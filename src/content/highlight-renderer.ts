@@ -385,7 +385,11 @@ export class HighlightRenderer {
                         border: 2px solid var(--annotation-color);
                         border-radius: 4px;
                         padding: 2px 4px;
-                        display: inline-block;
+                        display: inline;
+                        
+                        /* Critical for multi-line: creates separate boxes per line */
+                        box-decoration-break: clone;
+                        -webkit-box-decoration-break: clone;
                     }
                     :host(:hover) {
                         background-color: rgba(var(--annotation-rgb), 0.08);
