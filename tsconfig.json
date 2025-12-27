@@ -1,0 +1,152 @@
+{
+  "compilerOptions": {
+    // ===================================
+    // STRICT TYPE-CHECKING OPTIONS
+    // ===================================
+    // Enable all strict type-checking options
+    "strict": true,
+    // Raise error on expressions and declarations with an implied 'any' type
+    "noImplicitAny": true,
+    // Enable strict null checks
+    "strictNullChecks": true,
+    // Enable strict checking of function types
+    "strictFunctionTypes": true,
+    // Enable strict checking of property initialization in classes
+    "strictPropertyInitialization": true,
+    // Enable strict 'bind', 'call', and 'apply' methods on functions
+    "strictBindCallApply": true,
+    // Raise error on 'this' expressions with an implied 'any' type
+    "noImplicitThis": true,
+    // Parse in strict mode and emit "use strict" for each source file
+    "alwaysStrict": true,
+    // ===================================
+    // ADDITIONAL CHECKS
+    // ===================================
+    // Report errors on unused local variables
+    "noUnusedLocals": true,
+    // Report errors on unused parameters
+    "noUnusedParameters": true,
+    // Report error when not all code paths in function return a value
+    "noImplicitReturns": true,
+    // Report errors for fallthrough cases in switch statement
+    "noFallthroughCasesInSwitch": true,
+    // Ensure overriding members in derived classes are marked with 'override' modifier
+    "noImplicitOverride": true,
+    // Require undeclared properties from index signatures to use element accesses
+    "noPropertyAccessFromIndexSignature": true,
+    // Include 'undefined' in index signature results
+    "noUncheckedIndexedAccess": true,
+    // ===================================
+    // MODULE RESOLUTION
+    // ===================================
+    // Specify module resolution strategy
+    "moduleResolution": "node",
+    // Emit additional JavaScript to ease support for importing CommonJS modules
+    "esModuleInterop": true,
+    // Allow importing .json files
+    "resolveJsonModule": true,
+    // Ensure each file can be safely transpiled without relying on other imports
+    "isolatedModules": true,
+    // Allow default imports from modules with no default export
+    "allowSyntheticDefaultImports": true,
+    // ===================================
+    // OUTPUT & BUILD
+    // ===================================
+    // Set the JavaScript language version for emitted JavaScript
+    "target": "ES2022",
+    // Specify module code generation
+    "module": "ESNext",
+    // Specify library files to be included in the compilation
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    // Generate .d.ts files from TypeScript and JavaScript files in your project
+    "declaration": true,
+    // Generate .map files
+    "sourceMap": true,
+    // Specify an output folder for all emitted files
+    "outDir": "./dist",
+    // Specify the root folder within your source files
+    "rootDir": "./src",
+    // Remove comments from output
+    "removeComments": true,
+    // Disable emitting files from a compilation
+    "noEmit": false,
+    // Emit design-type metadata for decorated declarations
+    "emitDecoratorMetadata": true,
+    // Enable experimental support for decorators
+    "experimentalDecorators": true,
+    // ===================================
+    // PATH MAPPING
+    // ===================================
+    // Base directory to resolve non-relative module names
+    "baseUrl": ".",
+    // Path mapping for module resolution
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@/content/*": [
+        "src/content/*"
+      ],
+      "@/background/*": [
+        "src/background/*"
+      ],
+      "@/popup/*": [
+        "src/popup/*"
+      ],
+      "@/shared/*": [
+        "src/shared/*"
+      ],
+      "@/utils/*": [
+        "src/utils/*"
+      ],
+      "@/components/*": [
+        "src/components/*"
+      ],
+      "@/types/*": [
+        "src/types/*"
+      ]
+    },
+    // ===================================
+    // ADVANCED OPTIONS
+    // ===================================
+    // Skip type checking of declaration files
+    "skipLibCheck": true,
+    // Ensure that casing is correct in imports
+    "forceConsistentCasingInFileNames": true,
+    // Raise an error when a variable would be considered const
+    "noErrorTruncation": true,
+    // Preserve const enums
+    "preserveConstEnums": true,
+    // Specify what JSX code is generated
+    "jsx": "preserve"
+  },
+  // ===================================
+  // INCLUDE & EXCLUDE
+  // ===================================
+  "include": [
+    "src/**/*",
+    "types/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "tests",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  // ===================================
+  // TYPE ACQUISITION
+  // ===================================
+  "typeAcquisition": {
+    "enable": true,
+    "include": [
+      "chrome",
+      "node"
+    ]
+  }
+}
