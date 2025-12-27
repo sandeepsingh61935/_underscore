@@ -56,3 +56,4 @@ Thumbs.db
 
 # Zone Identifier (Windows)
 *.Identifier
+.wxt/
