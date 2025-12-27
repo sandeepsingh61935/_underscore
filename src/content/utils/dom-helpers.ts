@@ -6,7 +6,8 @@
 const BLOCK_ELEMENTS = new Set([
     'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
     'LI', 'TD', 'TH', 'ARTICLE', 'SECTION', 'HEADER',
-    'FOOTER', 'ASIDE', 'BLOCKQUOTE', 'PRE', 'NAV', 'MAIN'
+    'FOOTER', 'ASIDE', 'BLOCKQUOTE', 'PRE', 'NAV', 'MAIN',
+    'DD', 'DT', 'DL', 'UL', 'OL', 'FORM', 'FIELDSET'
 ]);
 
 /**
