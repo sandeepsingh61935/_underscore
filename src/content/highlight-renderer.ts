@@ -8,6 +8,14 @@ import { EventName, createEvent, HighlightRemovedEvent } from '@/shared/types/ev
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import type { Highlight } from './highlight-store';
+import { serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
+
+/**
+ * Extended Highlight with serialized range for storage
+ */
+export interface HighlightWithRange extends Highlight {
+    range: SerializedRange;
+}
 
 /**
  * Renders highlights using Shadow DOM for style isolation
@@ -157,15 +165,19 @@ export class HighlightRenderer {
         // Store element reference
         this.highlightElements.set(id, highlightElement);
 
-        const highlight: Highlight = {
+        // Serialize range BEFORE wrapping modifies the DOM
+        const serializedRange = serializeRange(range);
+
+        const highlightWithRange: HighlightWithRange = {
             id,
             text,
             color: color, // Store ORIGINAL color (not adjusted)
             element: highlightElement,
             createdAt: new Date(),
+            range: serializedRange,
         };
 
-        // Emit creation event
+        // Emit creation event with range for storage
         this.eventBus.emit(EventName.HIGHLIGHT_CREATED, createEvent({
             type: EventName.HIGHLIGHT_CREATED,
             highlight: {
@@ -173,6 +185,7 @@ export class HighlightRenderer {
                 text,
                 color: adjustedColor,
             },
+            range: serializedRange, // Include for storage
         }));
 
         this.logger.info('Highlight created', {
@@ -181,9 +194,10 @@ export class HighlightRenderer {
             originalColor: color,
             adjustedColor,
             backgroundColor,
+            xpath: serializedRange.xpath,
         });
 
-        return highlight;
+        return highlightWithRange;
     }
 
     /**

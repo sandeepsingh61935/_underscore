@@ -12,6 +12,7 @@ import { HighlightRenderer } from '@/content/highlight-renderer';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
+import { deserializeRange } from '@/shared/utils/range-serializer';
 import {
     CreateHighlightCommand,
     RemoveHighlightCommand,
@@ -205,18 +206,52 @@ async function restoreHighlights(
             }
         }
 
-        // Render active highlights
-        for (const highlight of activeHighlights.values()) {
+        // Render active highlights at their original positions
+        let restored = 0;
+        let failed = 0;
+
+        for (const highlightData of activeHighlights.values()) {
             try {
-                store.add(highlight);
-                // Note: Renderer will recreate highlight elements on next paint
-                logger.debug('Restored highlight', { id: highlight.id });
+                // Deserialize the range to find the correct position
+                if (highlightData.range) {
+                    const range = deserializeRange(highlightData.range);
+
+                    if (range) {
+                        // Create a selection from the range
+                        const selection = window.getSelection();
+                        if (selection) {
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+
+                            // Re-create the highlight at the correct position
+                            const highlight = renderer.createHighlight(selection, highlightData.color);
+                            store.add(highlight);
+                            selection.removeAllRanges();
+                            restored++;
+                            logger.debug('Restored highlight', { id: highlightData.id });
+                        }
+                    } else {
+                        logger.warn('Could not deserialize range for highlight', {
+                            id: highlightData.id,
+                            text: highlightData.text?.substring(0, 30)
+                        });
+                        failed++;
+                    }
+                } else {
+                    // Legacy highlight without range data
+                    logger.warn('Highlight missing range data', { id: highlightData.id });
+                    failed++;
+                }
             } catch (error) {
                 logger.warn('Failed to restore highlight', error as Error);
+                failed++;
             }
         }
 
-        logger.info(`Restored ${activeHighlights.size} highlights from ${events.length} events`);
+        if (failed > 0) {
+            logger.warn(`${failed} highlights could not be restored (content may have changed)`);
+        }
+        logger.info(`Restored ${restored}/${activeHighlights.size} highlights from ${events.length} events`);
     } catch (error) {
         logger.error('Failed to restore highlights', error as Error);
     }

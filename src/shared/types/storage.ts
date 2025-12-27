@@ -4,6 +4,7 @@
  */
 
 import type { Highlight } from '@/content/highlight-store';
+import type { SerializedRange } from '@/shared/utils/range-serializer';
 
 /**
  * Event types for event sourcing
@@ -20,11 +21,11 @@ export interface HighlightEvent {
 }
 
 /**
- * Highlight created event
+ * Highlight created event - includes serialized range for restoration
  */
 export interface HighlightCreatedEvent extends HighlightEvent {
     type: 'highlight.created';
-    data: Highlight;
+    data: Highlight & { range: SerializedRange };
 }
 
 /**
@@ -100,7 +101,12 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
     if (typeof e.eventId !== 'string') return false;
 
     if (e.type === 'highlight.created') {
-        return e.data !== undefined;
+        if (!e['data'] || typeof e['data'] !== 'object') return false;
+        const data = e['data'] as Record<string, unknown>;
+        // Validate range exists and has required fields
+        if (!data['range'] || typeof data['range'] !== 'object') return false;
+        const range = data['range'] as Record<string, unknown>;
+        return typeof range['xpath'] === 'string' && typeof range['text'] === 'string';
     } else if (e.type === 'highlight.removed') {
         return typeof e.highlightId === 'string';
     }
