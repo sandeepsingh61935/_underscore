@@ -1,23 +1,20 @@
 /**
- * @file entrypoints/background.ts
- * @description Background service worker entry point
+ * @file background.ts
+ * @description Background service worker
  */
 
 import { LoggerFactory } from '@/shared/utils/logger';
-import { defineBackground } from 'wxt/client';
 
-const logger = LoggerFactory.getLogger('BackgroundWorker');
+const logger = LoggerFactory.getLogger('Background');
 
-// Main background worker initialization
 export default defineBackground({
     type: 'module',
-
     main() {
-        logger.info('Background worker initialized');
+        logger.info('Background service worker started');
 
-        // TODO: Add background functionality in future sprints
-        // - Storage management (Vault Mode)
-        // - Sync queue (Vault  Mode)
-        // - Extension lifecycle management
+        // TODO: Handle extension events in future sprints
+        // - Storage sync
+        // - Context menus
+        // - Browser action
     },
 });

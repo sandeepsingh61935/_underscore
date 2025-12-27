@@ -5,14 +5,21 @@
 
 /// <reference types="wxt/client" />
 
-declare module 'wxt/client' {
-    export function defineContentScript(options: {
-        matches: string[];
-        main: () => void;
-    }): void;
+/**
+ * WXT global type declarations
+ */
 
-    export function defineBackground(options: {
-        type: 'module';
-        main: () => void;
-    }): void;
+interface ContentScriptContext {
+    matches: string[];
+    main(): void | Promise<void>;
 }
+
+declare function defineContentScript(context: ContentScriptContext): ContentScriptContext;
+declare function defineBackground(fn: () => void | Promise<void>): void;
+
+declare global {
+    const defineContentScript: typeof defineContentScript;
+    const defineBackground: typeof defineBackground;
+}
+
+export { };
