@@ -152,8 +152,8 @@ export class HighlightRenderer {
         const backgroundColor = this.getBackgroundColor(range);
         const adjustedColor = this.getContrastColor(color, backgroundColor);
 
-        // Create highlight element
-        const highlightElement = this.createHighlightElement(id, adjustedColor);
+        // Create highlight element with type-specific styling
+        const highlightElement = this.createHighlightElement(id, adjustedColor, type);
 
         // Wrap range with highlight
         try {
@@ -308,9 +308,10 @@ export class HighlightRenderer {
     /**
      * Create highlight element with Shadow DOM
      */
-    private createHighlightElement(id: string, color: string): HTMLElement {
+    private createHighlightElement(id: string, color: string, type: AnnotationType = 'underscore'): HTMLElement {
         const span = document.createElement('span');
         span.className = 'underscore-highlight';
+        span.classList.add(`annotation-${type}`); // Type-specific class
         span.dataset['id'] = id;
         span.dataset['color'] = color;
         span.dataset['originalColor'] = color; // Store original for theme updates
@@ -318,9 +319,9 @@ export class HighlightRenderer {
         // Create Shadow DOM
         const shadow = span.attachShadow({ mode: 'closed' });
 
-        // Add styles
+        // Add styles with annotation type
         const style = document.createElement('style');
-        style.textContent = this.getHighlightStyles(color);
+        style.textContent = this.getAnnotationStyles(color, type);
         shadow.appendChild(style);
 
         // Add slot for original content
