@@ -15,7 +15,8 @@ import { CommandStack } from '@/shared/patterns/command';
 import {
     CreateHighlightCommand,
     RemoveHighlightCommand,
-    ClearAllCommand
+    ClearAllCommand,
+    ClearSelectionCommand
 } from '@/content/commands/highlight-commands';
 
 const logger = LoggerFactory.getLogger('ContentScript');
@@ -87,6 +88,24 @@ export default defineContentScript({
                     );
                     await commandStack.execute(command);
                     logger.info('Highlight removed', { id: event.highlightId });
+                }
+            });
+
+            // ===== Handle clear selection (double-click) =====
+            eventBus.on(EventName.CLEAR_SELECTION, async (event) => {
+                const highlightsInSelection = getHighlightsInRange(event.selection, store);
+                if (highlightsInSelection.length > 0) {
+                    const command = new ClearSelectionCommand(
+                        highlightsInSelection,
+                        renderer,
+                        store,
+                        storage
+                    );
+                    await commandStack.execute(command);
+                    logger.info('Cleared highlights in selection', {
+                        count: highlightsInSelection.length
+                    });
+                    broadcastCount();
                 }
             });
 
@@ -201,4 +220,33 @@ async function restoreHighlights(
     } catch (error) {
         logger.error('Failed to restore highlights', error as Error);
     }
+}
+
+/**
+ * Get highlights that intersect with a selection range
+ */
+function getHighlightsInRange(range: Range, store: HighlightStore): any[] {
+    const container = range.commonAncestorContainer;
+    const parent = container.nodeType === Node.ELEMENT_NODE
+        ? container as Element
+        : container.parentElement;
+
+    if (!parent) return [];
+
+    const highlightElements = parent.querySelectorAll('.underscore-highlight');
+    const highlightsInRange: any[] = [];
+
+    for (const el of Array.from(highlightElements)) {
+        if (range.intersectsNode(el)) {
+            const id = el.getAttribute('data-id') || (el as any).dataset?.id;
+            if (id) {
+                const highlight = store.get(id);
+                if (highlight) {
+                    highlightsInRange.push(highlight);
+                }
+            }
+        }
+    }
+
+    return highlightsInRange;
 }
