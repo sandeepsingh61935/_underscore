@@ -176,7 +176,7 @@ export default defineContentScript({
 
             logger.info('Web Highlighter Extension initialized successfully');
             logger.info(`Default color: ${await colorManager.getCurrentColor()}`);
-            logger.info('Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z), Storage (4h TTL)');
+            logger.info('Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)');
             logger.info(`Restored ${store.count()} highlights from storage`);
         } catch (error) {
             logger.error('Failed to initialize extension', error as Error);
