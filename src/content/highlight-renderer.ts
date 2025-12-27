@@ -156,7 +156,7 @@ export class HighlightRenderer {
         const highlight: Highlight = {
             id,
             text,
-            color: adjustedColor, // Store adjusted color
+            color: color, // Store ORIGINAL color (not adjusted)
             element: highlightElement,
             createdAt: new Date(),
         };
@@ -401,130 +401,7 @@ export class HighlightRenderer {
         return `highlight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    /**
-   * Get background color of range
-   */
-    private getBackgroundColor(range: Range): string {
-        const container = range.commonAncestorContainer;
-        const element = container.nodeType === Node.ELEMENT_NODE
-            ? container as Element
-            : container.parentElement;
 
-        if (!element) return '#FFFFFF';
-
-        let currentElement: Element | null = element;
-
-        while (currentElement && currentElement !== document.body) {
-            const bg = window.getComputedStyle(currentElement).backgroundColor;
-
-            // Check if background is not transparent
-            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-                // Convert rgba to hex
-                const match = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
-                if (match) {
-                    const r = parseInt(match[1]);
-                    const g = parseInt(match[2]);
-                    const b = parseInt(match[3]);
-                    return this.rgbToHex(r, g, b);
-                }
-            }
-
-            currentElement = currentElement.parentElement;
-        }
-
-        return '#FFFFFF'; // Default to white
-    }
-
-    /**
-     * Get contrast-adjusted color
-     */
-    private getContrastColor(color: string, backgroundColor: string): string {
-        const bgIsDark = this.isDarkColor(backgroundColor);
-
-        if (bgIsDark) {
-            // Dark background - lighten significantly
-            return this.lightenColor(color, 40);
-        } else {
-            // Light background - darken MUCH more for visibility
-            return this.darkenColor(color, 50);
-        }
-    }
-
-    /**
-     * Check if color is dark (luminance < 0.5)
-     */
-    private isDarkColor(hex: string): boolean {
-        const rgb = this.hexToRgb(hex);
-        if (!rgb) return false;
-
-        const luminance = this.getLuminance(rgb.r, rgb.g, rgb.b);
-        return luminance < 0.5;
-    }
-
-    /**
-     * Calculate relative luminance
-     */
-    private getLuminance(r: number, g: number, b: number): number {
-        const [rs, gs, bs] = [r, g, b].map((c) => {
-            const val = c / 255;
-            return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-    }
-
-    /**
-     * Convert hex to RGB
-     */
-    private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-            ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16),
-            }
-            : null;
-    }
-
-    /**
-     * Convert RGB to hex
-     */
-    private rgbToHex(r: number, g: number, b: number): string {
-        return '#' + [r, g, b].map((x) => {
-            const hex = Math.round(x).toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        }).join('');
-    }
-
-    /**
-     * Lighten color
-     */
-    private lightenColor(hex: string, percent: number): string {
-        const rgb = this.hexToRgb(hex);
-        if (!rgb) return hex;
-
-        const amount = percent / 100;
-        const r = Math.min(255, rgb.r + (255 - rgb.r) * amount);
-        const g = Math.min(255, rgb.g + (255 - rgb.g) * amount);
-        const b = Math.min(255, rgb.b + (255 - rgb.b) * amount);
-
-        return this.rgbToHex(r, g, b);
-    }
-
-    /**
-     * Darken color
-     */
-    private darkenColor(hex: string, percent: number): string {
-        const rgb = this.hexToRgb(hex);
-        if (!rgb) return hex;
-
-        const amount = 1 - percent / 100;
-        const r = Math.max(0, rgb.r * amount);
-        const g = Math.max(0, rgb.g * amount);
-        const b = Math.max(0, rgb.b * amount);
-
-        return this.rgbToHex(r, g, b);
-    }
 
     /**
      * Get highlight count
