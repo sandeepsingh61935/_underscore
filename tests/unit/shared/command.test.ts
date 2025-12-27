@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CommandStack, type Command } from '../command';
+import { CommandStack, type Command } from '@/shared/patterns/command';
 
 // Mock command for testing
 class MockCommand implements Command {
