@@ -187,6 +187,50 @@ export class HighlightRenderer {
     }
 
     /**
+     * Restore a highlight from saved data (for page reload)
+     * Searches for the text in the document and highlights it
+     * Returns null if text not found
+     */
+    restoreHighlight(id: string, text: string, color: string): Highlight | null {
+        try {
+            // Use window.find() to search for text
+            const found = window.find(text, false, false, false, false, true, false);
+
+            if (!found) {
+                this.logger.warn('Could not find text to restore highlight', { id, text: text.substring(0, 50) });
+                return null;
+            }
+
+            // Get the selection created by find()
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+                this.logger.warn('No selection after find', { id });
+                return null;
+            }
+
+            // Create highlight using the found selection
+            const highlight = this.createHighlight(selection, color);
+
+            // Override the generated ID with the stored ID to maintain consistency
+            this.highlightElements.delete(highlight.id); // Remove with generated ID
+            const element = highlight.element;
+            element.setAttribute('data-id', id); // Update DOM
+            this.highlightElements.set(id, element); // Re-add with correct ID
+
+            const restoredHighlight: Highlight = {
+                ...highlight,
+                id: id // Use original ID
+            };
+
+            this.logger.debug('Highlight restored', { id });
+            return restoredHighlight;
+        } catch (error) {
+            this.logger.error('Failed to restore highlight', error as Error);
+            return null;
+        }
+    }
+
+    /**
      * Detects the background color of the element containing the selection.
      * @param range The selection range.
      * @returns The computed background color as a string (e.g., "rgb(255, 255, 255)").

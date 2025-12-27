@@ -208,9 +208,22 @@ async function restoreHighlights(
         // Render active highlights
         for (const highlight of activeHighlights.values()) {
             try {
-                store.add(highlight);
-                // Note: Renderer will recreate highlight elements on next paint
-                logger.debug('Restored highlight', { id: highlight.id });
+                // Use renderer to restore highlight by searching for text
+                const restored = renderer.restoreHighlight(
+                    highlight.id,
+                    highlight.text,
+                    highlight.color
+                );
+
+                if (restored) {
+                    store.add(restored);
+                    logger.debug('Restored highlight', { id: highlight.id });
+                } else {
+                    logger.warn('Could not restore highlight (text not found)', {
+                        id: highlight.id,
+                        text: highlight.text.substring(0, 50)
+                    });
+                }
             } catch (error) {
                 logger.warn('Failed to restore highlight', error as Error);
             }
