@@ -13,6 +13,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange } from '@/shared/utils/range-serializer';
+import { AnnotationModeManager } from '@/content/annotation-mode-manager';
 import {
     CreateHighlightCommand,
     RemoveHighlightCommand,
@@ -44,6 +45,7 @@ export default defineContentScript({
             const store = new HighlightStore(eventBus);
             const renderer = new HighlightRenderer(eventBus);
             const detector = new SelectionDetector(eventBus);
+            const modeManager = new AnnotationModeManager(eventBus);
 
             // ===== PAGE LOAD: Restore highlights from storage =====
             await restoreHighlights(storage, renderer, store);
@@ -56,7 +58,8 @@ export default defineContentScript({
 
                     try {
                         const color = await colorManager.getCurrentColor();
-                        const highlight = renderer.createHighlight(event.selection, color);
+                        const currentMode = modeManager.getCurrentMode();
+                        const highlight = renderer.createHighlight(event.selection, color, currentMode);
 
                         // Execute command (auto-saves to storage)
                         const command = new CreateHighlightCommand(
@@ -140,6 +143,27 @@ export default defineContentScript({
                         logger.info('Redo executed (Ctrl+Y)');
                         broadcastCount();
                     }
+                }
+
+                // Ctrl+U - Switch to Underscore mode
+                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyU') {
+                    e.preventDefault();
+                    modeManager.setMode('underscore');
+                    logger.info('Switched to underscore mode');
+                }
+
+                // Ctrl+H - Switch to Highlight mode
+                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyH') {
+                    e.preventDefault();
+                    modeManager.setMode('highlight');
+                    logger.info('Switched to highlight mode');
+                }
+
+                // Ctrl+B - Switch to Box mode
+                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyB') {
+                    e.preventDefault();
+                    modeManager.setMode('box');
+                    logger.info('Switched to box mode');
                 }
 
                 // Ctrl+Shift+U - Clear all
