@@ -263,11 +263,22 @@ async function restoreHighlights(
                             selection.removeAllRanges();
                             selection.addRange(range);
 
-                            // Re-create the highlight at the correct position
-                            const highlight = renderer.createHighlight(selection, highlightData.color);
-                            store.add(highlight);
+                            // Re-create the highlight at the correct position with original type
+                            const highlight = renderer.createHighlight(
+                                selection,
+                                highlightData.color,
+                                highlightData.type || 'underscore'  // Use stored type
+                            );
+
+                            // Check if createHighlight returned null (cross-paragraph blocked)
+                            if (highlight) {
+                                store.add(highlight);
+                                restored++;
+                            } else {
+                                failed++;
+                            }
+
                             selection.removeAllRanges();
-                            restored++;
                             logger.debug('Restored highlight', { id: highlightData.id });
                         }
                     } else {
