@@ -385,6 +385,7 @@ export class HighlightRenderer {
                         border: 2px solid var(--annotation-color);
                         border-radius: 4px;
                         padding: 2px 4px;
+                        margin: 2px 0; /* Vertical spacing to prevent border collision */
                         display: inline;
                         
                         /* Critical for multi-line: creates separate boxes per line */
