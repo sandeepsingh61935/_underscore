@@ -136,16 +136,18 @@ export class HighlightRenderer {
     private getHighlightStyles(color: string): string {
         return `
       :host {
-        background-color: ${color};
-        opacity: 0.4;
+        text-decoration: underline;
+        text-decoration-color: ${color};
+        text-decoration-thickness: 2px;
+        text-underline-offset: 2px;
         cursor: pointer;
-        transition: opacity 0.2s ease;
+        transition: all 0.2s ease;
         animation: fadeIn 0.2s ease;
       }
 
       :host(:hover) {
-        opacity: 0.6;
-        box-shadow: 0 0 8px ${color};
+        text-decoration-thickness: 3px;
+        text-shadow: 0 0 8px ${color};
       }
 
       @keyframes fadeIn {
@@ -153,7 +155,7 @@ export class HighlightRenderer {
           opacity: 0;
         }
         to {
-          opacity: 0.4;
+          opacity: 1;
         }
       }
     `;
