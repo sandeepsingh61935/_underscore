@@ -13,6 +13,7 @@ import { serializeRange, type SerializedRange } from '@/shared/utils/range-seria
 import { rgbToHex } from '@/shared/utils/color-utils';
 import type { AnnotationType } from '@/shared/types/annotation';
 import { MD3_COLORS } from '@/shared/types/annotation';
+import { spansMultipleBlocks } from './utils/dom-helpers';
 
 /**
  * Extended Highlight with serialized range for storage
@@ -142,11 +143,20 @@ export class HighlightRenderer {
      * @param selection - The text selection
      * @param color - Annotation color
      * @param type - Annotation type (underscore, highlight, or box)
+     * @returns Highlight object or null if blocked
      */
-    createHighlight(selection: Selection, color: string, type: AnnotationType = 'underscore'): Highlight {
+    createHighlight(selection: Selection, color: string, type: AnnotationType = 'underscore'): Highlight | null {
         const id = this.generateId();
         const text = selection.toString().trim();
         const range = selection.getRangeAt(0);
+
+        // TEMPORARY: Block cross-paragraph selections to prevent DOM breakage
+        if (spansMultipleBlocks(range)) {
+            this.logger.warn('[TEMP] Cross-paragraph selection blocked', {
+                preview: text.substring(0, 50)
+            });
+            return null;
+        }
 
         // Detect background color and adjust for contrast
         const backgroundColor = this.getBackgroundColor(range);

@@ -61,6 +61,12 @@ export default defineContentScript({
                         const currentMode = modeManager.getCurrentMode();
                         const highlight = renderer.createHighlight(event.selection, color, currentMode);
 
+                        // Check if blocked (cross-paragraph)
+                        if (!highlight) {
+                            logger.debug('Selection blocked');
+                            return;
+                        }
+
                         // Execute command (auto-saves to storage)
                         const command = new CreateHighlightCommand(
                             highlight,
