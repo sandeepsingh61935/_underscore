@@ -142,12 +142,16 @@ export class HighlightRenderer {
 
         // Wrap range with highlight
         try {
+            // Try simple approach first
             range.surroundContents(highlightElement);
         } catch (error) {
             // Fallback for complex ranges (spanning multiple elements)
-            this.logger.warn('Complex range, using fallback', error as Error);
-            // TODO: Implement advanced range handling for complex selections
-            throw new Error('Complex selections not yet supported');
+            this.logger.debug('Using complex range handling');
+
+            // Extract contents and wrap manually
+            const contents = range.extractContents();
+            highlightElement.appendChild(contents);
+            range.insertNode(highlightElement);
         }
 
         // Store element reference
