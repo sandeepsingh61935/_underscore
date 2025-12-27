@@ -1,6 +1,7 @@
 /**
  * @file highlight-renderer.ts
- * @description Renders highlights using Shadow DOM isolation
+ * @description Renders annotations using Shadow DOM isolation
+ * Supports: underscore, highlight, and box modes
  */
 
 import { EventBus } from '@/shared/utils/event-bus';
@@ -10,6 +11,8 @@ import type { ILogger } from '@/shared/utils/logger';
 import type { Highlight } from './highlight-store';
 import { serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
 import { rgbToHex } from '@/shared/utils/color-utils';
+import type { AnnotationType } from '@/shared/types/annotation';
+import { MD3_COLORS } from '@/shared/types/annotation';
 
 /**
  * Extended Highlight with serialized range for storage
@@ -135,9 +138,12 @@ export class HighlightRenderer {
     }
 
     /**
-     * Create highlight from selection
+     * Create annotation from selection
+     * @param selection - The text selection
+     * @param color - Annotation color
+     * @param type - Annotation type (underscore, highlight, or box)
      */
-    createHighlight(selection: Selection, color: string): Highlight {
+    createHighlight(selection: Selection, color: string, type: AnnotationType = 'underscore'): Highlight {
         const id = this.generateId();
         const text = selection.toString().trim();
         const range = selection.getRangeAt(0);
