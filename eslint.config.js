@@ -1,0 +1,128 @@
+import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
+import promisePlugin from 'eslint-plugin-promise';
+import securityPlugin from 'eslint-plugin-security';
+import unicornPlugin from 'eslint-plugin-unicorn';
+import prettierConfig from 'eslint-config-prettier';
+
+export default [
+    // Global ignores
+    {
+        ignores: [
+            'node_modules/**',
+            'dist/**',
+            'build/**',
+            '.tsbuildinfo',
+            'coverage/**',
+            'test-results/**',
+            'playwright-report/**',
+        ],
+    },
+
+    // Base JavaScript config
+    js.configs.recommended,
+
+    // TypeScript files
+    {
+        files: ['**/*.ts', '**/*.tsx'],
+        languageOptions: {
+            parser: tsparser,
+            parserOptions: {
+                ecmaVersion: 2022,
+                sourceType: 'module',
+                project: './tsconfig.json',
+            },
+            globals: {
+                console: 'readonly',
+                process: 'readonly',
+                chrome: 'readonly',
+                browser: 'readonly',
+            },
+        },
+        plugins: {
+            '@typescript-eslint': tseslint,
+            import: importPlugin,
+            promise: promisePlugin,
+            security: securityPlugin,
+            unicorn: unicornPlugin,
+        },
+        rules: {
+            // TypeScript-specific
+            '@typescript-eslint/no-explicit-any': 'error',
+            '@typescript-eslint/explicit-function-return-type': [
+                'error',
+                {
+                    allowExpressions: true,
+                    allowTypedFunctionExpressions: true,
+                },
+            ],
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                },
+            ],
+            '@typescript-eslint/consistent-type-imports': [
+                'error',
+                { prefer: 'type-imports' },
+            ],
+
+            // Code quality
+            complexity: ['error', 10],
+            'max-depth': ['error', 4],
+            'max-params': ['error', 4],
+            'prefer-const': 'error',
+            'no-var': 'error',
+            eqeqeq: ['error', 'always'],
+            'no-console': ['warn', { allow: ['warn', 'error'] }],
+
+            // Import rules
+            'import/no-unresolved': 'off', // TypeScript handles this
+            'import/order': [
+                'error',
+                {
+                    groups: [
+                        'builtin',
+                        'external',
+                        'internal',
+                        'parent',
+                        'sibling',
+                        'index',
+                    ],
+                    'newlines-between': 'always',
+                    alphabetize: { order: 'asc', caseInsensitive: true },
+                },
+            ],
+
+            // Promise rules
+            'promise/always-return': 'error',
+            'promise/catch-or-return': 'error',
+
+            // Security rules
+            'security/detect-object-injection': 'off', // Too many false positives
+        },
+    },
+
+    // Test files - relaxed rules
+    {
+        files: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/*.ts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            'max-lines-per-function': 'off',
+        },
+    },
+
+    // Config files
+    {
+        files: ['*.config.{js,ts}', '*.config.*.{js,ts}'],
+        rules: {
+            '@typescript-eslint/no-var-requires': 'off',
+        },
+    },
+
+    // Prettier must be last
+    prettierConfig,
+];
