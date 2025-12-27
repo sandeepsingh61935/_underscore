@@ -15,20 +15,35 @@ Underscore Web Highlighter ("we", "our", or "the Extension") is committed to pro
 
 ### Sprint Mode (Current - Privacy-First)
 
-**What We Collect**: NOTHING
+**What We Store Locally**:
+- **Highlighted text and positions**: Per website, in encrypted form
+- **Highlight colors and timestamps**: Metadata for your highlights  
+- **Undo history**: Last 50 actions (in memory only, not persisted)
 
-- **Zero Data Collection**: Sprint Mode is completely ephemeral and privacy-focused
-- **In-Memory Only**: All highlights exist only in your browser's RAM
-- **No Persistence**: Highlights are lost when you close the tab or browser
-- **No Network Requests**: Zero communication with external servers
-- **No Tracking**: We don't track what you highlight, when, or where
-- **No Analytics**: No usage statistics, telemetry, or analytics
+**Where It's Stored**:
+- **Chrome extension storage** (chrome.storage.local)
+- **Encrypted**: Per-website encryption using Web Crypto API
+- **Local only**: Never sent to servers
+- **Not synced**: Does not sync across devices
 
-**Your Data**:
-- Stays entirely on your device
-- Never leaves your browser
-- Never stored anywhere
-- Never transmitted over the network
+**How Long We Keep It**:
+- **Active session**: Up to 4 hours from last activity
+- **Automatic cleanup**: Every 5 minutes, expired data deleted
+- **Browser restart**: Highlights survive if < 4 hours old
+- **Undo history**: Lost on page reload (industry standard)
+
+**Your Control**:
+- **Clear current website**: Ctrl+Shift+U
+- **Clear selection**: Double-click highlighted text
+- **Undo**: Ctrl+Z (works during current session)
+- **Switch to Vault Mode**: Explicit migration preserves data
+
+**Privacy Guarantees**:
+- ✅ No tracking or analytics
+- ✅ No third-party data sharing
+- ✅ Data never leaves your device
+- ✅ Automatic expiration (4 hours)
+- ✅ You control all deletions
 
 ### Vault Mode (Future Feature)
 

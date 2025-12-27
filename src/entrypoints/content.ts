@@ -10,6 +10,13 @@ import { ColorManager } from '@/content/color-manager';
 import { HighlightStore } from '@/content/highlight-store';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { StorageService } from '@/shared/services/storage-service';
+import { CommandStack } from '@/shared/patterns/command';
+import {
+    CreateHighlightCommand,
+    RemoveHighlightCommand,
+    ClearAllCommand
+} from '@/content/commands/highlight-commands';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -18,11 +25,15 @@ export default defineContentScript({
     matches: ['<all_urls>'],
 
     async main() {
-        logger.info('Initializing Web Highlighter Extension...');
+        logger.info('Initializing Web Highlighter Extension (Sprint 1.5)...');
 
         try {
             // Create shared event bus
             const eventBus = new EventBus();
+
+            // Initialize storage and command stack
+            const storage = new StorageService();
+            const commandStack = new CommandStack(50);
 
             // Initialize components
             const colorManager = new ColorManager();
@@ -32,7 +43,10 @@ export default defineContentScript({
             const renderer = new HighlightRenderer(eventBus);
             const detector = new SelectionDetector(eventBus);
 
-            // Orchestrate: Listen to selection events
+            // ===== PAGE LOAD: Restore highlights from storage =====
+            await restoreHighlights(storage, renderer, store);
+
+            // ===== Orchestrate: Listen to selection events =====
             eventBus.on<SelectionCreatedEvent>(
                 EventName.SELECTION_CREATED,
                 async (event) => {
@@ -41,6 +55,15 @@ export default defineContentScript({
                     try {
                         const color = await colorManager.getCurrentColor();
                         const highlight = renderer.createHighlight(event.selection, color);
+
+                        // Execute command (auto-saves to storage)
+                        const command = new CreateHighlightCommand(
+                            highlight,
+                            renderer,
+                            store,
+                            storage
+                        );
+                        await commandStack.execute(command);
 
                         logger.info('Highlight created successfully', {
                             id: highlight.id,
@@ -52,13 +75,56 @@ export default defineContentScript({
                 }
             );
 
-            // Clear all highlights (Ctrl+Shift+U)
-            document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
+            // ===== Handle highlight removal (click) =====
+            eventBus.on(EventName.HIGHLIGHT_CLICKED, async (event) => {
+                const highlight = store.get(event.highlightId);
+                if (highlight) {
+                    const command = new RemoveHighlightCommand(
+                        highlight,
+                        renderer,
+                        store,
+                        storage
+                    );
+                    await commandStack.execute(command);
+                    logger.info('Highlight removed', { id: event.highlightId });
+                }
+            });
+
+            // ===== Keyboard Shortcuts =====
+            document.addEventListener('keydown', async (e) => {
+                // Ctrl+Z - Undo
+                if (e.ctrlKey && !e.shiftKey && e.code === 'KeyZ') {
                     e.preventDefault();
-                    store.clear();
-                    renderer.clearAll();
+                    if (commandStack.canUndo()) {
+                        await commandStack.undo();
+                        logger.info('Undo executed');
+                        broadcastCount();
+                    }
+                }
+
+                // Ctrl+Shift+Z - Redo
+                else if (e.ctrlKey && e.shiftKey && e.code === 'KeyZ') {
+                    e.preventDefault();
+                    if (commandStack.canRedo()) {
+                        await commandStack.redo();
+                        logger.info('Redo executed');
+                        broadcastCount();
+                    }
+                }
+
+                // Ctrl+Shift+U - Clear all
+                else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
+                    e.preventDefault();
+                    const highlights = store.getAll();
+                    const command = new ClearAllCommand(
+                        highlights,
+                        renderer,
+                        store,
+                        storage
+                    );
+                    await commandStack.execute(command);
                     logger.info('Cleared all highlights');
+                    broadcastCount();
                 }
             });
 
@@ -90,9 +156,49 @@ export default defineContentScript({
 
             logger.info('Web Highlighter Extension initialized successfully');
             logger.info(`Default color: ${await colorManager.getCurrentColor()}`);
-            logger.info('Ready to highlight! Use double-click or Ctrl+U');
+            logger.info('Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z), Storage (4h TTL)');
+            logger.info(`Restored ${store.count()} highlights from storage`);
         } catch (error) {
             logger.error('Failed to initialize extension', error as Error);
         }
     },
 });
+
+/**
+ * Restore highlights from storage on page load
+ */
+async function restoreHighlights(
+    storage: StorageService,
+    renderer: HighlightRenderer,
+    store: HighlightStore
+): Promise<void> {
+    try {
+        const events = await storage.loadEvents();
+
+        // Replay events to reconstruct state
+        const activeHighlights = new Map<string, any>();
+
+        for (const event of events) {
+            if (event.type === 'highlight.created' && event.data) {
+                activeHighlights.set(event.data.id, event.data);
+            } else if (event.type === 'highlight.removed' && event.highlightId) {
+                activeHighlights.delete(event.highlightId);
+            }
+        }
+
+        // Render active highlights
+        for (const highlight of activeHighlights.values()) {
+            try {
+                store.add(highlight);
+                // Note: Renderer will recreate highlight elements on next paint
+                logger.debug('Restored highlight', { id: highlight.id });
+            } catch (error) {
+                logger.warn('Failed to restore highlight', error as Error);
+            }
+        }
+
+        logger.info(`Restored ${activeHighlights.size} highlights from ${events.length} events`);
+    } catch (error) {
+        logger.error('Failed to restore highlights', error as Error);
+    }
+}
