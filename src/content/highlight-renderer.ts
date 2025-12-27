@@ -364,8 +364,8 @@ export class HighlightRenderer {
             // Dark background - lighten significantly
             return this.lightenColor(color, 40);
         } else {
-            // Light background - darken slightly
-            return this.darkenColor(color, 10);
+            // Light background - darken MUCH more for visibility
+            return this.darkenColor(color, 50);
         }
     }
 
