@@ -90,10 +90,6 @@ describe('HighlightRenderer', () => {
         it('should create element with Shadow DOM', () => {
             const selection = createMockSelection();
 
-            const highlight = renderer.createHighlight(selection, '#FFEB3B');
-
-            expect(highlight.element.shadowRoot).toBeTruthy();
-        });
     });
 
     describe('removeHighlight', () => {

@@ -74,7 +74,7 @@ export class SelectionDetector {
         const timeSinceLastClick = now - this.lastClickTime;
 
         // Check if this is a double-click (within threshold)
-        if (timeSinceLastClick < this.doubleClickThreshold && timeSinceLastClick > 0) {
+        if (timeSinceLastClick < this.doubleClickThreshold && timeSinceLastClick >= 0) {
             this.logger.debug('Double-click detected', { timeSinceLastClick });
             this.checkAndEmitSelection();
         }
