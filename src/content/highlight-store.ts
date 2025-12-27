@@ -7,6 +7,7 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { EventName, HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import type { AnnotationType } from '@/shared/types/annotation';
 
 /**
  * Highlight data structure
@@ -15,6 +16,7 @@ export interface Highlight {
     id: string;
     text: string;
     color: string;
+    type: AnnotationType;  // Store type for undo/redo
     element: HTMLElement;
     createdAt: Date;
 }

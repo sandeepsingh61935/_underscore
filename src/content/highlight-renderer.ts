@@ -179,6 +179,7 @@ export class HighlightRenderer {
             id,
             text,
             color: color, // Store ORIGINAL color (not adjusted)
+            type, // Store annotation type for undo/redo
             element: highlightElement,
             createdAt: new Date(),
             range: serializedRange,

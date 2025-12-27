@@ -43,8 +43,12 @@ export class CreateHighlightCommand implements Command {
                     selection.removeAllRanges();
                     selection.addRange(range);
 
-                    // Recreate the highlight visually
-                    const newHighlight = this.renderer.createHighlight(selection, this.highlight.color);
+                    // Recreate the highlight visually with original type
+                    const newHighlight = this.renderer.createHighlight(
+                        selection,
+                        this.highlight.color,
+                        this.highlight.type  // Preserve annotation type!
+                    );
                     this.store.add(newHighlight);
 
                     // Update our reference
@@ -135,7 +139,12 @@ export class RemoveHighlightCommand implements Command {
                 selection.addRange(range);
 
                 // Recreate the highlight visually
-                const newHighlight = this.renderer.createHighlight(selection, this.highlight.color);
+                // Recreate the highlight visually with original type
+                const newHighlight = this.renderer.createHighlight(
+                    selection,
+                    this.highlight.color,
+                    this.highlight.type  // Preserve annotation type!
+                );
                 this.store.add(newHighlight);
 
                 // Update our reference
