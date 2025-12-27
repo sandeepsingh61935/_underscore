@@ -9,9 +9,8 @@ import type {
     DomainStorage,
     EventLog,
     StorageConfig,
-    DEFAULT_STORAGE_CONFIG,
-    isValidHighlightEvent
 } from '@/shared/types/storage';
+import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
