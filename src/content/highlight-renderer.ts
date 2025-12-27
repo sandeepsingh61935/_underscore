@@ -27,10 +27,12 @@ import type { Highlight } from './highlight-store';
 export class HighlightRenderer {
     private logger: ILogger;
     private highlightElements = new Map<string, HTMLElement>();
+    private themeObserver: MutationObserver | null = null;
 
     constructor(private readonly eventBus: EventBus) {
         this.logger = LoggerFactory.getLogger('HighlightRenderer');
         this.setupEventListeners();
+        this.setupThemeObserver();
     }
 
     /**
@@ -43,6 +45,84 @@ export class HighlightRenderer {
                 this.removeHighlight(event.highlightId);
             }
         );
+    }
+
+    /**
+     * Set up theme change observer
+     * Watches for class/style changes on <html> and <body> that indicate theme changes
+     */
+    private setupThemeObserver(): void {
+        // Watch for theme changes on html and body elements
+        this.themeObserver = new MutationObserver(() => {
+            this.handleThemeChange();
+        });
+
+        // Observe class and style changes on html and body
+        const config = { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] };
+
+        this.themeObserver.observe(document.documentElement, config);
+        this.themeObserver.observe(document.body, config);
+
+        this.logger.debug('Theme observer initialized');
+    }
+
+    /**
+     * Handle theme changes - update all highlight colors
+     */
+    private handleThemeChange(): void {
+        this.logger.debug('Theme change detected, updating all highlights');
+
+        for (const [id, element] of this.highlightElements) {
+            const originalColor = element.dataset.originalColor;
+            if (!originalColor) continue;
+
+            // Detect new background color
+            const backgroundColor = this.getBackgroundColorFromElement(element);
+            const adjustedColor = this.getContrastColor(originalColor, backgroundColor);
+
+            // Update underline color
+            this.updateUnderlineColor(element, adjustedColor);
+
+            this.logger.debug('Updated highlight color', { id, originalColor, adjustedColor });
+        }
+    }
+
+    /**
+     * Get background color of element
+     */
+    private getBackgroundColorFromElement(element: Element): string {
+        let currentElement: Element | null = element;
+
+        while (currentElement && currentElement !== document.body) {
+            const bg = window.getComputedStyle(currentElement).backgroundColor;
+
+            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+                const match = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+                if (match) {
+                    const r = parseInt(match[1]);
+                    const g = parseInt(match[2]);
+                    const b = parseInt(match[3]);
+                    return this.rgbToHex(r, g, b);
+                }
+            }
+
+            currentElement = currentElement.parentElement;
+        }
+
+        return '#FFFFFF';
+    }
+
+    /**
+     * Update underline color of existing highlight
+     */
+    private updateUnderlineColor(element: HTMLElement, color: string): void {
+        const shadowRoot = element.shadowRoot;
+        if (!shadowRoot) return;
+
+        const style = shadowRoot.querySelector('style');
+        if (!style) return;
+
+        style.textContent = this.getHighlightStyles(color);
     }
 
     /**
@@ -206,8 +286,9 @@ export class HighlightRenderer {
     private createHighlightElement(id: string, color: string): HTMLElement {
         const span = document.createElement('span');
         span.className = 'underscore-highlight';
-        span.dataset.id = id;
-        span.dataset.color = color;
+        span.dataset['id'] = id;
+        span.dataset['color'] = color;
+        span.dataset['originalColor'] = color; // Store original for theme updates
 
         // Create Shadow DOM
         const shadow = span.attachShadow({ mode: 'closed' });
