@@ -48,6 +48,9 @@ export class SelectionDetector {
         // Double-click detection
         document.addEventListener('mouseup', this.handleMouseUp);
 
+        // Click-within-selection detection (for phrases/paragraphs)
+        document.addEventListener('click', this.handleClick);
+
         // Keyboard shortcut (Ctrl+U)
         document.addEventListener('keydown', this.handleKeyDown);
 
@@ -60,10 +63,51 @@ export class SelectionDetector {
      */
     destroy(): void {
         document.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('click', this.handleClick);
         document.removeEventListener('keydown', this.handleKeyDown);
 
         this.initialized = false;
         this.logger.info('SelectionDetector destroyed');
+    }
+
+    /**
+     * Handle click for selection confirmation
+     * If user has text selected and clicks within it, trigger highlight
+     */
+    private handleClick = (event: MouseEvent): void => {
+        const selection = window.getSelection();
+
+        if (!this.isValidSelection(selection)) {
+            return;
+        }
+
+        // Check if click is within the selected range
+        const range = selection.getRangeAt(0);
+        const clickedNode = event.target as Node;
+
+        // Check if clicked element is within the selection range
+        if (this.isClickWithinRange(clickedNode, range)) {
+            this.logger.debug('Click within selection detected');
+            this.checkAndEmitSelection();
+        }
+    };
+
+    /**
+     * Check if clicked node is within the selection range
+     */
+    private isClickWithinRange(clickedNode: Node, range: Range): boolean {
+        try {
+            const testRange = document.createRange();
+            testRange.selectNode(clickedNode);
+
+            // Check if ranges intersect
+            return (
+                range.compareBoundaryPoints(Range.START_TO_END, testRange) >= 0 &&
+                range.compareBoundaryPoints(Range.END_TO_START, testRange) <= 0
+            );
+        } catch {
+            return false;
+        }
     }
 
     /**
