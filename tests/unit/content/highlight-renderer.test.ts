@@ -86,10 +86,6 @@ describe('HighlightRenderer', () => {
 
             expect(renderer.count()).toBe(1);
         });
-
-        it('should create element with Shadow DOM', () => {
-            const selection = createMockSelection();
-
     });
 
     describe('removeHighlight', () => {

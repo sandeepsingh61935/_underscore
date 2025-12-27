@@ -114,6 +114,7 @@ export const EventName = {
     HIGHLIGHT_REMOVED: 'highlight:removed',
     HIGHLIGHTS_CLEARED: 'highlights:cleared',
     HIGHLIGHT_CLICKED: 'highlight:clicked',
+    CLEAR_SELECTION: 'clear:selection',
 
     // Color
     COLOR_CHANGED: 'color:changed',
