@@ -9,6 +9,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import type { Highlight } from './highlight-store';
 import { serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
+import { rgbToHex } from '@/shared/utils/color-utils';
 
 /**
  * Extended Highlight with serialized range for storage
@@ -110,7 +111,7 @@ export class HighlightRenderer {
                     const r = parseInt(match[1]);
                     const g = parseInt(match[2]);
                     const b = parseInt(match[3]);
-                    return this.rgbToHex(r, g, b);
+                    return rgbToHex(r, g, b);
                 }
             }
 
