@@ -65,6 +65,29 @@ export default defineContentScript({
             // Start detecting selections
             detector.init();
 
+            // Broadcast count updates to popup
+            const broadcastCount = () => {
+                chrome.runtime.sendMessage({
+                    type: 'HIGHLIGHT_COUNT_UPDATE',
+                    count: store.count(),
+                }).catch(() => {
+                    // Popup may not be open, ignore error
+                });
+            };
+
+            // Listen for count changes
+            eventBus.on(EventName.HIGHLIGHT_CREATED, () => broadcastCount());
+            eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
+            eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
+
+            // Listen for count requests from popup
+            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                if (message.type === 'GET_HIGHLIGHT_COUNT') {
+                    sendResponse({ count: store.count() });
+                }
+                return true; // Keep channel open for async response
+            });
+
             logger.info('Web Highlighter Extension initialized successfully');
             logger.info(`Default color: ${await colorManager.getCurrentColor()}`);
             logger.info('Ready to highlight! Use double-click or Ctrl+U');

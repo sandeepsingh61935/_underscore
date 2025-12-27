@@ -98,14 +98,29 @@
     </div>
 
     <script type="module">
-        // Popup initialization
-        console.log('Popup initialized');
+        const countElement = document.getElementById('highlight-count');
 
-        // TODO: Implement popup functionality in Sprint 1-2
-        // - Display highlight count from content script
-        // - Clear all button handler
-        // - Mode switching (Sprint 2+)
-        // - Color picker (Sprint 2)
+        // Listen for count updates from content script
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.type === 'HIGHLIGHT_COUNT_UPDATE') {
+                if (countElement) {
+                    countElement.textContent = message.count.toString();
+                }
+            }
+        });
+
+        // Request current count when popup opens
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+                chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_HIGHLIGHT_COUNT' }, (response) => {
+                    if (response && countElement) {
+                        countElement.textContent = response.count.toString();
+                    }
+                });
+            }
+        });
+
+        console.log('Popup loaded');
     </script>
 </body>
 
