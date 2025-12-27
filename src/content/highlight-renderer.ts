@@ -371,8 +371,7 @@ export class HighlightRenderer {
                 return baseStyles + `
                     :host {
                         background-color: rgba(var(--annotation-rgb), 0.24);
-                        padding: 2px 1px; /* Minimal horizontal padding */
-                        border-radius: 4px;
+                        border-radius: 2px;
                     }
                     :host(:hover) {
                         background-color: rgba(var(--annotation-rgb), 0.32);
