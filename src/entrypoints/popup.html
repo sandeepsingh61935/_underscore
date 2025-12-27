@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Underscore Highlighter</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 16px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        header {
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 8px 0;
+        }
+
+        .mode-badge {
+            background: #4caf50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .stats {
+            margin: 16px 0;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <header>
+            <h1>Underscore Highlighter</h1>
+            <span class="mode-badge">Sprint Mode</span>
+        </header>
+
+        <main>
+            <section class="stats">
+                <div class="stat">
+                    <span class="stat-value" id="highlight-count">0</span>
+                    <span class="stat-label">Highlights</span>
+                </div>
+            </section>
+
+            <section class="quick-actions">
+                <button id="clear-all" class="btn btn-secondary">
+                    Clear All
+                </button>
+            </section>
+
+            <section class="info">
+                <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
+                <ul style="font-size: 12px;">
+                    <li>Double-tap to highlight</li>
+                    <li>Ctrl+U to highlight selection</li>
+                    <li>Click to remove</li>
+                    <li>Ctrl+Shift+U to clear all</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer style="margin-top: 16px; font-size: 11px; color: #999;">
+            <span>v0.1.0</span>
+        </footer>
+    </div>
+
+    <script type="module">
+        // Popup initialization
+        console.log('Popup initialized');
+
+        // TODO: Implement popup functionality in Sprint 1-2
+        // - Display highlight count from content script
+        // - Clear all button handler
+        // - Mode switching (Sprint 2+)
+        // - Color picker (Sprint 2)
+    </script>
+</body>
+
+</html>
