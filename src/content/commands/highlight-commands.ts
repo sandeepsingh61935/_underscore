@@ -5,34 +5,58 @@
 
 import type { Command } from '@/shared/patterns/command';
 import type { Highlight, HighlightStore } from '@/content/highlight-store';
-import type { HighlightRenderer } from '@/content/highlight-renderer';
+import type { HighlightRenderer, HighlightWithRange } from '@/content/highlight-renderer';
 import { StorageService } from '@/shared/services/storage-service';
 import type { AnyHighlightEvent } from '@/shared/types/storage';
+import { deserializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
 
 /**
  * Create highlight command
  * Execute: Creates highlight, stores it, saves event
  * Undo: Removes highlight, saves removal event
  * 
- * CRITICAL: Stores full highlight data so redo works correctly
+ * CRITICAL: Stores SerializedRange so redo can recreate visual highlight
  */
 export class CreateHighlightCommand implements Command {
+    private serializedRange: SerializedRange;
+
     constructor(
-        private highlight: Highlight,
+        private highlight: HighlightWithRange,
         private renderer: HighlightRenderer,
         private store: HighlightStore,
         private storage: StorageService
-    ) { }
+    ) {
+        // Store range for redo
+        this.serializedRange = highlight.range;
+    }
 
     async execute(): Promise<void> {
-        // Add to store (visual element already exists from initial creation)
-        // On REDO: Element was removed by undo, need to recreate visually
+        // Check if this is a redo (element was removed by undo)
         if (!document.contains(this.highlight.element)) {
-            // Element was removed - this is a redo
-            // We need to recreate the visual highlight, but we lost the Range
-            // For now, just add to store - element will be restored on page reload
-            // TODO: Store range in command for full redo support
-            this.store.add(this.highlight);
+            // REDO: Recreate visual highlight using stored range
+            const range = deserializeRange(this.serializedRange);
+
+            if (range) {
+                // Create selection from deserialized range
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+
+                    // Recreate the highlight visually
+                    const newHighlight = this.renderer.createHighlight(selection, this.highlight.color);
+                    this.store.add(newHighlight);
+
+                    // Update our reference
+                    this.highlight = newHighlight;
+
+                    selection.removeAllRanges();
+                }
+            } else {
+                // Range couldn't be deserialized (content changed)
+                // Just add to store - will restore on page reload if possible
+                this.store.add(this.highlight);
+            }
         } else {
             // Initial execution - element already exists
             this.store.add(this.highlight);
@@ -69,15 +93,20 @@ export class CreateHighlightCommand implements Command {
 /**
  * Remove highlight command
  * Execute: Removes highlight, saves removal event
- * Undo: Recreates highlight, saves creation event
+ * Undo: Recreates highlight visually, saves creation event
  */
 export class RemoveHighlightCommand implements Command {
+    private serializedRange: SerializedRange;
+
     constructor(
-        private highlight: Highlight,
+        private highlight: HighlightWithRange,
         private renderer: HighlightRenderer,
         private store: HighlightStore,
         private storage: StorageService
-    ) { }
+    ) {
+        // Store range for undo
+        this.serializedRange = highlight.range;
+    }
 
     async execute(): Promise<void> {
         // Remove
@@ -96,8 +125,28 @@ export class RemoveHighlightCommand implements Command {
     }
 
     async undo(): Promise<void> {
-        // Recreate - add back to store (renderer recreates on load)
-        this.store.add(this.highlight);
+        // Recreate visual highlight using stored range
+        const range = deserializeRange(this.serializedRange);
+
+        if (range) {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                // Recreate the highlight visually
+                const newHighlight = this.renderer.createHighlight(selection, this.highlight.color);
+                this.store.add(newHighlight);
+
+                // Update our reference
+                this.highlight = newHighlight;
+
+                selection.removeAllRanges();
+            }
+        } else {
+            // Fallback - just add to store
+            this.store.add(this.highlight);
+        }
 
         // Save creation event
         const event: AnyHighlightEvent = {
@@ -117,10 +166,10 @@ export class RemoveHighlightCommand implements Command {
  * Undo: Recreates all highlights
  */
 export class ClearAllCommand implements Command {
-    private highlights: Highlight[];
+    private highlights: HighlightWithRange[];
 
     constructor(
-        highlightsSnapshot: Highlight[],
+        highlightsSnapshot: HighlightWithRange[],
         private renderer: HighlightRenderer,
         private store: HighlightStore,
         private storage: StorageService
@@ -162,7 +211,7 @@ export class ClearAllCommand implements Command {
  */
 export class ClearSelectionCommand implements Command {
     constructor(
-        private highlightsInSelection: Highlight[],
+        private highlightsInSelection: HighlightWithRange[],
         private renderer: HighlightRenderer,
         private store: HighlightStore,
         private storage: StorageService

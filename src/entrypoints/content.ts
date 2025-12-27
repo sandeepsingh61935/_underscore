@@ -132,6 +132,16 @@ export default defineContentScript({
                     }
                 }
 
+                // Ctrl+Y - Redo (Windows/Linux standard)
+                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyY') {
+                    e.preventDefault();
+                    if (commandStack.canRedo()) {
+                        await commandStack.redo();
+                        logger.info('Redo executed (Ctrl+Y)');
+                        broadcastCount();
+                    }
+                }
+
                 // Ctrl+Shift+U - Clear all
                 else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
                     e.preventDefault();
