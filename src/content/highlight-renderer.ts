@@ -345,34 +345,76 @@ export class HighlightRenderer {
     }
 
     /**
-     * Get styles for highlight element
+     * Generate Material Design 3 styles for annotations
+     * @param color Annotation color (hex)
+     * @param type Annotation type (underscore/highlight/box)
+     */
+    private getAnnotationStyles(color: string, type: AnnotationType = 'underscore'): string {
+        // Get RGB values for opacity-based state layers
+        const hex = color.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        const rgb = `${r}, ${g}, ${b}`;
+
+        const baseStyles = `
+            :host {
+                --annotation-color: ${color};
+                --annotation-rgb: ${rgb};
+                cursor: pointer;
+            }
+        `;
+
+        switch (type) {
+            case 'highlight':
+                return baseStyles + `
+                    :host {
+                        background-color: rgba(var(--annotation-rgb), 0.24);
+                        padding: 2px 4px;
+                        border-radius: 4px;
+                    }
+                    :host(:hover) {
+                        background-color: rgba(var(--annotation-rgb), 0.32);
+                    }
+                `;
+
+            case 'box':
+                return baseStyles + `
+                    :host {
+                        border: 2px solid var(--annotation-color);
+                        border-radius: 4px;
+                        padding: 2px 4px;
+                        display: inline-block;
+                    }
+                    :host(:hover) {
+                        background-color: rgba(var(--annotation-rgb), 0.08);
+                    }
+                `;
+
+            case 'underscore':
+            default:
+                return baseStyles + `
+                    :host {
+                        text-decoration: underline;
+                        text-decoration-color: var(--annotation-color);
+                        text-decoration-thickness: 2px;
+                        text-underline-offset: 2px;
+                        transition: all 0.2s ease;
+                    }
+                    :host(:hover) {
+                        text-decoration-thickness: 3px;
+                        text-shadow: 0 0 8px ${color};
+                    }
+                `;
+        }
+    }
+
+    /**
+     * Get styles for highlight element (legacy - calls getAnnotationStyles)
+     * @deprecated Use getAnnotationStyles instead
      */
     private getHighlightStyles(color: string): string {
-        return `
-      :host {
-        text-decoration: underline;
-        text-decoration-color: ${color};
-        text-decoration-thickness: 2px;
-        text-underline-offset: 2px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        animation: fadeIn 0.2s ease;
-      }
-
-      :host(:hover) {
-        text-decoration-thickness: 3px;
-        text-shadow: 0 0 8px ${color};
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-    `;
+        return this.getAnnotationStyles(color, 'underscore');
     }
 
     /**
