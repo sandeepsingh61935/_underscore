@@ -13,7 +13,7 @@ import { serializeRange, type SerializedRange } from '@/shared/utils/range-seria
 import { rgbToHex } from '@/shared/utils/color-utils';
 import type { AnnotationType } from '@/shared/types/annotation';
 import { MD3_COLORS } from '@/shared/types/annotation';
-import { spansMultipleBlocks } from './utils/dom-helpers';
+// spansMultipleBlocks import removed - Custom Highlight API handles cross-block natively
 
 /**
  * Extended Highlight with serialized range for storage
@@ -150,13 +150,8 @@ export class HighlightRenderer {
         const text = selection.toString().trim();
         const range = selection.getRangeAt(0);
 
-        // TEMPORARY: Block cross-paragraph selections to prevent DOM breakage
-        if (spansMultipleBlocks(range)) {
-            this.logger.warn('[TEMP] Cross-paragraph selection blocked', {
-                preview: text.substring(0, 50)
-            });
-            return null;
-        }
+        // Custom Highlight API handles cross-block selections natively!
+        // No need to block - single Range can span multiple elements
 
         // Detect background color and adjust for contrast
         const backgroundColor = this.getBackgroundColor(range);

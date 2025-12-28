@@ -17,8 +17,13 @@ export interface Highlight {
     text: string;
     color: string;
     type: AnnotationType;  // Store type for undo/redo
-    element: HTMLElement;
+    element: HTMLElement;  // Legacy - for Shadow DOM fallback
     createdAt: Date;
+
+    // NEW: For Custom Highlight API
+    // Needed because ::highlight() pseudo-elements don't emit DOM events
+    // We use this to detect clicks on highlighted text
+    liveRange?: Range;
 }
 
 /**
@@ -100,6 +105,7 @@ export class HighlightStore {
         range?: any;
         createdAt?: Date;
         element?: HTMLElement;
+        liveRange?: Range;  // NEW: Accept live range for Custom Highlight API
     }): void {
         const highlight: Highlight = {
             id: data.id,
@@ -108,8 +114,14 @@ export class HighlightStore {
             type: data.type || 'underscore',
             element: data.element || (null as any),  // Not needed for Custom Highlight API
             createdAt: data.createdAt || new Date(),
+            liveRange: data.liveRange  // NEW: Store live range
         };
         this.add(highlight);
+
+        this.logger.debug('Added highlight from data', {
+            id: data.id,
+            hasLiveRange: !!data.liveRange
+        });
     }
 
     /**
