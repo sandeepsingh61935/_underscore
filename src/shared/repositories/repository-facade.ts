@@ -254,36 +254,18 @@ export class RepositoryFacade {
             this.logger.error('Background bulk add failed', error);
         });
     }
-}
-
+    
     /**
      * Add from data (backward compatibility with HighlightStore)
      */
     addFromData(data: any): void {
         this.ensureInitialized();
         
-        // If already V2 format, just add
         if (data.version === 2 && data.contentHash && data.colorRole) {
             this.add(data as HighlightDataV2);
             return;
         }
         
-
-    /**
-     * Add from data (backward compatibility with HighlightStore)
-     */
-    addFromData(data: any): void {
-        this.ensureInitialized();
-        
-        // If already V2 format, just add
-        if (data.version === 2 && data.contentHash && data.colorRole) {
-            this.add(data as HighlightDataV2);
-            return;
-        }
-        
-        // Old format - log warning (will be handled by migration later)
-        this.logger.warn('Old format data detected - skipping', {
-            id: data.id
-        });
+        this.logger.warn('Old format data - skipping', { id: data.id });
     }
 }
