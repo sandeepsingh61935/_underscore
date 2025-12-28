@@ -19,8 +19,11 @@ export abstract class BaseHighlightMode implements IHighlightMode {
 
     constructor(
         protected readonly eventBus: EventBus,
-        protected readonly logger: ILogger
-    ) { }
+        protected readonly logger: ILogger,
+        repository: RepositoryFacade  // ✅ Dependency Injection - shared instance
+    ) {
+        this.repository = repository;
+    }
 
     abstract get name(): 'sprint' | 'vault' | 'gen';
 

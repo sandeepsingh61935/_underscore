@@ -53,7 +53,10 @@ export default defineContentScript({
 
             // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
             const modeManager = new ModeManager(eventBus, logger);
-            const sprintMode = new SprintMode(eventBus, logger);
+
+            // ✅ Dependency Injection: Pass shared repository to mode
+            const sprintMode = new SprintMode(eventBus, logger, repositoryFacade);
+
             modeManager.registerMode(sprintMode);
             await modeManager.activateMode('sprint');
 
