@@ -328,12 +328,12 @@ export default defineContentScript({
 
                     const count = repositoryFacade.count();
 
-                    // ✅ FIXED: Delegate to mode's clearAll() 
-                    // This clears CSS.highlights (DOM) + internal maps + repository
+                    // ✅ Call mode's clearAll (clears CSS.highlights + state + repo)
                     await modeManager.clearAll();
 
-                    // Clear storage
-                    await storage.clear();
+                    // ❌ DON'T clear storage! 
+                    // This would wipe ALL events including creation events
+                    // Let event sourcing handle it naturally
 
                     logger.info('Cleared all highlights', { count });
                     broadcastCount();
