@@ -53,12 +53,12 @@
     // OUTPUT & BUILD
     // ===================================
     // Set the JavaScript language version for emitted JavaScript
-    "target": "ES2022",
+    "target": "ES2020",
     // Specify module code generation
     "module": "ESNext",
     // Specify library files to be included in the compilation
     "lib": [
-      "ES2022",
+      "ES2020",
       "DOM",
       "DOM.Iterable"
     ],
@@ -73,7 +73,7 @@
     // Remove comments from output
     "removeComments": true,
     // Disable emitting files from a compilation
-    "noEmit": false,
+    "noEmit": true,
     // Emit design-type metadata for decorated declarations
     "emitDecoratorMetadata": true,
     // Enable experimental support for decorators
