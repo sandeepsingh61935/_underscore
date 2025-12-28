@@ -1,0 +1,223 @@
+/**
+ * @file highlight-manager.ts
+ * @description Custom Highlight API-based highlight manager
+ * 
+ * Replaces Shadow DOM approach with native CSS Custom Highlights.
+ * Key benefits:
+ * - Zero DOM modification
+ * - Native cross-block support
+ * - Better performance
+ */
+
+import { EventBus } from '@/shared/utils/event-bus';
+import { EventName, createEvent } from '@/shared/types/events';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
+import type { AnnotationType } from '@/shared/types/annotation';
+import { serializeRange } from '@/shared/utils/range-serializer';
+import type { SerializedRange } from '@/shared/utils/range-serializer';
+import { getHighlightName, setHighlightColor } from './styles/highlight-styles';
+
+/**
+ * Highlight data structure (no DOM element needed!)
+ */
+export interface HighlightData {
+    id: string;
+    text: string;
+    color: string;
+    type: AnnotationType;
+    range: SerializedRange;
+    createdAt: Date;
+}
+
+/**
+ * Extended with live Range for CSS.highlights
+ */
+export interface HighlightWithLiveRange extends HighlightData {
+    liveRange: Range;
+}
+
+/**
+ * Manages CSS Custom Highlights
+ * 
+ * Uses the native CSS Custom Highlight API:
+ * - CSS.highlights.set(name, Highlight)
+ * - Styled via ::highlight(name) pseudo-element
+ */
+export class HighlightManager {
+    private readonly logger: ILogger;
+    private readonly eventBus: EventBus;
+
+    // Map of highlight id → Highlight object
+    private readonly highlights: Map<string, Highlight> = new Map();
+
+    // Map of highlight id → Range (for undo/redo)
+    private readonly ranges: Map<string, Range> = new Map();
+
+    constructor(eventBus: EventBus) {
+        this.logger = LoggerFactory.getLogger('HighlightManager');
+        this.eventBus = eventBus;
+
+        this.logger.info('HighlightManager initialized (Custom Highlight API)');
+    }
+
+    /**
+     * Check if Custom Highlight API is supported
+     */
+    static isSupported(): boolean {
+        return 'highlights' in CSS;
+    }
+
+    /**
+     * Create a highlight from selection
+     * 
+     * @param selection - User's text selection
+     * @param color - Highlight color
+     * @param type - Annotation type (underscore, highlight, box)
+     * @returns HighlightData or null if failed
+     */
+    createHighlight(
+        selection: Selection,
+        color: string,
+        type: AnnotationType = 'underscore'
+    ): HighlightData | null {
+        if (!selection.rangeCount) {
+            this.logger.warn('No selection range');
+            return null;
+        }
+
+        const range = selection.getRangeAt(0);
+        const text = selection.toString().trim();
+
+        if (!text) {
+            this.logger.warn('Empty selection');
+            return null;
+        }
+
+        // Clone range to avoid mutation issues
+        const liveRange = range.cloneRange();
+
+        // Serialize for storage
+        const serializedRange = serializeRange(range);
+        if (!serializedRange) {
+            this.logger.error('Failed to serialize range');
+            return null;
+        }
+
+        // Generate unique ID
+        const id = this.generateId();
+
+        // Create native Highlight object
+        const highlight = new Highlight(liveRange);
+
+        // Get the CSS highlight name for this mode
+        const highlightName = getHighlightName(type, id);
+
+        // Add to existing highlights for this mode, or create new
+        const existingHighlight = CSS.highlights.get(highlightName);
+        if (existingHighlight) {
+            existingHighlight.add(liveRange);
+        } else {
+            CSS.highlights.set(highlightName, highlight);
+        }
+
+        // Set color
+        setHighlightColor(color);
+
+        // Store for management
+        this.highlights.set(id, highlight);
+        this.ranges.set(id, liveRange);
+
+        // Create highlight data
+        const highlightData: HighlightData = {
+            id,
+            text,
+            color,
+            type,
+            range: serializedRange,
+            createdAt: new Date(),
+        };
+
+        // Emit event
+        this.eventBus.emit(EventName.HIGHLIGHT_CREATED, createEvent({
+            type: EventName.HIGHLIGHT_CREATED,
+            highlight: {
+                id,
+                text,
+                color,
+            },
+            range: serializedRange,
+        }));
+
+        this.logger.info('Highlight created', { id, type, textLength: text.length });
+
+        return highlightData;
+    }
+
+    /**
+     * Remove a highlight by ID
+     */
+    removeHighlight(id: string, type: AnnotationType): void {
+        const liveRange = this.ranges.get(id);
+
+        if (!liveRange) {
+            this.logger.warn('Highlight not found for removal', { id });
+            return;
+        }
+
+        // Get the CSS highlight for this mode
+        const highlightName = getHighlightName(type, id);
+        const cssHighlight = CSS.highlights.get(highlightName);
+
+        if (cssHighlight) {
+            // Remove this specific range from the highlight
+            cssHighlight.delete(liveRange);
+
+            // If no more ranges, remove the highlight entirely
+            if (cssHighlight.size === 0) {
+                CSS.highlights.delete(highlightName);
+            }
+        }
+
+        // Clean up internal maps
+        this.highlights.delete(id);
+        this.ranges.delete(id);
+
+        this.logger.info('Highlight removed', { id });
+    }
+
+    /**
+     * Clear all highlights
+     */
+    clearAll(): void {
+        // Clear all CSS highlights
+        CSS.highlights.clear();
+
+        // Clear internal maps
+        this.highlights.clear();
+        this.ranges.clear();
+
+        this.logger.info('All highlights cleared');
+    }
+
+    /**
+     * Get highlight count
+     */
+    getHighlightCount(): number {
+        return this.highlights.size;
+    }
+
+    /**
+     * Check if a highlight exists
+     */
+    hasHighlight(id: string): boolean {
+        return this.highlights.has(id);
+    }
+
+    /**
+     * Generate unique ID
+     */
+    private generateId(): string {
+        return `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+}

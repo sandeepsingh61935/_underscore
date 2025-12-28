@@ -62,6 +62,7 @@ export class HighlightStore {
                     id: event.highlight.id,
                     text: event.highlight.text,
                     color: event.highlight.color,
+                    type: 'underscore',  // Default type
                     element: null as any, // Will be set by renderer
                     createdAt: event.timestamp,
                 });
@@ -85,6 +86,30 @@ export class HighlightStore {
     add(highlight: Highlight): void {
         this.highlights.set(highlight.id, highlight);
         this.logger.debug('Highlight added', { id: highlight.id, count: this.count() });
+    }
+
+    /**
+     * Add highlight from HighlightData (Custom Highlight API format)
+     * Works with both legacy Highlight and new HighlightData formats
+     */
+    addFromData(data: {
+        id: string;
+        text: string;
+        color: string;
+        type?: AnnotationType;
+        range?: any;
+        createdAt?: Date;
+        element?: HTMLElement;
+    }): void {
+        const highlight: Highlight = {
+            id: data.id,
+            text: data.text,
+            color: data.color,
+            type: data.type || 'underscore',
+            element: data.element || (null as any),  // Not needed for Custom Highlight API
+            createdAt: data.createdAt || new Date(),
+        };
+        this.add(highlight);
     }
 
     /**

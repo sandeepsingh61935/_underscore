@@ -9,17 +9,15 @@ import { SelectionDetector } from '@/content/selection-detector';
 import { ColorManager } from '@/content/color-manager';
 import { HighlightStore } from '@/content/highlight-store';
 import { HighlightRenderer } from '@/content/highlight-renderer';
+import { HighlightManager } from '@/content/highlight-manager';
+import { injectHighlightStyles } from '@/content/styles/highlight-styles';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange } from '@/shared/utils/range-serializer';
 import { AnnotationModeManager } from '@/content/annotation-mode-manager';
-import {
-    CreateHighlightCommand,
-    RemoveHighlightCommand,
-    ClearAllCommand,
-    ClearSelectionCommand
-} from '@/content/commands/highlight-commands';
+// Note: Command pattern temporarily bypassed for Custom Highlight API
+// Commands will be re-integrated for proper undo/redo support
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -28,9 +26,18 @@ export default defineContentScript({
     matches: ['<all_urls>'],
 
     async main() {
-        logger.info('Initializing Web Highlighter Extension (Sprint 1.5)...');
+        logger.info('Initializing Web Highlighter Extension (Sprint 2.0 - Custom Highlight API)...');
 
         try {
+            // Check Custom Highlight API support
+            const useCustomHighlightAPI = HighlightManager.isSupported();
+            logger.info('Custom Highlight API support:', { supported: useCustomHighlightAPI });
+
+            // Inject CSS styles for Custom Highlight API
+            if (useCustomHighlightAPI) {
+                injectHighlightStyles();
+            }
+
             // Create shared event bus
             const eventBus = new EventBus();
 
@@ -43,12 +50,18 @@ export default defineContentScript({
             await colorManager.initialize();
 
             const store = new HighlightStore(eventBus);
-            const renderer = new HighlightRenderer(eventBus);
+
+            // Use new HighlightManager if supported, otherwise fallback to legacy
+            const highlightManager = useCustomHighlightAPI
+                ? new HighlightManager(eventBus)
+                : null;
+            const renderer = new HighlightRenderer(eventBus);  // Keep for fallback
+
             const detector = new SelectionDetector(eventBus);
             const modeManager = new AnnotationModeManager(eventBus);
 
             // ===== PAGE LOAD: Restore highlights from storage =====
-            await restoreHighlights(storage, renderer, store);
+            await restoreHighlights(storage, renderer, store, highlightManager);
 
             // ===== Orchestrate: Listen to selection events =====
             eventBus.on<SelectionCreatedEvent>(
@@ -59,27 +72,49 @@ export default defineContentScript({
                     try {
                         const color = await colorManager.getCurrentColor();
                         const currentMode = modeManager.getCurrentMode();
-                        const highlight = renderer.createHighlight(event.selection, color, currentMode);
 
-                        // Check if blocked (cross-paragraph)
-                        if (!highlight) {
-                            logger.debug('Selection blocked');
+                        let highlightData: any = null;
+
+                        // Use Custom Highlight API if available
+                        if (highlightManager) {
+                            highlightData = highlightManager.createHighlight(
+                                event.selection,
+                                color,
+                                currentMode
+                            );
+                        } else {
+                            // Fallback to legacy renderer
+                            highlightData = renderer.createHighlight(
+                                event.selection,
+                                color,
+                                currentMode
+                            );
+                        }
+
+                        // Check if creation was blocked
+                        if (!highlightData) {
+                            logger.debug('Selection blocked or failed');
                             return;
                         }
 
-                        // Execute command (auto-saves to storage)
-                        const command = new CreateHighlightCommand(
-                            highlight,
-                            renderer,
-                            store,
-                            storage
-                        );
-                        await commandStack.execute(command);
+                        // Add to store (works with both old and new format)
+                        store.addFromData(highlightData);
+
+                        // Save to storage
+                        await storage.saveEvent({
+                            type: 'highlight.created',
+                            timestamp: Date.now(),
+                            eventId: crypto.randomUUID(),
+                            data: highlightData
+                        });
 
                         logger.info('Highlight created successfully', {
-                            id: highlight.id,
-                            color,
+                            id: highlightData.id,
+                            mode: currentMode,
+                            api: highlightManager ? 'Custom Highlight API' : 'Legacy'
                         });
+
+                        broadcastCount();
                     } catch (error) {
                         logger.error('Failed to create highlight', error as Error);
                     }
@@ -90,28 +125,49 @@ export default defineContentScript({
             eventBus.on(EventName.HIGHLIGHT_CLICKED, async (event) => {
                 const highlight = store.get(event.highlightId);
                 if (highlight) {
-                    const command = new RemoveHighlightCommand(
-                        highlight,
-                        renderer,
-                        store,
-                        storage
-                    );
-                    await commandStack.execute(command);
+                    // Use Custom Highlight API if available
+                    if (highlightManager) {
+                        highlightManager.removeHighlight(highlight.id, highlight.type);
+                    } else {
+                        renderer.removeHighlight(highlight.id);
+                    }
+
+                    store.remove(highlight.id);
+
+                    // Save removal event
+                    await storage.saveEvent({
+                        type: 'highlight.removed',
+                        timestamp: Date.now(),
+                        eventId: crypto.randomUUID(),
+                        highlightId: highlight.id
+                    });
+
                     logger.info('Highlight removed', { id: event.highlightId });
+                    broadcastCount();
                 }
             });
 
             // ===== Handle clear selection (double-click) =====
             eventBus.on(EventName.CLEAR_SELECTION, async (event) => {
                 const highlightsInSelection = getHighlightsInRange(event.selection, store);
+
                 if (highlightsInSelection.length > 0) {
-                    const command = new ClearSelectionCommand(
-                        highlightsInSelection,
-                        renderer,
-                        store,
-                        storage
-                    );
-                    await commandStack.execute(command);
+                    for (const hl of highlightsInSelection) {
+                        if (highlightManager) {
+                            highlightManager.removeHighlight(hl.id, hl.type);
+                        } else {
+                            renderer.removeHighlight(hl.id);
+                        }
+                        store.remove(hl.id);
+
+                        await storage.saveEvent({
+                            type: 'highlight.removed',
+                            timestamp: Date.now(),
+                            eventId: crypto.randomUUID(),
+                            highlightId: hl.id
+                        });
+                    }
+
                     logger.info('Cleared highlights in selection', {
                         count: highlightsInSelection.length
                     });
@@ -176,14 +232,24 @@ export default defineContentScript({
                 else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
                     e.preventDefault();
                     const highlights = store.getAll();
-                    const command = new ClearAllCommand(
-                        highlights,
-                        renderer,
-                        store,
-                        storage
-                    );
-                    await commandStack.execute(command);
-                    logger.info('Cleared all highlights');
+
+                    for (const hl of highlights) {
+                        if (highlightManager) {
+                            highlightManager.removeHighlight(hl.id, hl.type);
+                        } else {
+                            renderer.removeHighlight(hl.id);
+                        }
+                        store.remove(hl.id);
+
+                        await storage.saveEvent({
+                            type: 'highlight.removed',
+                            timestamp: Date.now(),
+                            eventId: crypto.randomUUID(),
+                            highlightId: hl.id
+                        });
+                    }
+
+                    logger.info('Cleared all highlights', { count: highlights.length });
                     broadcastCount();
                 }
             });
@@ -230,7 +296,8 @@ export default defineContentScript({
 async function restoreHighlights(
     storage: StorageService,
     renderer: HighlightRenderer,
-    store: HighlightStore
+    store: HighlightStore,
+    highlightManager?: HighlightManager | null
 ): Promise<void> {
     try {
         const events = await storage.loadEvents();
@@ -257,30 +324,49 @@ async function restoreHighlights(
                     const range = deserializeRange(highlightData.range);
 
                     if (range) {
-                        // Create a selection from the range
-                        const selection = window.getSelection();
-                        if (selection) {
-                            selection.removeAllRanges();
-                            selection.addRange(range);
+                        const type = highlightData.type || 'underscore';
 
-                            // Re-create the highlight at the correct position with original type
-                            const highlight = renderer.createHighlight(
-                                selection,
-                                highlightData.color,
-                                highlightData.type || 'underscore'  // Use stored type
-                            );
+                        // Use Custom Highlight API if available
+                        if (highlightManager) {
+                            // Create CSS highlight directly from range
+                            const cssHighlight = new Highlight(range);
+                            CSS.highlights.set(type, cssHighlight);
 
-                            // Check if createHighlight returned null (cross-paragraph blocked)
-                            if (highlight) {
-                                store.add(highlight);
-                                restored++;
-                            } else {
-                                failed++;
+                            // Add to store
+                            store.addFromData({
+                                id: highlightData.id,
+                                text: highlightData.text,
+                                color: highlightData.color,
+                                type: type,
+                                range: highlightData.range
+                            });
+
+                            restored++;
+                        } else {
+                            // Legacy: create selection and use renderer
+                            const selection = window.getSelection();
+                            if (selection) {
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+
+                                const highlight = renderer.createHighlight(
+                                    selection,
+                                    highlightData.color,
+                                    type
+                                );
+
+                                if (highlight) {
+                                    store.add(highlight);
+                                    restored++;
+                                } else {
+                                    failed++;
+                                }
+
+                                selection.removeAllRanges();
                             }
-
-                            selection.removeAllRanges();
-                            logger.debug('Restored highlight', { id: highlightData.id });
                         }
+
+                        logger.debug('Restored highlight', { id: highlightData.id });
                     } else {
                         logger.warn('Could not deserialize range for highlight', {
                             id: highlightData.id,
