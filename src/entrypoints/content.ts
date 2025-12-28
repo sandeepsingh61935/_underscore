@@ -365,78 +365,90 @@ async function restoreHighlights(
 
         for (const highlightData of activeHighlights.values()) {
             try {
-                // Deserialize the range to find the correct position
-                if (highlightData.range) {
-                    const range = deserializeRange(highlightData.range);
+                // Support both old (single range) and new (multi-range) formats
+                const serializedRanges = highlightData.ranges || (highlightData.range ? [highlightData.range] : []);
 
-                    if (range) {
-                        const type = highlightData.type || 'underscore';
-
-                        // Use Custom Highlight API if available
-                        if (highlightManager) {
-                            // Inject CSS for this highlight
-                            injectHighlightCSS(type, highlightData.id, highlightData.color);
-
-                            // Create CSS highlight directly from range
-                            const cssHighlight = new Highlight(range);
-
-                            // Use unique name per highlight
-                            const highlightName = getHighlightName(type, highlightData.id);
-                            CSS.highlights.set(highlightName, cssHighlight);
-
-                            // Add to store
-                            store.addFromData({
-                                id: highlightData.id,
-                                text: highlightData.text,
-                                color: highlightData.color,
-                                type: type,
-                                range: highlightData.range
-                            });
-
-                            restored++;
-                        } else {
-                            // Legacy: create selection and use renderer
-                            const selection = window.getSelection();
-                            if (selection) {
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-
-                                const highlight = renderer.createHighlight(
-                                    selection,
-                                    highlightData.color,
-                                    type
-                                );
-
-                                if (highlight) {
-                                    store.add(highlight);
-                                    restored++;
-                                } else {
-                                    failed++;
-                                }
-
-                                selection.removeAllRanges();
-                            }
-                        }
-
-                        logger.debug('Restored highlight', { id: highlightData.id });
-                    } else {
-                        logger.warn('Could not deserialize range for highlight', {
-                            id: highlightData.id,
-                            text: highlightData.text?.substring(0, 30)
-                        });
-                        failed++;
-                    }
-                } else {
-                    // Legacy highlight without range data
-                    logger.warn('Highlight missing range data', { id: highlightData.id });
+                if (serializedRanges.length === 0) {
+                    logger.warn('No ranges to restore', { id: highlightData.id });
                     failed++;
+                    continue;
+                }
+
+                // Deserialize all ranges
+                const liveRanges: Range[] = [];
+                for (const serializedRange of serializedRanges) {
+                    const range = deserializeRange(serializedRange);
+                    if (range) {
+                        liveRanges.push(range);
+                    }
+                }
+
+                if (liveRanges.length === 0) {
+                    logger.warn('Failed to deserialize any ranges', { id: highlightData.id });
+                    failed++;
+                    continue;
+                }
+
+                const type = highlightData.type || 'underscore';
+
+                // Use Custom Highlight API if available
+                if (highlightManager) {
+                    // Inject CSS for this highlight
+                    injectHighlightCSS(type, highlightData.id, highlightData.color);
+
+                    // Create CSS highlight with ALL ranges (multi-range support!)
+                    const cssHighlight = new Highlight(...liveRanges);
+
+                    // Use unique name per highlight
+                    const highlightName = getHighlightName(type, highlightData.id);
+                    CSS.highlights.set(highlightName, cssHighlight);
+
+                    // Add to store with all ranges
+                    store.addFromData({
+                        id: highlightData.id,
+                        text: highlightData.text,
+                        color: highlightData.color,
+                        type: type,
+                        ranges: serializedRanges,
+                        liveRanges: liveRanges
+                    });
+
+                    restored++;
+                } else {
+                    // Legacy: only restore first range
+                    const selection = window.getSelection();
+                    if (selection) {
+                        selection.removeAllRanges();
+                        selection.addRange(liveRanges[0]); // Legacy: only first range
+
+                        const command = new CreateHighlightCommand(
+                            selection,
+                            highlightData.color,
+                            renderer,
+                            store,
+                            storage
+                        );
+
+                        await command.execute();
+                        restored++;
+                    }
                 }
             } catch (error) {
-                logger.warn('Failed to restore highlight', error as Error);
+                logger.error('Failed to restore highlight', {
+                    id: highlightData.id,
+                    error: error as Error
+                });
                 failed++;
             }
         }
 
+        logger.info('Restoration complete', {
+            restored,
+            failed,
+            total: activeHighlights.size
+        });
+
+        // Broadcast initial count
         if (failed > 0) {
             logger.warn(`${failed} highlights could not be restored (content may have changed)`);
         }
