@@ -14,12 +14,40 @@ import { z } from 'zod';
 /**
  * Serialized range schema
  */
+/**
+ * Serialized Range Schema V2
+ * 
+ * Backward Compatible: V1 data (no selector) validates ✓
+ * Forward Compatible: V2 data (with selector) validates ✓
+ * 
+ * Pattern: Optional Field Extension (graceful upgrade)
+ */
 export const SerializedRangeSchema = z.object({
-    startContainer: z.string(),
-    startOffset: z.number().int().nonnegative(),
-    endContainer: z.string(),
-    endOffset: z.number().int().nonnegative(),
+    // ========================================
+    // V1 Fields (REQUIRED - backward compat)
+    // ========================================
+    startContainer: z.string()
+        .min(1, 'startContainer cannot be empty'),
+
+    startOffset: z.number()
+        .int('Offset must be integer')
+        .nonnegative('Offset cannot be negative'),
+
+    endContainer: z.string()
+        .min(1, 'endContainer cannot be empty'),
+
+    endOffset: z.number()
+        .int('Offset must be integer')
+        .nonnegative('Offset cannot be negative'),
+
     commonAncestor: z.string()
+        .min(1, 'commonAncestor cannot be empty'),
+
+    // ========================================
+    // V2 Field (OPTIONAL - graceful upgrade)
+    // ========================================
+    // Note: Defined below after TextQuoteSelectorSchema
+    // Will be added via .extend() after schema definition
 });
 
 export type SerializedRange = z.infer<typeof SerializedRangeSchema>;
@@ -60,6 +88,19 @@ export const TextQuoteSelectorSchema = z.object({
 );
 
 export type TextQuoteSelector = z.infer<typeof TextQuoteSelectorSchema>;
+
+/**
+ * Extend SerializedRangeSchema with TextQuoteSelector
+ * Pattern: Schema Extension for backward compatibility
+ */
+const SerializedRangeSchemaExtended = SerializedRangeSchema.extend({
+    selector: TextQuoteSelectorSchema.optional()
+});
+
+// Re-export extended schema as main schema
+export { SerializedRangeSchemaExtended as SerializedRangeSchema };
+
+export type SerializedRange = z.infer<typeof SerializedRangeSchemaExtended>;
 
 /**
  * Color role enum - maps to CSS design tokens
