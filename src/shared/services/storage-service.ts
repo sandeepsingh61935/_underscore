@@ -77,19 +77,61 @@ export class StorageService {
     async loadEvents(): Promise<AnyHighlightEvent[]> {
         try {
             const hashedDomain = await hashDomain(this.currentDomain);
+
+            this.logger.info('🔍 [LOAD] Starting load operation', {
+                domain: this.currentDomain,
+                hashedDomain
+            });
+
+            // Debug: Dump all storage keys
+            const allKeys = await chrome.storage.local.get(null);
+            this.logger.info('🔍 [LOAD] Storage dump', {
+                totalKeys: Object.keys(allKeys).length,
+                allKeys: Object.keys(allKeys),
+                ourKey: hashedDomain,
+                keyExists: hashedDomain in allKeys
+            });
+
             const result = await chrome.storage.local.get(hashedDomain);
 
             if (!result[hashedDomain]) {
+                this.logger.warn('❌ [LOAD] No data found', {
+                    domain: this.currentDomain,
+                    hashedDomain
+                });
                 return [];
             }
 
             const domainStorage = result[hashedDomain] as DomainStorage;
 
-            // Check TTL
-            if (Date.now() > domainStorage.ttl) {
-                this.logger.info('Storage expired, clearing', {
+            this.logger.info('🔍 [LOAD] Found data', {
+                domain: domainStorage.domain,
+                lastModified: new Date(domainStorage.lastModified).toISOString(),
+                ttl: domainStorage.ttl,
+                ttlDate: new Date(domainStorage.ttl).toISOString()
+            });
+
+            // Check TTL with detailed calculation
+            const now = Date.now();
+            const timeUntilExpiry = domainStorage.ttl - now;
+            const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
+
+            this.logger.info('🔍 [LOAD] TTL check', {
+                now,
+                nowDate: new Date(now).toISOString(),
+                ttl: domainStorage.ttl,
+                ttlDate: new Date(domainStorage.ttl).toISOString(),
+                timeUntilExpiryMs: timeUntilExpiry,
+                hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+                isExpired: now > domainStorage.ttl,
+                comparison: `${now} > ${domainStorage.ttl} = ${now > domainStorage.ttl}`
+            });
+
+            if (now > domainStorage.ttl) {
+                this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
                     domain: this.currentDomain,
-                    ttl: new Date(domainStorage.ttl)
+                    expiredAt: new Date(domainStorage.ttl).toISOString(),
+                    expiredAgo: `${((now - domainStorage.ttl) / (1000 * 60)).toFixed(1)} minutes`
                 });
                 await chrome.storage.local.remove(hashedDomain);
                 return [];
@@ -109,9 +151,10 @@ export class StorageService {
                 });
             }
 
-            this.logger.info('Events loaded', {
+            this.logger.info('✅ [LOAD] Events loaded successfully', {
                 domain: this.currentDomain,
-                count: validEvents.length
+                count: validEvents.length,
+                hoursUntilExpiry: hoursUntilExpiry.toFixed(2)
             });
 
             return validEvents;
