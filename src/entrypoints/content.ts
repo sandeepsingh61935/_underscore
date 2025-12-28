@@ -15,7 +15,8 @@ import { injectHighlightCSS, getHighlightName } from '@/content/styles/highlight
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
-import { deserializeRange } from '@/shared/utils/range-serializer';
+import { deserializeRange, serializeRange } from '@/shared/utils/range-serializer';
+import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
 import { CreateHighlightCommand, RemoveHighlightCommand, ClearSelectionCommand, ClearAllCommand } from '@/content/commands/simple-highlight-commands';
 // Removed: AnnotationModeManager - single mode only
 // Note: Command pattern temporarily bypassed for Custom Highlight API
@@ -72,21 +73,102 @@ export default defineContentScript({
                     logger.info('Selection detected, checking for overlaps');
 
                     try {
-                        // PRESERVE EXISTING: Check if selection overlaps existing highlights
+                        // RANGE SUBTRACTION: Check if selection overlaps existing highlights
                         const overlappingHighlights = getHighlightsInRange(event.selection, store);
 
                         if (overlappingHighlights.length > 0) {
-                            // Existing highlights have PRIORITY - don't create new one
-                            logger.info('Selection overlaps existing highlights - preserving existing', {
-                                count: overlappingHighlights.length,
-                                existingIds: overlappingHighlights.map(h => h.id)
+                            logger.info('Range subtraction: Splitting overlapping highlights', {
+                                count: overlappingHighlights.length
                             });
 
-                            // Don't create new highlight - preserve what's already there
-                            return;
+                            const selectionRange = event.selection.getRangeAt(0);
+
+                            // Process each overlapping highlight
+                            for (const existingHighlight of overlappingHighlights) {
+                                // Remove the existing highlight first
+                                if (highlightManager) {
+                                    highlightManager.removeHighlight(existingHighlight.id, existingHighlight.type);
+                                }
+                                store.remove(existingHighlight.id);
+
+                                // Split each range in the highlight
+                                const allRemainingRanges: Range[] = [];
+
+                                for (const liveRange of (existingHighlight.liveRanges || [])) {
+                                    // Subtract selection from this range
+                                    const remainingRanges = subtractRange(liveRange, selectionRange);
+                                    allRemainingRanges.push(...remainingRanges);
+                                }
+
+                                // Filter out tiny ranges (< 3 chars)
+                                const validRanges = filterTinyRanges(allRemainingRanges, 3);
+
+                                // Merge adjacent ranges
+                                const mergedRanges = mergeAdjacentRanges(validRanges);
+
+                                if (mergedRanges.length > 0) {
+                                    // Create new highlight(s) from remaining ranges
+                                    const text = mergedRanges.map(r => r.toString()).join(' ... ');
+                                    const serializedRanges = mergedRanges.map(r => serializeRange(r));
+
+                                    // Generate new ID for split highlight
+                                    const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+                                    if (highlightManager) {
+                                        // Create visual for each range
+                                        const highlightName = getHighlightName(existingHighlight.type, newId);
+
+                                        // CSS Highlight API supports multiple ranges!
+                                        const nativeHighlight = new Highlight(...mergedRanges);
+                                        CSS.highlights.set(highlightName, nativeHighlight);
+                                        injectHighlightCSS(existingHighlight.type, newId, existingHighlight.color);
+                                    }
+
+                                    // Add to store with multiple ranges
+                                    store.addFromData({
+                                        id: newId,
+                                        text,
+                                        color: existingHighlight.color,
+                                        type: existingHighlight.type,
+                                        ranges: serializedRanges,
+                                        liveRanges: mergedRanges
+                                    });
+
+                                    // Save event
+                                    await storage.saveEvent({
+                                        type: 'highlight.created',
+                                        timestamp: Date.now(),
+                                        eventId: crypto.randomUUID(),
+                                        data: {
+                                            id: newId,
+                                            text,
+                                            color: existingHighlight.color,
+                                            type: existingHighlight.type,
+                                            ranges: serializedRanges
+                                        } as any
+                                    });
+
+                                    logger.info('Created split highlight', {
+                                        id: newId,
+                                        rangeCount: mergedRanges.length
+                                    });
+                                }
+
+                                // Save removal event for original
+                                await storage.saveEvent({
+                                    type: 'highlight.removed',
+                                    timestamp: Date.now(),
+                                    eventId: crypto.randomUUID(),
+                                    highlightId: existingHighlight.id
+                                });
+                            }
+
+                            logger.info('Range subtraction complete');
+                            broadcastCount();
+                            return; // Don't create new highlight
                         }
 
-                        // No overlaps - safe to create new highlight
+                        // No overlaps - create new highlight as normal
                         const color = await colorManager.getCurrentColor();
 
                         const command = new CreateHighlightCommand(
@@ -366,34 +448,43 @@ async function restoreHighlights(
 
 /**
  * Find highlights that overlap with a selection
- * (for toggle behavior - remove highlights that overlap with new selection)
+ * (for range subtraction - find all highlights that need to be split)
  */
-function getHighlightsInRange(selection: Selection, store: HighlightStore): Highlight[] {
+function getHighlightsInRange(selection: Selection, store: HighlightStore): Array<import('@/content/highlight-store').Highlight> {
     if (selection.rangeCount === 0) return [];
 
     const userRange = selection.getRangeAt(0);
     const highlights = store.getAll();
 
     return highlights.filter((hl) => {
-        if (!hl.liveRange) return false;
+        // Check all liveRanges in this highlight
+        const ranges = hl.liveRanges || [];
+        if (ranges.length === 0) return false;
 
-        try {
-            // Check if ranges overlap
-            // Overlaps if: hl ends after selection starts AND hl starts before selection ends
-            const hlEndsAfterSelectionStarts = hl.liveRange.compareBoundaryPoints(
-                Range.END_TO_START,
-                userRange
-            ) > 0;
+        // Check if ANY of the highlight's ranges overlap with selection
+        for (const liveRange of ranges) {
+            try {
+                // Check if ranges overlap
+                // Overlaps if: hl ends after selection starts AND hl starts before selection ends
+                const hlEndsAfterSelectionStarts = liveRange.compareBoundaryPoints(
+                    Range.END_TO_START,
+                    userRange
+                ) > 0;
 
-            const hlStartsBeforeSelectionEnds = hl.liveRange.compareBoundaryPoints(
-                Range.START_TO_END,
-                userRange
-            ) < 0;
+                const hlStartsBeforeSelectionEnds = liveRange.compareBoundaryPoints(
+                    Range.START_TO_END,
+                    userRange
+                ) < 0;
 
-            return hlEndsAfterSelectionStarts && hlStartsBeforeSelectionEnds;
-        } catch (e) {
-            // If comparison fails (different documents), no overlap
-            return false;
+                if (hlEndsAfterSelectionStarts && hlStartsBeforeSelectionEnds) {
+                    return true; // This highlight overlaps
+                }
+            } catch (e) {
+                // If comparison fails (different documents), skip this range
+                continue;
+            }
         }
+
+        return false; // None of the ranges overlap
     });
 }
