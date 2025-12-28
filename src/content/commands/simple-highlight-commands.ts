@@ -6,7 +6,7 @@
  */
 
 import type { Command } from '@/shared/patterns/command';
-import type { Highlight, HighlightStore } from '@/content/highlight-store';
+import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightManager, HighlightData } from '@/content/highlight-manager';
 import type { ModeManager } from '@/content/modes';
@@ -29,7 +29,7 @@ export class CreateHighlightCommand implements Command {
         private selection: Selection,
         private colorRole: string,  // ✅ Semantic token
         private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
-        private store: HighlightStore,
+        private repositoryFacade: RepositoryFacade,
         private storage: StorageService
     ) {
         // CRITICAL: Store serialized range for redo
@@ -61,7 +61,7 @@ export class CreateHighlightCommand implements Command {
             }
 
             // CRITICAL: Store with liveRanges for click detection!
-            this.store.addFromData({
+            this.repositoryFacade.addFromData({
                 ...this.highlightData,
                 liveRanges: this.highlightData.liveRanges  // Ensure liveRanges are included
             });
@@ -106,7 +106,7 @@ export class CreateHighlightCommand implements Command {
             }
 
             // CRITICAL: Re-add to store with liveRanges for click detection!
-            this.store.addFromData({
+            this.repositoryFacade.addFromData({
                 ...this.highlightData,
                 liveRanges: [range]  // CRITICAL for click detection!
             });
@@ -130,7 +130,7 @@ export class CreateHighlightCommand implements Command {
         }
 
         // Remove from store
-        this.store.remove(this.highlightData.id);
+        this.repositoryFacade.remove(this.highlightData.id);
 
         // Save removal event
         await this.storage.saveEvent({
@@ -151,7 +151,7 @@ export class RemoveHighlightCommand implements Command {
     constructor(
         private highlight: Highlight,
         private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
-        private store: HighlightStore,
+        private repositoryFacade: RepositoryFacade,
         private storage: StorageService
     ) {
         // Store ALL ranges for undo (multi-range support!)
@@ -165,7 +165,7 @@ export class RemoveHighlightCommand implements Command {
             this.manager.removeHighlight(this.highlight.id);
         }
 
-        this.store.remove(this.highlight.id);
+        this.repositoryFacade.remove(this.highlight.id);
 
         // Save event
         await this.storage.saveEvent({
@@ -211,7 +211,7 @@ export class RemoveHighlightCommand implements Command {
         }
 
         // Re-add to store with ORIGINAL data + liveRanges for click detection!
-        this.store.addFromData({
+        this.repositoryFacade.addFromData({
             ...this.highlight,
             ranges: this.serializedRanges,
             liveRanges: liveRanges  // CRITICAL for click detection!
@@ -241,7 +241,7 @@ export class ClearSelectionCommand implements Command {
     constructor(
         private highlights: Highlight[],
         private manager: HighlightManager | HighlightRenderer,
-        private store: HighlightStore,
+        private repositoryFacade: RepositoryFacade,
         private storage: StorageService
     ) {
         // Store data for undo
@@ -259,7 +259,7 @@ export class ClearSelectionCommand implements Command {
                 this.manager.removeHighlight(hl.id, hl.type);
             }
 
-            this.store.remove(hl.id);
+            this.repositoryFacade.remove(hl.id);
 
             await this.storage.saveEvent({
                 type: 'highlight.removed',
@@ -290,7 +290,7 @@ export class ClearSelectionCommand implements Command {
             );
 
             if (highlightData) {
-                this.store.addFromData(highlightData);
+                this.repositoryFacade.addFromData(highlightData);
 
                 await this.storage.saveEvent({
                     type: 'highlight.created',
@@ -319,7 +319,7 @@ export class ClearAllCommand implements Command {
     constructor(
         private highlights: Highlight[],
         private manager: HighlightManager | HighlightRenderer,
-        private store: HighlightStore,
+        private repositoryFacade: RepositoryFacade,
         private storage: StorageService
     ) {
         // Store data for undo
@@ -337,7 +337,7 @@ export class ClearAllCommand implements Command {
                 this.manager.removeHighlight(hl.id, hl.type);
             }
 
-            this.store.remove(hl.id);
+            this.repositoryFacade.remove(hl.id);
 
             await this.storage.saveEvent({
                 type: 'highlight.removed',
@@ -368,7 +368,7 @@ export class ClearAllCommand implements Command {
             );
 
             if (highlightData) {
-                this.store.addFromData(highlightData);
+                this.repositoryFacade.addFromData(highlightData);
 
                 await this.storage.saveEvent({
                     type: 'highlight.created',
