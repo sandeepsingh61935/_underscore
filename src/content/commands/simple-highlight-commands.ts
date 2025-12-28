@@ -165,31 +165,29 @@ export class RemoveHighlightCommand implements Command {
         const range = deserializeRange(this.serializedRange);
         if (!range) return;
 
-        const selection = window.getSelection();
-        if (!selection) return;
+        // CRITICAL: Manually recreate with ORIGINAL ID (don't call createHighlight!)
+        const highlightName = getHighlightName(this.highlight.type, this.highlight.id);
 
-        selection.removeAllRanges();
-        selection.addRange(range);
+        // Inject CSS
+        injectHighlightCSS(this.highlight.type, this.highlight.id, this.highlight.color);
 
-        // Recreate highlight
-        const highlightData = this.manager.createHighlight(
-            selection,
-            this.highlight.color,
-            this.highlight.type
-        );
+        // Create native Highlight
+        const nativeHighlight = new Highlight(range);
+        CSS.highlights.set(highlightName, nativeHighlight);
 
-        if (highlightData) {
-            this.store.addFromData(highlightData);
+        // Re-add to store with ORIGINAL data + liveRange for click detection!
+        this.store.addFromData({
+            ...this.highlight,
+            liveRange: range  // CRITICAL for click detection!
+        });
 
-            await this.storage.saveEvent({
-                type: 'highlight.created',
-                timestamp: Date.now(),
-                eventId: crypto.randomUUID(),
-                data: highlightData as any
-            });
-        }
-
-        selection.removeAllRanges();
+        // Save event
+        await this.storage.saveEvent({
+            type: 'highlight.created',
+            timestamp: Date.now(),
+            eventId: crypto.randomUUID(),
+            highlightId: this.highlight.id
+        });
     }
 }
 
