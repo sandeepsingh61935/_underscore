@@ -118,26 +118,21 @@ export default defineContentScript({
                                     // Generate new ID for split highlight
                                     const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-                                    if (highlightManager) {
-                                        // Create visual for each range
-                                        const highlightName = getHighlightName(existingHighlight.type, newId);
-
-                                        // CSS Highlight API supports multiple ranges!
-                                        const nativeHighlight = new Highlight(...mergedRanges);
-                                        CSS.highlights.set(highlightName, nativeHighlight);
-                                        highlightManager.registerHighlight(newId, nativeHighlight, mergedRanges[0]);
-                                        injectHighlightCSS(existingHighlight.type, newId, existingHighlight.color);
-                                    }
-
-                                    // Add to store with multiple ranges
-                                    store.addFromData({
+                                    const highlightData = {
                                         id: newId,
                                         text,
                                         color: existingHighlight.color,
-                                        type: existingHighlight.type,
+                                        type: 'underscore' as const,
                                         ranges: serializedRanges,
-                                        liveRanges: mergedRanges
-                                    });
+                                        liveRanges: mergedRanges,
+                                        createdAt: new Date()
+                                    };
+
+                                    // ✅ Use mode's unified creation path (fixes undo/redo!)
+                                    await modeManager.createFromData(highlightData);
+
+                                    // Add to store for persistence
+                                    store.addFromData(highlightData);
 
                                     // Save event
                                     await storage.saveEvent({
@@ -179,7 +174,7 @@ export default defineContentScript({
                         const command = new CreateHighlightCommand(
                             event.selection,
                             color,
-                            highlightManager || renderer,
+                            modeManager,  // ✅ Use mode manager!
                             store,
                             storage
                         );

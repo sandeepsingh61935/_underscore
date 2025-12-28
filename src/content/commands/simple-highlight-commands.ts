@@ -9,9 +9,10 @@ import type { Command } from '@/shared/patterns/command';
 import type { Highlight, HighlightStore } from '@/content/highlight-store';
 import type { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightManager, HighlightData } from '@/content/highlight-manager';
+import type { ModeManager } from '@/content/modes';
+import type { HighlightData as ModeHighlightData } from '@/content/modes/highlight-mode.interface';
 import { StorageService } from '@/shared/services/storage-service';
 import { deserializeRange, serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
-
 import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
 
 /**
@@ -19,15 +20,15 @@ import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight
  * FIXED: Stores serialized range so redo works even after selection is lost
  */
 export class CreateHighlightCommand implements Command {
-    private highlightData: HighlightData | Highlight | null = null;
+    private highlightData: ModeHighlightData | HighlightData | Highlight | null = null;
     private readonly type = 'underscore';  // Single mode only
     private serializedRange: SerializedRange | null = null;
+    private highlightId: string | null = null;
 
     constructor(
         private selection: Selection,
         private color: string,
-
-        private manager: HighlightManager | HighlightRenderer,
+        private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
         private store: HighlightStore,
         private storage: StorageService
     ) {
@@ -40,11 +41,20 @@ export class CreateHighlightCommand implements Command {
     async execute(): Promise<void> {
         // First execution - use selection
         if (!this.highlightData) {
-            this.highlightData = this.manager.createHighlight(
-                this.selection,
-                this.color,
-                this.type
-            );
+            // Check if manager is ModeManager
+            if ('createHighlight' in this.manager && 'getCurrentMode' in this.manager) {
+                // ModeManager path - use unified creation
+                const id = await (this.manager as ModeManager).createHighlight(this.selection, this.color);
+                this.highlightId = id;
+                this.highlightData = (this.manager as ModeManager).getHighlight(id);
+            } else {
+                // Legacy path
+                this.highlightData = (this.manager as any).createHighlight(
+                    this.selection,
+                    this.color,
+                    this.type
+                );
+            }
 
             if (!this.highlightData) {
                 throw new Error('Failed to create highlight');
@@ -76,15 +86,24 @@ export class CreateHighlightCommand implements Command {
                 return;
             }
 
-            // Recreate the visual highlight using manager directly
-            const highlightName = getHighlightName(this.type, this.highlightData.id);
-
-            // Inject CSS
-            injectHighlightCSS(this.type, this.highlightData.id, this.color);
-
-            // Create native Highlight
-            const nativeHighlight = new Highlight(range);
-            CSS.highlights.set(highlightName, nativeHighlight);
+            // Check if manager is ModeManager
+            if ('createFromData' in this.manager) {
+                // ✅ Use mode's unified path (fixes registration!)
+                await (this.manager as ModeManager).createFromData({
+                    id: this.highlightData.id,
+                    text: this.highlightData.text,
+                    color: this.color,
+                    type: 'underscore',
+                    ranges: [this.serializedRange],
+                    liveRanges: [range],
+                    createdAt: new Date()
+                });
+            } else {
+                // Legacy path
+                const highlightName = getHighlightName(this.type, this.highlightData.id);
+                const nativeHighlight = new Highlight(range);
+                CSS.highlights.set(highlightName, nativeHighlight);
+            }
 
             // CRITICAL: Re-add to store with liveRanges for click detection!
             this.store.addFromData({
@@ -131,7 +150,7 @@ export class RemoveHighlightCommand implements Command {
 
     constructor(
         private highlight: Highlight,
-        private manager: HighlightManager | HighlightRenderer,
+        private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
         private store: HighlightStore,
         private storage: StorageService
     ) {
@@ -171,15 +190,25 @@ export class RemoveHighlightCommand implements Command {
 
         if (liveRanges.length === 0) return;
 
-        // CRITICAL: Manually recreate with ORIGINAL ID (don't call createHighlight!)
-        const highlightName = getHighlightName(this.highlight.type, this.highlight.id);
-
-        // Inject CSS
-        injectHighlightCSS(this.highlight.type, this.highlight.id, this.highlight.color);
-
-        // Create native Highlight with ALL ranges (multi-range!)
-        const nativeHighlight = new Highlight(...liveRanges);
-        CSS.highlights.set(highlightName, nativeHighlight);
+        // Check if manager is ModeManager
+        if ('createFromData' in this.manager) {
+            // ✅ Use mode's unified path (fixes registration!)
+            await (this.manager as ModeManager).createFromData({
+                id: this.highlight.id,
+                text: this.highlight.text,
+                color: this.highlight.color,
+                type: 'underscore',
+                ranges: this.serializedRanges,
+                liveRanges: liveRanges,
+                createdAt: new Date()
+            });
+        } else {
+            // Legacy path
+            const highlightName = getHighlightName(this.highlight.type, this.highlight.id);
+            injectHighlightCSS(this.highlight.type, this.highlight.id, this.highlight.color);
+            const nativeHighlight = new Highlight(...liveRanges);
+            CSS.highlights.set(highlightName, nativeHighlight);
+        }
 
         // Re-add to store with ORIGINAL data + liveRanges for click detection!
         this.store.addFromData({
