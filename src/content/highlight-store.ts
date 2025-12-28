@@ -11,14 +11,15 @@ import type { SerializedRange } from '@/shared/utils/range-serializer';
 
 /**
  * Highlight data structure
+ * UPDATED: Now supports multiple ranges per highlight (for range subtraction)
  */
 export interface Highlight {
     id: string;
     text: string;
     color: string;
     type: 'underscore';  // Single mode only
-    range: SerializedRange;
-    liveRange?: Range;  // For click detection
+    ranges: SerializedRange[];  // Multiple ranges!
+    liveRanges?: Range[];        // Multiple live ranges for click detection
 }
 
 /**
@@ -54,21 +55,6 @@ export class HighlightStore {
      * Set up event listeners
      */
     private setupEventListeners(): void {
-        // Listen for highlight creation
-        this.eventBus.on(
-            EventName.HIGHLIGHT_CREATED,
-            (event: any) => { // TODO: Define proper event type for HIGHLIGHT_CREATED
-                this.add({
-                    id: event.highlight.id,
-                    text: event.highlight.text,
-                    color: event.highlight.color,
-                    type: 'underscore',
-                    range: event.highlight.range,
-                    liveRange: event.highlight.liveRange,
-                });
-            }
-        );
-
         // Listen for highlight removal
         this.eventBus.on(
             EventName.HIGHLIGHT_REMOVED,
@@ -81,39 +67,51 @@ export class HighlightStore {
     }
 
     /**
-     * Add highlight to storage
+     * Add highlight to store
      */
     add(highlight: Highlight): void {
         this.highlights.set(highlight.id, highlight);
-        this.logger.debug('Highlight added', { id: highlight.id, count: this.count() });
+
+        this.logger.debug('Added highlight', {
+            id: highlight.id,
+            rangeCount: highlight.ranges.length,
+            liveRangeCount: highlight.liveRanges?.length || 0
+        });
+
+        // Emit event
+        this.eventBus.emit(EventName.HIGHLIGHT_CREATED, null);
     }
 
     /**
-     * Add highlight from HighlightData (Custom Highlight API format)
-     * Works with both legacy Highlight and new HighlightData formats
+     * Add highlight from data (for restoration/commands)
+     * Supports both old (single range) and new (multi-range) formats
      */
     addFromData(data: {
         id: string;
         text: string;
         color: string;
-        type: 'underscore';  // Single mode only
-        range: SerializedRange;
-        liveRange?: Range;  // NEW: Accept live range for Custom Highlight API
+        type: 'underscore';
+        // Backward compatibility: support old format
+        range?: SerializedRange;
+        liveRange?: Range;
+        // New format: multi-range
+        ranges?: SerializedRange[];
+        liveRanges?: Range[];
     }): void {
+        // Normalize to multi-range format
+        const ranges = data.ranges || (data.range ? [data.range] : []);
+        const liveRanges = data.liveRanges || (data.liveRange ? [data.liveRange] : []);
+
         const highlight: Highlight = {
             id: data.id,
             text: data.text,
             color: data.color,
             type: data.type,
-            range: data.range,
-            liveRange: data.liveRange  // CRITICAL: Store live range!
+            ranges,
+            liveRanges
         };
-        this.add(highlight);
 
-        this.logger.debug('Added highlight from data', {
-            id: data.id,
-            hasLiveRange: !!data.liveRange
-        });
+        this.add(highlight);
     }
 
     /**
