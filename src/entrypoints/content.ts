@@ -136,7 +136,7 @@ export default defineContentScript({
                                     // ✅ Use mode's unified creation path (fixes undo/redo!)
                                     await modeManager.createFromData(highlightData);
 
-                                    // Add to store for persistence
+                                    // Add to repository for persistence
                                     repositoryFacade.addFromData(highlightData);
 
                                     // Save event
@@ -409,7 +409,7 @@ async function restoreHighlights(
                         createdAt: highlightData.createdAt
                     });
 
-                    // Add to store for persistence tracking
+                    // Add to repository for persistence tracking
                     repositoryFacade.addFromData({
                         id: highlightData.id,
                         text: highlightData.text,
