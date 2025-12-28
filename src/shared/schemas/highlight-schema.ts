@@ -25,6 +25,43 @@ export const SerializedRangeSchema = z.object({
 export type SerializedRange = z.infer<typeof SerializedRangeSchema>;
 
 /**
+ * W3C TextQuoteSelector Schema
+ * Spec: https://www.w3.org/TR/annotation-model/#text-quote-selector
+ * 
+ * Provides robust text anchoring via exact text + context (prefix/suffix)
+ * Security: Max lengths prevent DoS attacks
+ * Validation: Refinements ensure data quality
+ */
+export const TextQuoteSelectorSchema = z.object({
+    // Type discriminator (enables future union types)
+    type: z.literal('TextQuoteSelector'),
+
+    // Selected text (required)
+    exact: z.string()
+        .min(1, 'Selected text cannot be empty')
+        .max(5000, 'Selected text too long (max 5000 chars)'),
+
+    // Context before selection (optional but recommended)
+    prefix: z.string()
+        .max(64, 'Prefix context too long (max 64 chars)')
+        .optional(),
+
+    // Context after selection (optional but recommended)
+    suffix: z.string()
+        .max(64, 'Suffix context too long (max 64 chars)')
+        .optional()
+}).refine(
+    // Business rule: Need context for disambiguation
+    (data) => data.prefix !== undefined || data.suffix !== undefined,
+    {
+        message: 'At least one of prefix or suffix required for robust matching',
+        path: ['prefix']
+    }
+);
+
+export type TextQuoteSelector = z.infer<typeof TextQuoteSelectorSchema>;
+
+/**
  * Color role enum - maps to CSS design tokens
  */
 export const ColorRoleSchema = z.enum([
