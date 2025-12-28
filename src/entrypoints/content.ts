@@ -325,25 +325,17 @@ export default defineContentScript({
                 // Ctrl+Shift+U - Clear all
                 else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
                     e.preventDefault();
-                    const highlights = repositoryFacade.getAll();
 
-                    for (const hl of highlights) {
-                        if (highlightManager) {
-                            highlightManager.removeHighlight(hl.id, hl.type);
-                        } else {
-                            renderer.removeHighlight(hl.id);
-                        }
-                        repositoryFacade.remove(hl.id);
+                    const count = repositoryFacade.count();
 
-                        await storage.saveEvent({
-                            type: 'highlight.removed',
-                            timestamp: Date.now(),
-                            eventId: crypto.randomUUID(),
-                            highlightId: hl.id
-                        });
-                    }
+                    // ✅ FIXED: Delegate to mode's clearAll() 
+                    // This clears CSS.highlights (DOM) + internal maps + repository
+                    await modeManager.clearAll();
 
-                    logger.info('Cleared all highlights', { count: highlights.length });
+                    // Clear storage
+                    await storage.clear();
+
+                    logger.info('Cleared all highlights', { count });
                     broadcastCount();
                 }
             });
