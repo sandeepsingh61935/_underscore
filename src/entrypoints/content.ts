@@ -66,7 +66,7 @@ export default defineContentScript({
             const detector = new SelectionDetector(eventBus);
 
             // Initialize click detector for double-click deletion
-            const clickDetector = new HighlightClickDetector(store, eventBus);
+            const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
             clickDetector.init();
 
             // ===== PAGE LOAD: Restore highlights from storage =====
@@ -80,7 +80,7 @@ export default defineContentScript({
 
                     try {
                         // RANGE SUBTRACTION: Check if selection overlaps existing highlights
-                        const overlappingHighlights = getHighlightsInRange(event.selection, store);
+                        const overlappingHighlights = getHighlightsInRange(event.selection, repositoryFacade);
 
                         if (overlappingHighlights.length > 0) {
                             logger.info('Range subtraction: Splitting overlapping highlights', {
@@ -177,7 +177,7 @@ export default defineContentScript({
                             event.selection,
                             colorRole,
                             modeManager,  // ✅ Use mode manager!
-                            store,
+                            repositoryFacade,
                             storage
                         );
 
@@ -202,7 +202,7 @@ export default defineContentScript({
                     const command = new RemoveHighlightCommand(
                         highlight,
                         modeManager,  // ✅ Use mode manager!
-                        store,
+                        repositoryFacade,
                         storage
                     );
 
@@ -215,7 +215,7 @@ export default defineContentScript({
 
             // ===== Handle clear selection (double-click) =====
             eventBus.on(EventName.CLEAR_SELECTION, async (event) => {
-                const highlightsInSelection = getHighlightsInRange(event.selection, store);
+                const highlightsInSelection = getHighlightsInRange(event.selection, repositoryFacade);
 
                 if (highlightsInSelection.length > 0) {
                     for (const hl of highlightsInSelection) {
@@ -428,7 +428,7 @@ async function restoreHighlights(
                             selection,
                             highlightData.color,  // Use semantic token
                             renderer,
-                            store,
+                            repositoryFacade,
                             storage
                         );
 
