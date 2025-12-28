@@ -105,8 +105,8 @@ export class StorageService {
             const domainStorage = result[hashedDomain] as DomainStorage;
 
             this.logger.info('🔍 [LOAD] Found data', {
-                domain: domainStorage.domain,
-                lastModified: new Date(domainStorage.lastModified).toISOString(),
+                domain: this.currentDomain,
+                lastModified: new Date(domainStorage.lastAccessed).toISOString(),
                 ttl: domainStorage.ttl,
                 ttlDate: new Date(domainStorage.ttl).toISOString()
             });
@@ -170,6 +170,12 @@ export class StorageService {
     private async saveEvents(events: AnyHighlightEvent[]): Promise<void> {
         const hashedDomain = await hashDomain(this.currentDomain);
 
+        this.logger.info('🔍 [SAVE] Starting save operation', {
+            domain: this.currentDomain,
+            hashedDomain,
+            eventCount: events.length
+        });
+
         // Create event log
         const eventLog: EventLog = { events };
 
@@ -179,16 +185,37 @@ export class StorageService {
             this.currentDomain
         );
 
+        // Calculate TTL
+        const now = Date.now();
+        const ttl = now + this.config.ttlDuration;
+
+        this.logger.info('🔍 [SAVE] TTL calculation', {
+            now,
+            nowDate: new Date(now).toISOString(),
+            ttlDuration: this.config.ttlDuration,
+            ttlDurationHours: (this.config.ttlDuration / (1000 * 60 * 60)).toFixed(2),
+            ttl,
+            ttlDate: new Date(ttl).toISOString()
+        });
+
         // Create storage object
         const domainStorage: DomainStorage = {
             data: encrypted,
-            ttl: Date.now() + this.config.ttlDuration,
-            lastAccessed: Date.now(),
+            ttl,
+            lastAccessed: now,
             version: 1
         };
 
         // Save
         await chrome.storage.local.set({ [hashedDomain]: domainStorage });
+
+        // Verify save
+        const verification = await chrome.storage.local.get(hashedDomain);
+        this.logger.info('✅ [SAVE] Save completed and verified', {
+            keyExists: !!verification[hashedDomain],
+            savedTtl: new Date(ttl).toISOString(),
+            eventCount: events.length
+        });
     }
 
     /**
