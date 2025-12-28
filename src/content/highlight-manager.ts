@@ -143,9 +143,7 @@ export class HighlightManager {
     /**
      * Remove a highlight by ID (underscore mode only)
      */
-    removeHighlight(id: string): void {
-        const type = 'underscore';  // Single mode only
-
+    removeHighlight(id: string, type: 'underscore' = 'underscore'): void {
         const highlight = this.highlights.get(id);
         if (!highlight) {
             this.logger.warn('Highlight not found', { id });

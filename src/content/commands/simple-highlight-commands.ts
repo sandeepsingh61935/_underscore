@@ -127,7 +127,7 @@ export class CreateHighlightCommand implements Command {
  * Remove highlight command
  */
 export class RemoveHighlightCommand implements Command {
-    private serializedRange: SerializedRange | null = null;
+    private serializedRanges: SerializedRange[] = [];
 
     constructor(
         private highlight: Highlight,
@@ -135,16 +135,15 @@ export class RemoveHighlightCommand implements Command {
         private store: HighlightStore,
         private storage: StorageService
     ) {
-        // Store range for undo
-        if (highlight.liveRange) {
-            this.serializedRange = serializeRange(highlight.liveRange);
-        }
+        // Store ALL ranges for undo (multi-range support!)
+        const liveRanges = highlight.liveRanges || [];
+        this.serializedRanges = liveRanges.map(r => serializeRange(r));
     }
 
     async execute(): Promise<void> {
         // Remove
         if ('removeHighlight' in this.manager) {
-            this.manager.removeHighlight(this.highlight.id, this.highlight.type);
+            this.manager.removeHighlight(this.highlight.id);
         }
 
         this.store.remove(this.highlight.id);
@@ -159,11 +158,18 @@ export class RemoveHighlightCommand implements Command {
     }
 
     async undo(): Promise<void> {
-        if (!this.serializedRange) return;
+        if (this.serializedRanges.length === 0) return;
 
-        // Recreate from serialized range
-        const range = deserializeRange(this.serializedRange);
-        if (!range) return;
+        // Recreate ALL ranges from serialized data
+        const liveRanges: Range[] = [];
+        for (const sr of this.serializedRanges) {
+            const range = deserializeRange(sr);
+            if (range) {
+                liveRanges.push(range);
+            }
+        }
+
+        if (liveRanges.length === 0) return;
 
         // CRITICAL: Manually recreate with ORIGINAL ID (don't call createHighlight!)
         const highlightName = getHighlightName(this.highlight.type, this.highlight.id);
@@ -171,14 +177,15 @@ export class RemoveHighlightCommand implements Command {
         // Inject CSS
         injectHighlightCSS(this.highlight.type, this.highlight.id, this.highlight.color);
 
-        // Create native Highlight
-        const nativeHighlight = new Highlight(range);
+        // Create native Highlight with ALL ranges (multi-range!)
+        const nativeHighlight = new Highlight(...liveRanges);
         CSS.highlights.set(highlightName, nativeHighlight);
 
-        // Re-add to store with ORIGINAL data + liveRange for click detection!
+        // Re-add to store with ORIGINAL data + liveRanges for click detection!
         this.store.addFromData({
             ...this.highlight,
-            liveRange: range  // CRITICAL for click detection!
+            ranges: this.serializedRanges,
+            liveRanges: liveRanges  // CRITICAL for click detection!
         });
 
         // Save event
