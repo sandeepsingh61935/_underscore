@@ -86,7 +86,13 @@ export class MigrationService {
      * Maps old hex colors to new semantic design tokens
      * Fallback: 'yellow' (default highlight color)
      */
-    private inferColorRole(hexColor: string): 'yellow' | 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'teal' {
+    private inferColorRole(hexColor: string | undefined): 'yellow' | 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'teal' {
+        // ✅ Defensive: Handle undefined/null color
+        if (!hexColor) {
+            this.logger.warn('No color provided, defaulting to yellow');
+            return 'yellow';
+        }
+
         const colorMap: Record<string, 'yellow' | 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'teal'> = {
             // Yellow shades
             '#FFEB3B': 'yellow',
