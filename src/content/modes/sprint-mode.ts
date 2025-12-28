@@ -1,8 +1,14 @@
 /**
  * Sprint Mode
  * 
- * Ephemeral highlighting - no persistence
- * Highlights cleared on page reload
+ * Philosophy: "Use and forget" - Zero commitment, minimal trace
+ * 
+ * Features:
+ * - 4-hour TTL (auto-delete after 4 hours)
+ * - Local storage with per-domain encryption
+ * - In-memory undo/redo
+ * - Adaptive theming (Material Design colors)
+ * - No account required
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
