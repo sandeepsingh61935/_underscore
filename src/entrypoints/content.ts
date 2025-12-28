@@ -72,6 +72,51 @@ export default defineContentScript({
             const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
             clickDetector.init();
 
+            // ===== EVENT SOURCING: Wire Event → Storage Bridge =====
+            // Observer Pattern: Storage listens to all domain events
+
+            // ✅ HIGHLIGHT_CREATED → Storage (Event Sourcing)
+            eventBus.on(EventName.HIGHLIGHT_CREATED, async (event: any) => {
+                try {
+                    await storage.saveEvent({
+                        type: 'highlight.created',
+                        timestamp: Date.now(),
+                        eventId: crypto.randomUUID(),
+                        data: {
+                            id: event.highlight.id,
+                            text: event.highlight.text,
+                            colorRole: event.highlight.colorRole,
+                            type: 'underscore',
+                            ranges: event.ranges,
+                            createdAt: new Date()
+                        }
+                    });
+                    logger.info('Event persisted: HIGHLIGHT_CREATED', { id: event.highlight.id });
+                } catch (error) {
+                    logger.error('Failed to persist HIGHLIGHT_CREATED event', error as Error);
+                }
+            });
+
+            // ✅ HIGHLIGHT_REMOVED → Storage (Event Sourcing)
+            eventBus.on(EventName.HIGHLIGHT_REMOVED, async (event: any) => {
+                try {
+                    await storage.saveEvent({
+                        type: 'highlight.removed',
+                        timestamp: Date.now(),
+                        eventId: crypto.randomUUID(),
+                        highlightId: event.highlightId
+                    });
+                    logger.info('Event persisted: HIGHLIGHT_REMOVED', { id: event.highlightId });
+                } catch (error) {
+                    logger.error('Failed to persist HIGHLIGHT_REMOVED event', error as Error);
+                }
+            });
+
+            logger.info('Event-Storage bridge wired', {
+                pattern: 'Observer + Event Sourcing',
+                listeners: ['HIGHLIGHT_CREATED', 'HIGHLIGHT_REMOVED']
+            });
+
             // ===== PAGE LOAD: Restore highlights from storage =====
             await restoreHighlights(storage, renderer, repositoryFacade, highlightManager, modeManager);
 
