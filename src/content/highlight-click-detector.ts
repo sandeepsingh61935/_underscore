@@ -11,16 +11,17 @@ import { EventName } from '@/shared/types/events';
 import { HighlightStore } from './highlight-store';
 import type { Highlight } from './highlight-store';
 import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 export class HighlightClickDetector {
-    private logger = LoggerFactory.getLogger('ClickDetector');
-    private lastClickTime = 0;
-    private lastClickedId: string | null = null;
+    private logger: ILogger;
 
     constructor(
         private store: HighlightStore,
         private eventBus: EventBus
-    ) { }
+    ) {
+        this.logger = LoggerFactory.getLogger('HighlightClickDetector');
+    }
 
     init(): void {
         document.addEventListener('click', (e) => {
@@ -31,77 +32,26 @@ export class HighlightClickDetector {
     }
 
     private handleClick(e: MouseEvent): void {
-        console.log('[ClickDetector] Click at', { x: e.clientX, y: e.clientY });
-
         const highlight = this.findHighlightAtPoint(e);
 
-        console.log('[ClickDetector] Found highlight?', !!highlight, highlight?.id);
-
         if (highlight) {
-            const now = Date.now();
-            const timeSinceLastClick = now - this.lastClickTime;
+            this.logger.info('Click on highlight - deleting', { id: highlight.id });
 
-            console.log('[ClickDetector] Timing:', {
-                timeSince: timeSinceLastClick,
-                lastId: this.lastClickedId,
-                currentId: highlight.id,
-                willBeDoubleClick: timeSinceLastClick < 500 && highlight.id === this.lastClickedId
+            // Emit event to delete this highlight (SINGLE CLICK!)
+            this.eventBus.emit(EventName.HIGHLIGHT_CLICKED, {
+                highlightId: highlight.id,
+                timestamp: Date.now()
             });
-
-            // Check for double-click (within 500ms on same highlight)
-            if (timeSinceLastClick < 500 && highlight.id === this.lastClickedId) {
-                console.log('[ClickDetector] DOUBLE-CLICK!  Emitting delete event');
-                this.logger.info('Double-click on highlight detected', { id: highlight.id });
-
-                // Emit event to delete this highlight
-                this.eventBus.emit(EventName.HIGHLIGHT_CLICKED, {
-                    highlightId: highlight.id,
-                    timestamp: now
-                });
-
-                // Reset
-                this.lastClickTime = 0;
-                this.lastClickedId = null;
-            } else {
-                // First click - store for potential double-click
-                this.lastClickTime = now;
-                this.lastClickedId = highlight.id;
-
-                console.log('[ClickDetector] First click - waiting for second');
-                this.logger.debug('Single click on highlight', { id: highlight.id });
-            }
-        } else {
-            // Clicked outside highlights - reset
-            this.lastClickTime = 0;
-            this.lastClickedId = null;
         }
     }
 
     private findHighlightAtPoint(e: MouseEvent): Highlight | null {
         const highlights = this.store.getAll();
 
-        console.log('[ClickDetector] Searching for highlight at point', {
-            totalHighlights: highlights.length,
-            highlightsWithRanges: highlights.filter(h => h.liveRange).length
-        });
-
         // Check each highlight's range
         for (const hl of highlights) {
-            if (hl.liveRange) {
-                const contains = this.rangeContainsPoint(hl.liveRange, e);
-                console.log('[ClickDetector] Checking highlight', {
-                    id: hl.id,
-                    hasLiveRange: true,
-                    contains
-                });
-
-                if (contains) {
-                    return hl;
-                }
-            } else {
-                console.log('[ClickDetector] Highlight missing liveRange', {
-                    id: hl.id
-                });
+            if (hl.liveRange && this.rangeContainsPoint(hl.liveRange, e)) {
+                return hl;
             }
         }
 
