@@ -113,6 +113,41 @@ export class SprintMode extends BaseHighlightMode {
         }
     }
 
+    async removeHighlight(id: string): Promise<void> {
+        this.logger.info('Removing highlight', { id });
+
+        // ✅ Remove from Custom Highlight API (DOM)
+        if (CSS.highlights.has(id)) {
+            CSS.highlights.delete(id);
+            this.logger.info('Removed from CSS.highlights', { id });
+        }
+
+        // ✅ Remove from internal maps (state)
+        this.highlights.delete(id);
+        this.data.delete(id);
+
+        // ✅ Remove from repository (persistence)
+        this.repository.remove(id);
+
+        this.logger.info('Highlight removed completely', { id });
+    }
+
+    async clearAll(): Promise<void> {
+        this.logger.info('Clearing all highlights in sprint mode');
+
+        // ✅ Clear Custom Highlight API (DOM)
+        CSS.highlights.clear();
+
+        // ✅ Clear internal maps (state)
+        this.highlights.clear();
+        this.data.clear();
+
+        // ✅ Clear repository (persistence)
+        this.repository.clear();
+
+        this.logger.info('All highlights cleared');
+    }
+
     async restore(url: string): Promise<void> {
         // Sprint mode: No restoration (ephemeral)
         this.logger.debug('Sprint mode: No highlights to restore');
