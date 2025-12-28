@@ -13,7 +13,6 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { EventName, createEvent } from '@/shared/types/events';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import type { AnnotationType } from '@/shared/types/annotation';
 import { serializeRange } from '@/shared/utils/range-serializer';
 import type { SerializedRange } from '@/shared/utils/range-serializer';
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styles/highlight-styles';
@@ -25,7 +24,7 @@ export interface HighlightData {
     id: string;
     text: string;
     color: string;
-    type: AnnotationType;
+    type: 'underscore';  // Single mode only
     range: SerializedRange;
     createdAt: Date;
 }
@@ -69,18 +68,18 @@ export class HighlightManager {
     }
 
     /**
-     * Create a highlight from selection
+     * Create a highlight from selection (underscore mode only)
      * 
      * @param selection - User's text selection
      * @param color - Highlight color
-     * @param type - Annotation type (underscore, highlight, box)
      * @returns HighlightData or null if failed
      */
     createHighlight(
         selection: Selection,
-        color: string,
-        type: AnnotationType = 'underscore'
+        color: string
     ): HighlightData | null {
+        const type = 'underscore';  // Single mode only
+
         if (!selection.rangeCount) {
             this.logger.warn('No selection range');
             return null;
@@ -113,9 +112,6 @@ export class HighlightManager {
         // Create native Highlight object
         const highlight = new Highlight(liveRange);
 
-        // Get the unique CSS highlight name
-        const highlightName = getHighlightName(type, id);
-
         // Set in CSS.highlights registry
         CSS.highlights.set(highlightName, highlight);
 
@@ -144,25 +140,35 @@ export class HighlightManager {
             range: serializedRange,
         }));
 
-        this.logger.info('Highlight created', { id, type, textLength: text.length });
+        this.logger.info('Highlight created', {
+            id,
+            type,
+            textLength: text.length,
+        });
 
         return highlightData;
     }
 
     /**
-     * Remove a highlight by ID
+     * Remove a highlight by ID (underscore mode only)
      */
-    removeHighlight(id: string, type: AnnotationType): void {
-        // Get the CSS highlight name
-        const highlightName = getHighlightName(type, id);
+    removeHighlight(id: string): void {
+        const type = 'underscore';  // Single mode only
+
+        const highlight = this.highlights.get(id);
+        if (!highlight) {
+            this.logger.warn('Highlight not found', { id });
+            return;
+        }
 
         // Remove from CSS.highlights
+        const highlightName = getHighlightName(type, id);
         CSS.highlights.delete(highlightName);
 
         // Remove CSS
         removeHighlightCSS(id);
 
-        // Clean up internal maps
+        // Remove from internal maps
         this.highlights.delete(id);
         this.ranges.delete(id);
 
