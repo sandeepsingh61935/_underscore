@@ -85,7 +85,7 @@ export function selectHighlightColor(
     hue: number = 45,  // Default: yellow-ish
     saturation: number = 70
 ): ColorResult {
-    const palette = generate TonalPalette(hue, saturation);
+    const palette = generateTonalPalette(hue, saturation);
 
     let bestColor: string = palette[5].hsl;  // Default: 50% tone
     let bestContrast = 1;
