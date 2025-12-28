@@ -10,11 +10,13 @@ import { ColorManager } from '@/content/color-manager';
 import { HighlightStore } from '@/content/highlight-store';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import { HighlightManager } from '@/content/highlight-manager';
+import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { injectHighlightCSS, getHighlightName } from '@/content/styles/highlight-styles';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange } from '@/shared/utils/range-serializer';
+import { CreateHighlightCommand, RemoveHighlightCommand, ClearSelectionCommand, ClearAllCommand } from '@/content/commands/simple-highlight-commands';
 // Removed: AnnotationModeManager - single mode only
 // Note: Command pattern temporarily bypassed for Custom Highlight API
 // Commands will be re-integrated for proper undo/redo support
@@ -55,7 +57,10 @@ export default defineContentScript({
             const renderer = new HighlightRenderer(eventBus);  // Keep for fallback
 
             const detector = new SelectionDetector(eventBus);
-            // Removed: mode manager - single 'underscore' mode only
+
+            // Initialize click detector for double-click deletion
+            const clickDetector = new HighlightClickDetector(store, eventBus);
+            clickDetector.init();
 
             // ===== PAGE LOAD: Restore highlights from storage =====
             await restoreHighlights(storage, renderer, store, highlightManager);
@@ -64,47 +69,23 @@ export default defineContentScript({
             eventBus.on<SelectionCreatedEvent>(
                 EventName.SELECTION_CREATED,
                 async (event) => {
-                    logger.info('Selection detected, creating highlight');
+                    logger.info('Selection detected, creating highlight via command');
 
                     try {
                         const color = await colorManager.getCurrentColor();
 
-                        let highlightData: any = null;
+                        // Use command pattern for undo/redo support
+                        const command = new CreateHighlightCommand(
+                            event.selection,
+                            color,
+                            highlightManager || renderer,
+                            store,
+                            storage
+                        );
 
-                        // Use Custom Highlight API if available
-                        if (highlightManager) {
-                            highlightData = highlightManager.createHighlight(
-                                event.selection,
-                                color
-                            );
-                        } else {
-                            // Fallback to legacy renderer  
-                            highlightData = renderer.createHighlight(
-                                event.selection,
-                                color,
-                                'underscore'  // Single mode
-                            );
-                        }
-
-                        // Check if creation was blocked
-                        if (!highlightData) {
-                            logger.debug('Selection blocked or failed');
-                            return;
-                        }
-
-                        // Add to store (works with both old and new format)
-                        store.addFromData(highlightData);
-
-                        // Save to storage
-                        await storage.saveEvent({
-                            type: 'highlight.created',
-                            timestamp: Date.now(),
-                            eventId: crypto.randomUUID(),
-                            data: highlightData
-                        });
+                        await commandStack.execute(command);
 
                         logger.info('Highlight created successfully', {
-                            id: highlightData.id,
                             api: highlightManager ? 'Custom Highlight API' : 'Legacy'
                         });
 
@@ -119,24 +100,17 @@ export default defineContentScript({
             eventBus.on(EventName.HIGHLIGHT_CLICKED, async (event) => {
                 const highlight = store.get(event.highlightId);
                 if (highlight) {
-                    // Use Custom Highlight API if available
-                    if (highlightManager) {
-                        highlightManager.removeHighlight(highlight.id);
-                    } else {
-                        renderer.removeHighlight(highlight.id);
-                    }
+                    // Use command for undo/redo support
+                    const command = new RemoveHighlightCommand(
+                        highlight,
+                        highlightManager || renderer,
+                        store,
+                        storage
+                    );
 
-                    store.remove(highlight.id);
+                    await commandStack.execute(command);
 
-                    // Save removal event
-                    await storage.saveEvent({
-                        type: 'highlight.removed',
-                        timestamp: Date.now(),
-                        eventId: crypto.randomUUID(),
-                        highlightId: highlight.id
-                    });
-
-                    logger.info('Highlight removed', { id: event.highlightId });
+                    logger.info('Highlight removed via command', { id: event.highlightId });
                     broadcastCount();
                 }
             });
