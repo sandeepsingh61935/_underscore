@@ -400,13 +400,27 @@ async function restoreHighlights(
         // Replay events to reconstruct state
         const activeHighlights = new Map<string, any>();
 
+        logger.warn(`🔥 Processing ${events.length} events to rebuild state...`);
+
         for (const event of events) {
+            logger.warn(`🔥 Event type: ${event.type}`, event);
+
             if (event.type === 'highlight.created' && event.data) {
                 activeHighlights.set(event.data.id, event.data);
+                logger.warn(`✅ Added highlight to map: ${event.data.id}`);
             } else if (event.type === 'highlight.removed' && event.highlightId) {
                 activeHighlights.delete(event.highlightId);
+                logger.warn(`🗑️ Removed highlight from map: ${event.highlightId}`);
+            } else {
+                logger.error(`❌ Event didn't match expected format:`, {
+                    type: event.type,
+                    hasData: !!event.data,
+                    hasHighlightId: !!(event as any).highlightId
+                });
             }
         }
+
+        logger.warn(`🎯 Final map size: ${activeHighlights.size} highlights to restore`);
 
         // Render active highlights at their original positions
         let restored = 0;
