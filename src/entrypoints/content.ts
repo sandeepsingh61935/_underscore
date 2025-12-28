@@ -68,7 +68,7 @@ export default defineContentScript({
             clickDetector.init();
 
             // ===== PAGE LOAD: Restore highlights from storage =====
-            await restoreHighlights(storage, renderer, store, highlightManager);
+            await restoreHighlights(storage, renderer, store, highlightManager, modeManager);
 
             // ===== Orchestrate: Listen to selection events =====
             eventBus.on<SelectionCreatedEvent>(
@@ -341,7 +341,8 @@ async function restoreHighlights(
     storage: StorageService,
     renderer: HighlightRenderer,
     store: HighlightStore,
-    highlightManager?: HighlightManager | null
+    highlightManager: HighlightManager | null | undefined,
+    modeManager: ModeManager  // ✅ Mode manager for proper registration
 ): Promise<void> {
     try {
         const events = await storage.loadEvents();
