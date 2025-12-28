@@ -31,6 +31,9 @@ export class HighlightClickDetector {
         this.logger.info('Click detector initialized');
     }
 
+    /**
+     * Handle click event
+     */
     private handleClick(e: MouseEvent): void {
         const highlight = this.findHighlightAtPoint(e);
 
@@ -45,53 +48,39 @@ export class HighlightClickDetector {
         }
     }
 
+    /**
+     * Find which highlight (if any) contains the clicked point
+     * Now supports multi-range highlights
+     */
     private findHighlightAtPoint(e: MouseEvent): Highlight | null {
         const highlights = this.store.getAll();
 
-        // Check each highlight's range
-        for (const hl of highlights) {
-            if (hl.liveRange && this.rangeContainsPoint(hl.liveRange, e)) {
-                return hl;
+        try {
+            for (const highlight of highlights) {
+                // Check ALL liveRanges in this highlight
+                const ranges = highlight.liveRanges || [];
+
+                for (const liveRange of ranges) {
+                    const rects = liveRange.getClientRects();
+
+                    for (let i = 0; i < rects.length; i++) {
+                        const rect = rects[i];
+                        if (rect &&
+                            e.clientX >= rect.left &&
+                            e.clientX <= rect.right &&
+                            e.clientY >= rect.top &&
+                            e.clientY <= rect.bottom
+                        ) {
+                            // Found it! Return the entire highlight
+                            return highlight;
+                        }
+                    }
+                }
             }
+        } catch (error) {
+            this.logger.warn('Error finding highlight at point', error as Error);
         }
 
         return null;
-    }
-
-    private rangeContainsPoint(range: Range, e: MouseEvent): boolean {
-        try {
-            // Use visual rectangles instead of DOM boundary comparison
-            // This handles nested elements, multi-line highlights, etc.
-            const rects = range.getClientRects();
-
-            console.log('[ClickDetector] Checking click against range rects', {
-                clickX: e.clientX,
-                clickY: e.clientY,
-                rectCount: rects.length
-            });
-
-            // Check if click point is inside ANY rectangle
-            for (let i = 0; i < rects.length; i++) {
-                const rect = rects[i];
-
-                const isInside = (
-                    e.clientX >= rect.left &&
-                    e.clientX <= rect.right &&
-                    e.clientY >= rect.top &&
-                    e.clientY <= rect.bottom
-                );
-
-                if (isInside) {
-                    console.log('[ClickDetector] ✅ Click is inside rect', i);
-                    return true;
-                }
-            }
-
-            console.log('[ClickDetector] Click not inside any rect');
-            return false;
-        } catch (error) {
-            this.logger.warn('Error checking range contains point', error as Error);
-            return false;
-        }
     }
 }
