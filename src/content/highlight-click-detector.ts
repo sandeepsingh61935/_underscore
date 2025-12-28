@@ -8,7 +8,7 @@
 
 import { EventBus } from '@/shared/utils/event-bus';
 import { EventName } from '@/shared/types/events';
-import { HighlightStore } from './highlight-store';
+import { RepositoryFacade } from '@/shared/repositories';
 import type { Highlight } from './highlight-store';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
@@ -17,7 +17,7 @@ export class HighlightClickDetector {
     private logger: ILogger;
 
     constructor(
-        private store: HighlightStore,
+        private repositoryFacade: RepositoryFacade,
         private eventBus: EventBus
     ) {
         this.logger = LoggerFactory.getLogger('HighlightClickDetector');
@@ -53,7 +53,7 @@ export class HighlightClickDetector {
      * Now supports multi-range highlights
      */
     private findHighlightAtPoint(e: MouseEvent): Highlight | null {
-        const highlights = this.store.getAll();
+        const highlights = this.repositoryFacade.getAll();
 
         try {
             for (const highlight of highlights) {
