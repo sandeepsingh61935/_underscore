@@ -13,6 +13,7 @@
 
 import { BaseHighlightMode } from './base-highlight-mode';
 import { serializeRange } from '@/shared/utils/range-serializer';
+import { generateContentHash } from '@/shared/utils/content-hash';
 import { EventName } from '@/shared/types/events';
 import type { HighlightData } from './highlight-mode.interface';
 
@@ -31,6 +32,20 @@ export class SprintMode extends BaseHighlightMode {
             throw new Error('Empty text selection');
         }
 
+        // ============================================
+        // DEDUPLICATION: Check for existing highlight
+        // ============================================
+        const contentHash = await generateContentHash(text);
+        const existing = this.repository.findByContentHash(contentHash);
+
+        if (existing) {
+            this.logger.info('Duplicate content detected - returning existing highlight', {
+                existingId: existing.id,
+                text: text.substring(0, 50) + '...'
+            });
+            return existing.id;  // ✅ Return existing instead of creating duplicate
+        }
+
         const id = this.generateId();
         const serializedRange = serializeRange(range);
 
@@ -41,6 +56,7 @@ export class SprintMode extends BaseHighlightMode {
         const data: HighlightData = {
             id,
             text,
+            contentHash,  // ✅ Store hash for future dedup
             colorRole,  // ✅ Semantic token
             type: 'underscore',
             ranges: [serializedRange],
