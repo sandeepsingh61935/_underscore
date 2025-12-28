@@ -69,12 +69,36 @@ export default defineContentScript({
             eventBus.on<SelectionCreatedEvent>(
                 EventName.SELECTION_CREATED,
                 async (event) => {
-                    logger.info('Selection detected, creating highlight via command');
+                    logger.info('Selection detected, checking for overlaps');
 
                     try {
+                        // TOGGLE BEHAVIOR: Check if selection overlaps existing highlights
+                        const overlappingHighlights = getHighlightsInRange(event.selection, store);
+
+                        if (overlappingHighlights.length > 0) {
+                            // Remove overlapping highlights instead of creating new one
+                            logger.info('Removing overlapping highlights', {
+                                count: overlappingHighlights.length
+                            });
+
+                            for (const hl of overlappingHighlights) {
+                                const command = new RemoveHighlightCommand(
+                                    hl,
+                                    highlightManager || renderer,
+                                    store,
+                                    storage
+                                );
+                                await commandStack.execute(command);
+                            }
+
+                            logger.info('Overlapping highlights removed');
+                            broadcastCount();
+                            return; // Don't create new highlight
+                        }
+
+                        // No overlaps - create new highlight
                         const color = await colorManager.getCurrentColor();
 
-                        // Use command pattern for undo/redo support
                         const command = new CreateHighlightCommand(
                             event.selection,
                             color,
@@ -91,7 +115,7 @@ export default defineContentScript({
 
                         broadcastCount();
                     } catch (error) {
-                        logger.error('Failed to create highlight', error as Error);
+                        logger.error('Failed to process selection', error as Error);
                     }
                 }
             );
