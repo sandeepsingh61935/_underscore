@@ -7,7 +7,7 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { EventName, SelectionCreatedEvent } from '@/shared/types/events';
 import { SelectionDetector } from '@/content/selection-detector';
 import { ColorManager } from '@/content/color-manager';
-import { HighlightStore } from '@/content/highlight-store';
+import { RepositoryFacade } from '@/shared/repositories';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
@@ -47,7 +47,9 @@ export default defineContentScript({
             const colorManager = new ColorManager();
             await colorManager.initialize();
 
-            const store = new HighlightStore(eventBus);
+            // Initialize Repository Facade (Facade Pattern from quality framework)
+            const repositoryFacade = new RepositoryFacade();
+            await repositoryFacade.initialize();  // Load existing data into cache
 
             // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
             const modeManager = new ModeManager(eventBus, logger);
@@ -68,7 +70,7 @@ export default defineContentScript({
             clickDetector.init();
 
             // ===== PAGE LOAD: Restore highlights from storage =====
-            await restoreHighlights(storage, renderer, store, highlightManager, modeManager);
+            await restoreHighlights(storage, renderer, repositoryFacade, highlightManager, modeManager);
 
             // ===== Orchestrate: Listen to selection events =====
             eventBus.on<SelectionCreatedEvent>(
@@ -93,7 +95,7 @@ export default defineContentScript({
                                 if (highlightManager) {
                                     highlightManager.removeHighlight(existingHighlight.id, existingHighlight.type);
                                 }
-                                store.remove(existingHighlight.id);
+                                repositoryFacade.remove(existingHighlight.id);
 
                                 // Split each range in the highlight
                                 const allRemainingRanges: Range[] = [];
@@ -132,7 +134,7 @@ export default defineContentScript({
                                     await modeManager.createFromData(highlightData);
 
                                     // Add to store for persistence
-                                    store.addFromData(highlightData);
+                                    repositoryFacade.addFromData(highlightData);
 
                                     // Save event
                                     await storage.saveEvent({
@@ -194,7 +196,7 @@ export default defineContentScript({
 
             // ===== Handle highlight removal (click) =====
             eventBus.on(EventName.HIGHLIGHT_CLICKED, async (event) => {
-                const highlight = store.get(event.highlightId);
+                const highlight = repositoryFacade.get(event.highlightId);
                 if (highlight) {
                     // Use command for undo/redo support
                     const command = new RemoveHighlightCommand(
@@ -220,7 +222,7 @@ export default defineContentScript({
                         // ✅ Use mode manager's unified removal
                         await modeManager.removeHighlight(hl.id);
 
-                        store.remove(hl.id);
+                        repositoryFacade.remove(hl.id);
 
                         await storage.saveEvent({
                             type: 'highlight.removed',
@@ -275,7 +277,7 @@ export default defineContentScript({
                 // Ctrl+Shift+U - Clear all
                 else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
                     e.preventDefault();
-                    const highlights = store.getAll();
+                    const highlights = repositoryFacade.getAll();
 
                     for (const hl of highlights) {
                         if (highlightManager) {
@@ -283,7 +285,7 @@ export default defineContentScript({
                         } else {
                             renderer.removeHighlight(hl.id);
                         }
-                        store.remove(hl.id);
+                        repositoryFacade.remove(hl.id);
 
                         await storage.saveEvent({
                             type: 'highlight.removed',
@@ -305,7 +307,7 @@ export default defineContentScript({
             const broadcastCount = () => {
                 chrome.runtime.sendMessage({
                     type: 'HIGHLIGHT_COUNT_UPDATE',
-                    count: store.count(),
+                    count: repositoryFacade.count(),
                 }).catch(() => {
                     // Popup may not be open, ignore error
                 });
@@ -319,7 +321,7 @@ export default defineContentScript({
             // Listen for count requests from popup
             chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (message.type === 'GET_HIGHLIGHT_COUNT') {
-                    sendResponse({ count: store.count() });
+                    sendResponse({ count: repositoryFacade.count() });
                 }
                 return true; // Keep channel open for async response
             });
@@ -327,7 +329,7 @@ export default defineContentScript({
             logger.info('Web Highlighter Extension initialized successfully');
             logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
             logger.info('Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)');
-            logger.info(`Restored ${store.count()} highlights from storage`);
+            logger.info(`Restored ${repositoryFacade.count()} highlights from storage`);
         } catch (error) {
             logger.error('Failed to initialize extension', error as Error);
         }
@@ -340,7 +342,7 @@ export default defineContentScript({
 async function restoreHighlights(
     storage: StorageService,
     renderer: HighlightRenderer,
-    store: HighlightStore,
+    repositoryFacade: RepositoryFacade,
     highlightManager: HighlightManager | null | undefined,
     modeManager: ModeManager  // ✅ Mode manager for proper registration
 ): Promise<void> {
@@ -405,7 +407,7 @@ async function restoreHighlights(
                     });
 
                     // Add to store for persistence tracking
-                    store.addFromData({
+                    repositoryFacade.addFromData({
                         id: highlightData.id,
                         text: highlightData.text,
                         color: highlightData.color,
@@ -463,11 +465,11 @@ async function restoreHighlights(
  * Find highlights that overlap with a selection
  * (for range subtraction - find all highlights that need to be split)
  */
-function getHighlightsInRange(selection: Selection, store: HighlightStore): Array<import('@/content/highlight-store').Highlight> {
+function getHighlightsInRange(selection: Selection, repositoryFacade: RepositoryFacade): Array<import('@/content/highlight-store').Highlight> {
     if (selection.rangeCount === 0) return [];
 
     const userRange = selection.getRangeAt(0);
-    const highlights = store.getAll();
+    const highlights = repositoryFacade.getAll();
 
     return highlights.filter((hl) => {
         // Check all liveRanges in this highlight
