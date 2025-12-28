@@ -26,7 +26,7 @@ export class CreateHighlightCommand implements Command {
     constructor(
         private selection: Selection,
         private color: string,
-        
+
         private manager: HighlightManager | HighlightRenderer,
         private store: HighlightStore,
         private storage: StorageService
@@ -50,8 +50,11 @@ export class CreateHighlightCommand implements Command {
                 throw new Error('Failed to create highlight');
             }
 
-            // Store for redo
-            this.store.addFromData(this.highlightData);
+            // CRITICAL: Store with liveRange for click detection!
+            this.store.addFromData({
+                ...this.highlightData,
+                liveRange: this.highlightData.liveRange  // Ensure liveRange is included
+            });
 
             // Save to storage
             await this.storage.saveEvent({
@@ -83,10 +86,10 @@ export class CreateHighlightCommand implements Command {
             const nativeHighlight = new Highlight(range);
             CSS.highlights.set(highlightName, nativeHighlight);
 
-            // Re-add to store (already has correct ID)
+            // CRITICAL: Re-add to store with liveRange for click detection!
             this.store.addFromData({
                 ...this.highlightData,
-                liveRange: range
+                liveRange: range  // CRITICAL for click detection!
             });
 
             // Save event
