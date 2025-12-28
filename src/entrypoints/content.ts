@@ -76,6 +76,13 @@ export default defineContentScript({
                         const overlappingHighlights = getHighlightsInRange(event.selection, store);
 
                         if (overlappingHighlights.length > 0) {
+                            // Verify we have a manager before attempting removal
+                            const manager = highlightManager || renderer;
+                            if (!manager) {
+                                logger.error('Cannot remove highlights: no manager available');
+                                return;
+                            }
+
                             // Remove overlapping highlights instead of creating new one
                             logger.info('Removing overlapping highlights', {
                                 count: overlappingHighlights.length
@@ -84,7 +91,7 @@ export default defineContentScript({
                             for (const hl of overlappingHighlights) {
                                 const command = new RemoveHighlightCommand(
                                     hl,
-                                    highlightManager || renderer,
+                                    manager,  // Guaranteed non-null
                                     store,
                                     storage
                                 );
