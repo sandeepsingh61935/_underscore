@@ -141,8 +141,6 @@ export class EventBus {
  * Singleton instance for global event bus
  * Use this for application-wide event coordination
  */
-export const eventBus = new EventBus();
-
 
 /**
  * Singleton instance for global event bus
