@@ -199,7 +199,7 @@ export default defineContentScript({
                     // Use command for undo/redo support
                     const command = new RemoveHighlightCommand(
                         highlight,
-                        highlightManager || renderer,
+                        modeManager,  // ✅ Use mode manager!
                         store,
                         storage
                     );
@@ -217,11 +217,9 @@ export default defineContentScript({
 
                 if (highlightsInSelection.length > 0) {
                     for (const hl of highlightsInSelection) {
-                        if (highlightManager) {
-                            highlightManager.removeHighlight(hl.id);
-                        } else {
-                            renderer.removeHighlight(hl.id);
-                        }
+                        // ✅ Use mode manager's unified removal
+                        await modeManager.removeHighlight(hl.id);
+
                         store.remove(hl.id);
 
                         await storage.saveEvent({
@@ -393,17 +391,19 @@ async function restoreHighlights(
 
                 // Use Custom Highlight API if available
                 if (highlightManager) {
-                    // Inject CSS for this highlight
-                    injectHighlightCSS(type, highlightData.id, highlightData.color);
+                    // ✅ CRITICAL FIX: Use mode's unified creation path!
+                    // This ensures the highlight is registered in mode's internal maps
+                    await modeManager.createFromData({
+                        id: highlightData.id,
+                        text: highlightData.text,
+                        color: highlightData.color,
+                        type: type as 'underscore',
+                        ranges: serializedRanges,
+                        liveRanges: liveRanges,
+                        createdAt: highlightData.createdAt
+                    });
 
-                    // Create CSS highlight with ALL ranges (multi-range support!)
-                    const cssHighlight = new Highlight(...liveRanges);
-
-                    // Use unique name per highlight
-                    const highlightName = getHighlightName(type, highlightData.id);
-                    CSS.highlights.set(highlightName, cssHighlight);
-
-                    // Add to store with all ranges
+                    // Add to store for persistence tracking
                     store.addFromData({
                         id: highlightData.id,
                         text: highlightData.text,
