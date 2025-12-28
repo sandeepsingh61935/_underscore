@@ -19,6 +19,7 @@ import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styl
 
 /**
  * Highlight data structure (no DOM element needed!)
+ * liveRange is ephemeral - used for click detection but not serialized
  */
 export interface HighlightData {
     id: string;
@@ -27,6 +28,7 @@ export interface HighlightData {
     type: 'underscore';  // Single mode only
     range: SerializedRange;
     createdAt: Date;
+    liveRange?: Range;  // CRITICAL: For click detection!
 }
 
 /**
@@ -130,6 +132,7 @@ export class HighlightManager {
             type,
             range: serializedRange,
             createdAt: new Date(),
+            liveRange: liveRange  // CRITICAL: For click detection!
         };
 
         // Emit event
