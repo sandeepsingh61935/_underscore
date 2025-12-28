@@ -1,11 +1,18 @@
 /**
  * @file color-manager.ts
  * @description Manages highlight color palette and current selection
+ * 
+ * Features:
+ * - Material Design adaptive theming
+ * - Auto-contrast based on background luminance
+ * - 5-color preset palette
  */
 
 import { SecurityService } from '@/shared/utils/security';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { detectSiteTheme } from '@/content/utils/theme-detector';
+import { getAdaptiveHighlightColor, MATERIAL_HUES } from '@/content/utils/adaptive-color';
 
 /**
  * Color palette - 5 presets from design tokens
@@ -22,12 +29,14 @@ export type ColorName = keyof typeof COLOR_PALETTE;
 
 const DEFAULT_COLOR: ColorName = 'yellow';
 const STORAGE_KEY = 'currentHighlightColor';
+const ADAPTIVE_MODE_KEY = 'adaptiveColorMode';
 
 /**
  * Manages highlight color selection and palette
  * 
  * Features:
- * - 5-color preset palette
+ * - Material Design adaptive theming (auto-contrast)
+ * - 5-color preset palette (fallback/manual mode)
  * - Current color persistence via chrome.storage.local
  * - Color validation
  * 
@@ -36,12 +45,17 @@ const STORAGE_KEY = 'currentHighlightColor';
  * const colorManager = new ColorManager();
  * await colorManager.initialize();
  * 
- * const color = await colorManager.getCurrentColor(); // '#FFEB3B'
- * await colorManager.setCurrentColor('blue');
+ * // Adaptive mode (default)
+ * const color = await colorManager.getCurrentColor(selection); // Auto-adjusts
+ * 
+ * // Manual mode
+ * await colorManager.setAdaptiveMode(false);
+ * const color = await colorManager.getCurrentColor(); // Fixed color
  * ```
  */
 export class ColorManager {
     private currentColor: string = COLOR_PALETTE[DEFAULT_COLOR];
+    private adaptiveMode: boolean = true;  // Default: auto-adapt
     private logger: ILogger;
     private initialized = false;
 
@@ -90,11 +104,45 @@ export class ColorManager {
 
     /**
      * Get current selected color
+     * In adaptive mode, generates color based on selection background
+     * 
+     * @param selection Optional selection for adaptive theming
+     * @returns Color hex string (HSL for adaptive, hex for manual)
      */
-    async getCurrentColor(): Promise<string> {
+    async getCurrentColor(selection?: Selection): Promise<string> {
         if (!this.initialized) {
             await this.initialize();
         }
+
+        // Adaptive mode: generate color based on background
+        if (this.adaptiveMode && selection) {
+            try {
+                const theme = detectSiteTheme(selection);
+
+                // Map current palette color to Material hue
+                const colorName = this.getColorName(this.currentColor) || 'yellow';
+                const adaptiveColorName = colorName as keyof typeof MATERIAL_HUES;
+
+                // Generate adaptive color with contrast
+                const adaptiveColor = getAdaptiveHighlightColor(
+                    theme.luminance,
+                    adaptiveColorName
+                );
+
+                this.logger.debug('Generated adaptive color', {
+                    backgroundLum: theme.luminance,
+                    isDark: theme.isDark,
+                    color: adaptiveColor
+                });
+
+                return adaptiveColor;
+            } catch (error) {
+                this.logger.warn('Adaptive color failed, using fallback', error as Error);
+                return this.currentColor;  // Fallback to manual color
+            }
+        }
+
+        // Manual mode: use fixed palette color
         return this.currentColor;
     }
 
@@ -159,10 +207,10 @@ export class ColorManager {
         return null;
     }
 
-  /**
-   * Check if manager is initialized
-   */
-  isInitialized(): boolean {
-    return this.initialized;
-}
+    /**
+     * Check if manager is initialized
+     */
+    isInitialized(): boolean {
+        return this.initialized;
+    }
 }
