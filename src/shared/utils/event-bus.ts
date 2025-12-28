@@ -143,22 +143,8 @@ export class EventBus {
  */
 export const eventBus = new EventBus();
 
-    /**
-     * Set coordinator for transactional events
-     * Once set, all emits use coordinated dispatch
-     */
-    setCoordinator(coordinator: EventCoordinator): void {
-        this.coordinator = coordinator;
-        this.logger.info('EventCoordinator attached - transactions enabled');
-    }
 
-    /**
-     * Set coordinator for transactional events  
-     */
-    setCoordinator(coordinator: EventCoordinator): void {
-        this.coordinator = coordinator;
-        this.logger.info('EventCoordinator attached');
-    }
-}
-
+/**
+ * Singleton instance for global event bus
+ */
 export const eventBus = new EventBus();
