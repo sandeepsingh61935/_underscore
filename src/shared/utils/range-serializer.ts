@@ -21,6 +21,13 @@ export interface SerializedRange {
     textBefore: string;
     /** Context after highlight (for fuzzy matching) */
     textAfter: string;
+    /** W3C TextQuoteSelector for robust anchoring (optional) */
+    selector?: {
+        type: 'TextQuoteSelector';
+        exact: string;
+        prefix?: string;
+        suffix?: string;
+    };
 }
 
 const CONTEXT_LENGTH = 50; // Characters of context to store
@@ -30,7 +37,6 @@ const CONTEXT_LENGTH = 50; // Characters of context to store
  */
 export function serializeRange(range: Range): SerializedRange {
     const startContainer = range.startContainer;
-    const endContainer = range.endContainer;
 
     // Get XPath for start container
     const xpath = getXPath(startContainer);
@@ -42,13 +48,24 @@ export function serializeRange(range: Range): SerializedRange {
     const textBefore = getTextBefore(range, CONTEXT_LENGTH);
     const textAfter = getTextAfter(range, CONTEXT_LENGTH);
 
+    // ✅ NEW: Extract W3C TextQuoteSelector for robust anchoring
+    let selector;
+    try {
+        const { extractTextQuoteSelector } = require('./text-quote-extractor');
+        selector = extractTextQuoteSelector(range);
+    } catch (error) {
+        console.warn('[Serialization] TextQuoteSelector extraction failed', error);
+        // Continue without selector (backward compatible)
+    }
+
     return {
         xpath,
         startOffset: range.startOffset,
         endOffset: range.endOffset,
         text,
         textBefore,
-        textAfter
+        textAfter,
+        selector // ← NEW: W3C selector for improved accuracy
     };
 }
 
@@ -57,18 +74,39 @@ export function serializeRange(range: Range): SerializedRange {
  * Returns null if the range cannot be restored
  */
 export function deserializeRange(sr: SerializedRange): Range | null {
-    // Strategy 1: Try exact XPath match
+    // ✅ STRATEGY 1: Try W3C TextQuoteSelector (MOST ROBUST)
+    if (sr.selector) {
+        try {
+            const { findTextQuoteSelector } = require('./text-quote-finder');
+            const range = findTextQuoteSelector(sr.selector);
+            if (range) {
+                console.log('[Deserialize] ✅ Restored via TextQuoteSelector');
+                return range;
+            }
+        } catch (error) {
+            console.warn('[Deserialize] TextQuoteSelector failed, trying fallback', error);
+        }
+    }
+
+    // STRATEGY 2: Try exact XPath match
     const node = getNodeByXPath(sr.xpath);
     if (node) {
         const range = tryExactMatch(node, sr);
-        if (range) return range;
+        if (range) {
+            console.log('[Deserialize] ✅ Restored via XPath');
+            return range;
+        }
     }
 
-    // Strategy 2: Fuzzy text search with context
+    // STRATEGY 3: Fuzzy text search with context
     const fuzzyRange = tryFuzzyMatch(sr);
-    if (fuzzyRange) return fuzzyRange;
+    if (fuzzyRange) {
+        console.log('[Deserialize] ✅  Restored via fuzzy match');
+        return fuzzyRange;
+    }
 
     // Could not restore
+    console.warn('[Deserialize] ❌ All strategies failed');
     return null;
 }
 
