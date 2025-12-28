@@ -165,6 +165,16 @@ export class HighlightManager {
     }
 
     /**
+     * Register an externally-created highlight (e.g., from range subtraction)
+     * This ensures HighlightManager tracks it for future removal
+     */
+    registerHighlight(id: string, nativeHighlight: Highlight, range: Range): void {
+        this.highlights.set(id, nativeHighlight);
+        this.ranges.set(id, range);
+        this.logger.debug('Highlight registered', { id });
+    }
+
+    /**
      * Clear all highlights
      */
     clearAll(): void {

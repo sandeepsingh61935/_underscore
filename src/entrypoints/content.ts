@@ -121,6 +121,7 @@ export default defineContentScript({
                                         // CSS Highlight API supports multiple ranges!
                                         const nativeHighlight = new Highlight(...mergedRanges);
                                         CSS.highlights.set(highlightName, nativeHighlight);
+                                        highlightManager.registerHighlight(newId, nativeHighlight, mergedRanges[0]);
                                         injectHighlightCSS(existingHighlight.type, newId, existingHighlight.color);
                                     }
 
