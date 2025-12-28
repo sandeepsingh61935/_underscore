@@ -375,30 +375,37 @@ async function restoreHighlights(
 }
 
 /**
- * Get highlights that intersect with a selection range
+ * Find highlights that overlap with a selection
+ * (for toggle behavior - remove highlights that overlap with new selection)
  */
-function getHighlightsInRange(range: Range, store: HighlightStore): any[] {
-    const container = range.commonAncestorContainer;
-    const parent = container.nodeType === Node.ELEMENT_NODE
-        ? container as Element
-        : container.parentElement;
+function getHighlightsInRange(selection: Selection, store: HighlightStore): Highlight[] {
+    if (selection.rangeCount === 0) return [];
 
-    if (!parent) return [];
+    const userRange = selection.getRangeAt(0);
+    const highlights = store.getAll();
 
-    const highlightElements = parent.querySelectorAll('.underscore-highlight');
-    const highlightsInRange: any[] = [];
+    return highlights.filter((hl) => {
+        if (!hl.liveRange) return false;
 
-    for (const el of Array.from(highlightElements)) {
-        if (range.intersectsNode(el)) {
-            const id = el.getAttribute('data-id') || (el as any).dataset?.id;
-            if (id) {
-                const highlight = store.get(id);
-                if (highlight) {
-                    highlightsInRange.push(highlight);
-                }
-            }
+        try {
+            // Check if ranges overlap
+            // Overlaps if: hl ends after selection starts AND hl starts before selection ends
+            const hlEndsAfterSelectionStarts = hl.liveRange.compareBoundaryPoints(
+                Range.END_TO_START,
+                userRange
+            ) > 0;
+
+            const hlStartsBeforeSelectionEnds = hl.liveRange.compareBoundaryPoints(
+                Range.START_TO_END,
+                userRange
+            ) < 0;
+
+            return hlEndsAfterSelectionStarts && hlStartsBeforeSelectionEnds;
+        } catch (e) {
+            // If comparison fails (different documents), no overlap
+            return false;
         }
-    }
-
-    return highlightsInRange;
+    });
 }
+
+```
