@@ -72,38 +72,21 @@ export default defineContentScript({
                     logger.info('Selection detected, checking for overlaps');
 
                     try {
-                        // TOGGLE BEHAVIOR: Check if selection overlaps existing highlights
+                        // PRESERVE EXISTING: Check if selection overlaps existing highlights
                         const overlappingHighlights = getHighlightsInRange(event.selection, store);
 
                         if (overlappingHighlights.length > 0) {
-                            // Verify we have a manager before attempting removal
-                            const manager = highlightManager || renderer;
-                            if (!manager) {
-                                logger.error('Cannot remove highlights: no manager available');
-                                return;
-                            }
-
-                            // Remove overlapping highlights instead of creating new one
-                            logger.info('Removing overlapping highlights', {
-                                count: overlappingHighlights.length
+                            // Existing highlights have PRIORITY - don't create new one
+                            logger.info('Selection overlaps existing highlights - preserving existing', {
+                                count: overlappingHighlights.length,
+                                existingIds: overlappingHighlights.map(h => h.id)
                             });
 
-                            for (const hl of overlappingHighlights) {
-                                const command = new RemoveHighlightCommand(
-                                    hl,
-                                    manager,  // Guaranteed non-null
-                                    store,
-                                    storage
-                                );
-                                await commandStack.execute(command);
-                            }
-
-                            logger.info('Overlapping highlights removed');
-                            broadcastCount();
-                            return; // Don't create new highlight
+                            // Don't create new highlight - preserve what's already there
+                            return;
                         }
 
-                        // No overlaps - create new highlight
+                        // No overlaps - safe to create new highlight
                         const color = await colorManager.getCurrentColor();
 
                         const command = new CreateHighlightCommand(
