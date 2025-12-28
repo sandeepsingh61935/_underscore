@@ -407,5 +407,3 @@ function getHighlightsInRange(selection: Selection, store: HighlightStore): High
         }
     });
 }
-
-```
