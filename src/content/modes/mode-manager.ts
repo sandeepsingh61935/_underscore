@@ -5,8 +5,8 @@
  */
 
 import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
-import type { ILogger } from '@/shared/logger';
-import type { EventBus } from '@/shared/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
+import type { EventBus } from '@/shared/utils/event-bus';
 
 export class ModeManager {
     private currentMode: IHighlightMode | null = null;

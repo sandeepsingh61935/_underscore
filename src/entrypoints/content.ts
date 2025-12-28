@@ -18,9 +18,7 @@ import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange, serializeRange } from '@/shared/utils/range-serializer';
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
 import { CreateHighlightCommand, RemoveHighlightCommand, ClearSelectionCommand, ClearAllCommand } from '@/content/commands/simple-highlight-commands';
-// Removed: AnnotationModeManager - single mode only
-// Note: Command pattern temporarily bypassed for Custom Highlight API
-// Commands will be re-integrated for proper undo/redo support
+import { ModeManager, SprintMode } from '@/content/modes';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -29,7 +27,7 @@ export default defineContentScript({
     matches: ['<all_urls>'],
 
     async main() {
-        logger.info('Initializing Web Highlighter Extension (Sprint 2.0 - Custom Highlight API)...');
+        logger.info('Initializing Web Highlighter Extension (Strategy Pattern + Sprint Mode)...');
 
         try {
             // Check Custom Highlight API support
@@ -51,7 +49,13 @@ export default defineContentScript({
 
             const store = new HighlightStore(eventBus);
 
-            // Use new HighlightManager if supported, otherwise fallback to legacy
+            // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
+            const modeManager = new ModeManager(eventBus, logger);
+            const sprintMode = new SprintMode(eventBus, logger);
+            modeManager.registerMode(sprintMode);
+            await modeManager.activateMode('sprint');
+
+            // Keep old HighlightManager temporarily for compatibility
             const highlightManager = useCustomHighlightAPI
                 ? new HighlightManager(eventBus)
                 : null;

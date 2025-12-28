@@ -7,7 +7,7 @@
 
 import { BaseHighlightMode } from './base-highlight-mode';
 import { serializeRange } from '@/shared/utils/range-serializer';
-import { EventName } from '@/types/events';
+import { EventName } from '@/shared/types/events';
 import type { HighlightData } from './highlight-mode.interface';
 
 export class SprintMode extends BaseHighlightMode {
