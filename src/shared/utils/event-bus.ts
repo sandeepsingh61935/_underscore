@@ -5,6 +5,7 @@
 
 import { LoggerFactory } from './logger';
 import type { ILogger } from './logger';
+import type { EventCoordinator } from '../coordination/event-coordinator';
 
 type EventHandler<T = any> = (data: T) => void | Promise<void>;
 
@@ -30,6 +31,7 @@ type EventHandler<T = any> = (data: T) => void | Promise<void>;
 export class EventBus {
     private handlers = new Map<string, Set<EventHandler>>();
     private logger: ILogger;
+    private coordinator: EventCoordinator | null = null;
 
     constructor(logger?: ILogger) {
         this.logger = logger ?? LoggerFactory.getLogger('EventBus');
@@ -139,4 +141,24 @@ export class EventBus {
  * Singleton instance for global event bus
  * Use this for application-wide event coordination
  */
+export const eventBus = new EventBus();
+
+    /**
+     * Set coordinator for transactional events
+     * Once set, all emits use coordinated dispatch
+     */
+    setCoordinator(coordinator: EventCoordinator): void {
+        this.coordinator = coordinator;
+        this.logger.info('EventCoordinator attached - transactions enabled');
+    }
+
+    /**
+     * Set coordinator for transactional events  
+     */
+    setCoordinator(coordinator: EventCoordinator): void {
+        this.coordinator = coordinator;
+        this.logger.info('EventCoordinator attached');
+    }
+}
+
 export const eventBus = new EventBus();
