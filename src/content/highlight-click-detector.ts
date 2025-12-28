@@ -33,18 +33,47 @@ export class HighlightClickDetector {
 
     /**
      * Handle click event
+     * Ctrl+Click to delete (better UX than double-click)
      */
     private handleClick(e: MouseEvent): void {
         const highlight = this.findHighlightAtPoint(e);
 
         if (highlight) {
-            this.logger.info('Click on highlight - deleting', { id: highlight.id });
+            // Check if Ctrl/Cmd key is pressed
+            if (e.ctrlKey || e.metaKey) {
+                this.logger.info('Ctrl+Click detected - deleting highlight', {
+                    id: highlight.id
+                });
 
-            // Emit event to delete this highlight (SINGLE CLICK!)
-            this.eventBus.emit(EventName.HIGHLIGHT_CLICKED, {
-                highlightId: highlight.id,
+                // Delete the highlight
+                this.deleteHighlight(highlight.id);
+            } else {
+                this.logger.debug('Click on highlight (Ctrl+Click to delete)', {
+                    id: highlight.id
+                });
+            }
+        }
+    }
+
+    /**
+     * Delete highlight (called on Ctrl+Click)
+     * Removes from repository and emits event
+     */
+    private deleteHighlight(highlightId: string): void {
+        try {
+            // Remove from repository
+            this.repositoryFacade.remove(highlightId);
+
+            // Emit event for other listeners (storage, UI, etc.)
+            this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
+                type: EventName.HIGHLIGHT_REMOVED,
+                highlightId,
                 timestamp: Date.now()
             });
+
+            this.logger.info('Highlight deleted', { id: highlightId });
+        } catch (error) {
+            this.logger.error('Failed to delete highlight', error as Error);
         }
     }
 
