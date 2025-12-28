@@ -104,10 +104,9 @@ export class HighlightStore {
             id: data.id,
             text: data.text,
             color: data.color,
-            type: data.type || 'underscore',
-            element: data.element || (null as any),  // Not needed for Custom Highlight API
-            createdAt: data.createdAt || new Date(),
-            liveRange: data.liveRange  // NEW: Store live range
+            type: data.type,
+            range: data.range,
+            liveRange: data.liveRange  // CRITICAL: Store live range!
         };
         this.add(highlight);
 
