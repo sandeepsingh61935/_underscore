@@ -103,10 +103,13 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
     if (e.type === 'highlight.created') {
         if (!e['data'] || typeof e['data'] !== 'object') return false;
         const data = e['data'] as Record<string, unknown>;
-        // Validate range exists and has required fields
-        if (!data['range'] || typeof data['range'] !== 'object') return false;
-        const range = data['range'] as Record<string, unknown>;
-        return typeof range['xpath'] === 'string' && typeof range['text'] === 'string';
+
+        // ✅ FIXED: Check for 'ranges' array (not singular 'range')
+        // We save multiple ranges, validator was checking for wrong field!
+        if (!data['ranges'] || !Array.isArray(data['ranges'])) return false;
+
+        // Accept if ranges array exists (validation passed)
+        return data['ranges'].length > 0;
     } else if (e.type === 'highlight.removed') {
         return typeof e.highlightId === 'string';
     }
