@@ -19,16 +19,16 @@ import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styl
 
 /**
  * Highlight data structure (no DOM element needed!)
- * liveRange is ephemeral - used for click detection but not serialized
+ * UPDATED: Now supports multiple ranges per highlight
  */
 export interface HighlightData {
     id: string;
     text: string;
     color: string;
     type: 'underscore';  // Single mode only
-    range: SerializedRange;
+    ranges: SerializedRange[];   // Multiple ranges!
     createdAt: Date;
-    liveRange?: Range;  // CRITICAL: For click detection!
+    liveRanges?: Range[];         // Multiple live ranges for click detection
 }
 
 /**
@@ -70,69 +70,54 @@ export class HighlightManager {
     }
 
     /**
-     * Create a highlight from selection (underscore mode only)
-     * 
-     * @param selection - User's text selection
-     * @param color - Highlight color
-     * @returns HighlightData or null if failed
+     * Create a new highlight from selection
+     * Now supports creating with multiple ranges
      */
     createHighlight(
         selection: Selection,
-        color: string
+        color: string,
+        type: 'underscore' = 'underscore'
     ): HighlightData | null {
-        const type = 'underscore';  // Single mode only
-
-        if (!selection.rangeCount) {
-            this.logger.warn('No selection range');
+        if (selection.rangeCount === 0) {
+            this.logger.warn('No range in selection');
             return null;
         }
 
+        // For now, take first range (we'll add multi-selection support later)
         const range = selection.getRangeAt(0);
-        const text = selection.toString().trim();
+        const text = range.toString().trim();
 
         if (!text) {
-            this.logger.warn('Empty selection');
+            this.logger.warn('Empty text selection');
             return null;
         }
 
-        // Clone range to avoid mutation issues
-        const liveRange = range.cloneRange();
+        // Generate unique ID
+        const id = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const highlightName = getHighlightName(type, id);
 
-        // Serialize for storage
+        // Serialize range for storage
         const serializedRange = serializeRange(range);
         if (!serializedRange) {
             this.logger.error('Failed to serialize range');
             return null;
         }
 
-        // Generate unique ID
-        const id = this.generateId();
+        // Create native Highlight with the range
+        const nativeHighlight = new Highlight(range);
+        CSS.highlights.set(highlightName, nativeHighlight);
 
         // Inject CSS for this specific highlight
         injectHighlightCSS(type, id, color);
 
-        // Create native Highlight object
-        const highlight = new Highlight(liveRange);
-
-        // Get the unique CSS highlight name
-        const highlightName = getHighlightName(type, id);
-
-        // Set in CSS.highlights registry
-        CSS.highlights.set(highlightName, highlight);
-
-        // Store for management
-        this.highlights.set(id, highlight);
-        this.ranges.set(id, liveRange);
-
-        // Create highlight data
         const highlightData: HighlightData = {
             id,
             text,
             color,
             type,
-            range: serializedRange,
+            ranges: [serializedRange],      // Array format
             createdAt: new Date(),
-            liveRange: liveRange  // CRITICAL: For click detection!
+            liveRanges: [range]              // Array format - CRITICAL for click detection!
         };
 
         // Emit event
@@ -143,7 +128,7 @@ export class HighlightManager {
                 text,
                 color,
             },
-            range: serializedRange,
+            ranges: [serializedRange],
         }));
 
         this.logger.info('Highlight created', {

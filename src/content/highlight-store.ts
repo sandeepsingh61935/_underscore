@@ -68,14 +68,25 @@ export class HighlightStore {
 
     /**
      * Add highlight to store
+     * Handles both old and new formats
      */
-    add(highlight: Highlight): void {
-        this.highlights.set(highlight.id, highlight);
+    add(highlight: Highlight | any): void {
+        // Normalize to multi-range format (backward compatibility)
+        const normalized: Highlight = {
+            id: highlight.id,
+            text: highlight.text,
+            color: highlight.color,
+            type: highlight.type || 'underscore',
+            ranges: highlight.ranges || (highlight.range ? [highlight.range] : []),
+            liveRanges: highlight.liveRanges || (highlight.liveRange ? [highlight.liveRange] : [])
+        };
+
+        this.highlights.set(normalized.id, normalized);
 
         this.logger.debug('Added highlight', {
-            id: highlight.id,
-            rangeCount: highlight.ranges.length,
-            liveRangeCount: highlight.liveRanges?.length || 0
+            id: normalized.id,
+            rangeCount: normalized.ranges.length,
+            liveRangeCount: normalized.liveRanges?.length || 0
         });
 
         // Emit event
