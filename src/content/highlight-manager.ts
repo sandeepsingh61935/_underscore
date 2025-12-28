@@ -112,6 +112,9 @@ export class HighlightManager {
         // Create native Highlight object
         const highlight = new Highlight(liveRange);
 
+        // Get the unique CSS highlight name
+        const highlightName = getHighlightName(type, id);
+
         // Set in CSS.highlights registry
         CSS.highlights.set(highlightName, highlight);
 
