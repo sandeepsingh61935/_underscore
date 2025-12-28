@@ -4,10 +4,10 @@
  */
 
 import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
+import { EventName } from '@/shared/types/events';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import type { AnnotationType } from '@/shared/types/annotation';
+import type { SerializedRange } from '@/shared/utils/range-serializer';
 
 /**
  * Highlight data structure
@@ -16,14 +16,9 @@ export interface Highlight {
     id: string;
     text: string;
     color: string;
-    type: AnnotationType;  // Store type for undo/redo
-    element: HTMLElement;  // Legacy - for Shadow DOM fallback
-    createdAt: Date;
-
-    // NEW: For Custom Highlight API
-    // Needed because ::highlight() pseudo-elements don't emit DOM events
-    // We use this to detect clicks on highlighted text
-    liveRange?: Range;
+    type: 'underscore';  // Single mode only
+    range: SerializedRange;
+    liveRange?: Range;  // For click detection
 }
 
 /**
@@ -60,24 +55,24 @@ export class HighlightStore {
      */
     private setupEventListeners(): void {
         // Listen for highlight creation
-        this.eventBus.on<HighlightCreatedEvent>(
+        this.eventBus.on(
             EventName.HIGHLIGHT_CREATED,
-            (event) => {
+            (event: any) => { // TODO: Define proper event type for HIGHLIGHT_CREATED
                 this.add({
                     id: event.highlight.id,
                     text: event.highlight.text,
                     color: event.highlight.color,
-                    type: 'underscore',  // Default type
-                    element: null as any, // Will be set by renderer
-                    createdAt: event.timestamp,
+                    type: 'underscore',
+                    range: event.highlight.range,
+                    liveRange: event.highlight.liveRange,
                 });
             }
         );
 
         // Listen for highlight removal
-        this.eventBus.on<HighlightRemovedEvent>(
+        this.eventBus.on(
             EventName.HIGHLIGHT_REMOVED,
-            (event) => {
+            (event: any) => { // TODO: Define proper event type for HIGHLIGHT_REMOVED
                 this.remove(event.highlightId);
             }
         );
@@ -101,10 +96,8 @@ export class HighlightStore {
         id: string;
         text: string;
         color: string;
-        type?: AnnotationType;
-        range?: any;
-        createdAt?: Date;
-        element?: HTMLElement;
+        type: 'underscore';  // Single mode only
+        range: SerializedRange;
         liveRange?: Range;  // NEW: Accept live range for Custom Highlight API
     }): void {
         const highlight: Highlight = {
