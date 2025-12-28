@@ -27,7 +27,7 @@ export class CreateHighlightCommand implements Command {
 
     constructor(
         private selection: Selection,
-        private color: string,
+        private colorRole: string,  // ✅ Semantic token
         private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
         private store: HighlightStore,
         private storage: StorageService

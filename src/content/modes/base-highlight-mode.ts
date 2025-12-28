@@ -47,8 +47,8 @@ export abstract class BaseHighlightMode implements IHighlightMode {
         // 2. Register with CSS
         CSS.highlights.set(highlightName, nativeHighlight);
 
-        // 3. Inject styles
-        injectHighlightCSS(data.type, data.id, data.color);
+        // 3. Inject styles with colorRole (CSS variable)
+        injectHighlightCSS(data.type, data.id, data.colorRole);
 
         // 4. Track internally (replaces HighlightManager tracking)
         this.highlights.set(data.id, nativeHighlight);
@@ -92,7 +92,7 @@ export abstract class BaseHighlightMode implements IHighlightMode {
     }
 
     // Abstract methods - mode-specific
-    abstract createHighlight(selection: Selection, color: string): Promise<string>;
+    abstract createHighlight(selection: Selection, colorRole: string): Promise<string>;
     abstract createFromData(data: HighlightData): Promise<void>;
     abstract updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void>;
     abstract restore(url: string): Promise<void>;

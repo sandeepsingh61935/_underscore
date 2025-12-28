@@ -169,11 +169,11 @@ export default defineContentScript({
                         }
 
                         // No overlaps - create new highlight as normal
-                        const color = await colorManager.getCurrentColor();
+                        const colorRole = await colorManager.getCurrentColorRole();
 
                         const command = new CreateHighlightCommand(
                             event.selection,
-                            color,
+                            colorRole,
                             modeManager,  // ✅ Use mode manager!
                             store,
                             storage
@@ -325,7 +325,7 @@ export default defineContentScript({
             });
 
             logger.info('Web Highlighter Extension initialized successfully');
-            logger.info(`Default color: ${await colorManager.getCurrentColor()}`);
+            logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
             logger.info('Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)');
             logger.info(`Restored ${store.count()} highlights from storage`);
         } catch (error) {
@@ -422,15 +422,15 @@ async function restoreHighlights(
                         selection.removeAllRanges();
                         selection.addRange(liveRanges[0]); // Legacy: only first range
 
-                        const command = new CreateHighlightCommand(
+                        const createCommand = new CreateHighlightCommand(
                             selection,
-                            highlightData.color,
+                            highlightData.color,  // Use semantic token
                             renderer,
                             store,
                             storage
                         );
 
-                        await command.execute();
+                        await createCommand.execute();
                         restored++;
                     }
                 }

@@ -9,7 +9,13 @@ import type { SerializedRange } from '@/shared/utils/range-serializer';
 export interface HighlightData {
     id: string;
     text: string;
-    color: string;
+
+    /** Semantic color role (e.g., 'yellow', 'blue') - maps to CSS design tokens */
+    colorRole: string;
+
+    /** @deprecated Legacy field - use colorRole with CSS variables instead */
+    color?: string;
+
     type: 'underscore';
     ranges: SerializedRange[];
     liveRanges: Range[];

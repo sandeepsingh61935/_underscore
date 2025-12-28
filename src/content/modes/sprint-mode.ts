@@ -19,7 +19,7 @@ import type { HighlightData } from './highlight-mode.interface';
 export class SprintMode extends BaseHighlightMode {
     get name() { return 'sprint' as const; }
 
-    async createHighlight(selection: Selection, color: string): Promise<string> {
+    async createHighlight(selection: Selection, colorRole: string): Promise<string> {
         if (selection.rangeCount === 0) {
             throw new Error('No range in selection');
         }
@@ -41,7 +41,7 @@ export class SprintMode extends BaseHighlightMode {
         const data: HighlightData = {
             id,
             text,
-            color,
+            colorRole,  // ✅ Semantic token
             type: 'underscore',
             ranges: [serializedRange],
             liveRanges: [range],
@@ -57,7 +57,7 @@ export class SprintMode extends BaseHighlightMode {
             highlight: {
                 id: data.id,
                 text: data.text,
-                color: data.color
+                colorRole: data.colorRole
             },
             ranges: data.ranges
         });
@@ -75,7 +75,7 @@ export class SprintMode extends BaseHighlightMode {
             highlight: {
                 id: data.id,
                 text: data.text,
-                color: data.color
+                colorRole: data.colorRole
             },
             ranges: data.ranges
         });
@@ -90,10 +90,10 @@ export class SprintMode extends BaseHighlightMode {
         const updated = { ...existing, ...updates };
         this.data.set(id, updated);
 
-        // Re-inject CSS if color changed
-        if (updates.color) {
+        // Re-inject CSS if colorRole changed
+        if (updates.colorRole) {
             const { injectHighlightCSS } = await import('@/content/styles/highlight-styles');
-            injectHighlightCSS(updated.type, id, updates.color);
+            injectHighlightCSS(updated.type, id, updates.colorRole);
         }
     }
 

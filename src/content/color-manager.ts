@@ -1,61 +1,48 @@
 /**
  * @file color-manager.ts
- * @description Manages highlight color palette and current selection
+ * @description Manages highlight color roles for CSS-first reactive theming
  * 
  * Features:
- * - Material Design adaptive theming
- * - Auto-contrast based on background luminance
- * - 5-color preset palette
+ * - Semantic color roles (yellow, blue, orange, etc.)
+ * - CSS design token integration
+ * - Automatic theme adaptation via CSS variables
  */
 
-import { SecurityService } from '@/shared/utils/security';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { detectSiteTheme } from '@/content/utils/theme-detector';
-import { getAdaptiveHighlightColor, MATERIAL_HUES } from '@/content/utils/adaptive-color';
 
 /**
- * Color palette - 5 presets from design tokens
+ * Available color roles - map to CSS design tokens
  */
-export const COLOR_PALETTE = {
-    yellow: '#FFEB3B',
-    blue: '#64B5F6',
-    green: '#81C784',
-    orange: '#FFB74D',
-    purple: '#BA68C8',
+export const COLOR_ROLES = {
+    yellow: 'yellow',
+    orange: 'orange',
+    blue: 'blue',
+    green: 'green',
+    purple: 'purple',
+    pink: 'pink',
+    teal: 'teal',
 } as const;
 
-export type ColorName = keyof typeof COLOR_PALETTE;
+export type ColorRole = keyof typeof COLOR_ROLES;
 
-const DEFAULT_COLOR: ColorName = 'yellow';
-const STORAGE_KEY = 'currentHighlightColor';
-const ADAPTIVE_MODE_KEY = 'adaptiveColorMode';
+const DEFAULT_ROLE: ColorRole = 'yellow';
+const STORAGE_KEY = 'currentColorRole';
 
 /**
- * Manages highlight color selection and palette
- * 
- * Features:
- * - Material Design adaptive theming (auto-contrast)
- * - 5-color preset palette (fallback/manual mode)
- * - Current color persistence via chrome.storage.local
- * - Color validation
+ * Manages highlight color roles
  * 
  * @example
  * ```typescript
  * const colorManager = new ColorManager();
  * await colorManager.initialize();
  * 
- * // Adaptive mode (default)
- * const color = await colorManager.getCurrentColor(selection); // Auto-adjusts
- * 
- * // Manual mode
- * await colorManager.setAdaptiveMode(false);
- * const color = await colorManager.getCurrentColor(); // Fixed color
+ * const role = await colorManager.getCurrentColorRole(); // 'yellow'
+ * await colorManager.setCurrentColorRole('blue');
  * ```
  */
 export class ColorManager {
-    private currentColor: string = COLOR_PALETTE[DEFAULT_COLOR];
-    private adaptiveMode: boolean = true;  // Default: auto-adapt
+    private currentColorRole: ColorRole = DEFAULT_ROLE;
     private logger: ILogger;
     private initialized = false;
 
@@ -64,7 +51,7 @@ export class ColorManager {
     }
 
     /**
-     * Initialize color manager and load saved color from storage
+     * Initialize color manager and load saved role from storage
      */
     async initialize(): Promise<void> {
         if (this.initialized) {
@@ -73,138 +60,97 @@ export class ColorManager {
         }
 
         try {
-            // Load saved color from chrome.storage.local
+            // Load saved role from chrome.storage.local
             const result = await chrome.storage.local.get(STORAGE_KEY);
 
             if (result[STORAGE_KEY]) {
-                const savedColor = result[STORAGE_KEY] as string;
+                const savedRole = result[STORAGE_KEY] as string;
 
-                // Validate saved color
-                if (this.isValidPaletteColor(savedColor)) {
-                    this.currentColor = savedColor;
-                    this.logger.info('Loaded saved color', { color: savedColor });
+                // Validate saved role
+                if (this.isValidColorRole(savedRole as ColorRole)) {
+                    this.currentColorRole = savedRole as ColorRole;
+                    this.logger.info('Loaded saved color role', { role: savedRole });
                 } else {
-                    this.logger.warn('Invalid saved color, using default', { savedColor });
-                    this.currentColor = COLOR_PALETTE[DEFAULT_COLOR];
+                    this.logger.warn('Invalid saved role, using default', { savedRole });
+                    this.currentColorRole = DEFAULT_ROLE;
                 }
             } else {
-                this.logger.info('No saved color, using default');
-                this.currentColor = COLOR_PALETTE[DEFAULT_COLOR];
+                this.logger.info('No saved role, using default');
+                this.currentColorRole = DEFAULT_ROLE;
             }
 
             this.initialized = true;
-            this.logger.info('ColorManager initialized');
+            this.logger.info('ColorManager initialized', { role: this.currentColorRole });
         } catch (error) {
             this.logger.error('Failed to initialize ColorManager', error as Error);
-            // Fall back to default color
-            this.currentColor = COLOR_PALETTE[DEFAULT_COLOR];
+            this.currentColorRole = DEFAULT_ROLE;
             this.initialized = true;
         }
     }
 
     /**
-     * Get current selected color
-     * In adaptive mode, generates color based on selection background
-     * 
-     * @param selection Optional selection for adaptive theming
-     * @returns Color hex string (HSL for adaptive, hex for manual)
+     * Get current color role (semantic token)
      */
-    async getCurrentColor(selection?: Selection): Promise<string> {
+    async getCurrentColorRole(): Promise<ColorRole> {
         if (!this.initialized) {
             await this.initialize();
         }
-
-        // Adaptive mode: generate color based on background
-        if (this.adaptiveMode && selection) {
-            try {
-                const theme = detectSiteTheme(selection);
-
-                // Map current palette color to Material hue
-                const colorName = this.getColorName(this.currentColor) || 'yellow';
-                const adaptiveColorName = colorName as keyof typeof MATERIAL_HUES;
-
-                // Generate adaptive color with contrast
-                const adaptiveColor = getAdaptiveHighlightColor(
-                    theme.luminance,
-                    adaptiveColorName
-                );
-
-                this.logger.debug('Generated adaptive color', {
-                    backgroundLum: theme.luminance,
-                    isDark: theme.isDark,
-                    color: adaptiveColor
-                });
-
-                return adaptiveColor;
-            } catch (error) {
-                this.logger.warn('Adaptive color failed, using fallback', error as Error);
-                return this.currentColor;  // Fallback to manual color
-            }
-        }
-
-        // Manual mode: use fixed palette color
-        return this.currentColor;
+        return this.currentColorRole;
     }
 
     /**
-     * Set current color and persist to storage
+     * Get CSS variable name for current color role
      */
-    async setCurrentColor(color: string): Promise<void> {
+    getCSSVariableName(): string {
+        return `--highlight-${this.currentColorRole}`;
+    }
+
+    /**
+     * Set current color role and persist to storage
+     */
+    async setCurrentColorRole(role: ColorRole): Promise<void> {
         if (!this.initialized) {
             await this.initialize();
         }
 
-        // Validate color
-        if (!this.isValidPaletteColor(color) && !SecurityService.isValidHexColor(color)) {
-            this.logger.error('Invalid color', { color });
-            throw new Error(`Invalid color: ${color}`);
+        // Validate role
+        if (!this.isValidColorRole(role)) {
+            this.logger.error('Invalid color role', { role });
+            throw new Error(`Invalid color role: ${role}`);
         }
 
-        const previousColor = this.currentColor;
-        this.currentColor = color;
+        const previousRole = this.currentColorRole;
+        this.currentColorRole = role;
 
         try {
             // Persist to storage
-            await chrome.storage.local.set({ [STORAGE_KEY]: color });
+            await chrome.storage.local.set({ [STORAGE_KEY]: role });
 
-            this.logger.info('Color changed', { previousColor, newColor: color });
+            this.logger.info('Color role changed', { previousRole, newRole: role });
         } catch (error) {
-            this.logger.error('Failed to save color to storage', error as Error);
-            // Continue anyway - color is changed in memory
+            this.logger.error('Failed to save role to storage', error as Error);
         }
     }
 
     /**
-     * Get all available palette colors
+     * Get all available color roles
      */
-    getColorPalette(): Record<ColorName, string> {
-        return { ...COLOR_PALETTE };
+    getColorRoles(): ColorRole[] {
+        return Object.keys(COLOR_ROLES) as ColorRole[];
     }
 
     /**
-     * Get default color
+     * Get default color role
      */
-    getDefaultColor(): string {
-        return COLOR_PALETTE[DEFAULT_COLOR];
+    getDefaultColorRole(): ColorRole {
+        return DEFAULT_ROLE;
     }
 
     /**
-     * Check if color is in the preset palette
+     * Check if color role is valid
      */
-    private isValidPaletteColor(color: string): boolean {
-        return Object.values(COLOR_PALETTE).includes(color as any);
-    }
-
-    /**
-     * Get color name from hex value
-     */
-    getColorName(hexColor: string): ColorName | null {
-        for (const [name, hex] of Object.entries(COLOR_PALETTE)) {
-            if (hex.toLowerCase() === hexColor.toLowerCase()) {
-                return name as ColorName;
-            }
-        }
-        return null;
+    private isValidColorRole(role: ColorRole): boolean {
+        return Object.keys(COLOR_ROLES).includes(role);
     }
 
     /**

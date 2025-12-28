@@ -1,0 +1,138 @@
+/**
+ * Design Tokens - Material Design Inspired
+ * CSS Custom Properties for reactive theming
+ * 
+ * Architecture:
+ * - Tier 1: Primitive Tokens (raw values)
+ * - Tier 2: Semantic Tokens (color roles)
+ */
+
+/* ============================================
+   TIER 1: PRIMITIVE TOKENS
+   Raw color values - internal use only
+   ============================================ */
+
+:root {
+    /* Yellow Tonal Palette */
+    --yellow-0: hsl(45, 70%, 0%);
+    --yellow-10: hsl(45, 70%, 10%);
+    --yellow-20: hsl(45, 70%, 20%);
+    --yellow-25: hsl(45, 70%, 25%);
+    --yellow-30: hsl(45, 70%, 30%);
+    --yellow-35: hsl(45, 70%, 35%);
+    --yellow-40: hsl(45, 70%, 40%);
+    --yellow-50: hsl(45, 70%, 50%);
+    --yellow-60: hsl(45, 70%, 60%);
+    --yellow-70: hsl(45, 70%, 70%);
+    --yellow-80: hsl(45, 70%, 80%);
+    --yellow-90: hsl(45, 70%, 90%);
+    --yellow-95: hsl(45, 70%, 95%);
+    --yellow-100: hsl(45, 70%, 100%);
+
+    /* Orange Tonal Palette */
+    --orange-0: hsl(25, 75%, 0%);
+    --orange-20: hsl(25, 75%, 20%);
+    --orange-25: hsl(25, 75%, 25%);
+    --orange-30: hsl(25, 75%, 30%);
+    --orange-70: hsl(25, 75%, 70%);
+    --orange-75: hsl(25, 75%, 75%);
+    --orange-80: hsl(25, 75%, 80%);
+    --orange-100: hsl(25, 75%, 100%);
+
+    /* Blue Tonal Palette */
+    --blue-0: hsl(220, 70%, 0%);
+    --blue-25: hsl(220, 70%, 25%);
+    --blue-30: hsl(220, 70%, 30%);
+    --blue-35: hsl(220, 70%, 35%);
+    --blue-40: hsl(220, 70%, 40%);
+    --blue-70: hsl(220, 70%, 70%);
+    --blue-75: hsl(220, 70%, 75%);
+    --blue-80: hsl(220, 70%, 80%);
+    --blue-100: hsl(220, 70%, 100%);
+
+    /* Green Tonal Palette */
+    --green-0: hsl(120, 60%, 0%);
+    --green-25: hsl(120, 60%, 25%);
+    --green-30: hsl(120, 60%, 30%);
+    --green-35: hsl(120, 60%, 35%);
+    --green-40: hsl(120, 60%, 40%);
+    --green-70: hsl(120, 60%, 70%);
+    --green-75: hsl(120, 60%, 75%);
+    --green-80: hsl(120, 60%, 80%);
+    --green-100: hsl(120, 60%, 100%);
+
+    /* Purple Tonal Palette */
+    --purple-0: hsl(280, 65%, 0%);
+    --purple-25: hsl(280, 65%, 25%);
+    --purple-30: hsl(280, 65%, 30%);
+    --purple-35: hsl(280, 65%, 35%);
+    --purple-40: hsl(280, 65%, 40%);
+    --purple-70: hsl(280, 65%, 70%);
+    --purple-75: hsl(280, 65%, 75%);
+    --purple-80: hsl(280, 65%, 80%);
+    --purple-100: hsl(280, 65%, 100%);
+
+    /* Pink Tonal Palette */
+    --pink-0: hsl(340, 70%, 0%);
+    --pink-25: hsl(340, 70%, 25%);
+    --pink-30: hsl(340, 70%, 30%);
+    --pink-35: hsl(340, 70%, 35%);
+    --pink-40: hsl(340, 70%, 40%);
+    --pink-70: hsl(340, 70%, 70%);
+    --pink-75: hsl(340, 70%, 75%);
+    --pink-80: hsl(340, 70%, 80%);
+    --pink-100: hsl(340, 70%, 100%);
+
+    /* Teal Tonal Palette */
+    --teal-0: hsl(180, 60%, 0%);
+    --teal-25: hsl(180, 60%, 25%);
+    --teal-30: hsl(180, 60%, 30%);
+    --teal-35: hsl(180, 60%, 35%);
+    --teal-40: hsl(180, 60%, 40%);
+    --teal-70: hsl(180, 60%, 70%);
+    --teal-75: hsl(180, 60%, 75%);
+    --teal-80: hsl(180, 60%, 80%);
+    --teal-100: hsl(180, 60%, 100%);
+}
+
+/* ============================================
+   TIER 2: SEMANTIC TOKENS
+   Color roles - use these in components
+   ============================================ */
+
+/* Light Theme (default) */
+:root {
+    /* Darker shades for light backgrounds - ensures 3:1+ contrast */
+    --highlight-yellow: var(--yellow-30);
+    --highlight-orange: var(--orange-25);
+    --highlight-blue: var(--blue-35);
+    --highlight-green: var(--green-35);
+    --highlight-purple: var(--purple-35);
+    --highlight-pink: var(--pink-30);
+    --highlight-teal: var(--teal-35);
+}
+
+/* Dark Theme - explicit attribute */
+:root[data-theme="dark"] {
+    /* Lighter shades for dark backgrounds - ensures 3:1+ contrast */
+    --highlight-yellow: var(--yellow-70);
+    --highlight-orange: var(--orange-75);
+    --highlight-blue: var(--blue-70);
+    --highlight-green: var(--green-70);
+    --highlight-purple: var(--purple-70);
+    --highlight-pink: var(--pink-70);
+    --highlight-teal: var(--teal-70);
+}
+
+/* System preference fallback */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --highlight-yellow: var(--yellow-70);
+        --highlight-orange: var(--orange-75);
+        --highlight-blue: var(--blue-70);
+        --highlight-green: var(--green-70);
+        --highlight-purple: var(--purple-70);
+        --highlight-pink: var(--pink-70);
+        --highlight-teal: var(--teal-70);
+    }
+}
