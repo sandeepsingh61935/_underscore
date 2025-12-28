@@ -15,7 +15,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange } from '@/shared/utils/range-serializer';
-import { AnnotationModeManager } from '@/content/annotation-mode-manager';
+// Removed: AnnotationModeManager - single mode only
 // Note: Command pattern temporarily bypassed for Custom Highlight API
 // Commands will be re-integrated for proper undo/redo support
 
@@ -55,7 +55,7 @@ export default defineContentScript({
             const renderer = new HighlightRenderer(eventBus);  // Keep for fallback
 
             const detector = new SelectionDetector(eventBus);
-            const modeManager = new AnnotationModeManager(eventBus);
+            // Removed: mode manager - single 'underscore' mode only
 
             // ===== PAGE LOAD: Restore highlights from storage =====
             await restoreHighlights(storage, renderer, store, highlightManager);
@@ -68,7 +68,6 @@ export default defineContentScript({
 
                     try {
                         const color = await colorManager.getCurrentColor();
-                        const currentMode = modeManager.getCurrentMode();
 
                         let highlightData: any = null;
 
@@ -76,15 +75,14 @@ export default defineContentScript({
                         if (highlightManager) {
                             highlightData = highlightManager.createHighlight(
                                 event.selection,
-                                color,
-                                currentMode
+                                color
                             );
                         } else {
-                            // Fallback to legacy renderer
+                            // Fallback to legacy renderer  
                             highlightData = renderer.createHighlight(
                                 event.selection,
                                 color,
-                                currentMode
+                                'underscore'  // Single mode
                             );
                         }
 
@@ -107,7 +105,6 @@ export default defineContentScript({
 
                         logger.info('Highlight created successfully', {
                             id: highlightData.id,
-                            mode: currentMode,
                             api: highlightManager ? 'Custom Highlight API' : 'Legacy'
                         });
 
@@ -124,7 +121,7 @@ export default defineContentScript({
                 if (highlight) {
                     // Use Custom Highlight API if available
                     if (highlightManager) {
-                        highlightManager.removeHighlight(highlight.id, highlight.type);
+                        highlightManager.removeHighlight(highlight.id);
                     } else {
                         renderer.removeHighlight(highlight.id);
                     }
@@ -151,7 +148,7 @@ export default defineContentScript({
                 if (highlightsInSelection.length > 0) {
                     for (const hl of highlightsInSelection) {
                         if (highlightManager) {
-                            highlightManager.removeHighlight(hl.id, hl.type);
+                            highlightManager.removeHighlight(hl.id);
                         } else {
                             renderer.removeHighlight(hl.id);
                         }
@@ -204,26 +201,8 @@ export default defineContentScript({
                     }
                 }
 
-                // Ctrl+U - Switch to Underscore mode
-                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyU') {
-                    e.preventDefault();
-                    modeManager.setMode('underscore');
-                    logger.info('Switched to underscore mode');
-                }
+                // Removed: mode switching shortcuts (Ctrl+U/H/B) - single mode only
 
-                // Ctrl+H - Switch to Highlight mode
-                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyH') {
-                    e.preventDefault();
-                    modeManager.setMode('highlight');
-                    logger.info('Switched to highlight mode');
-                }
-
-                // Ctrl+B - Switch to Box mode
-                else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyB') {
-                    e.preventDefault();
-                    modeManager.setMode('box');
-                    logger.info('Switched to box mode');
-                }
 
                 // Ctrl+Shift+U - Clear all
                 else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
