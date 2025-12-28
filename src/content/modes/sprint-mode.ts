@@ -64,6 +64,23 @@ export class SprintMode extends BaseHighlightMode {
             createdAt: new Date()
         };
 
+        // ✅ CRITICAL FIX: Register in ALL tracking structures
+        // 1. Create Custom Highlight API highlight
+        const highlight = new Highlight(range);
+
+        // 2. Add to CSS.highlights (DOM)
+        CSS.highlights.set(id, highlight);
+        this.logger.info('Added to CSS.highlights', { id });
+
+        // 3. Add to internal maps (mode state)
+        this.highlights.set(id, highlight);
+        this.data.set(id, data);
+        this.logger.info('Added to mode internal maps', { id });
+
+        // 4. Add to repository (persistence)
+        this.repository.add(data);
+        this.logger.info('Added to repository', { id });
+
         // Unified rendering - ALWAYS registers properly!
         await this.renderAndRegister(data);
 
