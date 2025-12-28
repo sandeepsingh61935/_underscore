@@ -50,10 +50,10 @@ export class CreateHighlightCommand implements Command {
                 throw new Error('Failed to create highlight');
             }
 
-            // CRITICAL: Store with liveRange for click detection!
+            // CRITICAL: Store with liveRanges for click detection!
             this.store.addFromData({
                 ...this.highlightData,
-                liveRange: this.highlightData.liveRange  // Ensure liveRange is included
+                liveRanges: this.highlightData.liveRanges  // Ensure liveRanges are included
             });
 
             // Save to storage
@@ -86,10 +86,10 @@ export class CreateHighlightCommand implements Command {
             const nativeHighlight = new Highlight(range);
             CSS.highlights.set(highlightName, nativeHighlight);
 
-            // CRITICAL: Re-add to store with liveRange for click detection!
+            // CRITICAL: Re-add to store with liveRanges for click detection!
             this.store.addFromData({
                 ...this.highlightData,
-                liveRange: range  // CRITICAL for click detection!
+                liveRanges: [range]  // CRITICAL for click detection!
             });
 
             // Save event
