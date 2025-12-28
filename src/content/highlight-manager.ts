@@ -16,7 +16,7 @@ import type { ILogger } from '@/shared/utils/logger';
 import type { AnnotationType } from '@/shared/types/annotation';
 import { serializeRange } from '@/shared/utils/range-serializer';
 import type { SerializedRange } from '@/shared/utils/range-serializer';
-import { getHighlightName, setHighlightColor } from './styles/highlight-styles';
+import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styles/highlight-styles';
 
 /**
  * Highlight data structure (no DOM element needed!)
@@ -107,22 +107,17 @@ export class HighlightManager {
         // Generate unique ID
         const id = this.generateId();
 
+        // Inject CSS for this specific highlight
+        injectHighlightCSS(type, id, color);
+
         // Create native Highlight object
         const highlight = new Highlight(liveRange);
 
-        // Get the CSS highlight name for this mode
+        // Get the unique CSS highlight name
         const highlightName = getHighlightName(type, id);
 
-        // Add to existing highlights for this mode, or create new
-        const existingHighlight = CSS.highlights.get(highlightName);
-        if (existingHighlight) {
-            existingHighlight.add(liveRange);
-        } else {
-            CSS.highlights.set(highlightName, highlight);
-        }
-
-        // Set color
-        setHighlightColor(color);
+        // Set in CSS.highlights registry
+        CSS.highlights.set(highlightName, highlight);
 
         // Store for management
         this.highlights.set(id, highlight);
@@ -158,26 +153,14 @@ export class HighlightManager {
      * Remove a highlight by ID
      */
     removeHighlight(id: string, type: AnnotationType): void {
-        const liveRange = this.ranges.get(id);
-
-        if (!liveRange) {
-            this.logger.warn('Highlight not found for removal', { id });
-            return;
-        }
-
-        // Get the CSS highlight for this mode
+        // Get the CSS highlight name
         const highlightName = getHighlightName(type, id);
-        const cssHighlight = CSS.highlights.get(highlightName);
 
-        if (cssHighlight) {
-            // Remove this specific range from the highlight
-            cssHighlight.delete(liveRange);
+        // Remove from CSS.highlights
+        CSS.highlights.delete(highlightName);
 
-            // If no more ranges, remove the highlight entirely
-            if (cssHighlight.size === 0) {
-                CSS.highlights.delete(highlightName);
-            }
-        }
+        // Remove CSS
+        removeHighlightCSS(id);
 
         // Clean up internal maps
         this.highlights.delete(id);

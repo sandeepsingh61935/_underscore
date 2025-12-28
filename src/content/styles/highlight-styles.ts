@@ -8,67 +8,66 @@
 import type { AnnotationType } from '@/shared/types/annotation';
 
 /**
- * CSS Custom Properties for dynamic colors
+ * Get the CSS highlight name for a given mode and id
+ * CRITICAL: Must be unique per highlight to avoid collisions
  */
-const CSS_VARS = {
-    color: '--underscore-hl-color',
-};
-
-/**
- * Generate CSS for all highlight modes
- */
-function generateHighlightCSS(): string {
-    return `
-        /* Underscore Mode - wavy underline */
-        ::highlight(underscore) {
-            text-decoration: underline wavy;
-            text-decoration-color: var(${CSS_VARS.color}, #FF5722);
-            text-underline-offset: 3px;
-            text-decoration-thickness: 2px;
-        }
-        
-        /* Highlight Mode - background color */
-        ::highlight(highlight) {
-            background-color: var(${CSS_VARS.color}, #FFEB3B);
-            color: inherit;
-        }
-        
-        /* Box Mode - outline (NO layout impact!) */
-        ::highlight(box) {
-            outline: 2px solid var(${CSS_VARS.color}, #2196F3);
-            outline-offset: 1px;
-        }
-    `;
+export function getHighlightName(mode: AnnotationType, id: string): string {
+    return `${mode}-${id}`;
 }
 
 /**
- * Inject highlight styles into document head
- * Called once on content script initialization
+ * Inject dynamic CSS rule for a specific highlight
  */
-export function injectHighlightStyles(): void {
-    // Check if already injected
-    if (document.getElementById('underscore-highlight-styles')) {
-        return;
+export function injectHighlightCSS(mode: AnnotationType, id: string, color: string): void {
+    const highlightName = getHighlightName(mode, id);
+    const styleId = `hl-style-${id}`;
+
+    // Remove existing style if present
+    const existing = document.getElementById(styleId);
+    if (existing) {
+        existing.remove();
     }
 
+    // Create style element
     const style = document.createElement('style');
-    style.id = 'underscore-highlight-styles';
-    style.textContent = generateHighlightCSS();
+    style.id = styleId;
+
+    // Generate CSS based on mode
+    let css = '';
+    switch (mode) {
+        case 'underscore':
+            css = `::highlight(${highlightName}) {
+                text-decoration: underline solid;
+                text-decoration-color: ${color};
+                text-underline-offset: 3px;
+                text-decoration-thickness: 2px;
+            }`;
+            break;
+        case 'highlight':
+            css = `::highlight(${highlightName}) {
+                background-color: ${color};
+                color: inherit;
+            }`;
+            break;
+        case 'box':
+            css = `::highlight(${highlightName}) {
+                outline: 2px solid ${color};
+                outline-offset: 1px;
+            }`;
+            break;
+    }
+
+    style.textContent = css;
     document.head.appendChild(style);
 }
 
 /**
- * Get the CSS highlight name for a given mode and id
+ * Remove CSS for a specific highlight
  */
-export function getHighlightName(mode: AnnotationType, _id: string): string {
-    // For now, use mode as group name (all same-mode highlights share style)
-    // The Highlight object itself is unique per id
-    return mode;
-}
-
-/**
- * Set highlight color via CSS custom property
- */
-export function setHighlightColor(color: string): void {
-    document.documentElement.style.setProperty(CSS_VARS.color, color);
+export function removeHighlightCSS(id: string): void {
+    const styleId = `hl-style-${id}`;
+    const style = document.getElementById(styleId);
+    if (style) {
+        style.remove();
+    }
 }

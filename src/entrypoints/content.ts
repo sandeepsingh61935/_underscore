@@ -10,7 +10,7 @@ import { ColorManager } from '@/content/color-manager';
 import { HighlightStore } from '@/content/highlight-store';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import { HighlightManager } from '@/content/highlight-manager';
-import { injectHighlightStyles } from '@/content/styles/highlight-styles';
+import { injectHighlightCSS, getHighlightName } from '@/content/styles/highlight-styles';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
@@ -33,10 +33,7 @@ export default defineContentScript({
             const useCustomHighlightAPI = HighlightManager.isSupported();
             logger.info('Custom Highlight API support:', { supported: useCustomHighlightAPI });
 
-            // Inject CSS styles for Custom Highlight API
-            if (useCustomHighlightAPI) {
-                injectHighlightStyles();
-            }
+
 
             // Create shared event bus
             const eventBus = new EventBus();
@@ -328,9 +325,15 @@ async function restoreHighlights(
 
                         // Use Custom Highlight API if available
                         if (highlightManager) {
+                            // Inject CSS for this highlight
+                            injectHighlightCSS(type, highlightData.id, highlightData.color);
+
                             // Create CSS highlight directly from range
                             const cssHighlight = new Highlight(range);
-                            CSS.highlights.set(type, cssHighlight);
+
+                            // Use unique name per highlight
+                            const highlightName = getHighlightName(type, highlightData.id);
+                            CSS.highlights.set(highlightName, cssHighlight);
 
                             // Add to store
                             store.addFromData({
