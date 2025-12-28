@@ -254,18 +254,27 @@ export class RepositoryFacade {
             this.logger.error('Background bulk add failed', error);
         });
     }
-    
+
     /**
      * Add from data (backward compatibility with HighlightStore)
+     * Automatically migrates old format to V2
      */
-    addFromData(data: any): void {
+    async addFromData(data: any): Promise<void> {
         this.ensureInitialized();
-        
-        if (data.version === 2 && data.contentHash && data.colorRole) {
-            this.add(data as HighlightDataV2);
-            return;
-        }
-        
-        this.logger.warn('Old format data - skipping', { id: data.id });
+
+        // Import migration service dynamically
+        const { MigrationService } = await import('../services/migration-service');
+        const migration = new MigrationService();
+
+        // Auto-migrate to latest version
+        const v2Data = await migration.migrateToLatest(data);
+
+        // Add migrated data
+        this.add(v2Data);
+
+        this.logger.info('Data added (with migration if needed)', {
+            id: v2Data.id,
+            wasMigrated: migration.needsMigration(data)
+        });
     }
 }
