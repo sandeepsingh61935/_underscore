@@ -3,7 +3,7 @@
  * @description Type definitions for domain-scoped storage with event sourcing
  */
 
-import type { Highlight } from '@/content/highlight-store';
+// Removed dead import: highlight-store module doesn't exist
 import type { SerializedRange } from '@/shared/utils/range-serializer';
 
 /**
