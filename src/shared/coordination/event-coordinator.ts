@@ -146,7 +146,7 @@ export class EventCoordinator {
         try {
             // Execute handlers in order (like Redux middleware pipeline)
             for (let i = 0; i < handlers.length; i++) {
-                const handler = handlers[i];
+                const handler = handlers[i]!; // Non-null assertion: array access within bounds
 
                 this.logger.debug('Executing handler', {
                     eventType,
@@ -168,9 +168,8 @@ export class EventCoordinator {
 
         } catch (error) {
             // Failure detected - rollback all executed handlers
-            this.logger.error('Event dispatch failed, rolling back', {
+            this.logger.error('Event dispatch failed, rolling back', error instanceof Error ? error : undefined, {
                 eventType,
-                error: error instanceof Error ? error.message : String(error),
                 executedCount: executed.length
             });
 
@@ -186,10 +185,9 @@ export class EventCoordinator {
                         await handler.rollback();
                     } catch (rollbackError) {
                         // Log but continue rollback (best effort)
-                        this.logger.error('Rollback failed for handler', {
+                        this.logger.error('Rollback failed for handler', rollbackError instanceof Error ? rollbackError : undefined, {
                             eventType,
-                            handlerName: handler.name || `handler-${index}`,
-                            error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+                            handlerName: handler.name || `handler-${index}`
                         });
                     }
                 } else {
