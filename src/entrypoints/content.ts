@@ -204,9 +204,9 @@ export default defineContentScript({
                                         data: {
                                             id: newId,
                                             text,
-                                            color: existingHighlight.color,
                                             type: existingHighlight.type,
                                             ranges: serializedRanges
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         } as any
                                     });
 
@@ -260,6 +260,7 @@ export default defineContentScript({
                 if (highlight) {
                     // Use command for undo/redo support
                     const command = new RemoveHighlightCommand(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         highlight as any,  // Legacy highlight type
                         modeManager,  // ✅ Use mode manager!
                         repositoryFacade,
