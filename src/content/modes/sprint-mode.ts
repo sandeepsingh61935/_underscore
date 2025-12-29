@@ -19,7 +19,7 @@ import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
 export class SprintMode extends BaseHighlightMode {
-    get name() { return 'sprint' as const; }
+    get name(): 'sprint' { return 'sprint' as const; }
 
     async createHighlight(selection: Selection, colorRole: string): Promise<string> {
         if (selection.rangeCount === 0) {
