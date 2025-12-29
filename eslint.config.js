@@ -147,6 +147,16 @@ export default [
         },
     },
 
+    // Definition files
+    {
+        files: ['**/*.d.ts'],
+        rules: {
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': 'off',
+            '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
+
     // Config files
     {
         files: ['*.config.{js,ts}', '*.config.*.{js,ts}'],
