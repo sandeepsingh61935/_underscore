@@ -124,7 +124,7 @@ export class ColorManager {
 
         try {
             // Persist to storage
-            await chrome.storage.local.set({ [STORAGE_KEY]: role });
+            await browser.storage.local.set({ [STORAGE_KEY]: role });
 
             this.logger.info('Color role changed', { previousRole, newRole: role });
         } catch (error) {
