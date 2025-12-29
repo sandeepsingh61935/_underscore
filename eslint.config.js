@@ -51,6 +51,11 @@ export default [
                 clearTimeout: 'readonly',
                 setInterval: 'readonly',
                 clearInterval: 'readonly',
+                // Browser globals
+                atob: 'readonly',
+                btoa: 'readonly',
+                TextEncoder: 'readonly',
+                TextDecoder: 'readonly',
                 // Vitest globals
                 describe: 'readonly',
                 it: 'readonly',
