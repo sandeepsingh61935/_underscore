@@ -41,6 +41,18 @@ export default [
                 browser: 'readonly',
                 defineContentScript: 'readonly',
                 defineBackground: 'readonly',
+                defineUnlistedScript: 'readonly',
+                // Standard DOM globals
+                window: 'readonly',
+                document: 'readonly',
+                getComputedStyle: 'readonly',
+                MutationObserver: 'readonly',
+                HTMLElement: 'readonly',
+                Element: 'readonly',
+                Node: 'readonly',
+                MouseEvent: 'readonly',
+                Range: 'readonly',
+                Selection: 'readonly',
                 // Node/JSDOM globals
                 global: 'readonly',
                 crypto: 'readonly',

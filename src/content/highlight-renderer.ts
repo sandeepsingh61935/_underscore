@@ -176,7 +176,7 @@ export class HighlightRenderer {
         try {
             // Try simple approach first
             range.surroundContents(highlightElement);
-        } catch (error) {
+        } catch (_error) {
             // Fallback for complex ranges (spanning multiple elements)
             this.logger.debug('Using complex range handling');
 

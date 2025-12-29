@@ -86,29 +86,43 @@ export class HighlightClickDetector {
 
         try {
             for (const highlight of highlights) {
-                // Check ALL liveRanges in this highlight
-                const ranges = (highlight as unknown as { liveRanges: Range[] }).liveRanges || [];
-
-                for (const liveRange of ranges) {
-                    const rects = liveRange.getClientRects();
-
-                    for (let i = 0; i < rects.length; i++) {
-                        const rect = rects[i];
-                        if (rect &&
-                            e.clientX >= rect.left &&
-                            e.clientX <= rect.right &&
-                            e.clientY >= rect.top &&
-                            e.clientY <= rect.bottom
-                        ) {
-                            // Found it! Return the entire highlight
-                            return highlight;
-                        }
-                    }
+                if (this.isPointInHighlight(highlight, e.clientX, e.clientY)) {
+                    return highlight;
                 }
             }
         } catch (error) {
             this.logger.warn('Error finding highlight at point', error as Error);
         }
+
+        return null;
+    }
+
+    /**
+     * Check if a point is within any of the highlight's ranges
+     */
+    private isPointInHighlight(highlight: HighlightDataV2, x: number, y: number): boolean {
+        // Check ALL liveRanges in this highlight
+        const ranges = (highlight as unknown as { liveRanges: Range[] }).liveRanges || [];
+
+        for (const liveRange of ranges) {
+            const rects = liveRange.getClientRects();
+
+            for (let i = 0; i < rects.length; i++) {
+                const rect = rects[i];
+                if (rect &&
+                    x >= rect.left &&
+                    x <= rect.right &&
+                    y >= rect.top &&
+                    y <= rect.bottom
+                ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    } catch(error) {
+        this.logger.warn('Error finding highlight at point', error as Error);
+    }
 
         return null;
     }
