@@ -18,6 +18,7 @@ import { deserializeRange, serializeRange } from '@/shared/utils/range-serialize
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
 import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import { ModeManager, SprintMode } from '@/content/modes';
+import { browser } from 'wxt/browser';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -362,7 +363,7 @@ export default defineContentScript({
             eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
             // Listen for count requests from popup
-            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            browser.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
                 if (message.type === 'GET_HIGHLIGHT_COUNT') {
                     sendResponse({ count: repositoryFacade.count() });
                 }
