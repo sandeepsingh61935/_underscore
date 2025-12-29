@@ -10,9 +10,9 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
         ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
+            r: parseInt(result[1]!, 16),
+            g: parseInt(result[2]!, 16),
+            b: parseInt(result[3]!, 16),
         }
         : null;
 }
@@ -36,7 +36,7 @@ export function getLuminance(r: number, g: number, b: number): number {
         const val = c / 255;
         return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
     });
-    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    return 0.2126 * rs! + 0.7152 * gs! + 0.0722 * bs!;
 }
 
 /**
@@ -93,7 +93,7 @@ export function getBackgroundColor(element: Element): string {
             // Convert rgba to hex
             const match = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
             if (match) {
-                return rgbToHex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+                return rgbToHex(parseInt(match[1]!, 10), parseInt(match[2]!, 10), parseInt(match[3]!, 10));
             }
         }
 

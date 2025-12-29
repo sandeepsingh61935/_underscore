@@ -3,6 +3,7 @@
  * @description Domain-scoped storage service with event sourcing and encryption
  */
 
+import { browser } from 'wxt/browser';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import type {
     AnyHighlightEvent,
@@ -84,7 +85,7 @@ export class StorageService {
             });
 
             // Debug: Dump all storage keys
-            const allKeys = await chrome.storage.local.get(null);
+            const allKeys = await browser.storage.local.get(null);
             this.logger.info('🔍 [LOAD] Storage dump', {
                 totalKeys: Object.keys(allKeys).length,
                 allKeys: Object.keys(allKeys),
@@ -92,7 +93,7 @@ export class StorageService {
                 keyExists: hashedDomain in allKeys
             });
 
-            const result = await chrome.storage.local.get(hashedDomain);
+            const result = await browser.storage.local.get(hashedDomain);
 
             if (!result[hashedDomain]) {
                 this.logger.warn('❌ [LOAD] No data found', {
@@ -133,7 +134,7 @@ export class StorageService {
                     expiredAt: new Date(domainStorage.ttl).toISOString(),
                     expiredAgo: `${((now - domainStorage.ttl) / (1000 * 60)).toFixed(1)} minutes`
                 });
-                await chrome.storage.local.remove(hashedDomain);
+                await browser.storage.local.remove(hashedDomain);
                 return [];
             }
 
@@ -207,10 +208,10 @@ export class StorageService {
         };
 
         // Save
-        await chrome.storage.local.set({ [hashedDomain]: domainStorage });
+        await browser.storage.local.set({ [hashedDomain]: domainStorage });
 
         // Verify save
-        const verification = await chrome.storage.local.get(hashedDomain);
+        const verification = await browser.storage.local.get(hashedDomain);
         this.logger.info('✅ [SAVE] Save completed and verified', {
             keyExists: !!verification[hashedDomain],
             savedTtl: new Date(ttl).toISOString(),
@@ -223,7 +224,7 @@ export class StorageService {
      */
     async clear(): Promise<void> {
         const hashedDomain = await hashDomain(this.currentDomain);
-        await chrome.storage.local.remove(hashedDomain);
+        await browser.storage.local.remove(hashedDomain);
         this.logger.info('Storage cleared', { domain: this.currentDomain });
     }
 
@@ -232,7 +233,7 @@ export class StorageService {
      */
     async getStats(): Promise<{ eventCount: number; ttl: Date | null }> {
         const hashedDomain = await hashDomain(this.currentDomain);
-        const result = await chrome.storage.local.get(hashedDomain);
+        const result = await browser.storage.local.get(hashedDomain);
 
         if (!result[hashedDomain]) {
             return { eventCount: 0, ttl: null };

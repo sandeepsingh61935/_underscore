@@ -3,6 +3,7 @@
  * @description Background service worker with TTL cleanup
  */
 
+import { browser } from 'wxt/browser';
 import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
@@ -13,17 +14,17 @@ export default defineBackground({
         logger.info('Background service worker started (Sprint 1.5)');
 
         // Set up TTL cleanup alarm (every 5 minutes)
-        chrome.alarms.create('ttl-cleanup', { periodInMinutes: 5 });
+        browser.alarms.create('ttl-cleanup', { periodInMinutes: 5 });
 
         // Listen for alarm
-        chrome.alarms.onAlarm.addListener(async (alarm) => {
+        browser.alarms.onAlarm.addListener(async (alarm: any) => {
             if (alarm.name === 'ttl-cleanup') {
                 await cleanupExpiredDomains();
             }
         });
 
         // Also cleanup on browser startup
-        chrome.runtime.onStartup.addListener(async () => {
+        browser.runtime.onStartup.addListener(async () => {
             logger.info('Browser startup detected, running cleanup');
             await cleanupExpiredDomains();
         });
@@ -39,7 +40,7 @@ export default defineBackground({
  */
 async function cleanupExpiredDomains(): Promise<void> {
     try {
-        const all = await chrome.storage.local.get(null);
+        const all = await browser.storage.local.get(null);
         const now = Date.now();
         const expired: string[] = [];
 
@@ -54,7 +55,7 @@ async function cleanupExpiredDomains(): Promise<void> {
         }
 
         if (expired.length > 0) {
-            await chrome.storage.local.remove(expired);
+            await browser.storage.local.remove(expired);
             logger.info(`[Cleanup] Removed ${expired.length} expired domains`);
         } else {
             logger.debug('[Cleanup] No expired domains found');

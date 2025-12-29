@@ -9,7 +9,7 @@
 import { EventBus } from '@/shared/utils/event-bus';
 import { EventName } from '@/shared/types/events';
 import { RepositoryFacade } from '@/shared/repositories';
-import type { Highlight } from './highlight-store';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -81,13 +81,13 @@ export class HighlightClickDetector {
      * Find which highlight (if any) contains the clicked point
      * Now supports multi-range highlights
      */
-    private findHighlightAtPoint(e: MouseEvent): Highlight | null {
+    private findHighlightAtPoint(e: MouseEvent): HighlightDataV2 | null {
         const highlights = this.repositoryFacade.getAll();
 
         try {
             for (const highlight of highlights) {
                 // Check ALL liveRanges in this highlight
-                const ranges = highlight.liveRanges || [];
+                const ranges = (highlight as any).liveRanges || [];
 
                 for (const liveRange of ranges) {
                     const rects = liveRange.getClientRects();
