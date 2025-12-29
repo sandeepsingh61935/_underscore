@@ -60,7 +60,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     let binary = '';
     for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+        binary += String.fromCharCode(bytes[i]!);
     }
     return btoa(binary);
 }
@@ -87,7 +87,7 @@ export async function encryptData(data: string, domain: string): Promise<string>
     const encoder = new TextEncoder();
 
     const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
+        { name: 'AES-GCM', iv: iv as any },
         key,
         encoder.encode(data)
     );
@@ -97,7 +97,7 @@ export async function encryptData(data: string, domain: string): Promise<string>
     combined.set(iv, 0);
     combined.set(new Uint8Array(encrypted), iv.length);
 
-    return arrayBufferToBase64(combined.buffer);
+    return arrayBufferToBase64(combined.buffer as ArrayBuffer);
 }
 
 /**
