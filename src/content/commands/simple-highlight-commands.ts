@@ -15,6 +15,7 @@ import type { Command } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { StorageService } from '@/shared/services/storage-service';
+import { RepositoryFactory } from '@/shared/repositories';
 
 /**
  * Create highlight command - works with both APIs
@@ -69,14 +70,16 @@ export class CreateHighlightCommand implements Command {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.repositoryFacade.addFromData(this.highlightData as any);
 
-      // Save to storage
-      await this.storage.saveEvent({
-        type: 'highlight.created',
-        timestamp: Date.now(),
-        eventId: crypto.randomUUID(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: this.highlightData as any,
-      });
+      // Save to storage (SPRINT MODE ONLY)
+      if (RepositoryFactory.getMode() !== 'walk') {
+        await this.storage.saveEvent({
+          type: 'highlight.created',
+          timestamp: Date.now(),
+          eventId: crypto.randomUUID(),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: this.highlightData as any,
+        });
+      }
     } else {
       // REDO: Recreate visual highlight with SAME ID
       if (!this.serializedRange) {
@@ -127,14 +130,16 @@ export class CreateHighlightCommand implements Command {
         liveRanges: [range], // CRITICAL for click detection!
       });
 
-      // Save event
-      await this.storage.saveEvent({
-        type: 'highlight.created',
-        timestamp: Date.now(),
-        eventId: crypto.randomUUID(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: this.highlightData as any,
-      });
+      // Save event (SPRINT MODE ONLY)
+      if (RepositoryFactory.getMode() !== 'walk') {
+        await this.storage.saveEvent({
+          type: 'highlight.created',
+          timestamp: Date.now(),
+          eventId: crypto.randomUUID(),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: this.highlightData as any,
+        });
+      }
     }
   }
 
@@ -153,13 +158,15 @@ export class CreateHighlightCommand implements Command {
     // Remove from store
     this.repositoryFacade.remove(data.id);
 
-    // Save removal event
-    await this.storage.saveEvent({
-      type: 'highlight.removed',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      highlightId: data.id,
-    });
+    // Save removal event (SPRINT MODE ONLY)
+    if (RepositoryFactory.getMode() !== 'walk') {
+      await this.storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        highlightId: data.id,
+      });
+    }
   }
 }
 
@@ -193,13 +200,15 @@ export class RemoveHighlightCommand implements Command {
 
     this.repositoryFacade.remove(h.id);
 
-    // Save event
-    await this.storage.saveEvent({
-      type: 'highlight.removed',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      highlightId: h.id,
-    });
+    // Save event (SPRINT MODE ONLY)
+    if (RepositoryFactory.getMode() !== 'walk') {
+      await this.storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        highlightId: h.id,
+      });
+    }
   }
 
   async undo(): Promise<void> {
@@ -255,15 +264,17 @@ export class RemoveHighlightCommand implements Command {
       liveRanges: liveRanges, // CRITICAL for click detection!
     });
 
-    // Save event
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const h = this.highlight as any;
-    await this.storage.saveEvent({
-      type: 'highlight.created',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      data: h,
-    });
+    // Save event (SPRINT MODE ONLY)
+    if (RepositoryFactory.getMode() !== 'walk') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const h = this.highlight as any;
+      await this.storage.saveEvent({
+        type: 'highlight.created',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        data: h,
+      });
+    }
   }
 }
 
