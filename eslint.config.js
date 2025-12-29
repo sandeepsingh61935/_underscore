@@ -39,6 +39,10 @@ export default [
                 process: 'readonly',
                 chrome: 'readonly',
                 browser: 'readonly',
+                // DOM globals for tests
+                document: 'readonly',
+                window: 'readonly',
+                navigator: 'readonly',
                 setTimeout: 'readonly',
                 clearTimeout: 'readonly',
                 setInterval: 'readonly',
