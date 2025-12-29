@@ -376,3 +376,30 @@ For the 1% on older browsers:
 | 2         | Phase 3-4 (Commands + Restore) | 2.5h     |
 | 2         | Phase 5-6 (Cleanup + Testing)  | 1.5h     |
 | **Total** |                                | **7-8h** |
+
+## Implementation Refinements (Post-Migration Hardening)
+
+During the implementation of strict type safety (Sprint 13.x), the architecture
+was refined to further decouple the layers:
+
+### 1. Highlight Type Bridge (`src/content/highlight-type-bridge.ts`)
+
+Instead of manual conversions, a dedicated bridge handles translation between:
+
+- **`RuntimeHighlight`**: The application view (includes live `Range` objects
+  for DOM interaction)
+- **`HighlightDataV2`**: The storage view (pure JSON, using `SerializedRange`)
+
+### 2. Repository Decoupling
+
+The `IHighlightRepository` was refactored to depend strictly on
+`SerializedRange` rather than DOM `Range`. This ensures:
+
+- The repository layer is environment-agnostic (can run in background/worker)
+- Type safety is enforced at the boundary
+- Testing is simplified (no jsdom requirement for repo tests)
+
+### 3. Strict Linting
+
+- **`no-explicit-any`**: Enforced globally to prevent type leaks.
+- **`consistent-type-assertions`**: Mandated to prevent unsafe casting.

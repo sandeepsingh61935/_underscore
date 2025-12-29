@@ -597,7 +597,85 @@ logger.info('Application started');
 
 ---
 
-## Structural Patterns
+### 3. Bridge Pattern
+
+**Problem**: Need to decouple an abstraction (Highlight Repository) from its
+implementation (DOM Range vs Serialized Range) so strict types can evolve
+independently.
+
+**Solution**: Use a Type Bridge to translate between the two worlds.
+
+```typescript
+/**
+ * Bridge Pattern for Type Safety
+ */
+
+// Abstraction (Runtime / Application Domain)
+export interface RuntimeHighlight {
+  id: string;
+  range: Range; // Live DOM object
+}
+
+// Implementation (Persistence / Storage Domain)
+export interface SerializedHighlight {
+  id: string;
+  range: SerializedRange; // JSON object
+}
+
+// The Bridge
+export class HighlightTypeBridge {
+  static toStorage(runtime: RuntimeHighlight): SerializedHighlight {
+    return {
+      id: runtime.id,
+      range: RangeSerializer.serialize(runtime.range),
+    };
+  }
+
+  static toRuntime(storage: SerializedHighlight): RuntimeHighlight {
+    return {
+      id: storage.id,
+      range: RangeSerializer.deserialize(storage.range),
+    };
+  }
+}
+```
+
+## Behavioral Patterns
+
+### 1. Mediator Pattern
+
+**Problem**: Components (ColorManager, Popup, ContentScript) need to react to
+Theme changes without tight coupling.
+
+**Solution**: Use a central `ThemeManager` as a Mediator.
+
+```typescript
+/**
+ * Mediator Pattern for Theme Orchestration
+ */
+
+export class ThemeManager {
+  private observers: Set<(theme: Theme) => void> = new Set();
+
+  // Components register themselves
+  subscribe(callback: (theme: Theme) => void): () => void {
+    this.observers.add(callback);
+    return () => this.observers.delete(callback);
+  }
+
+  // Detects change from one source (e.g., System Preference)
+  // and notifies all dependent colleagues
+  notifyThemeChange(newTheme: Theme) {
+    // 1. Update CSS Variables (infrastructure)
+    this.updateRootVariables(newTheme);
+
+    // 2. Notify JS components (application)
+    this.observers.forEach((cb) => cb(newTheme));
+  }
+}
+```
+
+### 2. Strategy Pattern
 
 ### 1. Adapter Pattern
 

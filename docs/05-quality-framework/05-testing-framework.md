@@ -220,6 +220,36 @@ describe('DebouncedHandler', () => {
 });
 ```
 
+### 4. Contract Testing
+
+**Purpose**: Verify that data shapes match expected schemas at architectural
+boundaries (e.g., between Application and Storage layers).
+
+```typescript
+import { HighlightTypeBridge } from '@/content/highlight-type-bridge';
+
+describe('HighlightTypeBridge Contract', () => {
+  it('should maintain data integrity across translation', () => {
+    // 1. Define the inputs (Runtime contract)
+    const runtimeInput = createRuntimeHighlight();
+
+    // 2. Bridge to Storage (Implementation contract)
+    const storageOutput = HighlightTypeBridge.toStorage(runtimeInput);
+
+    // 3. Bridge back to Runtime
+    const runtimeRestored = HighlightTypeBridge.toRuntime(storageOutput);
+
+    // 4. Verify invariant (A -> B -> A)
+    expect(runtimeRestored).toEqual(runtimeInput);
+  });
+
+  it('should fail gracefully on schema violation', () => {
+    const invalidStorage = { range: null }; // Violates contract
+    expect(() => HighlightTypeBridge.toRuntime(invalidStorage)).toThrow();
+  });
+});
+```
+
 ---
 
 ## Integration Testing

@@ -6,7 +6,13 @@
 
 ## Color Palette
 
-### Primary Highlight Colors (5 Presets)
+> [!IMPORTANT] **Dynamic Color Update**: We have moved to a **Material Design 3
+> (Material You)** dynamic color system. Static presets below are
+> legacy/fallback values. Please refer to
+> [Material Design Guidelines](../05-quality-framework/06-material-design-guidelines.md)
+> for the active color generation strategy.
+
+### Primary Highlight Colors (Legacy Presets)
 
 #### 1. Sunshine Yellow (Default)
 
