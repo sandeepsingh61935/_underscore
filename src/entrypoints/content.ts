@@ -17,11 +17,11 @@ import {
   toStorageFormat,
   type HighlightDataV2WithRuntime,
 } from '@/content/highlight-type-bridge';
-import { ModeManager, SprintMode } from '@/content/modes';
+import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { CommandStack } from '@/shared/patterns/command';
-import { RepositoryFacade } from '@/shared/repositories';
+import { RepositoryFacade, RepositoryFactory } from '@/shared/repositories';
 import { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
@@ -73,10 +73,16 @@ export default defineContentScript({
       const modeManager = new ModeManager(eventBus, logger);
 
       // ✅ Dependency Injection: Pass shared repository AND storage to mode
+      // ✅ Initialize Mode: Default to WALK MODE (Privacy First)
       const sprintMode = new SprintMode(eventBus, logger, repositoryFacade, storage);
+      const walkMode = new WalkMode(eventBus, logger, repositoryFacade, storage);
 
       modeManager.registerMode(sprintMode);
-      await modeManager.activateMode('sprint');
+      modeManager.registerMode(walkMode);
+
+      // Default: Walk Mode (No persistence)
+      await modeManager.activateMode('walk');
+      RepositoryFactory.setMode('walk');
 
       // Keep old HighlightManager temporarily for compatibility
       const highlightManager = useCustomHighlightAPI
