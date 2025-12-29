@@ -1,130 +1,191 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Underscore Highlighter</title>
-    <style>
-      body {
-        width: 300px;
-        padding: 16px;
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
-      }
 
-      header {
-        margin-bottom: 16px;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Underscore Highlighter</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 16px;
+      font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+    }
 
-      h1 {
-        font-size: 18px;
-        margin: 0 0 8px 0;
-      }
+    header {
+      margin-bottom: 16px;
+    }
 
-      .mode-badge {
-        background: #4caf50;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
 
-      .stats {
-        margin: 16px 0;
-      }
+    .mode-badge {
+      background: #4caf50;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
 
-      .stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-      }
+    .stats {
+      margin: 16px 0;
+    }
 
-      .stat-value {
-        font-size: 32px;
-        font-weight: bold;
-      }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
 
-      .btn {
-        width: 100%;
-        padding: 8px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+    }
 
-      .btn-secondary {
-        background: #f5f5f5;
-        color: #333;
-      }
-    </style>
-  </head>
+    .btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-  <body>
-    <div id="app">
-      <header>
-        <h1>Underscore Highlighter</h1>
-        <span class="mode-badge">Sprint Mode</span>
-      </header>
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
 
-      <main>
-        <section class="stats">
-          <div class="stat">
-            <span class="stat-value" id="highlight-count">0</span>
-            <span class="stat-label">Highlights</span>
-          </div>
-        </section>
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
 
-        <section class="quick-actions">
-          <button id="clear-all" class="btn btn-secondary">Clear All</button>
-        </section>
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
 
-        <section class="info">
-          <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
-          <ul style="font-size: 12px">
-            <li>Double-tap to highlight</li>
-            <li>Ctrl+U to highlight selection</li>
-            <li>Click to remove</li>
-            <li>Ctrl+Shift+U to clear all</li>
-          </ul>
-        </section>
-      </main>
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
 
-      <footer style="margin-top: 16px; font-size: 11px; color: #999">
-        <span>v0.1.0</span>
-      </footer>
-    </div>
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
 
-    <script type="module">
-      const countElement = document.getElementById('highlight-count');
+    input:checked+.slider {
+      background-color: #2196F3;
+    }
 
-      // Listen for count updates from content script
-      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.type === 'HIGHLIGHT_COUNT_UPDATE') {
-          if (countElement) {
-            countElement.textContent = message.count.toString();
-          }
+    input:checked+.slider:before {
+      transform: translateX(20px);
+    }
+
+    .mode-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Underscore</h1>
+      <div class="mode-control">
+        <span id="mode-label">Walk</span>
+        <label class="switch">
+          <input type="checkbox" id="mode-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <section class="stats">
+        <div class="stat">
+          <span class="stat-value" id="highlight-count">0</span>
+          <span class="stat-label">Highlights</span>
+        </div>
+      </section>
+
+      <section class="quick-actions">
+        <button id="clear-all" class="btn btn-secondary">Clear All</button>
+      </section>
+
+      <section class="info">
+        <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
+        <ul style="font-size: 12px">
+          <li>Double-tap to highlight</li>
+          <li>Ctrl+U to highlight selection</li>
+          <li>Click to remove</li>
+          <li>Ctrl+Shift+U to clear all</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer style="margin-top: 16px; font-size: 11px; color: #999">
+      <span>v0.1.0</span>
+    </footer>
+  </div>
+
+  <script type="module">
+    const countElement = document.getElementById('highlight-count');
+
+    // Listen for count updates from content script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'HIGHLIGHT_COUNT_UPDATE') {
+        if (countElement) {
+          countElement.textContent = message.count.toString();
         }
-      });
+      }
+    });
 
-      // Request current count when popup opens
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(
-            tabs[0].id,
-            { type: 'GET_HIGHLIGHT_COUNT' },
-            (response) => {
-              if (response && countElement) {
-                countElement.textContent = response.count.toString();
-              }
+    // Request current count when popup opens
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          { type: 'GET_HIGHLIGHT_COUNT' },
+          (response) => {
+            if (response && countElement) {
+              countElement.textContent = response.count.toString();
             }
-          );
-        }
-      });
+          }
+        );
+      }
+    });
 
-      console.log('Popup loaded');
-    </script>
-  </body>
+    console.log('Popup loaded');
+  </script>
+</body>
+
 </html>
