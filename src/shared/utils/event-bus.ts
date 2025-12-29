@@ -6,7 +6,7 @@
 import { LoggerFactory } from './logger';
 import type { ILogger } from './logger';
 
-type EventHandler<T = any> = (data: T) => void | Promise<void>;
+type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
 
 /**
  * EventBus - Central event coordination using Observer pattern
@@ -38,7 +38,7 @@ export class EventBus {
     /**
      * Subscribe to an event
      */
-    on<T = any>(event: string, handler: EventHandler<T>): void {
+    on<T = unknown>(event: string, handler: EventHandler<T>): void {
         if (!this.handlers.has(event)) {
             this.handlers.set(event, new Set());
         }
@@ -50,7 +50,7 @@ export class EventBus {
     /**
      * Unsubscribe from an event
      */
-    off<T = any>(event: string, handler: EventHandler<T>): void {
+    off<T = unknown>(event: string, handler: EventHandler<T>): void {
         const handlers = this.handlers.get(event);
         if (handlers) {
             handlers.delete(handler as EventHandler);
@@ -67,7 +67,7 @@ export class EventBus {
     /**
      * Emit an event to all subscribers
      */
-    emit<T = any>(event: string, data: T): void {
+    emit<T = unknown>(event: string, data: T): void {
         const handlers = this.handlers.get(event);
 
         if (!handlers || handlers.size === 0) {
@@ -98,7 +98,7 @@ export class EventBus {
     /**
      * Subscribe to an event, but only fire once
      */
-    once<T = any>(event: string, handler: EventHandler<T>): void {
+    once<T = unknown>(event: string, handler: EventHandler<T>): void {
         const wrappedHandler: EventHandler<T> = (data) => {
             this.off(event, wrappedHandler);
             return handler(data);
