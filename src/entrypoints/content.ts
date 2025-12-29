@@ -356,7 +356,7 @@ export default defineContentScript({
             detector.init();
 
             // Broadcast count updates to popup
-            const broadcastCount = () => {
+            const broadcastCount = (): void => {
                 browser.runtime.sendMessage({
                     type: 'HIGHLIGHT_COUNT_UPDATE',
                     count: repositoryFacade.count(),
@@ -371,8 +371,9 @@ export default defineContentScript({
             eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
             // Listen for count requests from popup
-            browser.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
-                if (message.type === 'GET_HIGHLIGHT_COUNT') {
+            browser.runtime.onMessage.addListener((message: unknown, _sender: unknown, sendResponse: (response: unknown) => void) => {
+                const msg = message as { type: string };
+                if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
                     sendResponse({ count: repositoryFacade.count() });
                 }
                 return true; // Keep channel open for async response
