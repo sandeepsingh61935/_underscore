@@ -16,22 +16,12 @@ import { z } from 'zod';
  * Extended below with TextQuoteSelector after its definition
  */
 const SerializedRangeSchemaBase = z.object({
-    startContainer: z.string()
-        .min(1, 'startContainer cannot be empty'),
-
-    startOffset: z.number()
-        .int('Offset must be integer')
-        .nonnegative('Offset cannot be negative'),
-
-    endContainer: z.string()
-        .min(1, 'endContainer cannot be empty'),
-
-    endOffset: z.number()
-        .int('Offset must be integer')
-        .nonnegative('Offset cannot be negative'),
-
-    commonAncestor: z.string()
-        .min(1, 'commonAncestor cannot be empty')
+    xpath: z.string().min(1, 'xpath cannot be empty'),
+    startOffset: z.number().int().nonnegative(),
+    endOffset: z.number().int().nonnegative(),
+    text: z.string(),
+    textBefore: z.string(),
+    textAfter: z.string()
 });
 
 /**

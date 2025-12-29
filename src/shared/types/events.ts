@@ -28,6 +28,10 @@ export interface HighlightData {
     id: string;
     text: string;
     color: string;
+    type?: 'underscore' | 'highlight' | 'box';
+    createdAt?: Date;
+    range?: any;   // SerializedRange
+    ranges?: any[]; // SerializedRange[]
 }
 
 export interface HighlightCreatedEvent extends BaseEvent {

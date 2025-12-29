@@ -4,7 +4,12 @@
  */
 
 // Removed dead import: highlight-store module doesn't exist
-import type { SerializedRange } from '@/shared/utils/range-serializer';
+
+
+/**
+ * Event types for event sourcing
+ */
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**
  * Event types for event sourcing
@@ -25,7 +30,7 @@ export interface HighlightEvent {
  */
 export interface HighlightCreatedEvent extends HighlightEvent {
     type: 'highlight.created';
-    data: Highlight & { range: SerializedRange };
+    data: HighlightDataV2;
 }
 
 /**
