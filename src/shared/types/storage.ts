@@ -13,7 +13,10 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 /**
  * Event types for event sourcing
  */
-export type HighlightEventType = 'highlight.created' | 'highlight.removed';
+export type HighlightEventType =
+  | 'highlight.created'
+  | 'highlight.removed'
+  | 'highlights.cleared';
 
 /**
  * Base event interface
@@ -41,9 +44,20 @@ export interface HighlightRemovedEvent extends HighlightEvent {
 }
 
 /**
+ * Highlights cleared event (bulk delete)
+ */
+export interface HighlightsClearedEvent extends HighlightEvent {
+  type: 'highlights.cleared';
+  count: number;
+}
+
+/**
  * Union type for all highlight events
  */
-export type AnyHighlightEvent = HighlightCreatedEvent | HighlightRemovedEvent;
+export type AnyHighlightEvent =
+  | HighlightCreatedEvent
+  | HighlightRemovedEvent
+  | HighlightsClearedEvent;
 
 /**
  * Domain storage schema
@@ -116,6 +130,8 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
     return data['ranges'].length > 0;
   } else if (e['type'] === 'highlight.removed') {
     return typeof e['highlightId'] === 'string';
+  } else if (e['type'] === 'highlights.cleared') {
+    return typeof e['count'] === 'number';
   }
 
   return false;
