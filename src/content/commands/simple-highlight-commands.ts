@@ -120,20 +120,23 @@ export class CreateHighlightCommand implements Command {
     async undo(): Promise<void> {
         if (!this.highlightData) return;
 
+        // Type assertion for accessing id
+        const data = this.highlightData as any;
+
         // Remove highlight
         if ('removeHighlight' in this.manager) {
-            this.manager.removeHighlight(this.highlightData.id);
+            this.manager.removeHighlight(data.id);
         }
 
         // Remove from store
-        this.repositoryFacade.remove(this.highlightData.id);
+        this.repositoryFacade.remove(data.id);
 
         // Save removal event
         await this.storage.saveEvent({
             type: 'highlight.removed',
             timestamp: Date.now(),
             eventId: crypto.randomUUID(),
-            highlightId: this.highlightData.id
+            highlightId: data.id
         });
     }
 }
@@ -151,24 +154,27 @@ export class RemoveHighlightCommand implements Command {
         private storage: StorageService
     ) {
         // Store ALL ranges for undo (multi-range support!)
-        const liveRanges = highlight.liveRanges || [];
-        this.serializedRanges = liveRanges.map(r => serializeRange(r));
+        const h = highlight as any;
+        const liveRanges = h.liveRanges || [];
+        this.serializedRanges = liveRanges.map((r: Range) => serializeRange(r));
     }
 
     async execute(): Promise<void> {
+        const h = this.highlight as any;
+
         // Remove
         if ('removeHighlight' in this.manager) {
-            this.manager.removeHighlight(this.highlight.id);
+            this.manager.removeHighlight(h.id);
         }
 
-        this.repositoryFacade.remove(this.highlight.id);
+        this.repositoryFacade.remove(h.id);
 
         // Save event
         await this.storage.saveEvent({
             type: 'highlight.removed',
             timestamp: Date.now(),
             eventId: crypto.randomUUID(),
-            highlightId: this.highlight.id
+            highlightId: h.id
         });
     }
 
