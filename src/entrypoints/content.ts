@@ -82,9 +82,9 @@ export default defineContentScript({
       const highlightManager = useCustomHighlightAPI
         ? new HighlightManager(eventBus)
         : null;
-      const renderer = new HighlightRenderer(eventBus); // Keep for fallback
-
+      const renderer = new HighlightRenderer(eventBus);
       const detector = new SelectionDetector(eventBus);
+
 
       // Initialize click detector for double-click deletion
       const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);

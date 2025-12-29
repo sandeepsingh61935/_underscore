@@ -80,7 +80,11 @@ export abstract class BaseHighlightMode implements IHighlightMode {
     const highlightName = getHighlightName(data.type, id);
 
     // 1. Remove from CSS
+    // Remove PRE-fixed ID (Unified path)
     CSS.highlights.delete(highlightName);
+
+    // Remove BARE ID (Manual path) - Fixes Visual Sync Issue!
+    CSS.highlights.delete(id);
 
     // 2. Remove styles
     removeHighlightCSS(id);

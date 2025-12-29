@@ -138,9 +138,19 @@ export class SprintMode extends BaseHighlightMode {
     this.logger.info('Removing highlight', { id });
 
     // ✅ Remove from Custom Highlight API (DOM)
+    // 1. Remove BARE ID (Manual registration)
     if (CSS.highlights.has(id)) {
       CSS.highlights.delete(id);
-      this.logger.info('Removed from CSS.highlights', { id });
+      this.logger.info('Removed from CSS.highlights (bare)', { id });
+    }
+
+    // 2. Remove PREFIXED ID (Unified renderAndRegister)
+    // CRITICAL: This was missing!
+    const { getHighlightName } = await import('@/content/styles/highlight-styles');
+    const highlightName = getHighlightName('underscore', id);
+    if (CSS.highlights.has(highlightName)) {
+      CSS.highlights.delete(highlightName);
+      this.logger.info('Removed from CSS.highlights (prefixed)', { highlightName });
     }
 
     // ✅ Remove from internal maps (state)
