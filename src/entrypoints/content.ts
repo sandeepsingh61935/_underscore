@@ -167,10 +167,14 @@ export default defineContentScript({
                                     // Generate new ID for split highlight
                                     const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+                                    const { generateContentHash } = await import('@/shared/utils/content-hash');
+                                    const contentHash = await generateContentHash(text);
+
                                     const highlightData = {
                                         id: newId,
                                         text,
-                                        color: existingHighlight.color,
+                                        contentHash,
+                                        colorRole: existingHighlight.color || 'yellow',
                                         type: 'underscore' as const,
                                         ranges: serializedRanges,
                                         liveRanges: mergedRanges,
