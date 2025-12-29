@@ -102,6 +102,12 @@ export default defineContentScript({
       // ✅ HIGHLIGHT_CREATED → Storage (Event Sourcing)
       eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
         try {
+          // CHECK MODE: Only persist if NOT in Walk Mode
+          if (RepositoryFactory.getMode() === 'walk') {
+            logger.debug('Skipping persistence for Walk Mode', { id: event.highlight.id });
+            return;
+          }
+
           const storageData = await toStorageFormat({
             ...event.highlight,
             type: event.highlight.type || 'underscore',
@@ -140,14 +146,18 @@ export default defineContentScript({
         listeners: ['HIGHLIGHT_CREATED', 'HIGHLIGHT_REMOVED'],
       });
 
-      // ===== PAGE LOAD: Restore highlights from storage =====
-      await restoreHighlights({
-        storage,
-        renderer,
-        repositoryFacade,
-        highlightManager,
-        modeManager,
-      });
+      // ===== PAGE LOAD: Restore highlights from storage (SPRINT MODE ONLY) =====
+      if (RepositoryFactory.getMode() !== 'walk') {
+        await restoreHighlights({
+          storage,
+          renderer,
+          repositoryFacade,
+          highlightManager,
+          modeManager,
+        });
+      } else {
+        logger.info('Walk Mode: Skipping restoration (Ephemeral Session)');
+      }
 
       // ===== Orchestrate: Listen to selection events =====
       eventBus.on<SelectionCreatedEvent>(EventName.SELECTION_CREATED, async (event) => {
