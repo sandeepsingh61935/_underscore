@@ -38,7 +38,6 @@ export class ValidationError extends Error {
      * Get formatted error details
      */
     getDetails(): string[] {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this.zodError as any).errors.map((err: any) => {
             const path = err.path.join('.');
             return `${path}: ${err.message}`;
@@ -74,7 +73,6 @@ export function validate<T>(
         if (error instanceof ZodError) {
             logger.error('Validation failed', undefined, {
                 context,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 errors: (error as any).errors,
                 data
             });
@@ -104,7 +102,6 @@ export function validateSafe<T>(
     if (!result.success) {
         logger.warn('Validation failed (safe mode)', {
             context,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             errors: (result.error as any).errors,
             data
         });
@@ -131,7 +128,6 @@ export function validateArray<T>(
         if (result.success) {
             valid.push(result.data);
         } else {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             invalid.push({ index, item, errors: (result.error as any).errors });
         }
     });
