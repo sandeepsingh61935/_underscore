@@ -79,6 +79,7 @@ export class SprintMode extends BaseHighlightMode {
         this.logger.info('Added to mode internal maps', { id });
 
         // 4. Add to repository (persistence)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.repository.add(data as any);
         this.logger.info('Added to repository', { id });
 

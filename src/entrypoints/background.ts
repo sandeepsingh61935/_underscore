@@ -18,8 +18,8 @@ export default defineBackground({
         browser.alarms.create('ttl-cleanup', { periodInMinutes: 5 });
 
         // Listen for alarm
-        browser.alarms.onAlarm.addListener(async (alarm: any) => {
-            if (alarm.name === 'ttl-cleanup') {
+        browser.alarms.onAlarm.addListener(async (alarm: unknown) => {
+            if ((alarm as { name: string }).name === 'ttl-cleanup') {
                 await cleanupExpiredDomains();
             }
         });
