@@ -65,7 +65,7 @@
     // Specify an output folder for all emitted files
     "outDir": "./dist",
     // Specify the root folder within your source files
-    "rootDir": "./src",
+    "rootDir": ".",
     // Remove comments from output
     "removeComments": true,
     // Disable emitting files from a compilation
@@ -107,18 +107,8 @@
   // ===================================
   // INCLUDE & EXCLUDE
   // ===================================
-  "include": ["src/**/*", "types/**/*"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build",
-    "tests",
-    "**/*.spec.ts",
-    "**/*.test.ts"
-  ],
-  // ===================================
-  // TYPE ACQUISITION
-  // ===================================
+  "include": ["src/**/*", "types/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "build"],
   "typeAcquisition": {
     "enable": true,
     "include": ["chrome", "node"]

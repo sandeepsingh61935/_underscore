@@ -6,7 +6,6 @@
 import { describe, it, expect } from 'vitest';
 
 import {
-  AppError,
   ValidationError,
   NotFoundError,
   StorageError,
@@ -59,7 +58,7 @@ describe('StorageError', () => {
     const cause = new Error('Disk full');
     const error = new StorageError('save', cause);
 
-    expect(error.context?.cause).toBe('Disk full');
+    expect(error.context?.['cause']).toBe('Disk full');
   });
 });
 

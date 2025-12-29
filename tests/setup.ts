@@ -3,6 +3,8 @@
  * @description Global test setup for Vitest
  */
 
+import { vi } from 'vitest';
+
 // Add any global test setup here
 // For example: custom matchers, global mocks, etc.
 

@@ -7,13 +7,6 @@ import {
 } from '../../../src/content/highlight-type-bridge';
 
 // Mocks
-const mockRange = {
-  startContainer: {},
-  endContainer: {},
-  startOffset: 0,
-  endOffset: 5,
-  toString: () => 'test text',
-};
 
 const mockSerializedRange = {
   xpath: '/html/body/div[1]',
