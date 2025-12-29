@@ -87,7 +87,7 @@ export class HighlightClickDetector {
         try {
             for (const highlight of highlights) {
                 // Check ALL liveRanges in this highlight
-                const ranges = (highlight as any).liveRanges || [];
+                const ranges = (highlight as unknown as { liveRanges: Range[] }).liveRanges || [];
 
                 for (const liveRange of ranges) {
                     const rects = liveRange.getClientRects();

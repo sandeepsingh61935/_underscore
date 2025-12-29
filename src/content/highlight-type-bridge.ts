@@ -13,7 +13,7 @@
  */
 
 import type { HighlightWithRange } from '@/content/highlight-renderer';
-import type { HighlightDataV2, ColorRole } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2, ColorRole, SerializedRange } from '@/shared/schemas/highlight-schema';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
 /**
@@ -33,8 +33,8 @@ export interface RuntimeHighlight {
     color: string;
     type: 'underscore' | 'highlight' | 'box';
     createdAt: Date;
-    range?: any; // SerializedRange (Legacy Renderer)
-    ranges?: any[]; // SerializedRange[] (New HighlightManager)
+    range?: SerializedRange; // SerializedRange (Legacy Renderer)
+    ranges?: SerializedRange[]; // SerializedRange[] (New HighlightManager)
     element?: HTMLElement; // Optional (DOM Renderer only)
 }
 
@@ -78,8 +78,8 @@ export async function toStorageFormatBatch(highlights: HighlightWithRange[]): Pr
 /**
  * Type guard to check if a value is HighlightWithRange
  */
-export function isHighlightWithRange(value: any): value is HighlightWithRange {
-    return value &&
+export function isHighlightWithRange(value: unknown): value is HighlightWithRange {
+    return !!value &&
         typeof value === 'object' &&
         'id' in value &&
         'text' in value &&
