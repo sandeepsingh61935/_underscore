@@ -58,6 +58,13 @@ export default [
                     allowTypedFunctionExpressions: true,
                 },
             ],
+            '@typescript-eslint/consistent-type-assertions': [
+                'error',
+                {
+                    assertionStyle: 'as',
+                    objectLiteralTypeAssertions: 'never',
+                },
+            ],
             '@typescript-eslint/no-unused-vars': [
                 'error',
                 {
