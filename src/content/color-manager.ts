@@ -10,6 +10,7 @@
 
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { browser } from 'wxt/browser';
 
 /**
  * Available color roles - map to CSS design tokens
