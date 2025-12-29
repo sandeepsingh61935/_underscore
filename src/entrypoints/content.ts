@@ -16,7 +16,7 @@ import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange, serializeRange } from '@/shared/utils/range-serializer';
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
-import { CreateHighlightCommand, RemoveHighlightCommand, ClearSelectionCommand, ClearAllCommand } from '@/content/commands/simple-highlight-commands';
+import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import { ModeManager, SprintMode } from '@/content/modes';
 
 const logger = LoggerFactory.getLogger('ContentScript');
@@ -409,7 +409,7 @@ async function restoreHighlights(
                 activeHighlights.delete(event.highlightId);
                 logger.warn(`🗑️ Removed highlight from map: ${event.highlightId}`);
             } else {
-                logger.error(`❌ Event didn't match expected format`, event.type);
+                logger.error(`❌ Event didn't match expected format: ${event.type}`);
             }
         }
 
@@ -527,8 +527,8 @@ function getHighlightsInRange(selection: Selection, repositoryFacade: Repository
     const userRange = selection.getRangeAt(0);
     const highlights = repositoryFacade.getAll();
 
-    return highlights.filter((hl) => {
-        // Check all liveRanges in this highlight
+    return highlights.filter((hl: any) => {
+        // Check all liveRanges in this highlight  
         const ranges = hl.liveRanges || [];
         if (ranges.length === 0) return false;
 
