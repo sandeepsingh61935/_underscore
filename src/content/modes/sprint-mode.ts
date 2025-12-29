@@ -133,10 +133,18 @@ export class SprintMode extends BaseHighlightMode {
     async removeHighlight(id: string): Promise<void> {
         this.logger.info('Removing highlight', { id });
 
+        // 🐛 DEBUG: Check state before deletion
+        console.log('🐛 CSS.highlights BEFORE delete:', Array.from(CSS.highlights.keys()));
+        console.log('🐛 Has highlight?', CSS.highlights.has(id));
+
         // ✅ Remove from Custom Highlight API (DOM)
         if (CSS.highlights.has(id)) {
             CSS.highlights.delete(id);
             this.logger.info('Removed from CSS.highlights', { id });
+
+            // 🐛 DEBUG: Verify deletion
+            console.log('🐛 CSS.highlights AFTER delete:', Array.from(CSS.highlights.keys()));
+            console.log('🐛 Still has highlight?', CSS.highlights.has(id));
         }
 
         // ✅ Remove from internal maps (state)
@@ -147,6 +155,9 @@ export class SprintMode extends BaseHighlightMode {
         this.repository.remove(id);
 
         this.logger.info('Highlight removed completely', { id });
+
+        // 🐛 DEBUG: Final check
+        console.log('🐛 FINAL CHECK - Still in CSS.highlights?', CSS.highlights.has(id));
     }
 
     async clearAll(): Promise<void> {

@@ -329,7 +329,7 @@ export default defineContentScript({
                     const count = repositoryFacade.count();
 
                     // ✅ Call mode's clearAll (clears CSS.highlights + state + repo)
-                    await modeManager.clearAll();
+                    await modeManager.getCurrentMode().clearAll();
 
                     // ❌ DON'T clear storage! 
                     // This would wipe ALL events including creation events
