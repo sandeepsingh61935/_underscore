@@ -126,7 +126,7 @@ export class CreateHighlightCommand implements Command {
 
         // Remove highlight
         if ('removeHighlight' in this.manager) {
-            this.manager.removeHighlight(this.highlightData.id, this.highlightData.type);
+            this.manager.removeHighlight(this.highlightData.id);
         }
 
         // Remove from store
@@ -256,7 +256,7 @@ export class ClearSelectionCommand implements Command {
     async execute(): Promise<void> {
         for (const hl of this.highlights) {
             if ('removeHighlight' in this.manager) {
-                this.manager.removeHighlight(hl.id, hl.type);
+                this.manager.removeHighlight(hl.id);
             }
 
             this.repositoryFacade.remove(hl.id);
@@ -334,7 +334,7 @@ export class ClearAllCommand implements Command {
     async execute(): Promise<void> {
         for (const hl of this.highlights) {
             if ('removeHighlight' in this.manager) {
-                this.manager.removeHighlight(hl.id, hl.type);
+                this.manager.removeHighlight(hl.id);
             }
 
             this.repositoryFacade.remove(hl.id);

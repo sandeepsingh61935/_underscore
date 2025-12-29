@@ -141,7 +141,7 @@ export default defineContentScript({
                             for (const existingHighlight of overlappingHighlights) {
                                 // Remove the existing highlight first
                                 if (highlightManager) {
-                                    highlightManager.removeHighlight(existingHighlight.id, existingHighlight.type);
+                                    highlightManager.removeHighlight(existingHighlight.id);
                                 }
                                 repositoryFacade.remove(existingHighlight.id);
 
