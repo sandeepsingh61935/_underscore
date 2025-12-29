@@ -95,8 +95,8 @@ export class SprintMode extends BaseHighlightMode {
         id: data.id,
         text: data.text,
         colorRole: data.colorRole,
+        ranges: data.ranges,
       },
-      ranges: data.ranges,
     });
 
     return id;
@@ -113,8 +113,8 @@ export class SprintMode extends BaseHighlightMode {
         id: data.id,
         text: data.text,
         colorRole: data.colorRole,
+        ranges: data.ranges,
       },
-      ranges: data.ranges,
     });
   }
 
