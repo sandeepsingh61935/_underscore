@@ -25,7 +25,7 @@ export interface HighlightData {
 
 export interface IHighlightMode {
   /** Mode identifier */
-  readonly name: 'sprint' | 'vault' | 'gen';
+  readonly name: 'walk' | 'sprint' | 'vault' | 'gen';
 
   /** Initialize mode (called on activation) */
   onActivate(): Promise<void>;

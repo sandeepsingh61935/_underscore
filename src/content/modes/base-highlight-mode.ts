@@ -33,7 +33,7 @@ export abstract class BaseHighlightMode implements IHighlightMode {
     this.storage = storage;
   }
 
-  abstract get name(): 'sprint' | 'vault' | 'gen';
+  abstract get name(): 'walk' | 'sprint' | 'vault' | 'gen';
 
   async onActivate(): Promise<void> {
     this.logger.info(`${this.name} mode activated`);
