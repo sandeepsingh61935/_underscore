@@ -26,6 +26,7 @@ export class CreateHighlightCommand implements Command {
     private serializedRange: SerializedRange | null = null;
     // Removed unused highlightId field
 
+    // eslint-disable-next-line max-params
     constructor(
         private selection: Selection,
         private colorRole: string,  // Color role (yellow, blue, etc.)

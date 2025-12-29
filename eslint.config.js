@@ -43,8 +43,6 @@ export default [
                 defineBackground: 'readonly',
                 defineUnlistedScript: 'readonly',
                 // Standard DOM globals
-                window: 'readonly',
-                document: 'readonly',
                 getComputedStyle: 'readonly',
                 MutationObserver: 'readonly',
                 HTMLElement: 'readonly',
