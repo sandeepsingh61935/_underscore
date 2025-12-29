@@ -104,7 +104,24 @@ export class ColorManager {
    * Get CSS variable name for current color role
    */
   getCSSVariableName(): string {
+    // If using the default role (yellow), map to the Dynamic Primary token
+    if (this.currentColorRole === 'yellow') {
+      return 'var(--md-sys-color-primary)';
+    }
     return `--highlight-${this.currentColorRole}`;
+  }
+
+  /**
+   * Get the actual color value to be used for rendering.
+   * Returns a CSS variable reference for dynamic roles.
+   */
+  getColorToken(): string {
+    // Dynamic Material Design 3 mapping
+    if (this.currentColorRole === 'yellow') {
+      return 'var(--md-sys-color-primary)';
+    }
+    // Legacy/Static roles
+    return `var(--highlight-${this.currentColorRole})`;
   }
 
   /**

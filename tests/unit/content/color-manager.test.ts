@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ColorManager, COLOR_ROLES, type ColorRole } from '@/content/color-manager';
+import { ColorManager, type ColorRole } from '@/content/color-manager';
 
 // Mock wxt/browser
 const mockStorageGet = vi.fn();
