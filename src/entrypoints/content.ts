@@ -247,7 +247,7 @@ export default defineContentScript({
                 if (highlight) {
                     // Use command for undo/redo support
                     const command = new RemoveHighlightCommand(
-                        highlight,
+                        highlight as any,  // Legacy highlight type
                         modeManager,  // ✅ Use mode manager!
                         repositoryFacade,
                         storage
@@ -409,11 +409,7 @@ async function restoreHighlights(
                 activeHighlights.delete(event.highlightId);
                 logger.warn(`🗑️ Removed highlight from map: ${event.highlightId}`);
             } else {
-                logger.error(`❌ Event didn't match expected format:`, {
-                    type: event.type,
-                    hasData: !!event.data,
-                    hasHighlightId: !!(event as any).highlightId
-                });
+                logger.error(`❌ Event didn't match expected format`, event.type);
             }
         }
 
@@ -455,11 +451,15 @@ async function restoreHighlights(
                 if (highlightManager) {
                     // ✅ CRITICAL FIX: Use mode's unified creation path!
                     // This ensures the highlight is registered in mode's internal maps
+                    const { generateContentHash } = await import('@/shared/utils/content-hash');
+                    const contentHash = await generateContentHash(highlightData.text);
+
                     await modeManager.createFromData({
                         id: highlightData.id,
                         text: highlightData.text,
-                        color: highlightData.color,
-                        type: type as 'underscore',
+                        contentHash,
+                        colorRole: highlightData.color || 'yellow',
+                        type: 'underscore' as const,
                         ranges: serializedRanges,
                         liveRanges: liveRanges,
                         createdAt: highlightData.createdAt
@@ -479,7 +479,7 @@ async function restoreHighlights(
                 } else {
                     // Legacy: only restore first range
                     const selection = window.getSelection();
-                    if (selection) {
+                    if (selection && liveRanges[0]) {
                         selection.removeAllRanges();
                         selection.addRange(liveRanges[0]); // Legacy: only first range
 
@@ -496,10 +496,7 @@ async function restoreHighlights(
                     }
                 }
             } catch (error) {
-                logger.error('Failed to restore highlight', {
-                    id: highlightData.id,
-                    error: error as Error
-                });
+                logger.error('Failed to restore highlight', highlightData.id, (error as Error).message);
                 failed++;
             }
         }
@@ -524,7 +521,7 @@ async function restoreHighlights(
  * Find highlights that overlap with a selection
  * (for range subtraction - find all highlights that need to be split)
  */
-function getHighlightsInRange(selection: Selection, repositoryFacade: RepositoryFacade): Array<import('@/content/highlight-store').Highlight> {
+function getHighlightsInRange(selection: Selection, repositoryFacade: RepositoryFacade): Array<any> {
     if (selection.rangeCount === 0) return [];
 
     const userRange = selection.getRangeAt(0);
