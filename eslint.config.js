@@ -180,7 +180,8 @@ export default [
             'src/shared/utils/*.ts',
             'src/shared/coordination/*.ts',
             'src/shared/types/*.ts',
-            'src/shared/services/*.ts'
+            'src/shared/services/*.ts',
+            'src/shared/repositories/*.ts'
         ],
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
