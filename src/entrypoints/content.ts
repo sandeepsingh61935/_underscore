@@ -72,8 +72,8 @@ export default defineContentScript({
       // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
       const modeManager = new ModeManager(eventBus, logger);
 
-      // ✅ Dependency Injection: Pass shared repository to mode
-      const sprintMode = new SprintMode(eventBus, logger, repositoryFacade);
+      // ✅ Dependency Injection: Pass shared repository AND storage to mode
+      const sprintMode = new SprintMode(eventBus, logger, repositoryFacade, storage);
 
       modeManager.registerMode(sprintMode);
       await modeManager.activateMode('sprint');
@@ -450,6 +450,15 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
     for (const event of events) {
       logger.warn(`🔥 Event type: ${event.type}`, event);
+
+      // ✅ Handle CLEAR ALL event (waterline - discard all previous highlights)
+      if (event.type === 'highlights.cleared') {
+        logger.info('🧹 CLEAR ALL event detected - discarding all highlights', {
+          previousCount: activeHighlights.size,
+        });
+        activeHighlights.clear();
+        continue;
+      }
 
       if (event.type === 'highlight.created' && event.data) {
         activeHighlights.set(event.data.id, event.data as HighlightDataV2WithRuntime);
