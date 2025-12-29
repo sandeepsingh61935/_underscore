@@ -23,11 +23,11 @@ export class CreateHighlightCommand implements Command {
     private highlightData: ModeHighlightData | HighlightData | Highlight | null = null;
     private readonly type = 'underscore';  // Single mode only
     private serializedRange: SerializedRange | null = null;
-    private highlightId: string | null = null;
+    // Removed unused highlightId field
 
     constructor(
         private selection: Selection,
-        private colorRole: string,  // ✅ Semantic token
+        private colorRole: string,  // Color role (yellow, blue, etc.)
         private manager: ModeManager | HighlightManager | HighlightRenderer,  // Accept all types
         private repositoryFacade: RepositoryFacade,
         private storage: StorageService
@@ -44,14 +44,13 @@ export class CreateHighlightCommand implements Command {
             // Check if manager is ModeManager
             if ('createHighlight' in this.manager && 'getCurrentMode' in this.manager) {
                 // ModeManager path - use unified creation
-                const id = await (this.manager as ModeManager).createHighlight(this.selection, this.color);
-                this.highlightId = id;
+                const id = await (this.manager as ModeManager).createHighlight(this.selection, this.colorRole);
                 this.highlightData = (this.manager as ModeManager).getHighlight(id);
             } else {
                 // Legacy path
                 this.highlightData = (this.manager as any).createHighlight(
                     this.selection,
-                    this.color,
+                    this.colorRole,
                     this.type
                 );
             }
@@ -61,10 +60,7 @@ export class CreateHighlightCommand implements Command {
             }
 
             // CRITICAL: Store with liveRanges for click detection!
-            this.repositoryFacade.addFromData({
-                ...this.highlightData,
-                liveRanges: this.highlightData.liveRanges  // Ensure liveRanges are included
-            });
+            this.repositoryFacade.addFromData(this.highlightData as any);
 
             // Save to storage
             await this.storage.saveEvent({
