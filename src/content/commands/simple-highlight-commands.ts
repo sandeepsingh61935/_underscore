@@ -255,7 +255,7 @@ export class ClearSelectionCommand implements Command {
     private serializedHighlights: Array<{
         id: string;
         color: string;
-        type: AnnotationType;
+        type: string;  // Changed from AnnotationType
         range: SerializedRange | null;
     }> = [];
 
@@ -266,27 +266,32 @@ export class ClearSelectionCommand implements Command {
         private storage: StorageService
     ) {
         // Store data for undo
-        this.serializedHighlights = highlights.map(hl => ({
-            id: hl.id,
-            color: hl.color,
-            type: hl.type,
-            range: hl.liveRange ? serializeRange(hl.liveRange) : null
-        }));
+        this.serializedHighlights = highlights.map(hl => {
+            const h = hl as any;  // Type cast for property access
+            return {
+                id: h.id,
+                color: h.color,
+                type: h.type,
+                range: h.liveRange ? serializeRange(h.liveRange) : null
+            };
+        });
     }
 
     async execute(): Promise<void> {
         for (const hl of this.highlights) {
+            const h = hl as any;  // Type cast for property access
+
             if ('removeHighlight' in this.manager) {
-                this.manager.removeHighlight(hl.id);
+                this.manager.removeHighlight(h.id);
             }
 
-            this.repositoryFacade.remove(hl.id);
+            this.repositoryFacade.remove(h.id);
 
             await this.storage.saveEvent({
                 type: 'highlight.removed',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
-                highlightId: hl.id
+                highlightId: h.id
             });
         }
     }
