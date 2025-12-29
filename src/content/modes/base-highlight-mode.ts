@@ -101,4 +101,5 @@ export abstract class BaseHighlightMode implements IHighlightMode {
     abstract createFromData(data: HighlightData): Promise<void>;
     abstract updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void>;
     abstract restore(url: string): Promise<void>;
+    abstract clearAll(): Promise<void>;
 }
