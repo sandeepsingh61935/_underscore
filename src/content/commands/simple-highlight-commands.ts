@@ -314,7 +314,7 @@ export class ClearSelectionCommand implements Command {
             const highlightData = this.manager.createHighlight(
                 selection,
                 data.color,
-                data.type
+                'underscore' as const
             );
 
             if (highlightData) {
@@ -397,7 +397,7 @@ export class ClearAllCommand implements Command {
             const highlightData = this.manager.createHighlight(
                 selection,
                 data.color,
-                data.type
+                'underscore' as const
             );
 
             if (highlightData) {
