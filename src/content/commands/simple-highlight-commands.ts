@@ -70,6 +70,7 @@ export class CreateHighlightCommand implements Command {
                 type: 'highlight.created',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data: this.highlightData as any
             });
         } else {
@@ -127,6 +128,7 @@ export class CreateHighlightCommand implements Command {
                 type: 'highlight.created',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data: this.highlightData as any
             });
         }
@@ -280,6 +282,7 @@ export class ClearSelectionCommand implements Command {
     ) {
         // Store data for undo
         this.serializedHighlights = highlights.map(hl => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = hl as any;  // Type cast for property access
             return {
                 id: h.id,
@@ -292,6 +295,7 @@ export class ClearSelectionCommand implements Command {
 
     async execute(): Promise<void> {
         for (const hl of this.highlights) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = hl as any;  // Type cast for property access
 
             if ('removeHighlight' in this.manager) {
@@ -335,6 +339,7 @@ export class ClearSelectionCommand implements Command {
                     type: 'highlight.created',
                     timestamp: Date.now(),
                     eventId: crypto.randomUUID(),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     data: highlightData as any
                 });
             }
@@ -363,6 +368,7 @@ export class ClearAllCommand implements Command {
     ) {
         // Store data for undo
         this.serializedHighlights = highlights.map(hl => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = hl as any;  // Type cast for property access
             return {
                 id: h.id,
@@ -375,6 +381,7 @@ export class ClearAllCommand implements Command {
 
     async execute(): Promise<void> {
         for (const hl of this.highlights) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = hl as any;  // Type cast for property access
 
             if ('removeHighlight' in this.manager) {
@@ -418,6 +425,7 @@ export class ClearAllCommand implements Command {
                     type: 'highlight.created',
                     timestamp: Date.now(),
                     eventId: crypto.randomUUID(),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     data: highlightData as any
                 });
             }
