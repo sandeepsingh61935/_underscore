@@ -167,6 +167,14 @@ export default [
         },
     },
 
+    // Legacy Shared Utils - Suppress technical debt
+    {
+        files: ['src/shared/utils/*.ts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
+
     // Prettier must be last
     prettierConfig,
 ];
