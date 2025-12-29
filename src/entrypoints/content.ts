@@ -442,8 +442,8 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             try {
                 // Support both old (single range) and new (multi-range) formats
                 // Cast to any to access legacy 'range' property if present
-                const legacyData = highlightData as Record<string, unknown>;
-                const serializedRanges = highlightData.ranges || (legacyData.range ? [legacyData.range] : []);
+                const legacyData = highlightData as unknown as Record<string, unknown>;
+                const serializedRanges = highlightData.ranges || (legacyData['range'] ? [legacyData['range']] : []);
 
                 if (serializedRanges.length === 0) {
                     logger.warn('No ranges to restore', { id: highlightData.id });
