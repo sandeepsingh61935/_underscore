@@ -78,7 +78,7 @@ export class SprintMode extends BaseHighlightMode {
         this.logger.info('Added to mode internal maps', { id });
 
         // 4. Add to repository (persistence)
-        this.repository.add(data);
+        this.repository.add(data as any);
         this.logger.info('Added to repository', { id });
 
         // Unified rendering - ALWAYS registers properly!
@@ -130,7 +130,7 @@ export class SprintMode extends BaseHighlightMode {
         }
     }
 
-    async removeHighlight(id: string): Promise<void> {
+    override async removeHighlight(id: string): Promise<void> {
         this.logger.info('Removing highlight', { id });
 
         // 🐛 DEBUG: Check state before deletion
@@ -176,7 +176,7 @@ export class SprintMode extends BaseHighlightMode {
         this.logger.info('All highlights cleared');
     }
 
-    async restore(url: string): Promise<void> {
+    async restore(): Promise<void> {
         // Sprint mode: No restoration (ephemeral)
         this.logger.debug('Sprint mode: No highlights to restore');
     }
