@@ -129,6 +129,11 @@ export default defineContentScript({
       // ✅ HIGHLIGHT_REMOVED → Storage (Event Sourcing)
       eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
         try {
+          // CHECK MODE: Only persist if NOT in Walk Mode
+          if (RepositoryFactory.getMode() === 'walk') {
+            return;
+          }
+
           await storage.saveEvent({
             type: 'highlight.removed',
             timestamp: Date.now(),
@@ -407,17 +412,54 @@ export default defineContentScript({
       eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
       eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
-      // Listen for count requests from popup
+      // Listen for count/mode requests from popup
       browser.runtime.onMessage.addListener(
         (
           message: unknown,
           _sender: unknown,
           sendResponse: (response: unknown) => void
         ) => {
-          const msg = message as { type: string };
+          const msg = message as { type: string; mode?: 'walk' | 'sprint' };
+
           if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
             sendResponse({ count: repositoryFacade.count() });
           }
+
+          else if (msg && msg.type === 'GET_MODE') {
+            sendResponse({ mode: RepositoryFactory.getMode() });
+          }
+
+          else if (msg && msg.type === 'SET_MODE' && msg.mode) {
+            const newMode = msg.mode;
+            logger.info(`Switching to ${newMode} mode`);
+
+            (async () => {
+              // Switch mode logic
+              await modeManager.activateMode(newMode);
+              RepositoryFactory.setMode(newMode);
+
+              if (newMode === 'sprint') {
+                // Restore if switching to Sprint
+                await restoreHighlights({
+                  storage,
+                  renderer,
+                  repositoryFacade,
+                  highlightManager,
+                  modeManager,
+                });
+              } else {
+                // Clear highlights if switching to Walk (Incognito)
+                // User expects privacy when toggling to Walk Mode
+                await modeManager.getCurrentMode().clearAll();
+              }
+
+              // Broadcast update
+              sendResponse({ success: true, mode: newMode });
+            })();
+
+            return true; // Async response
+          }
+
           return true; // Keep channel open for async response
         }
       );
