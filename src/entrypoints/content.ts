@@ -11,7 +11,6 @@ import { RepositoryFacade } from '@/shared/repositories';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
-import { injectHighlightCSS, getHighlightName } from '@/content/styles/highlight-styles';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';

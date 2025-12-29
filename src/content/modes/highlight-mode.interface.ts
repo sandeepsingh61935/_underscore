@@ -53,4 +53,7 @@ export interface IHighlightMode {
 
     /** Get all highlights */
     getAllHighlights(): HighlightData[];
+
+    /** Clear all highlights */
+    clearAll(): Promise<void>;
 }
