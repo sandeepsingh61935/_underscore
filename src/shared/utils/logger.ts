@@ -54,6 +54,7 @@ export class ConsoleLogger implements ILogger {
     debug(message: string, ...metadata: any[]): void {
         if (this.level <= LogLevel.DEBUG) {
             const entry = this.createEntry(LogLevel.DEBUG, message, metadata);
+            // eslint-disable-next-line no-console
             console.debug(this.format(entry), ...metadata);
         }
     }
@@ -61,6 +62,7 @@ export class ConsoleLogger implements ILogger {
     info(message: string, ...metadata: any[]): void {
         if (this.level <= LogLevel.INFO) {
             const entry = this.createEntry(LogLevel.INFO, message, metadata);
+            // eslint-disable-next-line no-console
             console.info(this.format(entry), ...metadata);
         }
     }

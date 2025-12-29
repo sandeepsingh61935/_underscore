@@ -19,6 +19,8 @@ export default [
             'test-results/**',
             'playwright-report/**',
             '.wxt',
+            '.eslintrc.legacy.js',
+            '.prettierrc.js'
         ],
     },
 
