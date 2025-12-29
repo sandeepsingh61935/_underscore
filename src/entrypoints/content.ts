@@ -4,7 +4,7 @@
  */
 
 import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, SelectionCreatedEvent } from '@/shared/types/events';
+import { EventName, SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent, HighlightsClearedEvent } from '@/shared/types/events';
 import { SelectionDetector } from '@/content/selection-detector';
 import { ColorManager } from '@/content/color-manager';
 import { RepositoryFacade } from '@/shared/repositories';
@@ -14,11 +14,12 @@ import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
-import { deserializeRange, serializeRange } from '@/shared/utils/range-serializer';
+import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
 import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import { ModeManager, SprintMode } from '@/content/modes';
 import { browser } from 'wxt/browser';
+import { toStorageFormat, type HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -76,20 +77,19 @@ export default defineContentScript({
             // Observer Pattern: Storage listens to all domain events
 
             // ✅ HIGHLIGHT_CREATED → Storage (Event Sourcing)
-            eventBus.on(EventName.HIGHLIGHT_CREATED, async (event: any) => {
+            eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
                 try {
+                    const storageData = await toStorageFormat({
+                        ...event.highlight,
+                        type: event.highlight.type || 'underscore',
+                        createdAt: event.highlight.createdAt || new Date()
+                    });
+
                     await storage.saveEvent({
                         type: 'highlight.created',
                         timestamp: Date.now(),
                         eventId: crypto.randomUUID(),
-                        data: {
-                            id: event.highlight.id,
-                            text: event.highlight.text,
-                            colorRole: event.highlight.colorRole,
-                            type: 'underscore',
-                            ranges: event.ranges,
-                            createdAt: new Date()
-                        }
+                        data: storageData
                     });
                     logger.info('Event persisted: HIGHLIGHT_CREATED', { id: event.highlight.id });
                 } catch (error) {
@@ -98,7 +98,7 @@ export default defineContentScript({
             });
 
             // ✅ HIGHLIGHT_REMOVED → Storage (Event Sourcing)
-            eventBus.on(EventName.HIGHLIGHT_REMOVED, async (event: any) => {
+            eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
                 try {
                     await storage.saveEvent({
                         type: 'highlight.removed',
@@ -247,7 +247,7 @@ export default defineContentScript({
             );
 
             // ===== Handle highlight removal (click) =====
-            eventBus.on(EventName.HIGHLIGHT_CLICKED, async (event) => {
+            eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
                 const highlight = repositoryFacade.get(event.highlightId);
                 if (highlight) {
                     // Use command for undo/redo support
@@ -266,7 +266,7 @@ export default defineContentScript({
             });
 
             // ===== Handle clear selection (double-click) =====
-            eventBus.on(EventName.CLEAR_SELECTION, async (event) => {
+            eventBus.on<SelectionCreatedEvent>(EventName.CLEAR_SELECTION, async (event) => {
                 const highlightsInSelection = getHighlightsInRange(event.selection, repositoryFacade);
 
                 if (highlightsInSelection.length > 0) {
@@ -400,7 +400,7 @@ async function restoreHighlights(
         logger.info('🧹 Cleared repository projection before event replay');
 
         // Replay events to reconstruct state
-        const activeHighlights = new Map<string, any>();
+        const activeHighlights = new Map<string, HighlightDataV2WithRuntime>();
 
         logger.warn(`🔥 Processing ${events.length} events to rebuild state...`);
 
@@ -408,7 +408,7 @@ async function restoreHighlights(
             logger.warn(`🔥 Event type: ${event.type}`, event);
 
             if (event.type === 'highlight.created' && event.data) {
-                activeHighlights.set(event.data.id, event.data);
+                activeHighlights.set(event.data.id, event.data as HighlightDataV2WithRuntime);
                 logger.warn(`✅ Added highlight to map: ${event.data.id}`);
             } else if (event.type === 'highlight.removed' && event.highlightId) {
                 activeHighlights.delete(event.highlightId);
@@ -427,7 +427,9 @@ async function restoreHighlights(
         for (const highlightData of activeHighlights.values()) {
             try {
                 // Support both old (single range) and new (multi-range) formats
-                const serializedRanges = highlightData.ranges || (highlightData.range ? [highlightData.range] : []);
+                // Cast to any to access legacy 'range' property if present
+                const legacyData = highlightData as any;
+                const serializedRanges = highlightData.ranges || (legacyData.range ? [legacyData.range] : []);
 
                 if (serializedRanges.length === 0) {
                     logger.warn('No ranges to restore', { id: highlightData.id });
@@ -490,7 +492,7 @@ async function restoreHighlights(
 
                         const createCommand = new CreateHighlightCommand(
                             selection,
-                            highlightData.color,  // Use semantic token
+                            highlightData.color || 'yellow',  // Use semantic token
                             renderer,
                             repositoryFacade,
                             storage
@@ -501,7 +503,7 @@ async function restoreHighlights(
                     }
                 }
             } catch (error) {
-                logger.error('Failed to restore highlight', highlightData.id, (error as Error).message);
+                logger.error('Failed to restore highlight', error as Error, { id: highlightData.id });
                 failed++;
             }
         }
@@ -526,13 +528,13 @@ async function restoreHighlights(
  * Find highlights that overlap with a selection
  * (for range subtraction - find all highlights that need to be split)
  */
-function getHighlightsInRange(selection: Selection, repositoryFacade: RepositoryFacade): Array<any> {
+function getHighlightsInRange(selection: Selection, repositoryFacade: RepositoryFacade): Array<HighlightDataV2WithRuntime> {
     if (selection.rangeCount === 0) return [];
 
     const userRange = selection.getRangeAt(0);
     const highlights = repositoryFacade.getAll();
 
-    return highlights.filter((hl: any) => {
+    return (highlights as unknown as HighlightDataV2WithRuntime[]).filter((hl) => {
         // Check all liveRanges in this highlight  
         const ranges = hl.liveRanges || [];
         if (ranges.length === 0) return false;
