@@ -115,7 +115,7 @@ export class ColorManager {
 
         // Validate role
         if (!this.isValidColorRole(role)) {
-            this.logger.error('Invalid color role', { role });
+            this.logger.error('Invalid color role', undefined, { role });
             throw new Error(`Invalid color role: ${role}`);
         }
 
