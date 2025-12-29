@@ -91,6 +91,7 @@ export default [
                 {
                     argsIgnorePattern: '^_',
                     varsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_'
                 },
             ],
             '@typescript-eslint/consistent-type-imports': [
