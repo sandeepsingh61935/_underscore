@@ -105,7 +105,8 @@ export class CreateHighlightCommand implements Command {
                 });
             } else {
                 // Legacy path
-                const highlightName = getHighlightName(this.type, this.highlightData.id);
+                const data = this.highlightData as any;
+                const highlightName = getHighlightName(this.type, data.id);
                 const nativeHighlight = new Highlight(range);
                 CSS.highlights.set(highlightName, nativeHighlight);
             }
@@ -239,11 +240,12 @@ export class RemoveHighlightCommand implements Command {
         });
 
         // Save event
+        const h = this.highlight as any;
         await this.storage.saveEvent({
             type: 'highlight.created',
             timestamp: Date.now(),
             eventId: crypto.randomUUID(),
-            highlightId: this.highlight.id
+            data: h
         });
     }
 }
