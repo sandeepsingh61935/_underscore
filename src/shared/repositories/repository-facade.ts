@@ -260,7 +260,7 @@ export class RepositoryFacade {
      * Add from data (backward compatibility with HighlightStore)
      * Automatically migrates old format to V2
      */
-    async addFromData(data: any): Promise<void> {
+    async addFromData(data: unknown): Promise<void> {
         this.ensureInitialized();
 
         // Import migration service dynamically
