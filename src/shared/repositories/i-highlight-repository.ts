@@ -6,7 +6,7 @@
  * Implements Repository Pattern from quality framework
  */
 
-import type { HighlightDataV2 } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 
 /**
  * Repository interface for highlight data access
@@ -63,7 +63,7 @@ export interface IHighlightRepository {
      * Find highlights that overlap with given range
      * Returns empty array if no overlaps
      */
-    findOverlapping(range: Range): Promise<HighlightDataV2[]>;
+    findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
 
     // ============================================
     // Metadata

@@ -6,7 +6,7 @@
  */
 
 import type { IHighlightRepository } from './i-highlight-repository';
-import type { HighlightDataV2 } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
@@ -140,7 +140,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
         return this.findById(id);
     }
 
-    async findOverlapping(range: Range): Promise<HighlightDataV2[]> {
+    async findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]> {
         // TODO: Implement proper range overlap detection
         // For now, return empty array
         // Will implement in Phase 3 when we add range index

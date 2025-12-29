@@ -12,7 +12,7 @@
 
 import type { IHighlightRepository } from './i-highlight-repository';
 import { RepositoryFactory } from './repository-factory';
-import type { HighlightDataV2 } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
@@ -195,7 +195,7 @@ export class RepositoryFacade {
     /**
      * Find overlapping highlights (sync)
      */
-    findOverlapping(range: Range): HighlightDataV2[] {
+    findOverlapping(_range: SerializedRange): HighlightDataV2[] {
         this.ensureInitialized();
 
         // TODO: Implement range overlap detection
