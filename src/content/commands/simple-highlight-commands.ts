@@ -5,16 +5,16 @@
  * These commands work with both HighlightManager (Custom API) and HighlightRenderer (legacy)
  */
 
-import type { Command } from '@/shared/patterns/command';
-import type { RepositoryFacade } from '@/shared/repositories';
-import type { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightManager, HighlightData } from '@/content/highlight-manager';
+import type { HighlightRenderer } from '@/content/highlight-renderer';
 import type { ModeManager } from '@/content/modes';
 import type { HighlightData as ModeHighlightData } from '@/content/modes/highlight-mode.interface';
-import { StorageService } from '@/shared/services/storage-service';
-import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
-import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
+import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
+import type { Command } from '@/shared/patterns/command';
+import type { RepositoryFacade } from '@/shared/repositories';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
+import type { StorageService } from '@/shared/services/storage-service';
 
 /**
  * Create highlight command - works with both APIs

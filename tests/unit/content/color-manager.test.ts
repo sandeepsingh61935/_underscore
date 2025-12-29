@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { ColorManager, COLOR_PALETTE, type ColorName } from '@/content/color-manager';
 
 // Mock chrome.storage API

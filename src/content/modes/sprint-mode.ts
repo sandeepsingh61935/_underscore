@@ -12,10 +12,11 @@
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
-import { serializeRange } from '@/content/utils/range-converter';
-import { generateContentHash } from '@/shared/utils/content-hash';
-import { EventName } from '@/shared/types/events';
 import type { HighlightData } from './highlight-mode.interface';
+
+import { serializeRange } from '@/content/utils/range-converter';
+import { EventName } from '@/shared/types/events';
+import { generateContentHash } from '@/shared/utils/content-hash';
 
 export class SprintMode extends BaseHighlightMode {
     get name() { return 'sprint' as const; }

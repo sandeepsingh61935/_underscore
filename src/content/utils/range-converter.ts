@@ -6,9 +6,10 @@
  * Migrated from shared/utils/range-serializer.ts to decouple from DOM.
  */
 
-import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { extractTextQuoteSelector } from './text-quote-extractor';
 import { findTextQuoteSelector } from './text-quote-finder';
+
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 
 const CONTEXT_LENGTH = 50; // Characters of context to store
 

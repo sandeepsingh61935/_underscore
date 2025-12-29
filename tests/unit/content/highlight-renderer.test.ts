@@ -4,9 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+
 import { HighlightRenderer } from '@/content/highlight-renderer';
-import { EventBus } from '@/shared/utils/event-bus';
 import { EventName } from '@/shared/types/events';
+import { EventBus } from '@/shared/utils/event-bus';
 
 describe('HighlightRenderer', () => {
     let renderer: HighlightRenderer;
@@ -115,10 +116,10 @@ describe('HighlightRenderer', () => {
             const textNode = paragraph.firstChild!;
 
             // First highlight
-            let range = document.createRange();
+            const range = document.createRange();
             range.setStart(textNode, 0);
             range.setEnd(textNode, 4);
-            let selection = window.getSelection()!;
+            const selection = window.getSelection()!;
             selection.removeAllRanges();
             selection.addRange(range);
             renderer.createHighlight(selection, '#FFEB3B');

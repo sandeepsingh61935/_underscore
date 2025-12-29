@@ -3,8 +3,9 @@
  * @description Detects user text selections via double-click or keyboard shortcuts
  */
 
-import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, createEvent, SelectionCreatedEvent } from '@/shared/types/events';
+import type { SelectionCreatedEvent } from '@/shared/types/events';
+import { EventName, createEvent } from '@/shared/types/events';
+import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 

@@ -4,7 +4,7 @@
  */
 
 import { browser } from 'wxt/browser';
-import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
+
 import type {
     AnyHighlightEvent,
     DomainStorage,
@@ -12,6 +12,7 @@ import type {
     StorageConfig,
 } from '@/shared/types/storage';
 import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
+import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 

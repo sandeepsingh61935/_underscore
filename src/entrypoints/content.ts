@@ -3,22 +3,24 @@
  * @description Content script - integrates all highlighting components
  */
 
-import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent } from '@/shared/types/events';
-import { SelectionDetector } from '@/content/selection-detector';
+import { browser } from 'wxt/browser';
+
 import { ColorManager } from '@/content/color-manager';
-import { RepositoryFacade } from '@/shared/repositories';
-import { HighlightRenderer } from '@/content/highlight-renderer';
-import { HighlightManager } from '@/content/highlight-manager';
+import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
+import { HighlightManager } from '@/content/highlight-manager';
+import { HighlightRenderer } from '@/content/highlight-renderer';
+import { ModeManager, SprintMode } from '@/content/modes';
+import { SelectionDetector } from '@/content/selection-detector';
+import type { SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent } from '@/shared/types/events';
+import { EventName } from '@/shared/types/events';
+import { EventBus } from '@/shared/utils/event-bus';
+import { RepositoryFacade } from '@/shared/repositories';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { StorageService } from '@/shared/services/storage-service';
 import { CommandStack } from '@/shared/patterns/command';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
-import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
-import { ModeManager, SprintMode } from '@/content/modes';
-import { browser } from 'wxt/browser';
 import { toStorageFormat, type HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 
 const logger = LoggerFactory.getLogger('ContentScript');

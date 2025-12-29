@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import { SecurityService } from '@/shared/utils/security';
 
 describe('SecurityService', () => {

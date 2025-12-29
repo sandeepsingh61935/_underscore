@@ -4,9 +4,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import { SelectionDetector } from '@/content/selection-detector';
-import { EventBus } from '@/shared/utils/event-bus';
 import { EventName } from '@/shared/types/events';
+import { EventBus } from '@/shared/utils/event-bus';
 
 describe('SelectionDetector', () => {
     let detector: SelectionDetector;

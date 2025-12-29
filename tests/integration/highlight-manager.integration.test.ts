@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { HighlightManager } from '@/content/highlight-manager';
 import { EventBus } from '@/shared/utils/event-bus';
 

@@ -3,14 +3,14 @@
  * @description Command implementations for highlight operations with undo/redo
  */
 
+import type { HighlightRenderer, HighlightWithRange } from '@/content/highlight-renderer';
+import { toStorageFormat } from '@/content/highlight-type-bridge';
+import { deserializeRange } from '@/content/utils/range-converter';
 import type { Command } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
-import type { HighlightRenderer, HighlightWithRange } from '@/content/highlight-renderer';
-import { StorageService } from '@/shared/services/storage-service';
-import type { AnyHighlightEvent } from '@/shared/types/storage';
-import { deserializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
-import { toStorageFormat } from '@/content/highlight-type-bridge';
+import type { StorageService } from '@/shared/services/storage-service';
+import type { AnyHighlightEvent } from '@/shared/types/storage';
 
 /**
  * Create highlight command

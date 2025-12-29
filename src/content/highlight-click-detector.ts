@@ -6,10 +6,10 @@
  * SOLUTION: Detect clicks on underlying text and check if it's highlighted
  */
 
-import { EventBus } from '@/shared/utils/event-bus';
-import { EventName } from '@/shared/types/events';
-import { RepositoryFacade } from '@/shared/repositories';
+import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { EventName } from '@/shared/types/events';
+import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 

@@ -10,11 +10,12 @@
  * From Quality Framework: "Facade Pattern for complex subsystems"
  */
 
-import type { IHighlightRepository } from './i-highlight-repository';
-import { RepositoryFactory } from './repository-factory';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
+
+import type { IHighlightRepository } from './i-highlight-repository';
+import { RepositoryFactory } from './repository-factory';
 
 /**
  * Synchronous Repository Facade

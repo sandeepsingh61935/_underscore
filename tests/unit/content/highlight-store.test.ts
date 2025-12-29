@@ -4,9 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { HighlightStore, type Highlight } from '@/content/highlight-store';
-import { EventBus } from '@/shared/utils/event-bus';
 import { EventName } from '@/shared/types/events';
+import { EventBus } from '@/shared/utils/event-bus';
 
 describe('HighlightStore', () => {
     let store: HighlightStore;

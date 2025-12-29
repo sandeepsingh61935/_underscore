@@ -5,10 +5,11 @@
  * Fast, in-memory storage with indexes for efficient queries
  */
 
-import type { IHighlightRepository } from './i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
+
+import type { IHighlightRepository } from './i-highlight-repository';
 
 /**
  * In-memory highlight repository

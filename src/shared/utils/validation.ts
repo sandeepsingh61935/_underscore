@@ -5,7 +5,9 @@
  * Provides safe validation with detailed error reporting
  */
 
-import { z, ZodError } from 'zod';
+import type { z} from 'zod';
+import { ZodError } from 'zod';
+
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 

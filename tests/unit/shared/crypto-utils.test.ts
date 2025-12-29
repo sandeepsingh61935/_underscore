@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 
 describe('Crypto Utils', () => {

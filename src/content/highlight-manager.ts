@@ -9,13 +9,15 @@
  * - Better performance
  */
 
-import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, createEvent } from '@/shared/types/events';
-import { LoggerFactory } from '@/shared/utils/logger';
-import type { ILogger } from '@/shared/utils/logger';
+import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styles/highlight-styles';
+
 import { serializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
-import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styles/highlight-styles';
+import { EventName, createEvent } from '@/shared/types/events';
+import type { EventBus } from '@/shared/utils/event-bus';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
+
 
 /**
  * Highlight data structure (no DOM element needed!)

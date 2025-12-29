@@ -4,14 +4,15 @@
  * Supports: underscore, highlight, and box modes
  */
 
-import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, createEvent, HighlightRemovedEvent } from '@/shared/types/events';
-import { LoggerFactory } from '@/shared/utils/logger';
-import type { ILogger } from '@/shared/utils/logger';
 import { serializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
-import { rgbToHex } from '@/shared/utils/color-utils';
 import type { AnnotationType } from '@/shared/types/annotation';
+import type { HighlightRemovedEvent } from '@/shared/types/events';
+import { EventName, createEvent } from '@/shared/types/events';
+import { rgbToHex } from '@/shared/utils/color-utils';
+import type { EventBus } from '@/shared/utils/event-bus';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 // spansMultipleBlocks import removed - Custom Highlight API handles cross-block natively
 
 /**

@@ -4,11 +4,14 @@
  * Provides common functionality for all modes
  */
 
-import type { EventBus } from '@/shared/utils/event-bus';
-import { RepositoryFacade } from '@/shared/repositories';
-import type { ILogger } from '@/shared/utils/logger';
 import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
+
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
+import type { RepositoryFacade } from '@/shared/repositories';
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
+
+
 
 export abstract class BaseHighlightMode implements IHighlightMode {
     // Internal tracking (replaces HighlightManager.highlights)

@@ -4,6 +4,7 @@
  */
 
 import { browser } from 'wxt/browser';
+
 import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
