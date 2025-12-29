@@ -12,6 +12,7 @@ import {
   removeHighlightCSS,
 } from '@/content/styles/highlight-styles';
 import type { RepositoryFacade } from '@/shared/repositories';
+import type { StorageService } from '@/shared/services/storage-service';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -20,13 +21,16 @@ export abstract class BaseHighlightMode implements IHighlightMode {
   protected highlights = new Map<string, Highlight>();
   protected data = new Map<string, HighlightData>();
   protected repository: RepositoryFacade;
+  protected storage: StorageService;
 
   constructor(
     protected readonly eventBus: EventBus,
     protected readonly logger: ILogger,
-    repository: RepositoryFacade // ✅ Dependency Injection - shared instance
+    repository: RepositoryFacade, // ✅ Dependency Injection - shared instance
+    storage: StorageService // ✅ Added for event sourcing
   ) {
     this.repository = repository;
+    this.storage = storage;
   }
 
   abstract get name(): 'sprint' | 'vault' | 'gen';
