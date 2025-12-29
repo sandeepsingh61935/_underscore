@@ -214,7 +214,7 @@ export function mergeAdjacentRanges(ranges: Range[]): Range[] {
     const sorted = [...ranges].sort((a, b) => {
         try {
             return a.compareBoundaryPoints(Range.START_TO_START, b);
-        } catch (e) {
+        } catch (_e) {
             return 0;
         }
     });
