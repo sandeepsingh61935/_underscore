@@ -8,12 +8,23 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { EventName, createEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import type { Highlight } from './highlight-store';
-import { serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
+import { serializeRange } from '@/content/utils/range-converter';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { rgbToHex } from '@/shared/utils/color-utils';
 import type { AnnotationType } from '@/shared/types/annotation';
-import { MD3_COLORS } from '@/shared/types/annotation';
 // spansMultipleBlocks import removed - Custom Highlight API handles cross-block natively
+
+/**
+ * Core highlight data structure
+ */
+export interface Highlight {
+    id: string;
+    text: string;
+    color: string;
+    type: AnnotationType;
+    element: HTMLElement;
+    createdAt: Date;
+}
 
 /**
  * Extended Highlight with serialized range for storage
@@ -86,7 +97,7 @@ export class HighlightRenderer {
         this.logger.debug('Theme change detected, updating all highlights');
 
         for (const [id, element] of this.highlightElements) {
-            const originalColor = element.dataset.originalColor;
+            const originalColor = element.dataset['originalColor'];
             if (!originalColor) continue;
 
             // Detect new background color
@@ -112,9 +123,9 @@ export class HighlightRenderer {
             if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
                 const match = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
                 if (match) {
-                    const r = parseInt(match[1]);
-                    const g = parseInt(match[2]);
-                    const b = parseInt(match[3]);
+                    const r = parseInt(match[1]!, 10);
+                    const g = parseInt(match[2]!, 10);
+                    const b = parseInt(match[3]!, 10);
                     return rgbToHex(r, g, b);
                 }
             }
@@ -197,8 +208,10 @@ export class HighlightRenderer {
                 id,
                 text,
                 color: adjustedColor,
+                type,
+                createdAt: new Date(),
+                range: serializedRange,
             },
-            range: serializedRange, // Include for storage
         }));
 
         this.logger.info('Highlight created', {
@@ -286,18 +299,18 @@ export class HighlightRenderer {
         const rgbMatch = colorString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/) || colorString.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
         if (rgbMatch) {
             return {
-                r: parseInt(rgbMatch[1], 10),
-                g: parseInt(rgbMatch[2], 10),
-                b: parseInt(rgbMatch[3], 10),
+                r: parseInt(rgbMatch[1]!, 10),
+                g: parseInt(rgbMatch[2]!, 10),
+                b: parseInt(rgbMatch[3]!, 10),
             };
         }
 
         // Handle Hex
         const hexMatch = colorString.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
         if (hexMatch) {
-            let hex = hexMatch[1];
+            let hex = hexMatch[1]!;
             if (hex.length === 3) {
-                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                hex = hex[0]! + hex[0]! + hex[1]! + hex[1]! + hex[2]! + hex[2]!;
             }
             return {
                 r: parseInt(hex.substring(0, 2), 16),
