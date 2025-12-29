@@ -348,7 +348,7 @@ export default defineContentScript({
 
             // Broadcast count updates to popup
             const broadcastCount = () => {
-                chrome.runtime.sendMessage({
+                browser.runtime.sendMessage({
                     type: 'HIGHLIGHT_COUNT_UPDATE',
                     count: repositoryFacade.count(),
                 }).catch(() => {
