@@ -5,6 +5,8 @@
  * Provides safe validation with detailed error reporting
  */
 
+/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
+
 import type { z } from 'zod';
 import { ZodError } from 'zod';
 
