@@ -10,18 +10,18 @@ import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/comman
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
+import { toStorageFormat, type HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import { ModeManager, SprintMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
+import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
+import { CommandStack } from '@/shared/patterns/command';
+import { RepositoryFacade } from '@/shared/repositories';
+import { StorageService } from '@/shared/services/storage-service';
 import type { SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { EventBus } from '@/shared/utils/event-bus';
-import { RepositoryFacade } from '@/shared/repositories';
 import { LoggerFactory } from '@/shared/utils/logger';
-import { StorageService } from '@/shared/services/storage-service';
-import { CommandStack } from '@/shared/patterns/command';
-import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { subtractRange, filterTinyRanges, mergeAdjacentRanges } from '@/shared/utils/range-algebra';
-import { toStorageFormat, type HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -120,7 +120,13 @@ export default defineContentScript({
             });
 
             // ===== PAGE LOAD: Restore highlights from storage =====
-            await restoreHighlights(storage, renderer, repositoryFacade, highlightManager, modeManager);
+            await restoreHighlights({
+                storage,
+                renderer,
+                repositoryFacade,
+                highlightManager,
+                modeManager
+            });
 
             // ===== Orchestrate: Listen to selection events =====
             eventBus.on<SelectionCreatedEvent>(
@@ -385,13 +391,19 @@ export default defineContentScript({
 /**
  * Restore highlights from storage on page load
  */
-async function restoreHighlights(
-    storage: StorageService,
-    renderer: HighlightRenderer,
-    repositoryFacade: RepositoryFacade,
-    highlightManager: HighlightManager | null | undefined,
-    modeManager: ModeManager  // ✅ Mode manager for proper registration
-): Promise<void> {
+interface RestoreContext {
+    storage: StorageService;
+    renderer: HighlightRenderer;
+    repositoryFacade: RepositoryFacade;
+    highlightManager: HighlightManager | null;
+    modeManager: ModeManager;
+}
+
+/**
+ * Restore highlights from storage on page load
+ */
+async function restoreHighlights(context: RestoreContext): Promise<void> {
+    const { storage, renderer, repositoryFacade, highlightManager, modeManager } = context;
     try {
         const events = await storage.loadEvents();
 
@@ -430,7 +442,7 @@ async function restoreHighlights(
             try {
                 // Support both old (single range) and new (multi-range) formats
                 // Cast to any to access legacy 'range' property if present
-                const legacyData = highlightData as any;
+                const legacyData = highlightData as Record<string, unknown>;
                 const serializedRanges = highlightData.ranges || (legacyData.range ? [legacyData.range] : []);
 
                 if (serializedRanges.length === 0) {
@@ -559,7 +571,7 @@ function getHighlightsInRange(selection: Selection, repositoryFacade: Repository
                 if (hlEndsAfterSelectionStarts && hlStartsBeforeSelectionEnds) {
                     return true; // This highlight overlaps
                 }
-            } catch (e) {
+            } catch (_e) {
                 // If comparison fails (different documents), skip this range
                 continue;
             }
