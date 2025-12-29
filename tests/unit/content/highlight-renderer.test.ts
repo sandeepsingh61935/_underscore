@@ -43,7 +43,7 @@ describe('HighlightRenderer', () => {
     it('should create highlight element', () => {
       const selection = createMockSelection();
 
-      const highlight = renderer.createHighlight(selection, '#FFEB3B');
+      const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
       expect(highlight).toBeDefined();
       expect(highlight.id).toBeTruthy();
@@ -65,7 +65,7 @@ describe('HighlightRenderer', () => {
       const emitSpy = vi.spyOn(eventBus, 'emit');
       const selection = createMockSelection();
 
-      const highlight = renderer.createHighlight(selection, '#64B5F6');
+      const highlight = renderer.createHighlight(selection, '#64B5F6')!;
 
       expect(emitSpy).toHaveBeenCalledWith(
         EventName.HIGHLIGHT_CREATED,
@@ -94,7 +94,7 @@ describe('HighlightRenderer', () => {
   describe('removeHighlight', () => {
     it('should remove highlight element', () => {
       const selection = createMockSelection();
-      const highlight = renderer.createHighlight(selection, '#FFEB3B');
+      const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
       renderer.removeHighlight(highlight.id);
 
@@ -140,7 +140,7 @@ describe('HighlightRenderer', () => {
   describe('Event Listeners', () => {
     it('should remove highlight when HIGHLIGHT_REMOVED event is emitted', () => {
       const selection = createMockSelection();
-      const highlight = renderer.createHighlight(selection, '#FFEB3B');
+      const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
       eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
         type: EventName.HIGHLIGHT_REMOVED,
@@ -159,7 +159,7 @@ describe('HighlightRenderer', () => {
       const emitSpy = vi.spyOn(eventBus, 'emit');
       const selection = createMockSelection();
 
-      const highlight = renderer.createHighlight(selection, '#FFEB3B');
+      const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
       // Simulate click
       highlight.element.click();

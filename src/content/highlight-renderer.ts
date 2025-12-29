@@ -4,6 +4,8 @@
  * Supports: underscore, highlight, and box modes
  */
 
+import { strategyRegistry } from './strategies/annotation-strategies';
+
 import { serializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { AnnotationType } from '@/shared/types/annotation';
@@ -169,6 +171,10 @@ export class HighlightRenderer {
     // Custom Highlight API handles cross-block selections natively!
     // No need to block - single Range can span multiple elements
 
+    // Serialize range BEFORE wrapping modifies the DOM
+    // This ensures the path points to the original document structure, not our wrapper
+    const serializedRange = serializeRange(range);
+
     // Detect background color and adjust for contrast
     const backgroundColor = this.getBackgroundColor(range);
     const adjustedColor = this.getContrastColor(color, backgroundColor);
@@ -192,9 +198,6 @@ export class HighlightRenderer {
 
     // Store element reference
     this.highlightElements.set(id, highlightElement);
-
-    // Serialize range BEFORE wrapping modifies the DOM
-    const serializedRange = serializeRange(range);
 
     const highlightWithRange: HighlightWithRange = {
       id,
@@ -266,7 +269,15 @@ export class HighlightRenderer {
    * @param backgroundColor The detected background color.
    * @returns An adjusted color string.
    */
+  /**
+   * Adjusts the highlight color for better contrast against the background.
+   */
   private getContrastColor(originalColor: string, backgroundColor: string): string {
+    // If color is a CSS variable (dynamic token), trust it and return as-is
+    if (originalColor.trim().startsWith('var(')) {
+      return originalColor;
+    }
+
     // Simple luminance calculation for background
     const bgRgb = this.parseColorToRgb(backgroundColor);
     if (!bgRgb) return originalColor; // Fallback if background color can't be parsed
@@ -396,83 +407,15 @@ export class HighlightRenderer {
 
   /**
    * Generate Material Design 3 styles for annotations
-   * @param color Annotation color (hex)
+   * @param color Annotation color (hex or var)
    * @param type Annotation type (underscore/highlight/box)
    */
   private getAnnotationStyles(
     color: string,
     type: AnnotationType = 'underscore'
   ): string {
-    // Get RGB values for opacity-based state layers
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const rgb = `${r}, ${g}, ${b}`;
-
-    const baseStyles = `
-            :host {
-                --annotation-color: ${color};
-                --annotation-rgb: ${rgb};
-                cursor: pointer;
-            }
-        `;
-
-    switch (type) {
-      case 'highlight':
-        return (
-          baseStyles +
-          `
-                    :host {
-                        background-color: rgba(var(--annotation-rgb), 0.24);
-                        border-radius: 2px;
-                    }
-                    :host(:hover) {
-                        background-color: rgba(var(--annotation-rgb), 0.32);
-                    }
-                `
-        );
-
-      case 'box':
-        return (
-          baseStyles +
-          `
-                    :host {
-                        border: 2px solid var(--annotation-color);
-                        border-radius: 4px;
-                        padding: 2px 4px;
-                        margin: 2px 0; /* Vertical spacing to prevent border collision */
-                        display: inline;
-                        
-                        /* Critical for multi-line: creates separate boxes per line */
-                        box-decoration-break: clone;
-                        -webkit-box-decoration-break: clone;
-                    }
-                    :host(:hover) {
-                        background-color: rgba(var(--annotation-rgb), 0.08);
-                    }
-                `
-        );
-
-      case 'underscore':
-      default:
-        return (
-          baseStyles +
-          `
-                    :host {
-                        text-decoration: underline;
-                        text-decoration-color: var(--annotation-color);
-                        text-decoration-thickness: 2px;
-                        text-underline-offset: 2px;
-                        transition: all 0.2s ease;
-                    }
-                    :host(:hover) {
-                        text-decoration-thickness: 3px;
-                        text-shadow: 0 0 8px ${color};
-                    }
-                `
-        );
-    }
+    const strategy = strategyRegistry[type] || strategyRegistry.underscore;
+    return strategy.getStyles(color);
   }
 
   /**

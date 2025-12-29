@@ -65,6 +65,16 @@ export interface ColorChangedEvent extends BaseEvent {
 }
 
 // ============================================================================
+// Theme Events
+// ============================================================================
+
+export interface ThemeChangedEvent extends BaseEvent {
+  type: 'theme:changed';
+  isDark: boolean;
+  sourceColor: string;
+}
+
+// ============================================================================
 // Storage Events (Future - Vault Mode)
 // ============================================================================
 
@@ -102,6 +112,7 @@ export type AppEvent =
   | HighlightsClearedEvent
   | HighlightClickedEvent
   | ColorChangedEvent
+  | ThemeChangedEvent
   | HighlightSavedEvent
   | HighlightLoadedEvent
   | ErrorEvent;
@@ -122,6 +133,9 @@ export const EventName = {
 
   // Color
   COLOR_CHANGED: 'color:changed',
+
+  // Theme
+  THEME_CHANGED: 'theme:changed',
 
   // Storage (Future)
   HIGHLIGHT_SAVED: 'highlight:saved',
