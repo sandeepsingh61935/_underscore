@@ -8,7 +8,9 @@ import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightRenderer, HighlightWithRange } from '@/content/highlight-renderer';
 import { StorageService } from '@/shared/services/storage-service';
 import type { AnyHighlightEvent } from '@/shared/types/storage';
-import { deserializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
+import { deserializeRange } from '@/content/utils/range-converter';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
+import { toStorageFormat } from '@/content/highlight-type-bridge';
 
 /**
  * Create highlight command
@@ -49,21 +51,22 @@ export class CreateHighlightCommand implements Command {
                         this.highlight.color,
                         this.highlight.type  // Preserve annotation type!
                     );
-                    this.repositoryFacade.add(newHighlight);
-
-                    // Update our reference
-                    this.highlight = newHighlight;
+                    // Convert to storage format
+                    if (newHighlight) {
+                        await this.repositoryFacade.add(await toStorageFormat(newHighlight as HighlightWithRange));
+                        this.highlight = newHighlight as HighlightWithRange;
+                    }
 
                     selection.removeAllRanges();
                 }
             } else {
                 // Range couldn't be deserialized (content changed)
                 // Just add to store - will restore on page reload if possible
-                this.repositoryFacade.add(this.highlight);
+                await this.repositoryFacade.add(await toStorageFormat(this.highlight));
             }
         } else {
             // Initial execution - element already exists
-            this.repositoryFacade.add(this.highlight);
+            await this.repositoryFacade.add(await toStorageFormat(this.highlight));
         }
 
         // Save event for persistence
@@ -71,7 +74,7 @@ export class CreateHighlightCommand implements Command {
             type: 'highlight.created',
             timestamp: Date.now(),
             eventId: crypto.randomUUID(),
-            data: this.highlight
+            data: await toStorageFormat(this.highlight as HighlightWithRange)
         };
 
         await this.storage.saveEvent(event);
@@ -145,16 +148,18 @@ export class RemoveHighlightCommand implements Command {
                     this.highlight.color,
                     this.highlight.type  // Preserve annotation type!
                 );
-                this.repositoryFacade.add(newHighlight);
+                if (newHighlight) {
+                    await this.repositoryFacade.add(await toStorageFormat(newHighlight as HighlightWithRange));
 
-                // Update our reference
-                this.highlight = newHighlight;
+                    // Update our reference
+                    this.highlight = newHighlight as HighlightWithRange;
+                }
 
                 selection.removeAllRanges();
             }
         } else {
             // Fallback - just add to store
-            this.repositoryFacade.add(this.highlight);
+            await this.repositoryFacade.add(await toStorageFormat(this.highlight));
         }
 
         // Save creation event
@@ -162,7 +167,7 @@ export class RemoveHighlightCommand implements Command {
             type: 'highlight.created',
             timestamp: Date.now(),
             eventId: crypto.randomUUID(),
-            data: this.highlight
+            data: await toStorageFormat(this.highlight as HighlightWithRange)
         };
 
         await this.storage.saveEvent(event);
@@ -199,13 +204,13 @@ export class ClearAllCommand implements Command {
     async undo(): Promise<void> {
         // Recreate all highlights
         for (const highlight of this.highlights) {
-            this.repositoryFacade.add(highlight);
+            await this.repositoryFacade.add(await toStorageFormat(highlight));
 
             const event: AnyHighlightEvent = {
                 type: 'highlight.created',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
-                data: highlight
+                data: await toStorageFormat(highlight)
             };
 
             await this.storage.saveEvent(event);
@@ -244,13 +249,13 @@ export class ClearSelectionCommand implements Command {
 
     async undo(): Promise<void> {
         for (const highlight of this.highlightsInSelection) {
-            this.repositoryFacade.add(highlight);
+            await this.repositoryFacade.add(await toStorageFormat(highlight));
 
             const event: AnyHighlightEvent = {
                 type: 'highlight.created',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
-                data: highlight
+                data: await toStorageFormat(highlight)
             };
 
             await this.storage.saveEvent(event);

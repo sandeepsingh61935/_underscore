@@ -12,7 +12,8 @@ import type { HighlightManager, HighlightData } from '@/content/highlight-manage
 import type { ModeManager } from '@/content/modes';
 import type { HighlightData as ModeHighlightData } from '@/content/modes/highlight-mode.interface';
 import { StorageService } from '@/shared/services/storage-service';
-import { deserializeRange, serializeRange, type SerializedRange } from '@/shared/utils/range-serializer';
+import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
 
 /**
