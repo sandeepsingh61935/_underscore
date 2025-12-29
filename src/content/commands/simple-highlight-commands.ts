@@ -49,6 +49,7 @@ export class CreateHighlightCommand implements Command {
                 this.highlightData = (this.manager as ModeManager).getHighlight(id);
             } else {
                 // Legacy path
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 this.highlightData = (this.manager as any).createHighlight(
                     this.selection,
                     this.colorRole,
@@ -61,6 +62,7 @@ export class CreateHighlightCommand implements Command {
             }
 
             // CRITICAL: Store with liveRanges for click detection!
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             this.repositoryFacade.addFromData(this.highlightData as any);
 
             // Save to storage
@@ -86,6 +88,7 @@ export class CreateHighlightCommand implements Command {
             // Check if manager is ModeManager
             if ('createFromData' in this.manager) {
                 // Type cast for property access
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const data = this.highlightData as any;
 
                 // Generate contentHash
@@ -106,6 +109,7 @@ export class CreateHighlightCommand implements Command {
                 });
             } else {
                 // Legacy path
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const data = this.highlightData as any;
                 const highlightName = getHighlightName(this.type, data.id);
                 const nativeHighlight = new Highlight(range);
@@ -132,6 +136,7 @@ export class CreateHighlightCommand implements Command {
         if (!this.highlightData) return;
 
         // Type assertion for accessing id
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = this.highlightData as any;
 
         // Remove highlight
@@ -165,12 +170,14 @@ export class RemoveHighlightCommand implements Command {
         private storage: StorageService
     ) {
         // Store ALL ranges for undo (multi-range support!)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const h = highlight as any;
         const liveRanges = h.liveRanges || [];
         this.serializedRanges = liveRanges.map((r: Range) => serializeRange(r));
     }
 
     async execute(): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const h = this.highlight as any;
 
         // Remove
@@ -206,6 +213,7 @@ export class RemoveHighlightCommand implements Command {
         // Check if manager is ModeManager
         if ('createFromData' in this.manager) {
             // Type cast for property access
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = this.highlight as any;
 
             // Generate contentHash
@@ -226,6 +234,7 @@ export class RemoveHighlightCommand implements Command {
             });
         } else {
             // Legacy path
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const h = this.highlight as any;
             const highlightName = getHighlightName(h.type, h.id);
             injectHighlightCSS(h.type, h.id, h.color);
@@ -241,6 +250,7 @@ export class RemoveHighlightCommand implements Command {
         });
 
         // Save event
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const h = this.highlight as any;
         await this.storage.saveEvent({
             type: 'highlight.created',
