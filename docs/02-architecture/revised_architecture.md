@@ -9,7 +9,8 @@
 
 ## Executive Summary
 
-This document presents **revised, production-ready architecture** that addresses all critical gaps identified in the analysis. Key changes:
+This document presents **revised, production-ready architecture** that addresses
+all critical gaps identified in the analysis. Key changes:
 
 - ✅ **Event Sourcing** for conflict-free sync (replaces last-write-wins)
 - ✅ **PostgreSQL** database (replaces Turso)
@@ -43,7 +44,7 @@ CREATE TABLE events (
   device_id VARCHAR(100),
   timestamp TIMESTAMPTZ DEFAULT NOW(),
   sequence_number BIGINT NOT NULL,    -- Per-aggregate ordering
-  
+
   CONSTRAINT unique_sequence UNIQUE (aggregate_id, sequence_number)
 );
 
@@ -53,7 +54,7 @@ CREATE INDEX idx_events_type ON events(event_type);
 
 -- Materialized view (current state, rebuilt from events)
 CREATE MATERIALIZED VIEW highlights_current AS
-SELECT 
+SELECT
   aggregate_id as id,
   user_id,
   (event_data->>'url') as url,
@@ -63,9 +64,9 @@ SELECT
   MAX(timestamp) as updated_at,
   bool_or((event_data->>'deleted')::BOOLEAN) as deleted
 FROM events
-WHERE aggregate_type = 'highlight' 
+WHERE aggregate_type = 'highlight'
   AND event_type IN ('HighlightCreated', 'HighlightUpdated', 'HighlightDeleted')
-GROUP BY aggregate_id, user_id, 
+GROUP BY aggregate_id, user_id,
   event_data->>'url',
   event_data->>'highlightedText',
   event_data->>'color',
@@ -87,7 +88,7 @@ $$ LANGUAGE plpgsql;
 
 ```typescript
 // Domain Events
-type HighlightEvent = 
+type HighlightEvent =
   | { type: 'HighlightCreated'; data: HighlightData }
   | { type: 'HighlightColorChanged'; data: { color: string } }
   | { type: 'HighlightTagsUpdated'; data: { tags: string[] } }
@@ -100,7 +101,7 @@ interface EventMetadata {
   deviceId: string;
   ipAddress?: string;
   userAgent?: string;
-  causationId?: string;  // Previous event that caused this
+  causationId?: string; // Previous event that caused this
   correlationId?: string; // Request ID
 }
 ```
@@ -114,60 +115,58 @@ async function syncToServer(lastSyncTimestamp: Date): Promise<void> {
     .where('timestamp')
     .above(lastSyncTimestamp)
     .toArray();
-  
+
   // Send events (batched, max 100 per request)
   for (const batch of chunk(localEvents, 100)) {
     await api.post('/events/batch', { events: batch });
   }
-  
+
   // Receive remote events
   const remoteEvents = await api.get('/events/since', {
     timestamp: lastSyncTimestamp,
-    userId: currentUser.id
+    userId: currentUser.id,
   });
-  
+
   // Append remote events to local store
   await db.events.bulkAdd(remoteEvents);
-  
+
   // Rebuild materialized view
   await rebuildHighlightsView();
-  
+
   // Update last sync time
   await db.sync_metadata.put({
     id: 'last_sync',
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 }
 
 // Rebuild current state from events
 async function rebuildHighlightsView(): Promise<void> {
-  const allEvents = await db.events
-    .orderBy('sequence_number')
-    .toArray();
-  
+  const allEvents = await db.events.orderBy('sequence_number').toArray();
+
   const highlights = new Map<string, Highlight>();
-  
+
   for (const event of allEvents) {
     const id = event.aggregate_id;
-    
+
     switch (event.event_type) {
       case 'HighlightCreated':
         highlights.set(id, event.event_data as Highlight);
         break;
-      
+
       case 'HighlightColorChanged':
         const h1 = highlights.get(id);
         if (h1) h1.color = event.event_data.color;
         break;
-      
+
       case 'HighlightDeleted':
         highlights.delete(id);
         break;
-      
+
       // ... handle other event types
     }
   }
-  
+
   // Store in local cache
   await db.highlights_cache.clear();
   await db.highlights_cache.bulkAdd(Array.from(highlights.values()));
@@ -180,7 +179,7 @@ async function rebuildHighlightsView(): Promise<void> {
 ✅ **Full Audit Trail:** See entire history of changes  
 ✅ **Time Travel:** Restore state at any point in time  
 ✅ **Debugging:** Replay events to reproduce bugs  
-✅ **Analytics:** Event stream powers insights  
+✅ **Analytics:** Event stream powers insights
 
 #### Event Compaction (Storage Optimization)
 
@@ -200,7 +199,7 @@ RETURNS void AS $$
 BEGIN
   -- For each aggregate with >100 events older than 30 days
   INSERT INTO snapshots (aggregate_id, aggregate_type, state, version)
-  SELECT 
+  SELECT
     aggregate_id,
     aggregate_type,
     jsonb_agg(event_data ORDER BY sequence_number) as state,
@@ -211,7 +210,7 @@ BEGIN
   HAVING COUNT(*) > 100
   ON CONFLICT (aggregate_id) DO UPDATE
   SET state = EXCLUDED.state, version = EXCLUDED.version;
-  
+
   -- Delete compacted events
   DELETE FROM events
   WHERE aggregate_id IN (SELECT aggregate_id FROM snapshots)
@@ -228,14 +227,14 @@ $$ LANGUAGE plpgsql;
 
 **Rationale:**
 
-| Requirement | Turso (LibSQL) | Supabase (PostgreSQL) |
-|-------------|----------------|----------------------|
-| Full-text search | ❌ No | ✅ GIN indexes |
-| JSONB queries | ⚠️ Limited | ✅ Native support |
-| Real-time subscriptions | ❌ No | ✅ Built-in |
-| Event sourcing | ⚠️ Manual | ✅ Excellent |
-| Free tier | 500 DBs | 500MB storage |
-| Scalability | 10k rows | 10M+ rows |
+| Requirement             | Turso (LibSQL) | Supabase (PostgreSQL) |
+| ----------------------- | -------------- | --------------------- |
+| Full-text search        | ❌ No          | ✅ GIN indexes        |
+| JSONB queries           | ⚠️ Limited     | ✅ Native support     |
+| Real-time subscriptions | ❌ No          | ✅ Built-in           |
+| Event sourcing          | ⚠️ Manual      | ✅ Excellent          |
+| Free tier               | 500 DBs        | 500MB storage         |
+| Scalability             | 10k rows       | 10M+ rows             |
 
 #### Updated Database Schema
 
@@ -259,7 +258,7 @@ CREATE TABLE users (
 -- Generated automatically, DO NOT insert directly
 
 -- Full-text search (PostgreSQL native)
-CREATE INDEX idx_highlights_search ON highlights_current 
+CREATE INDEX idx_highlights_search ON highlights_current
 USING GIN(to_tsvector('english', highlighted_text || ' ' || COALESCE(array_to_string(tags, ' '), '')));
 
 -- Fast tag lookup (denormalized)
@@ -268,7 +267,7 @@ CREATE TABLE highlight_tags (
   tag VARCHAR(100) NOT NULL,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  
+
   PRIMARY KEY (highlight_id, tag)
 );
 
@@ -284,7 +283,7 @@ CREATE TABLE collections (
   icon VARCHAR(10),  -- emoji
   position INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  
+
   CONSTRAINT unique_collection_name UNIQUE (user_id, name)
 );
 
@@ -293,7 +292,7 @@ CREATE TABLE highlight_collections (
   highlight_id UUID NOT NULL,
   collection_id UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
   added_at TIMESTAMPTZ DEFAULT NOW(),
-  
+
   PRIMARY KEY (highlight_id, collection_id)
 );
 
@@ -358,14 +357,14 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 // POST /auth/login
 async function login(email: string, password: string): Promise<AuthResponse> {
   const user = await db.users.findOne({ email });
-  if (!user || !await bcrypt.compare(password, user.password_hash)) {
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new Error('Invalid credentials');
   }
-  
+
   // Generate tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = crypto.randomBytes(32).toString('hex');
-  
+
   // Store refresh token (hashed)
   await db.refresh_tokens.insert({
     user_id: user.id,
@@ -373,38 +372,41 @@ async function login(email: string, password: string): Promise<AuthResponse> {
     device_fingerprint: getDeviceFingerprint(req),
     ip_address: req.ip,
     user_agent: req.headers['user-agent'],
-    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
   });
-  
+
   return { user, accessToken, refreshToken };
 }
 
 // POST /auth/refresh
 async function refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
   const tokenHash = sha256(refreshToken);
-  const storedToken = await db.refresh_tokens.findOne({ token_hash: tokenHash });
-  
-  if (!storedToken || storedToken.revoked || storedToken.expires_at < new Date()) {
+  const storedToken = await db.refresh_tokens.findOne({
+    token_hash: tokenHash,
+  });
+
+  if (
+    !storedToken ||
+    storedToken.revoked ||
+    storedToken.expires_at < new Date()
+  ) {
     throw new Error('Invalid refresh token');
   }
-  
+
   // Update last used
   await db.refresh_tokens.update(storedToken.id, { last_used_at: new Date() });
-  
+
   // Generate new access token
   const user = await db.users.findOne({ id: storedToken.user_id });
   const accessToken = generateAccessToken(user);
-  
+
   return { user, accessToken, refreshToken }; // Same refresh token
 }
 
 // POST /auth/logout
 async function logout(refreshToken: string): Promise<void> {
   const tokenHash = sha256(refreshToken);
-  await db.refresh_tokens.update(
-    { token_hash: tokenHash },
-    { revoked: true }
-  );
+  await db.refresh_tokens.update({ token_hash: tokenHash }, { revoked: true });
 }
 
 // DELETE /auth/sessions/:sessionId (logout specific device)
@@ -420,15 +422,15 @@ async function getActiveSessions(userId: string): Promise<Session[]> {
   const sessions = await db.refresh_tokens.find({
     user_id: userId,
     revoked: false,
-    expires_at: { $gt: new Date() }
+    expires_at: { $gt: new Date() },
   });
-  
-  return sessions.map(s => ({
+
+  return sessions.map((s) => ({
     id: s.id,
     device: parseUserAgent(s.user_agent),
     ipAddress: s.ip_address,
     lastUsed: s.last_used_at,
-    createdAt: s.created_at
+    createdAt: s.created_at,
   }));
 }
 ```
@@ -443,24 +445,24 @@ const rateLimiter = new RateLimiter({
   maxRequests: {
     free: 100,
     pro: 300,
-    premium: 1000
-  }
+    premium: 1000,
+  },
 });
 
 app.use(async (req, res, next) => {
   const user = req.user; // From JWT
   const tier = user?.tier || 'free';
   const key = user ? `user:${user.id}` : `ip:${req.ip}`;
-  
+
   const { allowed, remaining } = await rateLimiter.check(key, tier);
-  
+
   if (!allowed) {
     return res.status(429).json({
       error: 'RATE_LIMIT_EXCEEDED',
-      retryAfter: 60
+      retryAfter: 60,
     });
   }
-  
+
   res.setHeader('X-RateLimit-Remaining', remaining);
   next();
 });
@@ -480,22 +482,22 @@ const highlightSchema = z.object({
       startContainer: z.string().regex(/^\/[\w\/\[\]]+$/), // Valid XPath only
       startOffset: z.number().int().min(0).max(1000000),
       endContainer: z.string().regex(/^\/[\w\/\[\]]+$/),
-      endOffset: z.number().int().min(0).max(1000000)
+      endOffset: z.number().int().min(0).max(1000000),
     }),
     position: z.object({
       start: z.number().int().min(0).max(10000000),
-      end: z.number().int().min(0).max(10000000)
+      end: z.number().int().min(0).max(10000000),
     }),
     quote: z.object({
       prefix: z.string().max(100),
       exact: z.string().min(1).max(5000),
-      suffix: z.string().max(100)
-    })
+      suffix: z.string().max(100),
+    }),
   }),
   highlightedText: z.string().min(1).max(5000),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   tags: z.array(z.string().max(50)).max(20).optional(),
-  note: z.string().max(10000).optional()
+  note: z.string().max(10000).optional(),
 });
 
 // Usage
@@ -506,7 +508,7 @@ app.post('/highlights', async (req, res) => {
   } catch (err) {
     return res.status(400).json({
       error: 'VALIDATION_ERROR',
-      details: err.errors
+      details: err.errors,
     });
   }
 });
@@ -529,7 +531,7 @@ Free Tier:
     - 1 device
     - Export Markdown only
     - NO AI features
-  
+
 Pro Tier:
   Price: $7/month or $60/year (29% discount)
   Features:
@@ -539,7 +541,7 @@ Pro Tier:
     - Collections & smart tags
     - Reading analytics
     - NO AI features (<-- KEY CHANGE)
-  
+
 Premium Tier:
   Price: $20/month or $180/year (25% discount)
   Features:
@@ -547,7 +549,7 @@ Premium Tier:
     - 10 AI analyses/month  (<-- REDUCED from 25)
     - Mindmaps, summaries, Q&A
     - Priority support
-  
+
 Ultimate Tier:
   Price: $40/month or $400/year
   Features:
@@ -576,7 +578,7 @@ Typical Mindmap:
   Input: 500 highlights × 200 chars = 100K chars ≈ 25K tokens
   Output: JSON mindmap = 5K tokens (optimized)
   Cost: (25K × $0.80 + 5K × $4.00) / 1M = $0.04 per analysis
-  
+
 At Scale (1,000 Premium users × 10 analyses):
   Monthly analyses: 10,000
   Total cost: 10,000 × $0.04 = $400/month
@@ -597,7 +599,7 @@ interface AIAnalysis {
   metadata: {
     model: string;
     tokensUsed: number;
-    confidence: number;  // 0.0-1.0
+    confidence: number; // 0.0-1.0
     disclaimer: string;
   };
   userFeedback?: {
@@ -622,33 +624,36 @@ This analysis was created by AI from your highlights and may contain:
 // Privacy-preserving AI calls
 async function generateMindmap(highlightIds: string[]): Promise<AIAnalysis> {
   const highlights = await db.highlights.find({ id: { $in: highlightIds } });
-  
+
   // Check for sensitive content
-  const sensitiveDetected = highlights.some(h => 
-    containsPII(h.highlighted_text) ||
-    containsMedical(h.highlighted_text) ||
-    containsFinancial(h.highlighted_text)
+  const sensitiveDetected = highlights.some(
+    (h) =>
+      containsPII(h.highlighted_text) ||
+      containsMedical(h.highlighted_text) ||
+      containsFinancial(h.highlighted_text)
   );
-  
+
   if (sensitiveDetected && !user.hasConsented('ai_sensitive_data')) {
     throw new Error('Sensitive data detected. Please review privacy settings.');
   }
-  
+
   // Strip metadata, send only text
-  const sanitizedTexts = highlights.map(h => ({
+  const sanitizedTexts = highlights.map((h) => ({
     text: h.highlighted_text,
-    tags: h.tags
+    tags: h.tags,
   }));
-  
+
   const response = await callClaudeAPI({
     model: 'claude-3-5-haiku-20241022',
-    messages: [{
-      role: 'user',
-      content: generateMindmapPrompt(sanitizedTexts)
-    }],
-    max_tokens: 5000
+    messages: [
+      {
+        role: 'user',
+        content: generateMindmapPrompt(sanitizedTexts),
+      },
+    ],
+    max_tokens: 5000,
   });
-  
+
   return {
     id: crypto.randomUUID(),
     type: 'mindmap',
@@ -657,21 +662,21 @@ async function generateMindmap(highlightIds: string[]): Promise<AIAnalysis> {
       model: response.model,
       tokensUsed: response.usage.total_tokens,
       confidence: 0.85,
-      disclaimer: AI_DISCLAIMER
-    }
+      disclaimer: AI_DISCLAIMER,
+    },
   };
 }
 
 // PII detection (basic)
 function containsPII(text: string): boolean {
   const patterns = [
-    /\b\d{3}-\d{2}-\d{4}\b/,  // SSN
-    /\b\d{16}\b/,             // Credit card
+    /\b\d{3}-\d{2}-\d{4}\b/, // SSN
+    /\b\d{16}\b/, // Credit card
     /\b[\w\.-]+@[\w\.-]+\.\w+\b/, // Email (if not user's own)
-    /\b\d{3}-\d{3}-\d{4}\b/   // Phone
+    /\b\d{3}-\d{3}-\d{4}\b/, // Phone
   ];
-  
-  return patterns.some(p => p.test(text));
+
+  return patterns.some((p) => p.test(text));
 }
 ```
 
@@ -689,20 +694,20 @@ class HighlightRestorer {
   private observer: MutationObserver;
   private debounceTimer: number | null = null;
   private pendingChanges: Set<Element> = new Set();
-  
+
   constructor() {
     this.observer = new MutationObserver((mutations) => {
       // Collect changed elements
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach(node => {
+          mutation.addedNodes.forEach((node) => {
             if (node instanceof Element) {
               this.pendingChanges.add(node);
             }
           });
         }
       }
-      
+
       // Debounce reanchoring (wait for DOM to settle)
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
@@ -711,19 +716,21 @@ class HighlightRestorer {
       }, 300); // Wait 300ms after last change
     });
   }
-  
+
   start() {
     this.observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: false // Don't watch text changes (too noisy)
+      characterData: false, // Don't watch text changes (too noisy)
     });
   }
-  
+
   private async reanchorHighlights() {
     // Only check highlights in changed subtrees
-    const affectedHighlights = await this.findAffectedHighlights(this.pendingChanges);
-    
+    const affectedHighlights = await this.findAffectedHighlights(
+      this.pendingChanges
+    );
+
     for (const highlight of affectedHighlights) {
       await this.reanchorSingle(highlight);
     }
@@ -733,11 +740,11 @@ class HighlightRestorer {
 // Use IntersectionObserver for lazy restoration
 class LazyHighlightRestorer {
   private intersectionObserver: IntersectionObserver;
-  
+
   constructor() {
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const section = entry.target;
             this.restoreHighlightsInSection(section);
@@ -748,11 +755,13 @@ class LazyHighlightRestorer {
       { rootMargin: '500px' } // Restore 500px before visible
     );
   }
-  
+
   async init() {
     // Divide page into sections
-    const sections = document.querySelectorAll('article, section, main, .content');
-    sections.forEach(section => {
+    const sections = document.querySelectorAll(
+      'article, section, main, .content'
+    );
+    sections.forEach((section) => {
       this.intersectionObserver.observe(section);
     });
   }
@@ -767,38 +776,38 @@ class HighlightCache {
   private cache: Map<string, CachedHighlight> = new Map();
   private maxSize = 50; // 50 most recent pages
   private maxAge = 60 * 60 * 1000; // 1 hour
-  
+
   set(url: string, highlights: Highlight[]) {
     const cacheKey = this.normalizeURL(url);
-    
+
     // Evict oldest if full
     if (this.cache.size >= this.maxSize) {
       const oldestKey = this.cache.keys().next().value;
       this.cache.delete(oldestKey);
     }
-    
+
     this.cache.set(cacheKey, {
       highlights,
       timestamp: Date.now(),
-      rendered: true
+      rendered: true,
     });
   }
-  
+
   get(url: string): Highlight[] | null {
     const cacheKey = this.normalizeURL(url);
     const cached = this.cache.get(cacheKey);
-    
+
     if (!cached) return null;
-    
+
     // Expire after 1 hour
     if (Date.now() - cached.timestamp > this.maxAge) {
       this.cache.delete(cacheKey);
       return null;
     }
-    
+
     return cached.highlights;
   }
-  
+
   private normalizeURL(url: string): string {
     // Remove query params, fragments (for caching identical content)
     const parsed = new URL(url);
@@ -807,22 +816,20 @@ class HighlightCache {
 }
 
 // IndexedDB query optimization
-async function getHighlightsByTag(userId: string, tag: string): Promise<Highlight[]> {
+async function getHighlightsByTag(
+  userId: string,
+  tag: string
+): Promise<Highlight[]> {
   // BEFORE: Load all highlights, filter in JS
   // const all = await db.highlights.where({ userId }).toArray();
   // return all.filter(h => h.tags.includes(tag));
-  
+
   // AFTER: Use denormalized tag table
-  const tagRecords = await db.highlight_tags
-    .where({ userId, tag })
-    .toArray();
-  
-  const highlightIds = tagRecords.map(t => t.highlight_id);
-  
-  return await db.highlights
-    .where('id')
-    .anyOf(highlightIds)
-    .toArray();
+  const tagRecords = await db.highlight_tags.where({ userId, tag }).toArray();
+
+  const highlightIds = tagRecords.map((t) => t.highlight_id);
+
+  return await db.highlights.where('id').anyOf(highlightIds).toArray();
 }
 ```
 
@@ -834,10 +841,10 @@ importScripts('diff-match-patch.js');
 
 self.addEventListener('message', (e) => {
   const { document Text, searchQuote, threshold } = e.data;
-  
+
   const dmp = new diff_match_patch();
   const result = fuzzyTextSearch(documentText, searchQuote, threshold);
-  
+
   self.postMessage(result);
 });
 
@@ -851,7 +858,7 @@ async function restoreWithFuzzy(highlight: Highlight): Promise<Range | null> {
       searchQuote: highlight.selectors.quote.exact,
       threshold: 0.8
     });
-    
+
     fuzzyWorker.onmessage = (e) => {
       const result = e.data;
       resolve(result ? createRangeFromOffset(result.startOffset, result.endOffset) : null);
@@ -884,36 +891,36 @@ class OrphanedHighlightsPanel {
     const orphaned = await db.highlights
       .where({ restore_confidence: { $lt: 0.5 } })
       .toArray();
-    
+
     if (orphaned.length === 0) {
       showToast('All highlights restored successfully! ✅');
       return;
     }
-    
+
     // Show panel
     const panel = createPanel({
       title: `${orphaned.length} Highlights Need Attention`,
-      items: orphaned.map(h => ({
+      items: orphaned.map((h) => ({
         text: h.highlighted_text.slice(0, 100) + '...',
         url: h.url,
         actions: [
           {
             label: 'Help me find it',
-            onClick: () => this.attemptLowerThresholdRestore(h)
+            onClick: () => this.attemptLowerThresholdRestore(h),
           },
           {
             label: 'View original page',
-            onClick: () => window.open(h.url, '_blank')
+            onClick: () => window.open(h.url, '_blank'),
           },
           {
             label: 'Delete',
-            onClick: () => this.deleteOrphan(h)
-          }
-        ]
-      }))
+            onClick: () => this.deleteOrphan(h),
+          },
+        ],
+      })),
     });
   }
-  
+
   async attemptLowerThresholdRestore(highlight: Highlight) {
     // Try fuzzy match with 60% threshold (lower than normal 80%)
     const result = await fuzzyTextSearch(
@@ -921,22 +928,24 @@ class OrphanedHighlightsPanel {
       highlight.selectors.quote.exact,
       0.6 // Lower threshold
     );
-    
+
     if (result) {
       // Show preview
       const preview = createHighlightPreview(result.range);
       const confirmed = await showConfirmDialog({
         title: 'Is this the right highlight?',
         preview,
-        confidence: result.similarity
+        confidence: result.similarity,
       });
-      
+
       if (confirmed) {
         // Update selectors with current page data
         await this.reanchorHighlight(highlight, result.range);
       }
     } else {
-      showToast('Could not find matching text. Page may have changed significantly.');
+      showToast(
+        'Could not find matching text. Page may have changed significantly.'
+      );
     }
   }
 }
@@ -945,10 +954,13 @@ class OrphanedHighlightsPanel {
 async function notifyOrphanedHighlights(userId: string) {
   const orphanedCount = await db.highlights.count({
     user_id: userId,
-    restore_confidence: { $lt: 0.5 }
+    restore_confidence: { $lt: 0.5 },
   });
-  
-  if (orphanedCount > 10 || orphanedCount / await db.highlights.count({ user_id: userId }) > 0.1) {
+
+  if (
+    orphanedCount > 10 ||
+    orphanedCount / (await db.highlights.count({ user_id: userId })) > 0.1
+  ) {
     // Send email if >10 orphaned OR >10% failure rate
     await sendEmail({
       to: user.email,
@@ -961,7 +973,7 @@ async function notifyOrphanedHighlights(userId: string) {
         https://app.yourdomain.com/library/orphaned
         
         Tip: We can often recover them with your help!
-      `
+      `,
     });
   }
 }
@@ -976,77 +988,54 @@ async function notifyOrphanedHighlights(userId: string) {
 ```yaml
 Total Timeline: 14 weeks (3.5 months)
 
-Week 1-2: Foundation
-  - [ ] Set up infrastructure (Supabase, Cloudflare Workers)
-  - [ ] Create database schema with Event Sourcing
-  - [ ] Implement authentication (refresh tokens)
-  - [ ] Set up rate limiting (Upstash Redis)
-  - [ ] Security audit tooling (OWASP ZAP, npm audit CI)
+Week 1-2:
+  Foundation - [ ] Set up infrastructure (Supabase, Cloudflare Workers) - [ ]
+  Create database schema with Event Sourcing - [ ] Implement authentication
+  (refresh tokens) - [ ] Set up rate limiting (Upstash Redis) - [ ] Security
+  audit tooling (OWASP ZAP, npm audit CI)
 
-Week 3-5: Sprint Mode
-  - [ ] Extension boilerplate (wxt.dev + Vite)
-  - [ ] Text selection detection
-  - [ ] Shadow DOM highlight rendering
-  - [ ] Auto-contrast color algorithm
-  - [ ] Keyboard shortcuts
-  - [ ] Remove highlight, clear all
-  - [ ] Test on 20+ websites
+Week 3-5:
+  Sprint Mode - [ ] Extension boilerplate (wxt.dev + Vite) - [ ] Text selection
+  detection - [ ] Shadow DOM highlight rendering - [ ] Auto-contrast color
+  algorithm - [ ] Keyboard shortcuts - [ ] Remove highlight, clear all - [ ]
+  Test on 20+ websites
 
-Week 6-9: Vault Mode (Local Only, No Sync)
-  - [ ] IndexedDB schema (Dexie.js)
-  - [ ] Multi-selector generation (XPath, position, quote)
-  - [ ] Restoration algorithm (3-tier fallback)
-  - [ ] Fuzzy matching in Web Worker
-  - [ ] Collections & tags (basic)
-  - [ ] Search (client-side, no full-text)
-  - [ ] Export Markdown
-  - [ ] Orphaned highlights UI
-  - [ ] Test on 50+ websites, including SPAs
+Week 6-9:
+  Vault Mode (Local Only, No Sync) - [ ] IndexedDB schema (Dexie.js) - [ ]
+  Multi-selector generation (XPath, position, quote) - [ ] Restoration algorithm
+  (3-tier fallback) - [ ] Fuzzy matching in Web Worker - [ ] Collections & tags
+  (basic) - [ ] Search (client-side, no full-text) - [ ] Export Markdown - [ ]
+  Orphaned highlights UI - [ ] Test on 50+ websites, including SPAs
 
-Week 10-12: Polish & Testing
-  - [ ] Onboarding tutorial (5 steps max)
-  - [ ] Settings panel
-  - [ ] Reading analytics (local only)
-  - [ ] Accessibility audit (WAVE, keyboard nav)
-  - [ ] Performance optimization (<70KB bundle)
-  - [ ] Cross-browser testing (Chrome, Firefox, Edge)
-  - [ ] Security audit
-  - [ ] Bug bash with team/friends
+Week 10-12:
+  Polish & Testing - [ ] Onboarding tutorial (5 steps max) - [ ] Settings panel
+  - [ ] Reading analytics (local only) - [ ] Accessibility audit (WAVE, keyboard
+  nav) - [ ] Performance optimization (<70KB bundle) - [ ] Cross-browser testing
+  (Chrome, Firefox, Edge) - [ ] Security audit - [ ] Bug bash with team/friends
 
-Week 13: Beta Testing
-  - [ ] Recruit 50 beta testers (Reddit, Twitter)
-  - [ ] Structured feedback collection
-  - [ ] Fix critical bugs
-  - [ ] Iterate on onboarding
+Week 13:
+  Beta Testing - [ ] Recruit 50 beta testers (Reddit, Twitter) - [ ] Structured
+  feedback collection - [ ] Fix critical bugs - [ ] Iterate on onboarding
 
-Week 14: Launch
-  - [ ] Chrome Web Store submission
-  - [ ] Firefox submission
-  - [ ] Product Hunt launch
-  - [ ] Hacker News "Show HN"
-  - [ ] Reddit posts
-  - [ ] Monitor metrics
+Week 14:
+  Launch - [ ] Chrome Web Store submission - [ ] Firefox submission - [ ]
+  Product Hunt launch - [ ] Hacker News "Show HN" - [ ] Reddit posts - [ ]
+  Monitor metrics
 
-Post-Launch (Week 15-20): V1.5 - Cloud Sync
-  - [ ] Backend API with Event Sourcing
-  - [ ] Real-time sync (WebSocket)
-  - [ ] Conflict resolution (automatic)
-  - [ ] Cross-device restoration
-  - [ ] Batch operations API
+Post-Launch (Week 15-20):
+  V1.5 - Cloud Sync - [ ] Backend API with Event Sourcing - [ ] Real-time sync
+  (WebSocket) - [ ] Conflict resolution (automatic) - [ ] Cross-device
+  restoration - [ ] Batch operations API
 
-Post-Launch (Week 21-26): V2.0 - Gen Mode
-  - [ ] AI integration (Claude Haiku)
-  - [ ] Mindmap generation
-  - [ ] Summaries
-  - [ ] Smart connections
-  - [ ] Privacy controls
-  - [ ] Usage analytics for cost monitoring
+Post-Launch (Week 21-26):
+  V2.0 - Gen Mode - [ ] AI integration (Claude Haiku) - [ ] Mindmap generation -
+  [ ] Summaries - [ ] Smart connections - [ ] Privacy controls - [ ] Usage
+  analytics for cost monitoring
 ```
 
 ### MVP Scope
 
-**Launch with:**
-✅ Sprint Mode (ephemeral)  
+**Launch with:** ✅ Sprint Mode (ephemeral)  
 ✅ Vault Mode (local storage only)  
 ✅ Collections & tags  
 ✅ Export Markdown  
@@ -1054,16 +1043,17 @@ Post-Launch (Week 21-26): V2.0 - Gen Mode
 ❌ Cloud sync (v1.5)  
 ❌ AI features (v2.0)  
 ❌ Reading analytics dashboard (v1.5)  
-❌ Collaborative features (Year 2)  
+❌ Collaborative features (Year 2)
 
-**Rationale:** Validate market fit before investing 6 months in full-featured product.
+**Rationale:** Validate market fit before investing 6 months in full-featured
+product.
 
 ---
 
 ## 6. Revised Business Model
 
 ```yaml
-Revenue Projections (Conservative):
+? Revenue Projections (Conservative)
 
 Month 1-3 (Launch):
   Installs: 1,000
@@ -1100,7 +1090,7 @@ Costs (Year 1):
   Tools: $20/month = $240/year
   AI (50 Premium users × 10 analyses): $200/year
   Total: ~$1,000/year
-  
+
   Net Profit Year 1: $17,000
   Net Profit Year 2: $71,000
 
@@ -1126,18 +1116,18 @@ Target: <5% monthly churn (industry 7%)
 
 ## 7. Summary of Critical Changes
 
-| Original Spec | Revised Architecture | Impact |
-|--------------|---------------------|--------|
-| Last-write-wins sync | **Event Sourcing** | ✅ Zero data loss |
-| Turso (LibSQL) | **PostgreSQL (Supabase)** | ✅ Full-text search, JSONB |
-| Stateless JWT | **Refresh tokens + session mgmt** | ✅ Revocable, secure |
-| 10 weeks timeline | **14 weeks MVP + phased rollout** | ✅ Realistic, sustainable |
-| Premium $10, 25 AI | **Premium $20, 10 AI** | ✅ Profitable margins |
-| Full-featured MVP | **Lean MVP (local only)** | ✅ Validate before building |
-| 90% restoration | **75% (set expectations)** | ✅ Honest marketing |
-| No orphan UI | **Orphan panel + email alerts** | ✅ Better UX |
-| MutationObserver (naive) | **Debounced + IntersectionObserver** | ✅ 90% CPU reduction |
-| Fuzzy match on main thread | **Web Worker** | ✅ Non-blocking |
+| Original Spec              | Revised Architecture                 | Impact                      |
+| -------------------------- | ------------------------------------ | --------------------------- |
+| Last-write-wins sync       | **Event Sourcing**                   | ✅ Zero data loss           |
+| Turso (LibSQL)             | **PostgreSQL (Supabase)**            | ✅ Full-text search, JSONB  |
+| Stateless JWT              | **Refresh tokens + session mgmt**    | ✅ Revocable, secure        |
+| 10 weeks timeline          | **14 weeks MVP + phased rollout**    | ✅ Realistic, sustainable   |
+| Premium $10, 25 AI         | **Premium $20, 10 AI**               | ✅ Profitable margins       |
+| Full-featured MVP          | **Lean MVP (local only)**            | ✅ Validate before building |
+| 90% restoration            | **75% (set expectations)**           | ✅ Honest marketing         |
+| No orphan UI               | **Orphan panel + email alerts**      | ✅ Better UX                |
+| MutationObserver (naive)   | **Debounced + IntersectionObserver** | ✅ 90% CPU reduction        |
+| Fuzzy match on main thread | **Web Worker**                       | ✅ Non-blocking             |
 
 ---
 
@@ -1170,21 +1160,25 @@ Target: <5% monthly churn (industry 7%)
 ### Implementation Priority
 
 **Phase 1 (Week 1-5): Core MVP**
+
 - Sprint Mode only
 - No persistence
 - Validate highlight rendering
 
 **Phase 2 (Week 6-9): Local Persistence**
+
 - Vault Mode (local storage)
 - Multi-selector strategy
 - Collections
 
 **Phase 3 (Week 10-14): Polish & Launch**
+
 - Testing, accessibility
 - Beta program
 - Store submission
 
 **Phase 4 (Post-launch): Growth Features**
+
 - Cloud sync (Event Sourcing)
 - AI features (Gen Mode)
 - Analytics dashboard
@@ -1193,7 +1187,8 @@ Target: <5% monthly churn (industry 7%)
 
 ## Conclusion
 
-This revised architecture addresses **all critical gaps** identified in analysis:
+This revised architecture addresses **all critical gaps** identified in
+analysis:
 
 ✅ **Sync conflicts eliminated** (Event Sourcing)  
 ✅ **AI economics fixed** (Haiku model, $20 pricing)  
@@ -1201,7 +1196,7 @@ This revised architecture addresses **all critical gaps** identified in analysis
 ✅ **Auth secure** (refresh tokens, sessions)  
 ✅ **Performance optimized** (debouncing, Web Workers, caching)  
 ✅ **Timeline realistic** (14 weeks MVP, not 10)  
-✅ **Scope achievable** (lean MVP, iterate based on user feedback)  
+✅ **Scope achievable** (lean MVP, iterate based on user feedback)
 
 **This is now a production-ready architecture that can scale to $500k+ ARR.**
 

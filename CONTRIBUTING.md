@@ -1,11 +1,12 @@
-/**
- * @file CONTRIBUTING.md
- * @description Contribution guidelines for the project
- */
+/\*\*
+
+- @file CONTRIBUTING.md
+- @description Contribution guidelines for the project \*/
 
 # Contributing to Underscore Web Highlighter
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing! This document provides guidelines
+for contributing to the project.
 
 ---
 
@@ -31,8 +32,10 @@ npm test
 ### 2. Before You Start
 
 - Read the [Quality Framework](./docs/05-quality-framework/README.md)
-- Understand [Coding Standards](./docs/05-quality-framework/02-coding-standards.md)
-- Review [Architecture Principles](./docs/05-quality-framework/03-architecture-principles.md)
+- Understand
+  [Coding Standards](./docs/05-quality-framework/02-coding-standards.md)
+- Review
+  [Architecture Principles](./docs/05-quality-framework/03-architecture-principles.md)
 
 ---
 
@@ -59,6 +62,7 @@ Follow conventional commits format:
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -68,6 +72,7 @@ Follow conventional commits format:
 - `chore`: Maintenance tasks
 
 **Examples**:
+
 ```
 feat(content): add highlight selection detection
 fix(logger): handle undefined metadata gracefully
@@ -92,6 +97,7 @@ npm run test:e2e
 ```
 
 **Requirements**:
+
 - All new code must have tests
 - Maintain ≥80% coverage
 - Follow AAA pattern (Arrange-Act-Assert)
@@ -116,6 +122,7 @@ npm run quality
 ```
 
 This runs:
+
 1. TypeScript type checking
 2. ESLint
 3. Prettier format check
@@ -135,6 +142,7 @@ This runs:
 ### 2. PR Description
 
 Include:
+
 - **What**: What changes you made
 - **Why**: Why these changes are needed
 - **How**: How you implemented them
@@ -181,22 +189,25 @@ export class HighlightService implements IHighlightService {
 
   async createHighlight(text: string): Promise<Highlight> {
     this.logger.debug('Creating highlight', { text });
-    
+
     if (!text?.trim()) {
       throw new ValidationError('Text cannot be empty');
     }
 
     const highlight = HighlightFactory.create(text);
     await this.repository.save(highlight);
-    
+
     return highlight;
   }
 }
 
 // ❌ Bad: Implicit types, multiple responsibilities
 class Service {
-  constructor(private repo: any, private log: any) {}
-  
+  constructor(
+    private repo: any,
+    private log: any
+  ) {}
+
   async create(text) {
     if (!text) throw new Error('bad');
     let h = { id: Math.random(), text };
@@ -227,4 +238,5 @@ class Service {
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (ISC).
+By contributing, you agree that your contributions will be licensed under the
+same license as the project (ISC).

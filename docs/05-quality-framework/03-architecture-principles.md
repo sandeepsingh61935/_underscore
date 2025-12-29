@@ -1,7 +1,9 @@
 # Architecture Principles & Best Practices
+
 **Web Highlighter Extension - Architectural Excellence**
 
-> **Purpose**: Define core architectural principles that guide all technical decisions in the project.
+> **Purpose**: Define core architectural principles that guide all technical
+> decisions in the project.
 
 ---
 
@@ -22,9 +24,11 @@
 
 ### 1. KISS (Keep It Simple, Stupid)
 
-**Principle**: Simplicity should be a key goal in design, and unnecessary complexity should be avoided.
+**Principle**: Simplicity should be a key goal in design, and unnecessary
+complexity should be avoided.
 
 **❌ Bad - Over-engineered**
+
 ```typescript
 // Abstract factory pattern for simple color creation
 interface IColorFactory {
@@ -43,6 +47,7 @@ class ColorFactoryBuilder {
 ```
 
 **✅ Good - Simple and direct**
+
 ```typescript
 // Simple color utilities
 export const ColorUtils = {
@@ -56,14 +61,15 @@ export const ColorUtils = {
       ? {
           r: parseInt(result[1], 16),
           g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16)
+          b: parseInt(result[3], 16),
         }
       : { r: 0, g: 0, b: 0 };
-  }
+  },
 };
 ```
 
 **Guidelines**:
+
 - ✅ Write code that is easy to understand at first glance
 - ✅ Avoid premature abstraction
 - ✅ Use patterns only when complexity justifies them
@@ -77,13 +83,14 @@ export const ColorUtils = {
 **Principle**: Don't add functionality until deemed necessary.
 
 **❌ Bad - Building for unknown future**
+
 ```typescript
 // Sprint Mode doesn't need database, but let's add it anyway
 export class SprintMode {
   constructor(
-    private database: IDatabase,        // ❌ Not needed yet
-    private syncService: ISyncService,  // ❌ Not needed yet
-    private aiService: IAIService       // ❌ Not needed yet
+    private database: IDatabase, // ❌ Not needed yet
+    private syncService: ISyncService, // ❌ Not needed yet
+    private aiService: IAIService // ❌ Not needed yet
   ) {}
 
   // Complex infrastructure for features we haven't built
@@ -94,6 +101,7 @@ export class SprintMode {
 ```
 
 **✅ Good - Build what you need now**
+
 ```typescript
 // Sprint Mode: In-memory only (exactly what's needed)
 export class SprintMode {
@@ -112,6 +120,7 @@ export class SprintMode {
 ```
 
 **Guidelines**:
+
 - ✅ Build features when they're actually required
 - ✅ Start simple, refactor when patterns emerge
 - ✅ Defer decisions until you have more information
@@ -122,9 +131,11 @@ export class SprintMode {
 
 ### 3. DRY (Don't Repeat Yourself)
 
-**Principle**: Every piece of knowledge must have a single, unambiguous, authoritative representation.
+**Principle**: Every piece of knowledge must have a single, unambiguous,
+authoritative representation.
 
 **❌ Bad - Duplicated logic**
+
 ```typescript
 // Validation duplicated everywhere
 export class HighlightService {
@@ -142,10 +153,12 @@ export class HighlightService {
 export class HighlightFactory {
   createFromSelection(selection: Selection): Highlight {
     const text = selection.toString();
-    if (!text || text.trim().length === 0) {  // ❌ Duplicated
+    if (!text || text.trim().length === 0) {
+      // ❌ Duplicated
       throw new Error('Empty text');
     }
-    if (text.length > 10000) {  // ❌ Duplicated
+    if (text.length > 10000) {
+      // ❌ Duplicated
       throw new Error('Text too long');
     }
     // ... create highlight
@@ -154,6 +167,7 @@ export class HighlightFactory {
 ```
 
 **✅ Good - Single source of truth**
+
 ```typescript
 // Centralized validation
 export class HighlightValidator {
@@ -194,6 +208,7 @@ export class HighlightFactory {
 ```
 
 **Guidelines**:
+
 - ✅ Extract common logic into utilities
 - ✅ Use constants for repeated values
 - ✅ Create shared validators, formatters, etc.
@@ -207,21 +222,39 @@ export class HighlightFactory {
 **Principle**: A class should have only one reason to change.
 
 **❌ Bad - God object with multiple responsibilities**
+
 ```typescript
 export class HighlightManager {
   // ❌ Too many responsibilities
-  async createHighlight(text: string): Promise<Highlight> { /* ... */ }
-  async saveToStorage(highlight: Highlight): Promise<void> { /* ... */ }
-  async syncToCloud(highlight: Highlight): Promise<void> { /* ... */ }
-  renderToDOM(highlight: Highlight): void { /* ... */ }
-  calculateContrast(bg: string, fg: string): number { /* ... */ }
-  generateMindmap(highlights: Highlight[]): string { /* ... */ }
-  exportToMarkdown(highlights: Highlight[]): string { /* ... */ }
-  validatePermissions(): boolean { /* ... */ }
+  async createHighlight(text: string): Promise<Highlight> {
+    /* ... */
+  }
+  async saveToStorage(highlight: Highlight): Promise<void> {
+    /* ... */
+  }
+  async syncToCloud(highlight: Highlight): Promise<void> {
+    /* ... */
+  }
+  renderToDOM(highlight: Highlight): void {
+    /* ... */
+  }
+  calculateContrast(bg: string, fg: string): number {
+    /* ... */
+  }
+  generateMindmap(highlights: Highlight[]): string {
+    /* ... */
+  }
+  exportToMarkdown(highlights: Highlight[]): string {
+    /* ... */
+  }
+  validatePermissions(): boolean {
+    /* ... */
+  }
 }
 ```
 
 **✅ Good - Single responsibility per class**
+
 ```typescript
 // 1. Domain logic - Creating highlights
 export class HighlightFactory {
@@ -285,9 +318,11 @@ export class HighlightService {
 
 ### 1. Open/Closed Principle (OCP)
 
-**Principle**: Software entities should be open for extension, but closed for modification.
+**Principle**: Software entities should be open for extension, but closed for
+modification.
 
 **❌ Bad - Requires modification to add new modes**
+
 ```typescript
 export class ModeManager {
   async handleHighlight(mode: string, selection: Selection): Promise<void> {
@@ -307,6 +342,7 @@ export class ModeManager {
 ```
 
 **✅ Good - Open for extension via plugin pattern**
+
 ```typescript
 // Abstract interface
 export interface IHighlightMode {
@@ -351,7 +387,7 @@ export class ModeManager {
 // ✅ New modes can be added without modifying ModeManager
 class CollaborativeMode implements IHighlightMode {
   readonly name = 'collaborative';
-  
+
   async highlight(selection: Selection): Promise<void> {
     // Collaborative mode logic
   }
@@ -364,9 +400,11 @@ modeManager.registerMode(new CollaborativeMode());
 
 ### 2. Liskov Substitution Principle (LSP)
 
-**Principle**: Objects of a superclass should be replaceable with objects of a subclass without breaking the application.
+**Principle**: Objects of a superclass should be replaceable with objects of a
+subclass without breaking the application.
 
 **❌ Bad - Subclass breaks contract**
+
 ```typescript
 interface IHighlightRepository {
   save(highlight: Highlight): Promise<void>;
@@ -396,6 +434,7 @@ class ReadOnlyRepository implements IHighlightRepository {
 ```
 
 **✅ Good - Proper interface segregation**
+
 ```typescript
 // Separate read and write concerns
 interface IReadableRepository {
@@ -409,7 +448,8 @@ interface IWritableRepository {
 }
 
 // Full repository combines both
-interface IHighlightRepository extends IReadableRepository, IWritableRepository {}
+interface IHighlightRepository
+  extends IReadableRepository, IWritableRepository {}
 
 // ✅ Read-only implementation only implements read interface
 class ReadOnlyRepository implements IReadableRepository {
@@ -424,10 +464,18 @@ class ReadOnlyRepository implements IReadableRepository {
 
 // ✅ Full repository implements both
 class FullRepository implements IHighlightRepository {
-  async save(highlight: Highlight): Promise<void> { /* ... */ }
-  async delete(id: string): Promise<void> { /* ... */ }
-  async findById(id: string): Promise<Highlight | null> { /* ... */ }
-  async findByUrl(url: string): Promise<Highlight[]> { /* ... */ }
+  async save(highlight: Highlight): Promise<void> {
+    /* ... */
+  }
+  async delete(id: string): Promise<void> {
+    /* ... */
+  }
+  async findById(id: string): Promise<Highlight | null> {
+    /* ... */
+  }
+  async findByUrl(url: string): Promise<Highlight[]> {
+    /* ... */
+  }
 }
 ```
 
@@ -435,9 +483,11 @@ class FullRepository implements IHighlightRepository {
 
 ### 3. Interface Segregation Principle (ISP)
 
-**Principle**: Clients should not be forced to depend on interfaces they don't use.
+**Principle**: Clients should not be forced to depend on interfaces they don't
+use.
 
 **❌ Bad - Fat interface**
+
 ```typescript
 interface IHighlightService {
   // Sprint Mode only needs these
@@ -459,19 +509,34 @@ interface IHighlightService {
 
 // ❌ Sprint Mode forced to implement unused methods
 class SprintModeService implements IHighlightService {
-  async createHighlight(text: string): Promise<Highlight> { /* works */ }
-  async removeHighlight(id: string): Promise<void> { /* works */ }
+  async createHighlight(text: string): Promise<Highlight> {
+    /* works */
+  }
+  async removeHighlight(id: string): Promise<void> {
+    /* works */
+  }
 
   // ❌ Not used in Sprint Mode but forced to implement
-  async saveToStorage(): Promise<void> { throw new Error('Not supported'); }
-  async generateMindmap(): Promise<string> { throw new Error('Not supported'); }
-  async analyzeSentiment(): Promise<any> { throw new Error('Not supported'); }
-  async exportAll(): Promise<Blob> { throw new Error('Not supported'); }
-  async deleteAll(): Promise<void> { throw new Error('Not supported'); }
+  async saveToStorage(): Promise<void> {
+    throw new Error('Not supported');
+  }
+  async generateMindmap(): Promise<string> {
+    throw new Error('Not supported');
+  }
+  async analyzeSentiment(): Promise<any> {
+    throw new Error('Not supported');
+  }
+  async exportAll(): Promise<Blob> {
+    throw new Error('Not supported');
+  }
+  async deleteAll(): Promise<void> {
+    throw new Error('Not supported');
+  }
 }
 ```
 
 **✅ Good - Segregated interfaces**
+
 ```typescript
 // Core operations
 interface IBasicHighlightOperations {
@@ -499,23 +564,38 @@ interface IAdminHighlightOperations {
 
 // ✅ Sprint Mode only implements what it needs
 class SprintModeService implements IBasicHighlightOperations {
-  async createHighlight(text: string): Promise<Highlight> { /* ... */ }
-  async removeHighlight(id: string): Promise<void> { /* ... */ }
+  async createHighlight(text: string): Promise<Highlight> {
+    /* ... */
+  }
+  async removeHighlight(id: string): Promise<void> {
+    /* ... */
+  }
 }
 
 // ✅ Vault Mode implements basic + persistent
-class VaultModeService implements IBasicHighlightOperations, IPersistentHighlightOperations {
-  async createHighlight(text: string): Promise<Highlight> { /* ... */ }
-  async removeHighlight(id: string): Promise<void> { /* ... */ }
-  async saveToStorage(highlight: Highlight): Promise<void> { /* ... */ }
-  async loadFromStorage(url: string): Promise<Highlight[]> { /* ... */ }
+class VaultModeService
+  implements IBasicHighlightOperations, IPersistentHighlightOperations
+{
+  async createHighlight(text: string): Promise<Highlight> {
+    /* ... */
+  }
+  async removeHighlight(id: string): Promise<void> {
+    /* ... */
+  }
+  async saveToStorage(highlight: Highlight): Promise<void> {
+    /* ... */
+  }
+  async loadFromStorage(url: string): Promise<Highlight[]> {
+    /* ... */
+  }
 }
 
 // ✅ Gen Mode implements all three
-class GenModeService implements 
-  IBasicHighlightOperations, 
-  IPersistentHighlightOperations, 
-  IAIHighlightOperations {
+class GenModeService
+  implements
+    IBasicHighlightOperations,
+    IPersistentHighlightOperations,
+    IAIHighlightOperations {
   // Implements all methods
 }
 ```
@@ -524,17 +604,19 @@ class GenModeService implements
 
 ### 4. Dependency Inversion Principle (DIP)
 
-**Principle**: High-level modules should not depend on low-level modules. Both should depend on abstractions.
+**Principle**: High-level modules should not depend on low-level modules. Both
+should depend on abstractions.
 
 **❌ Bad - Tight coupling to concrete implementations**
+
 ```typescript
 export class HighlightService {
-  private repository: InMemoryRepository;  // ❌ Depends on concrete class
-  private logger: ConsoleLogger;           // ❌ Depends on concrete class
+  private repository: InMemoryRepository; // ❌ Depends on concrete class
+  private logger: ConsoleLogger; // ❌ Depends on concrete class
 
   constructor() {
-    this.repository = new InMemoryRepository();  // ❌ Hard-coded
-    this.logger = new ConsoleLogger();           // ❌ Hard-coded
+    this.repository = new InMemoryRepository(); // ❌ Hard-coded
+    this.logger = new ConsoleLogger(); // ❌ Hard-coded
   }
 
   async createHighlight(text: string): Promise<Highlight> {
@@ -547,6 +629,7 @@ export class HighlightService {
 ```
 
 **✅ Good - Depend on abstractions**
+
 ```typescript
 // Abstractions (interfaces)
 export interface IHighlightRepository {
@@ -563,8 +646,8 @@ export interface ILogger {
 // ✅ High-level module depends on abstractions
 export class HighlightService {
   constructor(
-    private readonly repository: IHighlightRepository,  // ✅ Interface
-    private readonly logger: ILogger                    // ✅ Interface
+    private readonly repository: IHighlightRepository, // ✅ Interface
+    private readonly logger: ILogger // ✅ Interface
   ) {}
 
   async createHighlight(text: string): Promise<Highlight> {
@@ -599,6 +682,7 @@ const cloudService = new HighlightService(
 ### 1. Dependency Injection
 
 **✅ Constructor Injection (Preferred)**
+
 ```typescript
 export class HighlightRenderer {
   constructor(
@@ -610,21 +694,25 @@ export class HighlightRenderer {
 ```
 
 **✅ Container-Based DI**
+
 ```typescript
 // Service container
 const container = new ServiceContainer();
 
 // Register dependencies
 container.registerSingleton('logger', () => new Logger());
-container.registerSingleton('eventBus', () => 
-  new EventBus(container.resolve('logger'))
+container.registerSingleton(
+  'eventBus',
+  () => new EventBus(container.resolve('logger'))
 );
 
-container.registerTransient('highlightService', () =>
-  new HighlightService(
-    container.resolve('repository'),
-    container.resolve('logger')
-  )
+container.registerTransient(
+  'highlightService',
+  () =>
+    new HighlightService(
+      container.resolve('repository'),
+      container.resolve('logger')
+    )
 );
 
 // Resolve services
@@ -647,7 +735,7 @@ export class AIService {
   private async loadModel(): Promise<AIModel> {
     if (!this.aiModel) {
       this.logger.info('Loading AI model (lazy)...');
-      this.aiModel = await import('./ai-model').then(m => new m.AIModel());
+      this.aiModel = await import('./ai-model').then((m) => new m.AIModel());
     }
     return this.aiModel;
   }
@@ -675,13 +763,13 @@ export class LRUCache<K, V> {
 
   get(key: K): V | undefined {
     const value = this.cache.get(key);
-    
+
     if (value !== undefined) {
       // Move to end (most recently used)
       this.cache.delete(key);
       this.cache.set(key, value);
     }
-    
+
     return value;
   }
 
@@ -713,11 +801,11 @@ export class CachingRepository implements IHighlightRepository {
 
     // Fetch from storage
     const highlight = await this.storage.get(id);
-    
+
     if (highlight) {
       this.cache.set(id, highlight);
     }
-    
+
     return highlight;
   }
 }
@@ -725,4 +813,5 @@ export class CachingRepository implements IHighlightRepository {
 
 ---
 
-**Next Document**: [Error Handling & Logging Framework](./03-error-logging-framework.md)
+**Next Document**:
+[Error Handling & Logging Framework](./03-error-logging-framework.md)

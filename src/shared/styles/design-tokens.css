@@ -6,25 +6,25 @@
   /* ================================
    * HIGHLIGHT COLORS (5 Presets)
    * ================================ */
-  --highlight-yellow: #FFEB3B;
+  --highlight-yellow: #ffeb3b;
   --highlight-yellow-rgb: 255, 235, 59;
   --highlight-yellow-contrast: #000000;
-  
-  --highlight-blue: #64B5F6;
+
+  --highlight-blue: #64b5f6;
   --highlight-blue-rgb: 100, 181, 246;
   --highlight-blue-contrast: #000000;
-  
-  --highlight-green: #81C784;
+
+  --highlight-green: #81c784;
   --highlight-green-rgb: 129, 199, 132;
   --highlight-green-contrast: #000000;
-  
-  --highlight-orange: #FFB74D;
+
+  --highlight-orange: #ffb74d;
   --highlight-orange-rgb: 255, 183, 77;
   --highlight-orange-contrast: #000000;
-  
-  --highlight-purple: #BA68C8;
+
+  --highlight-purple: #ba68c8;
   --highlight-purple-rgb: 186, 104, 200;
-  --highlight-purple-contrast: #FFFFFF;
+  --highlight-purple-contrast: #ffffff;
 
   /* Default highlight color */
   --highlight-default: var(--highlight-yellow);
@@ -32,46 +32,47 @@
   /* ================================
    * SURFACE COLORS
    * ================================ */
-  --surface-primary: #FFFFFF;
-  --surface-secondary: #F5F5F5;
-  --surface-tertiary: #E0E0E0;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f5f5f5;
+  --surface-tertiary: #e0e0e0;
 
   /* ================================
    * TEXT COLORS
    * ================================ */
   --text-primary: #212121;
   --text-secondary: #757575;
-  --text-disabled: #BDBDBD;
+  --text-disabled: #bdbdbd;
 
   /* ================================
    * BORDER COLORS
    * ================================ */
-  --border-light: #E0E0E0;
-  --border-medium: #BDBDBD;
-  --border-dark: #9E9E9E;
+  --border-light: #e0e0e0;
+  --border-medium: #bdbdbd;
+  --border-dark: #9e9e9e;
 
   /* ================================
    * INTERACTIVE COLORS
    * ================================ */
-  --interactive-hover: #F5F5F5;
-  --interactive-active: #E0E0E0;
-  --interactive-focus: #2196F3;
+  --interactive-hover: #f5f5f5;
+  --interactive-active: #e0e0e0;
+  --interactive-focus: #2196f3;
 
   /* ================================
    * STATUS COLORS
    * ================================ */
-  --status-success: #4CAF50;
-  --status-warning: #FF9800;
-  --status-error: #F44336;
-  --status-info: #2196F3;
+  --status-success: #4caf50;
+  --status-warning: #ff9800;
+  --status-error: #f44336;
+  --status-info: #2196f3;
 
   /* ================================
    * TYPOGRAPHY
    * ================================ */
-  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 
-                      'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
-                      'Courier New', monospace;
+  --font-family-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-family-mono:
+    'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
 
   /* Font sizes */
   --font-size-xs: 11px;
@@ -147,19 +148,19 @@
  * ================================ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface-primary: #1E1E1E;
+    --surface-primary: #1e1e1e;
     --surface-secondary: #252525;
-    --surface-tertiary: #2C2C2C;
-    
-    --text-primary: #E0E0E0;
-    --text-secondary: #A0A0A0;
+    --surface-tertiary: #2c2c2c;
+
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
     --text-disabled: #606060;
-    
+
     /* Adjusted highlight colors for dark backgrounds */
-    --highlight-yellow: #FDD835;
-    --highlight-blue: #42A5F5;
-    --highlight-green: #66BB6A;
-    --highlight-orange: #FFA726;
-    --highlight-purple: #AB47BC;
+    --highlight-yellow: #fdd835;
+    --highlight-blue: #42a5f5;
+    --highlight-green: #66bb6a;
+    --highlight-orange: #ffa726;
+    --highlight-purple: #ab47bc;
   }
 }

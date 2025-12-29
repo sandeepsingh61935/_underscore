@@ -6,10 +6,10 @@
 import { browser } from 'wxt/browser';
 
 import type {
-    AnyHighlightEvent,
-    DomainStorage,
-    EventLog,
-    StorageConfig,
+  AnyHighlightEvent,
+  DomainStorage,
+  EventLog,
+  StorageConfig,
 } from '@/shared/types/storage';
 import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
@@ -18,13 +18,13 @@ import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Storage service for domain-scoped highlight persistence
- * 
+ *
  * Features:
  * - Event sourcing (append-only event log)
  * - Per-domain encryption
  * - TTL-based expiration
  * - Domain isolation
- * 
+ *
  * @example
  * ```typescript
  * const storage = new StorageService();
@@ -37,215 +37,212 @@ import type { ILogger } from '@/shared/utils/logger';
  * ```
  */
 export class StorageService {
-    private logger: ILogger;
-    private currentDomain: string;
-    private config: StorageConfig;
+  private logger: ILogger;
+  private currentDomain: string;
+  private config: StorageConfig;
 
-    constructor(config: Partial<StorageConfig> = {}) {
-        this.logger = LoggerFactory.getLogger('StorageService');
-        this.currentDomain = window.location.hostname;
-        this.config = { ...DEFAULT_STORAGE_CONFIG, ...config };
+  constructor(config: Partial<StorageConfig> = {}) {
+    this.logger = LoggerFactory.getLogger('StorageService');
+    this.currentDomain = window.location.hostname;
+    this.config = { ...DEFAULT_STORAGE_CONFIG, ...config };
+  }
+
+  /**
+   * Save event to storage
+   * Appends to event log, applies TTL, encrypts
+   */
+  async saveEvent(event: AnyHighlightEvent): Promise<void> {
+    try {
+      // Get existing events
+      const events = await this.loadEvents();
+
+      // Append new event
+      events.push(event);
+
+      // Trim to max size (keep recent events)
+      const trimmed = events.slice(-this.config.maxEventsPerDomain);
+
+      // Save
+      await this.saveEvents(trimmed);
+
+      this.logger.debug('Event saved', { type: event.type, eventId: event.eventId });
+    } catch (error) {
+      this.logger.error('Failed to save event', error as Error);
+      throw error;
     }
+  }
 
-    /**
-     * Save event to storage
-     * Appends to event log, applies TTL, encrypts
-     */
-    async saveEvent(event: AnyHighlightEvent): Promise<void> {
-        try {
-            // Get existing events
-            const events = await this.loadEvents();
+  /**
+   * Load events from storage
+   * Returns empty array if expired or not found
+   */
+  async loadEvents(): Promise<AnyHighlightEvent[]> {
+    try {
+      const hashedDomain = await hashDomain(this.currentDomain);
 
-            // Append new event
-            events.push(event);
+      this.logger.info('🔍 [LOAD] Starting load operation', {
+        domain: this.currentDomain,
+        hashedDomain,
+      });
 
-            // Trim to max size (keep recent events)
-            const trimmed = events.slice(-this.config.maxEventsPerDomain);
+      // Debug: Dump all storage keys
+      const allKeys = await browser.storage.local.get(null);
+      this.logger.info('🔍 [LOAD] Storage dump', {
+        totalKeys: Object.keys(allKeys).length,
+        allKeys: Object.keys(allKeys),
+        ourKey: hashedDomain,
+        keyExists: hashedDomain in allKeys,
+      });
 
-            // Save
-            await this.saveEvents(trimmed);
+      const result = await browser.storage.local.get(hashedDomain);
 
-            this.logger.debug('Event saved', { type: event.type, eventId: event.eventId });
-        } catch (error) {
-            this.logger.error('Failed to save event', error as Error);
-            throw error;
-        }
-    }
-
-    /**
-     * Load events from storage
-     * Returns empty array if expired or not found
-     */
-    async loadEvents(): Promise<AnyHighlightEvent[]> {
-        try {
-            const hashedDomain = await hashDomain(this.currentDomain);
-
-            this.logger.info('🔍 [LOAD] Starting load operation', {
-                domain: this.currentDomain,
-                hashedDomain
-            });
-
-            // Debug: Dump all storage keys
-            const allKeys = await browser.storage.local.get(null);
-            this.logger.info('🔍 [LOAD] Storage dump', {
-                totalKeys: Object.keys(allKeys).length,
-                allKeys: Object.keys(allKeys),
-                ourKey: hashedDomain,
-                keyExists: hashedDomain in allKeys
-            });
-
-            const result = await browser.storage.local.get(hashedDomain);
-
-            if (!result[hashedDomain]) {
-                this.logger.warn('❌ [LOAD] No data found', {
-                    domain: this.currentDomain,
-                    hashedDomain
-                });
-                return [];
-            }
-
-            const domainStorage = result[hashedDomain] as DomainStorage;
-
-            this.logger.info('🔍 [LOAD] Found data', {
-                domain: this.currentDomain,
-                lastModified: new Date(domainStorage.lastAccessed).toISOString(),
-                ttl: domainStorage.ttl,
-                ttlDate: new Date(domainStorage.ttl).toISOString()
-            });
-
-            // Check TTL with detailed calculation
-            const now = Date.now();
-            const timeUntilExpiry = domainStorage.ttl - now;
-            const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
-
-            this.logger.info('🔍 [LOAD] TTL check', {
-                now,
-                nowDate: new Date(now).toISOString(),
-                ttl: domainStorage.ttl,
-                ttlDate: new Date(domainStorage.ttl).toISOString(),
-                timeUntilExpiryMs: timeUntilExpiry,
-                hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
-                isExpired: now > domainStorage.ttl,
-                comparison: `${now} > ${domainStorage.ttl} = ${now > domainStorage.ttl}`
-            });
-
-            if (now > domainStorage.ttl) {
-                this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
-                    domain: this.currentDomain,
-                    expiredAt: new Date(domainStorage.ttl).toISOString(),
-                    expiredAgo: `${((now - domainStorage.ttl) / (1000 * 60)).toFixed(1)} minutes`
-                });
-                await browser.storage.local.remove(hashedDomain);
-                return [];
-            }
-
-            // Decrypt
-            const decrypted = await decryptData(domainStorage.data, this.currentDomain);
-            const eventLog: EventLog = JSON.parse(decrypted);
-
-            // Validate events
-            const validEvents = eventLog.events.filter(isValidHighlightEvent);
-
-            if (validEvents.length !== eventLog.events.length) {
-                this.logger.warn('Invalid events filtered', {
-                    total: eventLog.events.length,
-                    valid: validEvents.length
-                });
-            }
-
-            this.logger.info('✅ [LOAD] Events loaded successfully', {
-                domain: this.currentDomain,
-                count: validEvents.length,
-                hoursUntilExpiry: hoursUntilExpiry.toFixed(2)
-            });
-
-            return validEvents;
-        } catch (error) {
-            this.logger.error('Failed to load events', error as Error);
-            return []; // Fail gracefully
-        }
-    }
-
-    /**
-     * Save events to storage
-     */
-    private async saveEvents(events: AnyHighlightEvent[]): Promise<void> {
-        const hashedDomain = await hashDomain(this.currentDomain);
-
-        this.logger.info('🔍 [SAVE] Starting save operation', {
-            domain: this.currentDomain,
-            hashedDomain,
-            eventCount: events.length
+      if (!result[hashedDomain]) {
+        this.logger.warn('❌ [LOAD] No data found', {
+          domain: this.currentDomain,
+          hashedDomain,
         });
+        return [];
+      }
 
-        // Create event log
-        const eventLog: EventLog = { events };
+      const domainStorage = result[hashedDomain] as DomainStorage;
 
-        // Encrypt
-        const encrypted = await encryptData(
-            JSON.stringify(eventLog),
-            this.currentDomain
-        );
+      this.logger.info('🔍 [LOAD] Found data', {
+        domain: this.currentDomain,
+        lastModified: new Date(domainStorage.lastAccessed).toISOString(),
+        ttl: domainStorage.ttl,
+        ttlDate: new Date(domainStorage.ttl).toISOString(),
+      });
 
-        // Calculate TTL
-        const now = Date.now();
-        const ttl = now + this.config.ttlDuration;
+      // Check TTL with detailed calculation
+      const now = Date.now();
+      const timeUntilExpiry = domainStorage.ttl - now;
+      const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
 
-        this.logger.info('🔍 [SAVE] TTL calculation', {
-            now,
-            nowDate: new Date(now).toISOString(),
-            ttlDuration: this.config.ttlDuration,
-            ttlDurationHours: (this.config.ttlDuration / (1000 * 60 * 60)).toFixed(2),
-            ttl,
-            ttlDate: new Date(ttl).toISOString()
+      this.logger.info('🔍 [LOAD] TTL check', {
+        now,
+        nowDate: new Date(now).toISOString(),
+        ttl: domainStorage.ttl,
+        ttlDate: new Date(domainStorage.ttl).toISOString(),
+        timeUntilExpiryMs: timeUntilExpiry,
+        hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+        isExpired: now > domainStorage.ttl,
+        comparison: `${now} > ${domainStorage.ttl} = ${now > domainStorage.ttl}`,
+      });
+
+      if (now > domainStorage.ttl) {
+        this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
+          domain: this.currentDomain,
+          expiredAt: new Date(domainStorage.ttl).toISOString(),
+          expiredAgo: `${((now - domainStorage.ttl) / (1000 * 60)).toFixed(1)} minutes`,
         });
-
-        // Create storage object
-        const domainStorage: DomainStorage = {
-            data: encrypted,
-            ttl,
-            lastAccessed: now,
-            version: 1
-        };
-
-        // Save
-        await browser.storage.local.set({ [hashedDomain]: domainStorage });
-
-        // Verify save
-        const verification = await browser.storage.local.get(hashedDomain);
-        this.logger.info('✅ [SAVE] Save completed and verified', {
-            keyExists: !!verification[hashedDomain],
-            savedTtl: new Date(ttl).toISOString(),
-            eventCount: events.length
-        });
-    }
-
-    /**
-     * Clear all events for current domain
-     */
-    async clear(): Promise<void> {
-        const hashedDomain = await hashDomain(this.currentDomain);
         await browser.storage.local.remove(hashedDomain);
-        this.logger.info('Storage cleared', { domain: this.currentDomain });
+        return [];
+      }
+
+      // Decrypt
+      const decrypted = await decryptData(domainStorage.data, this.currentDomain);
+      const eventLog: EventLog = JSON.parse(decrypted);
+
+      // Validate events
+      const validEvents = eventLog.events.filter(isValidHighlightEvent);
+
+      if (validEvents.length !== eventLog.events.length) {
+        this.logger.warn('Invalid events filtered', {
+          total: eventLog.events.length,
+          valid: validEvents.length,
+        });
+      }
+
+      this.logger.info('✅ [LOAD] Events loaded successfully', {
+        domain: this.currentDomain,
+        count: validEvents.length,
+        hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+      });
+
+      return validEvents;
+    } catch (error) {
+      this.logger.error('Failed to load events', error as Error);
+      return []; // Fail gracefully
+    }
+  }
+
+  /**
+   * Save events to storage
+   */
+  private async saveEvents(events: AnyHighlightEvent[]): Promise<void> {
+    const hashedDomain = await hashDomain(this.currentDomain);
+
+    this.logger.info('🔍 [SAVE] Starting save operation', {
+      domain: this.currentDomain,
+      hashedDomain,
+      eventCount: events.length,
+    });
+
+    // Create event log
+    const eventLog: EventLog = { events };
+
+    // Encrypt
+    const encrypted = await encryptData(JSON.stringify(eventLog), this.currentDomain);
+
+    // Calculate TTL
+    const now = Date.now();
+    const ttl = now + this.config.ttlDuration;
+
+    this.logger.info('🔍 [SAVE] TTL calculation', {
+      now,
+      nowDate: new Date(now).toISOString(),
+      ttlDuration: this.config.ttlDuration,
+      ttlDurationHours: (this.config.ttlDuration / (1000 * 60 * 60)).toFixed(2),
+      ttl,
+      ttlDate: new Date(ttl).toISOString(),
+    });
+
+    // Create storage object
+    const domainStorage: DomainStorage = {
+      data: encrypted,
+      ttl,
+      lastAccessed: now,
+      version: 1,
+    };
+
+    // Save
+    await browser.storage.local.set({ [hashedDomain]: domainStorage });
+
+    // Verify save
+    const verification = await browser.storage.local.get(hashedDomain);
+    this.logger.info('✅ [SAVE] Save completed and verified', {
+      keyExists: !!verification[hashedDomain],
+      savedTtl: new Date(ttl).toISOString(),
+      eventCount: events.length,
+    });
+  }
+
+  /**
+   * Clear all events for current domain
+   */
+  async clear(): Promise<void> {
+    const hashedDomain = await hashDomain(this.currentDomain);
+    await browser.storage.local.remove(hashedDomain);
+    this.logger.info('Storage cleared', { domain: this.currentDomain });
+  }
+
+  /**
+   * Get storage stats
+   */
+  async getStats(): Promise<{ eventCount: number; ttl: Date | null }> {
+    const hashedDomain = await hashDomain(this.currentDomain);
+    const result = await browser.storage.local.get(hashedDomain);
+
+    if (!result[hashedDomain]) {
+      return { eventCount: 0, ttl: null };
     }
 
-    /**
-     * Get storage stats
-     */
-    async getStats(): Promise<{ eventCount: number; ttl: Date | null }> {
-        const hashedDomain = await hashDomain(this.currentDomain);
-        const result = await browser.storage.local.get(hashedDomain);
+    const events = await this.loadEvents();
+    const domainStorage = result[hashedDomain] as DomainStorage;
 
-        if (!result[hashedDomain]) {
-            return { eventCount: 0, ttl: null };
-        }
-
-        const events = await this.loadEvents();
-        const domainStorage = result[hashedDomain] as DomainStorage;
-
-        return {
-            eventCount: events.length,
-            ttl: new Date(domainStorage.ttl)
-        };
-    }
+    return {
+      eventCount: events.length,
+      ttl: new Date(domainStorage.ttl),
+    };
+  }
 }

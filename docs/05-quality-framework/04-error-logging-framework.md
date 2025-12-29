@@ -1,7 +1,9 @@
 # Error Handling & Logging Framework
+
 **Web Highlighter Extension - Robust Error Management**
 
-> **Purpose**: Comprehensive error handling and logging system for production-ready applications.
+> **Purpose**: Comprehensive error handling and logging system for
+> production-ready applications.
 
 ---
 
@@ -37,7 +39,7 @@ export abstract class AppError extends Error {
     context?: Record<string, any>
   ) {
     super(message);
-    
+
     this.name = this.constructor.name;
     this.code = code;
     this.timestamp = new Date();
@@ -59,7 +61,7 @@ export abstract class AppError extends Error {
       timestamp: this.timestamp.toISOString(),
       isOperational: this.isOperational,
       context: this.context,
-      stack: this.stack
+      stack: this.stack,
     };
   }
 
@@ -107,12 +109,10 @@ export class NotFoundError extends AppError {
  */
 export class UnauthorizedError extends AppError {
   constructor(action: string, context?: Record<string, any>) {
-    super(
-      `Unauthorized to perform action: ${action}`,
-      'UNAUTHORIZED',
-      true,
-      { action, ...context }
-    );
+    super(`Unauthorized to perform action: ${action}`, 'UNAUTHORIZED', true, {
+      action,
+      ...context,
+    });
   }
 
   toUserMessage(): string {
@@ -125,12 +125,10 @@ export class UnauthorizedError extends AppError {
  */
 export class StorageError extends AppError {
   constructor(operation: string, cause?: Error) {
-    super(
-      `Storage operation failed: ${operation}`,
-      'STORAGE_ERROR',
-      true,
-      { operation, cause: cause?.message }
-    );
+    super(`Storage operation failed: ${operation}`, 'STORAGE_ERROR', true, {
+      operation,
+      cause: cause?.message,
+    });
   }
 
   toUserMessage(): string {
@@ -143,12 +141,11 @@ export class StorageError extends AppError {
  */
 export class NetworkError extends AppError {
   constructor(url: string, status?: number, cause?: Error) {
-    super(
-      `Network request failed: ${url}`,
-      'NETWORK_ERROR',
-      true,
-      { url, status, cause: cause?.message }
-    );
+    super(`Network request failed: ${url}`, 'NETWORK_ERROR', true, {
+      url,
+      status,
+      cause: cause?.message,
+    });
   }
 
   toUserMessage(): string {
@@ -218,12 +215,12 @@ export function isRetryableError(error: Error): boolean {
     // Retry on 5xx errors and rate limiting
     return !status || status >= 500 || status === 429;
   }
-  
+
   if (error instanceof StorageError) {
     // Storage errors might be transient
     return true;
   }
-  
+
   return false;
 }
 ```
@@ -243,7 +240,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  NONE = 999
+  NONE = 999,
 }
 
 /**
@@ -308,7 +305,7 @@ export class ConsoleLogger implements ILogger {
     if (this.level <= LogLevel.ERROR) {
       const entry = this.createEntry(LogLevel.ERROR, message, metadata, error);
       console.error(this.format(entry), error, ...metadata);
-      
+
       if (error?.stack) {
         console.error('Stack trace:', error.stack);
       }
@@ -335,7 +332,7 @@ export class ConsoleLogger implements ILogger {
       namespace: this.namespace,
       message,
       metadata: metadata.length > 0 ? { data: metadata } : undefined,
-      error
+      error,
     };
   }
 
@@ -406,12 +403,12 @@ export class StructuredLogger implements ILogger {
       namespace: this.namespace,
       message,
       metadata: this.sanitizeMetadata(metadata),
-      error: error ? this.serializeError(error) : undefined
+      error: error ? this.serializeError(error) : undefined,
     };
 
     // Add to buffer
     this.buffer.push(entry);
-    
+
     // Trim buffer if too large
     if (this.buffer.length > this.maxBufferSize) {
       this.buffer.shift();
@@ -419,7 +416,7 @@ export class StructuredLogger implements ILogger {
 
     // Output JSON
     const output = JSON.stringify(entry);
-    
+
     switch (level) {
       case LogLevel.DEBUG:
         console.debug(output);
@@ -457,7 +454,7 @@ export class StructuredLogger implements ILogger {
     return {
       name: error.name,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     };
   }
 
@@ -511,7 +508,7 @@ export class LoggerFactory {
    */
   static setGlobalLevel(level: LogLevel): void {
     this.defaultLevel = level;
-    
+
     // Update all existing loggers
     for (const logger of this.loggers.values()) {
       logger.setLevel(level);
@@ -523,7 +520,7 @@ export class LoggerFactory {
    */
   private static createLogger(namespace: string): ILogger {
     const isDevelopment = process.env.NODE_ENV === 'development';
-    
+
     if (isDevelopment) {
       return new ConsoleLogger(namespace, this.defaultLevel);
     } else {
@@ -593,7 +590,7 @@ export class GlobalErrorHandler {
       // Programming error - log with full details
       this.logger.error('Unexpected error occurred', error);
       this.showErrorNotification();
-      
+
       // In development, rethrow for debugging
       if (process.env.NODE_ENV === 'development') {
         throw error;
@@ -631,12 +628,12 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
       return await fn(...args);
     } catch (error) {
       logger.error(`Error in ${fn.name}`, error as Error);
-      
+
       if (isRetryableError(error as Error)) {
         logger.info(`Retrying ${fn.name}...`);
         // Implement retry logic
       }
-      
+
       throw error;
     }
   }) as T;
@@ -688,17 +685,16 @@ export class GoodLoggingExample {
       // ✅ Log success with metrics
       this.logger.info('Highlight processed', {
         highlightId: id,
-        duration: `${duration.toFixed(2)}ms`
+        duration: `${duration.toFixed(2)}ms`,
       });
     } catch (error) {
       const duration = performance.now() - startTime;
 
       // ✅ Log error with full context
-      this.logger.error(
-        'Failed to process highlight',
-        error as Error,
-        { highlightId: id, duration: `${duration.toFixed(2)}ms` }
-      );
+      this.logger.error('Failed to process highlight', error as Error, {
+        highlightId: id,
+        duration: `${duration.toFixed(2)}ms`,
+      });
 
       throw error;
     }
@@ -755,11 +751,11 @@ function createHighlight(text: string, color: string): Highlight {
 // ✅ 2. Use specific error types
 async function loadData(id: string): Promise<Data> {
   const data = await storage.get(id);
-  
+
   if (!data) {
     throw new NotFoundError('Data', id); // Specific error
   }
-  
+
   return data;
 }
 
@@ -768,11 +764,7 @@ async function syncToCloud(highlights: Highlight[]): Promise<void> {
   try {
     await api.sync(highlights);
   } catch (error) {
-    throw new NetworkError(
-      '/api/sync',
-      undefined,
-      error as Error
-    ); // Wrapped with context
+    throw new NetworkError('/api/sync', undefined, error as Error); // Wrapped with context
   }
 }
 
@@ -789,10 +781,10 @@ async function criticalOperation(): Promise<void> {
 // ✅ 5. Provide recovery options
 async function fetchWithFallback(url: string): Promise<Data> {
   try {
-    return await fetch(url).then(r => r.json());
+    return await fetch(url).then((r) => r.json());
   } catch (error) {
     this.logger.warn('Primary fetch failed, using cache', error as Error);
-    return await this.cache.get(url) ?? this.getDefault();
+    return (await this.cache.get(url)) ?? this.getDefault();
   }
 }
 ```

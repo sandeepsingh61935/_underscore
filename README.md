@@ -9,6 +9,7 @@
 ## Overview
 
 A browser extension for intelligent web highlighting with three modes:
+
 - **🏃 Sprint Mode** (Current Focus): Ephemeral highlighting for focused reading
 - **🔐 Vault Mode** (Future): Persistent storage with cross-device sync
 - **🧠 Gen Mode** (Future): AI-powered insights and knowledge synthesis
@@ -48,6 +49,7 @@ _underscore/
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js ≥ 20.0.0
 - npm ≥ 10.0.0
 
@@ -97,12 +99,14 @@ This project follows a comprehensive quality framework:
 
 - **Design Patterns**: Plugin architecture, Dependency Injection, Event Bus
 - **Type Safety**: TypeScript strict mode, 100% type coverage
-- **Error Handling**: Custom error hierarchy with operational/programmer distinction
+- **Error Handling**: Custom error hierarchy with operational/programmer
+  distinction
 - **Logging**: Structured logging with multiple levels
 - **Testing**: 80% coverage requirement (unit, integration, E2E)
 - **Code Quality**: ESLint + Prettier, complexity limits
 
-📚 **Documentation**: See [`docs/05-quality-framework/`](./docs/05-quality-framework/README.md)
+📚 **Documentation**: See
+[`docs/05-quality-framework/`](./docs/05-quality-framework/README.md)
 
 ---
 
@@ -127,10 +131,12 @@ This project follows a comprehensive quality framework:
 ## Technology Stack
 
 ### Core
+
 - **TypeScript 5.9+** (strict mode)
 - **Manifest V3** (Chrome Extension API)
 
 ### Development Tools
+
 - **Vite/WXT** - Build tool
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
@@ -138,6 +144,7 @@ This project follows a comprehensive quality framework:
 - **Playwright** - E2E testing
 
 ### Quality Standards
+
 - ✅ 80%+ test coverage
 - ✅ 0 TypeScript errors
 - ✅ 0 ESLint errors
@@ -149,6 +156,7 @@ This project follows a comprehensive quality framework:
 ## Coding Standards
 
 ### Naming Conventions
+
 - **Files**: `kebab-case` (`highlight-service.ts`)
 - **Classes**: `PascalCase` (`HighlightService`)
 - **Interfaces**: `IPascalCase` (`ILogger`)
@@ -156,6 +164,7 @@ This project follows a comprehensive quality framework:
 - **Constants**: `UPPER_SNAKE_CASE` (`MAX_HIGHLIGHTS`)
 
 ### Import Organization
+
 ```typescript
 // 1. External imports
 import { v4 as uuidv4 } from 'uuid';
@@ -175,6 +184,7 @@ import { DEFAULT_COLOR } from '@/shared/constants';
 ## Testing
 
 ### Unit Tests
+
 ```bash
 npm test                    # Run all tests
 npm run test:watch          # Watch mode
@@ -182,12 +192,14 @@ npm run test:coverage       # With coverage
 ```
 
 ### E2E Tests
+
 ```bash
 npm run test:e2e           # Run E2E tests
 npm run test:e2e:ui        # Interactive mode
 ```
 
 ### Coverage Requirements
+
 - Overall: ≥80%
 - Branches: ≥75%
 - Critical paths: 100%
@@ -207,6 +219,7 @@ npm run test:e2e:ui        # Interactive mode
 ## Architecture Principles
 
 ### SOLID
+
 - ✅ Single Responsibility
 - ✅ Open/Closed
 - ✅ Liskov Substitution
@@ -214,11 +227,13 @@ npm run test:e2e:ui        # Interactive mode
 - ✅ Dependency Inversion
 
 ### Core Principles
+
 - ✅ KISS (Keep It Simple)
 - ✅ YAGNI (You Aren't Gonna Need It)
 - ✅ DRY (Don't Repeat Yourself)
 
-See [Architecture Principles](./docs/05-quality-framework/03-architecture-principles.md)
+See
+[Architecture Principles](./docs/05-quality-framework/03-architecture-principles.md)
 
 ---
 
@@ -239,4 +254,6 @@ Sandeep Singh
 **Current**: Sprint 0 - Infrastructure Setup  
 **Next**: Sprint 1 - Core Highlighting Implementation
 
-See [Sprint Mode Implementation Plan](./docs/03-implementation/sprint_mode_implementation_plan.md) for details.
+See
+[Sprint Mode Implementation Plan](./docs/03-implementation/sprint_mode_implementation_plan.md)
+for details.

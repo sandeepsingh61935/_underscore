@@ -1,7 +1,9 @@
 # Coding Standards & Style Guide
+
 **Web Highlighter Extension - Code Quality Blueprint**
 
-> **Purpose**: Establish consistent, maintainable, and high-quality code across the entire project.
+> **Purpose**: Establish consistent, maintainable, and high-quality code across
+> the entire project.
 
 ---
 
@@ -80,6 +82,7 @@
 ### 2. Type Definitions
 
 **❌ Bad - Loose types**
+
 ```typescript
 function processHighlight(data: any): any {
   return data.text;
@@ -90,6 +93,7 @@ const config = {};
 ```
 
 **✅ Good - Strict types**
+
 ```typescript
 interface HighlightData {
   readonly id: string;
@@ -106,13 +110,14 @@ function processHighlight(data: HighlightData): string {
 const highlights: Highlight[] = [];
 const config: HighlightRendererConfig = {
   shadowRoot: true,
-  animationDuration: 200
+  animationDuration: 200,
 };
 ```
 
 ### 3. Null Safety
 
 **❌ Bad - Potential null reference errors**
+
 ```typescript
 function getHighlightText(id: string): string {
   const highlight = store.get(id);
@@ -121,14 +126,15 @@ function getHighlightText(id: string): string {
 ```
 
 **✅ Good - Explicit null handling**
+
 ```typescript
 function getHighlightText(id: string): string | null {
   const highlight = store.get(id);
-  
+
   if (!highlight) {
     return null;
   }
-  
+
   return highlight.text;
 }
 
@@ -177,6 +183,7 @@ const validHighlights = highlights.filter(isHighlight);
 ### 5. Immutability
 
 **❌ Bad - Mutating objects**
+
 ```typescript
 function updateHighlight(highlight: Highlight, newColor: string): void {
   highlight.color = newColor; // ❌ Mutates input
@@ -184,14 +191,12 @@ function updateHighlight(highlight: Highlight, newColor: string): void {
 ```
 
 **✅ Good - Immutable updates**
+
 ```typescript
-function updateHighlight(
-  highlight: Highlight,
-  newColor: string
-): Highlight {
+function updateHighlight(highlight: Highlight, newColor: string): Highlight {
   return {
     ...highlight,
-    color: newColor
+    color: newColor,
   };
 }
 
@@ -206,15 +211,16 @@ interface Highlight {
 ### 6. Enums vs Union Types
 
 **✅ Prefer Union Types for Constants**
+
 ```typescript
 // ✅ Good - Union types (tree-shakeable)
 export const Mode = {
   SPRINT: 'sprint',
   VAULT: 'vault',
-  GEN: 'gen'
+  GEN: 'gen',
 } as const;
 
-export type ModeType = typeof Mode[keyof typeof Mode];
+export type ModeType = (typeof Mode)[keyof typeof Mode];
 
 function setMode(mode: ModeType): void {
   // mode can only be 'sprint' | 'vault' | 'gen'
@@ -225,7 +231,7 @@ export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
-  ERROR = 3
+  ERROR = 3,
 }
 ```
 
@@ -398,7 +404,7 @@ interface HighlightServiceConfig {
 // 7. Constants (local to this file)
 const DEFAULT_CONFIG: HighlightServiceConfig = {
   maxHighlightsPerPage: 50,
-  defaultColor: DEFAULT_HIGHLIGHT_COLOR
+  defaultColor: DEFAULT_HIGHLIGHT_COLOR,
 };
 
 // 8. Main implementation
@@ -484,14 +490,11 @@ export type { IHighlightRepository } from './interfaces/i-highlight-repository';
 export type { IHighlightRenderer } from './interfaces/i-highlight-renderer';
 
 // Re-export common types
-export type {
-  HighlightData,
-  SelectorsData,
-  ColorHex
-} from './types';
+export type { HighlightData, SelectorsData, ColorHex } from './types';
 ```
 
 **Usage:**
+
 ```typescript
 // ✅ Clean import from barrel
 import { HighlightService, ColorManager, Highlight } from '@/content';
@@ -518,7 +521,7 @@ export abstract class AppError extends Error {
   ) {
     super(message);
     this.name = this.constructor.name;
-    
+
     // Maintain proper stack trace
     Error.captureStackTrace(this, this.constructor);
   }
@@ -528,7 +531,7 @@ export abstract class AppError extends Error {
       name: this.name,
       message: this.message,
       code: this.code,
-      context: this.context
+      context: this.context,
     };
   }
 }
@@ -547,11 +550,9 @@ export class ValidationError extends AppError {
  */
 export class HighlightNotFoundError extends AppError {
   constructor(highlightId: string) {
-    super(
-      `Highlight with ID ${highlightId} not found`,
-      'HIGHLIGHT_NOT_FOUND',
-      { highlightId }
-    );
+    super(`Highlight with ID ${highlightId} not found`, 'HIGHLIGHT_NOT_FOUND', {
+      highlightId,
+    });
   }
 }
 
@@ -568,6 +569,7 @@ export class StorageError extends AppError {
 ### 2. Error Handling Patterns
 
 **❌ Bad - Silent failures**
+
 ```typescript
 async function loadHighlights(): Promise<Highlight[]> {
   try {
@@ -580,6 +582,7 @@ async function loadHighlights(): Promise<Highlight[]> {
 ```
 
 **✅ Good - Explicit error handling**
+
 ```typescript
 async function loadHighlights(): Promise<Highlight[]> {
   try {
@@ -587,7 +590,7 @@ async function loadHighlights(): Promise<Highlight[]> {
     return highlights;
   } catch (error) {
     this.logger.error('Failed to load highlights', error);
-    
+
     // Re-throw with context
     throw new StorageError(
       'Failed to load highlights from storage',
@@ -597,7 +600,7 @@ async function loadHighlights(): Promise<Highlight[]> {
 }
 
 // Or return Result type
-type Result<T, E = Error> = 
+type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
 
@@ -609,7 +612,7 @@ async function loadHighlights(): Promise<Result<Highlight[]>> {
     this.logger.error('Failed to load highlights', error);
     return {
       success: false,
-      error: new StorageError('Failed to load highlights', error as Error)
+      error: new StorageError('Failed to load highlights', error as Error),
     };
   }
 }
@@ -635,17 +638,12 @@ export class Validator {
   }
 
   static isValidColor(color: unknown): color is string {
-    return (
-      typeof color === 'string' &&
-      /^#[0-9A-F]{6}$/i.test(color)
-    );
+    return typeof color === 'string' && /^#[0-9A-F]{6}$/i.test(color);
   }
 
   static isValidHighlightText(text: unknown): text is string {
     return (
-      typeof text === 'string' &&
-      text.trim().length > 0 &&
-      text.length <= 10000 // Max length
+      typeof text === 'string' && text.trim().length > 0 && text.length <= 10000 // Max length
     );
   }
 }
@@ -683,7 +681,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  NONE = 999
+  NONE = 999,
 }
 
 /**
@@ -731,7 +729,7 @@ export class Logger implements ILogger {
   error(message: string, error?: Error, ...meta: any[]): void {
     if (this.level <= LogLevel.ERROR) {
       console.error(this.format('ERROR', message), error, ...meta);
-      
+
       // Log stack trace for errors
       if (error?.stack) {
         console.error(error.stack);
@@ -780,11 +778,9 @@ export class HighlightService {
       return highlight;
     } catch (error) {
       // ✅ Log error with context
-      this.logger.error(
-        'Failed to create highlight',
-        error as Error,
-        { textLength: text.length }
-      );
+      this.logger.error('Failed to create highlight', error as Error, {
+        textLength: text.length,
+      });
 
       throw error;
     }
@@ -804,7 +800,7 @@ export class HighlightService {
       this.logger.info('Highlights fetched', {
         count: highlights.length,
         duration: `${duration.toFixed(2)}ms`,
-        url
+        url,
       });
 
       return highlights;
@@ -869,9 +865,9 @@ describe('HighlightService', () => {
       const color = '#FFEB3B';
 
       // ✅ Act & Assert
-      await expect(
-        service.createHighlight(text, color)
-      ).rejects.toThrow(ValidationError);
+      await expect(service.createHighlight(text, color)).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('should log creation', async () => {
@@ -885,7 +881,7 @@ describe('HighlightService', () => {
       // ✅ Assert
       expect(mockLogger.infoLogs).toContainEqual(
         expect.objectContaining({
-          message: 'Highlight created'
+          message: 'Highlight created',
         })
       );
     });
@@ -928,15 +924,12 @@ Acceptable Low Coverage:
 
 **Continued in Part 2...**
 
-This document covers:
-✅ TypeScript strict mode configuration
-✅ Naming conventions (files, variables, classes)
-✅ Code organization patterns
-✅ Error handling strategies
-✅ Logging standards
-✅ Testing structure
+This document covers: ✅ TypeScript strict mode configuration ✅ Naming
+conventions (files, variables, classes) ✅ Code organization patterns ✅ Error
+handling strategies ✅ Logging standards ✅ Testing structure
 
-*Next sections will cover:*
+_Next sections will cover:_
+
 - Documentation Standards
 - Performance Guidelines
 - Security Guidelines

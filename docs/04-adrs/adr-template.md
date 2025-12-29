@@ -26,14 +26,14 @@ What is the change that we're proposing and/or doing?
 
 What becomes easier or better as a result of this decision?
 
-- 
+-
 -
 
 ### Negative
 
 What becomes more difficult or worse?
 
--  
+-
 -
 
 ### Neutral
@@ -41,9 +41,7 @@ What becomes more difficult or worse?
 What changes without clear positive or negative impact?
 
 -
--
-
----
+- ***
 
 ## Alternatives Considered
 
@@ -51,11 +49,9 @@ What changes without clear positive or negative impact?
 
 **Description**:
 
-**Pros**:
--
+## **Pros**:
 
-**Cons**:
--
+## **Cons**:
 
 **Why not chosen**:
 
@@ -63,11 +59,9 @@ What changes without clear positive or negative impact?
 
 **Description**:
 
-**Pros**:
--
+## **Pros**:
 
-**Cons**:
--
+## **Cons**:
 
 **Why not chosen**:
 
@@ -90,5 +84,5 @@ Any specific implementation details or migration strategies?
 ## Revision History
 
 | Date | Author | Changes |
-|------|--------|---------|
+| ---- | ------ | ------- |
 |      |        |         |

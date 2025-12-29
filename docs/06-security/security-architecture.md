@@ -1,4 +1,5 @@
 # Security Architecture
+
 **Web Highlighter Extension - Security Design**
 
 ---
@@ -16,6 +17,7 @@
 ## Content Security Policy (CSP)
 
 ### Manifest V3 CSP
+
 ```json
 {
   "content_security_policy": {
@@ -25,6 +27,7 @@
 ```
 
 **Protection Against**:
+
 - ✅ XSS (Cross-Site Scripting)
 - ✅ Code injection
 - ✅ Unauthorized external scripts
@@ -37,12 +40,14 @@
 ### DOMPurify Integration
 
 **What We Sanitize**:
+
 1. User-provided highlight text
 2. User notes/annotations (Vault Mode)
 3. Any HTML content from web pages
 4. URLs and page titles
 
 **Implementation**:
+
 ```typescript
 import DOMPurify from 'dompurify';
 
@@ -87,7 +92,7 @@ export class SecurityService {
 class HighlightRenderer {
   private createShadowRoot(element: HTMLElement): ShadowRoot {
     const shadow = element.attachShadow({ mode: 'closed' });
-    
+
     // Isolated styles
     const style = document.createElement('style');
     style.textContent = `
@@ -100,13 +105,14 @@ class HighlightRenderer {
       }
     `;
     shadow.appendChild(style);
-    
+
     return shadow;
   }
 }
 ```
 
 **Protection**:
+
 - ✅ CSS injection from host page
 - ✅ Style conflicts
 - ✅ JavaScript access to our DOM
@@ -120,13 +126,14 @@ class HighlightRenderer {
 ```json
 {
   "permissions": [
-    "activeTab",    // Only current tab
-    "storage"       // Local settings only
+    "activeTab", // Only current tab
+    "storage" // Local settings only
   ]
 }
 ```
 
 **NOT Requested**:
+
 - ❌ `<all_urls>` - Too broad
 - ❌ `tabs` - Don't need all tab access
 - ❌ `history` - Don't track browsing
@@ -138,11 +145,13 @@ class HighlightRenderer {
 ## Data Protection
 
 ### Sprint Mode (Current)
+
 - **No Storage**: Everything in memory
 - **No Network**: Zero external requests
 - **No Tracking**: No analytics or telemetry
 
 ### Vault Mode (Future)
+
 - **Encryption**: End-to-end encryption for sync
 - **Local First**: Data stays local until user enables sync
 - **User Control**: Export/delete data anytime
@@ -152,44 +161,54 @@ class HighlightRenderer {
 ## Threat Mitigation
 
 ### 1. XSS (Cross-Site Scripting)
+
 **Attack**: Malicious script injected via highlighted text
 
 **Mitigation**:
+
 - ✅ DOMPurify sanitization
 - ✅ Content Security Policy
 - ✅ Shadow DOM isolation
 - ✅ No `innerHTML` usage
 
 ### 2. Code Injection
+
 **Attack**: Malicious code in extension updates
 
 **Mitigation**:
+
 - ✅ Chrome Web Store review process
 - ✅ Open source (public audit)
 - ✅ Signed releases
 - ✅ Subresource Integrity (SRI)
 
 ### 3. Data Exfiltration
+
 **Attack**: Stealing user highlights/browsing data
 
 **Mitigation**:
+
 - ✅ No analytics/tracking
 - ✅ No external network requests (Sprint Mode)
 - ✅ Minimal permissions
 - ✅ Open source audit
 
 ### 4. CSS Injection
+
 **Attack**: Malicious styles affecting extension UI
 
 **Mitigation**:
+
 - ✅ Shadow DOM (closed mode)
 - ✅ Style reset in shadow root
 - ✅ No external stylesheets
 
 ### 5. Clickjacking
+
 **Attack**: Tricking users into clicking malicious elements
 
 **Mitigation**:
+
 - ✅ No iframes allowed
 - ✅ CSP frame-ancestors directive
 - ✅ User-initiated actions only
@@ -199,6 +218,7 @@ class HighlightRenderer {
 ## Secure Coding Practices
 
 ### 1. Type Safety
+
 ```typescript
 // ✅ Good: Explicit types prevent injection
 function createHighlight(text: string, color: HexColor): Highlight {
@@ -213,6 +233,7 @@ function createHighlight(text: any, color: any) {
 ```
 
 ### 2. Input Validation
+
 ```typescript
 // ✅ Good: Validate before use
 function setColor(color: string): void {
@@ -224,11 +245,12 @@ function setColor(color: string): void {
 
 // ❌ Bad: Trust user input
 function setColor(color: string): void {
-  this.color = color;  // Could be malicious
+  this.color = color; // Could be malicious
 }
 ```
 
 ### 3. Safe DOM Manipulation
+
 ```typescript
 // ✅ Good: Use textContent, not innerHTML
 element.textContent = userProvidedText;
@@ -242,6 +264,7 @@ element.innerHTML = userProvidedText;
 ## Security Testing
 
 ### Automated Tests
+
 ```typescript
 describe('SecurityService', () => {
   it('should sanitize XSS attempts', () => {
@@ -259,6 +282,7 @@ describe('SecurityService', () => {
 ```
 
 ### Manual Security Review Checklist
+
 - [ ] All user inputs sanitized
 - [ ] No `innerHTML` usage
 - [ ] No `eval()` or `Function()` calls
@@ -272,6 +296,7 @@ describe('SecurityService', () => {
 ## Dependency Security
 
 ### NPM Audit
+
 ```bash
 # Run before every release
 npm audit
@@ -281,6 +306,7 @@ npm audit fix
 ```
 
 ### Dependency Review
+
 - ✅ Only use well-maintained packages
 - ✅ Review security advisories
 - ✅ Pin versions in package.json
@@ -299,6 +325,7 @@ npm audit fix
 5. **Post-Mortem**: Document and prevent recurrence
 
 ### Security Contact
+
 - **GitHub Issues**: [Security label]
 - **Email**: security@example.com
 - **PGP**: [Key fingerprint]
@@ -308,12 +335,14 @@ npm audit fix
 ## Compliance
 
 ### Chrome Web Store Policies
+
 - ✅ Minimal permissions
 - ✅ Privacy policy published
 - ✅ Data collection disclosed
 - ✅ No obfuscated code
 
 ### GDPR (Future - Vault Mode)
+
 - ✅ Data portability
 - ✅ Right to deletion
 - ✅ Consent for processing
@@ -324,6 +353,7 @@ npm audit fix
 ## Security Roadmap
 
 ### Sprint Mode (Current)
+
 - ✅ DOMPurify integration
 - ✅ Shadow DOM isolation
 - ✅ CSP configuration
@@ -331,12 +361,14 @@ npm audit fix
 - ✅ Minimal permissions
 
 ### Vault Mode (Future)
+
 - ⏳ End-to-end encryption
 - ⏳ Secure key management
 - ⏳ Encrypted sync protocol
 - ⏳ Security audit
 
 ### Gen Mode (Future)
+
 - ⏳ API key protection
 - ⏳ Data minimization for AI
 - ⏳ Consent management

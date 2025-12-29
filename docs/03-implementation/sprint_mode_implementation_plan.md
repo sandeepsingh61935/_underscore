@@ -14,6 +14,7 @@
 **When**: Vault Mode (post Sprint Mode)  
 **Why**: Event-driven architecture suits this project perfectly  
 **Benefits**:
+
 - Zero data loss in sync conflicts
 - Complete audit trail of all changes
 - Time-travel debugging capabilities
@@ -24,9 +25,10 @@
 ### Decision 2: Database Strategy ✅
 
 **Development Phase** (Sprint Mode → Early Vault Mode):
+
 ```yaml
 Database: Supabase (PostgreSQL)
-Reason: 
+Reason:
   - Fast setup (5 minutes)
   - Built-in auth, storage, realtime
   - Excellent DX (dashboard, logs)
@@ -35,6 +37,7 @@ Use for: Development, testing, first 1,000 users
 ```
 
 **Production Phase** (After market validation):
+
 ```yaml
 Database: Oracle Cloud Always Free
 Reason:
@@ -42,7 +45,7 @@ Reason:
   - 20GB PostgreSQL database
   - 1GB RAM, AMD compute
   - Handles 50,000 users easily
-Migration: 
+Migration:
   - Week 14-15 (after Sprint Mode launch)
   - PostgreSQL dump from Supabase → Oracle Cloud
   - Zero downtime migration (DNS cutover)
@@ -66,7 +69,7 @@ This plan delivers **production-ready Sprint Mode** with:
 ✅ **Privacy guaranteed** (zero storage, zero tracking)  
 ✅ **Performance optimized** (<50ms highlight render)  
 ✅ **Accessibility compliant** (WCAG 2.1 AA)  
-✅ **Cross-browser** (Chrome, Firefox, Edge)  
+✅ **Cross-browser** (Chrome, Firefox, Edge)
 
 **After Sprint Mode ships, then consider Vault/Gen modes.**
 
@@ -410,6 +413,7 @@ Testing:
 
 - Working highlighting on static pages
 - In-memory storage functional
+
 ### ✅ Sprint 1: Foundation & Core Highlighting (COMPLETE)
 
 **Status**: ✅ All tasks complete  
@@ -417,6 +421,7 @@ Testing:
 **Branch**: `sprint-1`
 
 ### Infrastructure ✅
+
 - [x] EventBus implementation (Observer pattern)
 - [x] Event type definitions (TypeScript)
 - [x] ADR-002: Event-Driven Architecture
@@ -428,6 +433,7 @@ Testing:
 ### Core Components ✅
 
 #### SelectionDetector
+
 - [x] Double-click detection (300ms window)
 - [x] Keyboard shortcut (Ctrl+U / Cmd+U)
 - [x] **Click-within-selection** (select → click → highlight)
@@ -436,6 +442,7 @@ Testing:
 - [x] 12 unit tests
 
 #### ColorManager
+
 - [x] 5-color palette (yellow, blue, green, orange, purple)
 - [x] Chrome.storage.local persistence
 - [x] Color validation (hex + palette)
@@ -443,6 +450,7 @@ Testing:
 - [x] 17 unit tests
 
 #### HighlightRenderer
+
 - [x] **Underscore/underline style** (not background)
 - [x] **Contrast-aware colors** (dark/light adaptation)
 - [x] Shadow DOM isolation
@@ -452,6 +460,7 @@ Testing:
 - [x] 9 unit tests
 
 #### HighlightStore
+
 - [x] Map-based in-memory storage
 - [x] Event-driven CRUD operations
 - [x] Highlight count tracking
@@ -459,6 +468,7 @@ Testing:
 - [x] 19 unit tests
 
 ### Integration ✅
+
 - [x] Content script orchestration
 - [x] EventBus wiring (all components)
 - [x] **Popup count sync** (chrome.runtime messages)
@@ -467,15 +477,17 @@ Testing:
 - [x] Build successful (46.3 kB)
 
 ### UX Polish ✅
-- [x] **Underscore highlighting** (matches "_underscore" name)
+
+- [x] **Underscore highlighting** (matches "\_underscore" name)
 - [x] **Background detection** (walks DOM tree)
 - [x] **Contrast adjustment** (50% darker on light, 40% lighter on dark)
 - [x] **3 highlighting methods**:
   - Double-click (words)
-  - Select + click (phrases/paragraphs)  
+  - Select + click (phrases/paragraphs)
   - Ctrl+U (keyboard)
 
 ### Quality ✅
+
 - [x] 103/106 tests passing (97%)
 - [x] Build succeeds
 - [x] 0 TypeScript errors
@@ -760,7 +772,7 @@ Testing:
 
 Store Submission:
   - [ ] Chrome Web Store: Submitted
-  - [ ] Firefox Add-ons: Submitted  
+  - [ ] Firefox Add-ons: Submitted
   - [ ] Edge Add-ons: Submitted
   - [ ] All stores approved within 5 days
 ```
@@ -789,13 +801,13 @@ describe('ColorManager', () => {
     const color = manager.getContrastColor('#FFFFFF', 7.0);
     expect(color).toBe('#000000'); // Black text on white
   });
-  
+
   it('should calculate correct contrast for dark background', () => {
     const manager = new ColorManager();
     const color = manager.getContrastColor('#222222', 7.0);
     expect(color).toBe('#FFFFFF'); // White text on dark
   });
-  
+
   it('should meet WCAG AAA contrast ratio', () => {
     const manager = new ColorManager();
     const contrastRatio = manager.calculateContrast('#FFEB3B', '#000000');
@@ -818,41 +830,41 @@ test.describe('Sprint Mode Highlighting', () => {
     // Load extension
     const extensionPath = path.join(__dirname, '../../dist');
     await context.addInitScript({ path: extensionPath });
-    
+
     // Navigate to test page
     await page.goto('https://example.com');
   });
-  
+
   test('should highlight text on double-tap', async ({ page }) => {
     // Select text
     await page.locator('p').first().dblclick();
-    
+
     // Verify highlight rendered
     const highlight = page.locator('app-highlight');
     await expect(highlight).toBeVisible();
     await expect(highlight).toHaveCSS('background-color', 'rgb(255, 235, 59)');
   });
-  
+
   test('should remove highlight on click', async ({ page }) => {
     // Create highlight
     await page.locator('p').first().dblclick();
-    
+
     // Click highlight
     const highlight = page.locator('app-highlight');
     await highlight.click();
-    
+
     // Verify removed
     await expect(highlight).not.toBeVisible();
   });
-  
+
   test('should clear all highlights with Ctrl+Shift+U', async ({ page }) => {
     // Create multiple highlights
     await page.locator('p').nth(0).dblclick();
     await page.locator('p').nth(1).dblclick();
-    
+
     // Clear all
     await page.keyboard.press('Control+Shift+U');
-    
+
     // Verify all removed
     const highlights = page.locator('app-highlight');
     await expect(highlights).toHaveCount(0);
@@ -870,17 +882,17 @@ Websites to Test:
     - [ ] New York Times (https://nytimes.com)
     - [ ] The Guardian (https://theguardian.com)
     - [ ] BBC (https://bbc.com)
-  
+
   Social:
     - [ ] Twitter/X (https://twitter.com)
     - [ ] Reddit (https://reddit.com)
     - [ ] Hacker News (https://news.ycombinator.com)
-  
+
   Technical:
     - [ ] GitHub (https://github.com)
     - [ ] Stack Overflow (https://stackoverflow.com)
     - [ ] Medium (https://medium.com)
-  
+
   General:
     - [ ] Wikipedia (https://wikipedia.org)
     - [ ] Google Docs (https://docs.google.com)
@@ -892,14 +904,14 @@ Test Cases:
     - [ ] Keyboard shortcut highlights text
     - [ ] Click removes highlight
     - [ ] Clear all removes all highlights
-  
+
   Edge Cases:
     - [ ] Highlighting across paragraphs
     - [ ] Highlighting in tables
     - [ ] Highlighting in lists
     - [ ] Highlighting with special characters
     - [ ] Highlighting on dark mode sites
-  
+
   Performance:
     - [ ] 100 highlights on one page (performance)
     - [ ] Rapidly create/remove highlights (no jank)
@@ -937,14 +949,11 @@ Before Release:
 ```yaml
 Beta Program (Week 13):
   Participants: 20-30 early adopters
-  
+
   Testing Tasks:
-    1. Install extension
-    2. Highlight 20 passages across 5 websites
-    3. Try all keyboard shortcuts
-    4. Customize colors
-    5. Report any issues
-  
+    1. Install extension 2. Highlight 20 passages across 5 websites 3. Try all
+    keyboard shortcuts 4. Customize colors 5. Report any issues
+
   Success Criteria:
     - 90%+ completion rate
     - 4+ star rating (average)
@@ -972,7 +981,7 @@ Sprint Mode is **DONE** when:
 ✅ **Cross-browser**: Works on Chrome, Firefox, Edge  
 ✅ **Cross-site**: Works on 95% of top 50 websites  
 ✅ **Published**: Live on Chrome Web Store, Firefox Add-ons, Edge Add-ons  
-✅ **Documented**: User guide, privacy policy, support docs  
+✅ **Documented**: User guide, privacy policy, support docs
 
 **When Sprint Mode is DONE, celebrate 🎉 then plan Vault Mode.**
 
@@ -980,13 +989,13 @@ Sprint Mode is **DONE** when:
 
 ## Risk Mitigation
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Shadow DOM breaks on some sites | High | Medium | Fallback to regular DOM with warning |
-| Chrome Web Store rejection | Medium | High | Study guidelines, over-communicate, prepare appeal |
-| Performance issues at scale | Medium | Medium | Performance benchmarks in CI, load testing |
-| Browser API changes | Low | High | Subscribe to Chrome/Firefox dev channels |
-| Accessibility issues | Medium | Medium | Audit early and often, hire consultant if needed |
+| Risk                            | Likelihood | Impact | Mitigation                                         |
+| ------------------------------- | ---------- | ------ | -------------------------------------------------- |
+| Shadow DOM breaks on some sites | High       | Medium | Fallback to regular DOM with warning               |
+| Chrome Web Store rejection      | Medium     | High   | Study guidelines, over-communicate, prepare appeal |
+| Performance issues at scale     | Medium     | Medium | Performance benchmarks in CI, load testing         |
+| Browser API changes             | Low        | High   | Subscribe to Chrome/Firefox dev channels           |
+| Accessibility issues            | Medium     | Medium | Audit early and often, hire consultant if needed   |
 
 ---
 
@@ -1002,13 +1011,13 @@ Week 1:
 Month 1:
   - Installs: 2,000
   - Active users: 1,000
-  - Retention (7-day): >50%
+  - Retention (7-day): >50
   - Rating: 4.3+
 
 Quarter 1:
   - Installs: 10,000
   - Active users: 5,000
-  - Retention (30-day): >30%
+  - Retention (30-day): >30
   - Rating: 4.5+
   - Zero security incidents
   - Zero privacy violations
@@ -1021,21 +1030,25 @@ Quarter 1:
 After Sprint Mode ships and stabilizes (Month 3-4), evaluate:
 
 **Option 1: Add Vault Mode** (persistent local storage)
+
 - Requires: IndexedDB, multi-selector strategy, restoration logic
 - Timeline: +6 weeks
 - Complexity: High
 
 **Option 2: Add Cloud Sync** (requires backend)
+
 - Requires: Auth, API, database, Event Sourcing
 - Timeline: +8 weeks
 - Complexity: Very High
 
 **Option 3: Add Gen Mode** (AI features)
+
 - Requires: Backend, AI API, cost management
 - Timeline: +6 weeks
 - Complexity: High
 
-**Recommendation**: Validate Sprint Mode first (get 1,000 users), then decide based on user feedback.
+**Recommendation**: Validate Sprint Mode first (get 1,000 users), then decide
+based on user feedback.
 
 ---
 
@@ -1052,6 +1065,7 @@ This plan delivers **production-ready Sprint Mode in 10 weeks** with:
 
 **Focus**: Get Sprint Mode perfect before adding complexity.
 
-**Philosophy**: Ship small, ship fast, ship quality. Then iterate based on real user data.
+**Philosophy**: Ship small, ship fast, ship quality. Then iterate based on real
+user data.
 
 **Next Step**: Review this plan, approve, then start Sprint 0.

@@ -1,11 +1,9 @@
 /**
  * @file validation.ts
  * @description Runtime validation utilities using Zod
- * 
+ *
  * Provides safe validation with detailed error reporting
  */
-
-/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 import type { z } from 'zod';
 import { ZodError } from 'zod';
@@ -19,73 +17,69 @@ const logger: ILogger = LoggerFactory.getLogger('Validation');
  * Validation error with context
  */
 export class ValidationError extends Error {
-    constructor(
-        message: string,
-        public readonly zodError: ZodError,
-        public readonly data: unknown,
-        public readonly context?: string
-    ) {
-        super(message);
-        this.name = 'ValidationError';
+  constructor(
+    message: string,
+    public readonly zodError: ZodError,
+    public readonly data: unknown,
+    public readonly context?: string
+  ) {
+    super(message);
+    this.name = 'ValidationError';
 
-        // Maintain proper stack trace
-        if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, ValidationError);
-        }
+    // Maintain proper stack trace
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ValidationError);
     }
+  }
 
-    /**
-     * Get formatted error details
-     */
-    getDetails(): string[] {
-        return (this.zodError as any).errors.map((err: any) => {
-            const path = err.path.join('.');
-            return `${path}: ${err.message}`;
-        });
-    }
+  /**
+   * Get formatted error details
+   */
+  getDetails(): string[] {
+    return (this.zodError as any).errors.map((err: any) => {
+      const path = err.path.join('.');
+      return `${path}: ${err.message}`;
+    });
+  }
 
-    /**
-     * Convert to JSON for logging
-     */
-    toJSON(): object {
-        return {
-            name: this.name,
-            message: this.message,
-            context: this.context,
-            errors: this.getDetails(),
-            data: this.data
-        };
-    }
+  /**
+   * Convert to JSON for logging
+   */
+  toJSON(): object {
+    return {
+      name: this.name,
+      message: this.message,
+      context: this.context,
+      errors: this.getDetails(),
+      data: this.data,
+    };
+  }
 }
 
 /**
  * Validate data against schema with detailed error logging
  * Throws ValidationError on failure
  */
-export function validate<T>(
-    schema: z.ZodSchema<T>,
-    data: unknown,
-    context?: string
-): T {
-    try {
-        return schema.parse(data);
-    } catch (error) {
-        if (error instanceof ZodError) {
-            logger.error('Validation failed', undefined, {
-                context,
-                errors: (error as any).errors,
-                data
-            });
+export function validate<T>(schema: z.ZodSchema<T>, data: unknown, context?: string): T {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      logger.error('Validation failed', undefined, {
+        context,
+        errors: (error as any).errors,
+        data,
+      });
 
-            throw new ValidationError(
-                `Validation failed${context ? ` for ${context}` : ''}`,
-                error,
-                data,
-                context
-            );
-        }
-        throw error;
+      throw new ValidationError(
+        `Validation failed${context ? ` for ${context}` : ''}`,
+        error,
+        data,
+        context
+      );
     }
+    throw error;
+  }
 }
 
 /**
@@ -93,22 +87,22 @@ export function validate<T>(
  * Use when validation failure should not interrupt flow
  */
 export function validateSafe<T>(
-    schema: z.ZodSchema<T>,
-    data: unknown,
-    context?: string
+  schema: z.ZodSchema<T>,
+  data: unknown,
+  context?: string
 ): T | null {
-    const result = schema.safeParse(data);
+  const result = schema.safeParse(data);
 
-    if (!result.success) {
-        logger.warn('Validation failed (safe mode)', {
-            context,
-            errors: (result.error as any).errors,
-            data
-        });
-        return null;
-    }
+  if (!result.success) {
+    logger.warn('Validation failed (safe mode)', {
+      context,
+      errors: (result.error as any).errors,
+      data,
+    });
+    return null;
+  }
 
-    return result.data;
+  return result.data;
 }
 
 /**
@@ -116,40 +110,37 @@ export function validateSafe<T>(
  * Returns only valid items
  */
 export function validateArray<T>(
-    schema: z.ZodSchema<T>,
-    dataArray: unknown[],
-    context?: string
+  schema: z.ZodSchema<T>,
+  dataArray: unknown[],
+  context?: string
 ): T[] {
-    const valid: T[] = [];
-    const invalid: unknown[] = [];
+  const valid: T[] = [];
+  const invalid: unknown[] = [];
 
-    dataArray.forEach((item, index) => {
-        const result = schema.safeParse(item);
-        if (result.success) {
-            valid.push(result.data);
-        } else {
-            invalid.push({ index, item, errors: (result.error as any).errors });
-        }
-    });
-
-    if (invalid.length > 0) {
-        logger.warn('Some items failed validation', {
-            context,
-            validCount: valid.length,
-            invalidCount: invalid.length,
-            invalid
-        });
+  dataArray.forEach((item, index) => {
+    const result = schema.safeParse(item);
+    if (result.success) {
+      valid.push(result.data);
+    } else {
+      invalid.push({ index, item, errors: (result.error as any).errors });
     }
+  });
 
-    return valid;
+  if (invalid.length > 0) {
+    logger.warn('Some items failed validation', {
+      context,
+      validCount: valid.length,
+      invalidCount: invalid.length,
+      invalid,
+    });
+  }
+
+  return valid;
 }
 
 /**
  * Type guard to check if data matches schema
  */
-export function isValid<T>(
-    schema: z.ZodSchema<T>,
-    data: unknown
-): data is T {
-    return schema.safeParse(data).success;
+export function isValid<T>(schema: z.ZodSchema<T>, data: unknown): data is T {
+  return schema.safeParse(data).success;
 }

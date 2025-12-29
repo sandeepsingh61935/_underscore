@@ -5,178 +5,160 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ColorManager, COLOR_PALETTE, type ColorName } from '@/content/color-manager';
+import { ColorManager, COLOR_ROLES, type ColorRole } from '@/content/color-manager';
 
-// Mock chrome.storage API
-const mockStorage = {
-    local: {
-        get: vi.fn(),
-        set: vi.fn(),
+// Mock wxt/browser
+const mockStorageGet = vi.fn();
+const mockStorageSet = vi.fn();
+
+vi.mock('wxt/browser', () => ({
+  browser: {
+    storage: {
+      local: {
+        get: (...args: any[]) => mockStorageGet(...args),
+        set: (...args: any[]) => mockStorageSet(...args),
+      },
     },
-};
-
-vi.stubGlobal('chrome', { storage: mockStorage });
+  },
+}));
 
 describe('ColorManager', () => {
-    let colorManager: ColorManager;
+  let colorManager: ColorManager;
 
-    beforeEach(() => {
-        colorManager = new ColorManager();
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    colorManager = new ColorManager();
+  });
+
+  describe('Initialization', () => {
+    it('should initialize with default role when no saved role', async () => {
+      mockStorageGet.mockResolvedValue({});
+
+      await colorManager.initialize();
+      const role = await colorManager.getCurrentColorRole();
+
+      expect(role).toBe('yellow');
+      expect(colorManager.isInitialized()).toBe(true);
     });
 
-    describe('Initialization', () => {
-        it('should initialize with default color when no saved color', async () => {
-            mockStorage.local.get.mockResolvedValue({});
+    it('should load saved role from storage', async () => {
+      mockStorageGet.mockResolvedValue({
+        currentColorRole: 'blue',
+      });
 
-            await colorManager.initialize();
-            const color = await colorManager.getCurrentColor();
+      await colorManager.initialize();
+      const role = await colorManager.getCurrentColorRole();
 
-            expect(color).toBe(COLOR_PALETTE.yellow);
-            expect(colorManager.isInitialized()).toBe(true);
-        });
-
-        it('should load saved color from storage', async () => {
-            mockStorage.local.get.mockResolvedValue({
-                currentHighlightColor: COLOR_PALETTE.blue,
-            });
-
-            await colorManager.initialize();
-            const color = await colorManager.getCurrentColor();
-
-            expect(color).toBe(COLOR_PALETTE.blue);
-        });
-
-        it('should use default color if saved color is invalid', async () => {
-            mockStorage.local.get.mockResolvedValue({
-                currentHighlightColor: 'invalid-color',
-            });
-
-            await colorManager.initialize();
-            const color = await colorManager.getCurrentColor();
-
-            expect(color).toBe(COLOR_PALETTE.yellow);
-        });
-
-        it('should not initialize twice', async () => {
-            mockStorage.local.get.mockResolvedValue({});
-
-            await colorManager.initialize();
-            await colorManager.initialize(); // Second call
-
-            expect(mockStorage.local.get).toHaveBeenCalledTimes(1);
-        });
-
-        it('should handle storage errors gracefully', async () => {
-            mockStorage.local.get.mockRejectedValue(new Error('Storage error'));
-
-            await colorManager.initialize();
-            const color = await colorManager.getCurrentColor();
-
-            expect(color).toBe(COLOR_PALETTE.yellow); // Falls back to default
-            expect(colorManager.isInitialized()).toBe(true);
-        });
+      expect(role).toBe('blue');
     });
 
-    describe('getCurrentColor', () => {
-        it('should return current color', async () => {
-            mockStorage.local.get.mockResolvedValue({});
+    it('should use default role if saved role is invalid', async () => {
+      mockStorageGet.mockResolvedValue({
+        currentColorRole: 'invalid-role',
+      });
 
-            const color = await colorManager.getCurrentColor();
+      await colorManager.initialize();
+      const role = await colorManager.getCurrentColorRole();
 
-            expect(color).toBe(COLOR_PALETTE.yellow);
-        });
-
-        it('should auto-initialize if not initialized', async () => {
-            mockStorage.local.get.mockResolvedValue({});
-
-            expect(colorManager.isInitialized()).toBe(false);
-
-            await colorManager.getCurrentColor();
-
-            expect(colorManager.isInitialized()).toBe(true);
-        });
+      expect(role).toBe('yellow');
     });
 
-    describe('setCurrentColor', () => {
-        beforeEach(async () => {
-            mockStorage.local.get.mockResolvedValue({});
-            mockStorage.local.set.mockResolvedValue(undefined);
-            await colorManager.initialize();
-        });
+    it('should not initialize twice', async () => {
+      mockStorageGet.mockResolvedValue({});
 
-        it('should set color from palette', async () => {
-            await colorManager.setCurrentColor(COLOR_PALETTE.green);
-            const color = await colorManager.getCurrentColor();
+      await colorManager.initialize();
+      await colorManager.initialize(); // Second call
 
-            expect(color).toBe(COLOR_PALETTE.green);
-            expect(mockStorage.local.set).toHaveBeenCalledWith({
-                currentHighlightColor: COLOR_PALETTE.green,
-            });
-        });
-
-        it('should accept valid hex color', async () => {
-            const customColor = '#FF0000';
-            await colorManager.setCurrentColor(customColor);
-            const color = await colorManager.getCurrentColor();
-
-            expect(color).toBe(customColor);
-        });
-
-        it('should reject invalid hex color', async () => {
-            await expect(colorManager.setCurrentColor('invalid')).rejects.toThrow('Invalid color');
-            await expect(colorManager.setCurrentColor('#FFF')).rejects.toThrow(); // Too short
-        });
-
-        it('should continue if storage.set fails', async () => {
-            mockStorage.local.set.mockRejectedValue(new Error('Storage error'));
-
-            await colorManager.setCurrentColor(COLOR_PALETTE.purple);
-            const color = await colorManager.getCurrentColor();
-
-            expect(color).toBe(COLOR_PALETTE.purple); // Color changed in memory
-        });
+      expect(mockStorageGet).toHaveBeenCalledTimes(1);
     });
 
-    describe('getColorPalette', () => {
-        it('should return all palette colors', () => {
-            const palette = colorManager.getColorPalette();
+    it('should handle storage errors gracefully', async () => {
+      mockStorageGet.mockRejectedValue(new Error('Storage error'));
 
-            expect(palette).toEqual(COLOR_PALETTE);
-            expect(Object.keys(palette)).toHaveLength(5);
-        });
+      await colorManager.initialize();
+      const role = await colorManager.getCurrentColorRole();
 
-        it('should return a copy of the palette', () => {
-            const palette1 = colorManager.getColorPalette();
-            const palette2 = colorManager.getColorPalette();
+      expect(role).toBe('yellow'); // Falls back to default
+      expect(colorManager.isInitialized()).toBe(true);
+    });
+  });
 
-            expect(palette1).not.toBe(palette2); // Different objects
-            expect(palette1).toEqual(palette2); // Same values
-        });
+  describe('getCurrentColorRole', () => {
+    it('should return current role', async () => {
+      mockStorageGet.mockResolvedValue({});
+
+      const role = await colorManager.getCurrentColorRole();
+
+      expect(role).toBe('yellow');
     });
 
-    describe('getDefaultColor', () => {
-        it('should return yellow as default', () => {
-            const defaultColor = colorManager.getDefaultColor();
-            expect(defaultColor).toBe(COLOR_PALETTE.yellow);
-        });
+    it('should auto-initialize if not initialized', async () => {
+      mockStorageGet.mockResolvedValue({});
+
+      expect(colorManager.isInitialized()).toBe(false);
+
+      await colorManager.getCurrentColorRole();
+
+      expect(colorManager.isInitialized()).toBe(true);
+    });
+  });
+
+  describe('setCurrentColorRole', () => {
+    beforeEach(async () => {
+      mockStorageGet.mockResolvedValue({});
+      mockStorageSet.mockResolvedValue(undefined);
+      await colorManager.initialize();
     });
 
-    describe('getColorName', () => {
-        it('should return color name for palette color', () => {
-            expect(colorManager.getColorName(COLOR_PALETTE.yellow)).toBe('yellow');
-            expect(colorManager.getColorName(COLOR_PALETTE.blue)).toBe('blue');
-            expect(colorManager.getColorName(COLOR_PALETTE.green)).toBe('green');
-        });
+    it('should set valid role', async () => {
+      await colorManager.setCurrentColorRole('green');
+      const role = await colorManager.getCurrentColorRole();
 
-        it('should be case-insensitive', () => {
-            expect(colorManager.getColorName('#FFEB3B')).toBe('yellow');
-            expect(colorManager.getColorName('#ffeb3b')).toBe('yellow');
-        });
-
-        it('should return null for non-palette color', () => {
-            expect(colorManager.getColorName('#FF0000')).toBeNull();
-            expect(colorManager.getColorName('invalid')).toBeNull();
-        });
+      expect(role).toBe('green');
+      expect(mockStorageSet).toHaveBeenCalledWith({
+        currentColorRole: 'green',
+      });
     });
+
+    it('should reject invalid role', async () => {
+      await expect(
+        colorManager.setCurrentColorRole('invalid' as ColorRole)
+      ).rejects.toThrow('Invalid color role');
+    });
+
+    it('should continue if storage.set fails', async () => {
+      mockStorageSet.mockRejectedValue(new Error('Storage error'));
+
+      // Should verify it doesn't throw
+      await colorManager.setCurrentColorRole('purple');
+      const role = await colorManager.getCurrentColorRole();
+
+      expect(role).toBe('purple'); // Role changed in memory
+    });
+  });
+
+  describe('getCSSVariableName', () => {
+    it('should return correct CSS variable', async () => {
+      mockStorageGet.mockResolvedValue({});
+      await colorManager.setCurrentColorRole('blue');
+      expect(colorManager.getCSSVariableName()).toBe('--highlight-blue');
+    });
+  });
+
+  describe('getColorRoles', () => {
+    it('should return all available roles', () => {
+      const roles = colorManager.getColorRoles();
+      // yellow, orange, blue, green, purple, pink, teal = 7 roles
+      expect(roles).toHaveLength(7);
+      expect(roles).toContain('yellow');
+      expect(roles).toContain('teal');
+    });
+  });
+
+  describe('getDefaultColorRole', () => {
+    it('should return yellow as default', () => {
+      const defaultRole = colorManager.getDefaultColorRole();
+      expect(defaultRole).toBe('yellow');
+    });
+  });
 });

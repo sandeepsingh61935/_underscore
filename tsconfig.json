@@ -57,11 +57,7 @@
     // Specify module code generation
     "module": "ESNext",
     // Specify library files to be included in the compilation
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     // Generate .d.ts files from TypeScript and JavaScript files in your project
     "declaration": true,
     // Generate .map files
@@ -85,30 +81,14 @@
     "baseUrl": ".",
     // Path mapping for module resolution
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@/content/*": [
-        "src/content/*"
-      ],
-      "@/background/*": [
-        "src/background/*"
-      ],
-      "@/popup/*": [
-        "src/popup/*"
-      ],
-      "@/shared/*": [
-        "src/shared/*"
-      ],
-      "@/utils/*": [
-        "src/utils/*"
-      ],
-      "@/components/*": [
-        "src/components/*"
-      ],
-      "@/types/*": [
-        "src/types/*"
-      ]
+      "@/*": ["src/*"],
+      "@/content/*": ["src/content/*"],
+      "@/background/*": ["src/background/*"],
+      "@/popup/*": ["src/popup/*"],
+      "@/shared/*": ["src/shared/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/components/*": ["src/components/*"],
+      "@/types/*": ["src/types/*"]
     },
     // ===================================
     // ADVANCED OPTIONS
@@ -127,10 +107,7 @@
   // ===================================
   // INCLUDE & EXCLUDE
   // ===================================
-  "include": [
-    "src/**/*",
-    "types/**/*"
-  ],
+  "include": ["src/**/*", "types/**/*"],
   "exclude": [
     "node_modules",
     "dist",
@@ -144,9 +121,6 @@
   // ===================================
   "typeAcquisition": {
     "enable": true,
-    "include": [
-      "chrome",
-      "node"
-    ]
+    "include": ["chrome", "node"]
   }
 }

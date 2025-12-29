@@ -1,4 +1,5 @@
 # Web Highlighter Extension
+
 ## Complete Project Specification & Implementation Guide
 
 **Version:** 1.0  
@@ -36,21 +37,24 @@
 
 ### 1.1 Project Overview
 
-A browser extension that revolutionizes online reading through **three intelligent highlighting modes**:
+A browser extension that revolutionizes online reading through **three
+intelligent highlighting modes**:
 
-- **🏃 Sprint Mode**: Ephemeral highlighting for focused reading (zero storage, zero cost)
-- **🔐 Vault Mode**: Persistent storage with smart organization and cross-device sync
+- **🏃 Sprint Mode**: Ephemeral highlighting for focused reading (zero storage,
+  zero cost)
+- **🔐 Vault Mode**: Persistent storage with smart organization and cross-device
+  sync
 - **🧠 Gen Mode**: AI-powered insights, mindmaps, and knowledge synthesis
 
 ### 1.2 Key Differentiators
 
-| Feature | Competitors | Our Solution |
-|---------|-------------|--------------|
-| **Flexibility** | One-size-fits-all | 3 modes for different use cases |
-| **Privacy** | Always cloud-synced | Sprint mode = 100% private |
-| **AI Intelligence** | Whole-page summarization | User-curated highlights guide AI |
-| **Cost** | $5-10/month required | Free tier with generous limits |
-| **Persistence** | Brittle (breaks on page updates) | Multi-selector strategy (90% reliability) |
+| Feature             | Competitors                      | Our Solution                              |
+| ------------------- | -------------------------------- | ----------------------------------------- |
+| **Flexibility**     | One-size-fits-all                | 3 modes for different use cases           |
+| **Privacy**         | Always cloud-synced              | Sprint mode = 100% private                |
+| **AI Intelligence** | Whole-page summarization         | User-curated highlights guide AI          |
+| **Cost**            | $5-10/month required             | Free tier with generous limits            |
+| **Persistence**     | Brittle (breaks on page updates) | Multi-selector strategy (90% reliability) |
 
 ### 1.3 Target Market
 
@@ -74,11 +78,14 @@ Quality: 4.5+ stars, <2% crash rate
 
 ### 2.1 Vision Statement
 
-> "Transform online reading from passive consumption to active knowledge creation through intelligent, flexible highlighting that adapts to how people actually read."
+> "Transform online reading from passive consumption to active knowledge
+> creation through intelligent, flexible highlighting that adapts to how people
+> actually read."
 
 ### 2.2 Mission
 
 Enable readers to:
+
 1. **Focus** during reading without distractions
 2. **Remember** what matters through organized storage
 3. **Connect** ideas across articles with AI assistance
@@ -105,7 +112,8 @@ Open & Extensible:
 ### 2.4 Long-Term Goals
 
 **Year 1**: Establish product-market fit, 50k users, $5k MRR  
-**Year 2**: Build network effects (collaborative features), 500k users, $50k MRR  
+**Year 2**: Build network effects (collaborative features), 500k users, $50k
+MRR  
 **Year 3**: Enterprise offering, mobile apps, API marketplace, 2M users
 
 ---
@@ -117,21 +125,25 @@ Open & Extensible:
 #### Existing Solutions
 
 **Web Highlights** (100k+ users)
+
 - Strengths: Web Components, PWA dashboard
 - Weaknesses: No AI, limited free tier
 - Pricing: $4.99/month
 
 **Weava** (500k+ users)
+
 - Strengths: Folder organization, citations
 - Weaknesses: Technical debt, stability issues
 - Pricing: $7.99/month
 
 **Liner** (500k+ users)
+
 - Strengths: AI integration, social features
 - Weaknesses: Poor AI accuracy, removed key features
 - Pricing: $8.99/month
 
 **Hypothesis** (Open-source)
+
 - Strengths: Robust anchoring, academic focus
 - Weaknesses: Complex UI, no AI
 - Pricing: Free (nonprofit)
@@ -139,6 +151,7 @@ Open & Extensible:
 ### 3.2 Market Gap
 
 **Nobody offers**:
+
 1. Mode-based flexibility (Sprint/Vault/Gen)
 2. User-curated AI (highlights guide analysis)
 3. Privacy-first ephemeral mode
@@ -182,7 +195,7 @@ Highlighting:
 Visual Feedback:
   - Smooth fade-in (200ms)
   - Hover glow effect
-  - Count badge: "3 highlights on page"
+  - Count badge: '3 highlights on page'
 
 Storage:
   - In-memory only (JavaScript Map)
@@ -198,13 +211,13 @@ Privacy:
 #### User Stories
 
 ```
-US-SM-001: As a casual reader, I want to highlight text without saving it, 
+US-SM-001: As a casual reader, I want to highlight text without saving it,
            so I can focus while reading without commitment.
 
-US-SM-002: As a privacy-conscious user, I want highlights to disappear 
+US-SM-002: As a privacy-conscious user, I want highlights to disappear
            automatically, so no reading history is tracked.
 
-US-SM-003: As a power user, I want keyboard shortcuts, 
+US-SM-003: As a power user, I want keyboard shortcuts,
            so I can highlight without interrupting my flow.
 ```
 
@@ -254,16 +267,16 @@ Restoration:
 #### User Stories
 
 ```
-US-VM-001: As a student, I want to save highlights across articles, 
+US-VM-001: As a student, I want to save highlights across articles,
            so I can reference them while writing essays.
 
-US-VM-002: As a researcher, I want to organize highlights by topic, 
+US-VM-002: As a researcher, I want to organize highlights by topic,
            so I can find related information quickly.
 
-US-VM-003: As a multi-device user, I want highlights synced automatically, 
+US-VM-003: As a multi-device user, I want highlights synced automatically,
            so I can continue reading on any device.
 
-US-VM-004: As a knowledge worker, I want to export to Notion, 
+US-VM-004: As a knowledge worker, I want to export to Notion,
            so I can integrate with my existing workflow.
 ```
 
@@ -310,13 +323,13 @@ Privacy Controls:
 #### User Stories
 
 ```
-US-GM-001: As a deep learner, I want AI to create mindmaps from my highlights, 
+US-GM-001: As a deep learner, I want AI to create mindmaps from my highlights,
            so I can visualize connections between ideas.
 
-US-GM-002: As a writer, I want AI to detect contradictions, 
+US-GM-002: As a writer, I want AI to detect contradictions,
            so I can strengthen my arguments.
 
-US-GM-003: As a student, I want AI-generated questions, 
+US-GM-003: As a student, I want AI-generated questions,
            so I can test my understanding.
 ```
 
@@ -422,12 +435,14 @@ Analytics Dashboard:
 **Purpose**: Runs in context of every webpage, handles DOM manipulation
 
 **Responsibilities**:
+
 - Detect text selection events
 - Render highlights using Shadow DOM
 - Restore highlights on page load
 - Communicate with background script
 
 **Key Files**:
+
 ```
 src/content/
   ├── main.ts              // Entry point
@@ -442,12 +457,14 @@ src/content/
 **Purpose**: Persistent background process, handles storage & sync
 
 **Responsibilities**:
+
 - Manage IndexedDB operations
 - Batch sync to cloud (every 30s)
 - Handle API requests
 - Manage authentication state
 
 **Key Files**:
+
 ```
 src/background/
   ├── main.ts              // Service worker lifecycle
@@ -461,12 +478,14 @@ src/background/
 **Purpose**: Extension configuration interface
 
 **Responsibilities**:
+
 - Mode selection
 - Settings management
 - Analytics dashboard
 - Export functionality
 
 **Key Files**:
+
 ```
 src/popup/
   ├── main.ts              // Popup entry
@@ -491,13 +510,13 @@ abstract class HighlightMode {
 // Sprint Mode implementation
 class SprintMode extends HighlightMode {
   private highlights: Map<string, Highlight> = new Map();
-  
+
   async highlight(selection: Selection) {
     // In-memory only
     const id = crypto.randomUUID();
     this.highlights.set(id, { selection, timestamp: Date.now() });
   }
-  
+
   cleanup() {
     this.highlights.clear();
   }
@@ -506,7 +525,7 @@ class SprintMode extends HighlightMode {
 // Vault Mode extends Sprint
 class VaultMode extends SprintMode {
   private db: Dexie;
-  
+
   async highlight(selection: Selection) {
     await super.highlight(selection); // Render immediately
     await this.db.highlights.add({...}); // Persist
@@ -516,7 +535,7 @@ class VaultMode extends SprintMode {
 // Gen Mode extends Vault
 class GenMode extends VaultMode {
   private aiClient: AIClient;
-  
+
   async generateMindmap() {
     const highlights = await this.db.highlights.toArray();
     return this.aiClient.analyze(highlights);
@@ -540,6 +559,7 @@ class CollaborateMode extends GenMode {
 **Issue**: Highlights might inherit unwanted styles from host page
 
 **Solution**: Shadow DOM Isolation
+
 ```typescript
 class HighlightElement extends HTMLElement {
   constructor() {
@@ -558,6 +578,7 @@ customElements.define('app-highlight', HighlightElement);
 ```
 
 **Benefits**:
+
 - CSS isolation (no conflicts)
 - Encapsulated styling
 - Reusable component
@@ -567,6 +588,7 @@ customElements.define('app-highlight', HighlightElement);
 **Issue**: Single-page apps destroy highlights on navigation
 
 **Solution**: MutationObserver + Re-anchoring
+
 ```typescript
 const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
@@ -580,7 +602,7 @@ const observer = new MutationObserver((mutations) => {
 observer.observe(document.body, {
   childList: true,
   subtree: true,
-  characterData: false
+  characterData: false,
 });
 ```
 
@@ -595,33 +617,33 @@ interface HighlightData {
   id: string;
   url: string;
   timestamp: number;
-  
+
   // Three-tier selector strategy
   selectors: {
     // Tier 1: Fast (XPath + offsets)
     range: {
-      startContainer: string;  // "/html/body/article[1]/p[3]"
-      startOffset: number;     // 45
+      startContainer: string; // "/html/body/article[1]/p[3]"
+      startOffset: number; // 45
       endContainer: string;
-      endOffset: number;       // 67
+      endOffset: number; // 67
     };
-    
+
     // Tier 2: Medium (character positions)
     position: {
-      start: number;  // 2384 (in document.textContent)
-      end: number;    // 2406
+      start: number; // 2384 (in document.textContent)
+      end: number; // 2406
     };
-    
+
     // Tier 3: Robust (fuzzy text matching)
     quote: {
-      prefix: string;   // "recent developments in "
-      exact: string;    // "neural network architecture"
-      suffix: string;   // " have shown that"
+      prefix: string; // "recent developments in "
+      exact: string; // "neural network architecture"
+      suffix: string; // " have shown that"
     };
   };
-  
+
   // Version tracking
-  contentHash: string;  // SHA-256 of page content
+  contentHash: string; // SHA-256 of page content
 }
 ```
 
@@ -638,7 +660,7 @@ async function restoreHighlight(data: HighlightData, doc: Document) {
   } catch (e) {
     console.debug('XPath failed, trying position...');
   }
-  
+
   // Strategy 2: Position (medium speed, brittle to ads)
   try {
     const text = doc.body.textContent;
@@ -653,30 +675,30 @@ async function restoreHighlight(data: HighlightData, doc: Document) {
   } catch (e) {
     console.debug('Position failed, using fuzzy match...');
   }
-  
+
   // Strategy 3: Fuzzy matching (slow, very robust)
   const result = fuzzyTextSearch(
     doc.body,
     data.selectors.quote.prefix,
     data.selectors.quote.exact,
     data.selectors.quote.suffix,
-    0.80  // 80% similarity threshold
+    0.8 // 80% similarity threshold
   );
-  
+
   if (result) {
     return {
       range: result.range,
       confidence: result.similarity,
-      method: 'fuzzy'
+      method: 'fuzzy',
     };
   }
-  
+
   // All strategies failed
   return {
     range: null,
     confidence: 0,
     method: 'failed',
-    orphaned: true
+    orphaned: true,
   };
 }
 ```
@@ -695,26 +717,25 @@ function fuzzyTextSearch(
   suffix: string,
   threshold: number = 0.8
 ): { range: Range; similarity: number } | null {
-  
   const dmp = new diff_match_patch();
   const searchText = prefix + exact + suffix;
   const bodyText = root.textContent;
-  
+
   // Find approximate match
   const matches = dmp.match_main(bodyText, searchText, 0);
-  
+
   if (matches === -1) return null;
-  
+
   // Calculate similarity
   const foundText = bodyText.substr(matches, searchText.length);
   const diffs = dmp.diff_main(searchText, foundText);
-  const similarity = 1 - (dmp.diff_levenshtein(diffs) / searchText.length);
-  
+  const similarity = 1 - dmp.diff_levenshtein(diffs) / searchText.length;
+
   if (similarity < threshold) return null;
-  
+
   // Create range from match
   const range = createRangeFromOffset(root, matches, matches + exact.length);
-  
+
   return { range, similarity };
 }
 ```
@@ -733,7 +754,7 @@ function detectSPA(): boolean {
     document.querySelector('[data-reactroot]'),
     document.querySelector('[data-v-]'),
   ];
-  
+
   return indicators.some(Boolean);
 }
 
@@ -743,13 +764,13 @@ if (detectSPA()) {
   observer.observe(document.body, {
     childList: true,
     subtree: true,
-    characterData: true // Watch text changes too
+    characterData: true, // Watch text changes too
   });
 } else {
   // Lighter observation
   observer.observe(document.body, {
     childList: true,
-    subtree: false
+    subtree: false,
   });
 }
 ```
@@ -763,14 +784,14 @@ async function getContentFingerprint(doc: Document): Promise<string> {
   // Extract main content (ignore ads, headers, footers)
   const main = doc.querySelector('article, main, .content') || doc.body;
   const text = main.textContent.trim().replace(/\s+/g, ' ');
-  
+
   // Hash content
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  
+
   return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
@@ -779,7 +800,7 @@ const highlight: HighlightData = {
   // ...
   contentHash: await getContentFingerprint(document),
   pageTitle: document.title,
-  timestamp: Date.now()
+  timestamp: Date.now(),
 };
 
 // On return visit
@@ -809,17 +830,17 @@ function resolveConflict(conflict: SyncConflict): HighlightData {
       return conflict.local.timestamp > conflict.remote.timestamp
         ? conflict.local
         : conflict.remote;
-    
+
     case 'overlapping':
       // Different highlights at same position
       // Keep both, adjust positions slightly
       return [conflict.local, adjustPosition(conflict.remote)];
-    
+
     case 'deleted':
       // One device deleted, other modified
       // Modified wins (deletion might be accidental)
       return conflict.local.deleted ? conflict.remote : conflict.local;
-    
+
     default:
       // Unknown conflict type, last-write-wins
       return conflict.local.timestamp > conflict.remote.timestamp
@@ -838,23 +859,23 @@ class VirtualHighlightList {
   private itemHeight = 80; // px
   private buffer = 5;
   private visible: HighlightData[] = [];
-  
+
   updateVisibleItems(scrollTop: number, containerHeight: number) {
     const startIndex = Math.floor(scrollTop / this.itemHeight);
     const endIndex = Math.ceil((scrollTop + containerHeight) / this.itemHeight);
-    
+
     // Add buffer
     const start = Math.max(0, startIndex - this.buffer);
     const end = Math.min(this.highlights.length, endIndex + this.buffer);
-    
+
     this.visible = this.highlights.slice(start, end);
     this.render();
   }
-  
+
   render() {
     // Only render visible items
     this.container.innerHTML = this.visible
-      .map(h => this.renderHighlight(h))
+      .map((h) => this.renderHighlight(h))
       .join('');
   }
 }
@@ -891,6 +912,7 @@ Threats:
 ```
 
 **Key Restrictions**:
+
 - No inline scripts (prevents XSS)
 - Only allow connections to whitelisted APIs
 - No eval() or Function() constructor
@@ -905,7 +927,7 @@ function sanitizeUserInput(input: string): string {
   // Remove all HTML tags, scripts, event handlers
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [], // No HTML allowed
-    ALLOWED_ATTR: []
+    ALLOWED_ATTR: [],
   });
 }
 
@@ -923,12 +945,12 @@ import { importKey, encrypt, decrypt } from './crypto';
 async function storeAuthToken(token: string) {
   const key = await importKey(userPassword);
   const encrypted = await encrypt(token, key);
-  
+
   // Store encrypted in IndexedDB, NOT localStorage
   await db.credentials.put({
     id: 'auth_token',
     value: encrypted,
-    iv: encrypted.iv
+    iv: encrypted.iv,
   });
 }
 
@@ -936,13 +958,13 @@ async function storeAuthToken(token: string) {
 async function encrypt(data: string, key: CryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(data);
-  
+
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     key,
     encoded
   );
-  
+
   return { ciphertext, iv };
 }
 ```
@@ -955,22 +977,22 @@ const API_BASE = 'https://api.yourdomain.com';
 
 async function apiRequest(endpoint: string, data: any) {
   const token = await getAuthToken();
-  
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       // CSRF protection
-      'X-CSRF-Token': await getCSRFToken()
+      'X-CSRF-Token': await getCSRFToken(),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-  
+
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }
-  
+
   return response.json();
 }
 ```
@@ -1004,20 +1026,18 @@ Minimal Dependencies:
 // manifest.json - Minimal permissions
 {
   "permissions": [
-    "storage",        // For IndexedDB
-    "activeTab"       // For current tab only
+    "storage", // For IndexedDB
+    "activeTab" // For current tab only
   ],
   "optional_permissions": [
-    "tabs"            // Only if user enables sync
+    "tabs" // Only if user enables sync
   ],
-  "host_permissions": [
-    "https://api.anthropic.com/*",
-    "https://api.groq.com/*"
-  ]
+  "host_permissions": ["https://api.anthropic.com/*", "https://api.groq.com/*"]
 }
 ```
 
 **Principle of Least Privilege**:
+
 - Request minimal permissions
 - Optional permissions for advanced features
 - Explain why each permission is needed
@@ -1037,7 +1057,7 @@ Personal Data Collected:
     - Highlighted text (user content)
     - Website URLs (where highlights exist)
     - Timestamps (when highlights created)
-  
+
   Optional (with consent):
     - Reading patterns (for analytics)
     - AI analysis results
@@ -1058,21 +1078,25 @@ async function exportAllUserData(userId: string) {
     account: await db.users.get(userId),
     highlights: await db.highlights.where({ userId }).toArray(),
     collections: await db.collections.where({ userId }).toArray(),
-    analyses: await db.ai_analyses.where({ userId }).toArray()
+    analyses: await db.ai_analyses.where({ userId }).toArray(),
   };
-  
+
   return JSON.stringify(data, null, 2);
 }
 
 // Right to Erasure (delete all data)
 async function deleteAllUserData(userId: string) {
-  await db.transaction('rw', [db.users, db.highlights, db.collections], async () => {
-    await db.highlights.where({ userId }).delete();
-    await db.collections.where({ userId }).delete();
-    await db.ai_analyses.where({ userId }).delete();
-    await db.users.delete(userId);
-  });
-  
+  await db.transaction(
+    'rw',
+    [db.users, db.highlights, db.collections],
+    async () => {
+      await db.highlights.where({ userId }).delete();
+      await db.collections.where({ userId }).delete();
+      await db.ai_analyses.where({ userId }).delete();
+      await db.users.delete(userId);
+    }
+  );
+
   // Also delete from cloud
   await apiRequest('/api/v1/users/delete', { userId });
 }
@@ -1089,6 +1113,7 @@ async function exportMachineReadable(userId: string) {
 **Free Tool**: Termly.io Privacy Policy Generator
 
 **Required Sections**:
+
 ```
 1. Information We Collect
    - User account data
@@ -1146,18 +1171,20 @@ Implementation:
 ```html
 <!-- Simple consent banner -->
 <div id="cookie-consent" style="display:none;">
-  <p>We use essential cookies for functionality. 
-     Optional analytics help improve our service.</p>
+  <p>
+    We use essential cookies for functionality. Optional analytics help improve
+    our service.
+  </p>
   <button id="accept-all">Accept All</button>
   <button id="essential-only">Essential Only</button>
   <a href="/privacy">Privacy Policy</a>
 </div>
 
 <script>
-// Show banner if no consent recorded
-if (!localStorage.getItem('cookie-consent')) {
-  document.getElementById('cookie-consent').style.display = 'block';
-}
+  // Show banner if no consent recorded
+  if (!localStorage.getItem('cookie-consent')) {
+    document.getElementById('cookie-consent').style.display = 'block';
+  }
 </script>
 ```
 
@@ -1193,6 +1220,7 @@ class HighlightUI {
 ```
 
 **Global Keyboard Shortcuts**:
+
 ```
 Ctrl+U          Highlight selected text
 Ctrl+Shift+U    Clear all highlights
@@ -1207,10 +1235,11 @@ Enter/Space     Activate button
 
 ```html
 <!-- Proper ARIA labels -->
-<button 
+<button
   aria-label="Highlight selected text"
   aria-describedby="highlight-help"
-  role="button">
+  role="button"
+>
   Highlight
 </button>
 
@@ -1234,11 +1263,11 @@ Enter/Space     Activate button
 ```css
 /* Minimum 4.5:1 for normal text, 7:1 for large text */
 :root {
-  --highlight-bg: #ffeb3b;  /* Yellow */
-  --highlight-text: #000;   /* Black - 16:1 ratio ✓ */
-  
-  --button-bg: #1976d2;     /* Blue */
-  --button-text: #fff;      /* White - 4.5:1 ratio ✓ */
+  --highlight-bg: #ffeb3b; /* Yellow */
+  --highlight-text: #000; /* Black - 16:1 ratio ✓ */
+
+  --button-bg: #1976d2; /* Blue */
+  --button-text: #fff; /* White - 4.5:1 ratio ✓ */
 }
 
 /* Auto-adjust for user preferences */
@@ -1281,13 +1310,13 @@ Manual Tests:
     - [ ] All features accessible via keyboard
     - [ ] Focus order is logical
     - [ ] No keyboard traps
-  
+
   Screen Reader (NVDA/VoiceOver):
     - [ ] All text is read correctly
     - [ ] Button purposes are clear
     - [ ] Dynamic updates announced
     - [ ] Form labels properly associated
-  
+
   Visual:
     - [ ] Text resizable to 200%
     - [ ] No horizontal scrolling at 320px
@@ -1322,6 +1351,7 @@ Internal Triggers (Developed over time):
 #### Action Phase
 
 **Make it Easy (Reduce Friction)**:
+
 ```typescript
 // Sprint Mode: Zero friction
 // Just double-tap → immediate highlight
@@ -1345,43 +1375,48 @@ function enableVaultMode() {
 
 ```yaml
 Rewards of the Hunt (Unpredictable Content):
-  - "You highlighted this 3 months ago - remember?"
+  - 'You highlighted this 3 months ago - remember?'
   - Random old highlights resurfaced
   - "Similar highlight from last week's article"
-  - Weekly surprise: "Your most profound highlight"
+  - Weekly surprise: 'Your most profound highlight'
 
 Rewards of the Self (Mastery & Competence):
-  - Reading streak: "7 days! Keep it up 🔥"
-  - Milestones: "100 highlights saved!"
-  - Analytics: "You read 30% more this month"
-  - Leaderboard: "Top 10% most active readers"
+  - Reading streak: '7 days! Keep it up 🔥'
+  - Milestones: '100 highlights saved!'
+  - Analytics: 'You read 30% more this month'
+  - Leaderboard: 'Top 10% most active readers'
 
 Rewards of the Tribe (Social Validation):
-  - "12 people highlighted this same passage"
-  - "Your mindmap was shared 5 times"
-  - "Join 50 others researching AI ethics"
+  - '12 people highlighted this same passage'
+  - 'Your mindmap was shared 5 times'
+  - 'Join 50 others researching AI ethics'
 ```
 
 Implementation:
+
 ```typescript
 // Spaced repetition - variable schedule
 async function scheduleHighlightReminder(highlight: Highlight) {
   const intervals = [1, 3, 7, 14, 30]; // days
   const random = intervals[Math.floor(Math.random() * intervals.length)];
-  
-  setTimeout(async () => {
-    showNotification({
-      title: 'Remember this?',
-      body: highlight.text.slice(0, 100) + '...',
-      action: 'View highlight'
-    });
-  }, random * 24 * 60 * 60 * 1000);
+
+  setTimeout(
+    async () => {
+      showNotification({
+        title: 'Remember this?',
+        body: highlight.text.slice(0, 100) + '...',
+        action: 'View highlight',
+      });
+    },
+    random * 24 * 60 * 60 * 1000
+  );
 }
 ```
 
 #### Investment Phase
 
 **Increase Commitment Over Time**:
+
 ```yaml
 Small Investments (Week 1-2):
   - Add color to highlight (2 seconds)
@@ -1434,6 +1469,7 @@ Social Proof:
 **Goal**: Make highlighting automatic (30-day habit loop)
 
 **Strategy**:
+
 ```yaml
 Week 1: Awareness
   - Daily reminder: "Try highlighting one article today"
@@ -1480,7 +1516,7 @@ VAULT MODE - Freemium:
       - 1 device only
       - Basic export (Markdown)
       - Local storage only
-  
+
   Pro Tier:
     Price: $5/month or $50/year (17% discount)
     Features:
@@ -1518,6 +1554,7 @@ ULTIMATE - Enterprise:
 ### 11.2 Revenue Projections
 
 **Conservative Scenario**:
+
 ```
 Year 1:
   Total Users: 50,000
@@ -1525,7 +1562,7 @@ Year 1:
   Pro ($5): 1,000 (2%) = $5,000/mo
   Premium ($10): 400 (0.8%) = $4,000/mo
   Ultimate ($20): 100 (0.2%) = $2,000/mo
-  
+
   Total MRR: $11,000
   Annual Revenue: $132,000
 
@@ -1533,29 +1570,31 @@ Costs:
   Infrastructure: $500/mo = $6,000/yr
   Tools & Services: $100/mo = $1,200/yr
   Total Costs: $7,200/yr
-  
+
   Net Profit: $124,800/yr
 ```
 
 **Optimistic Scenario**:
+
 ```
 Year 1:
   Total Users: 200,000
   Conversion: 3% (industry standard with optimization)
-  
+
   Pro: 4,000 × $5 = $20,000/mo
   Premium: 1,600 × $10 = $16,000/mo
   Ultimate: 400 × $20 = $8,000/mo
-  
+
   Total MRR: $44,000
   Annual Revenue: $528,000
-  
+
   Net Profit (after costs): ~$500,000/yr
 ```
 
 ### 11.3 Customer Acquisition Cost (CAC)
 
 **Free Marketing Channels**:
+
 ```yaml
 Product Hunt: $0 (1,000-5,000 installs)
 Reddit Posts: $0 (500-2,000 installs)
@@ -1567,6 +1606,7 @@ Average CAC: $0.50 (mostly time, not money)
 ```
 
 **Paid Marketing** (Optional, if budget allows):
+
 ```yaml
 Google Ads: $2-5 CPC
   - Target: "web highlighter", "save highlights"
@@ -1601,24 +1641,28 @@ LTV:CAC Ratio: 100:1 (exceptional for free marketing)
 ### 11.5 Monetization Strategy
 
 **Phase 1 (Months 1-6): Growth**
+
 - Focus on free users
 - No aggressive upselling
 - Build trust and habit formation
 - Goal: 10,000 MAU
 
 **Phase 2 (Months 7-12): Conversion**
+
 - Introduce Pro features
 - Gentle upgrade prompts
 - "You've saved 50 highlights - upgrade for unlimited"
 - Goal: 2% conversion rate
 
 **Phase 3 (Year 2): Premium Features**
+
 - Roll out Gen Mode (AI features)
 - Target power users
 - "Generate mindmap from 100 highlights?"
 - Goal: 1% premium conversion
 
 **Phase 4 (Year 3): Enterprise**
+
 - Team features
 - API access
 - Custom integrations
@@ -1633,6 +1677,7 @@ LTV:CAC Ratio: 100:1 (exceptional for free marketing)
 **Tagline**: "Highlight Your Way - Read Smarter, Remember Everything"
 
 **Value Propositions**:
+
 ```
 For Students:
   "Study smarter with AI-powered mindmaps from your highlights"
@@ -1661,7 +1706,7 @@ Beta Program:
 Content Creation:
   - 3 demo videos (30s, 2min, 5min)
   - Landing page with email signup
-  - Blog post: "Why I Built This"
+  - Blog post: 'Why I Built This'
   - Twitter thread: Development journey
 
 Press Kit:
@@ -1681,7 +1726,7 @@ Product Hunt:
   Goal: Top 5 product of the day
 
 Hacker News:
-  Post: "Show HN: I built a smart web highlighter"
+  Post: 'Show HN: I built a smart web highlighter'
   Focus: Technical innovation (multi-selector persistence)
   Link: GitHub repo + live demo
 
@@ -1692,8 +1737,7 @@ Reddit:
     - r/getdisciplined (1M)
     - r/studying (500k)
   Approach: Value-first, not promotional
-  Example: "I got frustrated with forgetting what I read,
-            so I built this..."
+  Example: 'I got frustrated with forgetting what I read, so I built this...'
 
 Twitter:
   - Thread explaining the problem & solution
@@ -1704,7 +1748,7 @@ Twitter:
 Email List:
   - Send to beta subscribers
   - Personal message from founder
-  - Clear CTA: "Install now"
+  - Clear CTA: 'Install now'
 ```
 
 ### 12.3 Growth Channels
@@ -1738,10 +1782,10 @@ Podcast Appearances:
 
 ```yaml
 Discord Server:
-  - #general (community chat)
-  - #feature-requests (user feedback)
-  - #show-and-tell (share mindmaps)
-  - #support (help each other)
+  -  #general (community chat)
+  -  #feature-requests (user feedback)
+  -  #show-and-tell (share mindmaps)
+  -  #support (help each other)
 
 GitHub Discussions:
   - Open-source core components
@@ -1784,7 +1828,7 @@ Mechanics:
 
 Viral Coefficient Goal: 0.3
   (Each user brings 0.3 new users)
-  
+
   With 10,000 users:
     Next month: +3,000 new users
     Month after: +3,900
@@ -1805,9 +1849,9 @@ Implementation:
 Google Ads:
   Budget: $500/month
   Keywords:
-    - "web highlighter"
-    - "save highlights browser"
-    - "reading tool chrome"
+    - 'web highlighter'
+    - 'save highlights browser'
+    - 'reading tool chrome'
   Expected: 200-300 installs/month
 
 Twitter Ads:
@@ -1960,43 +2004,43 @@ CREATE TABLE users (
 CREATE TABLE highlights (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  
+
   -- Page metadata
   url VARCHAR(2048) NOT NULL,
   page_title VARCHAR(500),
   domain VARCHAR(255),
-  
+
   -- Multi-selector strategy
   selector_xpath JSONB,
   -- Example: {"startContainer": "/html/body/article[1]/p[3]", "startOffset": 45, ...}
-  
+
   selector_position JSONB,
   -- Example: {"start": 2384, "end": 2406}
-  
+
   selector_quote JSONB NOT NULL,
   -- Example: {"prefix": "recent developments in ", "exact": "neural networks", "suffix": " have shown"}
-  
+
   -- Content
   highlighted_text TEXT NOT NULL,
   surrounding_context TEXT,
-  
+
   -- User metadata
   color VARCHAR(7) DEFAULT '#ffeb3b',
   tags TEXT[],
   note TEXT,
-  
+
   -- Version tracking
   content_hash VARCHAR(64),
   restore_confidence FLOAT, -- 0.0-1.0
   restore_method VARCHAR(20), -- 'xpath' | 'position' | 'fuzzy'
-  
+
   -- Sync metadata
   device_id VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   synced_at TIMESTAMP,
   deleted BOOLEAN DEFAULT FALSE,
-  
+
   -- Indexes for performance
   CONSTRAINT check_confidence CHECK (restore_confidence >= 0 AND restore_confidence <= 1)
 );
@@ -2007,7 +2051,7 @@ CREATE INDEX idx_highlights_hash ON highlights(content_hash);
 CREATE INDEX idx_highlights_domain ON highlights(domain);
 
 -- Full-text search (PostgreSQL specific)
-CREATE INDEX idx_highlights_text_search 
+CREATE INDEX idx_highlights_text_search
 ON highlights USING GIN(to_tsvector('english', highlighted_text || ' ' || COALESCE(note, '')));
 
 -- Collections (folders/categories)
@@ -2039,16 +2083,16 @@ CREATE TABLE ai_analyses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   analysis_type VARCHAR(50) NOT NULL, -- 'summary' | 'mindmap' | 'connections' | 'questions'
-  
+
   -- Input
   input_highlight_ids UUID[], -- Array of highlight IDs
   input_urls TEXT[], -- Source URLs
-  
+
   -- Output
   output_data JSONB NOT NULL,
   -- Example for mindmap: {"nodes": [...], "edges": [...]}
   -- Example for summary: {"short": "...", "medium": "...", "long": "..."}
-  
+
   -- Metadata
   tokens_used INTEGER,
   processing_time_ms INTEGER,
@@ -2065,10 +2109,10 @@ CREATE TABLE events (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   event_type VARCHAR(50) NOT NULL,
   -- 'highlight_created' | 'highlight_deleted' | 'collection_created' | 'export' | 'ai_generated' | 'mode_switched'
-  
+
   event_data JSONB,
   -- Example: {"mode": "vault", "color": "#ffeb3b", "url": "..."}
-  
+
   session_id VARCHAR(100),
   device_type VARCHAR(20), -- 'desktop' | 'mobile'
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -2403,6 +2447,7 @@ AI Endpoints:
 ```
 
 **Error Codes**:
+
 - `UNAUTHORIZED`: Missing or invalid authentication
 - `FORBIDDEN`: Insufficient permissions
 - `RATE_LIMIT_EXCEEDED`: Too many requests
@@ -2418,12 +2463,14 @@ AI Endpoints:
 ### 16.1 Pre-Development (Week 1)
 
 **Day 1-2: Legal & Compliance**
+
 - [ ] Generate Privacy Policy (Termly.io)
 - [ ] Generate Terms of Service (FreePrivacyPolicy.com)
 - [ ] Create cookie consent banner
 - [ ] Document data retention policy
 
 **Day 3-4: Infrastructure Setup**
+
 - [ ] GitHub repository + project board
 - [ ] Cloudflare Workers account
 - [ ] Turso/Supabase database setup
@@ -2431,12 +2478,14 @@ AI Endpoints:
 - [ ] Email setup (Resend account)
 
 **Day 5: Security Planning**
+
 - [ ] Configure CSP in manifest.json
 - [ ] Set up npm audit in CI/CD
 - [ ] Create security checklist
 - [ ] Document encryption strategy
 
 **Day 6-7: Design & Planning**
+
 - [ ] Create wireframes (Figma)
 - [ ] Design brand identity (logo, colors)
 - [ ] Write API specifications
@@ -2447,6 +2496,7 @@ AI Endpoints:
 **Goal: Sprint Mode MVP**
 
 **Week 2: Core Highlighting**
+
 - [ ] Extension boilerplate (wxt.dev)
 - [ ] Manifest.json configuration
 - [ ] Content script injection
@@ -2455,6 +2505,7 @@ AI Endpoints:
 - [ ] Basic highlight rendering
 
 **Week 3: Sprint Mode Polish**
+
 - [ ] Shadow DOM implementation
 - [ ] Auto-contrast color algorithm
 - [ ] Click-to-remove functionality
@@ -2464,6 +2515,7 @@ AI Endpoints:
 - [ ] Cleanup on navigation
 
 **Testing**:
+
 - [ ] Test on 20+ popular websites
 - [ ] Performance: <100ms render time
 - [ ] Memory: <10MB usage
@@ -2474,6 +2526,7 @@ AI Endpoints:
 **Goal: Vault Mode Core**
 
 **Week 4: Persistence Layer**
+
 - [ ] IndexedDB schema (Dexie.js)
 - [ ] Multi-selector generation
   - [ ] XPath selector
@@ -2484,6 +2537,7 @@ AI Endpoints:
 - [ ] Background service worker
 
 **Week 5: Restoration Logic**
+
 - [ ] XPath restoration (fast path)
 - [ ] Position restoration (medium path)
 - [ ] Fuzzy matching (google-diff-match-patch)
@@ -2493,6 +2547,7 @@ AI Endpoints:
 - [ ] Re-anchoring on DOM changes
 
 **Testing**:
+
 - [ ] 90%+ restoration rate
 - [ ] Test on dynamic sites (Reddit, Twitter)
 - [ ] Test article updates (version tracking)
@@ -2502,6 +2557,7 @@ AI Endpoints:
 **Goal: Vault Mode Advanced**
 
 **Week 6: Organization Features**
+
 - [ ] Collections (create, edit, delete)
 - [ ] Tags system
 - [ ] Color picker (5 presets + custom)
@@ -2511,6 +2567,7 @@ AI Endpoints:
 - [ ] Drag-and-drop to collections
 
 **Week 7: Sync & Export**
+
 - [ ] User authentication (JWT)
 - [ ] Backend API (Cloudflare Workers + Hono)
 - [ ] Sync queue (batch every 30s)
@@ -2521,6 +2578,7 @@ AI Endpoints:
 - [ ] Public share links
 
 **Testing**:
+
 - [ ] Cross-device sync
 - [ ] Offline functionality
 - [ ] Export format validation
@@ -2530,6 +2588,7 @@ AI Endpoints:
 **Goal: Polish & Launch Prep**
 
 **Week 8: UI/UX Polish**
+
 - [ ] Onboarding tutorial
 - [ ] Settings panel
 - [ ] Mode switcher UI
@@ -2542,6 +2601,7 @@ AI Endpoints:
 - [ ] Help documentation
 
 **Week 9: Quality Assurance**
+
 - [ ] Security audit (OWASP ZAP)
 - [ ] Accessibility audit (WAVE, axe)
 - [ ] Performance optimization
@@ -2558,6 +2618,7 @@ AI Endpoints:
 ### 16.6 Launch (Week 10)
 
 **Day 1-2: Store Submission**
+
 - [ ] Chrome Web Store listing
   - [ ] Screenshots (5-10)
   - [ ] Promo video (30s)
@@ -2567,6 +2628,7 @@ AI Endpoints:
 - [ ] Edge Add-ons submission
 
 **Day 3: Marketing Launch**
+
 - [ ] Product Hunt submission (Tuesday 12:01 AM PST)
 - [ ] Hacker News "Show HN" post
 - [ ] Reddit posts (r/productivity, r/chrome_extensions)
@@ -2574,12 +2636,14 @@ AI Endpoints:
 - [ ] Email to beta users
 
 **Day 4-5: Engagement**
+
 - [ ] Reply to all comments
 - [ ] Monitor errors (Sentry)
 - [ ] Track usage (Plausible)
 - [ ] Collect feedback
 
 **Day 6-7: Analysis**
+
 - [ ] Review metrics
 - [ ] Prioritize bugs
 - [ ] Plan next sprint
@@ -2587,12 +2651,14 @@ AI Endpoints:
 ### 16.7 Post-Launch (Weeks 11-14)
 
 **Week 11-12: Iterate on Feedback**
+
 - [ ] Fix critical bugs
 - [ ] Improve onboarding based on drop-off
 - [ ] A/B test pricing messaging
 - [ ] Optimize conversion funnel
 
 **Week 13-14: Gen Mode Planning**
+
 - [ ] Define AI feature scope
 - [ ] Design mindmap UI
 - [ ] Prototype AI prompts
@@ -2600,6 +2666,7 @@ AI Endpoints:
 - [ ] Test with Groq API
 
 **Ongoing**:
+
 - [ ] Weekly blog posts
 - [ ] Community engagement (Discord, Twitter)
 - [ ] Feature requests prioritization
@@ -2622,13 +2689,13 @@ describe('Fuzzy Text Matching', () => {
     const result = fuzzyTextSearch(text, 'quick', 'brown fox', 'jumps');
     expect(result.similarity).toBe(1.0);
   });
-  
+
   it('should find match with typos (80% threshold)', () => {
     const text = 'The quick brown fox jumps over the lazy dog';
     const result = fuzzyTextSearch(text, 'quik', 'brown fox', 'jmps', 0.8);
     expect(result.similarity).toBeGreaterThan(0.8);
   });
-  
+
   it('should return null if below threshold', () => {
     const text = 'The quick brown fox jumps over the lazy dog';
     const result = fuzzyTextSearch(text, 'xyz', 'abc', 'def', 0.8);
@@ -2638,6 +2705,7 @@ describe('Fuzzy Text Matching', () => {
 ```
 
 **Test Coverage Goals**:
+
 - Multi-selector engine: 90%
 - Storage manager: 85%
 - API client: 80%
@@ -2651,28 +2719,29 @@ import { test, expect } from '@playwright/test';
 test('Highlight flow: create, save, restore', async ({ page }) => {
   // Load test page
   await page.goto('https://example.com/article');
-  
+
   // Select text
   await page.locator('article p').first().dblclick();
-  
+
   // Verify highlight rendered
   const highlight = page.locator('app-highlight');
   await expect(highlight).toBeVisible();
   await expect(highlight).toHaveCSS('background-color', 'rgb(255, 235, 59)');
-  
+
   // Save highlight (switch to Vault mode)
   await page.click('[data-testid="mode-switcher"]');
   await page.click('[data-testid="vault-mode"]');
-  
+
   // Reload page
   await page.reload();
-  
+
   // Verify highlight restored
   await expect(highlight).toBeVisible();
 });
 ```
 
 **Integration Test Coverage**:
+
 - Sprint Mode: Highlight, remove, clear all
 - Vault Mode: Save, restore, sync, export
 - Collections: Create, add highlights, organize
@@ -2688,7 +2757,7 @@ New User Onboarding:
   3. Highlight first passage
   4. Create account
   5. Save to Vault
-  
+
   Success Criteria: <5 minutes, 0 errors
 
 Power User Workflow:
@@ -2697,7 +2766,7 @@ Power User Workflow:
   3. Tag with 5 different tags
   4. Search for specific highlight
   5. Export to Markdown
-  
+
   Success Criteria: <3 minutes, accurate results
 
 Cross-Device Sync:
@@ -2705,7 +2774,7 @@ Cross-Device Sync:
   2. Wait for sync (30s)
   3. Open on Device B
   4. Verify highlight restored
-  
+
   Success Criteria: <60s total, 100% accuracy
 ```
 
@@ -2766,7 +2835,7 @@ Manual:
     - [ ] No keyboard traps
     - [ ] Visible focus indicators
     - [ ] Shortcuts documented
-  
+
   Screen Reader (NVDA):
     - [ ] All text readable
     - [ ] Button purposes clear
@@ -2797,64 +2866,68 @@ Test Coverage:
 
 ### 18.1 Technical Risks
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|-------------|--------|---------------------|
-| **Multi-selector fails on new sites** | High | Medium | Graceful degradation, user feedback system, continuous testing |
-| **IndexedDB quota exceeded** | Medium | High | Cleanup old highlights, cloud backup, user notification |
-| **AI API costs spiral** | Medium | High | Rate limiting, usage caps, monitor closely |
-| **Chrome Web Store rejection** | Low | Critical | Follow policies strictly, have appeal process ready |
-| **Performance degrades with 1000+ highlights** | Medium | Medium | Virtual scrolling, lazy loading, pagination |
-| **Security vulnerability discovered** | Low | Critical | Bug bounty program, rapid patch process, transparent communication |
+| Risk                                           | Probability | Impact   | Mitigation Strategy                                                |
+| ---------------------------------------------- | ----------- | -------- | ------------------------------------------------------------------ |
+| **Multi-selector fails on new sites**          | High        | Medium   | Graceful degradation, user feedback system, continuous testing     |
+| **IndexedDB quota exceeded**                   | Medium      | High     | Cleanup old highlights, cloud backup, user notification            |
+| **AI API costs spiral**                        | Medium      | High     | Rate limiting, usage caps, monitor closely                         |
+| **Chrome Web Store rejection**                 | Low         | Critical | Follow policies strictly, have appeal process ready                |
+| **Performance degrades with 1000+ highlights** | Medium      | Medium   | Virtual scrolling, lazy loading, pagination                        |
+| **Security vulnerability discovered**          | Low         | Critical | Bug bounty program, rapid patch process, transparent communication |
 
 ### 18.2 Business Risks
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|-------------|--------|---------------------|
-| **Low conversion rate (<1%)** | Medium | High | A/B test pricing, improve onboarding, add social proof |
-| **Competitor copies features** | High | Medium | Build network effects, focus on UX, iterate faster |
-| **User churn after free trial** | High | High | Implement hook model, email campaigns, exit surveys |
-| **Negative reviews due to bugs** | Medium | Medium | Rapid support, proactive communication, quality focus |
-| **Market saturation** | Low | High | Differentiate with AI, target niches, international expansion |
+| Risk                             | Probability | Impact | Mitigation Strategy                                           |
+| -------------------------------- | ----------- | ------ | ------------------------------------------------------------- |
+| **Low conversion rate (<1%)**    | Medium      | High   | A/B test pricing, improve onboarding, add social proof        |
+| **Competitor copies features**   | High        | Medium | Build network effects, focus on UX, iterate faster            |
+| **User churn after free trial**  | High        | High   | Implement hook model, email campaigns, exit surveys           |
+| **Negative reviews due to bugs** | Medium      | Medium | Rapid support, proactive communication, quality focus         |
+| **Market saturation**            | Low         | High   | Differentiate with AI, target niches, international expansion |
 
 ### 18.3 Legal/Compliance Risks
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|-------------|--------|---------------------|
-| **GDPR violation fine** | Low | Critical | Use generator templates, lawyer review at $10k MRR, strict data handling |
-| **Copyright issues (highlights)** | Low | Medium | User-generated content defense, DMCA process, clear ToS |
-| **Accessibility lawsuit** | Low | High | WCAG 2.1 AA compliance from day 1, annual audits |
-| **Privacy breach** | Low | Critical | Encryption, security audits, cyber insurance at scale |
+| Risk                              | Probability | Impact   | Mitigation Strategy                                                      |
+| --------------------------------- | ----------- | -------- | ------------------------------------------------------------------------ |
+| **GDPR violation fine**           | Low         | Critical | Use generator templates, lawyer review at $10k MRR, strict data handling |
+| **Copyright issues (highlights)** | Low         | Medium   | User-generated content defense, DMCA process, clear ToS                  |
+| **Accessibility lawsuit**         | Low         | High     | WCAG 2.1 AA compliance from day 1, annual audits                         |
+| **Privacy breach**                | Low         | Critical | Encryption, security audits, cyber insurance at scale                    |
 
 ### 18.4 Operational Risks
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|-------------|--------|---------------------|
-| **Founder burnout** | Medium | Critical | Sustainable pace, delegate tasks, community support |
-| **Infrastructure outage** | Low | Medium | Multi-region deployment, status page, incident playbook |
-| **Key dependency abandoned** | Low | Medium | Minimal dependencies, fork if needed, regular audits |
-| **Support overwhelm** | Medium | Medium | Community forum, FAQ, automated responses, hire at scale |
+| Risk                         | Probability | Impact   | Mitigation Strategy                                      |
+| ---------------------------- | ----------- | -------- | -------------------------------------------------------- |
+| **Founder burnout**          | Medium      | Critical | Sustainable pace, delegate tasks, community support      |
+| **Infrastructure outage**    | Low         | Medium   | Multi-region deployment, status page, incident playbook  |
+| **Key dependency abandoned** | Low         | Medium   | Minimal dependencies, fork if needed, regular audits     |
+| **Support overwhelm**        | Medium      | Medium   | Community forum, FAQ, automated responses, hire at scale |
 
 ### 18.5 Contingency Plans
 
 **If Chrome Web Store Rejects**:
+
 1. Appeal with detailed response
 2. Meanwhile: Self-hosted .crx file
 3. Firefox Add-ons as primary
 4. Document everything for future attempts
 
 **If Free Tiers Run Out**:
+
 1. Optimize to stay within limits
 2. Upgrade to paid tier only when revenue covers
 3. Negotiate custom pricing with providers
 4. Consider alternative providers
 
 **If Competitor Launches Similar Product**:
+
 1. Double down on unique features (modes, AI)
 2. Build community faster
 3. Focus on superior UX
 4. Consider strategic partnerships
 
 **If Critical Bug in Production**:
+
 1. Immediate rollback to previous version
 2. Fix and test thoroughly
 3. Transparent communication to users
@@ -2867,6 +2940,7 @@ Test Coverage:
 ### Appendix A: Glossary
 
 **Terms**:
+
 - **Anchoring**: Process of storing highlight position
 - **Fuzzy Matching**: Approximate text search algorithm
 - **Multi-Selector**: Strategy using XPath, position, and quote
@@ -2877,22 +2951,26 @@ Test Coverage:
 ### Appendix B: Free Tools Reference
 
 **Legal/Compliance**:
+
 - Privacy Policy: https://termly.io/products/privacy-policy-generator/
 - Terms of Service: https://www.freeprivacypolicy.com/
 - Cookie Consent: https://www.getterms.io/ (or DIY)
 
 **Security**:
+
 - OWASP ZAP: https://www.zaproxy.org/
 - npm audit: Built into npm
 - Dependency-Check: https://owasp.org/www-project-dependency-check/
 
 **Accessibility**:
+
 - WAVE: https://wave.webaim.org/extension/
 - axe DevTools: https://www.deque.com/axe/devtools/
 - NVDA: https://www.nvaccess.org/
 - Contrast Checker: https://webaim.org/resources/contrastchecker/
 
 **Infrastructure (Free Tiers)**:
+
 - Cloudflare Workers: 100k req/day
 - Turso: 500 databases, 1GB storage
 - Supabase: 500MB database, 50k MAU
@@ -2903,12 +2981,14 @@ Test Coverage:
 ### Appendix C: Useful Resources
 
 **Documentation**:
+
 - Chrome Extension Docs: https://developer.chrome.com/docs/extensions/
 - wxt.dev: https://wxt.dev/
 - Dexie.js: https://dexie.org/
 - Hono Framework: https://hono.dev/
 
 **Learning**:
+
 - WCAG Guidelines: https://www.w3.org/WAI/WCAG21/quickref/
 - GDPR Compliance: https://gdpr.eu/
 - Hook Model: "Hooked" by Nir Eyal
@@ -2917,16 +2997,19 @@ Test Coverage:
 ### Appendix D: Contact & Support
 
 **Development Team**:
+
 - Lead Developer: [Your Name]
 - Email: dev@yourdomain.com
 - GitHub: https://github.com/yourusername/extension
 
 **Community**:
+
 - Discord: [Invite Link]
 - Twitter: @YourExtension
 - Reddit: r/YourExtension
 
 **Legal**:
+
 - Privacy Policy: https://yourdomain.com/privacy
 - Terms of Service: https://yourdomain.com/terms
 - Contact: privacy@yourdomain.com
@@ -2935,15 +3018,16 @@ Test Coverage:
 
 ## Document Version History
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-26 | Initial comprehensive specification | AI Assistant |
+| Version | Date       | Changes                             | Author       |
+| ------- | ---------- | ----------------------------------- | ------------ |
+| 1.0     | 2025-12-26 | Initial comprehensive specification | AI Assistant |
 
 ---
 
 ## Conclusion
 
-This document represents a **complete, production-ready specification** for building a browser extension that:
+This document represents a **complete, production-ready specification** for
+building a browser extension that:
 
 1. ✅ **Solves a real problem** (reading retention)
 2. ✅ **Uses proven technology** (multi-selector, fuzzy matching)
@@ -2956,6 +3040,7 @@ This document represents a **complete, production-ready specification** for buil
 **You are now ready to begin implementation.**
 
 **Next Steps**:
+
 1. Review this document thoroughly
 2. Set up GitHub repository
 3. Complete Week 1 pre-development tasks

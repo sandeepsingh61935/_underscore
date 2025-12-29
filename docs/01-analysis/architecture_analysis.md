@@ -11,16 +11,23 @@
 
 ### Overall Assessment: **B+ (Good with Notable Concerns)**
 
-This is a **well-researched and comprehensive specification** that demonstrates strong understanding of browser extension development, modern web technologies, and product-market fit. However, there are **critical architectural gaps, over-optimistic assumptions, and structural issues** that could severely impact success.
+This is a **well-researched and comprehensive specification** that demonstrates
+strong understanding of browser extension development, modern web technologies,
+and product-market fit. However, there are **critical architectural gaps,
+over-optimistic assumptions, and structural issues** that could severely impact
+success.
 
 ### Key Strengths ✅
+
 - **Innovative mode-based architecture** (Sprint/Vault/Gen)
 - **Strong technical foundation** (multi-selector strategy, fuzzy matching)
-- **Excellent attention to non-functional requirements** (security, privacy, accessibility)
+- **Excellent attention to non-functional requirements** (security, privacy,
+  accessibility)
 - **Realistic free-tier infrastructure planning**
 - **Comprehensive go-to-market strategy**
 
 ### Critical Concerns 🚨
+
 - **Fundamental architectural flaws** in sync and conflict resolution
 - **Severely underestimated AI costs** (could kill business model)
 - **Missing scalability considerations** for core features
@@ -28,7 +35,9 @@ This is a **well-researched and comprehensive specification** that demonstrates 
 - **Inadequate data migration strategy**
 - **Questionable 90% highlight restoration claim**
 
-**Verdict:** This project has potential but needs **significant architectural refinement** before implementation begins. Current spec is **40% too ambitious** for a solo developer 10-week timeline.
+**Verdict:** This project has potential but needs **significant architectural
+refinement** before implementation begins. Current spec is **40% too ambitious**
+for a solo developer 10-week timeline.
 
 ---
 
@@ -39,11 +48,14 @@ This is a **well-researched and comprehensive specification** that demonstrates 
 #### Strengths
 
 **✅ Clean Separation of Concerns**
-- Content Script (DOM), Background Worker (Business Logic), Popup (UI) are properly isolated
+
+- Content Script (DOM), Background Worker (Business Logic), Popup (UI) are
+  properly isolated
 - Shadow DOM for CSS encapsulation is excellent choice
 - Plugin architecture allows extensibility
 
 **✅ Technology Choices**
+
 - Vanilla JS + Web Components (Lit) = lightweight, no framework lock-in
 - Vite + wxt.dev = modern, fast DX
 - IndexedDB (Dexie) = correct choice for unlimited storage
@@ -59,7 +71,7 @@ Problem:
     - Batch sync every 30s from background worker
     - Last-write-wins conflict resolution
     - No event sourcing or CRDT
-  
+
   Why This Fails:
     Scenario: User has 2 devices, both offline
       1. Device A: Creates highlight at 10:00:00
@@ -68,7 +80,7 @@ Problem:
       4. Batch sync happens
       5. Result: Device B's highlight overwins (timestamp)
       6. Device A's highlight is LOST forever
-    
+
     The spec says: "Newest wins" (line 809)
     Reality: This causes DATA LOSS in concurrent editing
 
@@ -76,19 +88,20 @@ Problem:
 ```
 
 **Correct Solution:**
+
 ```yaml
 Option 1: Event Sourcing (Recommended)
   - Store all events (HighlightCreated, HighlightDeleted)
   - Replay events to rebuild state
   - Conflicts impossible (events are facts)
   - Cost: More complex, larger storage
-  
+
 Option 2: CRDT (Conflict-free Replicated Data Type)
   - Use Yjs or Automerge library
   - Automatic conflict resolution
   - Guaranteed eventual consistency
   - Cost: Larger bundle size (~100KB)
-  
+
 Option 3: Operational Transform (Complex)
   - Google Docs-style sync
   - Cost: Very complex to implement correctly
@@ -106,7 +119,7 @@ Reality Check:
   - Hypothesis (industry leader): ~85% with 8 years development
   - Web Highlights: ~75-80% based on user reports
   - Your approach: Same strategy, but newer
-  
+
   Realistic Expectation: 70-75% on launch, 80-85% after 1 year
 
 Failure Modes Not Addressed:
@@ -117,11 +130,12 @@ Failure Modes Not Addressed:
   5. Canvas/Shadow DOM content (inaccessible)
   6. Infinite scroll (positions shift)
   7. Reader mode (completely different DOM)
-  
+
   Conservative Estimate: 25-30% of web pages
 ```
 
-**Recommendation:** 
+**Recommendation:**
+
 - Set user expectation at 75%, not 90%
 - Build "highlight health" indicator (confidence score)
 - Add manual re-anchoring UI for orphaned highlights
@@ -139,12 +153,12 @@ Problem 1: MutationObserver on Every Page
       subtree: true,  // ← DANGER
       characterData: true // ← WORSE
     })
-  
+
   Cost: On a typical SPA (e.g., Twitter):
     - 500-1000 mutations per second
     - Each triggers reanchorHighlights()
     - Result: 100% CPU, browser freezes
-  
+
   Solution: Debounce with 300ms delay + IntersectionObserver
 
 Problem 2: Fuzzy Matching on Every Restore
@@ -152,11 +166,11 @@ Problem 2: Fuzzy Matching on Every Restore
     n = document.length (avg 50KB = 50,000 chars)
     m = search.length (avg 100 chars)
     Cost: ~5 million operations per highlight
-  
+
   On page with 10 highlights: 50ms compute EACH
   Total: 500ms page load penalty
-  
-  Solution: 
+
+  Solution:
     - Run fuzzy match in Web Worker (non-blocking)
     - Cache results with content hash
     - Only fallback to fuzzy if XPath fails
@@ -169,6 +183,7 @@ Problem 2: Fuzzy Matching on Every Restore
 #### Excellent Decisions
 
 **✅ Shadow DOM Isolation**
+
 ```typescript
 // Line 544-557: Perfect encapsulation
 class HighlightElement extends HTMLElement {
@@ -178,11 +193,13 @@ class HighlightElement extends HTMLElement {
   }
 }
 ```
+
 - Prevents CSS conflicts with host page
 - Industry best practice
 - Used by Google, GitHub
 
 **✅ Web Components (Lit 3.x)**
+
 - Lightweight (~50KB), not React's 150KB
 - Native browser support
 - Reusable across projects
@@ -190,6 +207,7 @@ class HighlightElement extends HTMLElement {
 #### Minor Issues
 
 **⚠️ Bundle Size Target Too Optimistic**
+
 ```yaml
 Claimed (Line 2718): <70KB gzipped
 Reality Check:
@@ -199,13 +217,14 @@ Reality Check:
   - DOMPurify: 10KB
   - jose (JWT): 15KB
   - Your code: ~30KB (estimated)
-  
+
   Total: ~125KB gzipped
-  
+
   Actual Target: <150KB (still good, just realistic)
 ```
 
 **⚠️ Missing Progressive Enhancement**
+
 ```yaml
 What if:
   - IndexedDB is disabled (privacy mode)?
@@ -227,11 +246,13 @@ Recommendation:
 #### Good Choices
 
 **✅ Cloudflare Workers**
+
 - Edge compute (low latency globally)
 - Free tier: 100k req/day
 - Auto-scaling
 
 **✅ Hono Framework**
+
 - 3x faster than Express
 - TypeScript-first
 - Tiny footprint
@@ -246,13 +267,13 @@ Option A: Turso (LibSQL)
     - 500 databases free
     - Edge replication
     - SQLite-compatible
-  
+
   Cons (NOT mentioned in spec):
     - NO full-text search (for highlight search)
     - NO JSONB query support (for selectors)
     - Have to do ALL filtering in application layer
     - Performance degrades quickly >10k rows
-  
+
   Verdict: WRONG choice for this use case
 
 Option B: Supabase (PostgreSQL)
@@ -261,13 +282,13 @@ Option B: Supabase (PostgreSQL)
     - JSONB queries native
     - PostGIS for future features
     - Real-time subscriptions
-  
+
   Cons:
     - 500MB limit (enough for ~50k highlights)
     - Slightly higher latency (not edge)
-  
+
   Verdict: CORRECT choice
-  
+
 Recommendation: MUST use PostgreSQL, not LibSQL
 ```
 
@@ -282,15 +303,15 @@ Problems:
   1. No token revocation strategy
      - User logs out: Token still valid until expiry
      - Hacked account: Cannot invalidate token
-  
+
   2. No refresh token mechanism
      - Short expiry (5 min): Users logged out constantly
      - Long expiry (30 days): Security risk
-  
+
   3. No session management
      - Cannot see "Active devices"
      - Cannot logout from other devices
-  
+
   4. No rate limiting per user
      - Attacker steals token → unlimited API calls
 
@@ -301,7 +322,8 @@ Industry Standard Solution:
   - Device fingerprinting for security
 ```
 
-**Recommendation:** Use Clerk (mentioned as option) or implement proper JWT + refresh token flow.
+**Recommendation:** Use Clerk (mentioned as option) or implement proper JWT +
+refresh token flow.
 
 ---
 
@@ -310,6 +332,7 @@ Industry Standard Solution:
 ### 2.1 Sprint Mode (Ephemeral) - Grade: **A**
 
 **Strengths:**
+
 - Simple, focused scope
 - Zero backend dependencies
 - Privacy-first (zero storage)
@@ -318,6 +341,7 @@ Industry Standard Solution:
 **No Critical Issues.** This mode is well-designed.
 
 **Minor Enhancement:**
+
 ```yaml
 Add: Undo/Redo support
   - Keep last 10 actions in memory
@@ -330,6 +354,7 @@ Add: Undo/Redo support
 ### 2.2 Vault Mode (Persistent) - Grade: **B-**
 
 **Strengths:**
+
 - Multi-selector strategy is correct approach
 - Collections/tags/search are standard features
 - Export formats comprehensive
@@ -382,7 +407,7 @@ Required Features:
 Line 2324-2336: Export endpoints
   Problem: Generates URL like:
     https://cdn.yourdomain.com/exports/uuid.md
-  
+
   But:
     - Is UUID guessable? (use UUIDv4, but still)
     - No signed URLs (anyone with link can access)
@@ -408,7 +433,7 @@ Industry Standard:
 Spec Claims (Line 1495-1504):
   Premium: $10/month
   Features: 25 AI analyses/month
-  
+
   Implied Cost per Analysis: $0.40
 
 Reality Check (December 2025 pricing):
@@ -417,19 +442,19 @@ Reality Check (December 2025 pricing):
     - With 10,000 users doing 25 analyses = 250,000/month
     - That's 8,333/day → EXCEEDS free tier in 2 days
     - Must upgrade: $0 → ??? (Groq doesn't publish paid pricing)
-  
+
   Claude 3.5 Sonnet (industry standard):
     Input: $3 per 1M tokens
     Output: $15 per 1M tokens
-    
+
     Typical mindmap generation:
       - Input: 500 highlights × 200 chars = 100K chars ≈ 25K tokens
       - Output: Mindmap JSON = 10K tokens
       - Cost: (25K × $3 + 10K × $15) / 1M = $0.22 per analysis
-    
+
     At scale: 250K analyses × $0.22 = $55,000/month
     Revenue: 1,000 users × $10 = $10,000/month
-    
+
     LOSS: $45,000/month ← PROJECT KILLER
 
 Recommended Pricing:
@@ -438,12 +463,12 @@ Recommended Pricing:
     - Pro ($5): NO AI analyses (highlight storage only)
     - Premium ($15): 10 AI analyses/month
     - Ultimate ($30): 50 AI analyses/month
-  
+
   OR: Pay-per-use
     - $1 per mindmap generation
     - $0.50 per summary
     - $0.25 per smart connections
-  
+
   OR: Delay Gen Mode
     - Launch without AI (Sprint + Vault only)
     - Add Gen Mode when you have revenue to cover costs
@@ -459,7 +484,7 @@ Problems:
   2. Who evaluates "accuracy"?
   3. Different users = different expectations
   4. LLMs hallucinate 5-15% of the time
-  
+
   Real Risk:
     - Student uses AI summary for exam
     - AI hallucinates a fact
@@ -487,9 +512,9 @@ Problem: "Context" is vague
     - Financial data
     - Private messages
     - Passwords in plaintext
-  
+
   Current Spec: No scrubbing, no sanitization
-  
+
   Regulation Risk:
     - HIPAA violation (if medical)
     - GDPR violation (PII leakage)
@@ -507,6 +532,7 @@ Required:
 ### 2.4 Collections & Organization - Grade: **B+**
 
 **Strengths:**
+
 - Standard features (tags, colors, folders)
 - Drag-and-drop UX
 - Search with filters
@@ -514,18 +540,20 @@ Required:
 **Missing:**
 
 **⚠️ No Smart Auto-Organization**
+
 ```yaml
 Opportunity: Use AI to auto-categorize highlights
   Example:
     - User highlights 10 passages about "machine learning"
     - System suggests: "Create collection called 'ML Research'?"
     - User accepts with 1 click
-  
+
   Value: Reduces friction, increases engagement
   Cost: Minimal (use embeddings, not LLM)
 ```
 
 **⚠️ No Collaborative Features (Yet mentioned in vision)**
+
 ```yaml
 Line 109: "Year 2: Build network effects (collaborative features)"
 
@@ -535,7 +563,7 @@ But: NO architecture for collaboration
     - Real-time updates (WebSockets)
     - Comments on highlights
     - Public vs private collections
-  
+
   If not planned in MVP, refactoring later will be PAINFUL
 ```
 
@@ -546,6 +574,7 @@ But: NO architecture for collaboration
 ### Grade: **B+**
 
 **Strengths:**
+
 - Comprehensive threat model (Line 869-877)
 - CSP configured correctly
 - DOMPurify for XSS prevention
@@ -561,11 +590,13 @@ Line 2196-2209: POST /highlights accepts selectors JSONB
 
 Attack Vector:
   Malicious user sends:
-    "selectors": {
-      "xpath": "' OR 1=1--",  // SQL injection attempt
-      "position": {"start": -999999},  // Buffer overflow
-      "quote": {"exact": "<script>alert('xss')</script>"}
-    }
+    'selectors':
+      {
+        'xpath': "' OR 1=1--",
+        // SQL injection attempt "position": { 'start': -999999 },
+        // Buffer overflow "quote":
+          { 'exact': "<script>alert('xss')</script>" },
+      }
 
 Current Defense: NONE mentioned
 
@@ -581,10 +612,9 @@ Required:
 ```yaml
 Line 965: Claims "X-CSRF-Token" header
 
-But: No CSRF token generation mentioned anywhere
-  - Where is token stored?
-  - How is it validated?
-  - When does it rotate?
+But:
+  No CSRF token generation mentioned anywhere - Where is token stored? - How is
+  it validated? - When does it rotate?
 
 Without implementation: FALSE SENSE OF SECURITY
 ```
@@ -594,10 +624,9 @@ Without implementation: FALSE SENSE OF SECURITY
 ```yaml
 Line 2362-2387: Rate limits defined beautifully
 
-But: HOW are they enforced?
-  - In-memory (lost on restart)?
-  - Redis (not mentioned in stack)?
-  - Cloudflare's built-in (limited features)?
+But:
+  HOW are they enforced? - In-memory (lost on restart)? - Redis (not mentioned
+  in stack)? - Cloudflare's built-in (limited features)?
 
 Recommendation:
   - Use Cloudflare Rate Limiting (100 rules free)
@@ -611,6 +640,7 @@ Recommendation:
 ### Grade: **C+**
 
 **Good:**
+
 - Virtual scrolling for large lists (Line 834-860)
 - Pagination in API
 - Lazy loading mentioned
@@ -622,13 +652,13 @@ Recommendation:
 ```yaml
 Problem: IndexedDB has NO indexes on tags/colors
   Current Schema: Just arrays stored as JSON
-  
+
   Query: "Find all highlights with tag 'ai'"
     Current Method:
       1. Load ALL highlights into memory
       2. Filter in JavaScript
       3. Return results
-    
+
     Cost at scale:
       - 10k highlights = 50MB data
       - Load time: 2-5 seconds
@@ -669,11 +699,11 @@ Line 1923-1926: Says "Cloudflare CDN (always free)"
 But: Extension loads from chrome-extension:// protocol
   - NO CDN benefit
   - Assets bundled in .crx
-  
+
   Only helps for:
     - Landing page
     - Export downloads
-    
+
   NOT for:
     - Extension scripts
     - Extension images
@@ -686,6 +716,7 @@ But: Extension loads from chrome-extension:// protocol
 ### Grade: **B**
 
 **Good:**
+
 - Proper foreign keys and cascades
 - Indexes on common queries
 - Full-text search index (PostgreSQL specific)
@@ -701,7 +732,7 @@ Line 1960: highlights table
 At 1M users with 1k highlights each:
   - 1 billion rows
   - PostgreSQL recommended limit: 100M rows/table
-  
+
   Performance degradation at scale:
     - Queries slow down logarithmically
     - VACUUM takes hours
@@ -718,12 +749,12 @@ Required: Table partitioning
 ```yaml
 Line 1998: "deleted BOOLEAN DEFAULT FALSE"
   Good: Soft deletes implemented
-  
+
   Problem: No deleted_at timestamp
     - Cannot restore within 30 days
     - Cannot auto-purge after 90 days
     - Cannot track deletion patterns
-  
+
   Add: deleted_at TIMESTAMP NULL
 ```
 
@@ -747,6 +778,7 @@ Missing:
 ### Grade: **B+**
 
 **Strengths:**
+
 - RESTful design
 - Good use of HTTP verbs
 - Pagination implemented
@@ -780,10 +812,9 @@ Common Use Case:
   - Time: 500 × 100ms = 50 seconds
   - Rate limit: Hits 100 req/min limit
 
-Required: POST /highlights/bulk
-  - Accept array of highlights
-  - Atomic transaction (all or nothing)
-  - Return array of IDs
+Required:
+  POST /highlights/bulk - Accept array of highlights - Atomic transaction (all
+  or nothing) - Return array of IDs
 ```
 
 **⚠️ No WebSocket for Real-Time Sync**
@@ -795,7 +826,7 @@ Better: WebSocket connection
   - Server pushes updates when highlights change
   - Saves battery (no polling)
   - Lower latency (instant sync)
-  
+
   Cloudflare Workers: Supports WebSockets (Durable Objects)
   Cost: $5/month for 1M messages
 ```
@@ -807,6 +838,7 @@ Better: WebSocket connection
 ### Grade: **B-**
 
 **Good:**
+
 - Unit, integration, E2E all planned
 - Security testing (OWASP ZAP)
 - Accessibility testing (WAVE, axe)
@@ -847,17 +879,16 @@ Recommendation:
 ```yaml
 Current: 100 beta testers (Line 1656)
 
-But: What are they testing?
-  - No test scripts
-  - No success criteria
-  - No feedback collection method
+But:
+  What are they testing? - No test scripts - No success criteria - No feedback
+  collection method
 
 Recommendation:
   - Structured beta program with:
-    - Specific user journeys to test
-    - Survey after each journey
-    - Bug reporting template
-    - Weekly feedback calls
+      - Specific user journeys to test
+      - Survey after each journey
+      - Bug reporting template
+      - Weekly feedback calls
 ```
 
 ---
@@ -880,10 +911,10 @@ Line 1477-1482: Free Vault Mode
 
 Cost to serve (per user/month):
   - Infrastructure: $0 (within free tier)
-  
+
   Value to user: HIGH
   Incentive to upgrade: LOW
-  
+
   Result: 98% stay on free tier forever
 
 Better Free Tier:
@@ -933,6 +964,7 @@ Required:
 ### Grade: **A-**
 
 **Strengths:**
+
 - Mode-based differentiation is UNIQUE
 - Privacy-first Sprint Mode: No competitor has this
 - Generous free tier competitive
@@ -948,7 +980,7 @@ Line 109: "Year 2: Build network effects"
 Problem: Highlights are ANTI-network-effect
   - Value is personal (my highlights ≠ your highlights)
   - Unlike Twitter (more users = more content to consume)
-  
+
   True Network Effects:
     - Shared collections (but also competitive moat risk)
     - Public highlights (privacy concerns)
@@ -962,15 +994,16 @@ Recommendation:
 
 **Competitive Moat Analysis:**
 
-| Feature | Defensibility | Copying Difficulty | Value to Users |
-|---------|---------------|-------------------|----------------|
-| Sprint Mode | **Low** | Easy (2 weeks) | High |
-| Multi-selector | **Medium** | Medium (2 months) | Critical |
-| Mode system | **Medium** | Easy concept, hard execution | Medium |
-| AI features | **Low** | Everyone has LLM access | High (but costly) |
-| Free tier | **Low** | Anyone can copy | High acquisition |
+| Feature        | Defensibility | Copying Difficulty           | Value to Users    |
+| -------------- | ------------- | ---------------------------- | ----------------- |
+| Sprint Mode    | **Low**       | Easy (2 weeks)               | High              |
+| Multi-selector | **Medium**    | Medium (2 months)            | Critical          |
+| Mode system    | **Medium**    | Easy concept, hard execution | Medium            |
+| AI features    | **Low**       | Everyone has LLM access      | High (but costly) |
+| Free tier      | **Low**       | Anyone can copy              | High acquisition  |
 
 **Real Moat: EXECUTION + COMMUNITY**
+
 - Your execution quality
 - Customer support experience
 - Community engagement
@@ -1084,6 +1117,7 @@ Realistic Timeline: 26 weeks (6 months)
 ### Verdict: **A-** (Mostly Excellent)
 
 **Perfect Choices:**
+
 - Cloudflare Workers + Hono
 - Vite + wxt.dev
 - Lit (Web Components)
@@ -1091,11 +1125,13 @@ Realistic Timeline: 26 weeks (6 months)
 - DOMPurify
 
 **Questionable:**
+
 - Turso (should be Supabase)
 - google-diff-match-patch (old, consider Diff-Match-Patch-Typescript)
 - jose (consider OAuth.js for easier auth)
 
 **Missing:**
+
 - Redis for caching (Upstash Redis free tier)
 - Error tracking (Sentry is mentioned ✓)
 - APM (Application Performance Monitoring)
@@ -1106,18 +1142,18 @@ Realistic Timeline: 26 weeks (6 months)
 
 ### Must-Fix Before Implementation:
 
-| # | Gap | Severity | Impact | Est. Effort |
-|---|-----|----------|--------|-------------|
-| 1 | Sync conflict resolution (Event Sourcing) | **CRITICAL** | Data loss | 2 weeks |
-| 2 | AI cost model broken | **CRITICAL** | Business killer | 1 week planning |
-| 3 | Multi-selector reliability overstated | **HIGH** | User trust | Set expectations |
-| 4 | Database choice (use PostgreSQL) | **HIGH** | Performance | 2 days |
-| 5 | Auth strategy naive (add refresh tokens) | **HIGH** | Security | 1 week |
-| 6 | Timeline unrealistic (6 months not 10 weeks) | **HIGH** | Burnout | Re-plan |
-| 7 | Performance bottlenecks (MutationObserver) | **MEDIUM** | UX | 3 days |
-| 8 | Missing data migration strategy | **MEDIUM** | Future pain | 2 days |
-| 9 | No orphaned highlights UX | **MEDIUM** | Support load | 1 week |
-| 10 | Export security hole | **MEDIUM** | Privacy | 2 days |
+| #   | Gap                                          | Severity     | Impact          | Est. Effort      |
+| --- | -------------------------------------------- | ------------ | --------------- | ---------------- |
+| 1   | Sync conflict resolution (Event Sourcing)    | **CRITICAL** | Data loss       | 2 weeks          |
+| 2   | AI cost model broken                         | **CRITICAL** | Business killer | 1 week planning  |
+| 3   | Multi-selector reliability overstated        | **HIGH**     | User trust      | Set expectations |
+| 4   | Database choice (use PostgreSQL)             | **HIGH**     | Performance     | 2 days           |
+| 5   | Auth strategy naive (add refresh tokens)     | **HIGH**     | Security        | 1 week           |
+| 6   | Timeline unrealistic (6 months not 10 weeks) | **HIGH**     | Burnout         | Re-plan          |
+| 7   | Performance bottlenecks (MutationObserver)   | **MEDIUM**   | UX              | 3 days           |
+| 8   | Missing data migration strategy              | **MEDIUM**   | Future pain     | 2 days           |
+| 9   | No orphaned highlights UX                    | **MEDIUM**   | Support load    | 1 week           |
+| 10  | Export security hole                         | **MEDIUM**   | Privacy         | 2 days           |
 
 ---
 
@@ -1177,6 +1213,7 @@ Priority 3 (Nice to Have):
 ### 14.3 MVP Scope Recommendation
 
 **Option A: Full-Featured (6 months)**
+
 ```yaml
 Includes:
   - Sprint Mode ✅
@@ -1193,15 +1230,12 @@ Investment: $0 (all free tiers)
 ```
 
 **Option B: Lean MVP (3 months, RECOMMENDED)**
+
 ```yaml
 Includes:
   - Sprint Mode ✅
-  - Vault Mode (basic) ✅
-    - Local storage only (no sync) ✅
-    - Single device ✅
-    - Basic collections ✅
-    - Search (client-side) ✅
-    - Export Markdown only ✅
+  - Vault Mode (basic) ✅ - Local storage only (no sync) ✅ - Single device ✅ -
+    Basic collections ✅ - Search (client-side) ✅ - Export Markdown only ✅
   - NO cloud sync ❌
   - NO AI features ❌
   - NO analytics dashboard ❌
@@ -1224,6 +1258,7 @@ Post-Launch:
 ### Is This Project Competitive?
 
 **YES**, with major revisions:
+
 - The mode-based architecture is genuinely innovative
 - Sprint Mode has no competitor equivalent
 - Multi-selector strategy is sound (but 75%, not 90%)
@@ -1232,6 +1267,7 @@ Post-Launch:
 ### Is This Project Unique?
 
 **PARTIALLY**:
+
 - Sprint Mode: Unique ✅
 - Vault Mode: Similar to Hypothesis, Web Highlights ⚠️
 - Gen Mode: Similar to Liner AI ⚠️
@@ -1240,6 +1276,7 @@ Post-Launch:
 ### Will This Become a Hit?
 
 **POSSIBLE**, if you:
+
 1. ✅ Fix the critical gaps (sync, AI costs, timeline)
 2. ✅ Launch Lean MVP first (validate market)
 3. ✅ Execute brilliantly (UX, performance, support)
@@ -1247,6 +1284,7 @@ Post-Launch:
 5. ✅ Iterate based on feedback (not assumptions)
 
 **Probability:**
+
 - With current spec as-is: **20%** (too many flaws)
 - With recommended changes: **55%** (solid execution needed)
 - With Lean MVP + iteration: **70%** (realistic path)
@@ -1271,21 +1309,21 @@ Post-Launch:
 
 ## 16. Letter Grade by Category
 
-| Category | Grade | Notes |
-|----------|-------|-------|
-| **Overall Architecture** | B | Solid foundation, critical flaws |
-| **Frontend Architecture** | A- | Excellent choices |
-| **Backend Architecture** | B- | Database choice wrong, auth naive |
-| **Security** | B+ | Comprehensive but gaps in implementation |
-| **Scalability** | C+ | Missing caching, partitioning |
-| **Database Design** | B | Good schema, missing partitioning |
-| **API Design** | B+ | RESTful, needs batch operations |
-| **Testing Strategy** | B- | Good coverage, missing chaos engineering |
-| **Business Model** | C | AI costs broken, pricing too generous |
-| **Competitive Positioning** | A- | Unique angles, realistic threats |
-| **Risk Management** | B | Comprehensive list, weak mitigation |
-| **Implementation Roadmap** | D | **Unrealistic timeline** |
-| **Technology Stack** | A- | Excellent choices (fix Turso) |
+| Category                    | Grade | Notes                                    |
+| --------------------------- | ----- | ---------------------------------------- |
+| **Overall Architecture**    | B     | Solid foundation, critical flaws         |
+| **Frontend Architecture**   | A-    | Excellent choices                        |
+| **Backend Architecture**    | B-    | Database choice wrong, auth naive        |
+| **Security**                | B+    | Comprehensive but gaps in implementation |
+| **Scalability**             | C+    | Missing caching, partitioning            |
+| **Database Design**         | B     | Good schema, missing partitioning        |
+| **API Design**              | B+    | RESTful, needs batch operations          |
+| **Testing Strategy**        | B-    | Good coverage, missing chaos engineering |
+| **Business Model**          | C     | AI costs broken, pricing too generous    |
+| **Competitive Positioning** | A-    | Unique angles, realistic threats         |
+| **Risk Management**         | B     | Comprehensive list, weak mitigation      |
+| **Implementation Roadmap**  | D     | **Unrealistic timeline**                 |
+| **Technology Stack**        | A-    | Excellent choices (fix Turso)            |
 
 **Overall Project Grade: B- (Good concept, needs significant refinement)**
 
@@ -1294,6 +1332,7 @@ Post-Launch:
 ## 17. Action Plan
 
 ### Week 1: Architecture Revision
+
 - [ ] Redesign sync with Event Sourcing
 - [ ] Reprice or remove Gen Mode
 - [ ] Choose PostgreSQL (Supabase)
@@ -1301,27 +1340,32 @@ Post-Launch:
 - [ ] Revise timeline to 24 weeks (or cut scope)
 
 ### Week 2: Implementation Planning
+
 - [ ] Create detailed task breakdown (Jira/Linear)
 - [ ] Set up monitoring (Sentry, Plausible)
 - [ ] Design database migrations strategy
 - [ ] Write technical design doc (this analysis as input)
 
 ### Week 3-14: Lean MVP Build
+
 - [ ] Sprint Mode (3 weeks)
 - [ ] Vault Mode Basic (6 weeks)
 - [ ] Polish + Testing (3 weeks)
 
 ### Week 15-16: Beta Testing
+
 - [ ] Recruit 100 beta users
 - [ ] Collect structured feedback
 - [ ] Fix critical bugs
 
 ### Week 17: Launch
+
 - [ ] Submit to Chrome Web Store
 - [ ] Product Hunt, Hacker News, Reddit
 - [ ] Monitor metrics closely
 
 ### Week 18-24: Iterate
+
 - [ ] Analyze user behavior
 - [ ] Prioritize feature requests
 - [ ] Plan v2 (sync, AI)
@@ -1330,15 +1374,19 @@ Post-Launch:
 
 ## Conclusion
 
-This is a **well-researched, ambitious, and thoughtful specification** that demonstrates deep understanding of the problem space. However, it suffers from **over-optimism in timeline, AI costs, and sync architecture**.
+This is a **well-researched, ambitious, and thoughtful specification** that
+demonstrates deep understanding of the problem space. However, it suffers from
+**over-optimism in timeline, AI costs, and sync architecture**.
 
-**Key Insight:** This project is trying to be everything to everyone (Sprint + Vault + Gen, all in 10 weeks). The path to success is:
+**Key Insight:** This project is trying to be everything to everyone (Sprint +
+Vault + Gen, all in 10 weeks). The path to success is:
 
 1. **Launch Lean** (Sprint + Vault Local only)
 2. **Validate Market** (1,000 users, feedback)
 3. **Iterate Intelligently** (add sync, then AI if economics work)
 
-**With revisions, this could be a $500k/year business in 18 months. Without revisions, it will fail in month 3 due to sync bugs or AI cost overruns.**
+**With revisions, this could be a $500k/year business in 18 months. Without
+revisions, it will fail in month 3 due to sync bugs or AI cost overruns.**
 
 **Recommendation: REVISE FIRST, BUILD SECOND.**
 
@@ -1346,4 +1394,5 @@ This is a **well-researched, ambitious, and thoughtful specification** that demo
 
 **Report Prepared By:** Senior System Architect  
 **Contact:** Available for follow-up questions  
-**Next Steps:** Review recommendations, revise architecture, then proceed to implementation planning
+**Next Steps:** Review recommendations, revise architecture, then proceed to
+implementation planning

@@ -1,4 +1,5 @@
 # Design System
+
 **Web Highlighter Extension - Visual Design**
 
 ---
@@ -8,11 +9,13 @@
 ### Primary Highlight Colors (5 Presets)
 
 #### 1. Sunshine Yellow (Default)
+
 ```css
---highlight-yellow: #FFEB3B;
+--highlight-yellow: #ffeb3b;
 --highlight-yellow-rgb: 255, 235, 59;
 --highlight-yellow-contrast: #000000;
 ```
+
 **Use**: General highlighting, most visible  
 **Accessibility**: AAA contrast ratio  
 **Psychology**: Attention, energy, optimism
@@ -20,11 +23,13 @@
 ---
 
 #### 2. Ocean Blue
+
 ```css
---highlight-blue: #64B5F6;
+--highlight-blue: #64b5f6;
 --highlight-blue-rgb: 100, 181, 246;
 --highlight-blue-contrast: #000000;
 ```
+
 **Use**: Technical content, facts  
 **Accessibility**: AAA contrast ratio  
 **Psychology**: Trust, calm, intelligence
@@ -32,11 +37,13 @@
 ---
 
 #### 3. Forest Green
+
 ```css
---highlight-green: #81C784;
+--highlight-green: #81c784;
 --highlight-green-rgb: 129, 199, 132;
 --highlight-green-contrast: #000000;
 ```
+
 **Use**: Positive points, agreements  
 **Accessibility**: AAA contrast ratio  
 **Psychology**: Growth, harmony, balance
@@ -44,11 +51,13 @@
 ---
 
 #### 4. Sunset Orange
+
 ```css
---highlight-orange: #FFB74D;
+--highlight-orange: #ffb74d;
 --highlight-orange-rgb: 255, 183, 77;
 --highlight-orange-contrast: #000000;
 ```
+
 **Use**: Important warnings, key points  
 **Accessibility**: AAA contrast ratio  
 **Psychology**: Enthusiasm, creativity, attention
@@ -56,11 +65,13 @@
 ---
 
 #### 5. Lavender Purple
+
 ```css
---highlight-purple: #BA68C8;
+--highlight-purple: #ba68c8;
 --highlight-purple-rgb: 186, 104, 200;
---highlight-purple-contrast: #FFFFFF;
+--highlight-purple-contrast: #ffffff;
 ```
+
 **Use**: Quotes, inspirational content  
 **Accessibility**: AAA contrast ratio  
 **Psychology**: Wisdom, creativity, luxury
@@ -73,30 +84,30 @@
 
 ```css
 /* Background */
---surface-primary: #FFFFFF;
---surface-secondary: #F5F5F5;
---surface-tertiary: #E0E0E0;
+--surface-primary: #ffffff;
+--surface-secondary: #f5f5f5;
+--surface-tertiary: #e0e0e0;
 
 /* Text */
 --text-primary: #212121;
 --text-secondary: #757575;
---text-disabled: #BDBDBD;
+--text-disabled: #bdbdbd;
 
 /* Borders */
---border-light: #E0E0E0;
---border-medium: #BDBDBD;
---border-dark: #9E9E9E;
+--border-light: #e0e0e0;
+--border-medium: #bdbdbd;
+--border-dark: #9e9e9e;
 
 /* Interactive */
---interactive-hover: #F5F5F5;
---interactive-active: #E0E0E0;
---interactive-focus: #2196F3;
+--interactive-hover: #f5f5f5;
+--interactive-active: #e0e0e0;
+--interactive-focus: #2196f3;
 
 /* Status */
---status-success: #4CAF50;
---status-warning: #FF9800;
---status-error: #F44336;
---status-info: #2196F3;
+--status-success: #4caf50;
+--status-warning: #ff9800;
+--status-error: #f44336;
+--status-info: #2196f3;
 ```
 
 ---
@@ -104,15 +115,18 @@
 ## Typography
 
 ### Font Stack
-```css
---font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 
-                    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
---font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
-                    'Courier New', monospace;
+```css
+--font-family-sans:
+  system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  'Helvetica Neue', Arial, sans-serif;
+
+--font-family-mono:
+  'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
 ```
 
 ### Font Sizes
+
 ```css
 --font-size-xs: 11px;
 --font-size-sm: 12px;
@@ -123,6 +137,7 @@
 ```
 
 ### Font Weights
+
 ```css
 --font-weight-normal: 400;
 --font-weight-medium: 500;
@@ -131,6 +146,7 @@
 ```
 
 ### Line Heights
+
 ```css
 --line-height-tight: 1.25;
 --line-height-normal: 1.5;
@@ -159,6 +175,7 @@
 ## Highlight Styles
 
 ### Default Highlight
+
 ```css
 .highlight {
   background-color: var(--highlight-color);
@@ -176,9 +193,10 @@
 ```
 
 ### Highlight States
+
 ```css
 .highlight--selected {
-  outline: 2px solid #2196F3;
+  outline: 2px solid #2196f3;
   outline-offset: 2px;
 }
 
@@ -187,8 +205,12 @@
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 ```
 
@@ -197,6 +219,7 @@
 ## Popup UI Design
 
 ### Layout
+
 ```
 ┌─────────────────────────┐
 │ ⚡ Underscore           │
@@ -219,6 +242,7 @@
 ```
 
 ### Dimensions
+
 ```css
 --popup-width: 320px;
 --popup-min-height: 400px;
@@ -230,6 +254,7 @@
 ## Settings Page Design (Future)
 
 ### Layout
+
 ```
 ┌──────────────────────────────────────┐
 │  ⚡ Underscore Highlighter           │
@@ -261,6 +286,7 @@
 ## Animations
 
 ### Micro-interactions
+
 ```css
 /* Highlight creation */
 @keyframes highlightCreated {
@@ -309,6 +335,7 @@
 ## Accessibility
 
 ### WCAG AA Compliance
+
 - ✅ Color contrast ratio ≥ 4.5:1
 - ✅ Focus indicators visible
 - ✅ Keyboard navigation support
@@ -316,6 +343,7 @@
 - ✅ Reduced motion support
 
 ### Focus Styles
+
 ```css
 *:focus-visible {
   outline: 2px solid var(--interactive-focus);
@@ -340,19 +368,19 @@
 ```css
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface-primary: #1E1E1E;
+    --surface-primary: #1e1e1e;
     --surface-secondary: #252525;
-    --surface-tertiary: #2C2C2C;
-    
-    --text-primary: #E0E0E0;
-    --text-secondary: #A0A0A0;
-    
+    --surface-tertiary: #2c2c2c;
+
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+
     /* Adjust highlight colors for dark backgrounds */
-    --highlight-yellow: #FDD835;  /* Darker yellow */
-    --highlight-blue: #42A5F5;    /* Darker blue */
-    --highlight-green: #66BB6A;   /* Darker green */
-    --highlight-orange: #FFA726;  /* Darker orange */
-    --highlight-purple: #AB47BC;  /* Darker purple */
+    --highlight-yellow: #fdd835; /* Darker yellow */
+    --highlight-blue: #42a5f5; /* Darker blue */
+    --highlight-green: #66bb6a; /* Darker green */
+    --highlight-orange: #ffa726; /* Darker orange */
+    --highlight-purple: #ab47bc; /* Darker purple */
   }
 }
 ```
@@ -362,6 +390,7 @@
 ## Icons (Lucide)
 
 We'll use Lucide Icons (lightweight, consistent):
+
 - ⚡ Highlight: `zap`
 - 🎨 Color: `palette`
 - ⌨️ Keyboard: `keyboard`
@@ -375,6 +404,7 @@ We'll use Lucide Icons (lightweight, consistent):
 ## Component Library
 
 ### Button
+
 ```css
 .btn {
   padding: var(--space-2) var(--space-4);
@@ -399,11 +429,12 @@ We'll use Lucide Icons (lightweight, consistent):
 
 .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 ```
 
 ### Color Picker
+
 ```css
 .color-picker {
   display: flex;

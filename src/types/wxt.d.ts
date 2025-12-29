@@ -10,16 +10,16 @@
  */
 
 interface ContentScriptContext {
-    matches: string[];
-    main(): void | Promise<void>;
+  matches: string[];
+  main(): void | Promise<void>;
 }
 
 declare function defineContentScript(context: ContentScriptContext): ContentScriptContext;
 declare function defineBackground(fn: () => void | Promise<void>): void;
 
 declare global {
-    const defineContentScript: typeof defineContentScript;
-    const defineBackground: typeof defineBackground;
+  const defineContentScript: typeof defineContentScript;
+  const defineBackground: typeof defineBackground;
 }
 
-export { };
+export {};

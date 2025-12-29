@@ -1,7 +1,10 @@
 # System Design Patterns
+
 **Web Highlighter Extension - Design Pattern Catalog**
 
-> **Purpose**: Comprehensive guide to design patterns, architectural decisions, and best practices for building a maintainable, scalable, and robust browser extension.
+> **Purpose**: Comprehensive guide to design patterns, architectural decisions,
+> and best practices for building a maintainable, scalable, and robust browser
+> extension.
 
 ---
 
@@ -24,12 +27,13 @@
 
 **Problem**: Need clear separation of concerns and unidirectional data flow.
 
-**Solution**: Organize code into distinct layers with well-defined responsibilities.
+**Solution**: Organize code into distinct layers with well-defined
+responsibilities.
 
 ```typescript
 /**
  * Layer Structure:
- * 
+ *
  * ┌─────────────────────────────────────┐
  * │   PRESENTATION LAYER                │
  * │   - Popup UI                        │
@@ -88,10 +92,10 @@ export class HighlightService {
       color,
       new Date()
     );
-    
+
     await this.repository.save(highlight);
     await this.renderer.render(highlight);
-    
+
     return highlight;
   }
 }
@@ -111,6 +115,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 ```
 
 **Benefits**:
+
 - ✅ Clear separation of concerns
 - ✅ Testable in isolation
 - ✅ Easy to replace infrastructure
@@ -120,7 +125,8 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
 ### 2. Plugin Architecture (Strategy Pattern)
 
-**Problem**: Need to support multiple modes (Sprint/Vault/Gen) with shared core functionality.
+**Problem**: Need to support multiple modes (Sprint/Vault/Gen) with shared core
+functionality.
 
 **Solution**: Define a plugin interface and implement mode-specific behavior.
 
@@ -133,16 +139,16 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 export interface IHighlightMode {
   readonly name: string;
   readonly icon: string;
-  
+
   // Lifecycle hooks
   onActivate(): Promise<void>;
   onDeactivate(): Promise<void>;
-  
+
   // Core operations
   highlight(selection: Selection): Promise<void>;
   removeHighlight(id: string): Promise<void>;
   clearAll(): Promise<void>;
-  
+
   // Restoration
   restore(url: string): Promise<void>;
 }
@@ -150,7 +156,7 @@ export interface IHighlightMode {
 // Base implementation with common logic
 export abstract class BaseHighlightMode implements IHighlightMode {
   protected highlights = new Map<string, Highlight>();
-  
+
   constructor(
     protected readonly renderer: IHighlightRenderer,
     protected readonly logger: ILogger
@@ -186,8 +192,12 @@ export abstract class BaseHighlightMode implements IHighlightMode {
 
 // Sprint Mode: In-memory only
 export class SprintMode extends BaseHighlightMode {
-  get name() { return 'Sprint'; }
-  get icon() { return '🏃'; }
+  get name() {
+    return 'Sprint';
+  }
+  get icon() {
+    return '🏃';
+  }
 
   async highlight(selection: Selection): Promise<void> {
     const highlight = this.createHighlightFromSelection(selection);
@@ -216,8 +226,12 @@ export class SprintMode extends BaseHighlightMode {
 
 // Vault Mode: With persistence (future)
 export class VaultMode extends BaseHighlightMode {
-  get name() { return 'Vault'; }
-  get icon() { return '🔐'; }
+  get name() {
+    return 'Vault';
+  }
+  get icon() {
+    return '🔐';
+  }
 
   constructor(
     renderer: IHighlightRenderer,
@@ -229,17 +243,17 @@ export class VaultMode extends BaseHighlightMode {
 
   async highlight(selection: Selection): Promise<void> {
     const highlight = this.createHighlightFromSelection(selection);
-    
+
     // Render immediately
     await this.renderHighlight(highlight);
-    
+
     // Persist to storage
     await this.storage.save(highlight);
   }
 
   async restore(url: string): Promise<void> {
     const highlights = await this.storage.findByUrl(url);
-    
+
     for (const highlight of highlights) {
       await this.renderHighlight(highlight);
     }
@@ -263,7 +277,7 @@ export class VaultMode extends BaseHighlightMode {
 // Mode Manager: Orchestrates mode switching
 export class ModeManager {
   private currentMode: IHighlightMode;
-  
+
   constructor(
     private readonly modes: Map<string, IHighlightMode>,
     private readonly logger: ILogger
@@ -274,7 +288,7 @@ export class ModeManager {
 
   async switchMode(modeName: string): Promise<void> {
     const newMode = this.modes.get(modeName);
-    
+
     if (!newMode) {
       throw new Error(`Mode ${modeName} not found`);
     }
@@ -283,7 +297,9 @@ export class ModeManager {
       return; // Already in this mode
     }
 
-    this.logger.info(`Switching from ${this.currentMode.name} to ${newMode.name}`);
+    this.logger.info(
+      `Switching from ${this.currentMode.name} to ${newMode.name}`
+    );
 
     // Deactivate current mode
     await this.currentMode.onDeactivate();
@@ -306,6 +322,7 @@ export class ModeManager {
 ```
 
 **Benefits**:
+
 - ✅ Easy to add new modes
 - ✅ Shared common functionality
 - ✅ Mode-specific behavior isolated
@@ -346,12 +363,9 @@ export class HighlightFactory {
   /**
    * Create highlight from text selection
    */
-  createFromSelection(
-    selection: Selection,
-    userColor?: string
-  ): Highlight {
+  createFromSelection(selection: Selection, userColor?: string): Highlight {
     const text = selection.toString().trim();
-    
+
     if (!text) {
       throw new Error('Cannot create highlight from empty selection');
     }
@@ -380,7 +394,7 @@ export class HighlightFactory {
    * Create multiple highlights in batch
    */
   createBatch(dataList: HighlightData[]): Highlight[] {
-    return dataList.map(data => this.createFromData(data));
+    return dataList.map((data) => this.createFromData(data));
   }
 
   private generateId(): string {
@@ -495,7 +509,7 @@ export class ServiceContainer {
   registerSingleton<T>(token: string, factory: ServiceFactory<T>): void {
     this.services.set(token, {
       factory,
-      lifetime: 'singleton'
+      lifetime: 'singleton',
     });
   }
 
@@ -505,7 +519,7 @@ export class ServiceContainer {
   registerTransient<T>(token: string, factory: ServiceFactory<T>): void {
     this.services.set(token, {
       factory,
-      lifetime: 'transient'
+      lifetime: 'transient',
     });
   }
 
@@ -557,16 +571,19 @@ export function bootstrap(): ServiceContainer {
   // Register singletons
   container.registerSingleton('logger', () => new Logger());
   container.registerSingleton('eventBus', () => new EventBus());
-  container.registerSingleton('colorManager', () => 
-    new ColorManager(container.resolve('logger'))
+  container.registerSingleton(
+    'colorManager',
+    () => new ColorManager(container.resolve('logger'))
   );
 
   // Register transient services
-  container.registerTransient('highlightFactory', () =>
-    new HighlightFactory(
-      container.resolve('colorManager'),
-      container.resolve('selectorEngine')
-    )
+  container.registerTransient(
+    'highlightFactory',
+    () =>
+      new HighlightFactory(
+        container.resolve('colorManager'),
+        container.resolve('selectorEngine')
+      )
   );
 
   return container;
@@ -672,7 +689,8 @@ export class StorageAdapterFactory {
 
 ### 2. Decorator Pattern
 
-**Problem**: Need to add cross-cutting concerns (logging, performance tracking) without modifying core logic.
+**Problem**: Need to add cross-cutting concerns (logging, performance tracking)
+without modifying core logic.
 
 **Solution**: Use decorators to wrap functionality.
 
@@ -696,22 +714,24 @@ export function LogMethod(
     logger.debug(`[${className}.${propertyKey}] Called with args:`, args);
 
     const startTime = performance.now();
-    
+
     try {
       const result = await originalMethod.apply(this, args);
       const duration = performance.now() - startTime;
-      
-      logger.debug(`[${className}.${propertyKey}] Completed in ${duration.toFixed(2)}ms`);
-      
+
+      logger.debug(
+        `[${className}.${propertyKey}] Completed in ${duration.toFixed(2)}ms`
+      );
+
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       logger.error(
         `[${className}.${propertyKey}] Failed after ${duration.toFixed(2)}ms`,
         error
       );
-      
+
       throw error;
     }
   };
@@ -729,18 +749,20 @@ export function Monitor(
 
   descriptor.value = async function (...args: any[]) {
     const mark = `${target.constructor.name}.${propertyKey}`;
-    
+
     performance.mark(`${mark}:start`);
-    
+
     try {
       return await originalMethod.apply(this, args);
     } finally {
       performance.mark(`${mark}:end`);
       performance.measure(mark, `${mark}:start`, `${mark}:end`);
-      
+
       const measure = performance.getEntriesByName(mark)[0];
       if (measure && measure.duration > 50) {
-        console.warn(`⚠️ Slow method: ${mark} took ${measure.duration.toFixed(2)}ms`);
+        console.warn(
+          `⚠️ Slow method: ${mark} took ${measure.duration.toFixed(2)}ms`
+        );
       }
     }
   };
@@ -768,7 +790,7 @@ export function Retry(maxAttempts: number = 3, delayMs: number = 100) {
 
           if (attempt < maxAttempts - 1) {
             const delay = delayMs * Math.pow(2, attempt);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }
       }
@@ -796,7 +818,7 @@ export class HighlightService {
     // Will retry 3 times with exponential backoff
     await fetch('/api/sync', {
       method: 'POST',
-      body: JSON.stringify(highlights)
+      body: JSON.stringify(highlights),
     });
   }
 }
@@ -816,7 +838,7 @@ export class HighlightService {
 // Lazy-loading proxy
 export class LazyHighlightRenderer implements IHighlightRenderer {
   private realRenderer?: ShadowDOMRenderer;
-  
+
   constructor(private readonly config: HighlightRendererConfig) {}
 
   private getRenderer(): ShadowDOMRenderer {
@@ -894,24 +916,24 @@ export class CachingHighlightRepository implements IHighlightRepository {
     // Check cache first
     if (this.cache.has(id)) {
       const cached = this.cache.get(id)!;
-      
+
       // Check if expired
       if (!cached.isExpired(this.ttlMs)) {
         console.log(`Cache hit: ${id}`);
         return cached;
       }
-      
+
       this.cache.delete(id);
     }
 
     // Cache miss - fetch from inner repository
     console.log(`Cache miss: ${id}`);
     const highlight = await this.innerRepository.findById(id);
-    
+
     if (highlight) {
       this.cache.set(id, highlight);
     }
-    
+
     return highlight;
   }
 }
@@ -960,7 +982,9 @@ export class EventBus implements IEventBus {
     const handlersSet = this.handlers.get(event)!;
     handlersSet.add(handler as EventHandler);
 
-    this.logger.debug(`Subscribed to event: ${event} (${handlersSet.size} handlers)`);
+    this.logger.debug(
+      `Subscribed to event: ${event} (${handlersSet.size} handlers)`
+    );
 
     // Return unsubscribe function
     return () => {
@@ -980,7 +1004,9 @@ export class EventBus implements IEventBus {
       return;
     }
 
-    this.logger.debug(`Publishing event: ${event} to ${handlersSet.size} handlers`);
+    this.logger.debug(
+      `Publishing event: ${event} to ${handlersSet.size} handlers`
+    );
 
     // Execute all handlers concurrently
     const promises = Array.from(handlersSet).map(async (handler) => {
@@ -1017,7 +1043,7 @@ export const AppEvents = {
   HIGHLIGHT_CLEARED: 'highlight:cleared',
   MODE_CHANGED: 'mode:changed',
   COLOR_CHANGED: 'color:changed',
-  ERROR_OCCURRED: 'error:occurred'
+  ERROR_OCCURRED: 'error:occurred',
 } as const;
 
 export interface HighlightCreatedEvent {
@@ -1044,7 +1070,7 @@ const unsubscribe = eventBus.subscribe<HighlightCreatedEvent>(
 // Publish
 await eventBus.publish<HighlightCreatedEvent>(AppEvents.HIGHLIGHT_CREATED, {
   highlight: new Highlight(/* ... */),
-  source: 'user'
+  source: 'user',
 });
 
 // Unsubscribe
@@ -1172,7 +1198,7 @@ export class CommandHistory {
   }
 
   getHistory(): string[] {
-    return this.history.map(cmd => cmd.getDescription());
+    return this.history.map((cmd) => cmd.getDescription());
   }
 
   clear(): void {
@@ -1294,17 +1320,16 @@ export class ModeStateContext {
 
 ---
 
-*Continued in next sections...*
+_Continued in next sections..._
 
-**Note**: This is Part 1 of the System Design Patterns document. The following sections will cover:
+**Note**: This is Part 1 of the System Design Patterns document. The following
+sections will cover:
+
 - Extension-Specific Patterns
 - State Management Patterns
 - Communication Patterns
 - Performance Patterns
 - Anti-Patterns to Avoid
 
-Each pattern includes:
-✅ Problem statement
-✅ Solution with code examples
-✅ Benefits and trade-offs
-✅ When to use / when not to use
+Each pattern includes: ✅ Problem statement ✅ Solution with code examples ✅
+Benefits and trade-offs ✅ When to use / when not to use

@@ -1,7 +1,9 @@
 # Testing Framework & Standards
+
 **Web Highlighter Extension - Quality Assurance**
 
-> **Purpose**: Comprehensive testing strategy for unit, integration, and end-to-end tests.
+> **Purpose**: Comprehensive testing strategy for unit, integration, and
+> end-to-end tests.
 
 ---
 
@@ -174,12 +176,12 @@ describe('HighlightService', () => {
 
   it('should handle errors gracefully', async () => {
     // ✅ Arrange
-    mockRepository.save = vi.fn().mockRejectedValue(new Error('Storage failed'));
+    mockRepository.save = vi
+      .fn()
+      .mockRejectedValue(new Error('Storage failed'));
 
     // ✅ Act & Assert
-    await expect(
-      service.createHighlight('text')
-    ).rejects.toThrow(StorageError);
+    await expect(service.createHighlight('text')).rejects.toThrow(StorageError);
   });
 });
 ```
@@ -234,19 +236,22 @@ describe('Highlight Creation Flow', () => {
   beforeEach(() => {
     // ✅ Set up real dependencies (not mocks)
     container = new ServiceContainer();
-    
+
     // Register real implementations
     container.registerSingleton('logger', () => new SilentLogger());
     container.registerSingleton('repository', () => new InMemoryRepository());
-    container.registerSingleton('renderer', () => 
-      new ShadowDOMRenderer(DEFAULT_CONFIG)
+    container.registerSingleton(
+      'renderer',
+      () => new ShadowDOMRenderer(DEFAULT_CONFIG)
     );
-    container.registerSingleton('highlightService', () =>
-      new HighlightService(
-        container.resolve('repository'),
-        container.resolve('renderer'),
-        container.resolve('logger')
-      )
+    container.registerSingleton(
+      'highlightService',
+      () =>
+        new HighlightService(
+          container.resolve('repository'),
+          container.resolve('renderer'),
+          container.resolve('logger')
+        )
     );
 
     highlightService = container.resolve('highlightService');
@@ -262,7 +267,7 @@ describe('Highlight Creation Flow', () => {
     const highlight = await highlightService.createHighlight(text);
 
     // ✅ Assert - Check all integrated components
-    
+
     // 1. Highlight created
     expect(highlight).toBeDefined();
     expect(highlight.text).toBe(text);
@@ -272,7 +277,9 @@ describe('Highlight Creation Flow', () => {
     expect(retrieved).toEqual(highlight);
 
     // 3. Rendered to DOM
-    const element = document.querySelector(`[data-highlight-id="${highlight.id}"]`);
+    const element = document.querySelector(
+      `[data-highlight-id="${highlight.id}"]`
+    );
     expect(element).toBeInTheDocument();
   });
 
@@ -286,7 +293,9 @@ describe('Highlight Creation Flow', () => {
     expect(await repository.findById(highlight.id)).toBeNull();
 
     // ✅ Verify cleanup
-    const element = document.querySelector(`[data-highlight-id="${highlight.id}"]`);
+    const element = document.querySelector(
+      `[data-highlight-id="${highlight.id}"]`
+    );
     expect(element).not.toBeInTheDocument();
   });
 });
@@ -304,48 +313,48 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  
+
   // Timeout
   timeout: 30000,
-  
+
   // Retries
   retries: process.env.CI ? 2 : 0,
-  
+
   // Workers
   workers: process.env.CI ? 1 : undefined,
-  
+
   // Reporter
   reporter: 'html',
-  
+
   // Global setup
   use: {
     // Base URL
     baseURL: 'https://example.com',
-    
+
     // Screenshots
     screenshot: 'only-on-failure',
-    
+
     // Videos
     video: 'retain-on-failure',
-    
+
     // Trace
-    trace: 'on-first-retry'
+    trace: 'on-first-retry',
   },
 
   // Projects (browsers)
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
-    }
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Web server
   webServer: {
     command: 'npm run dev',
     port: 3000,
-    reuseExistingServer: !process.env.CI
-  }
+    reuseExistingServer: !process.env.CI,
+  },
 });
 ```
 
@@ -389,7 +398,9 @@ test.describe('Sprint Mode Highlighting', () => {
     await expect(highlight).not.toBeVisible();
   });
 
-  test('should clear all highlights with keyboard shortcut', async ({ page }) => {
+  test('should clear all highlights with keyboard shortcut', async ({
+    page,
+  }) => {
     await page.goto('https://example.com');
 
     // ✅ Create multiple highlights
@@ -410,12 +421,12 @@ test.describe('Sprint Mode Highlighting', () => {
     const sites = [
       'https://en.wikipedia.org',
       'https://medium.com',
-      'https://github.com'
+      'https://github.com',
     ];
 
     for (const site of sites) {
       await page.goto(site);
-      
+
       // Find first paragraph
       const paragraph = page.locator('p').first();
       await paragraph.dblclick();
@@ -510,7 +521,9 @@ export class MockLogger implements ILogger {
   }
 
   setLevel(level: LogLevel): void {}
-  getLevel(): LogLevel { return LogLevel.INFO; }
+  getLevel(): LogLevel {
+    return LogLevel.INFO;
+  }
 
   // Test helpers
   clear(): void {
@@ -521,7 +534,7 @@ export class MockLogger implements ILogger {
   }
 
   hasError(messagePattern: string): boolean {
-    return this.errorLogs.some(log => log.message.includes(messagePattern));
+    return this.errorLogs.some((log) => log.message.includes(messagePattern));
   }
 }
 ```
@@ -538,11 +551,11 @@ export class MockHighlightRepository implements IHighlightRepository {
   }
 
   async findById(id: string): Promise<Highlight | null> {
-    return this.saved.find(h => h.id === id) ?? null;
+    return this.saved.find((h) => h.id === id) ?? null;
   }
 
   async delete(id: string): Promise<void> {
-    this.saved = this.saved.filter(h => h.id !== id);
+    this.saved = this.saved.filter((h) => h.id !== id);
     this.deleted.push(id);
   }
 
@@ -567,13 +580,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      
+
       // Coverage thresholds
       lines: 80,
       functions: 80,
       branches: 75,
       statements: 80,
-      
+
       // Exclude from coverage
       exclude: [
         'node_modules/',
@@ -582,16 +595,16 @@ export default defineConfig({
         '**/*.test.ts',
         '**/*.spec.ts',
         '**/*.config.ts',
-        '**/types/**'
+        '**/types/**',
       ],
-      
+
       // Per-file thresholds for critical files
       perFile: true,
-      
+
       // Fail build if below threshold
-      thresholdAutoUpdate: false
-    }
-  }
+      thresholdAutoUpdate: false,
+    },
+  },
 });
 ```
 
@@ -602,7 +615,7 @@ export default defineConfig({
 const criticalPaths = [
   'src/shared/validators/**',
   'src/content/security/**',
-  'src/background/storage/**'
+  'src/background/storage/**',
 ];
 ```
 
