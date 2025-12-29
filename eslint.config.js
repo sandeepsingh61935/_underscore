@@ -143,6 +143,7 @@ export default [
             '@typescript-eslint/no-unused-vars': 'off',
             'no-unused-vars': 'off',
             '@typescript-eslint/explicit-function-return-type': 'off',
+            '@typescript-eslint/consistent-type-assertions': 'off',
         },
     },
 
