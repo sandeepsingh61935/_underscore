@@ -389,6 +389,12 @@ async function restoreHighlights(
     try {
         const events = await storage.loadEvents();
 
+        // ✅ PURE EVENT SOURCING: Clear projection before rebuilding
+        // This ensures repository is a true projection of events, not a persistent cache
+        // Fixes undo/redo bug where undone highlights resurrect after reload
+        await repositoryFacade.clear();
+        logger.info('🧹 Cleared repository projection before event replay');
+
         // Replay events to reconstruct state
         const activeHighlights = new Map<string, any>();
 
