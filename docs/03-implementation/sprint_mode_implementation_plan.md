@@ -416,9 +416,22 @@ Testing:
 
 ### ✅ Sprint 1: Foundation & Core Highlighting (COMPLETE)
 
-**Status**: ✅ All tasks complete  
-**Duration**: Completed  
+**Status**: ✅ All tasks complete + Architectural Hardening
+**Duration**: Completed
 **Branch**: `sprint-1`
+
+### Major Architectural Upgrades (Added Scope) ✅
+- [x] **Git Strategy**: Adopted Strict Atomic Commits
+- [x] **Pattern Adoption**:
+  - `Command Pattern` for Undo/Redo
+  - `Strategy Pattern` for Highlight Modes (SprintMode vs BaseMode)
+  - `Repository Pattern` with Facade & Hydration
+- [x] **Event Sourcing**: Implemented partial event sourcing for persistence
+
+### Critical Fixes & Adjustments ✅
+- [x] **Toggle-Delete Reverted**: Removed complex toggle-delete; restored standard Highlight → creation, Ctrl+Click → deletion.
+- [x] **Dual Registration Fix**: Solved visual sync issues by cleaning up both legacy and unified keys.
+- [x] **Persistence Integrity**: Fixed `liveRanges` loss during Undo/Redo cycles.
 
 ### Infrastructure ✅
 
@@ -432,10 +445,12 @@ Testing:
 
 ### Core Components ✅
 
-#### SelectionDetector
+#### SelectionDetector (Refactored)
 
+- [x] **Creation Only**: Responsible ONLY for detecting selections (Single Responsibility Principle).
 - [x] Double-click detection (300ms window)
 - [x] Keyboard shortcut (Ctrl+U / Cmd+U)
+- [x] **Toggle-Delete Removed**: Reverted to standard behavior per user request.
 - [x] **Click-within-selection** (select → click → highlight)
 - [x] Selection validation (non-empty, non-collapsed)
 - [x] Event emission via EventBus
@@ -449,14 +464,15 @@ Testing:
 - [x] Default color (yellow)
 - [x] 17 unit tests
 
-#### HighlightRenderer
+#### HighlightRenderer (Unified)
 
+- [x] **Dual Registration System**: Handles both legacy ID and unified underscored ID.
 - [x] **Underscore/underline style** (not background)
 - [x] **Contrast-aware colors** (dark/light adaptation)
 - [x] Shadow DOM isolation
 - [x] Design token integration
 - [x] Fade-in/fade-out animations
-- [x] Click-to-remove interaction
+- [x] Click-to-remove interaction (via HighlightClickDetector)
 - [x] 9 unit tests
 
 #### HighlightStore
