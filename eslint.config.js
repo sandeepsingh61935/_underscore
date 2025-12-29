@@ -39,6 +39,10 @@ export default [
                 process: 'readonly',
                 chrome: 'readonly',
                 browser: 'readonly',
+                // Node/JSDOM globals
+                global: 'readonly',
+                crypto: 'readonly',
+                Buffer: 'readonly',
                 // DOM globals for tests
                 document: 'readonly',
                 window: 'readonly',
