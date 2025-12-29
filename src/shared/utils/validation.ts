@@ -5,7 +5,7 @@
  * Provides safe validation with detailed error reporting
  */
 
-import type { z} from 'zod';
+import type { z } from 'zod';
 import { ZodError } from 'zod';
 
 import { LoggerFactory } from '../utils/logger';
@@ -36,7 +36,7 @@ export class ValidationError extends Error {
      * Get formatted error details
      */
     getDetails(): string[] {
-        return (this.zodError as any).errors.map((err: any) => {
+        return this.zodError.errors.map((err) => {
             const path = err.path.join('.');
             return `${path}: ${err.message}`;
         });
@@ -71,7 +71,7 @@ export function validate<T>(
         if (error instanceof ZodError) {
             logger.error('Validation failed', undefined, {
                 context,
-                errors: (error as any).errors,
+                errors: error.errors,
                 data
             });
 
@@ -100,7 +100,7 @@ export function validateSafe<T>(
     if (!result.success) {
         logger.warn('Validation failed (safe mode)', {
             context,
-            errors: (result.error as any).errors,
+            errors: result.error.errors,
             data
         });
         return null;
@@ -126,7 +126,7 @@ export function validateArray<T>(
         if (result.success) {
             valid.push(result.data);
         } else {
-            invalid.push({ index, item, errors: (result.error as any).errors });
+            invalid.push({ index, item, errors: result.error.errors });
         }
     });
 
