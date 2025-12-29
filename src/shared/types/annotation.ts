@@ -3,7 +3,7 @@
  * @description Type definitions for text annotations (underscore, highlight, box)
  */
 
-import type { SerializedRange } from '@/shared/utils/range-serializer';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 
 /**
  * Annotation display modes

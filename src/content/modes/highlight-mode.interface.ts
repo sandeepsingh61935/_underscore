@@ -4,7 +4,7 @@
  * Defines contract for all highlight modes (Sprint, Vault, Gen)
  */
 
-import type { SerializedRange } from '@/shared/utils/range-serializer';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 
 export interface HighlightData {
     id: string;

@@ -12,7 +12,7 @@
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
-import { serializeRange } from '@/shared/utils/range-serializer';
+import { serializeRange } from '@/content/utils/range-converter';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import { EventName } from '@/shared/types/events';
 import type { HighlightData } from './highlight-mode.interface';
