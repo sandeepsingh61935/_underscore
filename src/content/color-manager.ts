@@ -61,7 +61,7 @@ export class ColorManager {
 
         try {
             // Load saved role from chrome.storage.local
-            const result = await chrome.storage.local.get(STORAGE_KEY);
+            const result = await browser.storage.local.get(STORAGE_KEY);
 
             if (result[STORAGE_KEY]) {
                 const savedRole = result[STORAGE_KEY] as string;
