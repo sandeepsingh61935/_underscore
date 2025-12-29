@@ -154,7 +154,8 @@ export class SprintMode extends BaseHighlightMode {
   }
 
   async clearAll(): Promise<void> {
-    this.logger.info('Clearing all highlights in sprint mode');
+    const count = this.data.size;
+    this.logger.info('Clearing all highlights in sprint mode', { count });
 
     // ✅ Clear Custom Highlight API (DOM)
     CSS.highlights.clear();
@@ -166,7 +167,15 @@ export class SprintMode extends BaseHighlightMode {
     // ✅ Clear repository (persistence)
     this.repository.clear();
 
-    this.logger.info('All highlights cleared');
+    // ✅ Emit storage event for event sourcing (CRITICAL FIX!)
+    await this.storage.saveEvent({
+      type: 'highlights.cleared',
+      timestamp: Date.now(),
+      eventId: crypto.randomUUID(),
+      count,
+    });
+
+    this.logger.info('All highlights cleared (with storage event)', { count });
   }
 
   async restore(): Promise<void> {
