@@ -13,8 +13,8 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { EventName, createEvent } from '@/shared/types/events';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { serializeRange } from '@/shared/utils/range-serializer';
-import type { SerializedRange } from '@/shared/utils/range-serializer';
+import { serializeRange } from '@/content/utils/range-converter';
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from './styles/highlight-styles';
 
 /**
@@ -127,8 +127,10 @@ export class HighlightManager {
                 id,
                 text,
                 color,
+                type,
+                createdAt: new Date(),
+                ranges: [serializedRange],
             },
-            ranges: [serializedRange],
         }));
 
         this.logger.info('Highlight created', {
@@ -200,12 +202,5 @@ export class HighlightManager {
      */
     hasHighlight(id: string): boolean {
         return this.highlights.has(id);
-    }
-
-    /**
-     * Generate unique ID
-     */
-    private generateId(): string {
-        return `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 }
