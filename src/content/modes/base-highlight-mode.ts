@@ -6,7 +6,7 @@
 
 import type { EventBus } from '@/shared/utils/event-bus';
 import { RepositoryFacade } from '@/shared/repositories';
-import type { I Logger } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
 
