@@ -30,7 +30,7 @@ export function rangesOverlap(range1: Range, range2: Range): boolean {
         const r1StartsBeforeR2Ends = range1.compareBoundaryPoints(Range.START_TO_END, range2) < 0;
 
         return r1EndsAfterR2Starts && r1StartsBeforeR2Ends;
-    } catch (e) {
+    } catch (_e) {
         // Comparison failed (e.g., detached nodes)
         return false;
     }
@@ -78,7 +78,7 @@ export function getOverlapType(range1: Range, range2: Range): OverlapType {
         } else {
             return OverlapType.PARTIAL_RIGHT;
         }
-    } catch (e) {
+    } catch (_e) {
         return OverlapType.NONE;
     }
 }
@@ -166,7 +166,7 @@ export function rangesAdjacent(range1: Range, range2: Range): boolean {
         }
 
         return false;
-    } catch (e) {
+    } catch (_e) {
         return false;
     }
 }
@@ -196,7 +196,7 @@ export function mergeRanges(range1: Range, range2: Range): Range | null {
         }
 
         return merged;
-    } catch (e) {
+    } catch (_e) {
         return null;
     }
 }
@@ -249,7 +249,7 @@ export function mergeAdjacentRanges(ranges: Range[]): Range[] {
 export function getRangeLength(range: Range): number {
     try {
         return range.toString().length;
-    } catch (e) {
+    } catch (_e) {
         return 0;
     }
 }
@@ -281,7 +281,7 @@ export function rangeContainsPoint(range: Range, x: number, y: number): boolean 
         }
 
         return false;
-    } catch (e) {
+    } catch (_e) {
         return false;
     }
 }
