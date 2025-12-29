@@ -96,11 +96,11 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
 
     const e = event as Record<string, unknown>;
 
-    if (typeof e.type !== 'string') return false;
-    if (typeof e.timestamp !== 'number') return false;
-    if (typeof e.eventId !== 'string') return false;
+    if (typeof e['type'] !== 'string') return false;
+    if (typeof e['timestamp'] !== 'number') return false;
+    if (typeof e['eventId'] !== 'string') return false;
 
-    if (e.type === 'highlight.created') {
+    if (e['type'] === 'highlight.created') {
         if (!e['data'] || typeof e['data'] !== 'object') return false;
         const data = e['data'] as Record<string, unknown>;
 
@@ -110,8 +110,8 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
 
         // Accept if ranges array exists (validation passed)
         return data['ranges'].length > 0;
-    } else if (e.type === 'highlight.removed') {
-        return typeof e.highlightId === 'string';
+    } else if (e['type'] === 'highlight.removed') {
+        return typeof e['highlightId'] === 'string';
     }
 
     return false;
