@@ -4,7 +4,7 @@
  */
 
 import { EventBus } from '@/shared/utils/event-bus';
-import { EventName, SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent, HighlightsClearedEvent } from '@/shared/types/events';
+import { EventName, SelectionCreatedEvent, HighlightCreatedEvent, HighlightRemovedEvent, HighlightClickedEvent } from '@/shared/types/events';
 import { SelectionDetector } from '@/content/selection-detector';
 import { ColorManager } from '@/content/color-manager';
 import { RepositoryFacade } from '@/shared/repositories';
