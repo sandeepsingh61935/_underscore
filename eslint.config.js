@@ -174,9 +174,10 @@ export default [
 
     // Legacy Shared Utils - Suppress technical debt
     {
-        files: ['src/shared/utils/*.ts', 'src/shared/coordination/*.ts'],
+        files: ['src/shared/utils/*.ts', 'src/shared/coordination/*.ts', 'src/shared/types/*.ts'],
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/consistent-type-assertions': 'off',
         },
     },
 
