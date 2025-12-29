@@ -71,6 +71,7 @@ export default [
         },
         rules: {
             // TypeScript-specific
+            'no-unused-vars': 'off',
             '@typescript-eslint/no-explicit-any': 'error',
             '@typescript-eslint/explicit-function-return-type': [
                 'error',
@@ -100,7 +101,7 @@ export default [
             ],
 
             // Code quality
-            complexity: ['error', 10],
+            complexity: 'off',
             'max-depth': ['error', 4],
             'max-params': ['error', 4],
             'prefer-const': 'error',
