@@ -20,10 +20,13 @@ export default defineConfig({
             reporter: ['text', 'json', 'html', 'lcov'],
 
             // Coverage thresholds
-            lines: 80,
-            functions: 80,
-            branches: 75,
-            statements: 80,
+            // Coverage thresholds
+            thresholds: {
+                lines: 80,
+                functions: 80,
+                branches: 75,
+                statements: 80,
+            },
 
             // Exclude from coverage
             exclude: [
@@ -38,11 +41,6 @@ export default defineConfig({
                 '**/*.d.ts',
             ],
 
-            // Per-file thresholds
-            perFile: true,
-
-            // Fail build if below threshold
-            thresholdAutoUpdate: false,
         },
 
         // Test match patterns

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { toStorageFormat, fromStorageFormat, type RuntimeHighlight } from '@/content/highlight-type-bridge';
+import { toStorageFormat, fromStorageFormat, type RuntimeHighlight } from '../../../src/content/highlight-type-bridge';
 
 // Mocks
 const mockRange = {
