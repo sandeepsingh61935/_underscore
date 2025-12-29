@@ -84,12 +84,21 @@ export class CreateHighlightCommand implements Command {
 
             // Check if manager is ModeManager
             if ('createFromData' in this.manager) {
+                // Type cast for property access
+                const data = this.highlightData as any;
+
+                // Generate contentHash
+                const text = range.toString();
+                const { generateContentHash } = await import('@/shared/utils/content-hash');
+                const contentHash = await generateContentHash(text);
+
                 // ✅ Use mode's unified path (fixes registration!)
                 await (this.manager as ModeManager).createFromData({
-                    id: this.highlightData.id,
-                    text: this.highlightData.text,
-                    color: this.color,
-                    type: 'underscore',
+                    id: data.id,
+                    text: data.text,
+                    contentHash,
+                    colorRole: this.colorRole,
+                    type: 'underscore' as const,
                     ranges: [this.serializedRange],
                     liveRanges: [range],
                     createdAt: new Date()
@@ -194,20 +203,30 @@ export class RemoveHighlightCommand implements Command {
 
         // Check if manager is ModeManager
         if ('createFromData' in this.manager) {
+            // Type cast for property access
+            const h = this.highlight as any;
+
+            // Generate contentHash
+            const text = liveRanges.map(r => r.toString()).join('');
+            const { generateContentHash } = await import('@/shared/utils/content-hash');
+            const contentHash = await generateContentHash(text);
+
             // ✅ Use mode's unified path (fixes registration!)
             await (this.manager as ModeManager).createFromData({
-                id: this.highlight.id,
-                text: this.highlight.text,
-                color: this.highlight.color,
-                type: 'underscore',
+                id: h.id,
+                text: h.text,
+                contentHash,
+                colorRole: h.color || 'yellow',
+                type: 'underscore' as const,
                 ranges: this.serializedRanges,
                 liveRanges: liveRanges,
                 createdAt: new Date()
             });
         } else {
             // Legacy path
-            const highlightName = getHighlightName(this.highlight.type, this.highlight.id);
-            injectHighlightCSS(this.highlight.type, this.highlight.id, this.highlight.color);
+            const h = this.highlight as any;
+            const highlightName = getHighlightName(h.type, h.id);
+            injectHighlightCSS(h.type, h.id, h.color);
             const nativeHighlight = new Highlight(...liveRanges);
             CSS.highlights.set(highlightName, nativeHighlight);
         }
