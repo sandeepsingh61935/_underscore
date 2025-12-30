@@ -125,14 +125,14 @@ describe('IndexedDBStorage', () => {
 
         it('should mark events as synced', async () => {
             const eventId1 = await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: Date.now(),
                 data: {},
                 synced: false,
             });
 
             const eventId2 = await storage.saveEvent({
-                type: 'HIGHLIGHT_REMOVED',
+                type: 'highlight.removed',
                 timestamp: Date.now(),
                 data: {},
                 synced: false,
@@ -148,21 +148,21 @@ describe('IndexedDBStorage', () => {
             const now = Date.now();
 
             await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: now - 1000,
                 data: {},
                 synced: false,
             });
 
             await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: now,
                 data: {},
                 synced: false,
             });
 
             await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: now + 1000,
                 data: {},
                 synced: false,
@@ -182,7 +182,7 @@ describe('IndexedDBStorage', () => {
 
             const collections = await storage.getAllCollections();
             expect(collections).toHaveLength(1);
-            expect(collections[0].name).toBe('Research Notes');
+            expect(collections[0]!.name).toBe('Research Notes');
         });
 
         it('should rename a collection', async () => {
@@ -191,8 +191,8 @@ describe('IndexedDBStorage', () => {
             await storage.renameCollection(id, 'New Name');
 
             const collections = await storage.getAllCollections();
-            expect(collections[0].name).toBe('New Name');
-            expect(collections[0].synced).toBe(false);
+            expect(collections[0]!.name).toBe('New Name');
+            expect(collections[0]!.synced).toBe(false);
         });
 
         it('should delete a collection and move highlights to default', async () => {
@@ -356,7 +356,7 @@ describe('IndexedDBStorage', () => {
 
             await storage.saveHighlight(mockHighlight);
             await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: Date.now(),
                 data: {},
                 synced: false,
