@@ -7,18 +7,39 @@
  * - Ephemeral storage (memory only)
  * - Clears on reload/close
  * - No side effects (no storage, no network)
+ * 
+ * Architectural Compliance:
+ * - Implements IBasicMode only (Interface Segregation Principle)
+ * - Encapsulates mode-specific logic (Single Responsibility Principle)
+ * - No restore() method needed (not IPersistentMode)
+ * 
+ * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData } from './highlight-mode.interface';
+import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
-export class WalkMode extends BaseHighlightMode {
+export class WalkMode extends BaseHighlightMode implements IBasicMode {
     get name(): 'walk' {
         return 'walk' as const;
     }
+
+    readonly capabilities: ModeCapabilities = {
+        persistence: 'none',
+        undo: false,
+        sync: false,
+        collections: false,
+        tags: false,
+        export: false,
+        ai: false,
+        search: false,
+        multiSelector: false,
+    };
 
     async createHighlight(selection: Selection, colorRole: string): Promise<string> {
         if (selection.rangeCount === 0) {
@@ -130,8 +151,29 @@ export class WalkMode extends BaseHighlightMode {
         this.logger.info('Cleared all highlights (Walk Mode)');
     }
 
-    async restore(): Promise<void> {
-        // NO-OP for Walk Mode
-        this.logger.info('Walk Mode: No restoration');
+    /**
+     * Event Handler: Highlight Created
+     * Walk Mode: NO-OP (no persistence)
+     */
+    async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
+        this.logger.debug('Walk Mode: Highlight created (ephemeral, no persistence)');
+        // NO-OP - Walk Mode doesn't persist
+    }
+
+    /**
+     * Event Handler: Highlight Removed
+     * Walk Mode: NO-OP (no persistence)
+     */
+    async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
+        this.logger.debug('Walk Mode: Highlight removed (ephemeral)');
+        // NO-OP - Walk Mode doesn't persist
+    }
+
+    /**
+     * Restoration Control
+     * Walk Mode: Never restores (ephemeral by design)
+     */
+    shouldRestore(): boolean {
+        return false;
     }
 }
