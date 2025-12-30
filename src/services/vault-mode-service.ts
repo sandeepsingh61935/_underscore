@@ -80,12 +80,12 @@ export class VaultModeService {
                 synced: false,
             });
 
-            this.logger.info('✅ Highlight saved to Vault Mode', {
+            this.logger.info('[VAULT] Highlight saved', {
                 id: highlight.id,
                 text: highlight.text.substring(0, 50),
             });
         } catch (error) {
-            this.logger.error('❌ Failed to save highlight:', error);
+            this.logger.error('[VAULT] Failed to save highlight:', error);
             throw error;
         }
     }
@@ -109,12 +109,12 @@ export class VaultModeService {
             const url = window.location.href;
             const records = await this.storage.getHighlightsByUrl(url);
 
-            this.logger.info(`🔄 Restoring ${records.length} highlights for URL`, { url });
+            this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
 
             const results = await Promise.all(
                 records.map(async (record) => {
                     if (!record.metadata?.['selectors']) {
-                        this.logger.warn('⚠️ No selectors found for highlight', record.id);
+                        this.logger.warn('[VAULT] No selectors found for highlight', record.id);
                         return {
                             highlight: record.data,
                             range: null,
@@ -134,11 +134,11 @@ export class VaultModeService {
             );
 
             const successful = results.filter(r => r.range !== null).length;
-            this.logger.info(`✅ Restored ${successful}/${records.length} highlights`);
+            this.logger.info(`[VAULT] Restored ${successful}/${records.length} highlights`);
 
             return results;
         } catch (error) {
-            this.logger.error('❌ Failed to restore highlights:', error);
+            this.logger.error('[VAULT] Failed to restore highlights:', error);
             throw error;
         }
     }
@@ -224,9 +224,9 @@ export class VaultModeService {
                 synced: false,
             });
 
-            this.logger.info('✅ Highlight deleted from Vault Mode', highlightId);
+            this.logger.info('[VAULT] Highlight deleted', highlightId);
         } catch (error) {
-            this.logger.error('❌ Failed to delete highlight:', error);
+            this.logger.error('[VAULT] Failed to delete highlight:', error);
             throw error;
         }
     }
@@ -248,7 +248,7 @@ export class VaultModeService {
             const unsyncedEvents = await this.storage.getUnsyncedEvents();
             const unsyncedHighlights = await this.storage.getUnsyncedHighlights();
 
-            this.logger.info('📤 Syncing to server', {
+            this.logger.info('[VAULT] Syncing to server', {
                 events: unsyncedEvents.length,
                 highlights: unsyncedHighlights.length,
             });
@@ -263,11 +263,11 @@ export class VaultModeService {
                 await this.storage.markHighlightSynced(highlight.id);
             }
 
-            this.logger.info('✅ Sync complete', { syncedEvents: eventIds.length });
+            this.logger.info('[VAULT] Sync complete', { syncedEvents: eventIds.length });
 
             return eventIds;
         } catch (error) {
-            this.logger.error('❌ Sync failed:', error);
+            this.logger.error('[VAULT] Sync failed:', error);
             throw error;
         }
     }
@@ -277,7 +277,7 @@ export class VaultModeService {
      */
     async clearAll(): Promise<void> {
         await this.storage.clearAll();
-        this.logger.info('🗑️ All Vault Mode data cleared');
+        this.logger.info('[VAULT] All Vault Mode data cleared');
     }
 }
 

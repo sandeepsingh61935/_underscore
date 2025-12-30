@@ -86,9 +86,9 @@ export default defineContentScript({
       if (isVaultModeEnabled()) {
         try {
           await initializeVaultMode();
-          logger.info('✅ Vault Mode ready');
+          logger.info('[VAULT] Vault Mode ready');
         } catch (error) {
-          logger.warn('⚠️ Vault Mode initialization failed, falling back to Walk Mode:', error as Error);
+          logger.warn('[VAULT] Vault Mode initialization failed, falling back to Walk Mode:', error as Error);
         }
       }
 

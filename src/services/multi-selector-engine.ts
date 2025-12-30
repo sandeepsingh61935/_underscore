@@ -401,7 +401,7 @@ export class MultiSelectorEngine {
             range.setStart(node, selector.startOffset);
             range.setEnd(node, selector.endOffset);
 
-            this.logger.info('✅ XPath restoration successful', selector.xpath);
+            this.logger.info('[SELECTOR] XPath restoration successful', selector.xpath);
             return range;
 
         } catch (error) {
@@ -458,7 +458,7 @@ export class MultiSelectorEngine {
                 return null;
             }
 
-            this.logger.info('✅ Position restoration successful');
+            this.logger.info('[SELECTOR] Position restoration successful');
             return range;
 
         } catch (error) {
@@ -528,7 +528,7 @@ export class MultiSelectorEngine {
                 return null;
             }
 
-            this.logger.info('✅ Fuzzy match successful', {
+            this.logger.info('[SELECTOR] Fuzzy match successful', {
                 similarity: avgSimilarity.toFixed(3),
                 offset: matchIndex,
             });
@@ -708,7 +708,7 @@ export class MultiSelectorEngine {
         }
 
         // All strategies failed
-        this.logger.error('❌ All restoration strategies failed', {
+        this.logger.error('[SELECTOR] All restoration strategies failed', {
             text: selector.xpath.text.substring(0, 50) + '...',
             hash: selector.contentHash,
         });
