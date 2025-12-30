@@ -66,7 +66,7 @@ describe('VaultModeService - Integration Tests', () => {
                     endOffset: 17,
                 }],
                 color: '#ffeb3b',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             // 3. Save via service
@@ -107,7 +107,7 @@ describe('VaultModeService - Integration Tests', () => {
                 text: 'second paragraph',
                 ranges: [],
                 color: '#4caf50',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             await service.saveHighlight(highlight, range);
@@ -140,7 +140,7 @@ describe('VaultModeService - Integration Tests', () => {
                 text: 'Nested paragraph',
                 ranges: [],
                 color: '#2196f3',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             await service.saveHighlight(highlight, range);
@@ -174,7 +174,7 @@ describe('VaultModeService - Integration Tests', () => {
                     text: 'the first',
                     ranges: [],
                     color: '#ffeb3b',
-                    createdAt: Date.now(),
+                    createdAt: new Date(),
                 },
                 range: range1,
             });
@@ -190,7 +190,7 @@ describe('VaultModeService - Integration Tests', () => {
                     text: 'second paragraph',
                     ranges: [],
                     color: '#4caf50',
-                    createdAt: Date.now(),
+                    createdAt: new Date(),
                 },
                 range: range2,
             });
@@ -206,7 +206,7 @@ describe('VaultModeService - Integration Tests', () => {
                     text: 'Nested paragraph',
                     ranges: [],
                     color: '#2196f3',
-                    createdAt: Date.now(),
+                    createdAt: new Date(),
                 },
                 range: range3,
             });
@@ -237,7 +237,7 @@ describe('VaultModeService - Integration Tests', () => {
                 text: 'This is th',
                 ranges: [],
                 color: '#ffeb3b',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             await service.saveHighlight(highlight, range);
@@ -271,7 +271,7 @@ describe('VaultModeService - Integration Tests', () => {
                 text: 'This is th',
                 ranges: [],
                 color: '#ffeb3b',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             await service.saveHighlight(highlight, range);
@@ -302,15 +302,15 @@ describe('VaultModeService - Integration Tests', () => {
                 text: 'This is th',
                 ranges: [],
                 color: '#ffeb3b',
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             await service.saveHighlight(highlight, range);
 
             const stats = await service.getStats();
 
-            expect(stats.totalHighlights).toBe(1);
-            expect(stats.totalEvents).toBe(1);
+            expect(stats.highlightCount).toBe(1);
+            expect(stats.eventCount).toBe(1);
             expect(stats.unsyncedCount).toBeGreaterThan(0);
         });
     });

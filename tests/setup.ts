@@ -4,6 +4,7 @@
  */
 
 import { vi } from 'vitest';
+import 'fake-indexeddb/auto';
 
 // Add any global test setup here
 // For example: custom matchers, global mocks, etc.

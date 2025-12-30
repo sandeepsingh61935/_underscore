@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VaultModeService } from '@/services/vault-mode-service';
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { createMockHighlight, createMockHighlightRecord } from '../../helpers/mock-data';
 
 /**
  * Comprehensive Unit Tests for VaultModeService
@@ -48,18 +48,7 @@ describe('VaultModeService - Unit Tests', () => {
 
     describe('saveHighlight', () => {
         it('should generate selectors and store highlight with metadata', async () => {
-            const highlight: HighlightDataV2 = {
-                id: 'test-1',
-                text: 'Test highlight',
-                ranges: [{
-                    startContainerPath: '/html/body/p[1]',
-                    endContainerPath: '/html/body/p[1]',
-                    startOffset: 0,
-                    endOffset: 10,
-                }],
-                color: '#ffeb3b',
-                createdAt: Date.now(),
-            };
+            const highlight = createMockHighlight({ id: 'test-1', text: 'Test highlight' });
 
             const range = document.createRange();
             const mockSelectors = {
@@ -102,13 +91,7 @@ describe('VaultModeService - Unit Tests', () => {
         });
 
         it('should handle errors and rethrow', async () => {
-            const highlight: HighlightDataV2 = {
-                id: 'test-1',
-                text: 'Test',
-                ranges: [],
-                color: '#ffeb3b',
-                createdAt: Date.now(),
-            };
+            const highlight = createMockHighlight({ id: 'test-1', text: 'Test' });
 
             const range = document.createRange();
             const error = new Error('Storage failed');
@@ -124,37 +107,10 @@ describe('VaultModeService - Unit Tests', () => {
 
     describe('restoreHighlightsForUrl', () => {
         it('should restore highlights using multi-selector engine', async () => {
-            const mockRecords = [
-                {
-                    id: 'h1',
-                    url: 'https://example.com',
-                    data: {
-                        id: 'h1',
-                        text: 'Highlight 1',
-                        ranges: [],
-                        color: '#ffeb3b',
-                        createdAt: Date.now(),
-                    },
-                    collectionId: null,
-                    tags: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    synced: false,
-                    metadata: {
-                        selectors: {
-                            xpath: { xpath: '/p[1]', startOffset: 0, endOffset: 10, text: 'Highlight 1', textBefore: '', textAfter: '' },
-                            position: { startOffset: 0, endOffset: 10, text: 'Highlight 1', textBefore: '', textAfter: '' },
-                            fuzzy: { text: 'Highlight 1', textBefore: '', textAfter: '', threshold: 0.8 },
-                            contentHash: 'hash1',
-                            createdAt: Date.now(),
-                        },
-                    },
-                },
-            ];
-
+            const mockRecords = [createMockHighlightRecord('h1')];
             const mockRange = document.createRange();
 
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords);
+            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
             vi.mocked(mockEngine.restore).mockResolvedValue(mockRange);
 
             const results = await service.restoreHighlightsForUrl();
@@ -169,27 +125,19 @@ describe('VaultModeService - Unit Tests', () => {
         });
 
         it('should handle highlights without selectors', async () => {
-            const mockRecords = [
-                {
-                    id: 'h1',
-                    url: 'https://example.com',
-                    data: {
-                        id: 'h1',
-                        text: 'No selectors',
-                        ranges: [],
-                        color: '#ffeb3b',
-                        createdAt: Date.now(),
-                    },
-                    collectionId: null,
-                    tags: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    synced: false,
-                    metadata: undefined, // No metadata
-                },
-            ];
+            const mockRecords = [{
+                id: 'h1',
+                url: 'https://example.com',
+                data: createMockHighlight({ id: 'h1' }),
+                collectionId: null,
+                tags: [],
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                synced: false,
+                metadata: undefined, // No metadata
+            }];
 
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords);
+            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
 
             const results = await service.restoreHighlightsForUrl();
 
@@ -201,35 +149,9 @@ describe('VaultModeService - Unit Tests', () => {
         });
 
         it('should continue on restoration failures', async () => {
-            const mockRecords = [
-                {
-                    id: 'h1',
-                    url: 'https://example.com',
-                    data: {
-                        id: 'h1',
-                        text: 'Test',
-                        ranges: [],
-                        color: '#ffeb3b',
-                        createdAt: Date.now(),
-                    },
-                    collectionId: null,
-                    tags: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    synced: false,
-                    metadata: {
-                        selectors: {
-                            xpath: { xpath: '/p[1]', startOffset: 0, endOffset: 10, text: 'Test', textBefore: '', textAfter: '' },
-                            position: { startOffset: 0, endOffset: 10, text: 'Test', textBefore: '', textAfter: '' },
-                            fuzzy: { text: 'Test', textBefore: '', textAfter: '', threshold: 0.8 },
-                            contentHash: 'hash1',
-                            createdAt: Date.now(),
-                        },
-                    },
-                },
-            ];
+            const mockRecords = [createMockHighlightRecord('h1')];
 
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords);
+            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
             vi.mocked(mockEngine.restore).mockResolvedValue(null); // Restoration failed
 
             const results = await service.restoreHighlightsForUrl();
@@ -270,21 +192,19 @@ describe('VaultModeService - Unit Tests', () => {
                 { eventId: 'e2', type: 'highlight.removed' as const, timestamp: Date.now(), data: {}, synced: false },
             ];
 
-            const mockHighlights = [
-                {
-                    id: 'h1',
-                    url: 'https://example.com',
-                    data: {} as HighlightDataV2,
-                    collectionId: null,
-                    tags: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    synced: false,
-                },
-            ];
+            const mockHighlights = [{
+                id: 'h1',
+                url: 'https://example.com',
+                data: createMockHighlight({ id: 'h1' }),
+                collectionId: null,
+                tags: [],
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                synced: false,
+            }];
 
             vi.mocked(mockStorage.getUnsyncedEvents).mockResolvedValue(mockEvents);
-            vi.mocked(mockStorage.getUnsyncedHighlights).mockResolvedValue(mockHighlights);
+            vi.mocked(mockStorage.getUnsyncedHighlights).mockResolvedValue(mockHighlights as any);
 
             const syncedIds = await service.syncToServer();
 
@@ -306,10 +226,10 @@ describe('VaultModeService - Unit Tests', () => {
     describe('getStats', () => {
         it('should return storage statistics', async () => {
             const mockStats = {
-                totalHighlights: 10,
-                totalEvents: 20,
-                totalCollections: 2,
-                totalTags: 5,
+                highlightCount: 10,
+                eventCount: 20,
+                collectionCount: 2,
+                tagCount: 5,
                 unsyncedCount: 3,
             };
 
