@@ -161,6 +161,10 @@ export class IndexedDBStorage extends Dexie {
      * Get all highlights in a collection
      */
     async getHighlightsByCollection(collectionId: string | null): Promise<HighlightRecord[]> {
+        if (collectionId === null) {
+            const all = await this.highlights.toArray();
+            return all.filter(h => h.collectionId === null);
+        }
         return await this.highlights.where('collectionId').equals(collectionId).toArray();
     }
 
