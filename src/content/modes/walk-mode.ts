@@ -19,9 +19,9 @@
 import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
-import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 import { serializeRange } from '@/content/utils/range-converter';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
 export class WalkMode extends BaseHighlightMode implements IBasicMode {
@@ -97,6 +97,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
 
         // 4. Add to Repository (Memory Only)
         // In Walk Mode, 'repository' is purely ephemeral.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.add(data as any);
 
         this.logger.info('Created highlight in Walk Mode', { id });
@@ -115,7 +116,9 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         const updated = { ...existing, ...updates };
         this.data.set(id, updated);
 
+     
         // Update repo (Memory Only)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.update(id, updates as any);
 
         if (updates.colorRole) {

@@ -9,8 +9,9 @@
  * @see mode-interfaces.ts for new segregated interfaces
  */
 
-import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
+
+import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 export interface HighlightData {

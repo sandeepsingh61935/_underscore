@@ -13,9 +13,9 @@ import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import type { Command } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
+import { RepositoryFactory } from '@/shared/repositories';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { StorageService } from '@/shared/services/storage-service';
-import { RepositoryFactory } from '@/shared/repositories';
 
 /**
  * Create highlight command - works with both APIs

@@ -1,7 +1,8 @@
+import { indexedDB, IDBKeyRange } from 'fake-indexeddb';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import { indexedDB, IDBKeyRange } from 'fake-indexeddb';
 
 // Mock IndexedDB
 global.indexedDB = indexedDB as any;

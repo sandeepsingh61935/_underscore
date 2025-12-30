@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { VaultModeService, getVaultModeService } from '@/services/vault-mode-service';
+
+import { createMockHighlight } from '../helpers/mock-data';
+
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
+import { VaultModeService, getVaultModeService } from '@/services/vault-mode-service';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import { createMockHighlight } from '../helpers/mock-data';
+
 
 /**
  * Integration Tests for Vault Mode
@@ -68,7 +71,7 @@ describe('VaultModeService - Integration Tests', () => {
             expect(stored?.metadata).toBeDefined();
             expect(stored?.metadata?.['selectors']).toBeDefined();
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const selectors = stored!.metadata!['selectors'] as any;
             expect(selectors.xpath).toBeDefined();
             expect(selectors.position).toBeDefined();

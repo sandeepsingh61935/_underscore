@@ -1,9 +1,13 @@
+/* global performance */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { VaultModeService } from '@/services/vault-mode-service';
+
+import { createMockHighlight } from "../helpers/mock-data";
+
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
+import { VaultModeService } from '@/services/vault-mode-service';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import { createMockHighlight } from "../helpers/mock-data";
+
 
 /**
  * Cross-Mode Integration Tests

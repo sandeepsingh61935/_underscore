@@ -1,5 +1,6 @@
 import { IndexedDBStorage } from './indexeddb-storage';
 import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine';
+
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**

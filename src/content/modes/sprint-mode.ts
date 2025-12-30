@@ -21,9 +21,9 @@
 import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
-import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 import { serializeRange } from '@/content/utils/range-converter';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
@@ -222,6 +222,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       ...event.highlight,
       type: event.highlight.type || 'underscore',
       createdAt: event.highlight.createdAt || new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     await this.storage.saveEvent({

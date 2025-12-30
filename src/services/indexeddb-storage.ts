@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { HighlightEventType } from '@/shared/types/storage';
 
@@ -48,6 +49,7 @@ export interface EventRecord {
     timestamp: number;
 
     /** Event payload data */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any;
 
     /** Sync status */

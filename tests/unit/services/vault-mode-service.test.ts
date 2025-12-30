@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { VaultModeService } from '@/services/vault-mode-service';
-import { IndexedDBStorage } from '@/services/indexeddb-storage';
-import { MultiSelectorEngine } from '@/services/multi-selector-engine';
+
 import { createMockHighlight, createMockHighlightRecord } from '../../helpers/mock-data';
+
+import type { IndexedDBStorage } from '@/services/indexeddb-storage';
+import type { MultiSelectorEngine } from '@/services/multi-selector-engine';
+import { VaultModeService } from '@/services/vault-mode-service';
+
 
 /**
  * Comprehensive Unit Tests for VaultModeService

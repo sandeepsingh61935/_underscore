@@ -18,6 +18,7 @@
  */
 
 import type { HighlightData } from './highlight-mode.interface';
+
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 /**
