@@ -15,6 +15,10 @@ import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
+import { setupSelectionDetector } from './content/selection/selection-detector';
+import { setupContextMenuListener } from './content/context-menu/context-menu-listener';
+import type { HighlightMode } from './shared/types/modes';
+import { initializeVaultMode, isVaultModeEnabled } from './content/vault-mode-init';
 import { SelectionDetector } from '@/content/selection-detector';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { CommandStack } from '@/shared/patterns/command';
@@ -85,364 +89,376 @@ export default defineContentScript({
       const highlightManager = useCustomHighlightAPI
         ? new HighlightManager(eventBus)
         : null;
-      const renderer = new HighlightRenderer(eventBus);
-      const detector = new SelectionDetector(eventBus);
+      console.log('🚀 Underscore Highlighter initializing...');
 
-
-      // Initialize click detector for double-click deletion
-      const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
-      clickDetector.init();
-
-      // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
-      // Observer Pattern: Modes listen to domain events and decide how to handle
-
-      // ✅ HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
-      // Mode decides if/how to persist (Walk: NO-OP, Sprint: Event Sourcing)
-      eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
+      // Initialize Vault Mode if enabled
+      if (isVaultModeEnabled()) {
         try {
-          await modeManager.getCurrentMode().onHighlightCreated(event);
+          await initializeVaultMode();
+          console.log('✅ Vault Mode ready');
         } catch (error) {
-          logger.error('Error in mode highlight created handler:', error as Error);
+          console.warn('⚠️ Vault Mode initialization failed, falling back to Walk Mode:', error);
         }
-      });
-
-      // ✅ HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
-      // Mode decides if/how to persist removal (Walk: NO-OP, Sprint: Event Sourcing)
-      eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
-        try {
-          await modeManager.getCurrentMode().onHighlightRemoved(event);
-        } catch (error) {
-          logger.error('Error in mode highlight removed handler:', error as Error);
-        }
-      });
-
-      logger.info('Event-Mode delegation wired', {
-        pattern: 'Observer + Delegation (SRP Compliance)',
-        listeners: ['HIGHLIGHT_CREATED', 'HIGHLIGHT_REMOVED'],
-      });
-
-      // ===== PAGE LOAD: Restore highlights (Mode decides via shouldRestore())  =====
-      if (modeManager.getCurrentMode().shouldRestore()) {
-        await restoreHighlights({
-          storage,
-          renderer,
-          repositoryFacade,
-          highlightManager,
-          modeManager,
-        });
-      } else {
-        logger.info(`${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`);
       }
 
-      // ===== Orchestrate: Listen to selection events =====
-      eventBus.on<SelectionCreatedEvent>(EventName.SELECTION_CREATED, async (event) => {
-        logger.info('Selection detected, checking for overlaps');
+      // Setup selection detector for creating highlights
+      setupSelectionDetector();eventBus);
 
-        try {
-          // RANGE SUBTRACTION: Check if selection overlaps existing highlights
-          const overlappingHighlights = getHighlightsInRange(
-            event.selection,
-            repositoryFacade
-          );
 
-          if (overlappingHighlights.length > 0) {
-            logger.info('Range subtraction: Splitting overlapping highlights', {
-              count: overlappingHighlights.length,
-            });
+// Initialize click detector for double-click deletion
+const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
+clickDetector.init();
 
-            const selectionRange = event.selection.getRangeAt(0);
+// ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
+// Observer Pattern: Modes listen to domain events and decide how to handle
 
-            // Process each overlapping highlight
-            for (const existingHighlight of overlappingHighlights) {
-              // Remove the existing highlight first
-              if (highlightManager) {
-                highlightManager.removeHighlight(existingHighlight.id);
-              }
-              repositoryFacade.remove(existingHighlight.id);
+// ✅ HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
+// Mode decides if/how to persist (Walk: NO-OP, Sprint: Event Sourcing)
+eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
+  try {
+    await modeManager.getCurrentMode().onHighlightCreated(event);
+  } catch (error) {
+    logger.error('Error in mode highlight created handler:', error as Error);
+  }
+});
 
-              // Split each range in the highlight
-              const allRemainingRanges: Range[] = [];
+// ✅ HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
+// Mode decides if/how to persist removal (Walk: NO-OP, Sprint: Event Sourcing)
+eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
+  try {
+    await modeManager.getCurrentMode().onHighlightRemoved(event);
+  } catch (error) {
+    logger.error('Error in mode highlight removed handler:', error as Error);
+  }
+});
 
-              for (const liveRange of existingHighlight.liveRanges || []) {
-                // Subtract selection from this range
-                const remainingRanges = subtractRange(liveRange, selectionRange);
-                allRemainingRanges.push(...remainingRanges);
-              }
+logger.info('Event-Mode delegation wired', {
+  pattern: 'Observer + Delegation (SRP Compliance)',
+  listeners: ['HIGHLIGHT_CREATED', 'HIGHLIGHT_REMOVED'],
+});
 
-              // Filter out tiny ranges (< 3 chars)
-              const validRanges = filterTinyRanges(allRemainingRanges, 3);
+// ===== PAGE LOAD: Restore highlights (Mode decides via shouldRestore())  =====
+if (modeManager.getCurrentMode().shouldRestore()) {
+  await restoreHighlights({
+    storage,
+    renderer,
+    repositoryFacade,
+    highlightManager,
+    modeManager,
+  });
+} else {
+  logger.info(`${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`);
+}
 
-              // Merge adjacent ranges
-              const mergedRanges = mergeAdjacentRanges(validRanges);
+// ===== Orchestrate: Listen to selection events =====
+eventBus.on<SelectionCreatedEvent>(EventName.SELECTION_CREATED, async (event) => {
+  logger.info('Selection detected, checking for overlaps');
 
-              if (mergedRanges.length > 0) {
-                // Create new highlight(s) from remaining ranges
-                const text = mergedRanges.map((r) => r.toString()).join(' ... ');
-                const serializedRanges = mergedRanges.map((r) => serializeRange(r));
+  try {
+    // RANGE SUBTRACTION: Check if selection overlaps existing highlights
+    const overlappingHighlights = getHighlightsInRange(
+      event.selection,
+      repositoryFacade
+    );
 
-                // Generate new ID for split highlight
-                const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    if (overlappingHighlights.length > 0) {
+      logger.info('Range subtraction: Splitting overlapping highlights', {
+        count: overlappingHighlights.length,
+      });
 
-                const { generateContentHash } =
-                  await import('@/shared/utils/content-hash');
-                const contentHash = await generateContentHash(text);
+      const selectionRange = event.selection.getRangeAt(0);
 
-                const highlightData = {
-                  id: newId,
-                  text,
-                  contentHash,
-                  colorRole: existingHighlight.color || 'yellow',
-                  type: 'underscore' as const,
-                  ranges: serializedRanges,
-                  liveRanges: mergedRanges,
-                  createdAt: new Date(),
-                };
+      // Process each overlapping highlight
+      for (const existingHighlight of overlappingHighlights) {
+        // Remove the existing highlight first
+        if (highlightManager) {
+          highlightManager.removeHighlight(existingHighlight.id);
+        }
+        repositoryFacade.remove(existingHighlight.id);
 
-                // ✅ Use mode's unified creation path (fixes undo/redo!)
-                await modeManager.createFromData(highlightData);
+        // Split each range in the highlight
+        const allRemainingRanges: Range[] = [];
 
-                // Add to repository for persistence
-                repositoryFacade.addFromData(highlightData);
+        for (const liveRange of existingHighlight.liveRanges || []) {
+          // Subtract selection from this range
+          const remainingRanges = subtractRange(liveRange, selectionRange);
+          allRemainingRanges.push(...remainingRanges);
+        }
 
-                // Save event
-                await storage.saveEvent({
-                  type: 'highlight.created',
-                  timestamp: Date.now(),
-                  eventId: crypto.randomUUID(),
-                  data: {
-                    id: newId,
-                    text,
-                    type: existingHighlight.type,
-                    ranges: serializedRanges,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  } as any,
-                });
+        // Filter out tiny ranges (< 3 chars)
+        const validRanges = filterTinyRanges(allRemainingRanges, 3);
 
-                logger.info('Created split highlight', {
-                  id: newId,
-                  rangeCount: mergedRanges.length,
-                });
-              }
+        // Merge adjacent ranges
+        const mergedRanges = mergeAdjacentRanges(validRanges);
 
-              // Save removal event for original
-              await storage.saveEvent({
-                type: 'highlight.removed',
-                timestamp: Date.now(),
-                eventId: crypto.randomUUID(),
-                highlightId: existingHighlight.id,
-              });
-            }
+        if (mergedRanges.length > 0) {
+          // Create new highlight(s) from remaining ranges
+          const text = mergedRanges.map((r) => r.toString()).join(' ... ');
+          const serializedRanges = mergedRanges.map((r) => serializeRange(r));
 
-            logger.info('Range subtraction complete');
-            broadcastCount();
-            return; // Don't create new highlight
-          }
+          // Generate new ID for split highlight
+          const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-          // No overlaps - create new highlight as normal
-          const colorRole = await colorManager.getCurrentColorRole();
+          const { generateContentHash } =
+            await import('@/shared/utils/content-hash');
+          const contentHash = await generateContentHash(text);
 
-          const command = new CreateHighlightCommand(
-            event.selection,
-            colorRole,
-            modeManager, // ✅ Use mode manager!
-            repositoryFacade,
-            storage
-          );
+          const highlightData = {
+            id: newId,
+            text,
+            contentHash,
+            colorRole: existingHighlight.color || 'yellow',
+            type: 'underscore' as const,
+            ranges: serializedRanges,
+            liveRanges: mergedRanges,
+            createdAt: new Date(),
+          };
 
-          await commandStack.execute(command);
+          // ✅ Use mode's unified creation path (fixes undo/redo!)
+          await modeManager.createFromData(highlightData);
 
-          logger.info('Highlight created successfully', {
-            api: highlightManager ? 'Custom Highlight API' : 'Legacy',
+          // Add to repository for persistence
+          repositoryFacade.addFromData(highlightData);
+
+          // Save event
+          await storage.saveEvent({
+            type: 'highlight.created',
+            timestamp: Date.now(),
+            eventId: crypto.randomUUID(),
+            data: {
+              id: newId,
+              text,
+              type: existingHighlight.type,
+              ranges: serializedRanges,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any,
           });
 
-          broadcastCount();
-        } catch (error) {
-          logger.error('Failed to process selection', error as Error);
-        }
-      });
-
-      // ===== Handle highlight removal (click) =====
-      eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
-        const highlight = repositoryFacade.get(event.highlightId);
-        if (highlight) {
-          // Use command for undo/redo support
-          const command = new RemoveHighlightCommand(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            highlight as any, // Legacy highlight type
-            modeManager, // ✅ Use mode manager!
-            repositoryFacade,
-            storage
-          );
-
-          await commandStack.execute(command);
-
-          logger.info('Highlight removed via command', { id: event.highlightId });
-          broadcastCount();
-        }
-      });
-
-      // ===== Handle clear selection (double-click) =====
-      eventBus.on<SelectionCreatedEvent>(EventName.CLEAR_SELECTION, async (event) => {
-        const highlightsInSelection = getHighlightsInRange(
-          event.selection,
-          repositoryFacade
-        );
-
-        if (highlightsInSelection.length > 0) {
-          for (const hl of highlightsInSelection) {
-            // ✅ Use mode manager's unified removal
-            await modeManager.removeHighlight(hl.id);
-
-            repositoryFacade.remove(hl.id);
-
-            await storage.saveEvent({
-              type: 'highlight.removed',
-              timestamp: Date.now(),
-              eventId: crypto.randomUUID(),
-              highlightId: hl.id,
-            });
-          }
-
-          logger.info('Cleared highlights in selection', {
-            count: highlightsInSelection.length,
+          logger.info('Created split highlight', {
+            id: newId,
+            rangeCount: mergedRanges.length,
           });
-          broadcastCount();
-        }
-      });
-
-      // ===== Keyboard Shortcuts =====
-      document.addEventListener('keydown', async (e) => {
-        // Ctrl+Z - Undo
-        if (e.ctrlKey && !e.shiftKey && e.code === 'KeyZ') {
-          e.preventDefault();
-          if (commandStack.canUndo()) {
-            await commandStack.undo();
-            logger.info('Undo executed');
-            broadcastCount();
-          }
         }
 
-        // Ctrl+Shift+Z - Redo
-        else if (e.ctrlKey && e.shiftKey && e.code === 'KeyZ') {
-          e.preventDefault();
-          if (commandStack.canRedo()) {
-            await commandStack.redo();
-            logger.info('Redo executed');
-            broadcastCount();
-          }
-        }
+        // Save removal event for original
+        await storage.saveEvent({
+          type: 'highlight.removed',
+          timestamp: Date.now(),
+          eventId: crypto.randomUUID(),
+          highlightId: existingHighlight.id,
+        });
+      }
 
-        // Ctrl+Y - Redo (Windows/Linux standard)
-        else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyY') {
-          e.preventDefault();
-          if (commandStack.canRedo()) {
-            await commandStack.redo();
-            logger.info('Redo executed (Ctrl+Y)');
-            broadcastCount();
-          }
-        }
-
-        // Removed: mode switching shortcuts (Ctrl+U/H/B) - single mode only
-
-        // Ctrl+Shift+U - Clear all
-        else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
-          e.preventDefault();
-
-          const count = repositoryFacade.count();
-
-          // ✅ Call mode's clearAll (clears CSS.highlights + state + repo)
-          await modeManager.getCurrentMode().clearAll();
-
-          // ❌ DON'T clear storage!
-          // This would wipe ALL events including creation events
-          // Let event sourcing handle it naturally
-
-          logger.info('Cleared all highlights', { count });
-          broadcastCount();
-        }
-      });
-
-      // Start detecting selections
-      detector.init();
-
-      // Broadcast count updates to popup
-      const broadcastCount = (): void => {
-        browser.runtime
-          .sendMessage({
-            type: 'HIGHLIGHT_COUNT_UPDATE',
-            count: repositoryFacade.count(),
-          })
-          .catch(() => {
-            // Popup may not be open, ignore error
-          });
-      };
-
-      // Listen for count changes
-      eventBus.on(EventName.HIGHLIGHT_CREATED, () => broadcastCount());
-      eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
-      eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
-
-      // Listen for count/mode requests from popup
-      browser.runtime.onMessage.addListener(
-        (
-          message: unknown,
-          _sender: unknown,
-          sendResponse: (response: unknown) => void
-        ) => {
-          const msg = message as { type: string; mode?: 'walk' | 'sprint' };
-
-          if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
-            sendResponse({ count: repositoryFacade.count() });
-          }
-
-          else if (msg && msg.type === 'GET_MODE') {
-            sendResponse({ mode: RepositoryFactory.getMode() });
-          }
-
-          else if (msg && msg.type === 'SET_MODE' && msg.mode) {
-            const newMode = msg.mode;
-            logger.info(`Switching to ${newMode} mode`);
-
-            (async () => {
-              // Switch mode logic
-              await modeManager.activateMode(newMode);
-              RepositoryFactory.setMode(newMode);
-
-              if (newMode === 'sprint') {
-                // Restore if switching to Sprint
-                await restoreHighlights({
-                  storage,
-                  renderer,
-                  repositoryFacade,
-                  highlightManager,
-                  modeManager,
-                });
-              } else {
-                // Clear highlights if switching to Walk (Incognito)
-                // User expects privacy when toggling to Walk Mode
-                await modeManager.getCurrentMode().clearAll();
-              }
-
-              // Broadcast update
-              sendResponse({ success: true, mode: newMode });
-            })();
-
-            return true; // Async response
-          }
-
-          return true; // Keep channel open for async response
-        }
-      );
-
-      logger.info('Web Highlighter Extension initialized successfully');
-      logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
-      logger.info(
-        'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)'
-      );
-      logger.info(`Restored ${repositoryFacade.count()} highlights from storage`);
-    } catch (error) {
-      logger.error('Failed to initialize extension', error as Error);
+      logger.info('Range subtraction complete');
+      broadcastCount();
+      return; // Don't create new highlight
     }
+
+    // No overlaps - create new highlight as normal
+    const colorRole = await colorManager.getCurrentColorRole();
+
+    const command = new CreateHighlightCommand(
+      event.selection,
+      colorRole,
+      modeManager, // ✅ Use mode manager!
+      repositoryFacade,
+      storage
+    );
+
+    await commandStack.execute(command);
+
+    logger.info('Highlight created successfully', {
+      api: highlightManager ? 'Custom Highlight API' : 'Legacy',
+    });
+
+    broadcastCount();
+  } catch (error) {
+    logger.error('Failed to process selection', error as Error);
+  }
+});
+
+// ===== Handle highlight removal (click) =====
+eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
+  const highlight = repositoryFacade.get(event.highlightId);
+  if (highlight) {
+    // Use command for undo/redo support
+    const command = new RemoveHighlightCommand(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      highlight as any, // Legacy highlight type
+      modeManager, // ✅ Use mode manager!
+      repositoryFacade,
+      storage
+    );
+
+    await commandStack.execute(command);
+
+    logger.info('Highlight removed via command', { id: event.highlightId });
+    broadcastCount();
+  }
+});
+
+// ===== Handle clear selection (double-click) =====
+eventBus.on<SelectionCreatedEvent>(EventName.CLEAR_SELECTION, async (event) => {
+  const highlightsInSelection = getHighlightsInRange(
+    event.selection,
+    repositoryFacade
+  );
+
+  if (highlightsInSelection.length > 0) {
+    for (const hl of highlightsInSelection) {
+      // ✅ Use mode manager's unified removal
+      await modeManager.removeHighlight(hl.id);
+
+      repositoryFacade.remove(hl.id);
+
+      await storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        highlightId: hl.id,
+      });
+    }
+
+    logger.info('Cleared highlights in selection', {
+      count: highlightsInSelection.length,
+    });
+    broadcastCount();
+  }
+});
+
+// ===== Keyboard Shortcuts =====
+document.addEventListener('keydown', async (e) => {
+  // Ctrl+Z - Undo
+  if (e.ctrlKey && !e.shiftKey && e.code === 'KeyZ') {
+    e.preventDefault();
+    if (commandStack.canUndo()) {
+      await commandStack.undo();
+      logger.info('Undo executed');
+      broadcastCount();
+    }
+  }
+
+  // Ctrl+Shift+Z - Redo
+  else if (e.ctrlKey && e.shiftKey && e.code === 'KeyZ') {
+    e.preventDefault();
+    if (commandStack.canRedo()) {
+      await commandStack.redo();
+      logger.info('Redo executed');
+      broadcastCount();
+    }
+  }
+
+  // Ctrl+Y - Redo (Windows/Linux standard)
+  else if (e.ctrlKey && !e.shiftKey && e.code === 'KeyY') {
+    e.preventDefault();
+    if (commandStack.canRedo()) {
+      await commandStack.redo();
+      logger.info('Redo executed (Ctrl+Y)');
+      broadcastCount();
+    }
+  }
+
+  // Removed: mode switching shortcuts (Ctrl+U/H/B) - single mode only
+
+  // Ctrl+Shift+U - Clear all
+  else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
+    e.preventDefault();
+
+    const count = repositoryFacade.count();
+
+    // ✅ Call mode's clearAll (clears CSS.highlights + state + repo)
+    await modeManager.getCurrentMode().clearAll();
+
+    // ❌ DON'T clear storage!
+    // This would wipe ALL events including creation events
+    // Let event sourcing handle it naturally
+
+    logger.info('Cleared all highlights', { count });
+    broadcastCount();
+  }
+});
+
+// Start detecting selections
+detector.init();
+
+// Broadcast count updates to popup
+const broadcastCount = (): void => {
+  browser.runtime
+    .sendMessage({
+      type: 'HIGHLIGHT_COUNT_UPDATE',
+      count: repositoryFacade.count(),
+    })
+    .catch(() => {
+      // Popup may not be open, ignore error
+    });
+};
+
+// Listen for count changes
+eventBus.on(EventName.HIGHLIGHT_CREATED, () => broadcastCount());
+eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
+eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
+
+// Listen for count/mode requests from popup
+browser.runtime.onMessage.addListener(
+  (
+    message: unknown,
+    _sender: unknown,
+    sendResponse: (response: unknown) => void
+  ) => {
+    const msg = message as { type: string; mode?: 'walk' | 'sprint' };
+
+    if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
+      sendResponse({ count: repositoryFacade.count() });
+    }
+
+    else if (msg && msg.type === 'GET_MODE') {
+      sendResponse({ mode: RepositoryFactory.getMode() });
+    }
+
+    else if (msg && msg.type === 'SET_MODE' && msg.mode) {
+      const newMode = msg.mode;
+      logger.info(`Switching to ${newMode} mode`);
+
+      (async () => {
+        // Switch mode logic
+        await modeManager.activateMode(newMode);
+        RepositoryFactory.setMode(newMode);
+
+        if (newMode === 'sprint') {
+          // Restore if switching to Sprint
+          await restoreHighlights({
+            storage,
+            renderer,
+            repositoryFacade,
+            highlightManager,
+            modeManager,
+          });
+        } else {
+          // Clear highlights if switching to Walk (Incognito)
+          // User expects privacy when toggling to Walk Mode
+          await modeManager.getCurrentMode().clearAll();
+        }
+
+        // Broadcast update
+        sendResponse({ success: true, mode: newMode });
+      })();
+
+      return true; // Async response
+    }
+
+    return true; // Keep channel open for async response
+  }
+);
+
+logger.info('Web Highlighter Extension initialized successfully');
+logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
+logger.info(
+  'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)'
+);
+logger.info(`Restored ${repositoryFacade.count()} highlights from storage`);
+    } catch (error) {
+  logger.error('Failed to initialize extension', error as Error);
+}
   },
 });
 
