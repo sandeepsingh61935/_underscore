@@ -2,9 +2,11 @@
  * Base Highlight Mode
  *
  * Provides common functionality for all modes
+ * Note: Does NOT implement IHighlightMode (removed for ISP compliance)
+ * Concrete modes implement IBasicMode (and optionally IPersistentMode, etc.)
  */
 
-import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
+import type { HighlightData } from './highlight-mode.interface';
 
 import {
   getHighlightName,
@@ -16,7 +18,7 @@ import type { StorageService } from '@/shared/services/storage-service';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export abstract class BaseHighlightMode implements IHighlightMode {
+export abstract class BaseHighlightMode {
   // Internal tracking (replaces HighlightManager.highlights)
   protected highlights = new Map<string, Highlight>();
   protected data = new Map<string, HighlightData>();
@@ -112,6 +114,9 @@ export abstract class BaseHighlightMode implements IHighlightMode {
   abstract createHighlight(selection: Selection, colorRole: string): Promise<string>;
   abstract createFromData(data: HighlightData): Promise<void>;
   abstract updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void>;
-  abstract restore(url: string): Promise<void>;
   abstract clearAll(): Promise<void>;
+
+  // Note: restore() removed - only IPersistentMode needs it (Interface Segregation Principle)
+  // Modes use shouldRestore() to indicate if they want restoration
 }
+
