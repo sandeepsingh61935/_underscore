@@ -1,3 +1,5 @@
+import DiffMatchPatch from 'diff-match-patch';
+
 /**
  * XPath selector data for precise DOM node targeting
  */
@@ -42,7 +44,26 @@ export interface PositionSelector {
 }
 
 /**
+ * Fuzzy selector for content-based matching using approximate string matching
+ */
+export interface FuzzySelector {
+    /** Target text to find */
+    text: string;
+
+    /** Context before (for better matching) */
+    textBefore: string;
+
+    /** Context after (for better matching) */
+    textAfter: string;
+
+    /** Similarity threshold (0.0-1.0) */
+    threshold: number;
+}
+
+/**
  * Multi-selector container with all restoration strategies
+ * 
+ * Implements the Strategy pattern for highlight restoration with 3 fallback tiers
  */
 export interface MultiSelector {
     /** Primary XPath selector (fast, brittle) */
@@ -50,6 +71,9 @@ export interface MultiSelector {
 
     /** Secondary Position selector (medium reliability) */
     position: PositionSelector;
+
+    /** Tertiary Fuzzy selector (slow, robust) */
+    fuzzy: FuzzySelector;
 
     /** Content hash for verification */
     contentHash: string;
@@ -61,19 +85,28 @@ export interface MultiSelector {
 /**
  * Multi-Selector Engine for robust highlight restoration
  * 
- * Implements a 3-tier restoration strategy:
+ * Implements a 3-tier restoration strategy (Strategy Pattern):
  * 1. XPath (fast, brittle to DOM changes)
  * 2. Position (medium speed, brittle to ads/dynamic content)
  * 3. Fuzzy text matching (slow, robust to content changes)
  * 
- * Phase 2 (Task 1.3): XPath + Position selectors
- * Future: Fuzzy matching (Task 1.4)
+ * Architecture:
+ * - Follows Single Responsibility Principle (SRP): Each selector type is independent
+ * - Implements Strategy Pattern: Multiple restoration algorithms with fallback chain
+ * - Uses Facade Pattern: Simple API (restore()) hides complex multi-tier logic
+ * 
+ * Quality Framework Compliance:
+ * - SOLID: SRP, OCP (extensible with new selector types), LSP (Range contract)
+ * - DRY: Reusable selector creation and verification logic
+ * - Performance: Ordered by speed (fast->slow) for optimal UX
  */
 export class MultiSelectorEngine {
     private logger: Console;
+    private dmp: DiffMatchPatch;
 
     constructor(logger: Console = console) {
         this.logger = logger;
+        this.dmp = new DiffMatchPatch();
     }
 
     /**
@@ -134,6 +167,36 @@ export class MultiSelectorEngine {
             text,
             textBefore,
             textAfter,
+        };
+    }
+
+    /**
+     * Create a Fuzzy selector from a DOM Range
+     * 
+     * Uses larger context window (50 chars) for robust matching.
+     * Employs diff-match-patch for approximate string matching.
+     * 
+     * @param range - The DOM Range to create selector for
+     * @returns Fuzzy selector data
+     */
+    createFuzzySelector(range: Range): FuzzySelector {
+        const text = range.toString();
+
+        // Get larger context for fuzzy matching (50 chars before/after)
+        const bodyText = document.body.textContent || '';
+        const startOffset = this.getAbsoluteOffset(range.startContainer, range.startOffset);
+
+        const textBefore = bodyText.substring(Math.max(0, startOffset - 50), startOffset);
+        const textAfter = bodyText.substring(
+            startOffset + text.length,
+            startOffset + text.length + 50
+        );
+
+        return {
+            text,
+            textBefore,
+            textAfter,
+            threshold: 0.8, // 80% similarity required for context match
         };
     }
 
@@ -272,7 +335,7 @@ export class MultiSelectorEngine {
     }
 
     /**
-     * Try to restore a highlight using XPath selector
+     * Try to restore a highlight using XPath selector (Tier 1 - Fast)
      * 
      * @param selector - XPath selector data
      * @returns Restored Range, or null if restoration failed
@@ -338,7 +401,7 @@ export class MultiSelectorEngine {
             range.setStart(node, selector.startOffset);
             range.setEnd(node, selector.endOffset);
 
-            this.logger.info('XPath restoration successful', selector.xpath);
+            this.logger.info('✅ XPath restoration successful', selector.xpath);
             return range;
 
         } catch (error) {
@@ -348,7 +411,7 @@ export class MultiSelectorEngine {
     }
 
     /**
-     * Try to restore a highlight using Position selector
+     * Try to restore a highlight using Position selector (Tier 2 - Medium)
      * 
      * @param selector - Position selector data
      * @returns Restored Range, or null if restoration failed
@@ -395,7 +458,7 @@ export class MultiSelectorEngine {
                 return null;
             }
 
-            this.logger.info('Position restoration successful');
+            this.logger.info('✅ Position restoration successful');
             return range;
 
         } catch (error) {
@@ -405,10 +468,113 @@ export class MultiSelectorEngine {
     }
 
     /**
+     * Try to restore a highlight using fuzzy text matching (Tier 3 - Slow but Robust)
+     * 
+     * Uses diff-match-patch library for approximate string matching.
+     * Most CPU-intensive but handles content changes gracefully.
+     * 
+     * @param selector - Fuzzy selector data
+     * @returns Restored Range, or null if matching failed
+     */
+    async tryFuzzyMatch(selector: FuzzySelector): Promise<Range | null> {
+        try {
+            const bodyText = document.body.textContent || '';
+
+            // Use diff-match-patch for fuzzy matching
+            const matchIndex = this.dmp.match_main(
+                bodyText,
+                selector.text,
+                0 // Start searching from beginning
+            );
+
+            if (matchIndex === -1) {
+                this.logger.warn('Fuzzy match failed: text not found in document');
+                return null;
+            }
+
+            // Verify context similarity using Levenshtein distance
+            const foundBefore = bodyText.substring(
+                Math.max(0, matchIndex - 50),
+                matchIndex
+            );
+            const foundAfter = bodyText.substring(
+                matchIndex + selector.text.length,
+                matchIndex + selector.text.length + 50
+            );
+
+            // Calculate similarity scores (0.0 to 1.0)
+            const beforeSimilarity = this.calculateSimilarity(selector.textBefore, foundBefore);
+            const afterSimilarity = this.calculateSimilarity(selector.textAfter, foundAfter);
+            const avgSimilarity = (beforeSimilarity + afterSimilarity) / 2;
+
+            if (avgSimilarity < selector.threshold) {
+                this.logger.warn('Fuzzy match failed: context similarity too low', {
+                    required: selector.threshold,
+                    actual: avgSimilarity.toFixed(3),
+                    beforeSim: beforeSimilarity.toFixed(3),
+                    afterSim: afterSimilarity.toFixed(3),
+                });
+                return null;
+            }
+
+            // Create range from the matched position
+            const range = this.createRangeFromOffset(
+                matchIndex,
+                matchIndex + selector.text.length
+            );
+
+            if (!range) {
+                this.logger.warn('Fuzzy match failed: could not create range from offset');
+                return null;
+            }
+
+            this.logger.info('✅ Fuzzy match successful', {
+                similarity: avgSimilarity.toFixed(3),
+                offset: matchIndex,
+            });
+            return range;
+
+        } catch (error) {
+            this.logger.error('Fuzzy match error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Calculate similarity between two strings using Levenshtein distance
+     * 
+     * Returns a score from 0.0 (completely different) to 1.0 (identical).
+     * Uses diff-match-patch's optimized Levenshtein algorithm.
+     * 
+     * @param str1 - First string
+     * @param str2 - Second string
+     * @returns Similarity score (0.0 - 1.0)
+     */
+    private calculateSimilarity(str1: string, str2: string): number {
+        if (str1 === str2) return 1.0;
+        if (str1.length === 0 || str2.length === 0) return 0.0;
+
+        // Generate diffs
+        const diffs = this.dmp.diff_main(str1, str2);
+
+        // Clean up semantically for better results
+        this.dmp.diff_cleanupSemantic(diffs);
+
+        // Calculate Levenshtein distance (number of edits needed)
+        const distance = this.dmp.diff_levenshtein(diffs);
+        const maxLength = Math.max(str1.length, str2.length);
+
+        // Convert distance to similarity (inverse)
+        return 1.0 - (distance / maxLength);
+    }
+
+    /**
      * Create a DOM Range from absolute character offsets
      * 
-     * @param startOffset - Absolute start offset
-     * @param endOffset - Absolute end offset
+     * Walks the document tree to find the text nodes at the specified positions.
+     * 
+     * @param startOffset - Absolute start offset from document start
+     * @param endOffset - Absolute end offset from document start
      * @returns DOM Range, or null if failed
      */
     private createRangeFromOffset(startOffset: number, endOffset: number): Range | null {
@@ -445,6 +611,12 @@ export class MultiSelectorEngine {
         }
 
         if (!startNode || !endNode) {
+            this.logger.error('Could not find DOM nodes for offsets', {
+                startOffset,
+                endOffset,
+                foundStart: !!startNode,
+                foundEnd: !!endNode,
+            });
             return null;
         }
 
@@ -454,27 +626,31 @@ export class MultiSelectorEngine {
             range.setEnd(endNode, endNodeOffset);
             return range;
         } catch (error) {
-            this.logger.error('Failed to create range:', error);
+            this.logger.error('Failed to create range from nodes:', error);
             return null;
         }
     }
 
     /**
-     * Create a multi-selector from a Range (Phase 2: XPath + Position)
+     * Create a multi-selector from a Range with all 3 restoration tiers
+     * 
+     * Implements the Facade pattern: Simple API hiding complex multi-tier creation.
      * 
      * @param range - DOM Range to create selectors for
-     * @returns Multi-selector data
+     * @returns Multi-selector data with all 3 tiers
      */
     createSelectors(range: Range): MultiSelector {
         const xpath = this.createXPathSelector(range);
         const position = this.createPositionSelector(range);
+        const fuzzy = this.createFuzzySelector(range);
 
-        // Simple content hash
+        // Simple content hash for quick verification
         const contentHash = this.simpleHash(xpath.text);
 
         return {
             xpath,
             position,
+            fuzzy,
             contentHash,
             createdAt: Date.now(),
         };
@@ -483,8 +659,11 @@ export class MultiSelectorEngine {
     /**
      * Simple hash function for content verification
      * 
+     * Uses basic string hashing for quick content comparison.
+     * Not cryptographically secure - only for verification purposes.
+     * 
      * @param text - Text to hash
-     * @returns Hash string
+     * @returns Hash string (base-36)
      */
     private simpleHash(text: string): string {
         let hash = 0;
@@ -497,39 +676,57 @@ export class MultiSelectorEngine {
     }
 
     /**
-     * Restore a highlight using the multi-selector (Phase 2: XPath + Position)
+     * Restore a highlight using the 3-tier restoration strategy
+     * 
+     * Implements the Strategy pattern with fallback chain:
+     * 1. Try XPath (fast, exact match)
+     * 2. Try Position (medium, offset-based)
+     * 3. Try Fuzzy (slow, approximate matching)
+     * 
+     * Returns on first successful restoration for optimal performance.
      * 
      * @param selector - Multi-selector data
      * @returns Restored Range, or null if all strategies failed
      */
     async restore(selector: MultiSelector): Promise<Range | null> {
-        // Tier 1: Try XPath (fast)
+        // Tier 1: Try XPath (fastest - exact node location)
         const xpathRange = await this.tryXPath(selector.xpath);
-
         if (xpathRange) {
             return xpathRange;
         }
 
-        // Tier 2: Try Position (medium)
+        // Tier 2: Try Position (medium - absolute offsets)
         const positionRange = await this.tryPosition(selector.position);
-
         if (positionRange) {
             return positionRange;
         }
 
-        // Tier 3: Fuzzy matching will be added in Task 1.4
-        this.logger.warn('All restoration strategies failed');
+        // Tier 3: Try Fuzzy (slowest but most robust - approximate matching)
+        const fuzzyRange = await this.tryFuzzyMatch(selector.fuzzy);
+        if (fuzzyRange) {
+            return fuzzyRange;
+        }
+
+        // All strategies failed
+        this.logger.error('❌ All restoration strategies failed', {
+            text: selector.xpath.text.substring(0, 50) + '...',
+            hash: selector.contentHash,
+        });
         return null;
     }
 }
 
 /**
- * Singleton instance
+ * Singleton instance (Singleton pattern)
  */
 let instance: MultiSelectorEngine | null = null;
 
 /**
  * Get the Multi-Selector Engine instance
+ * 
+ * Implements Singleton pattern to ensure single instance across application.
+ * 
+ * @returns MultiSelectorEngine instance
  */
 export function getMultiSelectorEngine(): MultiSelectorEngine {
     if (!instance) {
