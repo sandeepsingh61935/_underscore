@@ -16,6 +16,7 @@ import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
+import { initializeVaultMode, isVaultModeEnabled } from '@/content/vault-mode-init';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import { CommandStack } from '@/shared/patterns/command';
 import { RepositoryFacade, RepositoryFactory } from '@/shared/repositories';
@@ -80,6 +81,16 @@ export default defineContentScript({
       // Default: Walk Mode (No persistence)
       await modeManager.activateMode('walk');
       RepositoryFactory.setMode('walk');
+
+      // Initialize Vault Mode if enabled
+      if (isVaultModeEnabled()) {
+        try {
+          await initializeVaultMode();
+          logger.info('✅ Vault Mode ready');
+        } catch (error) {
+          logger.warn('⚠️ Vault Mode initialization failed, falling back to Walk Mode:', error as Error);
+        }
+      }
 
       // Keep old HighlightManager temporarily for compatibility
       const highlightManager = useCustomHighlightAPI
