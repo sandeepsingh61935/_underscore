@@ -70,8 +70,8 @@ export default defineContentScript({
       // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
       const modeManager = new ModeManager(eventBus, logger);
 
-      // ✅ Dependency Injection: Pass shared repository AND storage to mode
-      // ✅ Initialize Mode: Default to WALK MODE (Privacy First)
+      // [OK] Dependency Injection: Pass shared repository AND storage to mode
+      // [OK] Initialize Mode: Default to WALK MODE (Privacy First)
       const sprintMode = new SprintMode(eventBus, logger, repositoryFacade, storage);
       const walkMode = new WalkMode(eventBus, logger, repositoryFacade, storage);
 
@@ -107,7 +107,7 @@ export default defineContentScript({
       // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
       // Observer Pattern: Modes listen to domain events and decide how to handle
 
-      // ✅ HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
+      // [OK] HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
       // Mode decides if/how to persist (Walk: NO-OP, Sprint: Event Sourcing)
       eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
         try {
@@ -117,7 +117,7 @@ export default defineContentScript({
         }
       });
 
-      // ✅ HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
+      // [OK] HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
       // Mode decides if/how to persist removal (Walk: NO-OP, Sprint: Event Sourcing)
       eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
         try {
@@ -209,7 +209,7 @@ export default defineContentScript({
                   createdAt: new Date(),
                 };
 
-                // ✅ Use mode's unified creation path (fixes undo/redo!)
+                // [OK] Use mode's unified creation path (fixes undo/redo!)
                 await modeManager.createFromData(highlightData);
 
                 // Add to repository for persistence
@@ -255,7 +255,7 @@ export default defineContentScript({
           const command = new CreateHighlightCommand(
             event.selection,
             colorRole,
-            modeManager, // ✅ Use mode manager!
+            modeManager, // [OK] Use mode manager!
             repositoryFacade,
             storage
           );
@@ -280,7 +280,7 @@ export default defineContentScript({
           const command = new RemoveHighlightCommand(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             highlight as any, // Legacy highlight type
-            modeManager, // ✅ Use mode manager!
+            modeManager, // [OK] Use mode manager!
             repositoryFacade,
             storage
           );
@@ -301,7 +301,7 @@ export default defineContentScript({
 
         if (highlightsInSelection.length > 0) {
           for (const hl of highlightsInSelection) {
-            // ✅ Use mode manager's unified removal
+            // [OK] Use mode manager's unified removal
             await modeManager.removeHighlight(hl.id);
 
             repositoryFacade.remove(hl.id);
@@ -361,10 +361,10 @@ export default defineContentScript({
 
           const count = repositoryFacade.count();
 
-          // ✅ Call mode's clearAll (clears CSS.highlights + state + repo)
+          // [OK] Call mode's clearAll (clears CSS.highlights + state + repo)
           await modeManager.getCurrentMode().clearAll();
 
-          // ❌ DON'T clear storage!
+          // [ERROR] DON'T clear storage!
           // This would wipe ALL events including creation events
           // Let event sourcing handle it naturally
 
@@ -476,22 +476,22 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
   try {
     const events = await storage.loadEvents();
 
-    // ✅ PURE EVENT SOURCING: Clear projection before rebuilding
+    // [OK] PURE EVENT SOURCING: Clear projection before rebuilding
     // This ensures repository is a true projection of events, not a persistent cache
     repositoryFacade.clear();
-    logger.info('🧹 Cleared repository projection before event replay');
+    logger.info('[CLEAR] Cleared repository projection before event replay');
 
     // Replay events to reconstruct state
     const activeHighlights = new Map<string, HighlightDataV2WithRuntime>();
 
-    logger.warn(`🔥 Processing ${events.length} events to rebuild state...`);
+    logger.warn(`[DEBUG] Processing ${events.length} events to rebuild state...`);
 
     for (const event of events) {
-      logger.warn(`🔥 Event type: ${event.type}`, event);
+      logger.warn(`[DEBUG] Event type: ${event.type}`, event);
 
-      // ✅ Handle CLEAR ALL event (waterline - discard all previous highlights)
+      // [OK] Handle CLEAR ALL event (waterline - discard all previous highlights)
       if (event.type === 'highlights.cleared') {
-        logger.info('🧹 CLEAR ALL event detected - discarding all highlights', {
+        logger.info('[CLEAR] CLEAR ALL event detected - discarding all highlights', {
           previousCount: activeHighlights.size,
         });
         activeHighlights.clear();
@@ -500,16 +500,16 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
       if (event.type === 'highlight.created' && event.data) {
         activeHighlights.set(event.data.id, event.data as HighlightDataV2WithRuntime);
-        logger.warn(`✅ Added highlight to map: ${event.data.id}`);
+        logger.warn(`[OK] Added highlight to map: ${event.data.id}`);
       } else if (event.type === 'highlight.removed' && event.highlightId) {
         activeHighlights.delete(event.highlightId);
-        logger.warn(`🗑️ Removed highlight from map: ${event.highlightId}`);
+        logger.warn(`[DELETE] Removed highlight from map: ${event.highlightId}`);
       } else {
-        logger.error(`❌ Event didn't match expected format: ${event.type}`);
+        logger.error(`[ERROR] Event didn't match expected format: ${event.type}`);
       }
     }
 
-    logger.warn(`🎯 Final map size: ${activeHighlights.size} highlights to restore`);
+    logger.warn(`[TARGET] Final map size: ${activeHighlights.size} highlights to restore`);
 
     // Render active highlights at their original positions
     let restored = 0;
@@ -548,7 +548,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
         // Use Custom Highlight API if available
         if (highlightManager) {
-          // ✅ CRITICAL FIX: Use mode's unified creation path!
+          // [OK] CRITICAL FIX: Use mode's unified creation path!
           // This ensures the highlight is registered in mode's internal maps
           const { generateContentHash } = await import('@/shared/utils/content-hash');
           const contentHash = await generateContentHash(highlightData.text);

@@ -104,7 +104,7 @@ export class CreateHighlightCommand implements Command {
         const { generateContentHash } = await import('@/shared/utils/content-hash');
         const contentHash = await generateContentHash(text);
 
-        // ✅ Use mode's unified path (fixes registration!)
+        // [OK] Use mode's unified path (fixes registration!)
         await (this.manager as ModeManager).createFromData({
           id: data.id,
           text: data.text,
@@ -236,7 +236,7 @@ export class RemoveHighlightCommand implements Command {
       const { generateContentHash } = await import('@/shared/utils/content-hash');
       const contentHash = await generateContentHash(text);
 
-      // ✅ Use mode's unified path (fixes registration!)
+      // [OK] Use mode's unified path (fixes registration!)
       await (this.manager as ModeManager).createFromData({
         id: h.id,
         text: h.text,

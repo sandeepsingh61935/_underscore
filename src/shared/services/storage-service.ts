@@ -97,7 +97,7 @@ export class StorageService {
       const result = await browser.storage.local.get(hashedDomain);
 
       if (!result[hashedDomain]) {
-        this.logger.warn('❌ [LOAD] No data found', {
+        this.logger.warn('[ERROR] [LOAD] No data found', {
           domain: this.currentDomain,
           hashedDomain,
         });
@@ -153,7 +153,7 @@ export class StorageService {
         });
       }
 
-      this.logger.info('✅ [LOAD] Events loaded successfully', {
+      this.logger.info('[OK] [LOAD] Events loaded successfully', {
         domain: this.currentDomain,
         count: validEvents.length,
         hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
@@ -210,7 +210,7 @@ export class StorageService {
 
     // Verify save
     const verification = await browser.storage.local.get(hashedDomain);
-    this.logger.info('✅ [SAVE] Save completed and verified', {
+    this.logger.info('[OK] [SAVE] Save completed and verified', {
       keyExists: !!verification[hashedDomain],
       savedTtl: new Date(ttl).toISOString(),
       eventCount: events.length,

@@ -89,7 +89,7 @@ export class MigrationService {
   private inferColorRole(
     hexColor: string | undefined
   ): 'yellow' | 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'teal' {
-    // ✅ Defensive: Handle undefined/null color
+    // [OK] Defensive: Handle undefined/null color
     if (!hexColor) {
       this.logger.warn('No color provided, defaulting to yellow');
       return 'yellow';

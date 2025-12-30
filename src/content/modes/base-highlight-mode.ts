@@ -28,8 +28,8 @@ export abstract class BaseHighlightMode {
   constructor(
     protected readonly eventBus: EventBus,
     protected readonly logger: ILogger,
-    repository: RepositoryFacade, // ✅ Dependency Injection - shared instance
-    storage: StorageService // ✅ Added for event sourcing
+    repository: RepositoryFacade, // [OK] Dependency Injection - shared instance
+    storage: StorageService // [OK] Added for event sourcing
   ) {
     this.repository = repository;
     this.storage = storage;

@@ -122,7 +122,7 @@ export function isValidHighlightEvent(event: unknown): event is AnyHighlightEven
     if (!e['data'] || typeof e['data'] !== 'object') return false;
     const data = e['data'] as Record<string, unknown>;
 
-    // ✅ FIXED: Check for 'ranges' array (not singular 'range')
+    // [OK] FIXED: Check for 'ranges' array (not singular 'range')
     // We save multiple ranges, validator was checking for wrong field!
     if (!data['ranges'] || !Array.isArray(data['ranges'])) return false;
 

@@ -67,7 +67,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
         existingId: existing.id,
         text: text.substring(0, 50) + '...',
       });
-      return existing.id; // ✅ Return existing instead of creating duplicate
+      return existing.id; // [OK] Return existing instead of creating duplicate
     }
 
     const id = this.generateId();
@@ -80,15 +80,15 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     const data: HighlightData = {
       id,
       text,
-      contentHash, // ✅ Store hash for future dedup
-      colorRole, // ✅ Semantic token
+      contentHash, // [OK] Store hash for future dedup
+      colorRole, // [OK] Semantic token
       type: 'underscore',
       ranges: [serializedRange],
       liveRanges: [range],
       createdAt: new Date(),
     };
 
-    // ✅ CRITICAL FIX: Register in ALL tracking structures
+    // [OK] CRITICAL FIX: Register in ALL tracking structures
     // 1. Create Custom Highlight API highlight
     const highlight = new Highlight(range);
 
@@ -158,7 +158,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   override async removeHighlight(id: string): Promise<void> {
     this.logger.info('Removing highlight', { id });
 
-    // ✅ Remove from Custom Highlight API (DOM)
+    // [OK] Remove from Custom Highlight API (DOM)
     // 1. Remove BARE ID (Manual registration)
     if (CSS.highlights.has(id)) {
       CSS.highlights.delete(id);
@@ -174,11 +174,11 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       this.logger.info('Removed from CSS.highlights (prefixed)', { highlightName });
     }
 
-    // ✅ Remove from internal maps (state)
+    // [OK] Remove from internal maps (state)
     this.highlights.delete(id);
     this.data.delete(id);
 
-    // ✅ Remove from repository (persistence)
+    // [OK] Remove from repository (persistence)
     this.repository.remove(id);
 
     this.logger.info('Highlight removed completely', { id });
@@ -188,17 +188,17 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     const count = this.data.size;
     this.logger.info('Clearing all highlights in sprint mode', { count });
 
-    // ✅ Clear Custom Highlight API (DOM)
+    // [OK] Clear Custom Highlight API (DOM)
     CSS.highlights.clear();
 
-    // ✅ Clear internal maps (state)
+    // [OK] Clear internal maps (state)
     this.highlights.clear();
     this.data.clear();
 
-    // ✅ Clear repository (persistence)
+    // [OK] Clear repository (persistence)
     this.repository.clear();
 
-    // ✅ Emit storage event for event sourcing (CRITICAL FIX!)
+    // [OK] Emit storage event for event sourcing (CRITICAL FIX!)
     await this.storage.saveEvent({
       type: 'highlights.cleared',
       timestamp: Date.now(),

@@ -29,7 +29,7 @@ export function serializeRange(range: Range): SerializedRange {
   const textBefore = getTextBefore(range, CONTEXT_LENGTH);
   const textAfter = getTextAfter(range, CONTEXT_LENGTH);
 
-  // ✅ Extract W3C TextQuoteSelector for robust anchoring
+  // [OK] Extract W3C TextQuoteSelector for robust anchoring
   let selector;
   try {
     selector = extractTextQuoteSelector(range);
@@ -54,12 +54,12 @@ export function serializeRange(range: Range): SerializedRange {
  * Returns null if the range cannot be restored
  */
 export function deserializeRange(sr: SerializedRange): Range | null {
-  // ✅ STRATEGY 1: Try W3C TextQuoteSelector (MOST ROBUST)
+  // [OK] STRATEGY 1: Try W3C TextQuoteSelector (MOST ROBUST)
   if (sr.selector) {
     try {
       const range = findTextQuoteSelector(sr.selector);
       if (range) {
-        // console.log('[Deserialize] ✅ Restored via TextQuoteSelector');
+        // console.log('[Deserialize] [OK] Restored via TextQuoteSelector');
         return range;
       }
     } catch (error) {
@@ -72,7 +72,7 @@ export function deserializeRange(sr: SerializedRange): Range | null {
   if (node) {
     const range = tryExactMatch(node, sr);
     if (range) {
-      // console.log('[Deserialize] ✅ Restored via XPath');
+      // console.log('[Deserialize] [OK] Restored via XPath');
       return range;
     }
   }
@@ -80,12 +80,12 @@ export function deserializeRange(sr: SerializedRange): Range | null {
   // STRATEGY 3: Fuzzy text search with context
   const fuzzyRange = tryFuzzyMatch(sr);
   if (fuzzyRange) {
-    // console.log('[Deserialize] ✅  Restored via fuzzy match');
+    // console.log('[Deserialize] [OK]  Restored via fuzzy match');
     return fuzzyRange;
   }
 
   // Could not restore
-  console.warn('[Deserialize] ❌ All strategies failed');
+  console.warn('[Deserialize] [ERROR] All strategies failed');
   return null;
 }
 
