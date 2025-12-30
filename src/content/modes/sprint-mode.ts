@@ -9,19 +9,40 @@
  * - In-memory undo/redo
  * - Adaptive theming (Material Design colors)
  * - No account required
+ * 
+ * Architectural Compliance:
+ * - Implements IBasicMode only (Interface Segregation Principle)
+ * - Encapsulates persistence logic (Single Responsibility Principle)
+ * - No restore() method needed (uses event sourcing instead)
+ * 
+ * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData } from './highlight-mode.interface';
+import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
-export class SprintMode extends BaseHighlightMode {
+export class SprintMode extends BaseHighlightMode implements IBasicMode {
   get name(): 'sprint' {
     return 'sprint' as const;
   }
+
+  readonly capabilities: ModeCapabilities = {
+    persistence: 'local',
+    undo: true,
+    sync: false,
+    collections: false,
+    tags: false,
+    export: false,
+    ai: false,
+    search: false,
+    multiSelector: false,
+  };
 
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
@@ -188,8 +209,49 @@ export class SprintMode extends BaseHighlightMode {
     this.logger.info('All highlights cleared (with storage event)', { count });
   }
 
-  async restore(): Promise<void> {
-    // Sprint mode: No restoration (ephemeral)
-    this.logger.debug('Sprint mode: No highlights to restore');
+  /**
+   * Event Handler: Highlight Created
+   * Sprint Mode: Persists to event store with TTL
+   */
+  async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
+    this.logger.debug('Sprint Mode: Persisting highlight to event store');
+
+    // Convert event data to storage format (HighlightDataV2)
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const storageData = await toStorageFormat({
+      ...event.highlight,
+      type: event.highlight.type || 'underscore',
+      createdAt: event.highlight.createdAt || new Date(),
+    } as any);
+
+    await this.storage.saveEvent({
+      type: 'highlight.created',
+      timestamp: Date.now(),
+      eventId: crypto.randomUUID(),
+      data: storageData,
+    });
+  }
+
+  /**
+   * Event Handler: Highlight Removed
+   * Sprint Mode: Persists removal event
+   */
+  async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
+    this.logger.debug('Sprint Mode: Persisting highlight removal');
+
+    await this.storage.saveEvent({
+      type: 'highlight.removed',
+      timestamp: Date.now(),
+      eventId: crypto.randomUUID(),
+      highlightId: event.highlightId,
+    });
+  }
+
+  /**
+   * Restoration Control
+   * Sprint Mode: Restores from event sourcing
+   */
+  shouldRestore(): boolean {
+    return true; // Sprint Mode restores via event sourcing
   }
 }
