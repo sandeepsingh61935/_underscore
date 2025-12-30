@@ -198,7 +198,8 @@ export class IndexedDBStorage extends Dexie {
      * Get all unsynced highlights
      */
     async getUnsyncedHighlights(): Promise<HighlightRecord[]> {
-        return await this.highlights.where('synced').equals(false).toArray();
+        const all = await this.highlights.toArray();
+        return all.filter(h => h.synced === false);
     }
 
     // ========== EVENT METHODS ==========
@@ -221,7 +222,8 @@ export class IndexedDBStorage extends Dexie {
      * Get all unsynced events
      */
     async getUnsyncedEvents(): Promise<EventRecord[]> {
-        return await this.events.where('synced').equals(false).toArray();
+        const all = await this.events.toArray();
+        return all.filter(e => e.synced === false);
     }
 
     /**
@@ -365,14 +367,16 @@ export class IndexedDBStorage extends Dexie {
         tagCount: number;
         unsyncedCount: number;
     }> {
-        const [highlightCount, eventCount, collectionCount, tagCount, unsyncedCount] =
+        const [highlightCount, eventCount, collectionCount, tagCount, allHighlights] =
             await Promise.all([
                 this.highlights.count(),
                 this.events.count(),
                 this.collections.count(),
                 this.tags.count(),
-                this.highlights.where('synced').equals(false).count(),
+                this.highlights.toArray(),
             ]);
+
+        const unsyncedCount = allHighlights.filter(h => h.synced === false).length;
 
         return {
             highlightCount,
