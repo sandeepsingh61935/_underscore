@@ -120,7 +120,7 @@ describe('IndexedDBStorage', () => {
 
             const events = await storage.getUnsyncedEvents();
             expect(events).toHaveLength(1);
-            expect(events[0].eventId).toBe(eventId);
+            expect(events[0]!.eventId).toBe(eventId);
         });
 
         it('should mark events as synced', async () => {
@@ -170,7 +170,7 @@ describe('IndexedDBStorage', () => {
 
             const events = await storage.getEventsByTimeRange(now - 500, now + 500);
             expect(events).toHaveLength(1);
-            expect(events[0].timestamp).toBe(now);
+            expect(events[0]!.timestamp).toBe(now);
         });
     });
 
