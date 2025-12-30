@@ -1,5 +1,3 @@
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-
 /**
  * XPath selector data for precise DOM node targeting
  */
