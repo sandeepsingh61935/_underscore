@@ -2,9 +2,16 @@
  * Highlight Mode Interface
  *
  * Defines contract for all highlight modes (Sprint, Vault, Gen)
+ *
+ * @deprecated This interface will be replaced by IBasicMode in future.
+ * For now, it extends IBasicMode for backward compatibility during Phase 0 refactoring.
+ *
+ * @see mode-interfaces.ts for new segregated interfaces
  */
 
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
+import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 
 export interface HighlightData {
   id: string;
@@ -23,9 +30,16 @@ export interface HighlightData {
   createdAt?: Date;
 }
 
-export interface IHighlightMode {
+/**
+ * @deprecated Use IBasicMode instead (with IPersistentMode, etc. as needed)
+ * This interface is kept for backward compatibility during Phase 0 refactoring.
+ */
+export interface IHighlightMode extends IBasicMode {
   /** Mode identifier */
   readonly name: 'walk' | 'sprint' | 'vault' | 'gen';
+
+  /** Mode capabilities */
+  readonly capabilities: ModeCapabilities;
 
   /** Initialize mode (called on activation) */
   onActivate(): Promise<void>;
@@ -45,9 +59,6 @@ export interface IHighlightMode {
   /** Update highlight properties */
   updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void>;
 
-  /** Restore highlights for current page */
-  restore(url: string): Promise<void>;
-
   /** Get highlight by ID */
   getHighlight(id: string): HighlightData | null;
 
@@ -56,4 +67,15 @@ export interface IHighlightMode {
 
   /** Clear all highlights */
   clearAll(): Promise<void>;
+
+  // New methods from IBasicMode
+  onHighlightCreated(event: HighlightCreatedEvent): Promise<void>;
+  onHighlightRemoved(event: HighlightRemovedEvent): Promise<void>;
+  shouldRestore(): boolean;
+
+  /**
+   * @deprecated Only IPersistentMode modes need this
+   * For basic modes (Walk, Sprint), check shouldRestore() instead
+   */
+  restore?(url: string): Promise<void>;
 }
