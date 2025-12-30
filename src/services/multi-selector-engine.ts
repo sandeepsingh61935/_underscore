@@ -22,11 +22,34 @@ export interface XPathSelector {
 }
 
 /**
+ * Position selector data using absolute character offsets
+ */
+export interface PositionSelector {
+    /** Absolute character offset from document start */
+    startOffset: number;
+
+    /** Absolute character offset from document end */
+    endOffset: number;
+
+    /** Highlighted text content */
+    text: string;
+
+    /** Text before the highlight (for verification) */
+    textBefore: string;
+
+    /** Text after the highlight (for verification) */
+    textAfter: string;
+}
+
+/**
  * Multi-selector container with all restoration strategies
  */
 export interface MultiSelector {
     /** Primary XPath selector (fast, brittle) */
     xpath: XPathSelector;
+
+    /** Secondary Position selector (medium reliability) */
+    position: PositionSelector;
 
     /** Content hash for verification */
     contentHash: string;
@@ -43,8 +66,8 @@ export interface MultiSelector {
  * 2. Position (medium speed, brittle to ads/dynamic content)
  * 3. Fuzzy text matching (slow, robust to content changes)
  * 
- * Phase 1 (Task 1.2): XPath selector only
- * Future: Position and fuzzy matching
+ * Phase 2 (Task 1.3): XPath + Position selectors
+ * Future: Fuzzy matching (Task 1.4)
  */
 export class MultiSelectorEngine {
     private logger: Console;
@@ -82,6 +105,67 @@ export class MultiSelectorEngine {
             textBefore,
             textAfter,
         };
+    }
+
+    /**
+     * Create a Position selector from a DOM Range
+     * 
+     * Uses absolute character offsets from document start.
+     * More resilient than XPath to minor DOM changes.
+     * 
+     * @param range - The DOM Range to create selector for
+     * @returns Position selector data
+     */
+    createPositionSelector(range: Range): PositionSelector {
+        const text = range.toString();
+
+        // Calculate absolute offset from document start
+        const startOffset = this.getAbsoluteOffset(range.startContainer, range.startOffset);
+        const endOffset = startOffset + text.length;
+
+        // Get context
+        const bodyText = document.body.textContent || '';
+        const textBefore = bodyText.substring(Math.max(0, startOffset - 30), startOffset);
+        const textAfter = bodyText.substring(endOffset, endOffset + 30);
+
+        return {
+            startOffset,
+            endOffset,
+            text,
+            textBefore,
+            textAfter,
+        };
+    }
+
+    /**
+     * Calculate absolute character offset from document start
+     * 
+     * @param node - The node containing the position
+     * @param offset - Offset within the node
+     * @returns Absolute character offset
+     */
+    private getAbsoluteOffset(node: Node, offset: number): number {
+        let absoluteOffset = 0;
+
+        // Walk the tree and count characters
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
+
+        let currentNode: Node | null;
+        while ((currentNode = walker.nextNode())) {
+            if (currentNode === node) {
+                // Found our node, add the offset within it
+                return absoluteOffset + offset;
+            }
+
+            // Add the length of this text node
+            absoluteOffset += (currentNode.textContent || '').length;
+        }
+
+        return absoluteOffset;
     }
 
     /**
@@ -264,19 +348,133 @@ export class MultiSelectorEngine {
     }
 
     /**
-     * Create a multi-selector from a Range (Phase 1: XPath only)
+     * Try to restore a highlight using Position selector
+     * 
+     * @param selector - Position selector data
+     * @returns Restored Range, or null if restoration failed
+     */
+    async tryPosition(selector: PositionSelector): Promise<Range | null> {
+        try {
+            const bodyText = document.body.textContent || '';
+
+            // Get the text at the expected position
+            const extractedText = bodyText.substring(
+                selector.startOffset,
+                selector.endOffset
+            );
+
+            // Verify text matches
+            if (extractedText !== selector.text) {
+                this.logger.warn('Position selector failed: text mismatch', {
+                    expected: selector.text,
+                    actual: extractedText,
+                });
+                return null;
+            }
+
+            // Verify context
+            const actualTextBefore = bodyText.substring(
+                Math.max(0, selector.startOffset - 30),
+                selector.startOffset
+            );
+            const actualTextAfter = bodyText.substring(
+                selector.endOffset,
+                selector.endOffset + 30
+            );
+
+            if (actualTextBefore !== selector.textBefore || actualTextAfter !== selector.textAfter) {
+                this.logger.warn('Position selector context mismatch');
+                // Continue if text matches even with context differences
+            }
+
+            // Find the DOM nodes at this position
+            const range = this.createRangeFromOffset(selector.startOffset, selector.endOffset);
+
+            if (!range) {
+                this.logger.warn('Position selector failed: could not create range');
+                return null;
+            }
+
+            this.logger.info('Position restoration successful');
+            return range;
+
+        } catch (error) {
+            this.logger.error('Position restoration error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Create a DOM Range from absolute character offsets
+     * 
+     * @param startOffset - Absolute start offset
+     * @param endOffset - Absolute end offset
+     * @returns DOM Range, or null if failed
+     */
+    private createRangeFromOffset(startOffset: number, endOffset: number): Range | null {
+        let currentOffset = 0;
+        let startNode: Node | null = null;
+        let startNodeOffset = 0;
+        let endNode: Node | null = null;
+        let endNodeOffset = 0;
+
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
+
+        let currentNode: Node | null;
+        while ((currentNode = walker.nextNode())) {
+            const nodeLength = (currentNode.textContent || '').length;
+
+            // Check if start position is in this node
+            if (!startNode && currentOffset + nodeLength >= startOffset) {
+                startNode = currentNode;
+                startNodeOffset = startOffset - currentOffset;
+            }
+
+            // Check if end position is in this node
+            if (!endNode && currentOffset + nodeLength >= endOffset) {
+                endNode = currentNode;
+                endNodeOffset = endOffset - currentOffset;
+                break; // Found both, can stop
+            }
+
+            currentOffset += nodeLength;
+        }
+
+        if (!startNode || !endNode) {
+            return null;
+        }
+
+        try {
+            const range = document.createRange();
+            range.setStart(startNode, startNodeOffset);
+            range.setEnd(endNode, endNodeOffset);
+            return range;
+        } catch (error) {
+            this.logger.error('Failed to create range:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Create a multi-selector from a Range (Phase 2: XPath + Position)
      * 
      * @param range - DOM Range to create selectors for
      * @returns Multi-selector data
      */
     createSelectors(range: Range): MultiSelector {
         const xpath = this.createXPathSelector(range);
+        const position = this.createPositionSelector(range);
 
-        // Simple content hash (Phase 1)
+        // Simple content hash
         const contentHash = this.simpleHash(xpath.text);
 
         return {
             xpath,
+            position,
             contentHash,
             createdAt: Date.now(),
         };
@@ -299,20 +497,27 @@ export class MultiSelectorEngine {
     }
 
     /**
-     * Restore a highlight using the multi-selector (Phase 1: XPath only)
+     * Restore a highlight using the multi-selector (Phase 2: XPath + Position)
      * 
      * @param selector - Multi-selector data
      * @returns Restored Range, or null if all strategies failed
      */
     async restore(selector: MultiSelector): Promise<Range | null> {
-        // Phase 1: Try XPath only
+        // Tier 1: Try XPath (fast)
         const xpathRange = await this.tryXPath(selector.xpath);
 
         if (xpathRange) {
             return xpathRange;
         }
 
-        // Phase 2 & 3 (position, fuzzy) will be added in Tasks 1.3, 1.4
+        // Tier 2: Try Position (medium)
+        const positionRange = await this.tryPosition(selector.position);
+
+        if (positionRange) {
+            return positionRange;
+        }
+
+        // Tier 3: Fuzzy matching will be added in Task 1.4
         this.logger.warn('All restoration strategies failed');
         return null;
     }
