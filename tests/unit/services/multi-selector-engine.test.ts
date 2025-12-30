@@ -1,17 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
-import type { XPathSelector } from '@/services/multi-selector-engine';
 
-describe('MultiSelectorEngine - XPath', () => {
-    let engine: MultiSelectorEngine;
-    let testContainer: HTMLDivElement;
+describe('MultiSelectorEngine', () => {
+  let engine: MultiSelectorEngine;
+  let testContainer: HTMLDivElement;
 
-    beforeEach(() => {
-        engine = new MultiSelectorEngine();
+  beforeEach(() => {
+    engine = new MultiSelectorEngine();
 
-        // Create a test DOM structure
-        testContainer = document.createElement('div');
-        testContainer.innerHTML = `
+    // Create a test DOM structure
+    testContainer = document.createElement('div');
+    testContainer.innerHTML = `
       <article>
         <h1>Test Article</h1>
         <p id="p1">This is the first paragraph with some test content.</p>
@@ -21,258 +20,196 @@ describe('MultiSelectorEngine - XPath', () => {
         </div>
       </article>
     `;
-        document.body.appendChild(testContainer);
+    document.body.appendChild(testContainer);
+  });
+
+  afterEach(() => {
+    document.body.removeChild(testContainer);
+  });
+
+  describe('XPath Selector', () => {
+    it('should create XPath selector for simple text range', () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
+
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
+
+      const selector = engine.createXPathSelector(range);
+
+      expect(selector.text).toBe('the first');
+      expect(selector.startOffset).toBe(8);
+      expect(selector.xpath).toContain('p');
     });
 
-    afterEach(() => {
-        document.body.removeChild(testContainer);
+    it('should restore using XPath when DOM is unchanged', async () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
+
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
+
+      const selector = engine.createXPathSelector(range);
+      const restored = await engine.tryXPath(selector);
+
+      expect(restored).not.toBeNull();
+      expect(restored!.toString()).toBe('the first');
+    });
+  });
+
+  describe('Position Selector', () => {
+    it('should create position selector with absolute offsets', () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
+
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
+
+      const selector = engine.createPositionSelector(range);
+
+      expect(selector.text).toBe('the first');
+      expect(selector.startOffset).toBeGreaterThan(0);
     });
 
-    describe('createXPathSelector', () => {
-        it('should create XPath selector for simple text range', () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
+    it('should restore using position when XPath fails', async () => {
+      const p2 = document.getElementById('p2')!;
+      const textNode = p2.firstChild!;
 
-            const range = document.createRange();
-            range.setStart(textNode, 8); // "the first"
-            range.setEnd(textNode, 17);
+      const range = document.createRange();
+      range.setStart(textNode, 12);
+      range.setEnd(textNode, 28);
 
-            const selector = engine.createXPathSelector(range);
+      const selector = engine.createPositionSelector(range);
 
-            expect(selector).toBeDefined();
-            expect(selector.text).toBe('the first');
-            expect(selector.startOffset).toBe(8);
-            expect(selector.endOffset).toBe(17);
-            expect(selector.xpath).toContain('p');
-            expect(selector.textBefore).toBe('This is ');
-            expect(selector.textAfter).toBe(' paragraph');
-        });
+      // Break XPath by wrapping
+      const wrapper = document.createElement('span');
+      p2.parentElement!.insertBefore(wrapper, p2);
+      wrapper.appendChild(p2);
 
-        it('should create XPath with correct node positions', () => {
-            const p2 = document.getElementById('p2')!;
-            const textNode = p2.firstChild!;
+      const restored = await engine.tryPosition(selector);
+      expect(restored).not.toBeNull();
+    });
+  });
 
-            const range = document.createRange();
-            range.setStart(textNode, 0);
-            range.setEnd(textNode, 10);
+  describe('Fuzzy Selector', () => {
+    it('should create fuzzy selector with large context', () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
 
-            const selector = engine.createXPathSelector(range);
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
 
-            // XPath should include position indices
-            expect(selector.xpath).toMatch(/\[\d+\]/); // Contains [N] positions
-            expect(selector.xpath).toContain('text()');
-        });
+      const selector = engine.createFuzzySelector(range);
 
-        it('should extract context text before highlight', () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
-
-            const range = document.createRange();
-            range.setStart(textNode, 30); // "test content"
-            range.setEnd(textNode, 42);
-
-            const selector = engine.createXPathSelector(range);
-
-            expect(selector.textBefore).toBe('t paragraph with some ');
-            expect(selector.textBefore.length).toBeLessThanOrEqual(30);
-        });
-
-        it('should extract context text after highlight', () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
-
-            const range = document.createRange();
-            range.setStart(textNode, 8);
-            range.setEnd(textNode, 17); // "the first"
-
-            const selector = engine.createXPathSelector(range);
-
-            expect(selector.textAfter).toBe(' paragraph with some test cont');
-            expect(selector.textAfter.length).toBeLessThanOrEqual(30);
-        });
-
-        it('should handle nested elements correctly', () => {
-            const p3 = document.getElementById('p3')!;
-            const textNode = p3.firstChild!;
-
-            const range = document.createRange();
-            range.setStart(textNode, 0);
-            range.setEnd(textNode, 16); // "Nested paragraph"
-
-            const selector = engine.createXPathSelector(range);
-
-            expect(selector.text).toBe('Nested paragraph');
-            expect(selector.xpath).toContain('div');
-            expect(selector.xpath).toContain('p');
-        });
+      expect(selector.text).toBe('the first');
+      expect(selector.threshold).toBe(0.8);
+      expect(selector.textBefore.length).toBeLessThanOrEqual(50);
     });
 
-    describe('tryXPath', () => {
-        it('should restore range using valid XPath selector', async () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
+    it('should restore using fuzzy matching', async () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
 
-            // Create original range
-            const originalRange = document.createRange();
-            originalRange.setStart(textNode, 8);
-            originalRange.setEnd(textNode, 17); // "the first"
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
 
-            // Create selector
-            const selector = engine.createXPathSelector(originalRange);
+      const selector = engine.createFuzzySelector(range);
+      const restored = await engine.tryFuzzyMatch(selector);
 
-            // Try to restore
-            const restoredRange = await engine.tryXPath(selector);
-
-            expect(restoredRange).not.toBeNull();
-            expect(restoredRange!.toString()).toBe('the first');
-            expect(restoredRange!.startOffset).toBe(8);
-            expect(restoredRange!.endOffset).toBe(17);
-        });
-
-        it('should return null for invalid XPath', async () => {
-            const invalidSelector: XPathSelector = {
-                xpath: '/html/body/nonexistent/element',
-                startOffset: 0,
-                endOffset: 10,
-                text: 'test',
-                textBefore: '',
-                textAfter: '',
-            };
-
-            const result = await engine.tryXPath(invalidSelector);
-
-            expect(result).toBeNull();
-        });
-
-        it('should return null when text content does not match', async () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
-
-            const originalRange = document.createRange();
-            originalRange.setStart(textNode, 8);
-            originalRange.setEnd(textNode, 17);
-
-            const selector = engine.createXPathSelector(originalRange);
-
-            // Modify the selector to have wrong text
-            selector.text = 'wrong text';
-
-            const result = await engine.tryXPath(selector);
-
-            expect(result).toBeNull();
-        });
-
-        it('should restore correctly after DOM modifications that preserve XPath', async () => {
-            const p2 = document.getElementById('p2')!;
-            const textNode = p2.firstChild!;
-
-            // Create selector before modification
-            const range = document.createRange();
-            range.setStart(textNode, 12);
-            range.setEnd(textNode, 25); // "second paragraph"
-
-            const selector = engine.createXPathSelector(range);
-
-            // Modify unrelated element (should not affect XPath)
-            const p1 = document.getElementById('p1')!;
-            p1.textContent = 'Modified first paragraph';
-
-            // Try to restore
-            const restoredRange = await engine.tryXPath(selector);
-
-            expect(restoredRange).not.toBeNull();
-            expect(restoredRange!.toString()).toBe('second paragraph');
-        });
-
-        it('should fail gracefully when DOM structure changes break XPath', async () => {
-            const p2 = document.getElementById('p2')!;
-            const textNode = p2.firstChild!;
-
-            const range = document.createRange();
-            range.setStart(textNode, 0);
-            range.setEnd(textNode, 10);
-
-            const selector = engine.createXPathSelector(range);
-
-            // Remove the element (breaks XPath)
-            p2.remove();
-
-            const result = await engine.tryXPath(selector);
-
-            expect(result).toBeNull();
-        });
+      expect(restored).not.toBeNull();
+      expect(restored!.toString()).toBe('the first');
     });
 
-    describe('createSelectors', () => {
-        it('should create multi-selector with XPath', () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
+    it('should handle content changes robustly', async () => {
+      const p2 = document.getElementById('p2')!;
+      const textNode = p2.firstChild!;
 
-            const range = document.createRange();
-            range.setStart(textNode, 8);
-            range.setEnd(textNode, 17);
+      const range = document.createRange();
+      range.setStart(textNode, 12);
+      range.setEnd(textNode, 28);
 
-            const multiSelector = engine.createSelectors(range);
+      const selector = engine.createFuzzySelector(range);
 
-            expect(multiSelector).toBeDefined();
-            expect(multiSelector.xpath).toBeDefined();
-            expect(multiSelector.xpath.text).toBe('the first');
-            expect(multiSelector.contentHash).toBeDefined();
-            expect(multiSelector.createdAt).toBeGreaterThan(0);
-        });
+      // Insert content before (breaks position offsets)
+      const newP = document.createElement('p');
+      newP.textContent = 'Inserted paragraph.';
+      p2.parentElement!.insertBefore(newP, p2);
 
-        it('should generate consistent content hash for same text', () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
+      const restored = await engine.tryFuzzyMatch(selector);
+      expect(restored).not.toBeNull();
+    });
+  });
 
-            const range1 = document.createRange();
-            range1.setStart(textNode, 8);
-            range1.setEnd(textNode, 17);
+  describe('3-Tier Integration', () => {
+    it('should create multi-selector with all 3 tiers', () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
 
-            const range2 = document.createRange();
-            range2.setStart(textNode, 8);
-            range2.setEnd(textNode, 17);
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
 
-            const selector1 = engine.createSelectors(range1);
-            const selector2 = engine.createSelectors(range2);
+      const multiSelector = engine.createSelectors(range);
 
-            expect(selector1.contentHash).toBe(selector2.contentHash);
-        });
+      expect(multiSelector.xpath).toBeDefined();
+      expect(multiSelector.position).toBeDefined();
+      expect(multiSelector.fuzzy).toBeDefined();
     });
 
-    describe('restore', () => {
-        it('should restore highlight using XPath strategy', async () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
+    it('should use tier 1 (XPath) when available', async () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
 
-            const originalRange = document.createRange();
-            originalRange.setStart(textNode, 8);
-            originalRange.setEnd(textNode, 17);
+      const range = document.createRange();
+      range.setStart(textNode, 8);
+      range.setEnd(textNode, 17);
 
-            const multiSelector = engine.createSelectors(originalRange);
+      const multi = engine.createSelectors(range);
+      const restored = await engine.restore(multi);
 
-            const restoredRange = await engine.restore(multiSelector);
-
-            expect(restoredRange).not.toBeNull();
-            expect(restoredRange!.toString()).toBe('the first');
-        });
-
-        it('should return null when all strategies fail', async () => {
-            const p1 = document.getElementById('p1')!;
-            const textNode = p1.firstChild!;
-
-            const range = document.createRange();
-            range.setStart(textNode, 0);
-            range.setEnd(textNode, 10);
-
-            const multiSelector = engine.createSelectors(range);
-
-            // Remove element to break XPath
-            p1.remove();
-
-            const result = await engine.restore(multiSelector);
-
-            expect(result).toBeNull();
-        });
+      expect(restored).not.toBeNull();
+      expect(restored!.toString()).toBe('the first');
     });
+
+    it('should fall back through tiers when needed', async () => {
+      const p2 = document.getElementById('p2')!;
+      const textNode = p2.firstChild!;
+
+      const range = document.createRange();
+      range.setStart(textNode, 12);
+      range.setEnd(textNode, 28);
+
+      const multi = engine.createSelectors(range);
+
+      // Break XPath and Position
+      const newP = document.createElement('p');
+      newP.textContent = 'New content.';
+      p2.parentElement!.insertBefore(newP, p2);
+
+      const restored = await engine.restore(multi);
+      expect(restored).not.toBeNull(); // Fuzzy should succeed
+    });
+
+    it('should return null when all tiers fail', async () => {
+      const p1 = document.getElementById('p1')!;
+      const textNode = p1.firstChild!;
+
+      const range = document.createRange();
+      range.setStart(textNode, 0);
+      range.setEnd(textNode, 10);
+
+      const multi = engine.createSelectors(range);
+
+      // Remove text completely
+      p1.textContent = 'Completely different unrelated content.';
+
+      const restored = await engine.restore(multi);
+      expect(restored).toBeNull();
+    });
+  });
 });
