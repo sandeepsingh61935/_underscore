@@ -3,6 +3,7 @@ import { VaultModeService, getVaultModeService } from '@/services/vault-mode-ser
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { createMockHighlight } from '../helpers/mock-data';
 
 /**
  * Integration Tests for Vault Mode
@@ -56,18 +57,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setEnd(textNode, 17);
 
             // 2. Create highlight data
-            const highlight: HighlightDataV2 = {
-                id: 'integration-test-1',
-                text: 'the first',
-                ranges: [{
-                    startContainerPath: '/html/body/div[1]/article[1]/p[1]/text()[1]',
-                    endContainerPath: '/html/body/div[1]/article[1]/p[1]/text()[1]',
-                    startOffset: 8,
-                    endOffset: 17,
-                }],
-                color: '#ffeb3b',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'integration-test-1', text: 'the first' });
 
             // 3. Save via service
             await service.saveHighlight(highlight, range);
@@ -102,13 +92,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(textNode, 12); // "second paragraph"
             range.setEnd(textNode, 28);
 
-            const highlight: HighlightDataV2 = {
-                id: 'position-test-1',
-                text: 'second paragraph',
-                ranges: [],
-                color: '#4caf50',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'position-test-1', text: 'second paragraph' });
 
             await service.saveHighlight(highlight, range);
 
@@ -135,13 +119,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(textNode, 0); // "Nested paragraph"
             range.setEnd(textNode, 16);
 
-            const highlight: HighlightDataV2 = {
-                id: 'fuzzy-test-1',
-                text: 'Nested paragraph',
-                ranges: [],
-                color: '#2196f3',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'fuzzy-test-1', text: 'Nested paragraph' });
 
             await service.saveHighlight(highlight, range);
 
@@ -171,6 +149,10 @@ describe('VaultModeService - Integration Tests', () => {
             highlights.push({
                 data: {
                     id: 'multi-1',
+                    version: 2,
+                    contentHash: "a".repeat(64),
+                    colorRole: "yellow" as const,
+                    type: "underscore" as const,
                     text: 'the first',
                     ranges: [],
                     color: '#ffeb3b',
@@ -187,6 +169,10 @@ describe('VaultModeService - Integration Tests', () => {
             highlights.push({
                 data: {
                     id: 'multi-2',
+                    version: 2,
+                    contentHash: "b".repeat(64),
+                    colorRole: "green" as const,
+                    type: "underscore" as const,
                     text: 'second paragraph',
                     ranges: [],
                     color: '#4caf50',
@@ -207,6 +193,10 @@ describe('VaultModeService - Integration Tests', () => {
                     ranges: [],
                     color: '#2196f3',
                     createdAt: new Date(),
+                    version: 2,
+                    contentHash: "c".repeat(64),
+                    colorRole: "blue" as const,
+                    type: "underscore" as const,
                 },
                 range: range3,
             });
@@ -232,13 +222,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-            const highlight: HighlightDataV2 = {
-                id: 'event-test-1',
-                text: 'This is th',
-                ranges: [],
-                color: '#ffeb3b',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'event-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 
@@ -266,13 +250,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-            const highlight: HighlightDataV2 = {
-                id: 'sync-test-1',
-                text: 'This is th',
-                ranges: [],
-                color: '#ffeb3b',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 
@@ -297,13 +275,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-            const highlight: HighlightDataV2 = {
-                id: 'stats-test-1',
-                text: 'This is th',
-                ranges: [],
-                color: '#ffeb3b',
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'stats-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 

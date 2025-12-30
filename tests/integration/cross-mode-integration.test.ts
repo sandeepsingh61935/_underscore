@@ -3,6 +3,7 @@ import { VaultModeService } from '@/services/vault-mode-service';
 import { IndexedDBStorage } from '@/services/indexeddb-storage';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { createMockHighlight } from "../helpers/mock-data";
 
 /**
  * Cross-Mode Integration Tests
@@ -228,23 +229,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 20);
 
-            const highlight: HighlightDataV2 = {
-                version: 2,
-                id: 'persist-test-1',
-                text: 'This paragraph tests',
-                contentHash: 'd'.repeat(64),
-                colorRole: 'pink',
-                type: 'underscore',
-                ranges: [{
-                    xpath: '/p[1]',
-                    startOffset: 0,
-                    endOffset: 20,
-                    text: 'This paragraph tests',
-                    textBefore: '',
-                    textAfter: ' Vault',
-                }],
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'persist-test-1', text: 'This paragraph tests' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -287,23 +272,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-            const highlight: HighlightDataV2 = {
-                version: 2,
-                id: 'sync-test-1',
-                text: 'This parag',
-                contentHash: 'e'.repeat(64),
-                colorRole: 'teal',
-                type: 'underscore',
-                ranges: [{
-                    xpath: '/p[1]',
-                    startOffset: 0,
-                    endOffset: 10,
-                    text: 'This parag',
-                    textBefore: '',
-                    textAfter: 'raph',
-                }],
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This parag' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -334,23 +303,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-            const highlight: HighlightDataV2 = {
-                version: 2,
-                id: consistentId,
-                text: 'This parag',
-                contentHash: 'f'.repeat(64),
-                colorRole: 'orange',
-                type: 'underscore',
-                ranges: [{
-                    xpath: '/p[1]',
-                    startOffset: 0,
-                    endOffset: 10,
-                    text: 'This parag',
-                    textBefore: '',
-                    textAfter: 'raph',
-                }],
-                createdAt: new Date(),
-            };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'onsistentI', text: 'This parag' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -373,23 +326,7 @@ describe('Cross-Mode Integration Tests', () => {
                 range.setStart(p.firstChild!, i);
                 range.setEnd(p.firstChild!, i + 5);
 
-                const highlight: HighlightDataV2 = {
-                    version: 2,
-                    id: `perf-test-${i}`,
-                    text: 'test',
-                    contentHash: String(i).repeat(64),
-                    colorRole: 'yellow',
-                    type: 'underscore',
-                    ranges: [{
-                        xpath: '/p[1]',
-                        startOffset: i,
-                        endOffset: i + 5,
-                        text: 'test',
-                        textBefore: '',
-                        textAfter: '',
-                    }],
-                    createdAt: new Date(),
-                };
+      const highlight: HighlightDataV2 = createMockHighlight({ id: 'perf-test-${i}', text: 'test' });
 
                 await vaultService.saveHighlight(highlight, range);
             }
