@@ -16,7 +16,7 @@ export class ModeManager {
   constructor(
     private readonly eventBus: EventBus,
     private readonly logger: ILogger
-  ) {}
+  ) { }
 
   registerMode(mode: IHighlightMode): void {
     this.modes.set(mode.name, mode);
@@ -69,7 +69,11 @@ export class ModeManager {
   }
 
   async restore(url: string): Promise<void> {
-    return await this.getCurrentMode().restore(url);
+    // Only call restore if mode implements it (IPersistentMode)
+    const mode = this.getCurrentMode();
+    if (mode.restore) {
+      return await mode.restore(url);
+    }
   }
 
   getHighlight(id: string): HighlightData | null {
