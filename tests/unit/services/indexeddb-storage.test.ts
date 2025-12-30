@@ -32,10 +32,9 @@ describe('IndexedDBStorage', () => {
                 startOffset: 0,
                 endOffset: 10,
                 text: 'Test highlight text',
+                textBefore: 'Before ',
+                textAfter: ' after',
                 xpath: '//div[1]/p[1]',
-                startContainerPath: '//div[1]/p[1]/text()',
-                endContainerPath: '//div[1]/p[1]/text()',
-                commonAncestorPath: '//div[1]/p[1]',
             }],
         };
 
@@ -90,7 +89,7 @@ describe('IndexedDBStorage', () => {
 
             const results = await storage.searchHighlights('test highlight');
             expect(results).toHaveLength(1);
-            expect(results[0].id).toBe(mockHighlight.id);
+            expect(results[0]!.id).toBe(mockHighlight.id);
         });
 
         it('should get unsynced highlights', async () => {
@@ -104,14 +103,14 @@ describe('IndexedDBStorage', () => {
 
             const unsynced = await storage.getUnsyncedHighlights();
             expect(unsynced).toHaveLength(1);
-            expect(unsynced[0].id).toBe('hl_test_456');
+            expect(unsynced[0]!.id).toBe('hl_test_456');
         });
     });
 
     describe('Event Operations', () => {
         it('should save an event', async () => {
             const eventId = await storage.saveEvent({
-                type: 'HIGHLIGHT_CREATED',
+                type: 'highlight.created',
                 timestamp: Date.now(),
                 data: { highlightId: 'hl_123' },
                 synced: false,
@@ -234,8 +233,8 @@ describe('IndexedDBStorage', () => {
 
             const tags = await storage.getAllTags();
             expect(tags).toHaveLength(1);
-            expect(tags[0].name).toBe('Important');
-            expect(tags[0].color).toBe('#FF0000');
+            expect(tags[0]!.name).toBe('Important');
+            expect(tags[0]!.color).toBe('#FF0000');
         });
 
         it('should add tag to highlight', async () => {
@@ -334,7 +333,7 @@ describe('IndexedDBStorage', () => {
 
             const tagged = await storage.getHighlightsByTag(tagId);
             expect(tagged).toHaveLength(1);
-            expect(tagged[0].id).toBe('hl_1');
+            expect(tagged[0]!.id).toBe('hl_1');
         });
     });
 
