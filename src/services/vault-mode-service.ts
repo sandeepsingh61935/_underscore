@@ -233,7 +233,7 @@ export class VaultModeService {
     /**
      * Get statistics about Vault Mode storage
      */
-    async getStats() {
+    async getStats(): Promise<{ highlightCount: number; eventCount: number; collectionCount: number; tagCount: number; unsyncedCount: number; }> {
         return await this.storage.getStats();
     }
 

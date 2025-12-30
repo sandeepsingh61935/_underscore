@@ -66,3 +66,8 @@ export default defineConfig({
     },
   },
 });
+
+// Add performance global for tests
+declare global {
+  const performance: Performance;
+}

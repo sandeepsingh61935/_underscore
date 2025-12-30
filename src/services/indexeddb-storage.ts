@@ -31,7 +31,7 @@ export interface HighlightRecord {
     synced: boolean;
 
     /** Optional metadata (e.g., multi-selectors, custom data) */
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 /**
@@ -136,7 +136,7 @@ export class IndexedDBStorage extends Dexie {
     async saveHighlight(
         highlight: HighlightDataV2,
         collectionId: string | null = null,
-        metadata?: Record<string, any>
+        metadata?: Record<string, unknown>
     ): Promise<void> {
         await this.highlights.put({
             id: highlight.id,

@@ -57,7 +57,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setEnd(textNode, 17);
 
             // 2. Create highlight data
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'integration-test-1', text: 'the first' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'integration-test-1', text: 'the first' });
 
             // 3. Save via service
             await service.saveHighlight(highlight, range);
@@ -68,7 +68,8 @@ describe('VaultModeService - Integration Tests', () => {
             expect(stored?.metadata).toBeDefined();
             expect(stored?.metadata?.['selectors']).toBeDefined();
 
-            const selectors = stored!.metadata!['selectors'];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const selectors = stored!.metadata!['selectors'] as any;
             expect(selectors.xpath).toBeDefined();
             expect(selectors.position).toBeDefined();
             expect(selectors.fuzzy).toBeDefined();
@@ -92,7 +93,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(textNode, 12); // "second paragraph"
             range.setEnd(textNode, 28);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'position-test-1', text: 'second paragraph' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'position-test-1', text: 'second paragraph' });
 
             await service.saveHighlight(highlight, range);
 
@@ -119,7 +120,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(textNode, 0); // "Nested paragraph"
             range.setEnd(textNode, 16);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'fuzzy-test-1', text: 'Nested paragraph' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'fuzzy-test-1', text: 'Nested paragraph' });
 
             await service.saveHighlight(highlight, range);
 
@@ -222,7 +223,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'event-test-1', text: 'This is th' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'event-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 
@@ -250,7 +251,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This is th' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 
@@ -275,7 +276,7 @@ describe('VaultModeService - Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'stats-test-1', text: 'This is th' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'stats-test-1', text: 'This is th' });
 
             await service.saveHighlight(highlight, range);
 
