@@ -29,6 +29,9 @@ export interface HighlightRecord {
 
     /** Sync status (false = pending sync) */
     synced: boolean;
+
+    /** Optional metadata (e.g., multi-selectors, custom data) */
+    metadata?: Record<string, any>;
 }
 
 /**
@@ -130,7 +133,11 @@ export class IndexedDBStorage extends Dexie {
     /**
      * Save a highlight to IndexedDB
      */
-    async saveHighlight(highlight: HighlightDataV2, collectionId: string | null = null): Promise<void> {
+    async saveHighlight(
+        highlight: HighlightDataV2,
+        collectionId: string | null = null,
+        metadata?: Record<string, any>
+    ): Promise<void> {
         await this.highlights.put({
             id: highlight.id,
             url: window.location.href,
@@ -140,6 +147,7 @@ export class IndexedDBStorage extends Dexie {
             createdAt: Date.now(),
             updatedAt: Date.now(),
             synced: false,
+            metadata,
         });
     }
 
