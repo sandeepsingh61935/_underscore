@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Underscore Highlighter</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 16px;
+      font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
+
+    .mode-badge {
+      background: #4caf50;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .stats {
+      margin: 16px 0;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #2196F3;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(20px);
+    }
+
+    .mode-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+  </style>
+  <script type="module" crossorigin src="/chunks/popup-BIQhJgLC.js"></script>
+  <link rel="modulepreload" crossorigin href="/chunks/_virtual_wxt-plugins-CDnz5Vh6.js">
+</head>
+
+<body>
+  <div id="app">
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Underscore</h1>
+      <div class="mode-control">
+        <span id="mode-label">Walk</span>
+        <label class="switch">
+          <input type="checkbox" id="mode-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <section class="stats">
+        <div class="stat">
+          <span class="stat-value" id="highlight-count">0</span>
+          <span class="stat-label">Highlights</span>
+        </div>
+      </section>
+
+      <section class="quick-actions">
+        <button id="clear-all" class="btn btn-secondary">Clear All</button>
+      </section>
+
+      <section class="info">
+        <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
+        <ul style="font-size: 12px">
+          <li>Double-tap to highlight</li>
+          <li>Ctrl+U to highlight selection</li>
+          <li>Click to remove</li>
+          <li>Ctrl+Shift+U to clear all</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer style="margin-top: 16px; font-size: 11px; color: #999">
+      <span>v0.1.0</span>
+    </footer>
+  </div>
+
+</body>
+
+</html>

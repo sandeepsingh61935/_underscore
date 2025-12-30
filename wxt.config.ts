@@ -1,37 +1,22 @@
 import { defineConfig } from 'wxt';
 
-// See https://wxt.dev/api/config.html
 export default defineConfig({
-  // Extension metadata
+  srcDir: 'src',
   manifest: {
     name: 'Underscore Highlighter',
     description: 'Intelligent web highlighting with Sprint, Vault, and Gen modes',
-    version: '0.1.0',
     permissions: ['activeTab', 'storage'],
   },
-
-  // Development
-  dev: {
-    server: {
-      port: 3000,
+  vite: () => ({
+    build: {
+      charset: 'utf8',
+      minify: 'terser',
+      terserOptions: {
+        format: {
+          ascii_only: true, // Force ASCII-only output
+          comments: false,  // Remove all comments
+        },
+      },
     },
-  },
-
-  // Build output
-  outDir: 'dist',
-
-  // Source directory
-  srcDir: 'src',
-
-  // Module resolution
-  alias: {
-    '@': './src',
-    '@/content': './src/content',
-    '@/background': './src/background',
-    '@/popup': './src/popup',
-    '@/shared': './src/shared',
-    '@/utils': './src/utils',
-    '@/components': './src/components',
-    '@/types': './src/types',
-  },
+  }),
 });
