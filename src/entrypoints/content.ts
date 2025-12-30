@@ -13,10 +13,7 @@ import {
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
-import {
-  toStorageFormat,
-  type HighlightDataV2WithRuntime,
-} from '@/content/highlight-type-bridge';
+import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
@@ -96,63 +93,36 @@ export default defineContentScript({
       const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
       clickDetector.init();
 
-      // ===== EVENT SOURCING: Wire Event → Storage Bridge =====
-      // Observer Pattern: Storage listens to all domain events
+      // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
+      // Observer Pattern: Modes listen to domain events and decide how to handle
 
-      // ✅ HIGHLIGHT_CREATED → Storage (Event Sourcing)
+      // ✅ HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
+      // Mode decides if/how to persist (Walk: NO-OP, Sprint: Event Sourcing)
       eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
         try {
-          // CHECK MODE: Only persist if NOT in Walk Mode
-          if (RepositoryFactory.getMode() === 'walk') {
-            logger.debug('Skipping persistence for Walk Mode', { id: event.highlight.id });
-            return;
-          }
-
-          const storageData = await toStorageFormat({
-            ...event.highlight,
-            type: event.highlight.type || 'underscore',
-            createdAt: event.highlight.createdAt || new Date(),
-          });
-
-          await storage.saveEvent({
-            type: 'highlight.created',
-            timestamp: Date.now(),
-            eventId: crypto.randomUUID(),
-            data: storageData,
-          });
-          logger.info('Event persisted: HIGHLIGHT_CREATED', { id: event.highlight.id });
+          await modeManager.getCurrentMode().onHighlightCreated(event);
         } catch (error) {
-          logger.error('Failed to persist HIGHLIGHT_CREATED event', error as Error);
+          logger.error('Error in mode highlight created handler:', error as Error);
         }
       });
 
-      // ✅ HIGHLIGHT_REMOVED → Storage (Event Sourcing)
+      // ✅ HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
+      // Mode decides if/how to persist removal (Walk: NO-OP, Sprint: Event Sourcing)
       eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
         try {
-          // CHECK MODE: Only persist if NOT in Walk Mode
-          if (RepositoryFactory.getMode() === 'walk') {
-            return;
-          }
-
-          await storage.saveEvent({
-            type: 'highlight.removed',
-            timestamp: Date.now(),
-            eventId: crypto.randomUUID(),
-            highlightId: event.highlightId,
-          });
-          logger.info('Event persisted: HIGHLIGHT_REMOVED', { id: event.highlightId });
+          await modeManager.getCurrentMode().onHighlightRemoved(event);
         } catch (error) {
-          logger.error('Failed to persist HIGHLIGHT_REMOVED event', error as Error);
+          logger.error('Error in mode highlight removed handler:', error as Error);
         }
       });
 
-      logger.info('Event-Storage bridge wired', {
-        pattern: 'Observer + Event Sourcing',
+      logger.info('Event-Mode delegation wired', {
+        pattern: 'Observer + Delegation (SRP Compliance)',
         listeners: ['HIGHLIGHT_CREATED', 'HIGHLIGHT_REMOVED'],
       });
 
-      // ===== PAGE LOAD: Restore highlights from storage (SPRINT MODE ONLY) =====
-      if (RepositoryFactory.getMode() !== 'walk') {
+      // ===== PAGE LOAD: Restore highlights (Mode decides via shouldRestore())  =====
+      if (modeManager.getCurrentMode().shouldRestore()) {
         await restoreHighlights({
           storage,
           renderer,
@@ -161,7 +131,7 @@ export default defineContentScript({
           modeManager,
         });
       } else {
-        logger.info('Walk Mode: Skipping restoration (Ephemeral Session)');
+        logger.info(`${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`);
       }
 
       // ===== Orchestrate: Listen to selection events =====
@@ -497,7 +467,6 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
     // ✅ PURE EVENT SOURCING: Clear projection before rebuilding
     // This ensures repository is a true projection of events, not a persistent cache
-    // Fixes undo/redo bug where undone highlights resurrect after reload
     repositoryFacade.clear();
     logger.info('🧹 Cleared repository projection before event replay');
 
