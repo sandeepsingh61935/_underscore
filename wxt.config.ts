@@ -9,12 +9,11 @@ export default defineConfig({
   },
   vite: () => ({
     build: {
-      charset: 'utf8',
       minify: 'terser',
       terserOptions: {
         format: {
-          ascii_only: true, // Force ASCII-only output
-          comments: false,  // Remove all comments
+          ascii_only: true,
+          comments: false,
         },
       },
     },
