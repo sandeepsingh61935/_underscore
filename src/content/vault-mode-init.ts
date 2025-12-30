@@ -16,7 +16,7 @@ import { getVaultModeService } from '@/services/vault-mode-service';
  */
 export async function initializeVaultMode(): Promise<void> {
     try {
-        console.log('🔄 Initializing Vault Mode...');
+        console.warn('🔄 Initializing Vault Mode...');
 
         const service = getVaultModeService();
 
@@ -26,15 +26,16 @@ export async function initializeVaultMode(): Promise<void> {
         // Restore highlights for current page
         const restored = await service.restoreHighlightsForUrl();
 
-        console.log(`✅ Vault Mode initialized: ${restored.length} highlights restored`);
+        console.warn(`✅ Vault Mode initialized: ${restored.length} highlights restored`);
         restored.forEach(r => {
-            console.log(`  - ${r.highlight.id}: ${r.restoredUsing} tier`);
+            console.warn(`  - ${r.highlight.id}: ${r.restoredUsing} tier`);
         });
 
         // Expose service globally for debugging
         if (typeof window !== 'undefined') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (window as any).vaultModeService = service;
-            console.log('💡 VaultModeService available as: window.vaultModeService');
+            console.warn('💡 VaultModeService available as: window.vaultModeService');
         }
 
     } catch (error) {
