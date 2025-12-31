@@ -93,6 +93,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         // 4. Update Repository (Idempotent check)
         const alreadyExists = await this.repository.findById(data.id);
         if (!alreadyExists) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await this.repository.add(data as any);
         } else {
             this.logger.debug('[VAULT] Skipping duplicate repo add during create', { id: data.id });
@@ -113,12 +114,14 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
         // Update runtime
         this.data.set(id, updated);
-        await this.repository.add(updated as any); // Updates existing in repo (add mimics addFromData/upsert if logic supports it, otherwise update)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await this.repository.add(updated as any); // Updates existing in repo
         // Correction: Repository Pattern typically separates add vs update. InMemory implementation 'add' usually overwrites or throws.
         // If 'add' throws on duplicate, we should use 'update'.
         // However, standard IRepository 'add' is often idempotent upsert in simple implementations, or strict.
         // Looking at InMemoryHighlightRepository behavior (impl inferred): Map.set(id, item) -> Upsert.
         // If specific update method exists on interface, use it.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.update(id, updates as any);
 
         // Update storage
@@ -216,6 +219,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         this.data.set(id, data);
 
         // 4. Update In-Memory Repository (for UI consistency)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.add(data as any);
 
         return id;
@@ -238,7 +242,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     async restore(_url?: string): Promise<void> {
         // Use VaultModeService to restore from IndexedDB
-         
+
         const restored = await this.vaultService.restoreHighlightsForUrl();
 
         this.logger.info(`[VAULT] Restoring ${restored.length} highlights`);
@@ -264,6 +268,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
                 // Sync to Repository (Idempotent check)
                 const exists = await this.repository.findById(storedData.id);
                 if (!exists) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     await this.repository.add(fullData as any);
                 } else {
                     this.logger.debug('[VAULT] Skipping duplicate restore', { id: storedData.id });

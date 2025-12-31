@@ -84,7 +84,7 @@ export class ModeStateManager {
                 type: 'MODE_CHANGED',
                 mode,
             });
-        } catch (error) {
+        } catch (_error) {
             // Popup might not be open, ignore
             this.logger.debug('[ModeState] No popup to notify');
         }
