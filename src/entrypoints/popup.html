@@ -120,12 +120,16 @@
   <div id="app">
     <header style="display: flex; justify-content: space-between; align-items: center;">
       <h1>Underscore</h1>
-      <div class="mode-control">
-        <span id="mode-label">Walk</span>
-        <label class="switch">
-          <input type="checkbox" id="mode-toggle">
-          <span class="slider"></span>
-        </label>
+
+      <!-- Mode Selector -->
+      <div class="mode-control" style="flex-direction: column; align-items: flex-end;">
+        <label for="mode-selector" style="font-size: 10px; color: #666; margin-bottom: 2px;">Mode</label>
+        <select id="mode-selector"
+          style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
+          <option value="walk">🚶 Walk</option>
+          <option value="sprint">🏃 Sprint</option>
+          <option value="vault">🔒 Vault</option>
+        </select>
       </div>
     </header>
 
@@ -157,34 +161,72 @@
     </footer>
   </div>
 
-  <script type="module">
-    const countElement = document.getElementById('highlight-count');
 
-    // Listen for count updates from content script
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.type === 'HIGHLIGHT_COUNT_UPDATE') {
-        if (countElement) {
-          countElement.textContent = message.count.toString();
+  <script type="module">
+    // Popup Controller (Inline until WXT entrypoint structure clarified)
+    class PopupController {
+      constructor() {
+        this.modeSelector = document.getElementById('mode-selector');
+        this.highlightCount = document.getElementById('highlight-count');
+      }
+
+      async init() {
+        // Get current tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) return;
+        this.tabId = tab.id;
+
+        // Load current mode
+        try {
+          const response = await chrome.tabs.sendMessage(this.tabId, { type: 'GET_MODE' });
+          if (response?.mode) {
+            this.modeSelector.value = response.mode;
+          }
+        } catch (e) {
+          console.log('[Popup] Content script not ready');
+        }
+
+        // Listen for mode selector changes
+        this.modeSelector.addEventListener('change', async () => {
+          const mode = this.modeSelector.value;
+          try {
+            await chrome.tabs.sendMessage(this.tabId, { type: 'SET_MODE', mode });
+            console.log('[Popup] Mode switched to:', mode);
+          } catch (e) {
+            console.error('[Popup] Failed to switch mode:', e);
+          }
+        });
+
+        // Listen for mode updates
+        chrome.runtime.onMessage.addListener((msg) => {
+          if (msg.type === 'MODE_CHANGED') {
+            this.modeSelector.value = msg.mode;
+          } else if (msg.type === 'HIGHLIGHT_COUNT_UPDATE') {
+            this.highlightCount.textContent = msg.count;
+          }
+        });
+
+        // Update count
+        this.updateCount();
+      }
+
+      async updateCount() {
+        try {
+          const response = await chrome.tabs.sendMessage(this.tabId, { type: 'GET_HIGHLIGHT_COUNT' });
+          if (response?.count !== undefined) {
+            this.highlightCount.textContent = response.count;
+          }
+        } catch (e) {
+          // Ignore if content script not ready
         }
       }
-    });
+    }
 
-    // Request current count when popup opens
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          { type: 'GET_HIGHLIGHT_COUNT' },
-          (response) => {
-            if (response && countElement) {
-              countElement.textContent = response.count.toString();
-            }
-          }
-        );
-      }
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      const controller = new PopupController();
+      await controller.init();
     });
-
-    console.log('Popup loaded');
   </script>
 </body>
 
