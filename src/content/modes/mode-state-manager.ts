@@ -9,7 +9,12 @@ import type { ModeManager } from './mode-manager';
 
 import { ValidationError } from '@/shared/errors/app-error';
 import { RepositoryFactory } from '@/shared/repositories';
-import { ModeTypeSchema, type ModeType } from '@/shared/schemas/mode-state-schemas';
+import {
+    ModeTypeSchema,
+    StateMetadataSchema,
+    type ModeType,
+    type StateMetadata
+} from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
 
 // Re-export ModeType for backward compatibility
@@ -17,6 +22,10 @@ export type { ModeType };
 
 export class ModeStateManager {
     private currentMode: ModeType = 'walk';
+    private metadata: StateMetadata = {
+        version: 2,
+        lastModified: Date.now(),
+    };
     private listeners: Set<(mode: ModeType) => void> = new Set();
 
     constructor(
@@ -29,8 +38,9 @@ export class ModeStateManager {
      */
     async init(): Promise<void> {
         try {
-            const result = await chrome.storage.sync.get('defaultMode');
+            const result = await chrome.storage.sync.get(['defaultMode', 'metadata']);
             const loadedMode = result['defaultMode'];
+            const loadedMetadata = result['metadata'];
 
             // Validate loaded mode with Zod
             const validation = ModeTypeSchema.safeParse(loadedMode);
@@ -46,6 +56,30 @@ export class ModeStateManager {
                     `Invalid mode "${loadedMode}": ${validation.error.message}`
                 ));
                 this.currentMode = 'walk';
+            }
+
+            // Validate and load metadata
+            if (loadedMetadata) {
+                const metadataValidation = StateMetadataSchema.safeParse(loadedMetadata);
+
+                if (metadataValidation.success) {
+                    this.metadata = metadataValidation.data;
+
+                    // Check if migration is needed
+                    if (this.metadata.version < 2) {
+                        this.logger.info('[ModeState] Migration needed', {
+                            currentVersion: this.metadata.version,
+                            targetVersion: 2,
+                        });
+                    }
+                } else {
+                    this.logger.error('[ModeState] Invalid metadata in storage', new Error(
+                        `Invalid metadata: ${metadataValidation.error.message}`
+                    ));
+                }
+            } else {
+                // No metadata = v1 state
+                this.logger.info('[ModeState] No metadata found - v1 state detected, migration needed');
             }
 
             await this.applyMode();
@@ -94,9 +128,15 @@ export class ModeStateManager {
 
         this.currentMode = validatedMode;
 
-        // 1. Persist preference
+        // 1. Update metadata timestamp
+        this.metadata.lastModified = Date.now();
+
+        // 2. Persist preference with metadata
         try {
-            await chrome.storage.sync.set({ defaultMode: mode });
+            await chrome.storage.sync.set({
+                defaultMode: mode,
+                metadata: this.metadata,
+            });
         } catch (error) {
             this.logger.error('[ModeState] Failed to persist preference', error as Error);
         }
