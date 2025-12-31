@@ -160,7 +160,9 @@ describe('Service Registration (8 tests)', () => {
             info: () => { },
             warn: () => { },
             error: () => { },
-        } as ILogger;
+            setLevel: () => { },
+            getLevel: () => 'debug' as const,
+        } as unknown as ILogger;
 
         testContainer.registerInstance('logger', mockLogger);
         testContainer.registerSingleton('eventBus', () => container.resolve('eventBus'));
@@ -169,7 +171,7 @@ describe('Service Registration (8 tests)', () => {
         testContainer.registerSingleton('modeManager', () => {
             const eventBus = testContainer.resolve<EventBus>('eventBus');
             const logger = testContainer.resolve<ILogger>('logger');
-            return new (require('@/content/modes/mode-manager').ModeManager)(eventBus, logger);
+            return new ModeManager(eventBus, logger);
         });
 
         // Act
