@@ -16,6 +16,7 @@ import type { IStorage } from '@/shared/interfaces/i-storage';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { ValidationError } from '@/shared/errors/app-error';
 
 /**
  * Storage service for domain-scoped highlight persistence
@@ -53,6 +54,17 @@ export class StorageService implements IStorage {
    * Appends to event log, applies TTL, encrypts
    */
   async saveEvent(event: AnyHighlightEvent): Promise<void> {
+    // Validate event structure
+    if (!isValidHighlightEvent(event)) {
+      throw new ValidationError(
+        'Invalid highlight event structure',
+        {
+          eventType: (event as { type?: string }).type,
+          eventId: (event as { eventId?: string }).eventId
+        }
+      );
+    }
+
     try {
       // Get existing events
       const events = await this.loadEvents();
@@ -68,6 +80,10 @@ export class StorageService implements IStorage {
 
       this.logger.debug('Event saved', { type: event.type, eventId: event.eventId });
     } catch (error) {
+      // Re-throw ValidationError as-is
+      if (error instanceof ValidationError) {
+        throw error;
+      }
       this.logger.error('Failed to save event', error as Error);
       throw error;
     }
