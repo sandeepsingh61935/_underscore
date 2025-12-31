@@ -568,8 +568,6 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
           continue;
         }
 
-        const type = highlightData.type || 'underscore';
-
         // Use Custom Highlight API if available
         if (highlightManager) {
           // [OK] CRITICAL FIX: Use mode's unified creation path!
