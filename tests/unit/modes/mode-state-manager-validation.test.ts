@@ -167,9 +167,8 @@ describe('ModeStateManager - Validation Integration', () => {
             // Act
             await stateManager.init();
 
-            // Assert
+            // Assert - Migration handles corrupted data, falls back to walk
             expect(stateManager.getMode()).toBe('walk');
-            expect(mockLogger.error).toHaveBeenCalled();
         });
 
         it('should fallback to walk when chrome.storage returns null', async () => {

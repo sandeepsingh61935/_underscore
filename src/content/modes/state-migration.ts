@@ -181,13 +181,24 @@ export class MigrationEngine {
             return 1; // Assume v1 for invalid state
         }
 
-        // v2+ states have explicit version field
-        if ('version' in state && typeof state.version === 'number') {
+        // Check for v2+ states: metadata.version exists
+        if (state.metadata && typeof state.metadata === 'object') {
+            if ('version' in state.metadata && typeof state.metadata.version === 'number') {
+                // Only accept positive version numbers
+                if (state.metadata.version > 0) {
+                    return state.metadata.version;
+                }
+                // Negative or zero version = corrupted, treat as v1
+            }
+        }
+
+        // Check for migrated v2 state shape: { currentMode, version, metadata }
+        if ('version' in state && typeof state.version === 'number' && state.version > 0) {
             return state.version;
         }
 
-        // v1 states have defaultMode but no version
-        if ('defaultMode' in state) {
+        // v1 states have defaultMode but no metadata
+        if ('defaultMode' in state && !state.metadata) {
             return 1;
         }
 

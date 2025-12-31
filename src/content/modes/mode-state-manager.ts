@@ -10,6 +10,8 @@ import type { ModeManager } from './mode-manager';
 import { ValidationError } from '@/shared/errors/app-error';
 import { RepositoryFactory } from '@/shared/repositories';
 import { ModeStateMachine } from './mode-state-machine';
+import { MigrationEngine } from './state-migration';
+import { migrateV1ToV2 } from './migrations/v1-to-v2';
 import {
     ModeTypeSchema,
     StateMetadataSchema,
@@ -29,12 +31,22 @@ export class ModeStateManager {
     };
     private listeners: Set<(mode: ModeType) => void> = new Set();
     private stateMachine: ModeStateMachine;
+    private migrationEngine: MigrationEngine;
 
     constructor(
         private readonly modeManager: ModeManager,
         private readonly logger: ILogger
     ) {
         this.stateMachine = new ModeStateMachine(logger);
+        this.migrationEngine = new MigrationEngine(logger);
+
+        // Register v1→v2 migration
+        this.migrationEngine.registerMigration({
+            fromVersion: 1,
+            toVersion: 2,
+            migrate: migrateV1ToV2,
+            description: 'Migrate v1 state ({ defaultMode }) to v2 ({ currentMode, version, metadata })',
+        });
     }
 
     /**
@@ -46,44 +58,79 @@ export class ModeStateManager {
             const loadedMode = result['defaultMode'];
             const loadedMetadata = result['metadata'];
 
-            // Validate loaded mode with Zod
-            const validation = ModeTypeSchema.safeParse(loadedMode);
+            // Detect state version
+            const currentVersion = this.migrationEngine.detectVersion({
+                defaultMode: loadedMode,
+                metadata: loadedMetadata,
+            });
 
-            if (validation.success) {
-                this.currentMode = validation.data;
-                this.logger.info('[ModeState] Loaded user preference', {
-                    mode: this.currentMode,
+            // Check if migration is needed
+            if (currentVersion < this.migrationEngine.getCurrentVersion()) {
+                this.logger.info('[ModeState] Migration needed', {
+                    currentVersion,
+                    targetVersion: this.migrationEngine.getCurrentVersion(),
                 });
-            } else {
-                // Invalid mode in storage - fall back to default
-                this.logger.error('[ModeState] Invalid mode in storage', new Error(
-                    `Invalid mode "${loadedMode}": ${validation.error.message}`
-                ));
-                this.currentMode = 'walk';
-            }
 
-            // Validate and load metadata
-            if (loadedMetadata) {
-                const metadataValidation = StateMetadataSchema.safeParse(loadedMetadata);
+                // Perform migration
+                const migrationResult = await this.migrationEngine.migrate(
+                    { defaultMode: loadedMode },
+                    currentVersion,
+                    this.migrationEngine.getCurrentVersion()
+                );
 
-                if (metadataValidation.success) {
-                    this.metadata = metadataValidation.data;
+                if (migrationResult.success) {
+                    const v2State = migrationResult.value;
 
-                    // Check if migration is needed
-                    if (this.metadata.version < 2) {
-                        this.logger.info('[ModeState] Migration needed', {
-                            currentVersion: this.metadata.version,
-                            targetVersion: 2,
-                        });
-                    }
+                    // Apply migrated state
+                    this.currentMode = v2State.currentMode;
+                    this.metadata = v2State.metadata;
+
+                    // Persist migrated state
+                    await chrome.storage.sync.set({
+                        defaultMode: v2State.currentMode,
+                        metadata: v2State.metadata,
+                    });
+
+                    this.logger.info('[ModeState] Migration complete', {
+                        mode: this.currentMode,
+                    });
                 } else {
-                    this.logger.error('[ModeState] Invalid metadata in storage', new Error(
-                        `Invalid metadata: ${metadataValidation.error.message}`
-                    ));
+                    // Migration failed - fallback to defaults
+                    this.logger.error('[ModeState] Migration failed', migrationResult.error);
+                    this.currentMode = 'walk';
+                    this.metadata = {
+                        version: 2,
+                        lastModified: Date.now(),
+                    };
                 }
             } else {
-                // No metadata = v1 state
-                this.logger.info('[ModeState] No metadata found - v1 state detected, migration needed');
+                // No migration needed - validate and load normally
+                const validation = ModeTypeSchema.safeParse(loadedMode);
+
+                if (validation.success) {
+                    this.currentMode = validation.data;
+                    this.logger.info('[ModeState] Loaded user preference', {
+                        mode: this.currentMode,
+                    });
+                } else {
+                    this.logger.error('[ModeState] Invalid mode in storage', new Error(
+                        `Invalid mode "${loadedMode}": ${validation.error.message}`
+                    ));
+                    this.currentMode = 'walk';
+                }
+
+                // Validate and load metadata
+                if (loadedMetadata) {
+                    const metadataValidation = StateMetadataSchema.safeParse(loadedMetadata);
+
+                    if (metadataValidation.success) {
+                        this.metadata = metadataValidation.data;
+                    } else {
+                        this.logger.error('[ModeState] Invalid metadata in storage', new Error(
+                            `Invalid metadata: ${metadataValidation.error.message}`
+                        ));
+                    }
+                }
             }
 
             await this.applyMode();
