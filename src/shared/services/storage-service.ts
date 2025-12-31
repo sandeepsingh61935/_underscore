@@ -5,6 +5,8 @@
 
 import { browser } from 'wxt/browser';
 
+import { ValidationError } from '@/shared/errors/app-error';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import type {
   AnyHighlightEvent,
   DomainStorage,
@@ -12,11 +14,9 @@ import type {
   StorageConfig,
 } from '@/shared/types/storage';
 import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
-import type { IStorage } from '@/shared/interfaces/i-storage';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { ValidationError } from '@/shared/errors/app-error';
 
 /**
  * Storage service for domain-scoped highlight persistence

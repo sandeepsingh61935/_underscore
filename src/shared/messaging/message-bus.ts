@@ -5,11 +5,12 @@
  * Implements Mediator Pattern
  */
 
+import type { Message } from './message-types';
+
 import type { ModeStateManager } from '@/content/modes/mode-state-manager';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { ILogger } from '@/shared/utils/logger';
 
-import type { Message } from './message-types';
 
 export class MessageBus {
     /**

@@ -7,8 +7,8 @@
  * Extends generic IRepository<T> with highlight-specific operations
  */
 
-import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import type { IRepository } from '../interfaces/i-repository';
+import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 
 /**
  * Repository interface for highlight data access

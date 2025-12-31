@@ -3,7 +3,7 @@
  * @description Unified notification service for user feedback
  */
 
-import { ILogger } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Notification types matching standard UI patterns
@@ -51,7 +51,7 @@ export class ChromeNotificationService implements INotificationService {
 
             // Wrap callback-based API in Promise
             return new Promise((resolve) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                 
                 chrome.notifications.create(options as any, (notificationId) => {
                     if (chrome.runtime.lastError) {
                         this.logger.error('Failed to create notification', new Error(chrome.runtime.lastError.message));
