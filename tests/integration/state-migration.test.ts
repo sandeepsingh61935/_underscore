@@ -223,4 +223,155 @@ describe('State Migration Integration', () => {
             });
         });
     });
+
+    describe('Tricky edge cases (production scenarios)', () => {
+        it('should handle chrome.storage quota exceeded during migration write', async () => {
+            storageData['defaultMode'] = 'vault';
+
+            // Simulate quota exceeded on write
+            mockChromeStorage.sync.set.mockRejectedValueOnce(
+                new Error('QUOTA_BYTES_PER_ITEM quota exceeded')
+            );
+
+            // Migration should still complete in memory
+            await stateManager.init();
+
+            // State loaded in memory
+            expect(stateManager.getMode()).toBe('vault');
+
+            // Should log persistence error
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to persist'),
+                expect.any(Error)
+            );
+        });
+
+        it('should handle concurrent init() from multiple tabs', async () => {
+            storageData['defaultMode'] = 'sprint';
+
+            // Simulate two tabs initializing simultaneously
+            const manager1 = new ModeStateManager(mockModeManager, mockLogger);
+            const manager2 = new ModeStateManager(mockModeManager, mockLogger);
+
+            // Both init at same time (race condition)
+            await Promise.all([
+                manager1.init(),
+                manager2.init()
+            ]);
+
+            // Both should end up with same state
+            expect(manager1.getMode()).toBe(manager2.getMode());
+            expect(manager1.getMode()).toBe('sprint');
+
+            // Storage should have v2 metadata
+            expect(storageData['metadata']).toBeDefined();
+            expect(storageData['metadata'].version).toBe(2);
+        });
+
+        it('should handle storage write failing halfway through migration', async () => {
+            storageData['defaultMode'] = 'vault';
+
+            let writeCount = 0;
+            mockChromeStorage.sync.set.mockImplementation((items) => {
+                writeCount++;
+                if (writeCount === 1) {
+                    // First write (during migration) fails
+                    return Promise.reject(new Error('Storage write failed'));
+                }
+                // Subsequent writes succeed
+                Object.assign(storageData, items);
+                return Promise.resolve();
+            });
+
+            // Init should handle gracefully
+            await stateManager.init();
+
+            // Mode should still be loaded
+            expect(stateManager.getMode()).toBe('vault');
+
+            // Error should be logged
+            expect(mockLogger.error).toHaveBeenCalled();
+        });
+
+        it('should handle race condition: setMode() during migration', async () => {
+            storageData['defaultMode'] = 'walk';
+
+            // Make migration slow
+            mockChromeStorage.sync.set.mockImplementation((items) => {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        Object.assign(storageData, items);
+                        resolve(undefined);
+                    }, 50); // 50ms delay
+                });
+            });
+
+            // Start init (triggers slow migration)
+            const initPromise = stateManager.init();
+
+            // Immediately try to change mode while migrating
+            await new Promise(resolve => setTimeout(resolve, 10)); // Wait 10ms
+            await stateManager.setMode('vault'); // Changed to vault
+
+            // Wait for migration to finish
+            await initPromise;
+
+            // The later operation should win
+            // (setMode happened after init started but might finish in different order)
+            const finalMode = stateManager.getMode();
+            expect(['walk', 'vault']).toContain(finalMode);
+        });
+
+        it('should handle orphaned state from browser crash mid-migration', async () => {
+            // Simulate: migration started, wrote partial data, crashed
+            storageData['defaultMode'] = 'sprint';
+            storageData['metadata'] = {
+                version: 1, // Old version still there
+                lastModified: Date.now() - 1000000, // Very old
+            };
+
+            // Init should detect incomplete migration and re-run
+            await stateManager.init();
+
+            // Should complete migration
+            expect(stateManager.getMode()).toBe('sprint');
+            expect(storageData['metadata'].version).toBe(2);
+        });
+
+        it('should handle very large metadata objects', async () => {
+            storageData['defaultMode'] = 'vault';
+
+            // Create bloated v1 state (simulates user adding lots of data manually)
+            const largeObject: any = { defaultMode: 'vault' };
+            for (let i = 0; i < 100; i++) {
+                largeObject[`someRandomField${i}`] = 'x'.repeat(100);
+            }
+            Object.assign(storageData, largeObject);
+
+            // Migration should handle large state
+            const startTime = Date.now();
+            await stateManager.init();
+            const duration = Date.now() - startTime;
+
+            // Should complete reasonably fast (< 1 second)
+            expect(duration).toBeLessThan(1000);
+            expect(stateManager.getMode()).toBe('vault');
+        });
+
+        it('should handle rapid sequential migrations', async () => {
+            // Simulate: v1 → v2 → setMode → setMode → reload
+            storageData['defaultMode'] = 'walk';
+
+            await stateManager.init(); // v1 → v2
+            await stateManager.setMode('sprint');
+            await stateManager.setMode('vault');
+
+            // Reload
+            const manager2 = new ModeStateManager(mockModeManager, mockLogger);
+            await manager2.init();
+
+            expect(manager2.getMode()).toBe('vault');
+            expect(storageData['metadata'].version).toBe(2);
+        });
+    });
 });

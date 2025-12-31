@@ -81,19 +81,24 @@ export class ModeStateManager {
                 if (migrationResult.success) {
                     const v2State = migrationResult.value;
 
-                    // Apply migrated state
+                    // Apply migrated state IN MEMORY first
                     this.currentMode = v2State.currentMode;
                     this.metadata = v2State.metadata;
 
-                    // Persist migrated state
-                    await chrome.storage.sync.set({
-                        defaultMode: v2State.currentMode,
-                        metadata: v2State.metadata,
-                    });
+                    // Persist migrated state (non-blocking)
+                    try {
+                        await chrome.storage.sync.set({
+                            defaultMode: v2State.currentMode,
+                            metadata: v2State.metadata,
+                        });
 
-                    this.logger.info('[ModeState] Migration complete', {
-                        mode: this.currentMode,
-                    });
+                        this.logger.info('[ModeState] Migration complete', {
+                            mode: this.currentMode,
+                        });
+                    } catch (persistError) {
+                        // Log but don't fail - state is good in memory
+                        this.logger.error('[ModeState] Failed to persist migrated state', persistError as Error);
+                    }
                 } else {
                     // Migration failed - fallback to defaults
                     this.logger.error('[ModeState] Migration failed', migrationResult.error);
