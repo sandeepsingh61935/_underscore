@@ -159,7 +159,9 @@ export class StorageService {
         hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
       });
 
-      return validEvents;
+      // ✅ Sort by timestamp (oldest first) for event sourcing correctness
+      // Events must be replayed in chronological order to reconstruct state
+      return validEvents.sort((a, b) => a.timestamp - b.timestamp);
     } catch (error) {
       this.logger.error('Failed to load events', error as Error);
       return []; // Fail gracefully
