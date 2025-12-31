@@ -16,13 +16,13 @@ import { WalkMode } from '@/content/modes/walk-mode';
 import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
+import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
 import { StorageService } from '@/shared/services/storage-service';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
-import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
 
 /**
  * Register all application services
