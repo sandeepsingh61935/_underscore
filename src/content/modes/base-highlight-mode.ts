@@ -13,8 +13,8 @@ import {
   injectHighlightCSS,
   removeHighlightCSS,
 } from '@/content/styles/highlight-styles';
-import type { RepositoryFacade } from '@/shared/repositories';
-import type { StorageService } from '@/shared/services/storage-service';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
@@ -23,17 +23,15 @@ export abstract class BaseHighlightMode {
   // Internal tracking (replaces HighlightManager.highlights)
   protected highlights = new Map<string, Highlight>();
   protected data = new Map<string, HighlightData>();
-  protected repository: RepositoryFacade;
-  protected storage: StorageService;
+  protected repository: IHighlightRepository;
+  protected storage?: IStorage; // Optional, strict DI for modes that need it
 
   constructor(
     protected readonly eventBus: EventBus,
     protected readonly logger: ILogger,
-    repository: RepositoryFacade, // [OK] Dependency Injection - shared instance
-    storage: StorageService // [OK] Added for event sourcing
+    repository: IHighlightRepository // [OK] Interface-based DI
   ) {
     this.repository = repository;
-    this.storage = storage;
   }
 
   abstract get name(): 'walk' | 'sprint' | 'vault' | 'gen';
