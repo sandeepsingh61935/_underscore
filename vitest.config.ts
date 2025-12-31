@@ -18,9 +18,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
 
-      // Coverage thresholds
-      // Coverage thresholds
+      // Coverage thresholds - enforced in CI
       thresholds: {
         lines: 80,
         functions: 80,
@@ -33,12 +33,15 @@ export default defineConfig({
         'node_modules/',
         'dist/',
         'build/',
+        '.wxt/',
+        '.output/',
         'tests/',
         '**/*.test.ts',
         '**/*.spec.ts',
         '**/*.config.ts',
         '**/types/**',
         '**/*.d.ts',
+        'src/entrypoints/**', // Entry points are integration-tested
       ],
     },
 
