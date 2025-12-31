@@ -104,7 +104,7 @@ describe('CommandFactory', () => {
             });
 
             // Act
-            const command = factory.createCreateHighlightCommand({} as Selection, 'green');
+            factory.createCreateHighlightCommand({} as Selection, 'green');
 
             // Assert: Command should have been called with our CUSTOM mode manager
             expect(CreateHighlightCommand).toHaveBeenCalledWith(

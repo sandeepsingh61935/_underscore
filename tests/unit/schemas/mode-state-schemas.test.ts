@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import {
     ModeTypeSchema,
     StateChangeEventSchema,
@@ -82,7 +83,7 @@ describe('ModeTypeSchema', () => {
         // Assert
         expect(result.success).toBe(false);
         if (!result.success) {
-            expect(result.error.issues[0].message).toContain('Invalid');
+            expect(result.error.issues[0]!.message).toContain('Invalid');
         }
     });
 });
