@@ -6,10 +6,7 @@
 import { browser } from 'wxt/browser';
 
 import { ColorManager } from '@/content/color-manager';
-import {
-  CreateHighlightCommand,
-  RemoveHighlightCommand,
-} from '@/content/commands/simple-highlight-commands';
+import type { CommandFactory } from '@/content/commands/command-factory';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
@@ -67,6 +64,7 @@ export default defineContentScript({
       const eventBus = container.resolve<EventBus>('eventBus');
       const modeManager = container.resolve<ModeManager>('modeManager');
       const repositoryFacade = container.resolve<RepositoryFacade>('repository');
+      const commandFactory = container.resolve<CommandFactory>('commandFactory');
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
@@ -166,6 +164,7 @@ export default defineContentScript({
           repositoryFacade,
           highlightManager,
           modeManager,
+          commandFactory,
         });
       } else {
         logger.info(`${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`);
@@ -276,11 +275,9 @@ export default defineContentScript({
           // No overlaps - create new highlight as normal
           const colorRole = await colorManager.getCurrentColorRole();
 
-          const command = new CreateHighlightCommand(
+          const command = commandFactory.createCreateHighlightCommand(
             event.selection,
-            colorRole,
-            modeManager,
-            logger  // Use logger from DI container
+            colorRole
           );
 
           await commandStack.execute(command);
@@ -300,10 +297,8 @@ export default defineContentScript({
         const highlight = repositoryFacade.get(event.highlightId);
         if (highlight) {
           // Use command for undo/redo support
-          const command = new RemoveHighlightCommand(
-            event.highlightId,
-            modeManager,
-            logger
+          const command = commandFactory.createRemoveHighlightCommand(
+            event.highlightId
           );
 
           await commandStack.execute(command);
@@ -448,6 +443,7 @@ export default defineContentScript({
                   repositoryFacade,
                   highlightManager,
                   modeManager,
+                  commandFactory,
                 });
               } else {
                 // Clear highlights if switching to Walk (Incognito)
@@ -487,13 +483,14 @@ interface RestoreContext {
   repositoryFacade: RepositoryFacade;
   highlightManager: HighlightManager | null;
   modeManager: ModeManager;
+  commandFactory: CommandFactory;
 }
 
 /**
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { storage, repositoryFacade, highlightManager, modeManager } = context;
+  const { storage, repositoryFacade, highlightManager, modeManager, commandFactory } = context;
   try {
     const events = await storage.loadEvents();
 
@@ -594,11 +591,9 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             selection.removeAllRanges();
             selection.addRange(liveRanges[0]); // Legacy: only first range
 
-            const createCommand = new CreateHighlightCommand(
+            const createCommand = commandFactory.createCreateHighlightCommand(
               selection,
-              highlightData.color || 'yellow',
-              modeManager,
-              logger  // Use logger from DI container
+              highlightData.color || 'yellow'
             );
 
             await createCommand.execute();
