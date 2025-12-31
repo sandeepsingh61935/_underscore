@@ -80,17 +80,22 @@ describe('State Migration Integration', () => {
             expect(storageData['metadata'].version).toBe(2);
             expect(storageData['metadata'].lastModified).toBeGreaterThan(0);
 
-            // STEP 5: Create new manager instance and reload
-            vi.clearAllMocks(); // Clear logs from first init
-            const stateManager2 = new ModeStateManager(mockModeManager, mockLogger);
+            // STEP 5: Create new manager instance with separate logger (realistic)
+            const mockLogger2 = {
+                info: vi.fn(),
+                debug: vi.fn(),
+                error: vi.fn(),
+                warn: vi.fn(),
+            } as any;
+            const stateManager2 = new ModeStateManager(mockModeManager, mockLogger2);
             await stateManager2.init();
 
             // STEP 6: Verify no re-migration occurs (v2 → v2)
             expect(stateManager2.getMode()).toBe('sprint');
-            const migrationLogs = (mockLogger.info as any).mock.calls.filter((call: any[]) =>
+            const migrationLogs = (mockLogger2.info as any).mock.calls.filter((call: any[]) =>
                 call[0]?.includes?.('Migration complete')
             );
-            // After clearing mocks, should have 0 migration logs (v2 loaded, no migration)
+            // Second logger should have 0 migration logs (no migration on reload)
             expect(migrationLogs.length).toBe(0);
         });
 
