@@ -4,6 +4,7 @@
  */
 
 import { vi } from 'vitest';
+
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { AnyHighlightEvent } from '@/shared/types/storage';
 

@@ -4,6 +4,7 @@
  */
 
 import { vi } from 'vitest';
+
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 

@@ -4,6 +4,7 @@
  */
 
 import { vi } from 'vitest';
+
 import { type ILogger, LogLevel } from '@/shared/utils/logger';
 
 export class MockLogger implements ILogger {

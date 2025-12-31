@@ -4,8 +4,9 @@
  */
 
 import { vi } from 'vitest';
-import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
+
 import type { IHighlightMode, HighlightData } from '@/content/modes/highlight-mode.interface';
+import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 
 export class MockModeManager implements IModeManager {
     currentModeName: string = 'walk'; // Default
@@ -47,7 +48,7 @@ export class MockModeManager implements IModeManager {
         // Update mock mode name to match for consistency
         // (In real tests, you might swap the whole mockCurrentMode object)
         if (this.mockCurrentMode) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             (this.mockCurrentMode as any).name = modeName;
         }
     }

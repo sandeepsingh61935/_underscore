@@ -4,6 +4,7 @@
  * Provides factory functions for generating valid test data
  */
 import { v4 as uuid } from 'uuid';
+
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 
 export function createTestHighlight(overrides?: Partial<HighlightDataV2>): HighlightDataV2 {
