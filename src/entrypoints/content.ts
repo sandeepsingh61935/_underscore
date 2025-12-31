@@ -54,30 +54,45 @@ export default defineContentScript({
       logger.info('Custom Highlight API support:', { supported: useCustomHighlightAPI });
 
       // Create shared event bus
-      const eventBus = new EventBus();
+      // ===== DEPENDENCY INJECTION: Initialize IoC Container =====
+      const { Container } = await import('@/shared/di/container');
+      const { registerServices } = await import('@/shared/di/service-registration');
 
-      // Initialize storage and command stack
-      const storage = new StorageService();
+      const container = new Container();
+      registerServices(container);
+
+      // Resolve key services
+      const storage = container.resolve<StorageService>('storage');
+      const eventBus = container.resolve<EventBus>('eventBus');
+      const modeManager = container.resolve<ModeManager>('modeManager');
+      const repositoryFacade = container.resolve<RepositoryFacade>('repository');
+
+      // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
 
       // Initialize components
       const colorManager = new ColorManager();
       await colorManager.initialize();
 
-      // Initialize Repository Facade (Facade Pattern from quality framework)
-      const repositoryFacade = new RepositoryFacade();
-      await repositoryFacade.initialize(); // Load existing data into cache
+      // Initialize Repository Facade (Now handled by DI, but kept for cache init if needed)
+      // Note: container gives us InMemoryHighlightRepository, we might need facade wrapping if strictly required
+      // But modes use IHighlightRepository now, so direct repo is fine.
+      // However, RepositoryFactory/static might be used elsewhere.
+      // For this step, we use the container's version.
 
-      // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
-      const modeManager = new ModeManager(eventBus, logger);
+      // Register Modes (Done in container registration, but we need to ensure ModeManager knows about them)
+      // Service registration lazy-loads them via factories, but ModeManager needs them registered to switch.
+      // We can iterate container services or manually register.
+      // The container DI registers 'walkMode', 'sprintMode', etc. as TRANSIENT.
+      // ModeManager expects INSTANCES.
 
-      // Re-enable all modes for proper switching
-      const sprintMode = new SprintMode(eventBus, logger, repositoryFacade, storage);
-      const walkMode = new WalkMode(eventBus, logger, repositoryFacade, storage);
-      const vaultMode = new VaultMode(eventBus, logger, repositoryFacade, storage);
+      // Pre-instantiate and register modes
+      const walkMode = container.resolve<WalkMode>('walkMode');
+      const sprintMode = container.resolve<SprintMode>('sprintMode');
+      const vaultMode = container.resolve<VaultMode>('vaultMode');
 
-      modeManager.registerMode(sprintMode);
       modeManager.registerMode(walkMode);
+      modeManager.registerMode(sprintMode);
       modeManager.registerMode(vaultMode);
 
       // Initialize State Management Pattern
