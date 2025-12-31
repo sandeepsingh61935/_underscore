@@ -4,26 +4,37 @@
  *
  * Provides abstraction over underlying storage mechanism
  * Implements Repository Pattern from quality framework
+ * Extends generic IRepository<T> with highlight-specific operations
  */
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
+import type { IRepository } from '../interfaces/i-repository';
 
 /**
  * Repository interface for highlight data access
  *
  * Single source of truth for all highlight data
  * Abstracts storage implementation details
+ *
+ * @extends IRepository<HighlightDataV2>
+ * Inherits base CRUD operations (add, get, remove, getAll, count, clear)
+ * Adds highlight-specific query methods
  */
-export interface IHighlightRepository {
+export interface IHighlightRepository extends IRepository<HighlightDataV2> {
   // ============================================
-  // CRUD Operations
+  // Inherited from IRepository<HighlightDataV2>
   // ============================================
+  // add(highlight: HighlightDataV2): Promise<void>
+  // findById(id: string): Promise<HighlightDataV2 | null>
+  // remove(id: string): Promise<void>
+  // findAll(): Promise<HighlightDataV2[]>
+  // count(): number
+  // exists(id: string): boolean
+  // clear(): Promise<void>
 
-  /**
-   * Add new highlight to repository
-   * Idempotent - no error if already exists
-   */
-  add(highlight: HighlightDataV2): Promise<void>;
+  // ============================================
+  // Update Operation (extends base CRUD)
+  // ============================================
 
   /**
    * Update existing highlight
@@ -31,27 +42,9 @@ export interface IHighlightRepository {
    */
   update(id: string, updates: Partial<HighlightDataV2>): Promise<void>;
 
-  /**
-   * Remove highlight by ID
-   * Idempotent - no error if not found
-   */
-  remove(id: string): Promise<void>;
-
   // ============================================
-  // Queries
+  // Highlight-Specific Queries
   // ============================================
-
-  /**
-   * Find highlight by ID
-   * Returns null if not found
-   */
-  findById(id: string): Promise<HighlightDataV2 | null>;
-
-  /**
-   * Get all highlights
-   * Returns empty array if none exist
-   */
-  findAll(): Promise<HighlightDataV2[]>;
 
   /**
    * Find highlight by content hash
@@ -66,32 +59,11 @@ export interface IHighlightRepository {
   findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
 
   // ============================================
-  // Metadata
-  // ============================================
-
-  /**
-   * Get total count of highlights
-   */
-  count(): number;
-
-  /**
-   * Check if highlight exists
-   */
-  exists(id: string): boolean;
-
-  // ============================================
   // Bulk Operations
   // ============================================
 
   /**
    * Add multiple highlights in batch
-   * More efficient than individual adds
-   */
+   * More efficient than individual adds  */
   addMany(highlights: HighlightDataV2[]): Promise<void>;
-
-  /**
-   * Remove all highlights
-   * Use with caution!
-   */
-  clear(): Promise<void>;
 }
