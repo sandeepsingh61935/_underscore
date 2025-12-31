@@ -27,7 +27,7 @@ import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/type
  */
 export interface ModeCapabilities {
     /** Storage type: none (Walk), local (Sprint), remote (Vault/Gen) */
-    persistence: 'none' | 'local' | 'remote';
+    persistence: 'none' | 'local' | 'remote' | 'indexeddb';
 
     /** Undo/redo support */
     undo: boolean;

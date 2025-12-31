@@ -2,14 +2,16 @@
  * Mode Manager
  *
  * Coordinates mode switching and delegates operations
+ * Implements Strategy Pattern
  */
 
 import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
+import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class ModeManager {
+export class ModeManager implements IModeManager {
   private currentMode: IHighlightMode | null = null;
   private modes = new Map<string, IHighlightMode>();
 
