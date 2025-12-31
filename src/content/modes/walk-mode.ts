@@ -24,9 +24,21 @@ import { serializeRange } from '@/content/utils/range-converter';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+
 export class WalkMode extends BaseHighlightMode implements IBasicMode {
     get name(): 'walk' {
         return 'walk' as const;
+    }
+
+    constructor(
+        repository: IHighlightRepository,
+        eventBus: EventBus,
+        logger: ILogger // [OK] Injected
+    ) {
+        super(eventBus, logger, repository);
     }
 
     readonly capabilities: ModeCapabilities = {
@@ -59,7 +71,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         // In Walk Mode, we trust the repo is empty on start and not persisted.
         const existing = await this.repository.findByContentHash(contentHash);
 
-        if (existing) {
+        if (existing && existing.id) {
             this.logger.info('Duplicate content detected (Walk Mode)', {
                 existingId: existing.id,
             });
