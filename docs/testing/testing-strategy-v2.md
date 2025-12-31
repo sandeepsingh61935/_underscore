@@ -13,7 +13,7 @@
 3. **Chrome Extension Reality**: Account for multi-context complexity
 4. **Risk-Based Coverage**: More tests for risky code, fewer for simple code
 5. **Pragmatic E2E**: Integration tests > E2E for Chrome extensions (E2E is expensive)
-
+6. **Write tricky and real test cases that simulate reality**: Use real APIs, real data, real user flows and edge cases to specify the behavior of the code and find bugs early - THIS IS CRITICAL
 ---
 
 ## Test Distribution - Risk-Based
