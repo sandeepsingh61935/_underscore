@@ -659,31 +659,31 @@
 
 #### Task 1.2.1: Implement Command Factory (Granular Strategy)
 **Micro-Steps**:
-1. [ ] **Skeleton**: Create `src/content/commands/command-factory.ts` with interface
+1. [x] **Skeleton**: Create `src/content/commands/command-factory.ts` with interface
    - *Commit*: `feat(commands): add CommandFactory scaffolding`
-2. [ ] **Tests**: Create failing tests for factory instantiation
+2. [x] **Tests**: Create failing tests for factory instantiation
    - *Commit*: `test(factory): add initial factory unit tests (red)`
-3. [ ] **Implementation**: Implement factory methods and DI integration
+3. [x] **Implementation**: Implement factory methods and DI integration
    - *Commit*: `feat(commands): implement CommandFactory logic`
-4. [ ] **Wiring**: Update `content.ts` to use factory (Remove direct `new`)
+4. [x] **Wiring**: Update `content.ts` to use factory (Remove direct `new`)
    - *Commit*: `refactor(content): switch to CommandFactory for command creation`
-5. [ ] **Verification**: Run full suite
+5. [x] **Verification**: Run full suite
    - *Commit*: `chore(1.2): verify factory integration`
 
 **Tests** (8 tests):
-  - [ ] Test: Factory creates commands
-  - [ ] Test: Dependencies injected correctly
-  - [ ] Test: Can create all command types
-  - [ ] Test: Commands functional
-  - [ ] Test: Can override dependencies
-  - [ ] Test: Factory is singleton
-  - [ ] Test: Memory management
-  - [ ] Test: Type safety
+  - [x] Test: Factory creates commands
+  - [x] Test: Dependencies injected correctly
+  - [x] Test: Can create all command types
+  - [x] Test: Commands functional
+  - [x] Test: Can override dependencies
+  - [x] Test: Factory is singleton
+  - [x] Test: Memory management
+  - [x] Test: Type safety
 
 **Acceptance**:
-  - [ ] All commands created via factory
-  - [ ] Zero hardcoded instantiation in `content.ts`
-  - [ ] CI Passing
+  - [x] All commands created via factory
+  - [x] Zero hardcoded instantiation in `content.ts`
+  - [x] CI Passing
 
 ---
 
@@ -702,14 +702,14 @@
 - [x] **Memory**: No leaks detected
 
 ### End of Phase 1 Gate
-- [ ] **Code Coverage**: ≥85% on commands
-- [ ] **Tests Written**: 58 tests minimum
-- [ ] **"Already exists" warning**: GONE
-- [ ] **Command duplication**: ELIMINATED
-- [ ] **Dependency Injection**: 100% compliant
-- [ ] **Integration tests**: All passing
-- [ ] **Documentation**: Commands documented
-- [ ] **Review**: Approved
+- [x] **Code Coverage**: ≥85% on commands
+- [x] **Tests Written**: 58 tests minimum
+- [x] **"Already exists" warning**: GONE
+- [x] **Command duplication**: ELIMINATED
+- [x] **Dependency Injection**: 100% compliant
+- [x] **Integration tests**: All passing
+- [x] **Documentation**: Commands documented
+- [x] **Review**: Approved
 
 ---
 
@@ -777,7 +777,7 @@ A task is DONE when ALL of the following are met:
 ## Progress Tracking
 
 - [x] Phase 0: Foundation (62/62 tasks)
-- [ ] Phase 1: Commands (0/58 tasks)
+- [x] Phase 1: Commands (Complete)
 - [ ] Phase 2: State (0/50 tasks)
 - [ ] Phase 3: IPC (0/32 tasks)
 - [ ] Phase 4: Popup (0/25 tasks)

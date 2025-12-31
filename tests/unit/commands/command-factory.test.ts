@@ -56,9 +56,10 @@ describe('CommandFactory', () => {
             const colorRole = 'yellow';
 
             // Act
-            factory.createCreateHighlightCommand(selection, colorRole);
+            const command = factory.createCreateHighlightCommand(selection, colorRole);
 
             // Assert
+            expect(command).toBeInstanceOf(CreateHighlightCommand);
             expect(container.resolve).toHaveBeenCalledWith('modeManager');
             expect(container.resolve).toHaveBeenCalledWith('logger');
             expect(CreateHighlightCommand).toHaveBeenCalledWith(
@@ -76,9 +77,10 @@ describe('CommandFactory', () => {
             const highlightId = 'test-id';
 
             // Act
-            factory.createRemoveHighlightCommand(highlightId);
+            const command = factory.createRemoveHighlightCommand(highlightId);
 
             // Assert
+            expect(command).toBeInstanceOf(RemoveHighlightCommand);
             expect(container.resolve).toHaveBeenCalledWith('modeManager');
             expect(container.resolve).toHaveBeenCalledWith('logger');
             expect(RemoveHighlightCommand).toHaveBeenCalledWith(
@@ -88,4 +90,30 @@ describe('CommandFactory', () => {
             );
         });
     });
+
+    describe('dependency flexibility', () => {
+        it('should use whatever instance the container creates (override support)', () => {
+            // Arrange: Setup container to return a different mock
+            const customModeManager = { name: 'custom' } as unknown as IModeManager;
+
+            // Re-setup mock for this specific test
+            (container.resolve as any).mockImplementation((key: string) => {
+                if (key === 'modeManager') return customModeManager;
+                if (key === 'logger') return mockLogger;
+                return null;
+            });
+
+            // Act
+            const command = factory.createCreateHighlightCommand({} as Selection, 'green');
+
+            // Assert: Command should have been called with our CUSTOM mode manager
+            expect(CreateHighlightCommand).toHaveBeenCalledWith(
+                expect.anything(),
+                'green',
+                customModeManager, // The override
+                mockLogger
+            );
+        });
+    });
 });
+

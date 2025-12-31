@@ -115,10 +115,18 @@ describe('Service Registration (8 tests)', () => {
         const storage1 = container.resolve<IStorage>('storage');
         const storage2 = container.resolve<IStorage>('storage');
 
+        // CommandFactory should be singleton
+        // We use 'any' here because CommandFactory might not be exported as a type in this file imports yet,
+        // or we need to import it. Let's check imports.
+        // It is NOT imported. I need to add import first.
+        const factory1 = container.resolve('commandFactory');
+        const factory2 = container.resolve('commandFactory');
+
         // Assert: Same instances
         expect(logger1).toBe(logger2);
         expect(eventBus1).toBe(eventBus2);
         expect(storage1).toBe(storage2);
+        expect(factory1).toBe(factory2);
     });
 
     it('6. transient services create new instances', () => {
