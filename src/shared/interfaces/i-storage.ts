@@ -6,7 +6,7 @@
  * Implements Repository Pattern for storage layer
  */
 
-import type { HighlightEvent } from '../schemas/highlight-schema';
+import type { AnyHighlightEvent } from '@/shared/types/storage';
 
 /**
  * Event storage interface for highlight events
@@ -27,7 +27,7 @@ export interface IStorage {
      * Events are append-only (immutable)
      * Each event has unique eventId
      */
-    saveEvent(event: HighlightEvent): Promise<void>;
+    saveEvent(event: AnyHighlightEvent): Promise<void>;
 
     /**
      * Load all highlight events from storage
@@ -38,7 +38,7 @@ export interface IStorage {
      * Returns in chronological order (oldest first)
      * Used for event replay on initialization
      */
-    loadEvents(): Promise<HighlightEvent[]>;
+    loadEvents(): Promise<AnyHighlightEvent[]>;
 
     /**
      * Clear all events from storage

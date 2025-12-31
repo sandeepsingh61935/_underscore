@@ -12,6 +12,7 @@ import type {
   StorageConfig,
 } from '@/shared/types/storage';
 import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
@@ -36,7 +37,7 @@ import type { ILogger } from '@/shared/utils/logger';
  * });
  * ```
  */
-export class StorageService {
+export class StorageService implements IStorage {
   private logger: ILogger;
   private currentDomain: string;
   private config: StorageConfig;

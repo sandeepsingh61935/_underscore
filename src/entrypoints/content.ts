@@ -17,7 +17,7 @@ import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge
 import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
 import { VaultMode } from '@/content/modes/vault-mode';
 import { SelectionDetector } from '@/content/selection-detector';
-import { serializeRange } from '@/content/utils/range-converter';
+import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isVaultModeEnabled } from '@/content/vault-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import { RepositoryFacade, RepositoryFactory } from '@/shared/repositories';

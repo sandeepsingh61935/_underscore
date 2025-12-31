@@ -13,6 +13,7 @@ import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
+import { ModeManager } from '@/content/modes/mode-manager';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 
 describe('Service Registration (8 tests)', () => {

@@ -6,8 +6,31 @@
 import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 
-// Add any global test setup here
-// For example: custom matchers, global mocks, etc.
+// Augment global type for browser API
+declare global {
+  // eslint-disable-next-line no-var
+  var browser: {
+    storage: {
+      local: {
+        clear: () => Promise<void>;
+        get: (keys?: string | string[]) => Promise<Record<string, unknown>>;
+        set: (items: Record<string, unknown>) => Promise<void>;
+        remove: (keys: string | string[]) => Promise<void>;
+      };
+    };
+    runtime: {
+      sendMessage: (message: unknown) => Promise<unknown>;
+      onMessage: {
+        addListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
+        removeListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
+      };
+    };
+    tabs: {
+      query: (queryInfo: object) => Promise<unknown[]>;
+      sendMessage: (tabId: number, message: unknown) => Promise<unknown>;
+    };
+  };
+}
 
 // Polyfill for crypto.randomUUID in test environment
 if (typeof crypto === 'undefined' || !crypto.randomUUID) {
@@ -26,6 +49,7 @@ if (typeof crypto === 'undefined' || !crypto.randomUUID) {
 // Mock browser.storage API for extension tests
 const storageData = new Map<string, any>();
 
+// @ts-ignore - Augmenting global object
 global.browser = {
   storage: {
     local: {
@@ -70,10 +94,11 @@ global.browser = {
     query: vi.fn(),
     sendMessage: vi.fn(),
   },
-} as any;
+};
 
 // Also set chrome for compatibility
-global.chrome = global.browser as any;
+// @ts-ignore - Augmenting global object
+global.chrome = global.browser;
 
 // Mock console methods in tests to reduce noise
 const originalConsole = { ...console };

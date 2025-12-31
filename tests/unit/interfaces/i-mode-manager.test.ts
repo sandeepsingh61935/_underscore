@@ -6,7 +6,6 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ModeManager } from '@/content/modes/mode-manager';
-import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
@@ -25,14 +24,24 @@ describe('IModeManager Interface (4 tests)', () => {
     it('1. can registerMode() and activateMode()', async () => {
         // Arrange: Create a minimal test mode
         const testMode: IHighlightMode = {
-            name: 'test',
-            capabilities: { canPersist: false, canSync: false, canRestore: false },
+            name: 'walk', // ✅ Valid mode name
+            capabilities: {
+                persistence: 'none',
+                undo: false,
+                sync: false,
+                collections: false,
+                tags: false,
+                export: false,
+                ai: false,
+                search: false,
+                multiSelector: false
+            },
             onActivate: vi.fn().mockResolvedValue(undefined),
             onDeactivate: vi.fn().mockResolvedValue(undefined),
             createHighlight: vi.fn(),
             createFromData: vi.fn(),
             removeHighlight: vi.fn(),
-            updateHighlight: vi.fn(),
+            updateHighlight: vi.fn(), // ✅ Added missing method
             getHighlight: vi.fn(),
             getAllHighlights: vi.fn(),
             clearAll: vi.fn(),
@@ -43,7 +52,7 @@ describe('IModeManager Interface (4 tests)', () => {
 
         // Act
         modeManager.registerMode(testMode);
-        await modeManager.activateMode('test');
+        await modeManager.activateMode('walk');
 
         // Assert
         expect(testMode.onActivate).toHaveBeenCalledOnce();
@@ -53,14 +62,24 @@ describe('IModeManager Interface (4 tests)', () => {
     it('2. getCurrentMode() returns correct mode', async () => {
         // Arrange
         const mode1: IHighlightMode = {
-            name: 'mode1',
-            capabilities: { canPersist: false, canSync: false, canRestore: false },
+            name: 'sprint', // ✅ Valid mode name
+            capabilities: {
+                persistence: 'local',
+                undo: true,
+                sync: false,
+                collections: false,
+                tags: false,
+                export: false,
+                ai: false,
+                search: false,
+                multiSelector: false
+            },
             onActivate: vi.fn().mockResolvedValue(undefined),
             onDeactivate: vi.fn().mockResolvedValue(undefined),
             createHighlight: vi.fn(),
             createFromData: vi.fn(),
             removeHighlight: vi.fn(),
-            updateHighlight: vi.fn(),
+            updateHighlight: vi.fn(), // ✅ Added missing method
             getHighlight: vi.fn(),
             getAllHighlights: vi.fn(),
             clearAll: vi.fn(),
@@ -70,13 +89,13 @@ describe('IModeManager Interface (4 tests)', () => {
         };
 
         modeManager.registerMode(mode1);
-        await modeManager.activateMode('mode1');
+        await modeManager.activateMode('sprint');
 
         // Act
         const currentMode = modeManager.getCurrentMode();
 
         // Assert
-        expect(currentMode.name).toBe('mode1');
+        expect(currentMode.name).toBe('sprint');
         expect(currentMode).toBe(mode1); // Same instance
     });
 
@@ -84,14 +103,24 @@ describe('IModeManager Interface (4 tests)', () => {
         // Arrange
         const mockCreateHighlight = vi.fn().mockResolvedValue('test-id-123');
         const testMode: IHighlightMode = {
-            name: 'test',
-            capabilities: { canPersist: false, canSync: false, canRestore: false },
+            name: 'walk', // ✅ Valid mode name
+            capabilities: {
+                persistence: 'none',
+                undo: false,
+                sync: false,
+                collections: false,
+                tags: false,
+                export: false,
+                ai: false,
+                search: false,
+                multiSelector: false
+            },
             onActivate: vi.fn().mockResolvedValue(undefined),
             onDeactivate: vi.fn().mockResolvedValue(undefined),
             createHighlight: mockCreateHighlight,
             createFromData: vi.fn(),
             removeHighlight: vi.fn(),
-            updateHighlight: vi.fn(),
+            updateHighlight: vi.fn(), // ✅ Added missing method
             getHighlight: vi.fn(),
             getAllHighlights: vi.fn(),
             clearAll: vi.fn(),
@@ -101,7 +130,7 @@ describe('IModeManager Interface (4 tests)', () => {
         };
 
         modeManager.registerMode(testMode);
-        await modeManager.activateMode('test');
+        await modeManager.activateMode('walk');
 
         const mockSelection = {} as Selection;
 
