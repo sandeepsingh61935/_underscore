@@ -6,12 +6,12 @@
  */
 
 import type { IHighlightMode, HighlightData } from './highlight-mode.interface';
-import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 
+import { ValidationError } from '@/shared/errors/app-error';
+import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
+import { ModeConfigSchema } from '@/shared/schemas/validation';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import { ModeConfigSchema } from '@/shared/schemas/validation';
-import { ValidationError } from '@/shared/errors/app-error';
 
 export class ModeManager implements IModeManager {
   private currentMode: IHighlightMode | null = null;

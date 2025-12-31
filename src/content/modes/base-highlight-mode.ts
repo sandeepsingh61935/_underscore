@@ -13,8 +13,8 @@ import {
   injectHighlightCSS,
   removeHighlightCSS,
 } from '@/content/styles/highlight-styles';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IStorage } from '@/shared/interfaces/i-storage';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';

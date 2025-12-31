@@ -14,14 +14,15 @@ import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
-import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
-import { VaultMode } from '@/content/modes/vault-mode';
+import type { ModeManager, SprintMode, WalkMode } from '@/content/modes';
+import type { VaultMode } from '@/content/modes/vault-mode';
 import { SelectionDetector } from '@/content/selection-detector';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isVaultModeEnabled } from '@/content/vault-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
-import { RepositoryFacade, RepositoryFactory } from '@/shared/repositories';
-import { StorageService } from '@/shared/services/storage-service';
+import type { RepositoryFacade} from '@/shared/repositories';
+import { RepositoryFactory } from '@/shared/repositories';
+import type { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
   HighlightCreatedEvent,
@@ -29,7 +30,7 @@ import type {
   HighlightClickedEvent,
 } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
-import { EventBus } from '@/shared/utils/event-bus';
+import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import {
   subtractRange,

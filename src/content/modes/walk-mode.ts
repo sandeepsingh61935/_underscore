@@ -21,12 +21,11 @@ import type { HighlightData } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
-
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 
 export class WalkMode extends BaseHighlightMode implements IBasicMode {
     get name(): 'walk' {
