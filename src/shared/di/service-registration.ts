@@ -8,6 +8,7 @@
 
 import type { Container } from './container';
 
+import { CommandFactory } from '@/content/commands/command-factory';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
 import { SprintMode } from '@/content/modes/sprint-mode';
@@ -159,6 +160,14 @@ export function registerServices(container: Container): void {
         const logger = container.resolve<ILogger>('logger');
         return new VaultMode(repository, eventBus, logger);
     });
+
+    /**
+     * Command Factory - Singleton
+     * Centralizes command creation and dependency injection
+     */
+    container.registerSingleton<CommandFactory>('commandFactory', () => {
+        return new CommandFactory(container);
+    });
 }
 
 /**
@@ -178,5 +187,6 @@ export function getDependencyGraph(): Map<string, string[]> {
         ['walkMode', ['repository', 'eventBus']],
         ['sprintMode', ['repository', 'storage', 'eventBus']],
         ['vaultMode', ['repository', 'eventBus']],
+        ['commandFactory', ['container']],
     ]);
 }
