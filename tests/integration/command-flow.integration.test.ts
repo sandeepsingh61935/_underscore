@@ -11,6 +11,7 @@ import { CommandStack } from '@/shared/patterns/command';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { ILogger } from '@/shared/utils/logger';
 import { RepositoryFactory } from '@/shared/repositories';
+import { CreateHighlightCommand } from '@/content/commands/simple-highlight-commands';
 
 // Mock DOM dependencies
 vi.mock('@/content/utils/range-converter', () => ({
@@ -77,8 +78,54 @@ describe('Command Flow Integration', () => {
         RepositoryFactory.reset();
     });
 
-    it('should initialize correctly', () => {
-        expect(modeManager).toBeDefined();
-        expect(commandStack).toBeDefined();
+    /**
+     * Helper: Create mock selection
+     */
+    function createSelection(): Selection {
+        const range = document.createRange();
+        const node = document.body.firstChild!;
+        range.selectNode(node);
+
+        const selection = {
+            rangeCount: 1,
+            getRangeAt: () => range,
+            removeAllRanges: vi.fn(),
+            addRange: vi.fn()
+        } as unknown as Selection;
+
+        return selection;
+    }
+
+    describe('Walk Mode (Ephemeral)', () => {
+        it('should create, undo, and redo highlights without persistence', async () => {
+            // 1. Activate Walk Mode
+            await modeManager.activateMode('walk');
+            const walkMode = modeManager.getCurrentMode();
+            expect(walkMode.name).toBe('walk');
+
+            // 2. Execute Create Command
+            const selection = createSelection();
+            const createCmd = new CreateHighlightCommand(
+                selection,
+                'yellow',
+                modeManager,
+                logger
+            );
+
+            await commandStack.execute(createCmd);
+
+            // Verify creation
+            expect(walkMode.getAllHighlights()).toHaveLength(1);
+            const hlId = walkMode.getAllHighlights()[0]?.id;
+            if (!hlId) throw new Error('Highlight not created');
+
+            // 3. Undo
+            await commandStack.undo();
+            expect(walkMode.getAllHighlights()).toHaveLength(0);
+
+            // 4. Redo
+            await commandStack.redo();
+            expect(walkMode.getAllHighlights()).toHaveLength(1);
+            expect(walkMode.getHighlight(hlId)).toBeDefined();
+        });
     });
-});
