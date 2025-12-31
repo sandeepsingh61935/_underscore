@@ -4,9 +4,10 @@
  * Verifies MockMessaging implements IMessaging correctly
  * These tests prove the mock works for unit testing
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MockMessaging } from '@/shared/services/mock-messaging';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import type { Message } from '@/shared/interfaces/i-messaging';
+import { MockMessaging } from '@/shared/services/mock-messaging';
 
 describe('IMessaging Interface (5 tests)', () => {
     let messaging: MockMessaging;
@@ -39,8 +40,8 @@ describe('IMessaging Interface (5 tests)', () => {
         // Assert
         expect(response).toEqual(testResponse);
         expect(messaging.sentToTab).toHaveLength(1);
-        expect(messaging.sentToTab[0].tabId).toBe(123);
-        expect(messaging.sentToTab[0].message.type).toBe('TEST_MESSAGE');
+        expect(messaging.sentToTab[0]?.tabId).toBe(123);
+        expect(messaging.sentToTab[0]?.message.type).toBe('TEST_MESSAGE');
     });
 
     it('3. onMessage() registers handler', () => {

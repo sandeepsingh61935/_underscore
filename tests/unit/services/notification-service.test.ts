@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { ChromeNotificationService } from '@/shared/services/notification-service';
 import type { ILogger } from '@/shared/utils/logger';
 

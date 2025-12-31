@@ -5,8 +5,9 @@
  * Uses real EventBus and Logger (minimal mocking)
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ModeManager } from '@/content/modes/mode-manager';
+
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
+import { ModeManager } from '@/content/modes/mode-manager';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 

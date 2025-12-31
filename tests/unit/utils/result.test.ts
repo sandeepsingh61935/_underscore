@@ -4,8 +4,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ok, err, unwrap, safe, ErrorBoundary } from '@/shared/utils/result';
+
 import { AppError, SystemError, ModeError } from '@/shared/errors/app-error';
+import { ok, err, unwrap, safe, ErrorBoundary } from '@/shared/utils/result';
 
 describe('Result & ErrorBoundary (6 tests)', () => {
 

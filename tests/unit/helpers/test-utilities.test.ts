@@ -6,8 +6,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
 import {
-    createMockRange,
+    createMockTab,
+    MockChromeStorage,
+    resetChromeMocks
+} from '../../helpers/chrome-helpers';
+import {
     createMockSelection,
     createTextNode,
     createParagraph,
@@ -15,11 +20,6 @@ import {
     createContainer,
     simulateUserSelection
 } from '../../helpers/dom-helpers';
-import {
-    createMockTab,
-    MockChromeStorage,
-    resetChromeMocks
-} from '../../helpers/chrome-helpers';
 
 describe('Test Utilities (10 tests)', () => {
 

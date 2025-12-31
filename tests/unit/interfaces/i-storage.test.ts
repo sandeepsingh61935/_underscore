@@ -5,10 +5,12 @@
  * Uses fake-indexeddb for real persistence testing
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+
 import 'fake-indexeddb/auto'; // ✅ Real IndexedDB, just in-memory
+import { createTestHighlight } from '../../helpers/test-fixtures';
+
 import { StorageService } from '@/shared/services/storage-service';
 import type { HighlightCreatedEvent } from '@/shared/types/storage';
-import { createTestHighlight } from '../../helpers/test-fixtures';
 
 describe('IStorage Interface (4 tests)', () => {
     let storage: StorageService;

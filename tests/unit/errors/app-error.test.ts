@@ -4,12 +4,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import {
     AppError,
     ModeError,
     ValidationError,
     PersistenceError,
-    MessagingError,
     SystemError
 } from '@/shared/errors/app-error';
 
@@ -77,6 +77,6 @@ describe('AppError Hierarchy (8 tests)', () => {
             queryId: 'abc'
         });
 
-        expect(err.context?.table).toBe('highlights');
+        expect(err.context?.['table']).toBe('highlights');
     });
 });

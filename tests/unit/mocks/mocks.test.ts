@@ -4,9 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { createMockContainer } from '../../helpers/mock-container';
+
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 
 describe('Mock Infrastructure (10 tests)', () => {
     let context: ReturnType<typeof createMockContainer>;

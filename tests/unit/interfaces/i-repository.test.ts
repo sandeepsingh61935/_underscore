@@ -5,10 +5,13 @@
  * Focus: Behavioral testing with minimal mocking
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
-import type { IRepository } from '@/shared/interfaces/i-repository';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+
 import { createTestHighlight } from '../../helpers/test-fixtures';
+
+import type { IRepository } from '@/shared/interfaces/i-repository';
+import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+
 
 describe('IRepository Interface (5 tests)', () => {
     let repository: InMemoryHighlightRepository;
