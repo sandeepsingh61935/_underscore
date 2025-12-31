@@ -92,24 +92,21 @@ describe('ModeStateManager - Metadata Validation', () => {
         });
 
         it('should update lastModified timestamp on each mode change', async () => {
-            // Arrange
-            const startTime = Date.now();
-            await stateManager.setMode('walk');
+            // Arrange - Set initial mode to sprint (not walk, which is default)
+            await stateManager.setMode('sprint');
             const firstTimestamp = mockChromeStorage.sync.set.mock.calls[0]?.[0]?.metadata?.lastModified;
 
-            // Wait a bit
+            // Wait a bit to ensure timestamp difference
             await new Promise(resolve => setTimeout(resolve, 10));
 
-            // Act
-            await stateManager.setMode('sprint');
+            // Act - Switch to vault
+            await stateManager.setMode('vault');
             const secondTimestamp = mockChromeStorage.sync.set.mock.calls[1]?.[0]?.metadata?.lastModified;
 
-            // Assert - Second timestamp should be later (or at least defined)
+            // Assert - Both timestamps should be defined and second should be >= first
             expect(firstTimestamp).toBeDefined();
             expect(secondTimestamp).toBeDefined();
-            if (firstTimestamp && secondTimestamp) {
-                expect(secondTimestamp).toBeGreaterThanOrEqual(firstTimestamp);
-            }
+            expect(secondTimestamp).toBeGreaterThanOrEqual(firstTimestamp!);
         });
 
         it('should preserve metadata across multiple mode switches', async () => {
@@ -288,16 +285,19 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     describe('Feature flags in metadata', () => {
         it('should persist feature flags in metadata', async () => {
-            // Arrange - State manager with flags support
-            // (This will be implemented when we add setFlags() method)
-            await stateManager.setMode('walk');
+            // Arrange - Set mode to sprint (not walk, which is default)
+            await stateManager.setMode('sprint');
 
             // Act
             const savedState = mockChromeStorage.sync.set.mock.calls[0]?.[0];
 
-            // Assert - Flags should be optional but structure should support them
+            // Assert - Metadata should be persisted (flags are optional)
             expect(savedState).toBeDefined();
-            if (savedState?.metadata?.flags) {
+            expect(savedState.metadata).toBeDefined();
+            expect(savedState.metadata.version).toBe(2);
+            expect(savedState.metadata.lastModified).toBeGreaterThan(0);
+            // Flags are optional, so just verify structure supports them if present
+            if (savedState.metadata.flags) {
                 expect(typeof savedState.metadata.flags).toBe('object');
             }
         });
