@@ -12,6 +12,9 @@ import { RepositoryFactory } from '@/shared/repositories';
 import { ModeTypeSchema, type ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
 
+// Re-export ModeType for backward compatibility
+export type { ModeType };
+
 export class ModeStateManager {
     private currentMode: ModeType = 'walk';
     private listeners: Set<(mode: ModeType) => void> = new Set();
