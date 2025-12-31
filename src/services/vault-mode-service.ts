@@ -63,9 +63,10 @@ export class VaultModeService {
             const selectors = this.selectorEngine.createSelectors(range);
 
             // Store highlight with selector metadata
+            const url = window.location.href.split('#')[0];
             await this.storage.saveHighlight(highlight, collectionId || null, {
                 selectors,
-                url: window.location.href,
+                url,
             });
 
             // Create event for sync
@@ -74,7 +75,7 @@ export class VaultModeService {
                 timestamp: Date.now(),
                 data: {
                     highlightId: highlight.id,
-                    url: window.location.href,
+                    url: window.location.href.split('#')[0],
                     collectionId: collectionId || null,
                 },
                 synced: false,
@@ -106,7 +107,7 @@ export class VaultModeService {
         restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
     }>> {
         try {
-            const url = window.location.href;
+            const url = window.location.href.split('#')[0];
             const records = await this.storage.getHighlightsByUrl(url);
 
             this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
