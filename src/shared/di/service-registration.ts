@@ -130,7 +130,8 @@ export function registerServices(container: Container): void {
     container.registerTransient<IHighlightMode>('walkMode', () => {
         const repository = container.resolve<IHighlightRepository>('repository');
         const eventBus = container.resolve<EventBus>('eventBus');
-        return new WalkMode(repository, eventBus);
+        const logger = container.resolve<ILogger>('logger');
+        return new WalkMode(repository, eventBus, logger);
     });
 
     /**
@@ -142,7 +143,8 @@ export function registerServices(container: Container): void {
         const repository = container.resolve<IHighlightRepository>('repository');
         const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
-        return new SprintMode(repository, storage, eventBus);
+        const logger = container.resolve<ILogger>('logger');
+        return new SprintMode(repository, storage, eventBus, logger);
     });
 
     /**
@@ -153,7 +155,8 @@ export function registerServices(container: Container): void {
     container.registerTransient<IHighlightMode>('vaultMode', () => {
         const repository = container.resolve<IHighlightRepository>('repository');
         const eventBus = container.resolve<EventBus>('eventBus');
-        return new VaultMode(repository, eventBus);
+        const logger = container.resolve<ILogger>('logger');
+        return new VaultMode(repository, eventBus, logger);
     });
 }
 
