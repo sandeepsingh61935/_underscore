@@ -161,111 +161,95 @@ export class CreateHighlightCommand implements Command {
 
 /**
  * Remove highlight command
+ * 
+ * **Responsibility**: Manage undo/redo state for highlight removal
+ * 
+ * **Design Pattern**: Command Pattern with Dependency Inversion Principle
+ * - Depends on IModeManager interface
+ * - Delegates ALL removal/restoration to modes
+ * - Stores minimal snapshot for undo
+ * 
+ * @remarks
+ * Commands do NOT access repository or storage directly.
+ * All persistence is delegated to modes via IModeManager.
+ * 
+ * @see Phase 1.1.3: Refactor RemoveHighlightCommand
  */
 export class RemoveHighlightCommand implements Command {
-  private serializedRanges: SerializedRange[] = [];
+  private highlightSnapshot: ModeHighlightData | null = null;
 
+  /**
+   * @param highlightId - ID of highlight to remove
+   * @param modeManager - Mode manager interface (DI)
+   * @param logger - Logger interface (DI)
+   */
   constructor(
-    private highlight: Highlight,
-    private manager: ModeManager | HighlightManager | HighlightRenderer, // Accept all types
-    private repositoryFacade: RepositoryFacade,
-    private storage: StorageService
-  ) {
-    // Store ALL ranges for undo (multi-range support!)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const h = highlight as any;
-    const liveRanges = h.liveRanges || [];
-    this.serializedRanges = liveRanges.map((r: Range) => serializeRange(r));
-  }
+    private readonly highlightId: string,
+    private readonly modeManager: IModeManager,
+    private readonly logger: ILogger
+  ) { }
 
+  /**
+   * Execute: Remove highlight via mode manager
+   * Snapshots data before removal for undo capability
+   */
   async execute(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const h = this.highlight as any;
+    try {
+      // Snapshot highlight data if not already captured
+      if (!this.highlightSnapshot) {
+        const data = this.modeManager.getHighlight(this.highlightId);
 
-    // Remove
-    if ('removeHighlight' in this.manager) {
-      this.manager.removeHighlight(h.id);
-    }
+        if (!data) {
+          this.logger.warn('Cannot remove: Highlight not found', {
+            id: this.highlightId
+          });
+          return;
+        }
 
-    this.repositoryFacade.remove(h.id);
+        // Store snapshot for undo
+        this.highlightSnapshot = { ...data };
+      }
 
-    // Save event (SPRINT MODE ONLY)
-    if (RepositoryFactory.getMode() !== 'walk') {
-      await this.storage.saveEvent({
-        type: 'highlight.removed',
-        timestamp: Date.now(),
-        eventId: crypto.randomUUID(),
-        highlightId: h.id,
+      // Delegate removal to mode
+      await this.modeManager.removeHighlight(this.highlightId);
+
+      this.logger.debug('Highlight removed', { id: this.highlightId });
+
+    } catch (error) {
+      this.logger.error('Remove command failed', error as Error, {
+        id: this.highlightId
       });
+      throw error;
     }
   }
 
+  /**
+   * Undo: Restore highlight via mode manager
+   */
   async undo(): Promise<void> {
-    if (this.serializedRanges.length === 0) return;
-
-    // Recreate ALL ranges from serialized data
-    const liveRanges: Range[] = [];
-    for (const sr of this.serializedRanges) {
-      const range = deserializeRange(sr);
-      if (range) {
-        liveRanges.push(range);
-      }
+    if (!this.highlightSnapshot) {
+      this.logger.warn('Cannot undo: No snapshot stored');
+      return;
     }
 
-    if (liveRanges.length === 0) return;
+    try {
+      // Delegate restoration to mode
+      const mode = this.modeManager.getCurrentMode();
+      await mode.createFromData(this.highlightSnapshot);
 
-    // Check if manager is ModeManager
-    if ('createFromData' in this.manager) {
-      // Type cast for property access
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const h = this.highlight as any;
-
-      // Generate contentHash
-      const text = liveRanges.map((r) => r.toString()).join('');
-      const { generateContentHash } = await import('@/shared/utils/content-hash');
-      const contentHash = await generateContentHash(text);
-
-      // [OK] Use mode's unified path (fixes registration!)
-      await (this.manager as ModeManager).createFromData({
-        id: h.id,
-        text: h.text,
-        contentHash,
-        colorRole: h.color || 'yellow',
-        type: 'underscore' as const,
-        ranges: this.serializedRanges,
-        liveRanges: liveRanges,
-        createdAt: new Date(),
+      this.logger.debug('Highlight restored (undo)', {
+        id: this.highlightId
       });
-    } else {
-      // Legacy path
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const h = this.highlight as any;
-      const highlightName = getHighlightName(h.type, h.id);
-      injectHighlightCSS(h.type, h.id, h.color);
-      const nativeHighlight = new Highlight(...liveRanges);
-      CSS.highlights.set(highlightName, nativeHighlight);
-    }
 
-    // Re-add to store with ORIGINAL data + liveRanges for click detection!
-    this.repositoryFacade.addFromData({
-      ...this.highlight,
-      ranges: this.serializedRanges,
-      liveRanges: liveRanges, // CRITICAL for click detection!
-    });
-
-    // Save event (SPRINT MODE ONLY)
-    if (RepositoryFactory.getMode() !== 'walk') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const h = this.highlight as any;
-      await this.storage.saveEvent({
-        type: 'highlight.created',
-        timestamp: Date.now(),
-        eventId: crypto.randomUUID(),
-        data: h,
+    } catch (error) {
+      this.logger.error('Undo remove failed', error as Error, {
+        id: this.highlightId
       });
+      throw error;
     }
   }
 }
+
 
 /**
  * Clear selection command

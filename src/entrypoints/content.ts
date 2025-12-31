@@ -301,11 +301,9 @@ export default defineContentScript({
         if (highlight) {
           // Use command for undo/redo support
           const command = new RemoveHighlightCommand(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            highlight as any, // Legacy highlight type
-            modeManager, // [OK] Use mode manager!
-            repositoryFacade,
-            storage
+            event.highlightId,
+            modeManager,
+            logger
           );
 
           await commandStack.execute(command);
