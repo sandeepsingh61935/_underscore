@@ -8,7 +8,7 @@ import 'fake-indexeddb/auto';
 
 // Augment global type for browser API
 declare global {
-  // eslint-disable-next-line no-var
+   
   var browser: {
     storage: {
       local: {

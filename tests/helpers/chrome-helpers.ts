@@ -50,7 +50,7 @@ export function createMockTab(overrides?: Partial<chrome.tabs.Tab>): chrome.tabs
         url: 'https://example.com',
         title: 'Example Page',
         ...overrides,
-    };
+    } as unknown as chrome.tabs.Tab;
 }
 
 /**

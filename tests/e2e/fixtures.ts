@@ -5,8 +5,13 @@
  * Provides helpers for loading extension and testing in browser
  */
 
-import { test as base, chromium, type BrowserContext } from '@playwright/test';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+import { test as base, chromium, type BrowserContext } from '@playwright/test';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Extended test with extension context
@@ -16,7 +21,7 @@ export const test = base.extend<{
     extensionId: string;
 }>({
     // Load extension before each test
-    context: async ({ }, use) => {
+    context: async (_args, use) => {
         const pathToExtension = path.join(__dirname, '../../.output/chrome-mv3');
         const context = await chromium.launchPersistentContext('', {
             headless: false,
@@ -35,6 +40,9 @@ export const test = base.extend<{
         if (!background) background = await context.waitForEvent('serviceworker');
 
         const extensionId = background.url().split('/')[2];
+        if (!extensionId) {
+            throw new Error('Could not determine extension ID from background service worker');
+        }
         await use(extensionId);
     },
 });

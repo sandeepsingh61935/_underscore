@@ -8,7 +8,7 @@
 import { test, expect } from './fixtures';
 
 test.describe('Extension E2E Smoke Tests (3 tests)', () => {
-    test('1. extension loads successfully', async ({ context, extensionId }) => {
+    test('1. extension loads successfully', async ({ extensionId }) => {
         expect(extensionId).toBeDefined();
         expect(extensionId).toMatch(/^[a-z]{32}$/);
     });

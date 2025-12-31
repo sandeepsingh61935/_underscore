@@ -7,11 +7,11 @@
 
 import { Container } from '@/shared/di/container';
 import { registerServices } from '@/shared/di/service-registration';
-import { EventBus } from '@/shared/utils/event-bus';
-import { LoggerFactory, LogLevel } from '@/shared/utils/logger';
-import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IStorage } from '@/shared/interfaces/i-storage';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { EventBus } from '@/shared/utils/event-bus';
+import { LogLevel } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Integration test context
@@ -57,7 +57,7 @@ export function createIntegrationContext(): IntegrationTestContext {
  */
 export async function cleanupIntegrationContext(context: IntegrationTestContext): Promise<void> {
     // Clear event listeners
-    context.eventBus.removeAllListeners?.();
+    context.eventBus.clear();
 
     // Clear storage
     await context.storage.clear?.();
