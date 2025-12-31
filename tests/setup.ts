@@ -29,6 +29,14 @@ declare global {
       query: (queryInfo: object) => Promise<unknown[]>;
       sendMessage: (tabId: number, message: unknown) => Promise<unknown>;
     };
+    notifications: {
+      create: (options: unknown, callback?: (notificationId: string) => void) => void;
+      clear: (notificationId: string, callback?: (wasCleared: boolean) => void) => void;
+      onClicked: {
+        addListener: (callback: (notificationId: string) => void) => void;
+        removeListener: (callback: (notificationId: string) => void) => void;
+      };
+    };
   };
 }
 
@@ -93,6 +101,16 @@ global.browser = {
   tabs: {
     query: vi.fn(),
     sendMessage: vi.fn(),
+  },
+  notifications: {
+    // @ts-ignore
+    create: vi.fn().mockImplementation((opts, cb) => cb && cb('mock-notification-id')),
+    // @ts-ignore
+    clear: vi.fn().mockImplementation((id, cb) => cb && cb(true)),
+    onClicked: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
   },
 };
 
