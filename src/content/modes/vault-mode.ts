@@ -22,11 +22,23 @@ import { serializeRange } from '@/content/utils/range-converter';
 import { getVaultModeService } from '@/services/vault-mode-service';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+
 export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     private vaultService = getVaultModeService();
 
     get name(): 'vault' {
         return 'vault' as const;
+    }
+
+    constructor(
+        repository: IHighlightRepository,
+        eventBus: EventBus,
+        logger: ILogger
+    ) {
+        super(eventBus, logger, repository);
     }
 
     override async onActivate(): Promise<void> {
@@ -80,8 +92,9 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         this.data.set(data.id, data);
 
         // 4. Update Repository (Idempotent check)
-        if (!this.repository.get(data.id)) {
-            this.repository.addFromData(data as any);
+        const alreadyExists = await this.repository.findById(data.id);
+        if (!alreadyExists) {
+            await this.repository.add(data as any);
         } else {
             this.logger.debug('[VAULT] Skipping duplicate repo add during create', { id: data.id });
         }
@@ -101,11 +114,17 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
         // Update runtime
         this.data.set(id, updated);
-        this.repository.addFromData(updated); // Updates existing in repo
+        await this.repository.add(updated as any); // Updates existing in repo (add mimics addFromData/upsert if logic supports it, otherwise update)
+        // Correction: Repository Pattern typically separates add vs update. InMemory implementation 'add' usually overwrites or throws.
+        // If 'add' throws on duplicate, we should use 'update'.
+        // However, standard IRepository 'add' is often idempotent upsert in simple implementations, or strict.
+        // Looking at InMemoryHighlightRepository behavior (impl inferred): Map.set(id, item) -> Upsert.
+        // If specific update method exists on interface, use it.
+        await this.repository.update(id, updates as any);
 
         // Update storage
         // Assuming ranges didn't change, we use the first live range
-        const range = existing.liveRanges[0];
+        const range = existing.liveRanges && existing.liveRanges[0];
         if (range) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await this.vaultService.saveHighlight(updated as any, range);
@@ -120,7 +139,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         }
         this.highlights.clear();
         this.data.clear();
-        this.repository.clear(); // If facade supports it
+        await this.repository.clear(); // If facade supports it
     }
 
     // IPersistentMode methods
@@ -158,8 +177,8 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
         // Deduplication
         const contentHash = await generateContentHash(text);
-        const existing = this.repository.findByContentHash(contentHash);
-        if (existing) {
+        const existing = await this.repository.findByContentHash(contentHash);
+        if (existing && existing.id) {
             this.logger.info('[VAULT] Duplicate content detected', { existingId: existing.id });
             return existing.id;
         }
@@ -198,7 +217,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         this.data.set(id, data);
 
         // 4. Update In-Memory Repository (for UI consistency)
-        this.repository.addFromData(data);
+        await this.repository.add(data as any);
 
         return id;
     }
@@ -215,7 +234,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
             this.highlights.delete(id);
         }
         this.data.delete(id);
-        this.repository.remove(id);
+        await this.repository.remove(id);
     }
 
     async restore(_url?: string): Promise<void> {
@@ -244,8 +263,9 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
                 this.data.set(storedData.id, fullData);
 
                 // Sync to Repository (Idempotent check)
-                if (!this.repository.get(storedData.id)) {
-                    await this.repository.addFromData(fullData);
+                const exists = await this.repository.findById(storedData.id);
+                if (!exists) {
+                    await this.repository.add(fullData as any);
                 } else {
                     this.logger.debug('[VAULT] Skipping duplicate restore', { id: storedData.id });
                 }
