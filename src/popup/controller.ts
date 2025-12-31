@@ -14,8 +14,8 @@ export class PopupController {
 
     async init(): Promise<void> {
         // Get DOM elements
-        this.modeSelector = document.getElementById('mode-selector') as HTMLSelectElement;
-        this.highlightCount = document.getElementById('highlight-count') as HTMLElement;
+        this.modeSelector = document.getElementById('mode-selector') as unknown as HTMLSelectElement;
+        this.highlightCount = document.getElementById('highlight-count') as unknown as HTMLElement;
 
         if (!this.modeSelector || !this.highlightCount) {
             console.error('[Popup] Required elements not found');
@@ -56,7 +56,7 @@ export class PopupController {
         try {
             const response = await chrome.tabs.sendMessage(this.currentTab.id, {
                 type: 'GET_MODE',
-            } as Message);
+            } as unknown as Message);
 
             if (response && 'mode' in response) {
                 this.modeSelector.value = response.mode;
@@ -75,8 +75,9 @@ export class PopupController {
             await chrome.tabs.sendMessage(this.currentTab.id, {
                 type: 'SET_MODE',
                 mode,
-            } as Message);
+            } as unknown as Message);
 
+            // eslint-disable-next-line no-console
             console.log('[Popup] Mode switched to:', mode);
         } catch (error) {
             console.error('[Popup] Failed to switch mode:', error);
@@ -89,12 +90,12 @@ export class PopupController {
         try {
             const response = await chrome.tabs.sendMessage(this.currentTab.id, {
                 type: 'GET_HIGHLIGHT_COUNT',
-            } as Message);
+            } as unknown as Message);
 
             if (response && 'count' in response) {
                 this.highlightCount.textContent = response.count.toString();
             }
-        } catch (error) {
+        } catch (_error) {
             // Content script might not be loaded yet, ignore
         }
     }
