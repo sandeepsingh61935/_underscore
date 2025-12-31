@@ -7,10 +7,10 @@
 
 import type { ModeManager } from './mode-manager';
 
+import { ValidationError } from '@/shared/errors/app-error';
 import { RepositoryFactory } from '@/shared/repositories';
+import { ModeTypeSchema, type ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
-
-export type ModeType = 'walk' | 'sprint' | 'vault';
 
 export class ModeStateManager {
     private currentMode: ModeType = 'walk';
@@ -27,11 +27,23 @@ export class ModeStateManager {
     async init(): Promise<void> {
         try {
             const result = await chrome.storage.sync.get('defaultMode');
-            this.currentMode = (result['defaultMode'] as ModeType) || 'walk';
+            const loadedMode = result['defaultMode'];
 
-            this.logger.info('[ModeState] Loaded user preference', {
-                mode: this.currentMode,
-            });
+            // Validate loaded mode with Zod
+            const validation = ModeTypeSchema.safeParse(loadedMode);
+
+            if (validation.success) {
+                this.currentMode = validation.data;
+                this.logger.info('[ModeState] Loaded user preference', {
+                    mode: this.currentMode,
+                });
+            } else {
+                // Invalid mode in storage - fall back to default
+                this.logger.error('[ModeState] Invalid mode in storage', new Error(
+                    `Invalid mode "${loadedMode}": ${validation.error.message}`
+                ));
+                this.currentMode = 'walk';
+            }
 
             await this.applyMode();
         } catch (error) {
@@ -53,17 +65,31 @@ export class ModeStateManager {
      * Set mode (with persistence and broadcast)
      */
     async setMode(mode: ModeType): Promise<void> {
-        if (this.currentMode === mode) {
-            this.logger.debug('[ModeState] Already in mode', { mode });
+        // Validate mode with Zod BEFORE any state changes
+        const validation = ModeTypeSchema.safeParse(mode);
+
+        if (!validation.success) {
+            const error = new ValidationError(
+                `Invalid mode: ${JSON.stringify(mode)}. ${validation.error.message}`,
+                { mode, validationErrors: validation.error.issues }
+            );
+            this.logger.error('[ModeState] Validation failed', error);
+            throw error;
+        }
+
+        const validatedMode = validation.data;
+
+        if (this.currentMode === validatedMode) {
+            this.logger.debug('[ModeState] Already in mode', { mode: validatedMode });
             return;
         }
 
         this.logger.info('[ModeState] Switching mode', {
             from: this.currentMode,
-            to: mode,
+            to: validatedMode,
         });
 
-        this.currentMode = mode;
+        this.currentMode = validatedMode;
 
         // 1. Persist preference
         try {
