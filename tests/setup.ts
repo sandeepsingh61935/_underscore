@@ -23,6 +23,58 @@ if (typeof crypto === 'undefined' || !crypto.randomUUID) {
   } as Crypto;
 }
 
+// Mock browser.storage API for extension tests
+const storageData = new Map<string, any>();
+
+global.browser = {
+  storage: {
+    local: {
+      get: vi.fn().mockImplementation(async (keys?: string | string[]) => {
+        if (!keys) {
+          // Return all storage
+          return Object.fromEntries(storageData);
+        }
+        if (typeof keys === 'string') {
+          return { [keys]: storageData.get(keys) };
+        }
+        const result: Record<string, any> = {};
+        for (const key of keys) {
+          result[key] = storageData.get(key);
+        }
+        return result;
+      }),
+      set: vi.fn().mockImplementation(async (items: Record<string, any>) => {
+        for (const [key, value] of Object.entries(items)) {
+          storageData.set(key, value);
+        }
+      }),
+      remove: vi.fn().mockImplementation(async (keys: string | string[]) => {
+        const keysArray = typeof keys === 'string' ? [keys] : keys;
+        for (const key of keysArray) {
+          storageData.delete(key);
+        }
+      }),
+      clear: vi.fn().mockImplementation(async () => {
+        storageData.clear();
+      }),
+    },
+  },
+  runtime: {
+    sendMessage: vi.fn(),
+    onMessage: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+  tabs: {
+    query: vi.fn(),
+    sendMessage: vi.fn(),
+  },
+} as any;
+
+// Also set chrome for compatibility
+global.chrome = global.browser as any;
+
 // Mock console methods in tests to reduce noise
 const originalConsole = { ...console };
 
