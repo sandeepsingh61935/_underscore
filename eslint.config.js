@@ -18,7 +18,8 @@ export default [
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
-      '.wxt',
+      '.wxt/**',
+      '.output/**',
       '.eslintrc.legacy.cjs',
       '.prettierrc.cjs',
     ],
@@ -66,6 +67,7 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        performance: 'readonly',
         // Browser globals
         atob: 'readonly',
         btoa: 'readonly',
