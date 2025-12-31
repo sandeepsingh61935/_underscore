@@ -27,7 +27,22 @@ import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/type
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IStorage } from '@/shared/interfaces/i-storage';
+
 export class SprintMode extends BaseHighlightMode implements IBasicMode {
+  constructor(
+    repository: IHighlightRepository,
+    storage: IStorage,
+    eventBus: EventBus,
+    logger: ILogger
+  ) {
+    super(eventBus, logger, repository);
+    this.storage = storage; // Explicitly set storage for Sprint Mode (uses event sourcing)
+  }
+
   get name(): 'sprint' {
     return 'sprint' as const;
   }
@@ -60,9 +75,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     // DEDUPLICATION: Check for existing highlight
     // ============================================
     const contentHash = await generateContentHash(text);
-    const existing = this.repository.findByContentHash(contentHash);
+    const existing = await this.repository.findByContentHash(contentHash);
 
-    if (existing) {
+    if (existing && existing.id) {
       this.logger.info('Duplicate content detected - returning existing highlight', {
         existingId: existing.id,
         text: text.substring(0, 50) + '...',
@@ -103,7 +118,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
     // 4. Add to repository (persistence)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.repository.add(data as any);
+    await this.repository.add(data as any);
     this.logger.info('Added to repository', { id });
 
     // Unified rendering - ALWAYS registers properly!
@@ -179,7 +194,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.data.delete(id);
 
     // [OK] Remove from repository (persistence)
-    this.repository.remove(id);
+    await this.repository.remove(id);
 
     this.logger.info('Highlight removed completely', { id });
   }
@@ -196,20 +211,21 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.data.clear();
 
     // [OK] Clear repository (persistence)
-    this.repository.clear();
+    await this.repository.clear();
 
     // [OK] Emit storage event for event sourcing (CRITICAL FIX!)
-    await this.storage.saveEvent({
-      type: 'highlights.cleared',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      count,
-    });
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlights.cleared',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        count,
+      });
+    }
 
     this.logger.info('All highlights cleared (with storage event)', { count });
   }
 
-  /**
   /**
    * Event Handler: Highlight Created
    * Sprint Mode: Persists to event store with TTL
@@ -226,12 +242,14 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    await this.storage.saveEvent({
-      type: 'highlight.created',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      data: storageData,
-    });
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlight.created',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        data: storageData,
+      });
+    }
   }
 
   /**
@@ -241,12 +259,14 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
     this.logger.debug('Sprint Mode: Persisting highlight removal');
 
-    await this.storage.saveEvent({
-      type: 'highlight.removed',
-      timestamp: Date.now(),
-      eventId: crypto.randomUUID(),
-      highlightId: event.highlightId,
-    });
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        highlightId: event.highlightId,
+      });
+    }
   }
 
   /**
