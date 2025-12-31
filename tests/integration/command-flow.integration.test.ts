@@ -11,7 +11,7 @@ import { CommandStack } from '@/shared/patterns/command';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { ILogger } from '@/shared/utils/logger';
 import { RepositoryFactory } from '@/shared/repositories';
-import { CreateHighlightCommand } from '@/content/commands/simple-highlight-commands';
+import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 
 // Mock DOM dependencies
 vi.mock('@/content/utils/range-converter', () => ({
@@ -127,5 +127,42 @@ describe('Command Flow Integration', () => {
             await commandStack.redo();
             expect(walkMode.getAllHighlights()).toHaveLength(1);
             expect(walkMode.getHighlight(hlId)).toBeDefined();
+        });
+
+        describe('Sprint Mode (Local Persistence)', () => {
+            it('should create and store highlights locally', async () => {
+                // 1. Activate Sprint Mode
+                await modeManager.activateMode('sprint');
+                const sprintMode = modeManager.getCurrentMode();
+
+                // 2. Execute Create
+                const selection = createSelection();
+                const createCmd = new CreateHighlightCommand(
+                    selection,
+                    'green',
+                    modeManager,
+                    logger
+                );
+
+                await commandStack.execute(createCmd);
+                const highlights = sprintMode.getAllHighlights();
+                expect(highlights).toHaveLength(1);
+                const hlId = highlights[0]?.id;
+                if (!hlId) throw new Error('Highlight not created');
+
+                // 3. Execute Remove
+                const removeCmd = new RemoveHighlightCommand(
+                    hlId,
+                    modeManager,
+                    logger
+                );
+                await commandStack.execute(removeCmd);
+                expect(sprintMode.getAllHighlights()).toHaveLength(0);
+
+                // 4. Undo Remove (Restore)
+                await commandStack.undo();
+                expect(sprintMode.getAllHighlights()).toHaveLength(1);
+                expect(sprintMode.getHighlight(hlId)?.colorRole).toBe('green');
+            });
         });
     });
