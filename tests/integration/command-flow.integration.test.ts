@@ -5,13 +5,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import { Container } from '@/shared/di/container';
 import { registerServices } from '@/shared/di/service-registration';
-import { CommandStack } from '@/shared/patterns/command';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
-import type { ILogger } from '@/shared/utils/logger';
+import { CommandStack } from '@/shared/patterns/command';
 import { RepositoryFactory } from '@/shared/repositories';
-import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
+import type { ILogger } from '@/shared/utils/logger';
 
 // Mock DOM dependencies
 vi.mock('@/content/utils/range-converter', () => ({

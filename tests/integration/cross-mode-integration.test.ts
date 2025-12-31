@@ -1,4 +1,3 @@
-/* global performance */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { createMockHighlight } from "../helpers/mock-data";

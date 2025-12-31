@@ -11,10 +11,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
+import type { IHighlightMode, HighlightData } from '@/content/modes/highlight-mode.interface';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightMode, HighlightData } from '@/content/modes/highlight-mode.interface';
 
 /**
  * Test Fixture: Create mock IModeManager

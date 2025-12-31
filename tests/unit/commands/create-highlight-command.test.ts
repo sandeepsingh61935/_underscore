@@ -12,10 +12,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { CreateHighlightCommand } from '@/content/commands/simple-highlight-commands';
+import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 
 // Mock range converter to avoid DOM complexity in JSDOM
 vi.mock('@/content/utils/range-converter', () => ({
