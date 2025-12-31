@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+
 import { HighlightDataSchemaV2 } from './highlight-schema';
 
 // ============================================================================
