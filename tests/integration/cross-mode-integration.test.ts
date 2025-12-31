@@ -233,7 +233,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 20);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'persist-test-1', text: 'This paragraph tests' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'persist-test-1', text: 'This paragraph tests' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -276,7 +276,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This parag' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: 'sync-test-1', text: 'This parag' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -307,7 +307,7 @@ describe('Cross-Mode Integration Tests', () => {
             range.setStart(p1.firstChild!, 0);
             range.setEnd(p1.firstChild!, 10);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'onsistentI', text: 'This parag' });
+            const highlight: HighlightDataV2 = createMockHighlight({ id: consistentId, text: 'This parag' });
 
             await vaultService.saveHighlight(highlight, range);
 
@@ -330,7 +330,7 @@ describe('Cross-Mode Integration Tests', () => {
                 range.setStart(p.firstChild!, i);
                 range.setEnd(p.firstChild!, i + 5);
 
-      const highlight: HighlightDataV2 = createMockHighlight({ id: 'perf-test-${i}', text: 'test' });
+                const highlight: HighlightDataV2 = createMockHighlight({ id: 'perf-test-${i}', text: 'test' });
 
                 await vaultService.saveHighlight(highlight, range);
             }

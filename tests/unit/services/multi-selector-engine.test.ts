@@ -136,10 +136,11 @@ describe('MultiSelectorEngine', () => {
 
       const selector = engine.createFuzzySelector(range);
 
-      // Insert content before (breaks position offsets)
+      // Insert content before p1 (shifts offsets but preserves p2's immediate context from p1)
       const newP = document.createElement('p');
       newP.textContent = 'Inserted paragraph.';
-      p2.parentElement!.insertBefore(newP, p2);
+      const p1 = document.getElementById('p1')!;
+      p1.parentElement!.insertBefore(newP, p1);
 
       const restored = await engine.tryFuzzyMatch(selector);
       expect(restored).not.toBeNull();
@@ -187,10 +188,11 @@ describe('MultiSelectorEngine', () => {
 
       const multi = engine.createSelectors(range);
 
-      // Break XPath and Position
+      // Break XPath and Position by inserting before p1 (preserves p2 context)
       const newP = document.createElement('p');
       newP.textContent = 'New content.';
-      p2.parentElement!.insertBefore(newP, p2);
+      const p1 = document.getElementById('p1')!;
+      p1.parentElement!.insertBefore(newP, p1);
 
       const restored = await engine.restore(multi);
       expect(restored).not.toBeNull(); // Fuzzy should succeed

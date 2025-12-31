@@ -4,12 +4,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+
+import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
+import { ValidationError } from '@/shared/errors/app-error';
 import { StorageService } from '@/shared/services/storage-service';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory, LogLevel } from '@/shared/utils/logger';
-import { ValidationError } from '@/shared/errors/app-error';
-import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 
 describe('Validation Integration (8 tests)', () => {
 
@@ -26,13 +27,13 @@ describe('Validation Integration (8 tests)', () => {
             // Register a mock mode
             const mockMode: IHighlightMode = {
                 name: 'walk',
-                type: 'ephemeral',
                 onActivate: async () => { },
                 onDeactivate: async () => { },
                 createHighlight: async () => 'test-id',
                 removeHighlight: async () => { },
                 createFromData: async () => { },
-            };
+                restore: async () => { },
+            } as unknown as IHighlightMode;
             modeManager.registerMode(mockMode);
         });
 
@@ -52,8 +53,9 @@ describe('Validation Integration (8 tests)', () => {
                 expect.fail('Should have thrown ValidationError');
             } catch (error) {
                 expect(error).toBeInstanceOf(ValidationError);
-                expect((error as ValidationError).context).toHaveProperty('modeName');
-                expect((error as ValidationError).context?.modeName).toBe('bad-mode');
+                const context = (error as ValidationError).context || {};
+                expect(context).toHaveProperty('modeName');
+                expect(context['modeName']).toBe('bad-mode');
             }
         });
 
@@ -74,8 +76,8 @@ describe('Validation Integration (8 tests)', () => {
         });
 
         it('5. accepts valid highlight event', async () => {
-            const validEvent = {
-                type: 'highlight.created' as const,
+            const validEvent: any = { // Use any to bypass strict type check for test data construction
+                type: 'highlight.created',
                 timestamp: Date.now(),
                 eventId: crypto.randomUUID(),
                 data: {
@@ -83,8 +85,8 @@ describe('Validation Integration (8 tests)', () => {
                     id: crypto.randomUUID(),
                     text: 'test',
                     contentHash: 'a'.repeat(64),
-                    colorRole: 'yellow' as const,
-                    type: 'underscore' as const,
+                    colorRole: 'yellow',
+                    type: 'underscore',
                     ranges: [{
                         xpath: '/div',
                         startOffset: 0,

@@ -71,7 +71,7 @@ describe('VaultModeService - Integration Tests', () => {
             expect(stored?.metadata).toBeDefined();
             expect(stored?.metadata?.['selectors']).toBeDefined();
 
-             
+
             const selectors = stored!.metadata!['selectors'] as any;
             expect(selectors.xpath).toBeDefined();
             expect(selectors.position).toBeDefined();
@@ -127,10 +127,18 @@ describe('VaultModeService - Integration Tests', () => {
 
             await service.saveHighlight(highlight, range);
 
-            // 2. Break both XPath and Position by inserting content before
+            // 2. Break XPath AND Position
+
+            // Break Position: Insert content at the top of article (shifts offsets but preserves p3 context)
+            const article = document.querySelector('article')!;
             const newP = document.createElement('p');
-            newP.textContent = 'Inserted content that shifts offsets.';
-            p3.parentElement!.insertBefore(newP, p3);
+            newP.textContent = 'Inserted content at start that shifts offsets.';
+            article.insertBefore(newP, article.firstChild);
+
+            // Break XPath: Wrap p3 in a blockquote (changes path structure)
+            const blockquote = document.createElement('blockquote');
+            p3.parentElement!.insertBefore(blockquote, p3);
+            blockquote.appendChild(p3);
 
             // 3. Restore - should fall back to fuzzy
             const results = await service.restoreHighlightsForUrl();
