@@ -493,7 +493,7 @@ interface RestoreContext {
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { storage, renderer, repositoryFacade, highlightManager, modeManager } = context;
+  const { storage, repositoryFacade, highlightManager, modeManager } = context;
   try {
     const events = await storage.loadEvents();
 
