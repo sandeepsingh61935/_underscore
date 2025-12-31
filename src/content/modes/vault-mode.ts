@@ -20,11 +20,10 @@ import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import { getVaultModeService } from '@/services/vault-mode-service';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
-
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 
 export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     private vaultService = getVaultModeService();
@@ -239,7 +238,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     async restore(_url?: string): Promise<void> {
         // Use VaultModeService to restore from IndexedDB
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const restored = await this.vaultService.restoreHighlightsForUrl();
 
         this.logger.info(`[VAULT] Restoring ${restored.length} highlights`);

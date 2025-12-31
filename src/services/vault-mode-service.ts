@@ -108,6 +108,8 @@ export class VaultModeService {
     }>> {
         try {
             const url = window.location.href.split('#')[0];
+            if (!url) return [];
+
             const records = await this.storage.getHighlightsByUrl(url);
 
             this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
