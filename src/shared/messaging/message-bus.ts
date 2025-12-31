@@ -12,6 +12,12 @@ import type { RepositoryFacade } from '@/shared/repositories';
 import type { ILogger } from '@/shared/utils/logger';
 
 
+interface MessageContext {
+    modeStateManager: ModeStateManager;
+    repositoryFacade: RepositoryFacade;
+    logger: ILogger;
+}
+
 export class MessageBus {
     /**
      * Setup message handlers in content script
@@ -21,9 +27,10 @@ export class MessageBus {
         repositoryFacade: RepositoryFacade,
         logger: ILogger
     ): void {
+        const context = { modeStateManager, repositoryFacade, logger };
         chrome.runtime.onMessage.addListener(
             (msg: Message, _sender, sendResponse) => {
-                this.handleMessage(msg, modeStateManager, repositoryFacade, logger, sendResponse);
+                this.handleMessage(msg, context, sendResponse);
                 return true; // Async response
             }
         );
@@ -33,11 +40,10 @@ export class MessageBus {
 
     private static async handleMessage(
         msg: Message,
-        modeStateManager: ModeStateManager,
-        repositoryFacade: RepositoryFacade,
-        logger: ILogger,
+        context: MessageContext,
         sendResponse: (response: unknown) => void
     ): Promise<void> {
+        const { modeStateManager, repositoryFacade, logger } = context;
         try {
             logger.debug('[MessageBus] Received message', { type: msg.type });
 

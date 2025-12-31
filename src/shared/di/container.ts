@@ -62,7 +62,7 @@ interface ServiceRegistration<T> {
  */
 export class Container {
     /** Service registry */
-    private services = new Map<string, ServiceRegistration<any>>();
+    private services = new Map<string, ServiceRegistration<unknown>>();
 
     /** Track services currently being resolved (for circular dependency detection) */
     private resolving = new Set<string>();
@@ -172,7 +172,7 @@ export class Container {
 
         // Singleton: Return cached instance if exists
         if (registration.lifecycle === 'singleton' && registration.instance) {
-            return registration.instance;
+            return registration.instance as T;
         }
 
         // Mark as resolving
@@ -187,7 +187,7 @@ export class Container {
                 registration.instance = instance;
             }
 
-            return instance;
+            return instance as T;
         } finally {
             // Always clean up resolving state
             this.resolving.delete(key);

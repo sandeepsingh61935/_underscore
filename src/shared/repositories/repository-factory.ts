@@ -47,7 +47,7 @@ export class RepositoryFactory {
    *
    * @param mode 'walk' (no persistence) or 'sprint' (persistence)
    */
-  static setMode(mode: 'walk' | 'sprint' | 'vault') {
+  static setMode(mode: 'walk' | 'sprint' | 'vault'): void {
     this.currentMode = mode;
     // In the future, this might trigger a repository swap
     // For now, both use InMemory, but logic in Facade might differ based on mode
