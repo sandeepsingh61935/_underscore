@@ -97,7 +97,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
 
         // 4. Add to Repository (Memory Only)
         // In Walk Mode, 'repository' is purely ephemeral.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.add(data as any);
 
         this.logger.info('Created highlight in Walk Mode', { id });
@@ -116,9 +116,9 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         const updated = { ...existing, ...updates };
         this.data.set(id, updated);
 
-     
+
         // Update repo (Memory Only)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.update(id, updates as any);
 
         if (updates.colorRole) {
@@ -158,7 +158,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
      * Event Handler: Highlight Created
      * Walk Mode: NO-OP (no persistence)
      */
-    async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
+    override async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
         this.logger.debug('Walk Mode: Highlight created (ephemeral, no persistence)');
         // NO-OP - Walk Mode doesn't persist
     }
@@ -167,7 +167,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
      * Event Handler: Highlight Removed
      * Walk Mode: NO-OP (no persistence)
      */
-    async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
+    override async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
         this.logger.debug('Walk Mode: Highlight removed (ephemeral)');
         // NO-OP - Walk Mode doesn't persist
     }
@@ -176,7 +176,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
      * Restoration Control
      * Walk Mode: Never restores (ephemeral by design)
      */
-    shouldRestore(): boolean {
+    override shouldRestore(): boolean {
         return false;
     }
 }

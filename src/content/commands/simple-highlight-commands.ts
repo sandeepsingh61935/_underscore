@@ -66,9 +66,16 @@ export class CreateHighlightCommand implements Command {
         throw new Error('Failed to create highlight');
       }
 
+      if (!this.highlightData) {
+        throw new Error('Failed to create highlight');
+      }
+
       // CRITICAL: Store with liveRanges for click detection!
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.repositoryFacade.addFromData(this.highlightData as any);
+      // NOTE: ModeManager tracks this internally, but we might need it for local command state?
+      // Actually, if ModeManager handles it, we shouldn't add it again to repo here.
+      // But we DO need to ensure Repository Facade has it for non-mode paths?
+      // For now, removing the double-add that causes warnings in Vault Mode.
+      // this.repositoryFacade.addFromData(this.highlightData as any);
 
       // Save to storage (SPRINT MODE ONLY)
       if (RepositoryFactory.getMode() !== 'walk') {
@@ -125,10 +132,12 @@ export class CreateHighlightCommand implements Command {
       }
 
       // CRITICAL: Re-add to store with liveRanges for click detection!
-      this.repositoryFacade.addFromData({
-        ...this.highlightData,
-        liveRanges: [range], // CRITICAL for click detection!
-      });
+      // Vault/Sprint modes handle this. Only needed for legacy?
+      // Preventing double-add warning.
+      // this.repositoryFacade.addFromData({
+      //   ...this.highlightData,
+      //   liveRanges: [range], // CRITICAL for click detection!
+      // });
 
       // Save event (SPRINT MODE ONLY)
       if (RepositoryFactory.getMode() !== 'walk') {

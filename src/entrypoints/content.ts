@@ -15,9 +15,10 @@ import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import { ModeManager, SprintMode, WalkMode } from '@/content/modes';
+import { VaultMode } from '@/content/modes/vault-mode';
 import { SelectionDetector } from '@/content/selection-detector';
-import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
-import { initializeVaultMode, isVaultModeEnabled } from '@/content/vault-mode-init';
+import { serializeRange } from '@/content/utils/range-converter';
+// import { isVaultModeEnabled } from '@/content/vault-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import { RepositoryFacade, RepositoryFactory } from '@/shared/repositories';
 import { StorageService } from '@/shared/services/storage-service';
@@ -70,27 +71,36 @@ export default defineContentScript({
       // ===== MODE SYSTEM: Initialize ModeManager and Sprint Mode =====
       const modeManager = new ModeManager(eventBus, logger);
 
-      // [OK] Dependency Injection: Pass shared repository AND storage to mode
-      // [OK] Initialize Mode: Default to WALK MODE (Privacy First)
+      // Re-enable all modes for proper switching
       const sprintMode = new SprintMode(eventBus, logger, repositoryFacade, storage);
       const walkMode = new WalkMode(eventBus, logger, repositoryFacade, storage);
+      const vaultMode = new VaultMode(eventBus, logger, repositoryFacade, storage);
 
       modeManager.registerMode(sprintMode);
       modeManager.registerMode(walkMode);
+      modeManager.registerMode(vaultMode);
 
-      // Default: Walk Mode (No persistence)
-      await modeManager.activateMode('walk');
-      RepositoryFactory.setMode('walk');
+      // Initialize State Management Pattern
+      const { ModeStateManager } = await import('@/content/modes/mode-state-manager');
+      const modeStateManager = new ModeStateManager(modeManager, logger);
 
-      // Initialize Vault Mode if enabled
-      if (isVaultModeEnabled()) {
-        try {
-          await initializeVaultMode();
-          logger.info('[VAULT] Vault Mode ready');
-        } catch (error) {
-          logger.warn('[VAULT] Vault Mode initialization failed, falling back to Walk Mode:', error as Error);
-        }
-      }
+      console.error('[MODE-STATE] Initializing state manager at ' + new Date().toISOString());
+      await modeStateManager.init(); // Loads user preference
+      console.error('[MODE-STATE] Initialized with mode: ' + modeStateManager.getMode());
+
+      // Setup Message Bus for IPC (Popup ↔ Content)
+      const { MessageBus } = await import('@/shared/messaging/message-bus');
+      MessageBus.setup(modeStateManager, repositoryFacade, logger);
+
+      // Initialize Vault Mode if enabled (Separate init removed - moved to VaultMode.onActivate)
+      // if (isVaultModeEnabled()) {
+      //   try {
+      //     // We call this to ensure DB migration/setup is done, even if mode deals with restore
+      //     await initializeVaultMode();
+      //   } catch(e) {
+      //     logger.error('[VAULT] Init failed', e as Error);
+      //   }
+      // }
 
       // Keep old HighlightManager temporarily for compatibility
       const highlightManager = useCustomHighlightAPI

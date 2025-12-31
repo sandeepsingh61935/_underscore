@@ -210,10 +210,11 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   }
 
   /**
+  /**
    * Event Handler: Highlight Created
    * Sprint Mode: Persists to event store with TTL
    */
-  async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
+  override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
     this.logger.debug('Sprint Mode: Persisting highlight to event store');
 
     // Convert event data to storage format (HighlightDataV2)
@@ -237,7 +238,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Event Handler: Highlight Removed
    * Sprint Mode: Persists removal event
    */
-  async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
+  override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
     this.logger.debug('Sprint Mode: Persisting highlight removal');
 
     await this.storage.saveEvent({
@@ -252,7 +253,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Restoration Control
    * Sprint Mode: Restores from event sourcing
    */
-  shouldRestore(): boolean {
+  override shouldRestore(): boolean {
     return true; // Sprint Mode restores via event sourcing
   }
 }

@@ -15,6 +15,7 @@ import {
 } from '@/content/styles/highlight-styles';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { StorageService } from '@/shared/services/storage-service';
+import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -118,5 +119,26 @@ export abstract class BaseHighlightMode {
 
   // Note: restore() removed - only IPersistentMode needs it (Interface Segregation Principle)
   // Modes use shouldRestore() to indicate if they want restoration
+
+  /**
+   * Default implementations for IBasicMode
+   * Modes can override these if they need to handle events or persistence
+   */
+  async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
+    // Default: No-op. Override in IPersistentMode implementation (like Vault/Sprint)
+    // if you want to handle event-sourced creation.
+    return Promise.resolve();
+  }
+
+  async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
+    // Default: No-op.
+    return Promise.resolve();
+  }
+
+  shouldRestore(): boolean {
+    // Default: false (Privacy-First / ephemeral).
+    // Override to return true in persistent modes.
+    return false;
+  }
 }
 
