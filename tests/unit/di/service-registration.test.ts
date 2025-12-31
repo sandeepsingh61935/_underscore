@@ -5,16 +5,17 @@
  * Tests dependency graph integrity and singleton behavior.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+
+import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
+import { ModeManager } from '@/content/modes/mode-manager';
 import { Container } from '@/shared/di/container';
 import { registerServices, getDependencyGraph } from '@/shared/di/service-registration';
-import type { ILogger } from '@/shared/utils/logger';
-import type { EventBus } from '@/shared/utils/event-bus';
-import type { IStorage } from '@/shared/interfaces/i-storage';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
-import { ModeManager } from '@/content/modes/mode-manager';
-import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
+import type { IStorage } from '@/shared/interfaces/i-storage';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
 
 describe('Service Registration (8 tests)', () => {
     let container: Container;

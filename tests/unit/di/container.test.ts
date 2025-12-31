@@ -9,6 +9,7 @@
  * - Edge cases
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+
 import { Container } from '@/shared/di/container';
 
 describe('Container (12 tests)', () => {

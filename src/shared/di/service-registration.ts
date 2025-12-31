@@ -7,21 +7,22 @@
  */
 
 import type { Container } from './container';
+
+import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
+import { ModeManager } from '@/content/modes/mode-manager';
+import { SprintMode } from '@/content/modes/sprint-mode';
+import { VaultMode } from '@/content/modes/vault-mode';
+import { WalkMode } from '@/content/modes/walk-mode';
+import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
+import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
+import type { IStorage } from '@/shared/interfaces/i-storage';
+import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
+import { StorageService } from '@/shared/services/storage-service';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { StorageService } from '@/shared/services/storage-service';
-import type { IStorage } from '@/shared/interfaces/i-storage';
-import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
-import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
-import { ModeManager } from '@/content/modes/mode-manager';
-import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
-import { WalkMode } from '@/content/modes/walk-mode';
-import { SprintMode } from '@/content/modes/sprint-mode';
-import { VaultMode } from '@/content/modes/vault-mode';
-import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 
 /**
  * Register all application services
