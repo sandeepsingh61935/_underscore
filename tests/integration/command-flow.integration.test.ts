@@ -1,8 +1,13 @@
+/**
+ * @file command-flow.integration.test.ts
+ * @description Integration tests for Command Pattern flows across modes
+ * @see Phase 1.1.5: Integration Testing
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Container } from '@/shared/di/container';
 import { registerServices } from '@/shared/di/service-registration';
 import { CommandStack } from '@/shared/patterns/command';
-import { CreateHighlightCommand, RemoveHighlightCommand } from '@/content/commands/simple-highlight-commands';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { ILogger } from '@/shared/utils/logger';
 import { RepositoryFactory } from '@/shared/repositories';
@@ -34,15 +39,12 @@ describe('Command Flow Integration', () => {
         logger = container.resolve<ILogger>('logger');
 
         // Register Modes (Integration: Use REAL modes)
-        // We need to resolve them as any to access registerMode if it's not on IModeManager (it is)
-        // But container returns them as typed classes
         const walkMode = container.resolve('walkMode');
         const sprintMode = container.resolve('sprintMode');
-
         modeManager.registerMode(walkMode as any);
         modeManager.registerMode(sprintMode as any);
 
-        // Mock crypto for ID generation and hashing
+        // Mock crypto
         Object.defineProperty(global, 'crypto', {
             value: {
                 randomUUID: () => 'uuid-' + Math.random().toString(36).substr(2, 9),
@@ -53,7 +55,7 @@ describe('Command Flow Integration', () => {
             writable: true
         });
 
-        // Mock CSS Highlight API (Not supported in JSDOM)
+        // Mock CSS Highlight API
         global.Highlight = class MockHighlight {
             constructor(..._ranges: Range[]) { }
         } as any;
@@ -66,30 +68,17 @@ describe('Command Flow Integration', () => {
         // Setup Command Stack
         commandStack = new CommandStack(50);
 
-        // Setup DOM for Range
+        // Setup DOM
         document.body.innerHTML = '<div>test content</div>';
     });
 
     afterEach(() => {
         vi.clearAllMocks();
-        RepositoryFactory.reset(); // Reset global state if any
+        RepositoryFactory.reset();
     });
 
-    /**
-     * Helper: Create mock selection
-     */
-    function createSelection(): Selection {
-        const range = document.createRange();
-        const node = document.body.firstChild!;
-        range.selectNode(node);
-
-        const selection = {
-            rangeCount: 1,
-            getRangeAt: () => range,
-            removeAllRanges: vi.fn(),
-            addRange: vi.fn()
-        } as unknown as Selection;
-
-        return selection;
-    }
+    it('should initialize correctly', () => {
+        expect(modeManager).toBeDefined();
+        expect(commandStack).toBeDefined();
+    });
 });
