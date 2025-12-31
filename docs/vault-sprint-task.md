@@ -537,18 +537,19 @@
 - [x] Confirmed simple-highlight-commands.ts violates SOLID principles
 - [x] Verified won't scale to GEN-MODE without refactor
 
-#### Task 1.1.1: Delete Dead Code and Fix Duplication (30 min) [/]
-- [/] Delete `highlight-commands.ts` (dead code, zero imports)
-- [/] Remove content.ts line 242: `repositoryFacade.addFromData(highlightData)`
-- [/] Remove content.ts line 594: duplicate `addFromData` call
-- [ ] Delete commented code in simple-highlight-commands.ts (lines 78, 137)
-- [ ] Add JSDoc explaining no repository calls
+#### Task 1.1.1: Delete Dead Code and Fix Duplication (30 min) [x] ✅ COMPLETE
+- [x] Delete `highlight-commands.ts` (dead code, zero imports)
+- [x] Remove content.ts line 242: `repositoryFacade.addFromData(highlightData)`
+- [x] Remove content.ts line 594: duplicate `addFromData` call
+- [x] Delete commented code in simple-highlight-commands.ts (lines 78, 137)
+- [x] Add JSDoc explaining no repository calls
 
 **Commits**:
-- [ ] `phase1.1.1a: delete highlight-commands.ts (dead code)`
-- [ ] `phase1.1.1b: remove content.ts duplication and legacy code`
+- [x] `phase1.1.1a: delete highlight-commands.ts (dead code)` - 3fd21e5
+- [x] `phase1.1.1b: remove content.ts duplication and legacy code` - committed
 
-**Acceptance**: Dead code removed, no duplication, compiles clean
+**Acceptance**: ✅ Dead code removed, no duplication, compiles clean
+**Quality**: ✅ TS 0 errors, ESLint clean, 270/270 tests pass
 
 #### Task 1.1.2: Refactor CreateHighlightCommand (1.5 hours) [ ]
 - [ ] Update constructor: Remove union type, use `IModeManager` + `ILogger` only

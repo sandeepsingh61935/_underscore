@@ -16,112 +16,103 @@ import type { RepositoryFacade } from '@/shared/repositories';
 import { RepositoryFactory } from '@/shared/repositories';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { StorageService } from '@/shared/services/storage-service';
+import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Create highlight command - works with both APIs
  * FIXED: Stores serialized range so redo works even after selection is lost
  */
+/**
+ * Create highlight command
+ * 
+ * **Responsibility**: Manage undo/redo state for highlight creation
+ * 
+ * **Design Pattern**: Command Pattern with Dependency Inversion Principle
+ * - Depends on IModeManager interface (not concrete classes)
+ * - Delegates ALL persistence to modes (Single Responsibility)
+ * - Stores minimal state for undo/redo operations
+ * 
+ * @remarks
+ * Commands do NOT:
+ * - Access repository directly (violates SRP)
+ * - Save events to storage (mode handles this)
+ * - Emit events (mode handles this)
+ * 
+ * Commands ONLY:
+ * - Store state for undo/redo
+ * - Delegate operations to IModeManager
+ * - Log operations for debugging
+ * 
+ * @see Phase 1.1.2: Refactor CreateHighlightCommand
+ * @see IModeManager interface for delegation contract
+ */
 export class CreateHighlightCommand implements Command {
-  private highlightData: ModeHighlightData | HighlightData | Highlight | null = null;
-  private readonly type = 'underscore'; // Single mode only
+  private createdHighlightId: string | null = null;
   private serializedRange: SerializedRange | null = null;
-  // Removed unused highlightId field
 
-  // eslint-disable-next-line max-params
+  /**
+   * @param selection - Browser Selection object to create highlight from
+   * @param colorRole - Semantic color role (e.g., 'yellow', 'blue')
+   * @param modeManager - Mode manager interface (DI - follows DIP)
+   * @param logger - Logger interface for debugging (DI - follows DIP)
+   */
   constructor(
-    private selection: Selection,
-    private colorRole: string, // Color role (yellow, blue, etc.)
-    private manager: ModeManager | HighlightManager | HighlightRenderer, // Accept all types
-    private repositoryFacade: RepositoryFacade,
-    private storage: StorageService
+    private readonly selection: Selection,
+    private readonly colorRole: string,
+    private readonly modeManager: IModeManager,
+    private readonly logger: ILogger
   ) {
-    // CRITICAL: Store serialized range for redo
+    // Store serialized range for redo operations
     if (selection.rangeCount > 0) {
       this.serializedRange = serializeRange(selection.getRangeAt(0));
     }
   }
 
+  /**
+   * Execute command: Create highlight via mode manager
+   * 
+   * On first execution: Creates new highlight
+   * On redo: Recreates highlight from stored range
+   */
   async execute(): Promise<void> {
-    // First execution - use selection
-    if (!this.highlightData) {
-      // Check if manager is ModeManager
-      if ('createHighlight' in this.manager && 'getCurrentMode' in this.manager) {
-        // ModeManager path - use unified creation
-        const id = await (this.manager as ModeManager).createHighlight(
+    try {
+      if (!this.createdHighlightId) {
+        // First execution - create new highlight
+        this.createdHighlightId = await this.modeManager.createHighlight(
           this.selection,
           this.colorRole
         );
-        this.highlightData = (this.manager as ModeManager).getHighlight(id);
-      } else {
-        // Legacy path
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.highlightData = (this.manager as any).createHighlight(
-          this.selection,
-          this.colorRole,
-          this.type
-        );
-      }
 
-      if (!this.highlightData) {
-        throw new Error('Failed to create highlight');
-      }
-
-      if (!this.highlightData) {
-        throw new Error('Failed to create highlight');
-      }
-
-      /**
-       * IMPORTANT: Commands do NOT call repository.add() or storage.saveEvent().
-       * 
-       * Reason: ModeManager.createHighlight() internally handles:
-       * - Adding to repository (via mode's add())
-       * - Saving events to storage (if mode is persistent)
-       * - Emitting events via EventBus
-       * 
-       * Commands ONLY store state for undo/redo. Persistence is delegated to modes.
-       * This prevents "already exists" warnings and follows Single Responsibility Principle.
-       * 
-       * @see Task 1.1: Fix Command Pattern (Phase 1)
-       */
-
-      // Save to storage (SPRINT MODE ONLY)
-      if (RepositoryFactory.getMode() !== 'walk') {
-        await this.storage.saveEvent({
-          type: 'highlight.created',
-          timestamp: Date.now(),
-          eventId: crypto.randomUUID(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: this.highlightData as any,
+        this.logger.debug('Highlight created via mode', {
+          id: this.createdHighlightId,
+          colorRole: this.colorRole
         });
-      }
-    } else {
-      // REDO: Recreate visual highlight with SAME ID
-      if (!this.serializedRange) {
-        console.warn('[Redo] No serialized range - skipping redo');
-        return;
-      }
+      } else {
+        // Redo - recreate from serialized range
+        if (!this.serializedRange) {
+          this.logger.warn('Cannot redo: No serialized range stored');
+          return;
+        }
 
-      const range = deserializeRange(this.serializedRange);
-      if (!range) {
-        console.warn('[Redo] Range deserialization failed - text may have changed');
-        return;
-      }
+        const range = deserializeRange(this.serializedRange);
+        if (!range) {
+          this.logger.warn('Cannot redo: Range deserialization failed (content may have changed)');
+          return;
+        }
 
-      // Check if manager is ModeManager
-      if ('createFromData' in this.manager) {
-        // Type cast for property access
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = this.highlightData as any;
-
-        // Generate contentHash
+        // Get current mode and recreate highlight
+        const mode = this.modeManager.getCurrentMode();
         const text = range.toString();
+
+        // Generate content hash for deduplication
         const { generateContentHash } = await import('@/shared/utils/content-hash');
         const contentHash = await generateContentHash(text);
 
-        // [OK] Use mode's unified path (fixes registration!)
-        await (this.manager as ModeManager).createFromData({
-          id: data.id,
-          text: data.text,
+        // Recreate via mode's createFromData - this handles ALL persistence
+        await mode.createFromData({
+          id: this.createdHighlightId,
+          text,
           contentHash,
           colorRole: this.colorRole,
           type: 'underscore' as const,
@@ -129,56 +120,41 @@ export class CreateHighlightCommand implements Command {
           liveRanges: [range],
           createdAt: new Date(),
         });
-      } else {
-        // Legacy path
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = this.highlightData as any;
-        const highlightName = getHighlightName(this.type, data.id);
-        const nativeHighlight = new Highlight(range);
-        CSS.highlights.set(highlightName, nativeHighlight);
-      }
 
-      /**
-       * REDO path: Mode's createFromData() already handles repository persistence.
-       * No need to call addFromData() again - would cause duplication.
-       */
-
-      // Save event (SPRINT MODE ONLY)
-      if (RepositoryFactory.getMode() !== 'walk') {
-        await this.storage.saveEvent({
-          type: 'highlight.created',
-          timestamp: Date.now(),
-          eventId: crypto.randomUUID(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: this.highlightData as any,
+        this.logger.debug('Highlight recreated (redo)', {
+          id: this.createdHighlightId
         });
       }
+    } catch (error) {
+      this.logger.error('Command execute failed', error as Error, {
+        highlightId: this.createdHighlightId,
+        colorRole: this.colorRole
+      });
+      throw error;
     }
   }
 
+  /**
+   * Undo command: Remove highlight via mode manager
+   */
   async undo(): Promise<void> {
-    if (!this.highlightData) return;
-
-    // Type assertion for accessing id
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = this.highlightData as any;
-
-    // Remove highlight
-    if ('removeHighlight' in this.manager) {
-      this.manager.removeHighlight(data.id);
+    if (!this.createdHighlightId) {
+      this.logger.warn('Cannot undo: No highlight ID stored');
+      return;
     }
 
-    // Remove from store
-    this.repositoryFacade.remove(data.id);
+    try {
+      // Delegate removal to mode - it handles ALL cleanup
+      await this.modeManager.removeHighlight(this.createdHighlightId);
 
-    // Save removal event (SPRINT MODE ONLY)
-    if (RepositoryFactory.getMode() !== 'walk') {
-      await this.storage.saveEvent({
-        type: 'highlight.removed',
-        timestamp: Date.now(),
-        eventId: crypto.randomUUID(),
-        highlightId: data.id,
+      this.logger.debug('Highlight removed (undo)', {
+        id: this.createdHighlightId
       });
+    } catch (error) {
+      this.logger.error('Command undo failed', error as Error, {
+        highlightId: this.createdHighlightId
+      });
+      throw error;
     }
   }
 }

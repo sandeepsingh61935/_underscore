@@ -279,9 +279,8 @@ export default defineContentScript({
           const command = new CreateHighlightCommand(
             event.selection,
             colorRole,
-            modeManager, // [OK] Use mode manager!
-            repositoryFacade,
-            storage
+            modeManager,
+            logger  // Use logger from DI container
           );
 
           await commandStack.execute(command);
@@ -599,10 +598,9 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
             const createCommand = new CreateHighlightCommand(
               selection,
-              highlightData.color || 'yellow', // Use semantic token
-              renderer,
-              repositoryFacade,
-              storage
+              highlightData.color || 'yellow',
+              modeManager,
+              logger  // Use logger from DI container
             );
 
             await createCommand.execute();
