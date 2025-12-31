@@ -562,3 +562,39 @@ Then proceed to Phase 0.2 (DI Container).
 5. **Iterate**: Start simple, add complexity as needed
 
 **Remember**: The goal is **confidence to refactor**, not **test count**.
+
+---
+
+## Enforcement Protocols (Added 2025-12-31)
+
+### Incident Report: Phase 0 False Positive
+On 2025-12-31, an agent reported "Phase 0 Complete" after fixing integration tests but failing to run the full regression suite. This hid a regression in `multi-selector-engine.test.ts`.
+**Root Cause**: Inferred success based on partial data ("I only touched these files") instead of verifying with execution.
+
+### Protocol 1: The Full Regression Mandate
+**Inference is NOT Proof.**
+- **Rule**: You CANNOT mark a Quality Gate as "PASS" without running the **full** relevant test command (e.g., `npx vitest run` or `npm test`).
+- **Forbidden**: "I fixed the component, so the system works."
+- **Required**: "I fixed the component, ran the full system test suite, and it all passed."
+
+### Protocol 2: The "Show me the logs" Rule
+When reporting success to the user, you must explicit cite the command run and the summary output.
+- ❌ "Tests passed."
+- ✅ "Ran `npx vitest run`. Output: `Tests 270 passed (270)`."
+
+### Protocol 3: Honest Failure Reporting
+If a test fails during a "final verification":
+1. **Stop**. Do not try to fix it silently and then report success.
+2. **Report** the failure to the user immediately.
+3. **Ask** for permission to fix it or if they want to see the error.
+*Transparency > Perfection.*
+
+### Agent Enforcement Trigger
+To force an agent to adhere to these rules, the user should say:
+> "Run Full Strict Verification."
+
+This command triggers:
+1. `npm run type-check` (if TS)
+2. `npm run lint`
+3. `npm test` (Full Suite)
+4. **No corner cutting allowed.**
