@@ -9,6 +9,7 @@ import type { ModeManager } from './mode-manager';
 
 import { ValidationError } from '@/shared/errors/app-error';
 import { RepositoryFactory } from '@/shared/repositories';
+import { ModeStateMachine } from './mode-state-machine';
 import {
     ModeTypeSchema,
     StateMetadataSchema,
@@ -27,11 +28,14 @@ export class ModeStateManager {
         lastModified: Date.now(),
     };
     private listeners: Set<(mode: ModeType) => void> = new Set();
+    private stateMachine: ModeStateMachine;
 
     constructor(
         private readonly modeManager: ModeManager,
         private readonly logger: ILogger
-    ) { }
+    ) {
+        this.stateMachine = new ModeStateMachine(logger);
+    }
 
     /**
      * Initialize from user preference
@@ -102,7 +106,7 @@ export class ModeStateManager {
      * Set mode (with persistence and broadcast)
      */
     async setMode(mode: ModeType): Promise<void> {
-        // Validate mode with Zod BEFORE any state changes
+        // 1. Validate mode with Zod schema
         const validation = ModeTypeSchema.safeParse(mode);
 
         if (!validation.success) {
@@ -116,11 +120,35 @@ export class ModeStateManager {
 
         const validatedMode = validation.data;
 
+        // 2. Check if already in target mode
         if (this.currentMode === validatedMode) {
             this.logger.debug('[ModeState] Already in mode', { mode: validatedMode });
             return;
         }
 
+        // 3. Validate transition via state machine
+        const transitionResult = this.stateMachine.validateTransition(this.currentMode, validatedMode);
+
+        if (!transitionResult.success) {
+            this.logger.error('[ModeState] Transition not allowed', transitionResult.error);
+            throw transitionResult.error;
+        }
+
+        // 4. Execute guards before transition
+        const guardPassed = await this.stateMachine.executeGuards(this.currentMode, validatedMode);
+
+        if (!guardPassed) {
+            const error = new Error(
+                `Transition guard failed: ${this.stateMachine.getTransitionReason(this.currentMode, validatedMode)}`
+            );
+            this.logger.warn('[ModeState] Transition blocked by guard', {
+                from: this.currentMode,
+                to: validatedMode
+            });
+            throw error;
+        }
+
+        // 5. Log successful transition
         this.logger.info('[ModeState] Switching mode', {
             from: this.currentMode,
             to: validatedMode,
