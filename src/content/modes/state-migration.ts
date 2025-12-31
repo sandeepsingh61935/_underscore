@@ -134,9 +134,15 @@ export class MigrationEngine {
                 currentState = await migration.migrate(currentState);
                 currentVersion = nextVersion;
 
-                // Validate migrated state
+                // Validate migrated state - warn if it looks invalid
                 if (!currentState || typeof currentState !== 'object') {
                     this.logger.warn('Migration produced invalid state', {
+                        migration: key,
+                        stateType: typeof currentState,
+                    });
+                } else if (!('version' in currentState)) {
+                    // Migrations should always add version field
+                    this.logger.warn('Migration produced state without version field', {
                         migration: key,
                     });
                 }

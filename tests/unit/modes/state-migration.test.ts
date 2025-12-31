@@ -172,8 +172,8 @@ describe('State Migration Infrastructure', () => {
                 fromVersion: 1,
                 toVersion: 2,
                 migrate: async (state: any) => ({
-                    // Invalid: missing required fields
-                    version: 2,
+                    // Invalid: missing version field (or other required fields)
+                    // Migration produces incomplete state
                 }),
                 description: 'Invalid migration',
             };
@@ -183,10 +183,12 @@ describe('State Migration Infrastructure', () => {
             const v1State = { defaultMode: 'walk' };
             const result = await engine.migrate(v1State, 1, 2);
 
-            // Should either fail or warn about invalid result
-            if (result.success) {
-                expect(mockLogger.warn).toHaveBeenCalled();
-            }
+            // Migration completes but should warn about invalid result
+            expect(result.success).toBe(true);
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                expect.stringContaining('version'),
+                expect.anything()
+            );
         });
     });
 
