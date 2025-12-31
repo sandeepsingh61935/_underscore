@@ -526,86 +526,126 @@
 
 ## Phase 1: Command Layer Refactoring (Day 7-10, 24-32 hours)
 
-### 1.1: Fix Command Pattern (Day 7-8, 12 hours)
+### 1.1: Fix Command Pattern (6 hours) ⏳ IN PROGRESS
 
-#### Task 1.1.1: Refactor CreateHighlightCommand
-- [ ] Remove duplicate [addFromData](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#259-281) call
-  - [ ] Audit current implementation
-  - [ ] Identify all repository calls
-  - [ ] Remove redundant calls
-  - [ ] Ensure mode handles ALL persistence
-- [ ] Inject dependencies via interfaces
+**Context**: Current `simple-highlight-commands.ts` violates Phase 0 DI principles. Uses union types with runtime checks, hardcodes dependencies, won't scale to GEN-MODE.
+
+**Goal**: Refactor commands to use ONLY `IModeManager` interface, remove 90+ lines of branching logic.
+
+**Analysis Complete**:
+- [x] Identified highlight-commands.ts as dead code (zero imports)
+- [x] Confirmed simple-highlight-commands.ts violates SOLID principles
+- [x] Verified won't scale to GEN-MODE without refactor
+
+#### Task 1.1.1: Delete Dead Code and Fix Duplication (30 min) [/]
+- [/] Delete `highlight-commands.ts` (dead code, zero imports)
+- [/] Remove content.ts line 242: `repositoryFacade.addFromData(highlightData)`
+- [/] Remove content.ts line 594: duplicate `addFromData` call
+- [ ] Delete commented code in simple-highlight-commands.ts (lines 78, 137)
+- [ ] Add JSDoc explaining no repository calls
+
+**Commits**:
+- [ ] `phase1.1.1a: delete highlight-commands.ts (dead code)`
+- [ ] `phase1.1.1b: remove content.ts duplication and legacy code`
+
+**Acceptance**: Dead code removed, no duplication, compiles clean
+
+#### Task 1.1.2: Refactor CreateHighlightCommand (1.5 hours) [ ]
+- [ ] Update constructor: Remove union type, use `IModeManager` + `ILogger` only
   ```typescript
   constructor(
-    private readonly modeManager: IM继 续odeManager,
-    private readonly eventBus: IEventBus,
+    private readonly selection: Selection,
+    private readonly colorRole: string,
+    private readonly modeManager: IModeManager,
     private readonly logger: ILogger
-  ) {}
+  )
   ```
-- [ ] Update execute() logic
-  - [ ] Delegate to mode ONLY
-  - [ ] Store data for undo/redo
-  - [ ] NO direct repository access
-- [ ] **Tests**: Write 15 tests
-  - [ ] Test: Creates highlight via mode
-  - [ ] Test: No duplicate repository calls
-  - [ ] Test: Undo works
-  - [ ] Test: Redo works
-  - [ ] Test: Works with Walk mode
-  - [ ] Test: Works with Sprint mode
-  - [ ] Test: Works with Vault mode
-  - [ ] Test: Error handling
-  - [ ] Test: Event emitted
-  - [ ] Test: State managed correctly
-  - [ ] Test: Can mock dependencies
-  - [ ] Test: Performance acceptable
-  - [ ] Test: Memory doesn't leak
-  - [ ] Test: Concurrent creates
-  - [ ] Test: Edge cases
-- [ ] **Acceptance Criteria**:
-  - [x] "Highlight already exists" warning GONE
-  - [x] All tests pass
-  - [x] Zero repository duplication
+- [ ] Refactor execute(): Remove runtime checks, delegate to modeManager only
+- [ ] Refactor undo(): Delegate to modeManager.removeHighlight()
+- [ ] Remove direct storage/repository access
+- [ ] Add error handling with logger
+- [ ] Reduce from 152 → ~60 lines
 
-#### Task 1.1.2: Refactor RemoveHighlightCommand
-- [ ] Apply same pattern as CreateHighlightCommand
-- [ ] Remove repository duplication
-- [ ] Add proper error handling
-- [ ] **Tests**: Write 12 tests
-  - [ ] Test: Removes via mode
-  - [ ] Test: Undo/redo works
-  - [ ] Test: Works with all modes
-  - [ ] Test: Error handling
-  - [ ] Test: Event emitted
-  - [ ] Test: State correct
-  - [ ] Test: Can mock
-  - [ ] Test: Performance
-  - [ ] Test: Memory
-  - [ ] Test: Concurrent removes
-  - [ ] Test: Edge cases
-  - [ ] Test: Removing non-existent highlight
-- [ ] **Acceptance Criteria**:
-  - [x] No duplication
-  - [x] Tests pass
+**Tests** (15):
+1. [ ] Calls modeManager.createHighlight() correctly
+2. [ ] Stores highlight ID for undo
+3. [ ] Undo calls modeManager.removeHighlight()
+4. [ ] Redo via createFromData()
+5. [ ] No repository calls (spy verified)
+6. [ ] No storage calls (spy verified)
+7. [ ] Works with mocked IModeManager
+8. [ ] Error handling logs/rethrows
+9. [ ] Undo before execute safe
+10. [ ] Multiple redo operations
+11. [ ] Serialized range preserved
+12. [ ] Logger called correctly
+13. [ ] Type safety (TS compiles)
+14. [ ] Performance < 50ms
+15. [ ] No memory leaks
 
-#### Task 1.1.3: Integration Testing
-- [ ] Test commands with real modes (not mocks)
-- [ ] Test command stack (undo/redo chains)
-- [ ] Test error scenarios
-- [ ] **Tests**: Write 10 integration tests
-  - [ ] Test: Create → Undo → Redo chain
-  - [ ] Test: Multiple commands in stack
-  - [ ] Test: Stack limit enforced
-  - [ ] Test: Commands with Walk mode
-  - [ ] Test: Commands with Sprint mode
-  - [ ] Test: Commands with Vault mode
-  - [ ] Test: Error recovery
-  - [ ] Test: Concurrent operations
-  - [ ] Test: Memory usage
-  - [ ] Test: Performance under load
-- [ ] **Acceptance Criteria**:
-  - [x] Integration tests pass
-  - [x] No bugs found
+**Commits**:
+- [ ] `phase1.1.2a: refactor CreateHighlightCommand to use IModeManager`
+- [ ] `phase1.1.2b: add CreateHighlightCommand test suite (15 tests)`
+
+**Acceptance**: No union types, < 80 lines, 15 tests pass, interfaces only
+
+#### Task 1.1.3: Refactor RemoveHighlightCommand (1 hour) [ ]
+- [ ] Update constructor: IModeManager + ILogger only
+- [ ] Simplify execute(): Delegate to mode
+- [ ] Simplify undo(): Delegate to mode
+- [ ] Remove repository/storage logic
+- [ ] Reduce from 105 → ~45 lines
+
+**Tests** (12): Similar to CreateHighlightCommand
+
+**Commits**:
+- [ ] `phase1.1.3a: refactor RemoveHighlightCommand to use IModeManager`
+- [ ] `phase1.1.3b: add RemoveHighlightCommand test suite (12 tests)`
+
+**Acceptance**: Same criteria as CreateHighlightCommand, 12 tests pass
+
+#### Task 1.1.4: Update content.ts DI Wiring (30 min) [ ]
+- [ ] Resolve ILogger from DI container
+- [ ] Update CreateHighlightCommand instantiation (lines 281, 611)
+  - Remove repositoryFacade, storage args
+  - Add logger arg
+- [ ] Update RemoveHighlightCommand instantiation (line 306)
+
+**Commits**:
+- [ ] `phase1.1.4: wire commands via DI container in content.ts`
+
+**Acceptance**: Commands instantiated correctly, extension works
+
+#### Task 1.1.5: Integration Testing (2 hours) [ ]
+**Tests** (10):
+1. [ ] Create → Undo → Redo with Walk Mode
+2. [ ] Create → Undo → Redo with Sprint Mode
+3. [ ] Create → Undo → Redo with Vault Mode
+4. [ ] Multiple commands in stack
+5. [ ] Stack limit enforced
+6. [ ] Error recovery
+7. [ ] Concurrent operations
+8. [ ] Mode switching works
+9. [ ] Memory: Stack cleanup
+10. [ ] Performance: 100 commands < 5s
+
+**Commits**:
+- [ ] `phase1.1.5: add command integration test suite (10 tests)`
+
+**Acceptance**: All 10 tests pass, uses real modes, coverage > 85%
+
+#### Quality Gate for Phase 1.1
+- [ ] Zero union types in constructors
+- [ ] Interface dependencies only (IModeManager, ILogger)
+- [ ] No direct persistence in commands
+- [ ] CreateHighlightCommand < 80 lines
+- [ ] Cyclomatic complexity < 5
+- [ ] Test coverage > 95% on commands
+- [ ] All 27 tests passing (15 + 12 + 10)
+- [ ] TypeScript: 0 errors
+- [ ] ESLint: 0 errors
+- [ ] "Already exists" warning: GONE
+- [ ] Full regression: 270+ tests passing
 
 ---
 

@@ -20,7 +20,7 @@ import { SelectionDetector } from '@/content/selection-detector';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isVaultModeEnabled } from '@/content/vault-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
-import type { RepositoryFacade} from '@/shared/repositories';
+import type { RepositoryFacade } from '@/shared/repositories';
 import { RepositoryFactory } from '@/shared/repositories';
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
@@ -236,10 +236,8 @@ export default defineContentScript({
                 };
 
                 // [OK] Use mode's unified creation path (fixes undo/redo!)
+                // Mode handles repository persistence internally - no need to call addFromData
                 await modeManager.createFromData(highlightData);
-
-                // Add to repository for persistence
-                repositoryFacade.addFromData(highlightData);
 
                 // Save event
                 await storage.saveEvent({
@@ -590,15 +588,8 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             createdAt: highlightData.createdAt,
           });
 
-          // Add to repository for persistence tracking
-          repositoryFacade.addFromData({
-            id: highlightData.id,
-            text: highlightData.text,
-            color: highlightData.color,
-            type: type,
-            ranges: serializedRanges,
-            liveRanges: liveRanges,
-          });
+          // Mode's createFromData() already adds to repository - no duplication needed
+          // Repository persistence is handled internally by the mode
 
           restored++;
         } else {

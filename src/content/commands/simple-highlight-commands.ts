@@ -70,12 +70,19 @@ export class CreateHighlightCommand implements Command {
         throw new Error('Failed to create highlight');
       }
 
-      // CRITICAL: Store with liveRanges for click detection!
-      // NOTE: ModeManager tracks this internally, but we might need it for local command state?
-      // Actually, if ModeManager handles it, we shouldn't add it again to repo here.
-      // But we DO need to ensure Repository Facade has it for non-mode paths?
-      // For now, removing the double-add that causes warnings in Vault Mode.
-      // this.repositoryFacade.addFromData(this.highlightData as any);
+      /**
+       * IMPORTANT: Commands do NOT call repository.add() or storage.saveEvent().
+       * 
+       * Reason: ModeManager.createHighlight() internally handles:
+       * - Adding to repository (via mode's add())
+       * - Saving events to storage (if mode is persistent)
+       * - Emitting events via EventBus
+       * 
+       * Commands ONLY store state for undo/redo. Persistence is delegated to modes.
+       * This prevents "already exists" warnings and follows Single Responsibility Principle.
+       * 
+       * @see Task 1.1: Fix Command Pattern (Phase 1)
+       */
 
       // Save to storage (SPRINT MODE ONLY)
       if (RepositoryFactory.getMode() !== 'walk') {
@@ -131,13 +138,10 @@ export class CreateHighlightCommand implements Command {
         CSS.highlights.set(highlightName, nativeHighlight);
       }
 
-      // CRITICAL: Re-add to store with liveRanges for click detection!
-      // Vault/Sprint modes handle this. Only needed for legacy?
-      // Preventing double-add warning.
-      // this.repositoryFacade.addFromData({
-      //   ...this.highlightData,
-      //   liveRanges: [range], // CRITICAL for click detection!
-      // });
+      /**
+       * REDO path: Mode's createFromData() already handles repository persistence.
+       * No need to call addFromData() again - would cause duplication.
+       */
 
       // Save event (SPRINT MODE ONLY)
       if (RepositoryFactory.getMode() !== 'walk') {
