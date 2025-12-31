@@ -10,6 +10,8 @@ import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import { ModeConfigSchema } from '@/shared/schemas/validation';
+import { ValidationError } from '@/shared/errors/app-error';
 
 export class ModeManager implements IModeManager {
   private currentMode: IHighlightMode | null = null;
@@ -26,6 +28,15 @@ export class ModeManager implements IModeManager {
   }
 
   async activateMode(modeName: string): Promise<void> {
+    // Validate mode name
+    const validation = ModeConfigSchema.safeParse({ modeName });
+    if (!validation.success) {
+      throw new ValidationError(
+        `Invalid mode name: ${modeName}`,
+        { modeName, validationIssues: validation.error.issues }
+      );
+    }
+
     const newMode = this.modes.get(modeName);
     if (!newMode) {
       throw new Error(`Mode ${modeName} not registered`);
