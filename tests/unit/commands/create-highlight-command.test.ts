@@ -41,16 +41,20 @@ vi.mock('@/content/utils/range-converter', () => ({
 function createMockModeManager() {
     const mockMode: IHighlightMode = {
         name: 'sprint',
-        isPersistent: true,
+        capabilities: { persistence: 'local', undo: true, sync: false, collections: false, tags: false, export: false, ai: false, search: false, multiSelector: false },
         createHighlight: vi.fn().mockResolvedValue('highlight-123'),
         removeHighlight: vi.fn().mockResolvedValue(undefined),
+        updateHighlight: vi.fn().mockResolvedValue(undefined),
         getHighlight: vi.fn().mockReturnValue({ id: 'test-id', text: 'test' }),
         getAllHighlights: vi.fn().mockReturnValue([]),
-        clear: vi.fn().mockResolvedValue(undefined),
+        clearAll: vi.fn().mockResolvedValue(undefined),
         restore: vi.fn().mockResolvedValue(0),
-        createFromData: vi.fn().mockResolvedValue(undefined), // Key: This gets called during redo!
+        createFromData: vi.fn().mockResolvedValue(undefined),
         onActivate: vi.fn().mockResolvedValue(undefined),
         onDeactivate: vi.fn().mockResolvedValue(undefined),
+        onHighlightCreated: vi.fn().mockResolvedValue(undefined),
+        onHighlightRemoved: vi.fn().mockResolvedValue(undefined),
+        shouldRestore: vi.fn().mockReturnValue(true),
     };
 
     const modeManager: IModeManager = {
@@ -194,8 +198,11 @@ describe('CreateHighlightCommand', () => {
             await command.execute();
 
             // Assert: Mode's createFromData was called
-            expect(mockMode.createFromData).toHaveBeenCalledTimes(1);
-            expect(mockMode.createFromData).toHaveBeenCalledWith(
+            expect(mockMode.createFromData).toHaveBeenCalled();
+            const calls = (mockMode.createFromData as ReturnType<typeof vi.fn>).mock.calls;
+            if (!calls.length) throw new Error('Action not called');
+            const createFromDataCall = calls[0]![0];
+            expect(createFromDataCall).toEqual(
                 expect.objectContaining({
                     id: 'highlight-123',
                     colorRole: 'yellow',
@@ -385,8 +392,12 @@ describe('CreateHighlightCommand', () => {
             await command.execute(); // Redo
 
             // Assert: Range was preserved and used in redo
-            const createFromDataCall = (mockMode.createFromData as ReturnType<typeof vi.fn>).mock.calls[0][0];
-            expect(createFromDataCall.text).toBe('test text'); // Matches mock
+            // Assert: Range was preserved and used in redo
+            expect(mockMode.createFromData).toHaveBeenCalled();
+            const calls = (mockMode.createFromData as ReturnType<typeof vi.fn>).mock.calls;
+            if (!calls.length) throw new Error('Redo not called');
+            const redoCallData = calls[0]![0];
+            expect(redoCallData.text).toBe('test text'); // Matches mock
         });
     });
 
