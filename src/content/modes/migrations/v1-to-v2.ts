@@ -44,7 +44,8 @@ export async function migrateV1ToV2(v1State: V1State | null | undefined): Promis
     }
 
     // Extract and validate mode
-    const rawMode = v1State.defaultMode;
+    // V1 might use 'mode' or 'defaultMode'
+    const rawMode = v1State['mode'] || v1State.defaultMode;
     const validatedMode = validateAndNormalizeMode(rawMode);
 
     // Create v2 state with metadata

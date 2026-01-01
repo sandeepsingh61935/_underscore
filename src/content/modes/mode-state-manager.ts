@@ -86,17 +86,16 @@ export class ModeStateManager {
     async init(): Promise<void> {
         try {
             // Wrap storage read in circuit breaker
+            // Fetch ALL keys to allow detection of legacy V1 state ('mode')
             const result = await this.storageCircuitBreaker.execute(
-                () => chrome.storage.sync.get(['defaultMode', 'metadata'])
+                () => chrome.storage.sync.get(null)
             );
             const loadedMode = result['defaultMode'];
             const loadedMetadata = result['metadata'];
 
             // Detect state version
-            const currentVersion = this.migrationEngine.detectVersion({
-                defaultMode: loadedMode,
-                metadata: loadedMetadata,
-            });
+            // Pass FULL result to allow detection of legacy keys ('mode')
+            const currentVersion = this.migrationEngine.detectVersion(result);
 
             // Check if migration is needed
             if (currentVersion < this.migrationEngine.getCurrentVersion()) {
@@ -107,7 +106,7 @@ export class ModeStateManager {
 
                 // Perform migration
                 const migrationResult = await this.migrationEngine.migrate(
-                    { defaultMode: loadedMode },
+                    result, // Pass full source state
                     currentVersion,
                     this.migrationEngine.getCurrentVersion()
                 );
