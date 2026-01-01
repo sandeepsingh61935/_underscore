@@ -15,7 +15,8 @@ import {
     ModeTypeSchema,
     StateMetadataSchema,
     type ModeType,
-    type StateMetadata
+    type StateMetadata,
+    type StateChangeEvent
 } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
 import {
@@ -38,6 +39,10 @@ export class ModeStateManager {
     private stateMachine: ModeStateMachine;
     private migrationEngine: MigrationEngine;
     private storageCircuitBreaker: CircuitBreaker;
+
+    // History tracking
+    private history: StateChangeEvent[] = [];
+    private readonly MAX_HISTORY_SIZE = 100;
 
     constructor(
         private readonly modeManager: ModeManager,
@@ -279,6 +284,10 @@ export class ModeStateManager {
             this.currentMode = validatedMode;
             this.metadata.lastModified = Date.now();
 
+            // Record state change to history
+            const reason = this.stateMachine.getTransitionReason(previousMode, validatedMode);
+            this.recordHistory(previousMode, validatedMode, reason);
+
             this.logger.info('[ModeState] Switching mode', {
                 from: previousMode,
                 to: validatedMode,
@@ -360,5 +369,43 @@ export class ModeStateManager {
 
     private notifyListeners(): void {
         this.listeners.forEach((listener) => listener(this.currentMode));
+    }
+
+    /**
+     * Record state change to history
+     * @private
+     */
+    private recordHistory(from: ModeType, to: ModeType, reason?: string): void {
+        const entry: StateChangeEvent = {
+            from,
+            to,
+            timestamp: Date.now(),
+            reason,
+        };
+
+        this.history.push(entry);
+
+        // LRU eviction - remove oldest if exceeding max size
+        if (this.history.length > this.MAX_HISTORY_SIZE) {
+            this.history.shift();
+        }
+
+        this.logger.debug('[ModeState] History recorded', entry);
+    }
+
+    /**
+     * Get state change history (readonly copy)
+     * @returns Readonly array of state change events
+     */
+    getHistory(): ReadonlyArray<StateChangeEvent> {
+        return [...this.history]; // Defensive copy
+    }
+
+    /**
+     * Clear history (useful for testing and debugging)
+     */
+    clearHistory(): void {
+        this.history = [];
+        this.logger.debug('[ModeState] History cleared');
     }
 }
