@@ -184,4 +184,111 @@ describe('ModeStateManager - State History Tracking', () => {
         expect(history2).toHaveLength(1);
         expect(history2[0]).not.toHaveProperty('fake');
     });
+
+    describe('Edge Cases (Tricky)', () => {
+        it('should handle concurrent setMode calls without race conditions', async () => {
+            // Act - Fire multiple setMode calls without awaiting
+            const promises = [
+                modeStateManager.setMode('sprint'),
+                modeStateManager.setMode('vault'),
+                modeStateManager.setMode('walk'),
+                modeStateManager.setMode('sprint'),
+            ];
+
+            await Promise.all(promises);
+
+            // Assert - All transitions should be recorded
+            const history = modeStateManager.getHistory();
+            expect(history.length).toBeGreaterThanOrEqual(3); // At least some transitions recorded
+
+            // Verify no corrupted entries
+            history.forEach(entry => {
+                expect(entry.from).toMatch(/^(walk|sprint|vault)$/);
+                expect(entry.to).toMatch(/^(walk|sprint|vault)$/);
+                expect(entry.timestamp).toBeTypeOf('number');
+            });
+        });
+
+        it('should still record history even if storage fails (Circuit Breaker open)', async () => {
+            // Arrange - Make storage fail to open circuit breaker
+            mockStorage.set.mockRejectedValue(new Error('QuotaExceededError'));
+
+            // Trigger 3 failures to open circuit
+            await modeStateManager.setMode('sprint');
+            await modeStateManager.setMode('vault');
+            await modeStateManager.setMode('walk');
+
+            modeStateManager.clearHistory(); // Clear to isolate test
+            mockStorage.set.mockClear();
+
+            // Act - Circuit should be OPEN now, but history should still work
+            await modeStateManager.setMode('sprint');
+
+            // Assert - History recorded despite storage failure
+            const history = modeStateManager.getHistory();
+            expect(history).toHaveLength(1);
+            expect(history[0].from).toBe('walk');
+            expect(history[0].to).toBe('sprint');
+
+            // Verify storage NOT called (circuit open)
+            expect(mockStorage.set).not.toHaveBeenCalled();
+        });
+
+        it('should handle rapid transitions (same millisecond timestamp collisions)', async () => {
+            // Arrange - Mock Date.now to return same value multiple times
+            const mockNow = vi.spyOn(Date, 'now');
+            let timestamp = 1000;
+            mockNow.mockImplementation(() => timestamp);
+
+            // Reinit with mocked time
+            modeStateManager = new ModeStateManager(modeManager, logger);
+            await modeStateManager.init();
+
+            // Act - Make transitions in "same millisecond"
+            await modeStateManager.setMode('sprint');
+            await modeStateManager.setMode('vault'); // Same timestamp
+
+            timestamp += 1; // Next millisecond
+            await modeStateManager.setMode('walk');
+
+            // Assert
+            const history = modeStateManager.getHistory();
+            expect(history).toHaveLength(3);
+
+            // First two should have same timestamp
+            expect(history[0].timestamp).toBe(1000);
+            expect(history[1].timestamp).toBe(1000);
+            expect(history[2].timestamp).toBe(1001);
+
+            // Both should still be recorded correctly
+            expect(history[0].to).toBe('sprint');
+            expect(history[1].to).toBe('vault');
+        });
+
+        it('should record history even when setMode throws error', async () => {
+            // Arrange - Mock state machine to block transition
+            const stateMachine = (modeStateManager as any).stateMachine;
+            vi.spyOn(stateMachine, 'executeGuards')
+                .mockResolvedValueOnce(true)  // First call succeeds
+                .mockResolvedValueOnce(false); // Second call blocked
+
+            // Act
+            await modeStateManager.setMode('sprint'); // Success
+
+            try {
+                await modeStateManager.setMode('vault'); // Blocked (shouldn't record)
+            } catch (error) {
+                // Expected to throw
+            }
+
+            // Assert - Only successful transition recorded
+            const history = modeStateManager.getHistory();
+            expect(history).toHaveLength(1);
+            expect(history[0].from).toBe('walk');
+            expect(history[0].to).toBe('sprint');
+
+            // Blocked transition should NOT be in history
+            expect(history.some(h => h.to === 'vault')).toBe(false);
+        });
+    });
 });
