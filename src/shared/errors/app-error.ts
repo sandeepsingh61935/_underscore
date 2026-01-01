@@ -50,6 +50,14 @@ export class AppError extends Error {
             isOperational: this.isOperational
         };
     }
+
+    /**
+     * Get user-friendly error message
+     * Override in subclasses for specific messages
+     */
+    public toUserMessage(): string {
+        return this.message;
+    }
 }
 
 /**
