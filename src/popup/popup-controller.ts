@@ -193,11 +193,45 @@ export class PopupController {
     }
 
     /**
-     * Get current active tab
+     * Get current active tab with context invalidation handling
+     * 
+     * Chrome extensions can have their context invalidated during:
+     * - Extension updates
+     * - Extension reload
+     * - Extension disable/enable
+     * 
+     * @returns Current tab or null if not found or context invalidated
+     * @private
      */
     private async getCurrentTab(): Promise<chrome.tabs.Tab | null> {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        return tab ?? null;
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            return tab ?? null;
+        } catch (error) {
+            // Check for context invalidation
+            if (
+                error instanceof Error &&
+                (error.message.includes('Extension context invalidated') ||
+                    error.message.includes('Cannot access') ||
+                    error.message.includes('Extension has been reloaded'))
+            ) {
+                this.logger.error('[PopupController] Extension context invalidated', error);
+
+                // Show user-friendly message
+                this.showErrorState(
+                    new AppError(
+                        'Extension was updated or reloaded. Please close and reopen this popup.',
+                        { code: 'CONTEXT_INVALIDATED', originalError: error.message },
+                        false // Not retryable without closing popup
+                    )
+                );
+
+                return null;
+            }
+
+            // Re-throw other errors
+            throw error;
+        }
     }
 
     /**
