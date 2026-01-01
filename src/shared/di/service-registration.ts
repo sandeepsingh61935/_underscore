@@ -24,6 +24,12 @@ import { StorageService } from '@/shared/services/storage-service';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
+import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
+import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
+
 
 /**
  * Register all application services
@@ -107,6 +113,52 @@ export function registerServices(container: Container): void {
     });
 
     // ============================================
+    // IPC LAYER (Phase 3: Inter-Process Communication)
+    // ============================================
+
+    /**
+     * Circuit Breaker for Messaging - Singleton
+     * Protects messaging operations from cascading failures
+     * Config: 5 failures, 30s reset (consistent with Phase 2 storage circuit breaker)
+     */
+    container.registerSingleton<CircuitBreaker>('messagingCircuitBreaker', () => {
+        const logger = container.resolve<ILogger>('logger');
+        return new CircuitBreaker(
+            {
+                failureThreshold: 5,
+                resetTimeout: 30000, // 30 seconds
+                successThreshold: 2,
+                name: 'messaging',
+            },
+            logger
+        );
+    });
+
+    /**
+     * Message Bus - Singleton
+     * Cross-context IPC with retry logic and circuit breaker protection
+     *
+     * Composition chain:
+     * CircuitBreakerMessageBus → RetryDecorator → ChromeMessageBus
+     *
+     * This provides:
+     * 1. Circuit Breaker (outermost) - prevents cascading failures
+     * 2. Retry with exponential backoff - handles transient failures
+     * 3. ChromeMessageBus (core) - chrome.runtime API wrapper
+     */
+    container.registerSingleton<IMessageBus>('messageBus', () => {
+        const logger = container.resolve<ILogger>('logger');
+        const circuitBreaker = container.resolve<CircuitBreaker>('messagingCircuitBreaker');
+
+        // Build composition chain
+        const chromeMessageBus = new ChromeMessageBus(logger, { timeoutMs: 5000 });
+        const retryDecorator = new RetryDecorator(chromeMessageBus, logger, DEFAULT_RETRY_POLICY);
+        const messageBus = new CircuitBreakerMessageBus(retryDecorator, circuitBreaker);
+
+        return messageBus;
+    });
+
+    // ============================================
     // MODE MANAGEMENT LAYER (Depends on Core Services)
     // ============================================
 
@@ -183,6 +235,8 @@ export function getDependencyGraph(): Map<string, string[]> {
         ['repository', []],
         ['messaging', []],
         ['tabQuery', []],
+        ['messagingCircuitBreaker', ['logger']],
+        ['messageBus', ['logger', 'messagingCircuitBreaker']],
         ['modeManager', ['eventBus', 'logger']],
         ['walkMode', ['repository', 'eventBus']],
         ['sprintMode', ['repository', 'storage', 'eventBus']],
