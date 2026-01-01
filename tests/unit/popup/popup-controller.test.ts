@@ -89,17 +89,29 @@ describe('PopupController - Edge Cases', () => {
     });
 
     describe('Initialization Edge Cases', () => {
-        // TODO: Restore deleted test - "should handle missing DOM elements"
-        // This test was wrongly deleted. DOM elements can be missing due to:
-        // - Other extensions mutating the DOM
-        // - Hot reload race conditions
-        // - Build process issues
-        it.skip('should handle missing DOM elements', () => {
-            // TODO: Implement defensive null checks in bindDOMElements()
-            // 1. Remove a required element from DOM
-            // 2. Call controller.initialize()
-            // 3. Verify graceful error handling (no crash)
-            // 4. Verify error is displayed to user
+        it('should handle missing DOM elements', async () => {
+            // Arrange: Remove critical element
+            // We deliberately create a broken DOM state
+            document.body.innerHTML = '<div id="app"></div>';
+
+            // Act
+            // Should NOT reject, but catch and log internally
+            await controller.initialize();
+
+            // Assert
+            // 1. Verify specific error was logged (from bindDOMElements catches)
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('DOM binding failed'),
+                expect.objectContaining({
+                    message: expect.stringContaining('Critical DOM element missing')
+                })
+            );
+
+            // 2. Verify initialization failure was logged
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Initialization failed'),
+                expect.any(Error)
+            );
         });
         it('should handle chrome.tabs.query returning empty array', async () => {
             // Arrange: No active tabs
@@ -261,15 +273,26 @@ describe('PopupController - Edge Cases', () => {
     });
 
     describe('Memory Leak Prevention', () => {
-        // TODO: Restore deleted test - "should cleanup event listeners on destroy"
-        // This test was wrongly deleted. It should verify that removeEventListener
-        // is called for all registered listeners to prevent memory leaks.
-        // Implementation needed: Track listeners in array, spy on removeEventListener
-        it.skip('should cleanup event listeners on destroy', () => {
-            // TODO: Implement proper event listener cleanup verification
-            // 1. Spy on removeEventListener
-            // 2. Call controller.cleanup()
-            // 3. Verify removeEventListener called for each registered listener
+        it('should cleanup event listeners on destroy', async () => {
+            // Arrange
+            // Initialize to setup listeners
+            global.chrome = {
+                tabs: { query: vi.fn().mockResolvedValue([{ id: 123 }]) },
+            } as any;
+            await controller.initialize();
+
+            // Spy on removeEventListener
+            // Note: We spy on the method we expect to be called on the elements
+            const removeSpy = vi.spyOn(HTMLSelectElement.prototype, 'removeEventListener');
+            const buttonRemoveSpy = vi.spyOn(HTMLButtonElement.prototype, 'removeEventListener');
+
+            // Act
+            controller.cleanup();
+
+            // Assert
+            // Verify listeners on specific elements were removed
+            expect(removeSpy).toHaveBeenCalled(); // Mode selector
+            expect(buttonRemoveSpy).toHaveBeenCalled(); // Clear all button
         });
 
         it('should handle cleanup called multiple times', () => {
@@ -285,14 +308,29 @@ describe('PopupController - Edge Cases', () => {
     });
 
     describe('Browser API Edge Cases', () => {
-        // TODO: Restore deleted test - "should handle chrome.runtime becoming unavailable"
-        // This test was wrongly deleted. Extension context can be invalidated during updates.
-        // This is documented Chrome behavior and needs proper handling.
-        it.skip('should handle chrome.runtime becoming unavailable', () => {
-            // TODO: Implement context invalidation handling
-            // 1. Simulate chrome.runtime becoming undefined
-            // 2. Verify controller handles gracefully without crashing
-            // 3. Verify error is logged appropriately
+        it('should handle chrome.runtime becoming unavailable', async () => {
+            // Arrange: Simulate Context invalidation
+            global.chrome = {
+                tabs: {
+                    query: vi.fn().mockRejectedValue(new Error('Extension context invalidated')),
+                },
+            } as any;
+
+            // Act & Assert
+            // Should not crash, but handle the error
+            await expect(controller.initialize()).resolves.not.toThrow();
+
+            // Verify specific handling
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Extension context invalidated'),
+                expect.any(Error)
+            );
+
+            expect(mockErrorDisplay.show).toHaveBeenCalled();
+
+            // Verify we set the specific error code
+            const errorArg = (mockErrorDisplay.show as any).mock.calls[0][1];
+            expect(errorArg.context?.code).toBe('CONTEXT_INVALIDATED');
         });
         it('should handle tab ID changing mid-session', async () => {
             // Arrange: Tab ID changes (e.g., tab reload)
