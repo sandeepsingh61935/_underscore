@@ -38,15 +38,26 @@ import { debounce } from '@/shared/utils/async-utils';
  * - Error Boundary: Graceful error handling
  */
 export class PopupController {
-    private stateManager: PopupStateManager;
-    private errorDisplay: ErrorDisplay;
+    // DOM Elements (bound during initialize)
+    private modeSelector!: HTMLSelectElement;
+    private highlightCount!: HTMLElement;
+    private loadingIndicator!: HTMLElement;
+    private errorContainer!: HTMLElement;
+    private mainUI!: HTMLElement;
 
-    // DOM Elements
-    private modeSelector: HTMLSelectElement | null = null;
-    private highlightCount: HTMLElement | null = null;
-    private loadingIndicator: HTMLElement | null = null;
-    private errorContainer: HTMLElement | null = null;
-    private mainUI: HTMLElement | null = null;
+    // Event listener registry for cleanup
+    private eventListeners: Array<{
+        element: Element | Window;
+        event: string;
+        handler: EventListener;
+    }> = [];
+
+    // Dependencies (injected)
+    private readonly stateManager: PopupStateManager;
+    private readonly errorDisplay: ErrorDisplay;
+
+    // Debounced event handlers (created in constructor)
+    private debouncedModeChange!: () => Promise<void>;
 
     // State
     private currentTabId: number | null = null;
@@ -68,9 +79,9 @@ export class PopupController {
         this.stateManager = stateManager || new PopupStateManager(messageBus, logger);
         this.errorDisplay = errorDisplay || new ErrorDisplay(logger);
 
-        // Debounce mode switching (prevent race conditions)
+        // Create debounced event handlers (prevent race conditions)
         // 300ms is standard UI debounce time
-        this.handleModeChange = debounce(this.handleModeChange.bind(this), 300);
+        this.debouncedModeChange = debounce(this.handleModeChange.bind(this), 300);
 
         this.logger.debug('[PopupController] Initialized with DI');
     }
@@ -190,25 +201,64 @@ export class PopupController {
     }
 
     /**
-     * Setup event listeners for user interactions
+     * Add event listener and track for cleanup
+     * 
+     * @param element - DOM element or window
+     * @param event - Event name
+     * @param handler - Event handler function
+     * @private
+     */
+    private addEventListener(
+        element: Element | Window,
+        event: string,
+        handler: EventListener
+    ): void {
+        element.addEventListener(event, handler);
+        this.eventListeners.push({ element, event, handler });
+    }
+
+    /**
+     * Setup event listeners for user interactions with cleanup tracking
+     * @private
      */
     private setupEventListeners(): void {
+        this.logger.debug('[PopupController] Setting up event listeners');
         // Mode selector change
-        this.modeSelector?.addEventListener('change', async () => {
-            await this.handleModeChange();
-        });
+        if (this.modeSelector) {
+            this.addEventListener(
+                this.modeSelector,
+                'change',
+                this.debouncedModeChange as EventListener
+            );
+        }
 
         // Clear all button
         const clearAllBtn = document.getElementById('clear-all');
-        clearAllBtn?.addEventListener('click', async () => {
-            await this.handleClearAll();
-        });
+        if (clearAllBtn) {
+            this.addEventListener(
+                clearAllBtn,
+                'click',
+                (async () => {
+                    await this.handleClearAll();
+                }) as EventListener
+            );
+        }
 
         // Retry button (error state)
         const retryBtn = document.querySelector('[data-action="retry"]');
-        retryBtn?.addEventListener('click', async () => {
-            await this.initialize();
-        });
+        if (retryBtn) {
+            this.addEventListener(
+                retryBtn,
+                'click',
+                (async () => {
+                    await this.initialize();
+                }) as EventListener
+            );
+        }
+
+        this.logger.debug(
+            `[PopupController] Registered ${this.eventListeners.length} event listeners`
+        );
     }
 
     /**
@@ -358,10 +408,23 @@ export class PopupController {
     }
 
     /**
-     * Cleanup resources
+     * Cleanup resources and remove event listeners
+     * 
+     * Removes all tracked event listeners to prevent memory leaks.
+     * Can be called multiple times safely (idempotent).
      */
     cleanup(): void {
+        this.logger.debug('[PopupController] Cleaning up resources');
+
+        // Remove all tracked event listeners
+        for (const { element, event, handler } of this.eventListeners) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventListeners = [];
+
+        // Cleanup state manager
         this.stateManager.cleanup();
-        this.logger.debug('[PopupController] Cleaned up');
+
+        this.logger.debug('[PopupController] Cleanup complete');
     }
 }
