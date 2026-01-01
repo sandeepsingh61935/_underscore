@@ -82,10 +82,11 @@ export class ChromeMessageBus implements IMessageBus {
                     try {
                         await handler(validatedMessage.payload, sender);
                     } catch (error) {
-                        this.logger.error('Message handler error', {
-                            messageType: validatedMessage.type,
-                            error: error instanceof Error ? error.message : String(error),
-                        });
+                        this.logger.error(
+                            'Message handler error',
+                            error instanceof Error ? error : new Error(String(error)),
+                            { messageType: validatedMessage.type }
+                        );
                     }
                 }
             })();
@@ -149,11 +150,11 @@ export class ChromeMessageBus implements IMessageBus {
             });
             return response;
         } catch (error) {
-            this.logger.error('Message send failed', {
-                messageType: message.type,
-                target,
-                error: error instanceof Error ? error.message : String(error),
-            });
+            this.logger.error(
+                'Message send failed',
+                error instanceof Error ? error : new Error(String(error)),
+                { messageType: message.type, target }
+            );
             throw error;
         }
     }
@@ -211,10 +212,11 @@ export class ChromeMessageBus implements IMessageBus {
             try {
                 await handler(payload, {} as chrome.runtime.MessageSender);
             } catch (error) {
-                this.logger.error('Publish handler error', {
-                    messageType,
-                    error: error instanceof Error ? error.message : String(error),
-                });
+                this.logger.error(
+                    'Publish handler error',
+                    error instanceof Error ? error : new Error(String(error)),
+                    { messageType }
+                );
             }
         });
 

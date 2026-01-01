@@ -1,5 +1,5 @@
 import type { IMessageBus } from '../interfaces/i-message-bus';
-import type { ILogger } from '../interfaces/i-logger';
+import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { Message, MessageTarget, MessageHandler } from '../schemas/message-schemas';
 
 /**
@@ -109,11 +109,11 @@ export class RetryDecorator implements IMessageBus {
         }
 
         // All retries exhausted
-        this.logger.error('Message send failed after all retries', {
-            messageType: message.type,
-            maxRetries: this.policy.maxRetries,
-            error: lastError?.message ?? 'Unknown error',
-        });
+        this.logger.error(
+            'Message send failed after all retries',
+            lastError ?? new Error('Unknown error'),
+            { messageType: message.type, maxRetries: this.policy.maxRetries }
+        );
 
         throw lastError ?? new Error('Message send failed after retries');
     }
