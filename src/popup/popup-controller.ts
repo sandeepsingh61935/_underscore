@@ -18,6 +18,7 @@ import type { MessageResponse } from '@/shared/schemas/message-schemas';
 import type { ModeType } from '@/content/modes/mode-state-manager';
 import { PopupStateManager, type PopupState } from './popup-state-manager';
 import { ErrorDisplay } from './components/error-display';
+import { AppError } from '@/shared/errors/app-error';
 
 import { debounce } from '@/shared/utils/async-utils';
 
@@ -126,18 +127,58 @@ export class PopupController {
     }
 
     /**
-     * Bind DOM elements
+     * Bind DOM elements with defensive null checks
+     *
+     * Verifies all required DOM elements exist before proceeding.
+     * Missing critical elements indicate a template/build issue that prevents the popup from functioning.
+     *
+     * @throws {AppError} If critical DOM elements are missing
+     * @private
      */
     private bindDOMElements(): void {
-        this.modeSelector = document.getElementById('mode-selector') as HTMLSelectElement;
-        this.highlightCount = document.getElementById('highlight-count');
-        this.loadingIndicator = document.getElementById('loading-state');
-        this.errorContainer = document.getElementById('error-state');
-        this.mainUI = document.getElementById('main-ui');
+        this.logger.debug('[PopupController] Binding DOM elements');
 
-        if (!this.modeSelector || !this.highlightCount) {
-            throw new Error('Required DOM elements not found');
+        // Critical elements (must exist for popup to function)
+        const criticalSelectors = {
+            'mode-selector': 'Mode selection dropdown',
+            'highlight-count': 'Statistics display',
+            'loading-state': 'Loading indicator',
+            'error-state': 'Error state container',
+            'main-ui': 'Main UI container',
+        };
+
+        // Verify all critical elements exist
+        for (const [id, description] of Object.entries(criticalSelectors)) {
+            const element = document.getElementById(id);
+            if (!element) {
+                const error = new AppError(
+                    `Critical DOM element missing: #${id} (${description})`,
+                    {
+                        code: 'DOM_ELEMENT_MISSING',
+                        selector: `#${id}`,
+                        description,
+                    },
+                    false // Not operational - indicates build/template issue
+                );
+                this.logger.error('[PopupController] DOM binding failed', error);
+                throw error;
+            }
         }
+
+        // Assign elements (we know they exist now)
+        this.modeSelector = document.getElementById('mode-selector') as HTMLSelectElement;
+        this.highlightCount = document.getElementById('highlight-count')!;
+        this.loadingIndicator = document.getElementById('loading-state')!;
+        this.errorContainer = document.getElementById('error-state')!;
+        this.mainUI = document.getElementById('main-ui')!;
+
+        // Optional elements (warn if missing but don't throw)
+        const clearAllButton = document.getElementById('clear-all');
+        if (!clearAllButton) {
+            this.logger.warn('[PopupController] Optional element missing: #clear-all (Clear all button)');
+        }
+
+        this.logger.debug('[PopupController] DOM elements bound successfully');
     }
 
     /**
