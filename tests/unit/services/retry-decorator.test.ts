@@ -261,6 +261,67 @@ describe('RetryDecorator', () => {
 
             expect(innerBus.sendMock).toHaveBeenCalledOnce();
         });
+
+        it('should NOT retry OUR timeout errors (ChromeMessageBus timeout)', async () => {
+            // This is the timeout thrown by ChromeMessageBus.send()
+            const ourTimeoutError = new Error(
+                'Message send timeout after 5000ms (type: TEST, target: background)'
+            );
+
+            innerBus.sendMock.mockRejectedValueOnce(ourTimeoutError);
+
+            await expect(
+                retryDecorator.send('background', {
+                    type: 'TEST',
+                    payload: {},
+                    timestamp: Date.now(),
+                })
+            ).rejects.toThrow('Message send timeout after 5000ms');
+
+            // Should NOT retry - timeout means the endpoint is dead/unresponsive
+            expect(innerBus.sendMock).toHaveBeenCalledOnce();
+        });
+
+        it('SHOULD retry Chrome network "timeout" errors (transient failures)', async () => {
+            // This is a Chrome runtime error that happens to mention "timeout"
+            // but is NOT our deliberate timeout mechanism
+            const chromeNetworkTimeout = new Error(
+                'Could not establish connection. Connection timeout.'
+            );
+
+            innerBus.sendMock
+                .mockRejectedValueOnce(chromeNetworkTimeout)
+                .mockResolvedValueOnce({ success: true });
+
+            const result = await retryDecorator.send('background', {
+                type: 'TEST',
+                payload: {},
+                timestamp: Date.now(),
+            });
+
+            expect(result).toEqual({ success: true });
+            // SHOULD retry - this is a transient network issue
+            expect(innerBus.sendMock).toHaveBeenCalledTimes(2);
+        });
+
+        it('should NOT retry CircuitBreakerOpenError (fail-fast)', async () => {
+            // This happens when circuit is OPEN and retry is attempted
+            const circuitOpenError = new Error('Circuit breaker is OPEN for messaging');
+            circuitOpenError.name = 'CircuitBreakerOpenError';
+
+            innerBus.sendMock.mockRejectedValueOnce(circuitOpenError);
+
+            await expect(
+                retryDecorator.send('background', {
+                    type: 'TEST',
+                    payload: {},
+                    timestamp: Date.now(),
+                })
+            ).rejects.toThrow('Circuit breaker is OPEN');
+
+            // Should NOT retry - circuit open means system is unhealthy
+            expect(innerBus.sendMock).toHaveBeenCalledOnce();
+        });
     });
 
     describe('send() - Tricky Edge Cases', () => {

@@ -154,9 +154,14 @@ export class RetryDecorator implements IMessageBus {
 
     /**
      * Check if error is non-retryable (permanent failure)
-     * Validation errors should not be retried
+     * Validation errors, OUR timeout mechanism, and circuit breaker open should not be retried
      */
     private isNonRetryableError(error: Error): boolean {
+        // Circuit breaker open - retrying defeats the circuit breaker's purpose
+        if (error.name === 'CircuitBreakerOpenError') {
+            return true;
+        }
+
         // Zod validation errors
         if (error.name === 'ZodError') {
             return true;
@@ -167,6 +172,7 @@ export class RetryDecorator implements IMessageBus {
             /validation/i,
             /invalid.*schema/i,
             /malformed.*message/i,
+            /Message send timeout after/i, // OUR timeout mechanism (not Chrome network timeouts)
         ];
 
         return nonRetryablePatterns.some((pattern) => pattern.test(error.message));
