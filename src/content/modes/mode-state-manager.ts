@@ -2,12 +2,11 @@
  * Mode State Manager
  *
  * Single Source of Truth for mode state with persistence and broadcasting.
- * Implements State Management Pattern.
+ * Implements State Management Pattern with Circuit Breaker for storage resilience.
  */
 
 import type { ModeManager } from './mode-manager';
 
-import { ValidationError } from '@/shared/errors/app-error';
 import { RepositoryFactory } from '@/shared/repositories';
 import { ModeStateMachine } from './mode-state-machine';
 import { MigrationEngine } from './state-migration';
@@ -19,6 +18,12 @@ import {
     type StateMetadata
 } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
+import {
+    StatePersistenceError,
+    StateValidationError,
+    StateTransitionError,
+} from '@/shared/errors/state-errors';
+import { CircuitBreaker, CircuitBreakerOpenError } from '@/shared/utils/circuit-breaker';
 
 // Re-export ModeType for backward compatibility
 export type { ModeType };
@@ -32,6 +37,7 @@ export class ModeStateManager {
     private listeners: Set<(mode: ModeType) => void> = new Set();
     private stateMachine: ModeStateMachine;
     private migrationEngine: MigrationEngine;
+    private storageCircuitBreaker: CircuitBreaker;
 
     constructor(
         private readonly modeManager: ModeManager,
@@ -39,6 +45,17 @@ export class ModeStateManager {
     ) {
         this.stateMachine = new ModeStateMachine(logger);
         this.migrationEngine = new MigrationEngine(logger);
+
+        // Initialize circuit breaker for storage operations
+        this.storageCircuitBreaker = new CircuitBreaker(
+            {
+                failureThreshold: 3,
+                resetTimeout: 30000, // 30 seconds
+                successThreshold: 1,
+                name: 'ModeStateStorage',
+            },
+            logger
+        );
 
         // Register v1→v2 migration
         this.migrationEngine.registerMigration({
@@ -51,10 +68,14 @@ export class ModeStateManager {
 
     /**
      * Initialize from user preference
+     * Implements error boundary with fallback to default mode
      */
     async init(): Promise<void> {
         try {
-            const result = await chrome.storage.sync.get(['defaultMode', 'metadata']);
+            // Wrap storage read in circuit breaker
+            const result = await this.storageCircuitBreaker.execute(
+                () => chrome.storage.sync.get(['defaultMode', 'metadata'])
+            );
             const loadedMode = result['defaultMode'];
             const loadedMetadata = result['metadata'];
 
@@ -85,19 +106,26 @@ export class ModeStateManager {
                     this.currentMode = v2State.currentMode;
                     this.metadata = v2State.metadata;
 
-                    // Persist migrated state (non-blocking)
+                    // Persist migrated state (non-blocking) with circuit breaker
                     try {
-                        await chrome.storage.sync.set({
-                            defaultMode: v2State.currentMode,
-                            metadata: v2State.metadata,
-                        });
+                        await this.storageCircuitBreaker.execute(
+                            () => chrome.storage.sync.set({
+                                defaultMode: v2State.currentMode,
+                                metadata: v2State.metadata,
+                            })
+                        );
 
                         this.logger.info('[ModeState] Migration complete', {
                             mode: this.currentMode,
                         });
                     } catch (persistError) {
                         // Log but don't fail - state is good in memory
-                        this.logger.error('[ModeState] Failed to persist migrated state', persistError as Error);
+                        this.logger.error(
+                            '[ModeState] Failed to persist migrated state',
+                            new StatePersistenceError('Failed to save migrated state', {
+                                originalError: persistError
+                            })
+                        );
                     }
                 } else {
                     // Migration failed - fallback to defaults
@@ -118,29 +146,60 @@ export class ModeStateManager {
                         mode: this.currentMode,
                     });
                 } else {
-                    this.logger.error('[ModeState] Invalid mode in storage', new Error(
-                        `Invalid mode "${loadedMode}": ${validation.error.message}`
-                    ));
+                    this.logger.warn(
+                        '[ModeState] Invalid mode in storage, falling back',
+                        new StateValidationError(`Invalid mode "${loadedMode}"`, {
+                            mode: loadedMode,
+                            validationErrors: validation.error.issues
+                        })
+                    );
                     this.currentMode = 'walk';
                 }
 
-                // Validate and load metadata
+                // Validate and load metadata INDEPENDENTLY
                 if (loadedMetadata) {
                     const metadataValidation = StateMetadataSchema.safeParse(loadedMetadata);
 
                     if (metadataValidation.success) {
                         this.metadata = metadataValidation.data;
                     } else {
-                        this.logger.error('[ModeState] Invalid metadata in storage', new Error(
-                            `Invalid metadata: ${metadataValidation.error.message}`
-                        ));
+                        // Warn but don't reset MODE. Just repair metadata.
+                        this.logger.warn(
+                            '[ModeState] Invalid metadata in storage, resetting metadata',
+                            new StateValidationError('Invalid metadata', {
+                                validationErrors: metadataValidation.error.issues
+                            })
+                        );
+                        // Fallback metadata only
+                        this.metadata = {
+                            version: 2,
+                            lastModified: Date.now(),
+                        };
                     }
                 }
             }
 
             await this.applyMode();
         } catch (error) {
-            this.logger.error('[ModeState] Failed to load preference', error as Error);
+            // Check if circuit breaker is open
+            if (error instanceof CircuitBreakerOpenError) {
+                this.logger.warn(
+                    '[ModeState] Circuit breaker open - using in-memory state only',
+                    { circuitName: 'ModeStateStorage' }
+                );
+                // Don't reset mode - keep current in-memory state
+                // Just apply the current mode without storage
+                await this.applyMode();
+                return;
+            }
+
+            // Critical initialization failure - fallback to safe default
+            this.logger.error(
+                '[ModeState] Failed to initialize mode state',
+                new StatePersistenceError('Storage read failed during init', {
+                    originalError: error
+                })
+            );
             // Fallback to walk mode
             this.currentMode = 'walk';
             await this.applyMode();
@@ -157,85 +216,132 @@ export class ModeStateManager {
     /**
      * Set mode (with persistence and broadcast)
      */
+    /**
+     * Set mode (with persistence and broadcast)
+     */
     async setMode(mode: ModeType): Promise<void> {
-        // 1. Validate mode with Zod schema
-        const validation = ModeTypeSchema.safeParse(mode);
-
-        if (!validation.success) {
-            const error = new ValidationError(
-                `Invalid mode: ${JSON.stringify(mode)}. ${validation.error.message}`,
-                { mode, validationErrors: validation.error.issues }
-            );
-            this.logger.error('[ModeState] Validation failed', error);
-            throw error;
-        }
-
-        const validatedMode = validation.data;
-
-        // 2. Check if already in target mode
-        if (this.currentMode === validatedMode) {
-            this.logger.debug('[ModeState] Already in mode', { mode: validatedMode });
-            return;
-        }
-
-        // 3. Validate transition via state machine
-        const transitionResult = this.stateMachine.validateTransition(this.currentMode, validatedMode);
-
-        if (!transitionResult.success) {
-            this.logger.error('[ModeState] Transition not allowed', transitionResult.error);
-            throw transitionResult.error;
-        }
-
-        // 4. Execute guards before transition
-        const guardPassed = await this.stateMachine.executeGuards(this.currentMode, validatedMode);
-
-        if (!guardPassed) {
-            const error = new Error(
-                `Transition guard failed: ${this.stateMachine.getTransitionReason(this.currentMode, validatedMode)}`
-            );
-            this.logger.warn('[ModeState] Transition blocked by guard', {
-                from: this.currentMode,
-                to: validatedMode
-            });
-            throw error;
-        }
-
-        // 5. Log successful transition
-        this.logger.info('[ModeState] Switching mode', {
-            from: this.currentMode,
-            to: validatedMode,
-        });
-
-        this.currentMode = validatedMode;
-
-        // 1. Update metadata timestamp
-        this.metadata.lastModified = Date.now();
-
-        // 2. Persist preference with metadata
         try {
-            await chrome.storage.sync.set({
-                defaultMode: mode,
-                metadata: this.metadata,
+            // 1. Validate mode with Zod schema
+            const validation = ModeTypeSchema.safeParse(mode);
+
+            if (!validation.success) {
+                const error = new StateValidationError(
+                    `Invalid mode: ${JSON.stringify(mode)}`,
+                    { mode, validationErrors: validation.error.issues }
+                );
+                // We re-throw validation errors as they are likely developer errors or bad calls
+                this.logger.error('[ModeState] Validation failed', error);
+                throw error;
+            }
+
+            const validatedMode = validation.data;
+
+            // 2. Check if already in target mode
+            if (this.currentMode === validatedMode) {
+                this.logger.debug('[ModeState] Already in mode', { mode: validatedMode });
+                return;
+            }
+
+            // 3. Validate transition via state machine
+            const transitionResult = this.stateMachine.validateTransition(this.currentMode, validatedMode);
+
+            if (!transitionResult.success) {
+                const error = new StateTransitionError(
+                    transitionResult.error.message,
+                    this.currentMode,
+                    validatedMode,
+                    { originalError: transitionResult.error }
+                );
+                this.logger.error('[ModeState] Transition not allowed', error);
+                throw error;
+            }
+
+            // 4. Execute guards before transition
+            const guardPassed = await this.stateMachine.executeGuards(this.currentMode, validatedMode);
+
+            if (!guardPassed) {
+                const reason = this.stateMachine.getTransitionReason(this.currentMode, validatedMode);
+                const error = new StateTransitionError(
+                    `Transition guard failed: ${reason}`,
+                    this.currentMode,
+                    validatedMode
+                );
+                this.logger.warn('[ModeState] Transition blocked by guard', {
+                    from: this.currentMode,
+                    to: validatedMode,
+                    reason
+                });
+                throw error;
+            }
+
+            // 5. Update Memory State (Optimistic Update)
+            const previousMode = this.currentMode;
+            this.currentMode = validatedMode;
+            this.metadata.lastModified = Date.now();
+
+            this.logger.info('[ModeState] Switching mode', {
+                from: previousMode,
+                to: validatedMode,
             });
+
+            // 6. Persist preference (Non-blocking / Graceful Degradation) with circuit breaker
+            try {
+                await this.storageCircuitBreaker.execute(
+                    () => chrome.storage.sync.set({
+                        defaultMode: validatedMode,
+                        metadata: this.metadata,
+                    })
+                );
+            } catch (persistError) {
+                // DON'T THROW - State is valid in memory
+                this.logger.error(
+                    '[ModeState] Failed to persist mode change',
+                    new StatePersistenceError('Persistence failed during setMode', {
+                        originalError: persistError
+                    })
+                );
+            }
+
+            // 7. Apply to ModeManager and Broadcast
+            try {
+                await this.applyMode();
+                this.notifyListeners(); // Notify local first
+
+                // Broadcast to popup (fire and forget)
+                try {
+                    await chrome.runtime.sendMessage({
+                        type: 'MODE_CHANGED',
+                        mode: validatedMode,
+                    });
+                } catch (msgError) {
+                    this.logger.debug('[ModeState] Failed to broadcast mode change', { error: msgError });
+                }
+
+            } catch (activationError) {
+                // Critical failure: We claimed to be in 'mode' but failed to activate it.
+                // Revert state?
+                this.logger.error('[ModeState] Failed to activate mode, reverting', activationError as Error);
+
+                this.currentMode = previousMode; // Revert
+                await this.applyMode(); // Re-apply old mode
+
+                throw new StateTransitionError('Activation failed', previousMode, validatedMode, {
+                    cause: activationError
+                });
+            }
+
         } catch (error) {
-            this.logger.error('[ModeState] Failed to persist preference', error as Error);
-        }
+            // Pass through specific errors, wrap others
+            if (error instanceof StateValidationError ||
+                error instanceof StateTransitionError ||
+                error instanceof StatePersistenceError) {
+                throw error;
+            }
 
-        // 2. Apply to ModeManager
-        await this.applyMode();
-
-        // 3. Notify local listeners
-        this.notifyListeners();
-
-        // 4. Broadcast to popup
-        try {
-            chrome.runtime.sendMessage({
-                type: 'MODE_CHANGED',
-                mode,
-            });
-        } catch (_error) {
-            // Popup might not be open, ignore
-            this.logger.debug('[ModeState] No popup to notify');
+            // Should properly wrap unknown errors needed?
+            // For now, rethrow as is or wrap?
+            // Existing tests might expect ValidationError or Error.
+            throw error;
         }
     }
 

@@ -92,16 +92,18 @@ describe('HighlightRenderer', () => {
   });
 
   describe('removeHighlight', () => {
-    it('should remove highlight element', () => {
+    it('should remove highlight element', async () => {
+      vi.useFakeTimers();
       const selection = createMockSelection();
       const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
       renderer.removeHighlight(highlight.id);
 
       // Wait for animation
-      setTimeout(() => {
-        expect(renderer.count()).toBe(0);
-      }, 250);
+      vi.advanceTimersByTime(250);
+      expect(renderer.count()).toBe(0);
+
+      vi.useRealTimers();
     });
 
     it('should handle removing non-existent highlight', () => {
@@ -113,6 +115,7 @@ describe('HighlightRenderer', () => {
 
   describe('clearAll', () => {
     it('should remove all highlights', () => {
+      vi.useFakeTimers();
       // Create multiple highlights
       const paragraph = document.getElementById('test')!;
       const textNode = paragraph.firstChild!;
@@ -131,14 +134,16 @@ describe('HighlightRenderer', () => {
       renderer.clearAll();
 
       // Check after animation
-      setTimeout(() => {
-        expect(renderer.count()).toBe(0);
-      }, 250);
+      vi.advanceTimersByTime(250);
+      expect(renderer.count()).toBe(0);
+
+      vi.useRealTimers();
     });
   });
 
   describe('Event Listeners', () => {
     it('should remove highlight when HIGHLIGHT_REMOVED event is emitted', () => {
+      vi.useFakeTimers();
       const selection = createMockSelection();
       const highlight = renderer.createHighlight(selection, '#FFEB3B')!;
 
@@ -148,9 +153,10 @@ describe('HighlightRenderer', () => {
         timestamp: new Date(),
       });
 
-      setTimeout(() => {
-        expect(renderer.count()).toBe(0);
-      }, 250);
+      vi.advanceTimersByTime(250);
+      expect(renderer.count()).toBe(0);
+
+      vi.useRealTimers();
     });
   });
 
