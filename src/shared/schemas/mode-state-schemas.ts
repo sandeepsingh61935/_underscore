@@ -103,3 +103,19 @@ export const ModeTransitionSchema = z.object({
 });
 
 export type ModeTransition = z.infer<typeof ModeTransitionSchema>;
+
+/**
+ * State Metrics
+ * 
+ * Analytics data for state transitions and mode usage.
+ * Used for debugging, observability, and user behavior analysis.
+ * 
+ * @property transitionCounts - Count of each transition (e.g., "walk→sprint": 5)
+ * @property failureCounts - Count of blocked transitions (e.g., "sprint→vault": 2)
+ * @property timeInMode - Total milliseconds spent in each mode
+ */
+export interface StateMetrics {
+    transitionCounts: Record<string, number>; // "walk→sprint": 5
+    failureCounts: Record<string, number>;    // "sprint→vault": 2 (blocked)
+    timeInMode: Partial<Record<ModeType, number>>;     // "walk": 5000ms (partial - not all modes may have time tracked)
+}

@@ -16,7 +16,8 @@ import {
     StateMetadataSchema,
     type ModeType,
     type StateMetadata,
-    type StateChangeEvent
+    type StateChangeEvent,
+    type StateMetrics
 } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
 import {
@@ -43,6 +44,12 @@ export class ModeStateManager {
     // History tracking
     private history: StateChangeEvent[] = [];
     private readonly MAX_HISTORY_SIZE = 100;
+
+    // Metrics tracking
+    private transitionCounts = new Map<string, number>();
+    private failureCounts = new Map<string, number>();
+    private timeInMode = new Map<ModeType, number>();
+    private modeActivatedAt: number = Date.now();
 
     constructor(
         private readonly modeManager: ModeManager,
@@ -266,6 +273,10 @@ export class ModeStateManager {
 
             if (!guardPassed) {
                 const reason = this.stateMachine.getTransitionReason(this.currentMode, validatedMode);
+
+                // Record failed transition for metrics
+                this.recordTransitionFailure(this.currentMode, validatedMode);
+
                 const error = new StateTransitionError(
                     `Transition guard failed: ${reason}`,
                     this.currentMode,
@@ -281,12 +292,17 @@ export class ModeStateManager {
 
             // 5. Update Memory State (Optimistic Update)
             const previousMode = this.currentMode;
+
+            // Update time tracking before switching
+            this.updateTimeInMode();
+
             this.currentMode = validatedMode;
             this.metadata.lastModified = Date.now();
 
-            // Record state change to history
+            // Record state change to history and metrics
             const reason = this.stateMachine.getTransitionReason(previousMode, validatedMode);
             this.recordHistory(previousMode, validatedMode, reason);
+            this.recordTransition(previousMode, validatedMode);
 
             this.logger.info('[ModeState] Switching mode', {
                 from: previousMode,
@@ -407,5 +423,50 @@ export class ModeStateManager {
     clearHistory(): void {
         this.history = [];
         this.logger.debug('[ModeState] History cleared');
+    }
+
+    /**
+     * Record successful transition for metrics
+     * @private
+     */
+    private recordTransition(from: ModeType, to: ModeType): void {
+        const key = `${from}→${to}`;
+        this.transitionCounts.set(key, (this.transitionCounts.get(key) || 0) + 1);
+    }
+
+    /**
+     * Record failed transition (guard blocked)
+     * @private
+     */
+    private recordTransitionFailure(from: ModeType, to: ModeType): void {
+        const key = `${from}→${to}`;
+        this.failureCounts.set(key, (this.failureCounts.get(key) || 0) + 1);
+    }
+
+    /**
+     * Update time tracking when switching modes
+     * @private
+     */
+    private updateTimeInMode(): void {
+        const now = Date.now();
+        const elapsed = now - this.modeActivatedAt;
+        const current = this.timeInMode.get(this.currentMode) || 0;
+        this.timeInMode.set(this.currentMode, current + elapsed);
+        this.modeActivatedAt = now;
+    }
+
+    /**
+     * Get all metrics snapshot
+     * @returns Current state metrics
+     */
+    getMetrics(): StateMetrics {
+        // Update time for current mode before returning
+        this.updateTimeInMode();
+
+        return {
+            transitionCounts: Object.fromEntries(this.transitionCounts),
+            failureCounts: Object.fromEntries(this.failureCounts),
+            timeInMode: Object.fromEntries(this.timeInMode),
+        };
     }
 }
