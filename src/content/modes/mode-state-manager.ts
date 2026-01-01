@@ -17,7 +17,8 @@ import {
     type ModeType,
     type StateMetadata,
     type StateChangeEvent,
-    type StateMetrics
+    type StateMetrics,
+    type DebugState
 } from '@/shared/schemas/mode-state-schemas';
 import type { ILogger } from '@/shared/utils/logger';
 import {
@@ -460,13 +461,27 @@ export class ModeStateManager {
      * @returns Current state metrics
      */
     getMetrics(): StateMetrics {
-        // Update time for current mode before returning
-        this.updateTimeInMode();
-
         return {
             transitionCounts: Object.fromEntries(this.transitionCounts),
             failureCounts: Object.fromEntries(this.failureCounts),
             timeInMode: Object.fromEntries(this.timeInMode),
+        };
+    }
+
+    /**
+     * Get comprehensive debug state
+     * Useful for debugging tools/devtools
+     */
+    getDebugState(): DebugState {
+        // Explicitly update time tracking to get latest numbers
+        this.updateTimeInMode();
+
+        return {
+            currentMode: this.currentMode,
+            metadata: { ...this.metadata },
+            history: this.getHistory(),
+            metrics: this.getMetrics(), // Now pure (no side effect)
+            timestamp: Date.now()
         };
     }
 }

@@ -119,3 +119,17 @@ export interface StateMetrics {
     failureCounts: Record<string, number>;    // "sprint→vault": 2 (blocked)
     timeInMode: Partial<Record<ModeType, number>>;     // "walk": 5000ms (partial - not all modes may have time tracked)
 }
+
+/**
+ * Debug State Snapshot
+ * 
+ * Comprehensive state dump for debugging purposes.
+ * Aggregates current state, history, and metrics.
+ */
+export interface DebugState {
+    currentMode: ModeType;
+    metadata: StateMetadata;
+    history: readonly StateChangeEvent[];
+    metrics: StateMetrics;
+    timestamp: number;
+}
