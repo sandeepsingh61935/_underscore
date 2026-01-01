@@ -416,17 +416,50 @@ export class PopupController {
     }
 
     /**
-     * Show error state
+     * Show error state with ErrorDisplay component
+     * 
+     * Handles both Error and AppError instances.
+     * Uses error boundary pattern to prevent ErrorDisplay crashes.
+     * 
+     * @param error - Error to display
+     * @private
      */
     private showErrorState(error: Error): void {
         this.loadingIndicator?.classList.add('hidden');
         this.mainUI?.classList.add('hidden');
 
         if (this.errorContainer) {
-            this.errorDisplay.show(this.errorContainer, error, async () => {
-                await this.initialize();
-            });
+            this.errorContainer.classList.remove('hidden');
+
+            try {
+                // ErrorDisplay component handles retry callback
+                this.errorDisplay.show(this.errorContainer, error, async () => {
+                    await this.initialize();
+                });
+            } catch (displayError) {
+                // Safety net: If ErrorDisplay crashes, show basic error
+                this.logger.error('[PopupController] ErrorDisplay failed', displayError as Error);
+                this.errorContainer.innerHTML = `
+                    <div class="error-card" role="alert">
+                        <div class="error-icon">⚠️</div>
+                        <p class="error-message">An error occurred</p>
+                        <p style="font-size: 12px; margin-top: 8px;">
+                            ${this.escapeHtml(error.message)}
+                        </p>
+                    </div>
+                `;
+            }
         }
+    }
+
+    /**
+     * Escape HTML to prevent XSS (fallback)
+     * @private
+     */
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
