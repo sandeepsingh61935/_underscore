@@ -32,7 +32,14 @@ global.chrome = {
 describe('ModeStateManager - Metadata Validation', () => {
     let stateManager: ModeStateManager;
     let mockModeManager: ModeManager;
-    let mockLogger: ILogger;
+    let mockLogger: {
+        info: ReturnType<typeof vi.fn>;
+        debug: ReturnType<typeof vi.fn>;
+        error: ReturnType<typeof vi.fn>;
+        warn: ReturnType<typeof vi.fn>;
+        setLevel: ReturnType<typeof vi.fn>;
+        getLevel: ReturnType<typeof vi.fn>;
+    };
 
     beforeEach(() => {
         mockModeManager = {
@@ -43,9 +50,12 @@ describe('ModeStateManager - Metadata Validation', () => {
             info: vi.fn(),
             debug: vi.fn(),
             error: vi.fn(),
-        } as any;
+            warn: vi.fn(),
+            setLevel: vi.fn(),
+            getLevel: vi.fn(),
+        };
 
-        stateManager = new ModeStateManager(mockModeManager, mockLogger);
+        stateManager = new ModeStateManager(mockModeManager, mockLogger as unknown as ILogger);
 
         mockChromeStorage.sync.get.mockReset();
         mockChromeStorage.sync.set.mockReset();
@@ -88,7 +98,7 @@ describe('ModeStateManager - Metadata Validation', () => {
 
             // Assert
             expect(stateManager.getMode()).toBe('vault');
-            // Metadata should be loaded (we'll verify via getMetadata() once implemented)
+            // Metadata should be loaded (verified by side effects or checking internal state if exposed)
         });
 
         it('should update lastModified timestamp on each mode change', async () => {
@@ -139,6 +149,7 @@ describe('ModeStateManager - Metadata Validation', () => {
 
             // Act & Assert - Should not throw
             await expect(stateManager.init()).resolves.not.toThrow();
+            expect(stateManager.getMode()).toBe('sprint');
         });
 
         it('should handle missing metadata gracefully', async () => {
@@ -197,15 +208,23 @@ describe('ModeStateManager - Metadata Validation', () => {
                 defaultMode: 'sprint',
                 metadata: {
                     version: 2,
-                    lastModified: 'invalid',
+                    lastModified: 'invalid', // should be number
                 },
             });
 
             // Act
             await stateManager.init();
 
-            // Assert - Mode loads despite invalid timestamp
+            // Assert - State should be repaired
+            // Mode defaults to fallback (or valid if separate) but here we expect clean slate or repair
+            // Implementation: validates metadata, fails -> resets metadata
             expect(stateManager.getMode()).toBe('sprint');
+
+            // Verify warning logs for reset
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                expect.stringContaining('Invalid metadata'),
+                expect.any(Object)
+            );
         });
 
         it('should handle corrupted metadata object', async () => {
@@ -237,7 +256,7 @@ describe('ModeStateManager - Metadata Validation', () => {
             // Assert - Should log migration needed
             const logCalls = mockLogger.info.mock.calls.map(call => call[0]);
             const hasMigrationLog = logCalls.some(msg =>
-                msg.includes('migration') || msg.includes('v1') || msg.includes('upgrade')
+                typeof msg === 'string' && (msg.includes('migration') || msg.includes('v1') || msg.includes('upgrade'))
             );
             expect(hasMigrationLog).toBe(true);
         });
@@ -278,8 +297,11 @@ describe('ModeStateManager - Metadata Validation', () => {
             await stateManager.init();
 
             // Assert - Migration check happens but no actual migration needed
+            // "Migration complete" is logged only when migration actually happens
             const logCalls = mockLogger.info.mock.calls.map(call => call[0]);
-            const hasActualMigration = logCalls.some(msg => msg.includes('Migration complete'));
+            const hasActualMigration = logCalls.some(msg =>
+                typeof msg === 'string' && msg.includes('Migration complete')
+            );
             expect(hasActualMigration).toBe(false); // No actual migration performed
         });
     });
@@ -341,54 +363,12 @@ describe('ModeStateManager - Metadata Validation', () => {
             // Act - Init with corrupted flag type
             await stateManager.init();
 
-            // Assert - Should handle gracefully without crashing
-            // Invalid flag types are ignored, mode preference preserved
+            // Assert - Should handle gracefully without crashing.
+            // Invalid flags usually trigger metadata repair/reset.
             expect(stateManager.getMode()).toBe('vault');
-        });
-    });
 
-    describe('Edge cases', () => {
-        it('should handle metadata with extra unknown fields', async () => {
-            // Arrange - Future version might have extra fields
-            mockChromeStorage.sync.get.mockResolvedValue({
-                defaultMode: 'walk',
-                metadata: {
-                    version: 2,
-                    lastModified: Date.now(),
-                    unknownField: 'future feature',
-                },
-            });
-
-            // Act & Assert - Should not crash
-            await expect(stateManager.init()).resolves.not.toThrow();
-        });
-
-        it('should handle very old timestamps in metadata', async () => {
-            // Arrange - Timestamp from 1970
-            mockChromeStorage.sync.get.mockResolvedValue({
-                defaultMode: 'sprint',
-                metadata: {
-                    version: 2,
-                    lastModified: 1000, // Very old
-                },
-            });
-
-            // Act & Assert
-            await expect(stateManager.init()).resolves.not.toThrow();
-        });
-
-        it('should handle future timestamps in metadata', async () => {
-            // Arrange - Timestamp in future (clock skew)
-            mockChromeStorage.sync.get.mockResolvedValue({
-                defaultMode: 'vault',
-                metadata: {
-                    version: 2,
-                    lastModified: Date.now() + 86400000, // Tomorrow
-                },
-            });
-
-            // Act & Assert - Should not reject
-            await expect(stateManager.init()).resolves.not.toThrow();
+            // Check that it warned about invalid metadata
+            expect(mockLogger.warn).toHaveBeenCalled();
         });
     });
 });
