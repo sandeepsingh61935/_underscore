@@ -365,29 +365,43 @@ export class PopupController {
 
     /**
      * Update UI from state
+     * 
+     * Orchestrates the UI state transitions:
+     * 1. Updates data bindings (selector, counts)
+     * 2. Handles view switching (Loading -> Error -> Main)
+     * 
+     * @param state - New state to render
+     * @private
      */
     private updateUIFromState(state: PopupState): void {
-        // Update mode selector
+        // 1. Update data bindings
         if (this.modeSelector && this.modeSelector.value !== state.currentMode) {
             this.modeSelector.value = state.currentMode;
         }
 
-        // Update highlight count
         if (this.highlightCount) {
             this.highlightCount.textContent = state.stats.totalHighlights.toString();
         }
 
-        // Update loading state
+        // 2. Handle View State (Mutually Exclusive)
         if (state.loading) {
             this.showLoadingState();
-        } else {
-            this.hideLoadingState();
+            return;
         }
 
-        // Update error state
         if (state.error) {
+            // Note: We're showing a notification/toast here, not a full error screen,
+            // to allow the user to see the previous valid state if possible.
+            // If the error is catastrophic, the blocking error boundary would have caught it.
             this.showErrorNotification(state.error.toUserMessage());
+
+            // Ensure main UI is visible even with error toast
+            this.showMainUI();
+            return;
         }
+
+        // Default: Show main UI
+        this.showMainUI();
     }
 
     /**
@@ -399,12 +413,7 @@ export class PopupController {
         this.errorContainer?.classList.add('hidden');
     }
 
-    /**
-     * Hide loading state
-     */
-    private hideLoadingState(): void {
-        this.loadingIndicator?.classList.add('hidden');
-    }
+
 
     /**
      * Show main UI
@@ -464,14 +473,48 @@ export class PopupController {
 
     /**
      * Show error notification (toast-style)
+     * 
+     * Creates a temporary toast notification at the bottom of the popup.
+     * Auto-dismisses after 5 seconds.
      */
     private showErrorNotification(message: string): void {
-        // TODO: Implement proper notification system
-        // For now, use browser notification or console
-        this.logger.warn('[PopupController] Error notification', { message });
+        this.logger.warn('[PopupController] Showing error notification', { message });
 
-        // Could use browser notifications API
-        // Or implement a toast UI component
+        // Remove existing toast if any
+        const existingToast = document.getElementById('error-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.id = 'error-toast';
+        toast.className = 'error-card'; // Reuse error card styling but position differently
+        toast.style.position = 'absolute';
+        toast.style.bottom = '16px';
+        toast.style.left = '16px';
+        toast.style.right = '16px';
+        toast.style.zIndex = '100';
+        toast.style.boxShadow = 'var(--md-sys-shadow-level3)';
+        toast.style.animation = 'slideUp 0.3s ease-out';
+        toast.role = 'alert';
+
+        toast.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; text-align: left;">
+                <span class="error-icon" style="font-size: 24px; margin: 0;">⚠️</span>
+                <span style="font-size: 14px; color: var(--md-sys-color-on-surface);">${this.escapeHtml(message)}</span>
+            </div>
+        `;
+
+        // Add to main UI
+        this.mainUI.appendChild(toast);
+
+        // Auto-dismiss
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
     }
 
     /**
