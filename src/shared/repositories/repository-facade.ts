@@ -40,8 +40,8 @@ export class RepositoryFacade {
   private initialized = false;
   private logger: ILogger;
 
-  constructor() {
-    this.repository = RepositoryFactory.getHighlightRepository();
+  constructor(repository?: IHighlightRepository) {
+    this.repository = repository || RepositoryFactory.getHighlightRepository();
     this.logger = LoggerFactory.getLogger('RepositoryFacade');
   }
 

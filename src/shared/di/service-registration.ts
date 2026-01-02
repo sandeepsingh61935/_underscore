@@ -19,6 +19,7 @@ import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
+import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
 import { StorageService } from '@/shared/services/storage-service';
 import { EventBus } from '@/shared/utils/event-bus';
@@ -92,8 +93,23 @@ export function registerServices(container: Container): void {
      * Highlight Repository - Singleton
      * In-memory highlight storage with content hash indexing
      */
+    /**
+     * Highlight Repository - Singleton
+     * In-memory highlight storage with content hash indexing
+     */
     container.registerSingleton<IHighlightRepository>('repository', () => {
         return new InMemoryHighlightRepository();
+    });
+
+    /**
+     * Repository Facade - Singleton
+     * Synchronous wrapper over async repository
+     * Required by legacy synchronous code (HighlightClickDetector, etc.)
+     */
+    container.registerSingleton<RepositoryFacade>('repositoryFacade', () => {
+        const repository = container.resolve<IHighlightRepository>('repository');
+        // We initialize facade asynchronously in content script
+        return new RepositoryFacade(repository);
     });
 
     /**
