@@ -32,6 +32,8 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class SprintMode extends BaseHighlightMode implements IBasicMode {
+  private static readonly TTL_HOURS = 4;
+
   constructor(
     repository: IHighlightRepository,
     storage: IStorage,
@@ -57,6 +59,19 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     search: false,
     multiSelector: false,
   };
+
+  /**
+   * Override onActivate to clean expired highlights after restoration
+   */
+  override async onActivate(): Promise<void> {
+    await super.onActivate();
+
+    // Clean any highlights that expired while mode was inactive
+    const cleaned = await this.cleanExpiredHighlights();
+    if (cleaned > 0) {
+      this.logger.info(`Sprint Mode activated: cleaned ${cleaned} expired highlights`);
+    }
+  }
 
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
@@ -100,9 +115,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       ranges: [serializedRange],
       liveRanges: [range],
       createdAt: new Date(),
+      expiresAt: new Date(Date.now() + SprintMode.TTL_HOURS * 60 * 60 * 1000), // 4 hours from now
     };
 
-    // [OK] CRITICAL FIX: Register in ALL tracking structures
     // 1. Create Custom Highlight API highlight
     const highlight = new Highlight(range);
 
@@ -116,8 +131,10 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.logger.info('Added to mode internal maps', { id });
 
     // 4. Add to repository (persistence)
+    // CRITICAL: Add to repository cache and storage
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add(data as any);
+
     this.logger.info('Added to repository', { id });
 
     // Unified rendering - ALWAYS registers properly!
@@ -141,6 +158,11 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     // Used by undo/redo and range subtraction
     // CRITICAL: Goes through same renderAndRegister path!
     await this.renderAndRegister(data);
+
+    // CRITICAL FIX: Populate repository cache during restore
+    // This ensures hover detector can find highlights after page reload
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.repository.add(data as any);
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
@@ -256,8 +278,12 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Sprint Mode: Persists removal event
    */
   override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
-    this.logger.debug('Sprint Mode: Persisting highlight removal');
+    this.logger.debug('Sprint Mode: Removing highlight and persisting removal event');
 
+    // CRITICAL FIX: Actually remove the highlight!
+    await this.removeHighlight(event.highlightId);
+
+    // Also persist the removal event for event sourcing
     if (this.storage) {
       await this.storage.saveEvent({
         type: 'highlight.removed',
@@ -269,10 +295,71 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   }
 
   /**
+   * Clean Expired Highlights (TTL Enforcement)
+   * Removes highlights older than 4 hours
+   * Called on restore and can be called periodically
+   * 
+   * @returns Number of highlights cleaned
+   */
+  async cleanExpiredHighlights(): Promise<number> {
+    const now = Date.now();
+    const expiredIds: string[] = [];
+
+    // Find all expired highlights
+    for (const [id, data] of this.data.entries()) {
+      if (data.expiresAt && data.expiresAt.getTime() < now) {
+        expiredIds.push(id);
+        this.logger.debug('Highlight expired (TTL)', {
+          id,
+          createdAt: data.createdAt,
+          expiresAt: data.expiresAt,
+          age: Math.round((now - (data.createdAt?.getTime() || now)) / 1000 / 60 / 60) + 'h'
+        });
+      }
+    }
+
+    // Remove expired highlights
+    for (const id of expiredIds) {
+      await this.removeHighlight(id);
+    }
+
+    if (expiredIds.length > 0) {
+      this.logger.info('Cleaned expired highlights', { count: expiredIds.length });
+
+      // Persist cleanup event
+      if (this.storage) {
+        await this.storage.saveEvent({
+          type: 'highlights.ttl_cleanup',
+          timestamp: now,
+          eventId: crypto.randomUUID(),
+          count: expiredIds.length,
+          ids: expiredIds,
+        } as any); // Custom event type for TTL cleanup
+      }
+    }
+
+    return expiredIds.length;
+  }
+
+  /**
    * Restoration Control
    * Sprint Mode: Restores from event sourcing
    */
   override shouldRestore(): boolean {
     return true; // Sprint Mode restores via event sourcing
+  }
+
+  /**
+   * Deletion Configuration  
+   * Sprint Mode: Requires confirmation (persistent highlights)
+   */
+  override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+    return {
+      showDeleteIcon: true,
+      requireConfirmation: true,  // Persistent, ask before deleting
+      confirmationMessage: 'Delete this highlight? (Undo available with Ctrl+Z)',
+      allowUndo: true,
+      iconType: 'trash'
+    };
   }
 }
