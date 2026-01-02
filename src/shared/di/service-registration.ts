@@ -198,10 +198,10 @@ export function registerServices(container: Container): void {
      * Created fresh when activated
      */
     container.registerTransient<IHighlightMode>('walkMode', () => {
-        const repository = container.resolve<IHighlightRepository>('repository');
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new WalkMode(repository, eventBus, logger);
+        return new WalkMode(repositoryFacade as any, eventBus, logger);
     });
 
     /**
@@ -210,11 +210,11 @@ export function registerServices(container: Container): void {
      * Created fresh when activated
      */
     container.registerTransient<IHighlightMode>('sprintMode', () => {
-        const repository = container.resolve<IHighlightRepository>('repository');
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new SprintMode(repository, storage, eventBus, logger);
+        return new SprintMode(repositoryFacade as any, storage, eventBus, logger);
     });
 
     /**
@@ -223,10 +223,10 @@ export function registerServices(container: Container): void {
      * Created fresh when activated
      */
     container.registerTransient<IHighlightMode>('vaultMode', () => {
-        const repository = container.resolve<IHighlightRepository>('repository');
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new VaultMode(repository, eventBus, logger);
+        return new VaultMode(repositoryFacade as any, eventBus, logger);
     });
 
     /**
