@@ -1,0 +1,199 @@
+/**
+ * Delete Icon - Finnish Material Design 3
+ * 
+ * Purpose: Hover delete icon for highlights with mode-aware behavior
+ * Design: Finnish minimalism + M3 error palette
+ */
+
+/* === Base Icon Styles === */
+.underscore-delete-icon {
+    /* Sizing - Compact, non-intrusive */
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    border-radius: 10px;
+    /* Fully rounded (M3) */
+
+    /* M3 Error Colors - Berry red */
+    background: var(--md-sys-color-error-container, #FFDAD6);
+    color: var(--md-sys-color-on-error-container, #410002);
+    border: none;
+
+    /* Positioning - Top-right of highlight */
+    position: absolute;
+    z-index: 9999;
+
+    /* M3 Motion - Standard easing, medium duration */
+    opacity: 1;
+    /* Changed: visible by default */
+    transform: scale(1);
+    /* Changed: normal scale by default */
+    transition:
+        opacity 250ms cubic-bezier(0.2, 0, 0, 1),
+        transform 200ms cubic-bezier(0.2, 0, 0, 1),
+        box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    /* Layout */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    /* Accessibility */
+    outline: none;
+}
+
+/* SVG Icon Sizing */
+.underscore-delete-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* === Hover States === */
+
+/* M3 State Layer: Hover */
+.underscore-delete-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+    /* M3 elevation level 2 */
+}
+
+/* M3 State Layer: Pressed */
+.underscore-delete-icon:active {
+    transform: scale(0.95);
+    box-shadow: none;
+}
+
+/* === Focus States (WCAG AAA) === */
+
+.underscore-delete-icon:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary, #5B8DB8);
+    outline-offset: 2px;
+    border-radius: 12px;
+}
+
+/* === Batch Selection === */
+
+/* Selection badge (shows count) */
+.underscore-delete-icon--selected::after {
+    content: attr(data-selection-count);
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--md-sys-color-primary, #5B8DB8);
+    color: var(--md-sys-color-on-primary, #FFFFFF);
+    font-size: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.underscore-delete-icon--selected {
+    background: var(--md-sys-color-primary-container, #D4E4F0);
+    color: var(--md-sys-color-on-primary-container, #1A3A4F);
+}
+
+/* === Custom Colors (Match Highlight) === */
+
+/* Sunshine yellow */
+.underscore-delete-icon--yellow {
+    background: var(--highlight-sunshine-container, #FFF8DC);
+    color: var(--on-highlight-sunshine, #2D2600);
+}
+
+/* Lake blue */
+.underscore-delete-icon--blue {
+    background: var(--highlight-lake-container, #E3F2FD);
+    color: var(--on-highlight-lake, #001F2E);
+}
+
+/* Forest green */
+.underscore-delete-icon--green {
+    background: var(--highlight-forest-container, #E8F5E9);
+    color: var(--on-highlight-forest, #1B5E20);
+}
+
+/* Sunset orange */
+.underscore-delete-icon--orange {
+    background: var(--highlight-sunset-container, #FFF3E0);
+    color: var(--on-highlight-sunset, #4A2800);
+}
+
+/* Aurora purple */
+.underscore-delete-icon--purple {
+    background: var(--highlight-aurora-container, #F3E5F5);
+    color: var(--on-highlight-aurora, #311B92);
+}
+
+/* === Dark Mode === */
+
+@media (prefers-color-scheme: dark) {
+    .underscore-delete-icon {
+        background: var(--md-sys-color-error-container, #93000A);
+        color: var(--md-sys-color-on-error-container, #FFDAD6);
+    }
+
+    .underscore-delete-icon:hover {
+        box-shadow: 0 2px 6px rgba(255, 255, 255, 0.10);
+    }
+
+    /* Custom colors - adjusted for dark mode */
+    .underscore-delete-icon--yellow {
+        background: rgba(253, 216, 53, 0.2);
+        color: #FDD835;
+    }
+
+    .underscore-delete-icon--blue {
+        background: rgba(117, 160, 200, 0.2);
+        color: #75A0C8;
+    }
+
+    .underscore-delete-icon--green {
+        background: rgba(129, 199, 132, 0.2);
+        color: #81C784;
+    }
+
+    .underscore-delete-icon--orange {
+        background: rgba(255, 183, 77, 0.2);
+        color: #FFB74D;
+    }
+
+    .underscore-delete-icon--purple {
+        background: rgba(179, 157, 219, 0.2);
+        color: #B39DDB;
+    }
+}
+
+/* === Reduced Motion === */
+
+@media (prefers-reduced-motion: reduce) {
+    .underscore-delete-icon {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* === Mode-Specific Variations === */
+
+/* Walk Mode - Lighter, less prominent */
+.underscore-mode-walk .underscore-delete-icon {
+    opacity: 0.8;
+}
+
+/* Sprint Mode - Standard (default) */
+
+/* Vault Mode - More prominent, warning color */
+.underscore-mode-vault .underscore-delete-icon {
+    background: var(--md-sys-color-error, #BA1A1A);
+    color: var(--md-sys-color-on-error, #FFFFFF);
+}
+
+.underscore-mode-vault .underscore-delete-icon:hover {
+    box-shadow: 0 4px 12px rgba(186, 26, 26, 0.3);
+}
