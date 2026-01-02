@@ -280,4 +280,26 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     async sync(): Promise<void> {
         await this.vaultService.syncToServer();
     }
+
+    /**
+     * Deletion Configuration
+     * Vault Mode: Protected deletion with sync check
+     */
+    override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+        return {
+            showDeleteIcon: true,
+            requireConfirmation: true,
+            confirmationMessage: 'Delete from vault? This cannot be undone.',
+            allowUndo: false,  // Vault deletions are permanent
+            iconType: 'trash',
+            beforeDelete: async (_id: string) => {
+                // Future: Check if highlight is synced across devices
+                // const isSynced = await this.vaultService.checkSyncStatus(id);
+                // if (isSynced) {
+                //   return confirm('This highlight is synced across devices. Delete anyway?');
+                // }
+                return true;
+            }
+        };
+    }
 }
