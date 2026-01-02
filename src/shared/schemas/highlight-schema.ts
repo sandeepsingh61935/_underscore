@@ -41,10 +41,6 @@ export const TextQuoteSelectorSchema = z
       .max(5000, 'Selected text too long (max 5000 chars)'),
     prefix: z.string().max(64, 'Prefix context too long (max 64 chars)').optional(),
     suffix: z.string().max(64, 'Suffix context too long (max 64 chars)').optional(),
-  })
-  .refine((data) => data.prefix !== undefined || data.suffix !== undefined, {
-    message: 'At least one of prefix or suffix required for robust matching',
-    path: ['prefix'],
   });
 
 export type TextQuoteSelector = z.infer<typeof TextQuoteSelectorSchema>;
