@@ -1,7 +1,13 @@
 /**
- * @file entrypoints/content.ts
- * @description Content script - integrates all highlighting components
+ * Content Script Entry Point
+ *
+ * Architecture: DI + Event-Driven
+ * - DI Container: Registers all services with clear dependencies
+ * - Event Bus: Decouples highlight creation, mode switching, storage
+ * - Mode Manager: Delegates behavior to current mode (Walk/Sprint/Vault)
  */
+
+import '@/content/ui/delete-icon.css'; // Phase 4.3: Delete icon styles
 
 import { browser } from 'wxt/browser';
 
@@ -126,6 +132,36 @@ export default defineContentScript({
       // Initialize click detector for double-click deletion
       const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
       clickDetector.init();
+
+      // Initialize delete icon overlay system (Phase 4.3)
+      const { DeleteIconOverlay } = await import('@/content/ui/delete-icon-overlay');
+      const { HighlightHoverDetector } = await import('@/content/ui/highlight-hover-detector');
+
+      const deleteIconOverlay = new DeleteIconOverlay(
+        modeManager,
+        repositoryFacade,
+        eventBus,
+        logger
+      );
+
+      const hoverDetector = new HighlightHoverDetector(
+        repositoryFacade,
+        eventBus,
+        logger
+      );
+
+      hoverDetector.init();
+
+      logger.info('[DELETE-ICON] Hover detector initialized');
+
+      // Wire hover events to icon overlay
+      eventBus.on('highlight:hover:start', (event: { highlightId: string; boundingRect: DOMRect }) => {
+        deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
+      });
+
+      eventBus.on('highlight:hover:end', (event: { highlightId: string }) => {
+        deleteIconOverlay.hideIcon(event.highlightId);
+      });
 
       // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
       // Observer Pattern: Modes listen to domain events and decide how to handle
