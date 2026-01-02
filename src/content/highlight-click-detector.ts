@@ -79,15 +79,40 @@ export class HighlightClickDetector {
 
   /**
    * Find which highlight (if any) contains the clicked point
-   * Now supports multi-range highlights
+   * Uses CSS.highlights API to access live ranges
    */
   private findHighlightAtPoint(e: MouseEvent): HighlightDataV2 | null {
     const highlights = this.repositoryFacade.getAll();
+    const x = e.clientX;
+    const y = e.clientY;
 
     try {
       for (const highlight of highlights) {
-        if (this.isPointInHighlight(highlight, e.clientX, e.clientY)) {
-          return highlight;
+        // Get liveRanges from CSS.highlights using underscore- prefix
+        const highlightName = `underscore-${highlight.id}`;
+        const nativeHighlight = CSS.highlights.get(highlightName);
+
+        if (!nativeHighlight) {
+          continue;
+        }
+
+        // Check if point is within any range of this highlight
+        for (const abstractRange of nativeHighlight) {
+          const range = abstractRange as Range;
+          const rects = range.getClientRects();
+
+          for (let i = 0; i < rects.length; i++) {
+            const rect = rects[i];
+            if (
+              rect &&
+              x >= rect.left &&
+              x <= rect.right &&
+              y >= rect.top &&
+              y <= rect.bottom
+            ) {
+              return highlight;
+            }
+          }
         }
       }
     } catch (error) {
@@ -95,31 +120,5 @@ export class HighlightClickDetector {
     }
 
     return null;
-  }
-
-  /**
-   * Check if a point is within any of the highlight's ranges
-   */
-  private isPointInHighlight(highlight: HighlightDataV2, x: number, y: number): boolean {
-    // Check ALL liveRanges in this highlight
-    const ranges = (highlight as unknown as { liveRanges: Range[] }).liveRanges || [];
-
-    for (const liveRange of ranges) {
-      const rects = liveRange.getClientRects();
-
-      for (let i = 0; i < rects.length; i++) {
-        const rect = rects[i];
-        if (
-          rect &&
-          x >= rect.left &&
-          x <= rect.right &&
-          y >= rect.top &&
-          y <= rect.bottom
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 }
