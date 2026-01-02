@@ -30,6 +30,8 @@ describe('PopupStateManager - Edge Cases', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            setLevel: vi.fn(),
+            getLevel: vi.fn(),
         };
 
         // Create mock message bus with spy
@@ -75,7 +77,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange: Slow initialization
             sendSpy.mockImplementation(() =>
                 new Promise(resolve => setTimeout(() =>
-                    resolve({ success: true, data: { mode: 'walk', total: 0, currentPage: 0 } }),
+                    resolve({ success: true, data: { mode: 'walk', count: 0 } }),
                     100
                 ))
             );
@@ -91,15 +93,15 @@ describe('PopupStateManager - Edge Cases', () => {
         it('should handle concurrent refreshStats calls', async () => {
             // Arrange: Mock both init calls
             sendSpy
-                .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } }) // GET_CURRENT_MODE
-                .mockResolvedValueOnce({ success: true, data: { total: 0, currentPage: 0 } }); // GET_HIGHLIGHT_STATS
+                .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+                .mockResolvedValueOnce({ success: true, data: { count: 0 } });
 
             await stateManager.initialize(123);
 
             // Now mock refreshStats responses
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { total: 10, currentPage: 5 }
+                data: { count: 10 }
             });
 
             // Act: Fire multiple refresh calls simultaneously
@@ -119,7 +121,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange: Initialize with walk mode
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 5, currentPage: 2 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 10 } });
             await stateManager.initialize(123);
 
             const initialState = stateManager.getState();
@@ -138,7 +140,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Assert: State should be rolled back to 'walk'
             const rolledBackState = stateManager.getState();
             expect(rolledBackState.currentMode).toBe('walk');
-            expect(rolledBackState.stats.totalHighlights).toBe(5);
+            expect(rolledBackState.stats.totalHighlights).toBe(10);
             expect(rolledBackState.error).toBeInstanceOf(AppError);
         });
 
@@ -146,7 +148,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 42, currentPage: 13 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 42 } });
             await stateManager.initialize(123);
 
             // Act: Fail mode switch
@@ -161,14 +163,14 @@ describe('PopupStateManager - Edge Cases', () => {
             // Assert: Stats unchanged
             const state = stateManager.getState();
             expect(state.stats.totalHighlights).toBe(42);
-            expect(state.stats.highlightsOnCurrentPage).toBe(13);
+            expect(state.stats.highlightsOnCurrentPage).toBe(42);
         });
 
         it('should handle partial rollback on network error', async () => {
             // Arrange: Successful init
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 10, currentPage: 5 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 10 } });
             await stateManager.initialize(123);
 
             // Act: Network error during switch
@@ -204,7 +206,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange: Init succeeds
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 0, currentPage: 0 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 0 } });
             await stateManager.initialize(123);
 
             // Act: Timeout on switch
@@ -227,7 +229,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange: Background returns invalid data
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 0, currentPage: 0 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 0 } });
             await stateManager.initialize(123);
 
             // Act: Malformed response (success but missing data field)
@@ -258,7 +260,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'sprint', total: 0, currentPage: 0 }
+                data: { mode: 'sprint', count: 0 }
             });
 
             // Act
@@ -289,7 +291,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
             sendSpy
                 .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
-                .mockResolvedValueOnce({ success: true, data: { total: 0, currentPage: 0 } });
+                .mockResolvedValueOnce({ success: true, data: { count: 0 } });
 
             // Act: Should not throw even if subscriber errors
             await expect(stateManager.initialize(123)).resolves.not.toThrow();
@@ -309,7 +311,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'walk', total: 0, currentPage: 0 }
+                data: { mode: 'walk', count: 0 }
             });
 
             await stateManager.initialize(123);
@@ -357,7 +359,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange & Act
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'walk', total: 0, currentPage: 0 }
+                data: { mode: 'walk', count: 0 }
             });
             await stateManager.initialize(123);
 
@@ -371,21 +373,21 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange & Act
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'vault', total: 999999, currentPage: 50000 }
+                data: { mode: 'vault', count: 999999 }
             });
             await stateManager.initialize(123);
 
             // Assert
             const state = stateManager.getState();
             expect(state.stats.totalHighlights).toBe(999999);
-            expect(state.stats.highlightsOnCurrentPage).toBe(50000);
+            expect(state.stats.highlightsOnCurrentPage).toBe(999999);
         });
 
         it('should handle negative tab ID edge case', async () => {
             // Arrange & Act: Chrome sometimes uses -1 for special tabs
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'walk', total: 0, currentPage: 0 }
+                data: { mode: 'walk', count: 0 }
             });
 
             // Should not throw
@@ -398,7 +400,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'walk', total: 5, currentPage: 2 }
+                data: { mode: 'walk', count: 10 }
             });
             await stateManager.initialize(123);
 
@@ -416,7 +418,7 @@ describe('PopupStateManager - Edge Cases', () => {
             // Arrange
             sendSpy.mockResolvedValue({
                 success: true,
-                data: { mode: 'walk', total: 10, currentPage: 5 }
+                data: { mode: 'walk', count: 10 }
             });
             await stateManager.initialize(123);
 

@@ -95,41 +95,50 @@ export class PopupStateManager {
         try {
             // Get current mode
             const modeResponse = await this.messageBus.send<MessageResponse<{ mode: ModeType }>>(
-                'background',
+                'content',
                 {
-                    type: 'GET_CURRENT_MODE',
+                    type: 'GET_MODE',
                     payload: { tabId },
                     timestamp: Date.now(),
                 }
             );
 
             if (!modeResponse.success) {
-                throw new Error(modeResponse.error);
+                // Check for legacy/stale response format (mode property exists but success is missing)
+                // This happens when extension is updated but page hasn't been refreshed
+                if ((modeResponse as any).mode) {
+                    throw new Error('Content script outdated. Please refresh the page.');
+                }
+
+                // Default to generic message if error field is missing
+                const errorMsg = modeResponse.error || 'Unknown IPC error (success=false)';
+                throw new Error(errorMsg);
             }
 
             // Get stats
-            const statsResponse = await this.messageBus.send<MessageResponse<{
-                total: number;
-                currentPage: number;
-            }>>(
-                'background',
+            const statsResponse = await this.messageBus.send<MessageResponse<{ count: number }>>(
+                'content',
                 {
-                    type: 'GET_HIGHLIGHT_STATS',
+                    type: 'GET_HIGHLIGHT_COUNT',
                     payload: { tabId },
                     timestamp: Date.now(),
                 }
             );
 
-            if (!statsResponse.success) {
-                throw new Error(statsResponse.error);
+            let count = 0;
+            if (statsResponse.success) {
+                count = statsResponse.data.count;
+            } else {
+                // If stats fail, it's non-critical, assume 0
+                this.logger.warn('Failed to fetch stats', statsResponse.error);
             }
 
             // Update state
             this.setState({
                 currentMode: modeResponse.data.mode,
                 stats: {
-                    totalHighlights: statsResponse.data.total,
-                    highlightsOnCurrentPage: statsResponse.data.currentPage,
+                    totalHighlights: count,
+                    highlightsOnCurrentPage: count, // In-memory repo is per-page(tab) effectively
                 },
                 loading: false,
                 error: null,
@@ -137,7 +146,7 @@ export class PopupStateManager {
 
             this.logger.info('[PopupStateManager] Initialized successfully', {
                 mode: modeResponse.data.mode,
-                total: statsResponse.data.total,
+                count: count,
             });
         } catch (error) {
             this.logger.error('[PopupStateManager] Initialization failed', error as Error);
@@ -179,11 +188,11 @@ export class PopupStateManager {
             // 1. Update UI immediately (optimistic)
             this.setState({ currentMode: newMode, loading: true });
 
-            // 2. Send IPC message to background
+            // 2. Send IPC message to content script (ModeManager lives there)
             const response = await this.messageBus.send<MessageResponse>(
-                'background',
+                'content',
                 {
-                    type: 'SWITCH_MODE',
+                    type: 'SET_MODE',
                     payload: { mode: newMode, tabId: this.currentTabId },
                     timestamp: Date.now(),
                 }
@@ -244,13 +253,10 @@ export class PopupStateManager {
         if (!this.currentTabId) return;
 
         try {
-            const response = await this.messageBus.send<MessageResponse<{
-                total: number;
-                currentPage: number;
-            }>>(
-                'background',
+            const response = await this.messageBus.send<MessageResponse<{ count: number }>>(
+                'content',
                 {
-                    type: 'GET_HIGHLIGHT_STATS',
+                    type: 'GET_HIGHLIGHT_COUNT',
                     payload: { tabId: this.currentTabId },
                     timestamp: Date.now(),
                 }
@@ -260,10 +266,15 @@ export class PopupStateManager {
                 throw new Error(response.error);
             }
 
+            let count = 0;
+            if (response.success) {
+                count = response.data.count;
+            }
+
             this.setState({
                 stats: {
-                    totalHighlights: response.data.total,
-                    highlightsOnCurrentPage: response.data.currentPage,
+                    totalHighlights: count,
+                    highlightsOnCurrentPage: count,
                 },
             });
         } catch (error) {
