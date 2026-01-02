@@ -88,10 +88,6 @@ export class RepositoryFacade {
   // SYNCHRONOUS API (from cache)
   // ============================================
 
-  /**
-   * Add highlight (sync from caller's perspective)
-   * Persists async in background
-   */
   add(highlight: HighlightDataV2): void {
     this.ensureInitialized();
 
@@ -178,7 +174,8 @@ export class RepositoryFacade {
    */
   getAll(): HighlightDataV2[] {
     this.ensureInitialized();
-    return Array.from(this.cache.values());
+    const all = Array.from(this.cache.values());
+    return all;
   }
 
   /**
@@ -217,6 +214,7 @@ export class RepositoryFacade {
    */
   count(): number {
     this.ensureInitialized();
+    console.log('[REPO-DEBUG] count() called, cache.size:', this.cache.size, 'cache keys:', Array.from(this.cache.keys()));
     return this.cache.size;
   }
 
