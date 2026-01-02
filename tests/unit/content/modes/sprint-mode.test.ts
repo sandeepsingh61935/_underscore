@@ -49,17 +49,22 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
     });
 
     describe('Highlight Creation with Event Sourcing', () => {
-        // TODO: Fix event structure - Sprint Mode emits events, doesn't call storage directly
-        it.skip('should persist highlight creation via event sourcing', async () => {
+        it('should emit event on highlight creation', async () => {
             // Arrange
             const selection = createMockSelection('Test highlight');
+            const eventSpy = vi.spyOn(eventBus, 'emit');
 
             // Act
             const id = await sprintMode.createHighlight(selection, 'yellow');
 
             // Assert
             expect(id).toBeTruthy();
-            expect(mockStorage.saveEvent).toHaveBeenCalled();
+            expect(eventSpy).toHaveBeenCalledWith(
+                'highlight:created',
+                expect.objectContaining({
+                    type: 'highlight:created',
+                })
+            );
         });
 
         it('should deduplicate highlights via content hash', async () => {
@@ -152,14 +157,26 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
     });
 
     describe('Event Handlers', () => {
-        // TODO: Fix event structure - needs proper highlight object with type field
-        it.skip('should persist event on onHighlightCreated', async () => {
-            // Arrange
+        it('should persist event on onHighlightCreated', async () => {
+            // Arrange - provide complete HighlightCreatedEvent structure
             const event = {
                 type: 'highlight:created' as const,
-                highlightId: 'test-id',
-                text: 'test text',
-                timestamp: Date.now(),
+                timestamp: new Date(),
+                highlight: {
+                    id: 'test-id',
+                    text: 'test text',
+                    contentHash: 'mock-hash-123',
+                    color: '#FFEB3B',
+                    colorRole: 'yellow',
+                    ranges: [{
+                        startOffset: 0,
+                        endOffset: 9,
+                        startContainerPath: '/html/body/p[1]/text()[1]',
+                        endContainerPath: '/html/body/p[1]/text()[1]'
+                    }],
+                    type: 'underscore' as const,
+                    createdAt: new Date(),
+                },
             };
 
             // Act
