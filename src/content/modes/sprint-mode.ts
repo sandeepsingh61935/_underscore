@@ -150,29 +150,22 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       expiresAt: new Date(Date.now() + SprintMode.TTL_HOURS * 60 * 60 * 1000), // 4 hours from now
     };
 
-    // 1. Create Custom Highlight API highlight
-    const highlight = new Highlight(range);
+    // FIXED: renderAndRegister() handles CSS.highlights registration
+    // Removed duplicate: CSS.highlights.set(id, highlight)
+    // Removed duplicate: this.highlights.set(id, highlight)
+    // Removed duplicate: this.data.set(id, data)
 
-    // 2. Add to CSS.highlights (DOM)
-    CSS.highlights.set(id, highlight);
-    this.logger.info('Added to CSS.highlights', { id });
+    // 1. Render and register with CSS Custom Highlight API
+    await this.renderAndRegister(data);
 
-    // 3. Add to internal maps (mode state)
-    this.highlights.set(id, highlight);
-    this.data.set(id, data);
-    this.logger.info('Added to mode internal maps', { id });
-
-    // 4. Add to repository (persistence)
+    // 2. Add to repository (persistence)
     // CRITICAL: Add to repository cache and storage
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add(data as any);
 
     this.logger.info('Added to repository', { id });
 
-    // Unified rendering - ALWAYS registers properly!
-    await this.renderAndRegister(data);
-
-    // Emit event
+    // 3. Emit event for event sourcing
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
       highlight: {
@@ -279,20 +272,12 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   override async removeHighlight(id: string): Promise<void> {
     this.logger.info('Removing highlight', { id });
 
-    // [OK] Remove from Custom Highlight API (DOM)
-    // 1. Remove BARE ID (Manual registration)
-    if (CSS.highlights.has(id)) {
-      CSS.highlights.delete(id);
-      this.logger.info('Removed from CSS.highlights (bare)', { id });
-    }
-
-    // 2. Remove PREFIXED ID (Unified renderAndRegister)
-    // CRITICAL: This was missing!
+    // FIXED: Only prefixed key needed after removing double-registration
     const { getHighlightName } = await import('@/content/styles/highlight-styles');
     const highlightName = getHighlightName('underscore', id);
     if (CSS.highlights.has(highlightName)) {
       CSS.highlights.delete(highlightName);
-      this.logger.info('Removed from CSS.highlights (prefixed)', { highlightName });
+      this.logger.info('Removed from CSS.highlights', { highlightName });
     }
 
     // [OK] Remove from internal maps (state)

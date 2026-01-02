@@ -311,14 +311,15 @@ describe('Walk Mode - Integration Tests', () => {
             // Create highlight
             const id = await walkMode.createHighlight(mockSelection, 'yellow');
 
-            // Verify in DOM
-            expect((global.CSS.highlights as Map<string, any>).has(id)).toBe(true);
+            // Verify in DOM (CSS.highlights uses prefixed key)
+            const highlightName = `underscore-${id}`;
+            expect((global.CSS.highlights as Map<string, any>).has(highlightName)).toBe(true);
 
             // Remove highlight
             await walkMode.removeHighlight(id);
 
             // Verify removed from DOM
-            expect((global.CSS.highlights as Map<string, any>).has(id)).toBe(false);
+            expect((global.CSS.highlights as Map<string, any>).has(highlightName)).toBe(false);
         });
     });
 

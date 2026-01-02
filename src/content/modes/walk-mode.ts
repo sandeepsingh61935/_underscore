@@ -120,18 +120,15 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
             createdAt: new Date(),
         };
 
-        // 1. Register with Custom Highlight API (DOM)
-        const highlight = new Highlight(range);
-        CSS.highlights.set(id, highlight);
+        // FIXED: renderAndRegister() handles CSS.highlights registration
+        // Removed duplicate: CSS.highlights.set(id, highlight)
+        // Removed duplicate: this.highlights.set(id, highlight)  
+        // Removed duplicate: this.data.set(id, data)
 
-        // 2. Add to internal maps
-        this.highlights.set(id, highlight);
-        this.data.set(id, data);
-
-        // 3. Render
+        // 1. Render and register with CSS Custom Highlight API
         await this.renderAndRegister(data);
 
-        // 4. Add to Repository (Memory Only)
+        // 2. Add to Repository (Memory Only)
         // In Walk Mode, 'repository' is purely ephemeral.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.repository.add(data as any);
@@ -212,10 +209,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
      * ```
      */
     override async removeHighlight(id: string): Promise<void> {
-        // DOM cleanup
-        if (CSS.highlights.has(id)) CSS.highlights.delete(id);
-
-        // Prefixed ID cleanup
+        // FIXED: Only prefixed key needed after removing double-registration
         const { getHighlightName } = await import('@/content/styles/highlight-styles');
         const highlightName = getHighlightName('underscore', id);
         if (CSS.highlights.has(highlightName)) CSS.highlights.delete(highlightName);
