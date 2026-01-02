@@ -59,24 +59,65 @@ export class TextQuoteFinder {
    */
   private findExactMatches(exact: string, root: Node): Range[] {
     const ranges: Range[] = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const textNodes: Text[] = [];
+    let fullText = '';
 
+    // 1. Build Virtual Text Map
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
     let node: Text | null;
     while ((node = walker.nextNode() as Text)) {
-      const text = node.textContent || '';
-      let index = 0;
+      textNodes.push(node);
+      fullText += (node.textContent || '');
+    }
 
-      // Find all occurrences in this text node
-      while ((index = text.indexOf(exact, index)) !== -1) {
-        const range = document.createRange();
-        range.setStart(node, index);
-        range.setEnd(node, index + exact.length);
-        ranges.push(range);
-        index += exact.length;
+    if (!fullText) return [];
+
+    // 2. Search in concatenated text
+    let searchIndex = 0;
+    while ((searchIndex = fullText.indexOf(exact, searchIndex)) !== -1) {
+      // 3. Map global searchIndex to (StartNode, StartOffset)
+      const start = this.mapTextIndexToNode(textNodes, searchIndex);
+      // 4. Map global searchIndex + length to (EndNode, EndOffset)
+      const end = this.mapTextIndexToNode(textNodes, searchIndex + exact.length);
+
+      if (start && end) {
+        try {
+          const range = document.createRange();
+          range.setStart(start.node, start.offset);
+          range.setEnd(end.node, end.offset);
+          ranges.push(range);
+        } catch (e) {
+          console.warn('Failed to create range from global search', e);
+        }
       }
+
+      // Advance to avoid infinite loop (allow overlaps? usually simple +1)
+      searchIndex += 1;
     }
 
     return ranges;
+  }
+
+  /**
+   * Map global text index to specific Text node and offset
+   */
+  private mapTextIndexToNode(nodes: Text[], targetIndex: number): { node: Text; offset: number } | null {
+    let currentIndex = 0;
+
+    for (const node of nodes) {
+      const nodeLength = node.length; // Text node length
+      const nodeEnd = currentIndex + nodeLength;
+
+      // Check if target falls within this node (inclusive)
+      // Note: We prioritize "End of Node A" over "Start of Node B" for consistency
+      // except when targetIndex is 0 (handled by loop start)
+      if (targetIndex <= nodeEnd) {
+        return { node, offset: targetIndex - currentIndex };
+      }
+
+      currentIndex = nodeEnd;
+    }
+    return null;
   }
 
   /**

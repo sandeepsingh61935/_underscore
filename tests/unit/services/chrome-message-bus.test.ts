@@ -13,9 +13,16 @@ const mockChromeRuntime = {
     lastError: null as { message: string } | null,
 };
 
+// Mock chrome.tabs API
+const mockChromeTabs = {
+    sendMessage: vi.fn(),
+    query: vi.fn(),
+};
+
 // @ts-expect-error - Mocking chrome global
 global.chrome = {
     runtime: mockChromeRuntime,
+    tabs: mockChromeTabs,
 };
 
 // Mock logger
@@ -109,6 +116,71 @@ describe('ChromeMessageBus', () => {
         });
     });
 
+    describe('send() - Content Target Routing', () => {
+        it('should send to specific tab ID when provided in payload', async () => {
+            const message: Message = {
+                type: 'TEST',
+                payload: { tabId: 123 },
+                timestamp: Date.now(),
+            };
+
+            mockChromeTabs.sendMessage.mockImplementation((id, msg, callback) => {
+                callback({ success: true });
+            });
+
+            await messageBus.send('content', message);
+
+            expect(mockChromeTabs.sendMessage).toHaveBeenCalledWith(
+                123,
+                message,
+                expect.any(Function)
+            );
+            expect(mockChromeRuntime.sendMessage).not.toHaveBeenCalled();
+        });
+
+        it('should query active tab if tab ID missing', async () => {
+            const message: Message = {
+                type: 'TEST',
+                payload: {},
+                timestamp: Date.now(),
+            };
+
+            mockChromeTabs.query.mockImplementation((query, callback) => {
+                callback([{ id: 999 }]);
+            });
+            mockChromeTabs.sendMessage.mockImplementation((id, msg, callback) => {
+                callback({ success: true });
+            });
+
+            await messageBus.send('content', message);
+
+            expect(mockChromeTabs.query).toHaveBeenCalledWith(
+                { active: true, currentWindow: true },
+                expect.any(Function)
+            );
+            expect(mockChromeTabs.sendMessage).toHaveBeenCalledWith(
+                999,
+                message,
+                expect.any(Function)
+            );
+        });
+
+        it('should reject if no active tab found', async () => {
+            const message: Message = {
+                type: 'TEST',
+                payload: {},
+                timestamp: Date.now(),
+            };
+
+            mockChromeTabs.query.mockImplementation((query, callback) => {
+                callback([]); // No tabs
+            });
+
+            await expect(messageBus.send('content', message))
+                .rejects.toThrow('No active tab found');
+        });
+    });
+
     describe('send() - Error Handling', () => {
         it('should reject on chrome.runtime.lastError', async () => {
             mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
@@ -126,6 +198,7 @@ describe('ChromeMessageBus', () => {
 
             expect(mockLogger.error).toHaveBeenCalledWith(
                 'Message send failed',
+                expect.any(Error),
                 expect.objectContaining({
                     messageType: 'TEST',
                 })
@@ -366,9 +439,9 @@ describe('ChromeMessageBus', () => {
 
             expect(mockLogger.error).toHaveBeenCalledWith(
                 'Message handler error',
+                expect.any(Error),
                 expect.objectContaining({
                     messageType: 'TEST',
-                    error: 'Handler crashed',
                 })
             );
         });
@@ -485,7 +558,8 @@ describe('ChromeMessageBus', () => {
 
             expect(mockLogger.error).toHaveBeenCalledWith(
                 'Publish handler error',
-                expect.objectContaining({ error: 'Publish failed' })
+                expect.any(Error),
+                expect.objectContaining({ messageType: 'TEST' })
             );
         });
     });

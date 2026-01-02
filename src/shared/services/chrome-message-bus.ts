@@ -125,17 +125,38 @@ export class ChromeMessageBus implements IMessageBus {
         // Create send promise
         const sendPromise = new Promise<T>((resolve, reject) => {
             try {
-                chrome.runtime.sendMessage(message, (response: T) => {
+                const handleResponse = (response: T) => {
                     if (chrome.runtime.lastError) {
                         reject(
                             new Error(
-                                `Chrome runtime error: ${chrome.runtime.lastError.message}`
+                                `Chrome runtime error: ${chrome.runtime.lastError.message || 'Unknown runtime error'}`
                             )
                         );
                         return;
                     }
                     resolve(response);
-                });
+                };
+
+                if (target === 'content') {
+                    // Content scripts must be messaged via tabs API
+                    const payload = message.payload as { tabId?: number };
+                    if (payload?.tabId) {
+                        chrome.tabs.sendMessage(payload.tabId, message, handleResponse);
+                    } else {
+                        // Fallback: Query active tab if no ID provided (best effort)
+                        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                            const activeTab = tabs[0];
+                            if (!activeTab?.id) {
+                                reject(new Error('No active tab found to send content message'));
+                                return;
+                            }
+                            chrome.tabs.sendMessage(activeTab.id, message, handleResponse);
+                        });
+                    }
+                } else {
+                    // Background/Popup are reachable via runtime API
+                    chrome.runtime.sendMessage(message, handleResponse);
+                }
             } catch (error) {
                 reject(error);
             }

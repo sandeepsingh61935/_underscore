@@ -124,6 +124,7 @@ describe('RetryDecorator', () => {
             expect(innerBus.sendMock).toHaveBeenCalledTimes(3);
             expect(mockLogger.error).toHaveBeenCalledWith(
                 'Message send failed after all retries',
+                expect.any(Error),
                 expect.objectContaining({ maxRetries: 2 })
             );
         });
