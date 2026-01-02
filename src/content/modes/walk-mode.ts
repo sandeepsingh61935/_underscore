@@ -190,4 +190,17 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     override shouldRestore(): boolean {
         return false;
     }
+
+    /**
+     * Deletion Configuration
+     * Walk Mode: Simple, no confirmation (ephemeral)
+     */
+    override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+        return {
+            showDeleteIcon: true,
+            requireConfirmation: false,  // Ephemeral, no need to confirm
+            allowUndo: true,
+            iconType: 'remove'  // Less aggressive icon for ephemeral mode
+        };
+    }
 }
