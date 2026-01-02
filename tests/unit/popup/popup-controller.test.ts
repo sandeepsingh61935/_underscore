@@ -57,11 +57,11 @@ describe('PopupController - Edge Cases', () => {
         // Setup mock message bus with valid response structure
         mockMessageBus = {
             send: vi.fn().mockImplementation((dest, msg) => {
-                if (msg.type === 'GET_CURRENT_MODE') {
-                    return Promise.resolve({ success: true, data: 'walk' });
+                if (msg.type === 'GET_MODE') {
+                    return Promise.resolve({ success: true, data: { mode: 'walk' } });
                 }
-                if (msg.type === 'GET_HIGHLIGHT_STATS') {
-                    return Promise.resolve({ success: true, data: { total: 10, currentPage: 5 } });
+                if (msg.type === 'GET_HIGHLIGHT_COUNT') {
+                    return Promise.resolve({ success: true, data: { count: 10 } });
                 }
                 return Promise.resolve({ success: true, data: {} });
             }),

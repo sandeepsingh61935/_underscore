@@ -33,15 +33,28 @@ describe('Popup Integration - Realistic Scenarios', () => {
         }, logger);
 
         // Mock chrome.runtime API
+        // Mock chrome APIs
+        const mockSendMessage = vi.fn();
+
         global.chrome = {
             runtime: {
-                sendMessage: vi.fn(),
+                sendMessage: mockSendMessage,
                 onMessage: {
                     addListener: vi.fn(),
                     removeListener: vi.fn(),
                 },
                 lastError: null,
             },
+            tabs: {
+                // Forward tabs.sendMessage to runtime.sendMessage mock for easier testing
+                sendMessage: vi.fn((tabId, msg, callback) => {
+                    // Check if runtime.sendMessage has an implementation
+                    if (mockSendMessage.getMockImplementation()) {
+                        mockSendMessage(msg, callback);
+                    }
+                }),
+                query: vi.fn(),
+            }
         } as any;
     });
 
@@ -214,7 +227,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
                     chrome.runtime.lastError = null;
                     callback({
                         success: true,
-                        data: { mode: 'walk', total: 5, currentPage: 2 }
+                        data: { mode: 'walk', count: 5, currentPage: 2 }
                     });
                 } else {
                     // Mode switch fails (3rd call)

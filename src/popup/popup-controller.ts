@@ -129,11 +129,54 @@ export class PopupController {
             this.logger.info('[PopupController] Initialized successfully');
         } catch (error) {
             this.logger.error('[PopupController] Initialization failed', error as Error);
+
+            // Enhance error message with step context if possible
+            const enhancedError = error instanceof Error ? error : new Error(String(error));
+            if (!enhancedError.message) {
+                enhancedError.message = `Empty error during initialization (${enhancedError.name})`;
+            }
+
             try {
-                this.showErrorState(error as Error);
+                this.showErrorState(enhancedError);
             } catch (displayError) {
                 this.logger.error('[PopupController] ErrorDisplay crashed', displayError as Error);
             }
+        }
+    }
+
+    /**
+     * Helper to run init steps with context
+     */
+    private async runInitStep(stepName: string, operation: () => Promise<any> | void): Promise<any> {
+        try {
+            return await operation();
+        } catch (error) {
+            const wrapped = error instanceof Error ? error : new Error(String(error));
+            wrapped.message = `[${stepName}] ${wrapped.message}`;
+            throw wrapped;
+        }
+    }
+
+    // Rewrite initialize using steps
+    async initializeDebug(): Promise<void> {
+        try {
+            this.logger.info('[PopupController] Initializing');
+
+            await this.runInitStep('Bind DOM', () => this.bindDOMElements());
+            await this.runInitStep('Show Loading', () => this.showLoadingState());
+
+            const tab = await this.runInitStep('Get Tab', () => this.getCurrentTab());
+            if (!tab?.id) throw new Error('No active tab found');
+            this.currentTabId = tab.id;
+
+            await this.runInitStep('Init State', () => this.stateManager.initialize(this.currentTabId!));
+            await this.runInitStep('Setup Events', () => this.setupEventListeners());
+            await this.runInitStep('Subscribe', () => this.subscribeToStateChanges());
+            await this.runInitStep('Show UI', () => this.showMainUI());
+
+            this.logger.info('[PopupController] Initialized successfully');
+        } catch (error) {
+            this.showErrorState(error as Error);
         }
     }
 
@@ -321,7 +364,8 @@ export class PopupController {
             this.logger.info('[PopupController] Mode switched successfully', { mode: newMode });
         } catch (error) {
             this.logger.error('[PopupController] Mode switch failed', error as Error);
-            this.showErrorNotification('Failed to switch mode. Please try again.');
+            const message = error instanceof Error ? error.message : 'Failed to switch mode. Please try again.';
+            this.showErrorNotification(message);
         }
     }
 

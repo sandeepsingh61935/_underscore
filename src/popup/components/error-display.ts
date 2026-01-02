@@ -94,7 +94,7 @@ export class ErrorDisplay {
 
         // Return error message for generic errors (sanitized by escapeHtml)
         // This allows developers/users to see what went wrong locally
-        return error.message || 'An unexpected error occurred. Please try again.';
+        return error.message || `An unexpected error occurred (${error.name}). Please try again.`;
     }
 
     /**
