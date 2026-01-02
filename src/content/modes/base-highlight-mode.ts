@@ -38,6 +38,12 @@ export abstract class BaseHighlightMode {
 
   async onActivate(): Promise<void> {
     this.logger.info(`${this.name} mode activated`);
+
+    // CRITICAL FIX: Sync mode.data to repository cache
+    // This ensures hover detector can find highlights after mode activation/restore
+    for (const [, highlight] of this.data.entries()) {
+      await this.repository.add(highlight as any);
+    }
   }
 
   async onDeactivate(): Promise<void> {
@@ -137,6 +143,19 @@ export abstract class BaseHighlightMode {
     // Default: false (Privacy-First / ephemeral).
     // Override to return true in persistent modes.
     return false;
+  }
+
+  /**
+   * Default deletion configuration
+   * Modes can override to customize deletion behavior
+   */
+  getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+    return {
+      showDeleteIcon: true,
+      requireConfirmation: false,
+      allowUndo: true,
+      iconType: 'trash'
+    };
   }
 }
 
