@@ -52,6 +52,31 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         multiSelector: false,
     };
 
+    /**
+     * Creates a new highlight in Walk Mode (ephemeral, memory-only)
+     * 
+     * @param selection - The browser Selection object containing the text to highlight
+     * @param colorRole - The color role to apply (e.g., 'yellow', 'blue', 'green')
+     * @returns Promise resolving to the unique highlight ID
+     * 
+     * @throws {Error} If selection has no ranges
+     * @throws {Error} If selected text is empty
+     * @throws {Error} If range serialization fails
+     * 
+     * @remarks
+     * - Deduplicates via content hash (returns existing ID if duplicate)
+     * - Stores ONLY in memory (no persistence)
+     * - Registers with CSS Custom Highlight API
+     * - Adds to in-memory repository
+     * - Data is lost on page reload/close
+     * 
+     * @example
+     * ```typescript
+     * const selection = window.getSelection();
+     * const id = await walkMode.createHighlight(selection, 'yellow');
+     * console.log('Created ephemeral highlight:', id);
+     * ```
+     */
     async createHighlight(selection: Selection, colorRole: string): Promise<string> {
         if (selection.rangeCount === 0) {
             throw new Error('No range in selection');
@@ -116,10 +141,38 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         return id;
     }
 
+    /**
+     * Creates a highlight from existing HighlightData (internal use)
+     * 
+     * @param data - Complete HighlightData object
+     * @returns Promise that resolves when highlight is rendered
+     * 
+     * @remarks
+     * Used internally for undo/redo operations
+     * Does NOT persist data (Walk Mode is ephemeral)
+     */
     async createFromData(data: HighlightData): Promise<void> {
         await this.renderAndRegister(data);
     }
 
+    /**
+     * Updates an existing highlight's properties
+     * 
+     * @param id - The highlight ID to update
+     * @param updates - Partial HighlightData with fields to update
+     * @returns Promise that resolves when update is complete
+     * 
+     * @remarks
+     * - Updates in-memory data only (no persistence)
+     * - If colorRole changes, re-injects CSS
+     * - Updates repository (memory-only)
+     * - Silently returns if highlight doesn't exist
+     * 
+     * @example
+     * ```typescript
+     * await walkMode.updateHighlight('abc123', { colorRole: 'blue' });
+     * ```
+     */
     async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
         const existing = this.data.get(id);
         if (!existing) return;
@@ -138,6 +191,26 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         }
     }
 
+    /**
+     * Removes a highlight from Walk Mode (ephemeral deletion)
+     * 
+     * @param id - The highlight ID to remove
+     * @returns Promise that resolves when removal is complete
+     * 
+     * @remarks
+     * Cleanup steps:
+     * 1. Remove from CSS Custom Highlight API
+     * 2. Remove prefixed highlight name variant
+     * 3. Clear from internal maps (highlights, data)
+     * 4. Remove from in-memory repository
+     * 
+     * No persistence cleanup needed (Walk Mode doesn't persist)
+     * 
+     * @example
+     * ```typescript
+     * await walkMode.removeHighlight('abc123');
+     * ```
+     */
     override async removeHighlight(id: string): Promise<void> {
         // DOM cleanup
         if (CSS.highlights.has(id)) CSS.highlights.delete(id);
@@ -157,6 +230,26 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
         this.logger.info('Removed highlight (Walk Mode)', { id });
     }
 
+    /**
+     * Clears ALL highlights from Walk Mode
+     * 
+     * @returns Promise that resolves when all highlights are cleared
+     * 
+     * @remarks
+     * Complete cleanup:
+     * - Clears CSS.highlights (all DOM highlights)
+     * - Clears internal highlight maps
+     * - Clears internal data maps
+     * - Clears in-memory repository
+     * 
+     * This is a destructive operation with no undo (ephemeral mode)
+     * 
+     * @example
+     * ```typescript
+     * await walkMode.clearAll();
+     * console.log('All ephemeral highlights cleared');
+     * ```
+     */
     async clearAll(): Promise<void> {
         CSS.highlights.clear();
         this.highlights.clear();

@@ -73,6 +73,38 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     }
   }
 
+  /**
+   * Creates a new highlight in Sprint Mode (4-hour TTL, encrypted persistence)
+   * 
+   * @param selection - The browser Selection object containing the text to highlight
+   * @param colorRole - The color role to apply (e.g., 'yellow', 'blue', 'green')
+   * @returns Promise resolving to the unique highlight ID
+   * 
+   * @throws {Error} If selection has no ranges
+   * @throws {Error} If selected text is empty
+   * @throws {Error} If range serialization fails
+   * 
+   * @remarks
+   * Sprint Mode features:
+   * - Deduplicates via content hash (returns existing ID if duplicate)
+   * - Sets 4-hour TTL (auto-deletion after 4 hours)
+   * - Persists to chrome.storage.local with domain-based encryption
+   * - Uses event sourcing for restoration
+   * - Emits HIGHLIGHT_CREATED event for persistence
+   * 
+   * Persistence flow:
+   * 1. Register with CSS Custom Highlight API
+   * 2. Add to internal maps (highlights, data)
+   * 3. Add to repository (triggers storage)
+   * 4. Emit event for event sourcing
+   * 
+   * @example
+   * ```typescript
+   * const selection = window.getSelection();
+   * const id = await sprintMode.createHighlight(selection, 'yellow');
+   * console.log('Created highlight with 4-hour TTL:', id);
+   * ```
+   */
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
@@ -154,6 +186,21 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     return id;
   }
 
+  /**
+   * Creates a highlight from existing HighlightData (restoration/undo)
+   * 
+   * @param data - Complete HighlightData object
+   * @returns Promise that resolves when highlight is rendered
+   * 
+   * @remarks
+   * Used for:
+   * - Restoring highlights from storage (event replay)
+   * - Undo/redo operations
+   * - Range subtraction operations
+   * 
+   * Critical: Populates repository cache to enable hover detection
+   * Emits HIGHLIGHT_CREATED event for consistency
+   */
   async createFromData(data: HighlightData): Promise<void> {
     // Used by undo/redo and range subtraction
     // CRITICAL: Goes through same renderAndRegister path!
@@ -175,6 +222,25 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     });
   }
 
+  /**
+   * Updates an existing highlight's properties
+   * 
+   * @param id - The highlight ID to update
+   * @param updates - Partial HighlightData with fields to update
+   * @returns Promise that resolves when update is complete
+   * 
+   * @throws {Error} If highlight doesn't exist
+   * 
+   * @remarks
+   * - Updates in-memory data
+   * - If colorRole changes, re-injects CSS
+   * - Does NOT emit storage event (updates not persisted via event sourcing)
+   * 
+   * @example
+   * ```typescript
+   * await sprintMode.updateHighlight('abc123', { colorRole: 'blue' });
+   * ```
+   */
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
     const existing = this.data.get(id);
     if (!existing) {
@@ -191,6 +257,25 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     }
   }
 
+  /**
+   * Removes a highlight from Sprint Mode (persistent deletion)
+   * 
+   * @param id - The highlight ID to remove
+   * @returns Promise that resolves when removal is complete
+   * 
+   * @remarks
+   * Cleanup steps:
+   * 1. Remove from CSS Custom Highlight API (both bare and prefixed IDs)
+   * 2. Clear from internal maps (highlights, data)
+   * 3. Remove from repository (triggers storage deletion)
+   * 
+   * Repository removal triggers event sourcing persistence
+   * 
+   * @example
+   * ```typescript
+   * await sprintMode.removeHighlight('abc123');
+   * ```
+   */
   override async removeHighlight(id: string): Promise<void> {
     this.logger.info('Removing highlight', { id });
 
@@ -220,6 +305,27 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.logger.info('Highlight removed completely', { id });
   }
 
+  /**
+   * Clears ALL highlights from Sprint Mode
+   * 
+   * @returns Promise that resolves when all highlights are cleared
+   * 
+   * @remarks
+   * Complete cleanup:
+   * - Clears CSS.highlights (all DOM highlights)
+   * - Clears internal highlight maps
+   * - Clears internal data maps
+   * - Clears repository (persistent storage)
+   * - Emits 'highlights.cleared' event for event sourcing
+   * 
+   * CRITICAL: Emits storage event to persist the clear operation
+   * 
+   * @example
+   * ```typescript
+   * await sprintMode.clearAll();
+   * console.log('All Sprint Mode highlights cleared and persisted');
+   * ```
+   */
   async clearAll(): Promise<void> {
     const count = this.data.size;
     this.logger.info('Clearing all highlights in sprint mode', { count });
