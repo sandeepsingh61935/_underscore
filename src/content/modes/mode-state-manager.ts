@@ -86,16 +86,21 @@ export class ModeStateManager {
     async init(): Promise<void> {
         try {
             // Wrap storage read in circuit breaker
-            // Fetch ALL keys to allow detection of legacy V1 state ('mode')
+            // Use chrome.storage.sync for cross-device preference sync
             const result = await this.storageCircuitBreaker.execute(
-                () => chrome.storage.sync.get(null)
+                () => chrome.storage.sync.get(['defaultMode', 'metadata'])
             );
+
+            // [DEBUG] Force log to console to verify persistence
+            console.error('[ModeState] Raw storage result:', JSON.stringify(result));
+
             const loadedMode = result['defaultMode'];
             const loadedMetadata = result['metadata'];
 
             // Detect state version
             // Pass FULL result to allow detection of legacy keys ('mode')
             const currentVersion = this.migrationEngine.detectVersion(result);
+            console.error('[ModeState] Detected version:', currentVersion);
 
             // Check if migration is needed
             if (currentVersion < this.migrationEngine.getCurrentVersion()) {
@@ -154,12 +159,12 @@ export class ModeStateManager {
 
                 if (validation.success) {
                     this.currentMode = validation.data;
-                    this.logger.info('[ModeState] Loaded user preference', {
+                    this.logger.info('[ModeState] Loaded user preference via local storage', {
                         mode: this.currentMode,
                     });
                 } else {
                     this.logger.warn(
-                        '[ModeState] Invalid mode in storage, falling back',
+                        '[ModeState] Invalid mode in storage (or missing), falling back',
                         new StateValidationError(`Invalid mode "${loadedMode}"`, {
                             mode: loadedMode,
                             validationErrors: validation.error.issues
@@ -310,6 +315,7 @@ export class ModeStateManager {
             });
 
             // 6. Persist preference (Non-blocking / Graceful Degradation) with circuit breaker
+            // Use chrome.storage.sync for cross-device preference sync
             try {
                 await this.storageCircuitBreaker.execute(
                     () => chrome.storage.sync.set({
@@ -332,15 +338,14 @@ export class ModeStateManager {
                 await this.applyMode();
                 this.notifyListeners(); // Notify local first
 
-                // Broadcast to popup (fire and forget)
-                try {
-                    await chrome.runtime.sendMessage({
-                        type: 'MODE_CHANGED',
-                        mode: validatedMode,
-                    });
-                } catch (msgError) {
+                // Broadcast to popup (fire and forget - DON'T AWAIT)
+                chrome.runtime.sendMessage({
+                    type: 'MODE_CHANGED',
+                    mode: validatedMode,
+                }).catch((msgError) => {
                     this.logger.debug('[ModeState] Failed to broadcast mode change', { error: msgError });
-                }
+                });
+
 
             } catch (activationError) {
                 // Critical failure: We claimed to be in 'mode' but failed to activate it.

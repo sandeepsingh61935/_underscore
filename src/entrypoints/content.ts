@@ -63,7 +63,7 @@ export default defineContentScript({
       const storage = container.resolve<StorageService>('storage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const modeManager = container.resolve<ModeManager>('modeManager');
-      const repositoryFacade = container.resolve<RepositoryFacade>('repository');
+      const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const commandFactory = container.resolve<CommandFactory>('commandFactory');
 
       // Initialize Command Stack (Scope: Content Script)
@@ -73,11 +73,8 @@ export default defineContentScript({
       const colorManager = new ColorManager();
       await colorManager.initialize();
 
-      // Initialize Repository Facade (Now handled by DI, but kept for cache init if needed)
-      // Note: container gives us InMemoryHighlightRepository, we might need facade wrapping if strictly required
-      // But modes use IHighlightRepository now, so direct repo is fine.
-      // However, RepositoryFactory/static might be used elsewhere.
-      // For this step, we use the container's version.
+      // Initialize Repository Facade (Asynchronous cache hydration)
+      await repositoryFacade.initialize();
 
       // Register Modes (Done in container registration, but we need to ensure ModeManager knows about them)
       // Service registration lazy-loads them via factories, but ModeManager needs them registered to switch.
@@ -103,8 +100,10 @@ export default defineContentScript({
       console.error('[MODE-STATE] Initialized with mode: ' + modeStateManager.getMode());
 
       // Setup Message Bus for IPC (Popup ↔ Content)
-      const { MessageBus } = await import('@/shared/messaging/message-bus');
-      MessageBus.setup(modeStateManager, repositoryFacade, logger);
+      // [REMOVED] MessageBus registers a conflicting listener with legacy response format.
+      // We rely on the unified listener below in this file (Lines 410+)
+      // const { MessageBus } = await import('@/shared/messaging/message-bus');
+      // MessageBus.setup(modeStateManager, repositoryFacade, logger);
 
       // Initialize Vault Mode if enabled (Separate init removed - moved to VaultMode.onActivate)
       // if (isVaultModeEnabled()) {
@@ -416,46 +415,79 @@ export default defineContentScript({
           _sender: unknown,
           sendResponse: (response: unknown) => void
         ) => {
-          const msg = message as { type: string; mode?: 'walk' | 'sprint' };
+          const msg = message as { type: string; mode?: 'walk' | 'sprint'; payload?: unknown };
 
           if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
-            sendResponse({ count: repositoryFacade.count() });
+            sendResponse({
+              success: true,
+              data: { count: repositoryFacade.count() }
+            });
           }
 
           else if (msg && msg.type === 'GET_MODE') {
-            sendResponse({ mode: RepositoryFactory.getMode() });
+            sendResponse({
+              success: true,
+              data: { mode: RepositoryFactory.getMode() }
+            });
           }
 
-          else if (msg && msg.type === 'SET_MODE' && msg.mode) {
-            const newMode = msg.mode;
-            logger.info(`Switching to ${newMode} mode`);
+          else if (msg && msg.type === 'SET_MODE') {
+            // Support both top-level mode (legacy) and payload.mode (schema-compliant)
+            const payloadMode = (msg.payload as { mode?: 'walk' | 'sprint' })?.mode;
+            const newMode = msg.mode || payloadMode;
 
+            if (!newMode) {
+              sendResponse({ success: false, error: 'No mode specified' });
+              return false; // Don't keep channel open
+            }
+
+            logger.info(`[IPC] Handling SET_MODE: ${newMode}`);
+
+            // Handle async mode switch with immediate response
             (async () => {
-              // Switch mode logic
-              await modeManager.activateMode(newMode);
-              RepositoryFactory.setMode(newMode);
+              try {
+                // 1. Switch mode via State Manager (includes persistence + activation)
+                logger.info('[IPC] Calling modeStateManager.setMode');
+                await modeStateManager.setMode(newMode);
+                logger.info('[IPC] Mode state updated successfully');
 
-              if (newMode === 'sprint') {
-                // Restore if switching to Sprint
-                await restoreHighlights({
-                  storage,
-                  renderer,
-                  repositoryFacade,
-                  highlightManager,
-                  modeManager,
-                  commandFactory,
+                // 2. Send IMMEDIATE response to unblock popup UI
+                logger.info('[IPC] Sending success response (popup unblocked)');
+                sendResponse({
+                  success: true,
+                  data: { mode: newMode }
                 });
-              } else {
-                // Clear highlights if switching to Walk (Incognito)
-                // User expects privacy when toggling to Walk Mode
-                await modeManager.getCurrentMode().clearAll();
-              }
 
-              // Broadcast update
-              sendResponse({ success: true, mode: newMode });
+                // 3. Run restoration/clearing in BACKGROUND (non-blocking for IPC)
+                // This prevents the 5-second timeout from triggering
+                logger.info('[IPC] Starting background highlight processing');
+                if (newMode === 'sprint') {
+                  logger.info('[IPC-Background] Restoring highlights for Sprint Mode...');
+                  await restoreHighlights({
+                    storage,
+                    renderer,
+                    repositoryFacade,
+                    highlightManager,
+                    modeManager,
+                    commandFactory,
+                  });
+                  logger.info('[IPC-Background] Restoration complete');
+                } else {
+                  logger.info('[IPC-Background] Clearing highlights for Walk Mode...');
+                  await modeManager.getCurrentMode().clearAll();
+                  logger.info('[IPC-Background] Clearing complete');
+                }
+
+              } catch (error) {
+                logger.error('[IPC] SET_MODE failed', error as Error);
+                sendResponse({
+                  success: false,
+                  error: (error as Error).message || 'Unknown error during mode switch'
+                });
+              }
             })();
 
-            return true; // Async response
+            return true; // Keep channel open for async response
           }
 
           return true; // Keep channel open for async response
