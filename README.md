@@ -10,9 +10,71 @@
 
 A browser extension for intelligent web highlighting with three modes:
 
-- **🏃 Sprint Mode** (Current Focus): Ephemeral highlighting for focused reading
-- **🔐 Vault Mode** (Future): Persistent storage with cross-device sync
+- **🚶 Walk Mode**: Ephemeral highlighting (memory only, no persistence)
+- **🏃 Sprint Mode**: 4-hour TTL with encrypted storage ✅ **AVAILABLE NOW**
+- **🔐 Vault Mode** (Future): Permanent storage with cross-device sync
 - **🧠 Gen Mode** (Future): AI-powered insights and knowledge synthesis
+
+---
+
+## Sprint Mode
+
+**Philosophy:** "Use and forget" - Zero commitment, minimal trace
+
+### Features
+
+- ✅ **4-hour TTL** - Highlights auto-delete after 4 hours
+- ✅ **Encrypted Storage** - AES-256-GCM encryption with domain-scoped keys
+- ✅ **Cross-Session Persistence** - Survives page reload and browser restart
+- ✅ **Cross-Domain Isolation** - Highlights on `example.com` ≠ `example.org`
+- ✅ **Undo/Redo Support** - Full undo/redo capability
+- ✅ **No Account Required** - Works entirely offline
+- ✅ **Privacy-First** - No cloud sync, no tracking, auto-deletion
+
+### Usage
+
+1. Click the extension icon
+2. Select "Sprint Mode"
+3. Highlight text on any webpage
+4. Highlights automatically delete after 4 hours
+
+### Technical Details
+
+**Storage:**
+- Location: `chrome.storage.local`
+- Encryption: AES-256-GCM
+- Key Derivation: PBKDF2 (100,000 iterations)
+- Domain Scoping: Separate encryption keys per domain
+- Capacity: ~5MB per domain (browser quota)
+
+**Persistence:**
+- Event sourcing for state restoration
+- Automatic cleanup of expired highlights
+- Cross-session support (survives browser restart)
+
+**Security:**
+- Domain-based encryption keys
+- Random IV per encryption (forward secrecy)
+- Tampering detection via authentication tags
+- No data leaves your device
+
+### Troubleshooting
+
+**Highlights not restoring after page reload?**
+- Check browser storage quota (Settings → Privacy → Site Data)
+- Verify highlights haven't exceeded 4-hour TTL
+
+**Highlights disappeared?**
+- Expected behavior: Highlights auto-delete after 4 hours
+- Check creation time in extension popup
+
+**Can't see highlights from another domain?**
+- By design: Encryption isolates domains for privacy
+- Highlights on `wikipedia.org` won't appear on `example.com`
+
+**Performance issues with many highlights?**
+- Sprint Mode handles 100+ highlights efficiently
+- Consider using Walk Mode for quick reading sessions
 
 ---
 
