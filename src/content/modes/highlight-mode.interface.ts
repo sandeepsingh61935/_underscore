@@ -29,6 +29,12 @@ export interface HighlightData {
   ranges: SerializedRange[];
   liveRanges: Range[];
   createdAt?: Date;
+
+  /** 
+   * Expiration timestamp for Sprint Mode TTL (4-hour auto-delete)
+   * Only used in Sprint Mode. Null/undefined for Walk and Vault modes.
+   */
+  expiresAt?: Date;
 }
 
 /**
@@ -69,14 +75,48 @@ export interface IHighlightMode extends IBasicMode {
   /** Clear all highlights */
   clearAll(): Promise<void>;
 
-  // New methods from IBasicMode
   onHighlightCreated(event: HighlightCreatedEvent): Promise<void>;
   onHighlightRemoved(event: HighlightRemovedEvent): Promise<void>;
   shouldRestore(): boolean;
+
+  /**
+   * Get deletion configuration for this mode
+   * Controls hover delete icon behavior, confirmation, undo, etc.
+   * @returns Configuration object, or null to disable delete icon
+   */
+  getDeletionConfig(): DeletionConfig | null;
 
   /**
    * @deprecated Only IPersistentMode modes need this
    * For basic modes (Walk, Sprint), check shouldRestore() instead
    */
   restore?(url: string): Promise<void>;
+}
+
+/**
+ * Mode-aware deletion configuration
+ * Controls how the hover delete icon behaves for each mode
+ */
+export interface DeletionConfig {
+  /** Show delete icon on highlight hover */
+  showDeleteIcon: boolean;
+
+  /** Require confirmation dialog before deletion */
+  requireConfirmation: boolean;
+
+  /** Custom confirmation message (if requireConfirmation is true) */
+  confirmationMessage?: string;
+
+  /** Icon type to display */
+  iconType?: 'trash' | 'remove' | 'clear';
+
+  /** Allow undo after deletion (uses command stack) */
+  allowUndo: boolean;
+
+  /**
+   * Custom hook to run before deletion
+   * Return false to cancel deletion
+   * Useful for mode-specific validation (e.g., Vault sync check, Gen AI suggestions)
+   */
+  beforeDelete?: (highlightId: string) => Promise<boolean>;
 }
