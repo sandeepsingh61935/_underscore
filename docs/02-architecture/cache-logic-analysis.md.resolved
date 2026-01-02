@@ -1,0 +1,331 @@
+# Repository Cache Logic Analysis
+
+## Current Implementation Review
+
+### 1. SAVE Flow (Create New Highlight)
+
+#### Sprint Mode [createHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#61-145) - Lines 61-130
+
+```typescript
+async createHighlight(selection, colorRole) {
+  // ... create highlight data ...
+  
+  // Step 1: Add to mode state
+  this.highlights.set(id, highlight);
+  this.data.set(id, data);
+  
+  // Step 2: Add to repository ✅
+  await this.repository.add(data);
+  
+  // Step 3: Render (CSS.highlights)
+  await this.renderAndRegister(data);
+  
+  // Step 4: Emit event
+  this.eventBus.emit(HIGHLIGHT_CREATED);
+}
+```
+
+**Flow**:
+```
+User creates highlight
+  → mode.data.set(id, data)         ✅
+  → repository.add(data)             ✅
+  → CSS.highlights.set(id, highlight) ✅
+  → Event emitted                    ✅
+```
+
+**Status**: ✅ **CORRECT** - All three stores populated
+
+---
+
+### 2. RETRIEVE Flow (Restore on Page Load)
+
+#### Sprint Mode [createFromData()](file:///home/sandy/projects/_underscore/src/content/modes/walk-mode.ts#119-122) - Lines 146-165
+
+```typescript
+async createFromData(data: HighlightData) {
+  // Step 1: Render
+  await this.renderAndRegister(data);
+  
+  // Step 2: Add to repository ✅ (JUST ADDED)
+  await this.repository.add(data);
+  
+  // Step 3: Emit event
+  this.eventBus.emit(HIGHLIGHT_CREATED);
+}
+```
+
+#### [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) - What it does:
+
+Let me check what renderAndRegister does...
+
+**Expected Flow**:
+```
+Page loads
+  → chrome.storage.local.get()       ✅
+  → For each stored highlight:
+      → createFromData(data)
+      → renderAndRegister(data)
+          → mode.data.set(id, data)  ✅ (assumed)
+          → CSS.highlights.set(...)  ✅ (assumed)
+      → repository.add(data)          ✅ (just added)
+```
+
+**Status**: ⚠️ **NEEDS VERIFICATION** - Need to check if renderAndRegister populates mode.data
+
+---
+
+### 3. DELETE Flow (Remove Highlight)
+
+#### Sprint Mode [removeHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts#228-242) - Lines 173-220
+
+```typescript
+override async removeHighlight(id: string) {
+  // 1. Remove from CSS.highlights (DOM)
+  CSS.highlights.delete(`underscore-${id}`);
+  CSS.highlights.delete(id); // bare ID too
+  
+  // 2. Remove from mode state
+  this.highlights.delete(id);
+  this.data.delete(id);
+  
+  // 3. Remove from storage (event sourcing)
+  if (this.storage) {
+    await this.storage.saveEvent({
+      type: 'highlight.removed',
+      // ...
+    });
+  }
+  
+  // ❌ MISSING: repository.remove(id)
+}
+```
+
+**Current Flow**:
+```
+User deletes highlight
+  → mode.data.delete(id)              ✅
+  → CSS.highlights.delete(id)         ✅
+  → storage.saveEvent('removed')      ✅
+  → repository.remove(id)             ❌ MISSING!
+```
+
+**Status**: ❌ **BUG FOUND** - Repository NOT cleared on delete!
+
+---
+
+## Repository Facade Implementation
+
+### [add()](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#91-109) - Line 91-108
+
+```typescript
+add(highlight: HighlightDataV2): void {
+  this.ensureInitialized();
+  
+  console.log('[REPO-DEBUG] add() called, id:', highlight.id, 
+              'cache size before:', this.cache.size);
+  
+  // Update cache immediately (sync)
+  this.cache.set(highlight.id, highlight);  // ✅
+  this.contentHashIndex.set(highlight.contentHash, highlight.id);
+  
+  console.log('[REPO-DEBUG] add() complete, cache size after:', 
+              this.cache.size);
+  
+  // Persist async in background
+  this.repository.add(highlight).catch((error) => {
+    this.logger.error('Background persist failed', error);
+  });
+}
+```
+
+**Status**: ✅ **CORRECT** - Synchronously updates cache
+
+---
+
+### [getAll()](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#176-185) - Line 176-182
+
+```typescript
+getAll(): HighlightDataV2[] {
+  this.ensureInitialized();
+  const all = Array.from(this.cache.values());  // ✅
+  console.log('[REPO-DEBUG] getAll() called, returning', 
+              all.length, 'highlights');
+  return all;
+}
+```
+
+**Status**: ✅ **CORRECT** - Returns all cache entries
+
+---
+
+### [remove()](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#110-133) - Need to check implementation
+
+Let me verify if remove() exists and works correctly...
+
+---
+
+## Critical Issues Found
+
+### Issue #1: Delete Doesn't Clear Repository ❌
+
+**Problem**: [removeHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts#228-242) clears mode.data and CSS.highlights but NOT repository cache!
+
+**Impact**:
+```
+1. User creates highlight    → repo.cache has 1 entry
+2. User deletes highlight    → mode.data cleared, CSS cleared
+3. Hover detector calls      → repo.getAll() returns deleted highlight!
+4. Delete icon appears on    → GHOST HIGHLIGHT (doesn't exist visually)
+   empty space
+```
+
+**Fix Needed**:
+```typescript
+// sprint-mode.ts removeHighlight()
+override async removeHighlight(id: string) {
+  // ... existing code ...
+  
+  // ✅ ADD THIS:
+  await this.repository.remove(id);
+}
+```
+
+---
+
+### Issue #2: Restore Flow - Need to Verify renderAndRegister()
+
+**Question**: Does [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) populate `mode.data`?
+
+If NO:
+```
+createFromData()
+  → renderAndRegister()
+      → CSS.highlights.set() ✅
+      → mode.data.set()      ❌ MISSING
+  → repository.add()         ✅
+  
+Result: Repository has data, mode.data EMPTY!
+```
+
+**Need to check**: What does [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) actually do?
+
+---
+
+## Complete Flow Diagram
+
+### SAVE (Create) - Currently CORRECT ✅
+
+```mermaid
+sequenceDiagram
+    User->>Mode: createHighlight()
+    Mode->>mode.data: set(id, data) ✅
+    Mode->>Repository: add(data) ✅
+    Repository->>cache: set(id, data) ✅
+    Mode->>CSS: highlights.set() ✅
+    Mode->>EventBus: emit(CREATED) ✅
+```
+
+---
+
+### RETRIEVE (Restore) - PARTIALLY FIXED ⚠️
+
+```mermaid
+sequenceDiagram
+    Page->>Storage: chrome.storage.get()
+    Storage-->>Page: [{data}]
+    Page->>Mode: createFromData(data)
+    Mode->>Mode: renderAndRegister(data)
+    Note over Mode: ❓ Does this set mode.data?
+    Mode->>Repository: add(data) ✅ NEW
+    Repository->>cache: set(id, data) ✅
+```
+
+---
+
+### DELETE (Remove) - BROKEN ❌
+
+```mermaid
+sequenceDiagram
+    User->>Mode: removeHighlight(id)
+    Mode->>mode.data: delete(id) ✅
+    Mode->>CSS: highlights.delete() ✅
+    Mode->>Storage: saveEvent('removed') ✅
+    Note over Repository: ❌ NOT CLEARED!
+    Repository->>Repository: cache STILL has id
+```
+
+---
+
+## Summary of Issues
+
+| Operation | mode.data | CSS.highlights | repository.cache | Status |
+|-----------|-----------|----------------|------------------|--------|
+| **CREATE** | ✅ Set | ✅ Set | ✅ Set | WORKING |
+| **RESTORE** | ❓ Unknown | ✅ Set | ✅ Set (just fixed) | NEEDS CHECK |
+| **DELETE** | ✅ Delete | ✅ Delete | ❌ **NOT DELETED** | **BROKEN** |
+
+---
+
+## Recommended Fixes
+
+### Fix #1: Add repository.remove() to Sprint Mode
+
+```typescript
+// src/content/modes/sprint-mode.ts
+override async removeHighlight(id: string) {
+  this.logger.info('Removing highlight', { id });
+
+  // Remove from CSS
+  CSS.highlights.delete(`underscore-${id}`);
+  CSS.highlights.delete(id);
+
+  // Remove from mode state
+  this.highlights.delete(id);
+  this.data.delete(id);
+  
+  // ✅ ADD THIS - Remove from repository
+  await this.repository.remove(id);
+
+  // Save removal event
+  if (this.storage) {
+    await this.storage.saveEvent({
+      type: 'highlight.removed',
+      timestamp: Date.now(),
+      eventId: crypto.randomUUID(),
+      data: { id }
+    });
+  }
+}
+```
+
+### Fix #2: Verify renderAndRegister() populates mode.data
+
+Need to check if [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) does:
+```typescript
+this.data.set(id, data);  // Does this happen?
+```
+
+If NOT, add it to [createFromData()](file:///home/sandy/projects/_underscore/src/content/modes/walk-mode.ts#119-122):
+```typescript
+async createFromData(data: HighlightData) {
+  await this.renderAndRegister(data);
+  
+  // ✅ ADD THIS if renderAndRegister doesn't do it
+  this.data.set(data.id, data);
+  
+  await this.repository.add(data);
+  this.eventBus.emit(HIGHLIGHT_CREATED);
+}
+```
+
+---
+
+## Next Steps
+
+1. Check what [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) actually does
+2. Add `repository.remove()` to [removeHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts#228-242)
+3. Test all three flows (create, restore, delete)
+4. Verify cache consistency
+
+Should I check [renderAndRegister()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#59-81) now and apply the fixes?
