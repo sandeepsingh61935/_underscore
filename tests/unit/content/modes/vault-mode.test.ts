@@ -24,6 +24,24 @@ import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-hig
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 
+// Helper to create complete mock highlight data
+function createMockHighlightData(id: string, text: string, colorRole: string = 'yellow') {
+    return {
+        id,
+        text,
+        contentHash: `mock-hash-${id}`, // Required for repository
+        colorRole,
+        type: 'underscore' as const,
+        ranges: [{
+            startOffset: 0,
+            endOffset: text.length,
+            startContainerPath: '/html/body/p[1]/text()[1]',
+            endContainerPath: '/html/body/p[1]/text()[1]'
+        }],
+        createdAt: new Date(),
+    };
+}
+
 describe('VaultMode - IndexedDB Persistence & 3-Tier Anchoring', () => {
     let vaultMode: VaultMode;
     let repository: InMemoryHighlightRepository;
@@ -129,19 +147,10 @@ describe('VaultMode - IndexedDB Persistence & 3-Tier Anchoring', () => {
     describe('Restoration from IndexedDB', () => {
         it('should restore highlights from IndexedDB', async () => {
             // Arrange
-            const mockRestoredData = [
-                {
-                    highlight: {
-                        id: 'restored-1',
-                        text: 'Restored highlight',
-                        colorRole: 'yellow',
-                        type: 'underscore' as const,
-                        ranges: [],
-                        createdAt: new Date(),
-                    },
-                    range: document.createRange(),
-                },
-            ];
+            const mockRestoredData = [{
+                highlight: createMockHighlightData('restored-1', 'Restored highlight'),
+                range: document.createRange(),
+            }];
             mockVaultService.restoreHighlightsForUrl.mockResolvedValue(mockRestoredData);
 
             // Act
@@ -159,26 +168,17 @@ describe('VaultMode - IndexedDB Persistence & 3-Tier Anchoring', () => {
 
         it('should sync restored highlights to repository', async () => {
             // Arrange
-            const mockRestoredData = [
-                {
-                    highlight: {
-                        id: 'restored-1',
-                        text: 'Restored highlight',
-                        colorRole: 'yellow',
-                        type: 'underscore' as const,
-                        ranges: [],
-                        createdAt: new Date(),
-                    },
-                    range: document.createRange(),
-                },
-            ];
+            const mockRestoredData = [{
+                highlight: createMockHighlightData('restored-2', 'Restored for repo'),
+                range: document.createRange(),
+            }];
             mockVaultService.restoreHighlightsForUrl.mockResolvedValue(mockRestoredData);
 
             // Act
             await vaultMode.restore();
 
             // Assert
-            const fromRepo = await repository.findById('restored-1');
+            const fromRepo = await repository.findById('restored-2');
             expect(fromRepo).toBeTruthy();
         });
     });
@@ -276,20 +276,20 @@ describe('VaultMode - IndexedDB Persistence & 3-Tier Anchoring', () => {
     describe('Error Recovery', () => {
         it('should handle IndexedDB save errors gracefully', async () => {
             // Arrange
-            mockVaultService.saveHighlight.mockRejectedValue(new Error('IndexedDB error'));
+            mockVaultService.saveHighlight.mockRejectedValueOnce(new Error('IndexedDB error'));
             const selection = createMockSelection('Error test');
 
-            // Act & Assert - should throw (Vault Mode doesn't suppress errors)
+            // Act & Assert - Vault Mode propagates errors
             await expect(vaultMode.createHighlight(selection, 'yellow'))
-                .rejects.toThrow();
+                .rejects.toThrow('IndexedDB error');
         });
 
         it('should handle restoration errors gracefully', async () => {
             // Arrange
-            mockVaultService.restoreHighlightsForUrl.mockRejectedValue(new Error('Restore error'));
+            mockVaultService.restoreHighlightsForUrl.mockRejectedValueOnce(new Error('Restore error'));
 
-            // Act & Assert - should not throw, logs error
-            await expect(vaultMode.restore()).rejects.toThrow();
+            // Act & Assert - should propagate error
+            await expect(vaultMode.restore()).rejects.toThrow('Restore error');
         });
     });
 
