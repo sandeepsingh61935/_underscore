@@ -79,4 +79,75 @@ describe('Crypto Utils', () => {
       expect(decrypted).toBe(data);
     });
   });
+
+  describe('Cross-Domain Isolation (CRITICAL)', () => {
+    it('should encrypt same data differently per domain', async () => {
+      const data = 'sensitive user highlight';
+
+      const encrypted1 = await encryptData(data, 'wikipedia.org');
+      const encrypted2 = await encryptData(data, 'example.com');
+
+      // Same plaintext → different ciphertext on different domains
+      expect(encrypted1).not.toBe(encrypted2);
+    });
+
+    it('should prevent cross-domain decryption', async () => {
+      const data = 'secret';
+      const encrypted = await encryptData(data, 'siteA.com');
+
+      // Domain B cannot decrypt Domain A's data
+      await expect(
+        decryptData(encrypted, 'siteB.com')
+      ).rejects.toThrow(); // AES-GCM authentication fails
+    });
+
+    it('should isolate subdomains', async () => {
+      const data = 'test';
+      const enc1 = await encryptData(data, 'mail.google.com');
+      const enc2 = await encryptData(data, 'docs.google.com');
+
+      // Different subdomains → different keys
+      expect(enc1).not.toBe(enc2);
+
+      // mail.google.com cannot decrypt docs.google.com data
+      await expect(
+        decryptData(enc1, 'docs.google.com')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('Tampering & Corruption Detection', () => {
+    it('should detect tampered ciphertext', async () => {
+      const encrypted = await encryptData('data', 'example.com');
+
+      // Flip bits in ciphertext (simulate tampering)
+      const tampered = encrypted.slice(0, -5) + 'AAAAA';
+
+      // AES-GCM auth tag should detect tampering
+      await expect(
+        decryptData(tampered, 'example.com')
+      ).rejects.toThrow();
+    });
+
+    it('should reject invalid base64 ciphertext', async () => {
+      await expect(
+        decryptData('not-valid-base64!@#$%', 'example.com')
+      ).rejects.toThrow();
+    });
+
+    it('should handle empty string encryption', async () => {
+      const encrypted = await encryptData('', 'example.com');
+      const decrypted = await decryptData(encrypted, 'example.com');
+
+      expect(decrypted).toBe('');
+    });
+
+    it('should preserve all Unicode characters', async () => {
+      const unicode = '你好世界 🌍 こんにちは مرحبا ñáéíóú';
+      const encrypted = await encryptData(unicode, 'example.com');
+      const decrypted = await decryptData(encrypted, 'example.com');
+
+      expect(decrypted).toBe(unicode);
+    });
+  });
 });
