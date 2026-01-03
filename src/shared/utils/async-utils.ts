@@ -8,34 +8,34 @@
  * have elapsed since the last time the debounced function was invoked.
  */
 export function debounce<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number
+  func: T,
+  wait: number
 ): T & { cancel: () => void } {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const debounced = (...args: Parameters<T>): void => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
+  const debounced = (...args: Parameters<T>): void => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
-        timeoutId = setTimeout(() => {
-            func(...args);
-            timeoutId = null;
-        }, wait);
-    };
+    timeoutId = setTimeout(() => {
+      func(...args);
+      timeoutId = null;
+    }, wait);
+  };
 
-    debounced.cancel = () => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
-    };
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  };
 
-    return debounced as any;
+  return debounced as any;
 }
 
 /**
  * Sleep for a specified duration
  */
 export function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

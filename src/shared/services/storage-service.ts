@@ -56,13 +56,10 @@ export class StorageService implements IStorage {
   async saveEvent(event: AnyHighlightEvent): Promise<void> {
     // Validate event structure
     if (!isValidHighlightEvent(event)) {
-      throw new ValidationError(
-        'Invalid highlight event structure',
-        {
-          eventType: (event as { type?: string }).type,
-          eventId: (event as { eventId?: string }).eventId
-        }
-      );
+      throw new ValidationError('Invalid highlight event structure', {
+        eventType: (event as { type?: string }).type,
+        eventId: (event as { eventId?: string }).eventId,
+      });
     }
 
     try {

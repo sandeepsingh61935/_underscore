@@ -32,16 +32,15 @@ const SerializedRangeSchemaBase = z.object({
  * Security: Max lengths prevent DoS attacks
  * Validation: Refinements ensure data quality
  */
-export const TextQuoteSelectorSchema = z
-  .object({
-    type: z.literal('TextQuoteSelector'),
-    exact: z
-      .string()
-      .min(1, 'Selected text cannot be empty')
-      .max(5000, 'Selected text too long (max 5000 chars)'),
-    prefix: z.string().max(64, 'Prefix context too long (max 64 chars)').optional(),
-    suffix: z.string().max(64, 'Suffix context too long (max 64 chars)').optional(),
-  });
+export const TextQuoteSelectorSchema = z.object({
+  type: z.literal('TextQuoteSelector'),
+  exact: z
+    .string()
+    .min(1, 'Selected text cannot be empty')
+    .max(5000, 'Selected text too long (max 5000 chars)'),
+  prefix: z.string().max(64, 'Prefix context too long (max 64 chars)').optional(),
+  suffix: z.string().max(64, 'Suffix context too long (max 64 chars)').optional(),
+});
 
 export type TextQuoteSelector = z.infer<typeof TextQuoteSelectorSchema>;
 

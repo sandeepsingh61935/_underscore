@@ -1,6 +1,6 @@
 import type { IMessageBus } from '../interfaces/i-message-bus';
 import type { Message, MessageTarget, MessageHandler } from '../schemas/message-schemas';
-import { CircuitBreaker } from '../utils/circuit-breaker';
+import type { CircuitBreaker } from '../utils/circuit-breaker';
 
 /**
  * CircuitBreakerMessageBus - Wraps IMessageBus with Circuit Breaker pattern
@@ -27,36 +27,36 @@ import { CircuitBreaker } from '../utils/circuit-breaker';
  * ```
  */
 export class CircuitBreakerMessageBus implements IMessageBus {
-    constructor(
-        private readonly inner: IMessageBus,
-        private readonly circuitBreaker: CircuitBreaker
-    ) { }
+  constructor(
+    private readonly inner: IMessageBus,
+    private readonly circuitBreaker: CircuitBreaker
+  ) {}
 
-    /**
-     * Send message with circuit breaker protection
-     * Fails fast when circuit is OPEN
-     */
-    async send<T = unknown>(target: MessageTarget, message: Message): Promise<T> {
-        return await this.circuitBreaker.execute(async () => {
-            return await this.inner.send<T>(target, message);
-        });
-    }
+  /**
+   * Send message with circuit breaker protection
+   * Fails fast when circuit is OPEN
+   */
+  async send<T = unknown>(target: MessageTarget, message: Message): Promise<T> {
+    return await this.circuitBreaker.execute(async () => {
+      return await this.inner.send<T>(target, message);
+    });
+  }
 
-    /**
-     * Subscribe to messages (no circuit breaker - local operation)
-     * Delegates directly to inner bus
-     */
-    subscribe<T = unknown>(messageType: string, handler: MessageHandler<T>): () => void {
-        return this.inner.subscribe(messageType, handler);
-    }
+  /**
+   * Subscribe to messages (no circuit breaker - local operation)
+   * Delegates directly to inner bus
+   */
+  subscribe<T = unknown>(messageType: string, handler: MessageHandler<T>): () => void {
+    return this.inner.subscribe(messageType, handler);
+  }
 
-    /**
-     * Publish messages with circuit breaker protection
-     * Fails fast when circuit is OPEN to conserve resources
-     */
-    async publish(messageType: string, payload: unknown): Promise<void> {
-        await this.circuitBreaker.execute(async () => {
-            return await this.inner.publish(messageType, payload);
-        });
-    }
+  /**
+   * Publish messages with circuit breaker protection
+   * Fails fast when circuit is OPEN to conserve resources
+   */
+  async publish(messageType: string, payload: unknown): Promise<void> {
+    await this.circuitBreaker.execute(async () => {
+      return await this.inner.publish(messageType, payload);
+    });
+  }
 }

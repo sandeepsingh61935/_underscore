@@ -18,10 +18,10 @@ export type MessageTarget = z.infer<typeof MessageTargetSchema>;
  * - timestamp: Message creation time (milliseconds since epoch)
  */
 export const MessageSchema = z.object({
-    type: z.string().min(1, 'Message type cannot be empty'),
-    payload: z.unknown(),
-    requestId: z.string().uuid().optional(),
-    timestamp: z.number().positive('Timestamp must be positive'),
+  type: z.string().min(1, 'Message type cannot be empty'),
+  payload: z.unknown(),
+  requestId: z.string().uuid().optional(),
+  timestamp: z.number().positive('Timestamp must be positive'),
 });
 export type Message = z.infer<typeof MessageSchema>;
 
@@ -30,26 +30,26 @@ export type Message = z.infer<typeof MessageSchema>;
  * Either success with data or error with message
  */
 export const MessageResponseSchema = z.discriminatedUnion('success', [
-    z.object({
-        success: z.literal(true),
-        data: z.unknown(),
-    }),
-    z.object({
-        success: z.literal(false),
-        error: z.string(),
-        code: z.string().optional(),
-    }),
+  z.object({
+    success: z.literal(true),
+    data: z.unknown(),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+    code: z.string().optional(),
+  }),
 ]);
 export type MessageResponse<T = unknown> =
-    | { success: true; data: T }
-    | { success: false; error: string; code?: string };
+  | { success: true; data: T }
+  | { success: false; error: string; code?: string };
 
 /**
  * Type-safe message handler function
  */
 export type MessageHandler<T = unknown> = (
-    payload: T,
-    sender: chrome.runtime.MessageSender
+  payload: T,
+  sender: chrome.runtime.MessageSender
 ) => void | Promise<void>;
 
 /**
@@ -57,7 +57,7 @@ export type MessageHandler<T = unknown> = (
  * @throws {z.ZodError} if message is invalid
  */
 export function validateMessage(message: unknown): Message {
-    return MessageSchema.parse(message);
+  return MessageSchema.parse(message);
 }
 
 /**
@@ -65,19 +65,19 @@ export function validateMessage(message: unknown): Message {
  * @throws {z.ZodError} if target is invalid
  */
 export function validateMessageTarget(target: unknown): MessageTarget {
-    return MessageTargetSchema.parse(target);
+  return MessageTargetSchema.parse(target);
 }
 
 /**
  * Creates a success response
  */
 export function createSuccessResponse<T>(data: T): MessageResponse<T> {
-    return { success: true, data };
+  return { success: true, data };
 }
 
 /**
  * Creates an error response
  */
 export function createErrorResponse(error: string, code?: string): MessageResponse {
-    return { success: false, error, code };
+  return { success: false, error, code };
 }

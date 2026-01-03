@@ -27,8 +27,8 @@ export type Highlight = z.infer<typeof HighlightSchema>;
  * Validates inter-component messages
  */
 export const MessageSchema = z.object({
-    type: z.string().min(1, 'Message type is required'),
-    payload: z.unknown().optional(),
+  type: z.string().min(1, 'Message type is required'),
+  payload: z.unknown().optional(),
 });
 
 export type Message = z.infer<typeof MessageSchema>;
@@ -42,8 +42,8 @@ export type Message = z.infer<typeof MessageSchema>;
  * (For switching modes or configuring them)
  */
 export const ModeConfigSchema = z.object({
-    modeName: z.enum(['walk', 'sprint', 'vault']),
-    settings: z.any().optional(),
+  modeName: z.enum(['walk', 'sprint', 'vault']),
+  settings: z.any().optional(),
 });
 
 export type ModeConfig = z.infer<typeof ModeConfigSchema>;
