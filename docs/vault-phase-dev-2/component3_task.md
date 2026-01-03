@@ -49,46 +49,46 @@
 
 #### Task 3.2: Implement EventStore with IndexedDB ✅ COMPLETE (25 tests passing)
 
-- [ ] Create [event-store.ts](file:///home/sandy/projects/_underscore/src/background/events/event-store.ts)
-  - [ ] Implement `EventStore` class with `IEventStore` interface
-  - [ ] Use IndexedDB for persistence (database: `vault_events`)
-  - [ ] Object store: `events` with indexes on `timestamp`, `eventType`, `entityId`
-  - [ ] Implement append-only log pattern (no updates/deletes)
-  - [ ] Add checksum validation for event integrity
-  - [ ] Handle storage quota exceeded gracefully
+- [x] Create [event-store.ts](file:///home/sandy/projects/_underscore/src/background/events/event-store.ts)
+  - [x] Implement `EventStore` class with `IEventStore` interface
+  - [x] Use IndexedDB for persistence (database: `vault_events`)
+  - [x] Object store: `events` with indexes on `timestamp`, `eventType`, `entityId`
+  - [x] Implement append-only log pattern (no updates/deletes)
+  - [x] Add checksum validation for event integrity
+  - [x] Handle storage quota exceeded gracefully
 
-- [ ] Implement core methods
-  - [ ] `append(event: SyncEvent): Promise<void>`
+- [x] Implement core methods
+  - [x] `append(event: SyncEvent): Promise<void>`
     - Validate event structure
     - Generate checksum (SHA-256 of payload)
     - Store in IndexedDB
     - Emit `EVENT_APPENDED` via EventBus
-  - [ ] `getEvents(filter: EventFilter): Promise<SyncEvent[]>`
+  - [x] `getEvents(filter: EventFilter): Promise<SyncEvent[]>`
     - Query with timestamp range
     - Filter by event type
     - Filter by entity ID
     - **CRITICAL**: Return in chronological order (oldest → newest)
-  - [ ] `getEventsSince(timestamp: number): Promise<SyncEvent[]>`
+  - [x] `getEventsSince(timestamp: number): Promise<SyncEvent[]>`
     - Optimized query for sync operations
     - Use timestamp index
-  - [ ] `getLatestEvent(entityId: string): Promise<SyncEvent | null>`
+  - [x] `getLatestEvent(entityId: string): Promise<SyncEvent | null>`
     - Get most recent event for entity
-  - [ ] `count(): Promise<number>`
+  - [x] `count(): Promise<number>`
     - Return total event count
-  - [ ] `clear(): Promise<void>`
+  - [x] `clear(): Promise<void>`
     - Remove all events (for testing/reset)
 
-- [ ] Add event validation
-  - [ ] Validate required fields (id, type, payload, timestamp, deviceId)
-  - [ ] Validate timestamp is not in future
-  - [ ] Validate vector clock format
-  - [ ] Throw `ValidationError` for invalid events
+- [x] Add event validation
+  - [x] Validate required fields (id, type, payload, timestamp, deviceId)
+  - [x] Validate timestamp is not in future
+  - [x] Validate vector clock format
+  - [x] Throw `ValidationError` for invalid events
 
-- [ ] Add checksum verification
-  - [ ] Generate SHA-256 checksum on append
-  - [ ] Verify checksum on retrieval
-  - [ ] Detect corrupted events
-  - [ ] Log corruption warnings
+- [x] Add checksum verification
+  - [x] Generate SHA-256 checksum on append
+  - [x] Verify checksum on retrieval
+  - [x] Detect corrupted events
+  - [x] Log corruption warnings
 
 **Tests** (25 Integration Tests) ✅ ALL PASSING:
 
@@ -133,52 +133,52 @@
 
 #### Task 3.3: Implement EventPublisher with EventBus ✅ COMPLETE (15 tests passing)
 
-- [ ] Create [event-publisher.ts](file:///home/sandy/projects/_underscore/src/background/events/event-publisher.ts)
-  - [ ] Implement `EventPublisher` class
-  - [ ] Use EventBus for pub/sub
-  - [ ] Support multiple subscribers per event type
-  - [ ] Return unsubscribe function
+- [x] Create [event-publisher.ts](file:///home/sandy/projects/_underscore/src/background/events/event-publisher.ts)
+  - [x] Implement `EventPublisher` class
+  - [x] Use EventBus for pub/sub
+  - [x] Support multiple subscribers per event type
+  - [x] Return unsubscribe function
 
-- [ ] Implement methods
-  - [ ] `publish<T>(eventType: string, payload: T): Promise<void>`
+- [x] Implement methods
+  - [x] `publish<T>(eventType: string, payload: T): Promise<void>`
     - Emit event via EventBus
     - Log event publication (DEBUG level)
     - Handle subscriber errors without breaking others
-  - [ ] `subscribe<T>(eventType: string, handler: EventHandler<T>): () => void`
+  - [x] `subscribe<T>(eventType: string, handler: EventHandler<T>): () => void`
     - Register handler with EventBus
     - Return unsubscribe function
     - Validate handler is function
-  - [ ] `unsubscribe(eventType: string, handler: EventHandler<any>): void`
+  - [x] `unsubscribe(eventType: string, handler: EventHandler<any>): void`
     - Remove handler from EventBus
     - Log unsubscription
 
-- [ ] Add error handling
-  - [ ] Wrap subscriber calls in try-catch
-  - [ ] Log subscriber errors (ERROR level)
-  - [ ] Continue to next subscriber on error
-  - [ ] Emit `SUBSCRIBER_ERROR` event
+- [x] Add error handling
+  - [x] Wrap subscriber calls in try-catch
+  - [x] Log subscriber errors (ERROR level)
+  - [x] Continue to next subscriber on error
+  - [x] Emit `SUBSCRIBER_ERROR` event
 
 **Tests** (15 Unit Tests) ✅ ALL PASSING:
 
 1. **Basic Functionality** (4 tests)
-   - [ ] Publish event calls all subscribers
-   - [ ] Subscribe registers handler
-   - [ ] Unsubscribe removes handler
-   - [ ] Unsubscribe function works
+   - [x] Publish event calls all subscribers
+   - [x] Subscribe registers handler
+   - [x] Unsubscribe removes handler
+   - [x] Unsubscribe function works
 
 2. **Multiple Subscribers** (3 tests)
-   - [ ] Multiple subscribers receive same event
-   - [ ] Subscribers called in registration order
-   - [ ] Removing one subscriber doesn't affect others
+   - [x] Multiple subscribers receive same event
+   - [x] Subscribers called in registration order
+   - [x] Removing one subscriber doesn't affect others
 
 3. **Error Handling** (3 tests)
-   - [ ] Subscriber error doesn't break other subscribers
-   - [ ] Subscriber error logged
-   - [ ] SUBSCRIBER_ERROR event emitted
+   - [x] Subscriber error doesn't break other subscribers
+   - [x] Subscriber error logged
+   - [x] SUBSCRIBER_ERROR event emitted
 
 4. **Edge Cases** (2 tests)
-   - [ ] Unsubscribe non-existent handler doesn't throw
-   - [ ] Publish with no subscribers doesn't throw
+   - [x] Unsubscribe non-existent handler doesn't throw
+   - [x] Publish with no subscribers doesn't throw
 
 **Design Pattern**: Observer Pattern (Event-Driven Architecture per ADR-002)
 
@@ -186,65 +186,65 @@
 
 #### Task 3.4: Implement EventReplayer for State Reconstruction ✅ COMPLETE (13 tests passing)
 
-- [ ] Create [event-replayer.ts](file:///home/sandy/projects/_underscore/src/background/events/event-replayer.ts)
-  - [ ] Implement `EventReplayer` class
-  - [ ] Reconstruct current state from event log
-  - [ ] Support incremental replay (from checkpoint)
-  - [ ] Handle event ordering correctly
+- [x] Create [event-replayer.ts](file:///home/sandy/projects/_underscore/src/background/events/event-replayer.ts)
+  - [x] Implement `EventReplayer` class
+  - [x] Reconstruct current state from event log
+  - [x] Support incremental replay (from checkpoint)
+  - [x] Handle event ordering correctly
 
-- [ ] Implement core logic
-  - [ ] `replay(events: SyncEvent[]): Promise<HighlightDataV2[]>`
+- [x] Implement core logic
+  - [x] `replay(events: SyncEvent[]): Promise<HighlightDataV2[]>`
     - Start with empty state
     - Apply events in chronological order
     - Handle CREATED, UPDATED, DELETED events
     - Return final state
-  - [ ] `replayFrom(checkpoint: number): Promise<HighlightDataV2[]>`
+  - [x] `replayFrom(checkpoint: number): Promise<HighlightDataV2[]>`
     - Load events since checkpoint
     - Apply to existing state
     - Optimize for incremental sync
-  - [ ] `applyEvent(state: Map<string, HighlightDataV2>, event: SyncEvent): void`
+  - [x] `applyEvent(state: Map<string, HighlightDataV2>, event: SyncEvent): void`
     - CREATED: Add to state
     - UPDATED: Merge changes
     - DELETED: Remove from state (soft delete)
 
-- [ ] Add conflict detection
-  - [ ] Detect concurrent updates (same entity, different devices)
-  - [ ] Use vector clocks for ordering
-  - [ ] Emit `CONFLICT_DETECTED` event
-  - [ ] Defer resolution to ConflictResolver (Component 5)
+- [x] Add conflict detection
+  - [x] Detect concurrent updates (same entity, different devices)
+  - [x] Use vector clocks for ordering
+  - [x] Emit `CONFLICT_DETECTED` event
+  - [x] Defer resolution to ConflictResolver (Component 5)
 
-- [ ] Add validation
-  - [ ] Validate events are in chronological order
-  - [ ] Validate no duplicate event IDs
-  - [ ] Validate entity exists for UPDATE/DELETE
-  - [ ] Log validation warnings
+- [x] Add validation
+  - [x] Validate events are in chronological order
+  - [x] Validate no duplicate event IDs
+  - [x] Validate entity exists for UPDATE/DELETE
+  - [x] Log validation warnings
 
 **Tests** (13 Integration Tests) ✅ ALL PASSING:
 
 1. **Basic Replay** (4 tests)
-   - [ ] Empty event log returns empty state
-   - [ ] Single CREATE event reconstructs highlight
-   - [ ] CREATE → UPDATE sequence works
-   - [ ] CREATE → DELETE sequence removes highlight
+   - [x] Empty event log returns empty state
+   - [x] Single CREATE event reconstructs highlight
+   - [x] CREATE → UPDATE sequence works
+   - [x] CREATE → DELETE sequence removes highlight
 
 2. **Complex Sequences** (4 tests)
-   - [ ] Multiple CREATEs for different entities
-   - [ ] CREATE → UPDATE → UPDATE chain
-   - [ ] CREATE → DELETE → CREATE (same ID) works
-   - [ ] Interleaved events for multiple entities
+   - [x] Multiple CREATEs for different entities
+   - [x] CREATE → UPDATE → UPDATE chain
+   - [x] CREATE → DELETE → CREATE (same ID) works
+   - [x] Interleaved events for multiple entities
 
 3. **Incremental Replay** (3 tests)
-   - [ ] Replay from checkpoint applies only new events
-   - [ ] Checkpoint optimization reduces processing
-   - [ ] Replay from middle of log works
+   - [x] Replay from checkpoint applies only new events
+   - [x] Checkpoint optimization reduces processing
+   - [x] Replay from middle of log works
 
 4. **Conflict Detection** (2 tests)
-   - [ ] Concurrent updates detected (different vector clocks)
-   - [ ] CONFLICT_DETECTED event emitted
+   - [x] Concurrent updates detected (different vector clocks)
+   - [x] CONFLICT_DETECTED event emitted
 
 5. **Edge Cases** (2 tests)
-   - [ ] Out-of-order events handled (sort by timestamp)
-   - [ ] Malformed event skipped with warning
+   - [x] Out-of-order events handled (sort by timestamp)
+   - [x] Malformed event skipped with warning
 
 **Reference**: Event Sourcing Pattern - State Reconstruction
 
@@ -257,18 +257,18 @@
 **Test Count**: 5 unit tests  
 **Security Impact**: **CRITICAL** - XSS protection
 
-- [ ] Install dependencies
-  - [ ] `npm install dompurify @types/dompurify`
-  - [ ] Verify DOMPurify version ^3.x
+- [x] Install dependencies
+  - [x] `npm install dompurify @types/dompurify`
+  - [x] Verify DOMPurify version ^3.x
 
-- [ ] Create [input-sanitizer.ts](file:///home/sandy/projects/_underscore/src/background/events/input-sanitizer.ts)
-  - [ ] Implement `InputSanitizer` class with `IInputSanitizer` interface
-  - [ ] Use DOMPurify for sanitization
-  - [ ] Configure allowed tags/attributes
-  - [ ] Log sanitization events
+- [x] Create [input-sanitizer.ts](file:///home/sandy/projects/_underscore/src/background/events/input-sanitizer.ts)
+  - [x] Implement `InputSanitizer` class with `IInputSanitizer` interface
+  - [x] Use DOMPurify for sanitization
+  - [x] Configure allowed tags/attributes
+  - [x] Log sanitization events
 
-- [ ] Implement sanitization methods
-  - [ ] `sanitizeText(text: string): string`
+- [x] Implement sanitization methods
+  - [x] `sanitizeText(text: string): string`
     ```typescript
     sanitizeText(text: string): string {
       return DOMPurify.sanitize(text, {
@@ -277,7 +277,7 @@
       });
     }
     ```
-  - [ ] `sanitizeHTML(html: string): string`
+  - [x] `sanitizeHTML(html: string): string`
     ```typescript
     sanitizeHTML(html: string): string {
       return DOMPurify.sanitize(html, {
@@ -286,7 +286,7 @@
       });
     }
     ```
-  - [ ] `sanitizeURL(url: string): string | null`
+  - [x] `sanitizeURL(url: string): string | null`
     ```typescript
     sanitizeURL(url: string): string | null {
       try {
@@ -303,24 +303,24 @@
     }
     ```
 
-- [ ] Integrate with EventStore
-  - [ ] Sanitize highlight text before appending event
-  - [ ] Sanitize collection names
-  - [ ] Sanitize all user-generated content
-  - [ ] Add sanitization logging (DEBUG level)
+- [x] Integrate with EventStore
+  - [x] Sanitize highlight text before appending event
+  - [x] Sanitize collection names
+  - [x] Sanitize all user-generated content
+  - [x] Add sanitization logging (DEBUG level)
 
 **Tests** (5 Unit Tests):
 
 1. **XSS Protection** (2 tests)
-   - [ ] `<script>alert('xss')</script>` → empty string
-   - [ ] `javascript:alert(1)` URL → null
+   - [x] `<script>alert('xss')</script>` → empty string
+   - [x] `javascript:alert(1)` URL → null
 
 2. **Safe Content Preservation** (2 tests)
-   - [ ] `<strong>bold</strong>` → `<strong>bold</strong>` (HTML mode)
-   - [ ] Unicode text preserved: `日本語 emoji 👍` → exact match
+   - [x] `<strong>bold</strong>` → `<strong>bold</strong>` (HTML mode)
+   - [x] Unicode text preserved: `日本語 emoji 👍` → exact match
 
 3. **Edge Cases** (1 test)
-   - [ ] Empty string handled gracefully
+   - [x] Empty string handled gracefully
 
 **Reference**: 
 - [Security Architecture](file:///home/sandy/projects/_underscore/docs/06-security/security-architecture.md) (DOMPurify requirement)
@@ -330,60 +330,60 @@
 
 #### Task 3.6: Implement EventValidator ✅ COMPLETE (5 tests passing)
 
-- [ ] Create [event-validator.ts](file:///home/sandy/projects/_underscore/src/background/events/event-validator.ts)
-  - [ ] Implement `EventValidator` class
-  - [ ] Validate event structure
-  - [ ] Validate payload schemas
-  - [ ] Use Zod for schema validation
+- [x] Create [event-validator.ts](file:///home/sandy/projects/_underscore/src/background/events/event-validator.ts)
+  - [x] Implement `EventValidator` class
+  - [x] Validate event structure
+  - [x] Validate payload schemas
+  - [x] Use Zod for schema validation
 
-- [ ] Implement validation rules
-  - [ ] Event ID is valid UUID
-  - [ ] Event type is valid enum value
-  - [ ] Timestamp is valid (not future, not too old)
-  - [ ] Device ID is non-empty string
-  - [ ] Vector clock is valid format
-  - [ ] Payload matches event type schema
+- [x] Implement validation rules
+  - [x] Event ID is valid UUID
+  - [x] Event type is valid enum value
+  - [x] Timestamp is valid (not future, not too old)
+  - [x] Device ID is non-empty string
+  - [x] Vector clock is valid format
+  - [x] Payload matches event type schema
 
-- [ ] Add schema validation
-  - [ ] Define Zod schemas for each event type
-  - [ ] Validate HIGHLIGHT_CREATED payload
-  - [ ] Validate HIGHLIGHT_UPDATED payload
-  - [ ] Validate HIGHLIGHT_DELETED payload
-  - [ ] Validate COLLECTION_* payloads
+- [x] Add schema validation
+  - [x] Define Zod schemas for each event type
+  - [x] Validate HIGHLIGHT_CREATED payload
+  - [x] Validate HIGHLIGHT_UPDATED payload
+  - [x] Validate HIGHLIGHT_DELETED payload
+  - [x] Validate COLLECTION_* payloads
 
 **Tests** (5 Unit Tests):
 
 1. **Valid Events** (1 test)
-   - [ ] Valid event passes all checks
+   - [x] Valid event passes all checks
 
 2. **Invalid Structure** (2 tests)
-   - [ ] Missing required field throws ValidationError
-   - [ ] Invalid event type throws ValidationError
+   - [x] Missing required field throws ValidationError
+   - [x] Invalid event type throws ValidationError
 
 3. **Invalid Payload** (2 tests)
-   - [ ] Payload doesn't match schema throws ValidationError
-   - [ ] Invalid timestamp throws ValidationError
+   - [x] Payload doesn't match schema throws ValidationError
+   - [x] Invalid timestamp throws ValidationError
 
 ---
 
 #### Task 3.7: DI Registration ✅ COMPLETE
 
-- [ ] Register in `/src/background/di/container-registration.ts`
-  - [ ] `EventStore` as singleton
-  - [ ] `EventPublisher` as singleton
-  - [ ] `EventReplayer` as singleton
-  - [ ] `InputSanitizer` as singleton
-  - [ ] `EventValidator` as singleton
+- [x] Register in `/src/background/di/container-registration.ts`
+  - [x] `EventStore` as singleton
+  - [x] `EventPublisher` as singleton
+  - [x] `EventReplayer` as singleton
+  - [x] `InputSanitizer` as singleton
+  - [x] `EventValidator` as singleton
 
-- [ ] Verify dependencies
-  - [ ] `ILogger` resolved
-  - [ ] `IEventBus` resolved
-  - [ ] Config from environment variables
+- [x] Verify dependencies
+  - [x] `ILogger` resolved
+  - [x] `IEventBus` resolved
+  - [x] Config from environment variables
 
-- [ ] Add to bootstrap function
-  - [ ] Initialize EventStore on startup
-  - [ ] Create IndexedDB database
-  - [ ] Verify schema version
+- [x] Add to bootstrap function
+  - [x] Initialize EventStore on startup
+  - [x] Create IndexedDB database
+  - [x] Verify schema version
 
 **Tests**: Integration tests verify DI resolution (2 tests)
 
@@ -391,27 +391,27 @@
 
 #### Task 3.8: Integration Testing ✅ COMPLETE (3 tests passing)
 
-- [ ] Create end-to-end event flow test
-  - [ ] Append event → EventStore
-  - [ ] Publish event → EventPublisher
-  - [ ] Replay events → EventReplayer
-  - [ ] Verify state reconstruction
+- [x] Create end-to-end event flow test
+  - [x] Append event → EventStore
+  - [x] Publish event → EventPublisher
+  - [x] Replay events → EventReplayer
+  - [x] Verify state reconstruction
 
-- [ ] Test with InputSanitizer
-  - [ ] Malicious input sanitized before storage
-  - [ ] XSS attempts blocked
-  - [ ] Safe content preserved
+- [x] Test with InputSanitizer
+  - [x] Malicious input sanitized before storage
+  - [x] XSS attempts blocked
+  - [x] Safe content preserved
 
 **Tests** (3 Integration Tests) ✅ ALL PASSING:
 
 1. **Full Event Flow** (1 test)
-   - [ ] Create highlight → Event appended → Published → Replayed
+   - [x] Create highlight → Event appended → Published → Replayed
 
 2. **Sanitization Integration** (1 test)
-   - [ ] XSS in highlight text sanitized before storage
+   - [x] XSS in highlight text sanitized before storage
 
 3. **DI Container** (1 test)
-   - [ ] All services resolve correctly
+   - [x] All services resolve correctly
 
 ---
 
@@ -462,11 +462,11 @@
 
 ### Per-Task Gates
 
-- [ ] 0 TypeScript errors
-- [ ] 0 ESLint errors
-- [ ] 100% Prettier compliance
-- [ ] All tests passing
-- [ ] Code coverage >85%
+- [x] 0 TypeScript errors
+- [x] 0 ESLint errors
+- [x] 100% Prettier compliance
+- [x] All tests passing
+- [x] Code coverage >85%
 
 ### Component-Level Gates ✅ ALL MET
 
