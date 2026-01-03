@@ -268,7 +268,7 @@ export function registerServices(container: Container): void {
    * Auth Manager - Singleton
    * OAuth authentication with automatic token refresh
    */
-  container.register Singleton('authManager', () => {
+  container.registerSingleton('authManager', () => {
     const tokenStore = container.resolve('tokenStore');
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
