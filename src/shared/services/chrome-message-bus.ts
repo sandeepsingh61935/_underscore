@@ -1,5 +1,5 @@
-import type { IMessageBus } from '../interfaces/i-message-bus';
 import type { ILogger } from '../interfaces/i-logger';
+import type { IMessageBus } from '../interfaces/i-message-bus';
 import {
     validateMessage,
     type Message,
@@ -57,7 +57,7 @@ export class ChromeMessageBus implements IMessageBus {
      * Dispatches incoming messages to registered handlers
      */
     private setupMessageListener(): void {
-        this.messageListener = (message, sender, sendResponse) => {
+        this.messageListener = (message, sender, _sendResponse) => {
             // Validate message structure
             let validatedMessage: Message;
             try {
@@ -125,7 +125,7 @@ export class ChromeMessageBus implements IMessageBus {
         // Create send promise
         const sendPromise = new Promise<T>((resolve, reject) => {
             try {
-                const handleResponse = (response: T) => {
+                const handleResponse = (response: T): void => {
                     if (chrome.runtime.lastError) {
                         reject(
                             new Error(
