@@ -9,12 +9,12 @@
  * - In-memory undo/redo
  * - Adaptive theming (Material Design colors)
  * - No account required
- * 
+ *
  * Architectural Compliance:
  * - Implements IBasicMode only (Interface Segregation Principle)
  * - Encapsulates persistence logic (Single Responsibility Principle)
  * - No restore() method needed (uses event sourcing instead)
- * 
+ *
  * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
  */
 
@@ -75,15 +75,15 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Creates a new highlight in Sprint Mode (4-hour TTL, encrypted persistence)
-   * 
+   *
    * @param selection - The browser Selection object containing the text to highlight
    * @param colorRole - The color role to apply (e.g., 'yellow', 'blue', 'green')
    * @returns Promise resolving to the unique highlight ID
-   * 
+   *
    * @throws {Error} If selection has no ranges
    * @throws {Error} If selected text is empty
    * @throws {Error} If range serialization fails
-   * 
+   *
    * @remarks
    * Sprint Mode features:
    * - Deduplicates via content hash (returns existing ID if duplicate)
@@ -91,13 +91,13 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * - Persists to chrome.storage.local with domain-based encryption
    * - Uses event sourcing for restoration
    * - Emits HIGHLIGHT_CREATED event for persistence
-   * 
+   *
    * Persistence flow:
    * 1. Register with CSS Custom Highlight API
    * 2. Add to internal maps (highlights, data)
    * 3. Add to repository (triggers storage)
    * 4. Emit event for event sourcing
-   * 
+   *
    * @example
    * ```typescript
    * const selection = window.getSelection();
@@ -182,16 +182,16 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Creates a highlight from existing HighlightData (restoration/undo)
-   * 
+   *
    * @param data - Complete HighlightData object
    * @returns Promise that resolves when highlight is rendered
-   * 
+   *
    * @remarks
    * Used for:
    * - Restoring highlights from storage (event replay)
    * - Undo/redo operations
    * - Range subtraction operations
-   * 
+   *
    * Critical: Populates repository cache to enable hover detection
    * Emits HIGHLIGHT_CREATED event for consistency
    */
@@ -218,18 +218,18 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Updates an existing highlight's properties
-   * 
+   *
    * @param id - The highlight ID to update
    * @param updates - Partial HighlightData with fields to update
    * @returns Promise that resolves when update is complete
-   * 
+   *
    * @throws {Error} If highlight doesn't exist
-   * 
+   *
    * @remarks
    * - Updates in-memory data
    * - If colorRole changes, re-injects CSS
    * - Does NOT emit storage event (updates not persisted via event sourcing)
-   * 
+   *
    * @example
    * ```typescript
    * await sprintMode.updateHighlight('abc123', { colorRole: 'blue' });
@@ -253,18 +253,18 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Removes a highlight from Sprint Mode (persistent deletion)
-   * 
+   *
    * @param id - The highlight ID to remove
    * @returns Promise that resolves when removal is complete
-   * 
+   *
    * @remarks
    * Cleanup steps:
    * 1. Remove from CSS Custom Highlight API (both bare and prefixed IDs)
    * 2. Clear from internal maps (highlights, data)
    * 3. Remove from repository (triggers storage deletion)
-   * 
+   *
    * Repository removal triggers event sourcing persistence
-   * 
+   *
    * @example
    * ```typescript
    * await sprintMode.removeHighlight('abc123');
@@ -293,9 +293,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Clears ALL highlights from Sprint Mode
-   * 
+   *
    * @returns Promise that resolves when all highlights are cleared
-   * 
+   *
    * @remarks
    * Complete cleanup:
    * - Clears CSS.highlights (all DOM highlights)
@@ -303,9 +303,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * - Clears internal data maps
    * - Clears repository (persistent storage)
    * - Emits 'highlights.cleared' event for event sourcing
-   * 
+   *
    * CRITICAL: Emits storage event to persist the clear operation
-   * 
+   *
    * @example
    * ```typescript
    * await sprintMode.clearAll();
@@ -389,7 +389,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Clean Expired Highlights (TTL Enforcement)
    * Removes highlights older than 4 hours
    * Called on restore and can be called periodically
-   * 
+   *
    * @returns Number of highlights cleaned
    */
   async cleanExpiredHighlights(): Promise<number> {
@@ -404,7 +404,8 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
           id,
           createdAt: data.createdAt,
           expiresAt: data.expiresAt,
-          age: Math.round((now - (data.createdAt?.getTime() || now)) / 1000 / 60 / 60) + 'h'
+          age:
+            Math.round((now - (data.createdAt?.getTime() || now)) / 1000 / 60 / 60) + 'h',
         });
       }
     }
@@ -443,16 +444,16 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   }
 
   /**
-   * Deletion Configuration  
+   * Deletion Configuration
    * Sprint Mode: Requires confirmation (persistent highlights)
    */
   override getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
-      requireConfirmation: true,  // Persistent, ask before deleting
+      requireConfirmation: true, // Persistent, ask before deleting
       confirmationMessage: 'Delete this highlight? (Undo available with Ctrl+Z)',
       allowUndo: true,
-      iconType: 'trash'
+      iconType: 'trash',
     };
   }
 }
