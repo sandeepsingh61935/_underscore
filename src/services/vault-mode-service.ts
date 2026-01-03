@@ -6,283 +6,291 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**
  * Vault Mode Service - Integration Layer
- * 
+ *
  * Coordinates between Multi-Selector Engine and IndexedDB Storage.
  * Implements the Facade pattern to provide a simple API for Vault Mode operations.
- * 
+ *
  * Architecture:
  * - Facade Pattern: Hides complexity of multi-selector + storage coordination
  * - Dependency Injection: Accepts storage and selector engine instances
  * - Single Responsibility: Only handles integration, delegates to specialists
- * 
+ *
  * Flow:
  * 1. User creates highlight → saveHighlight()
  * 2. Generate selectors from DOM Range → MultiSelectorEngine.createSelectors()
  * 3. Store highlight + selectors → IndexedDBStorage.saveHighlight()
  * 4. Create event → IndexedDBStorage.saveEvent()
- * 
+ *
  * Restoration:
  * 1. Load from storage → IndexedDBStorage.getHighlightsByUrl()
  * 2. Restore DOM Range → MultiSelectorEngine.restore()
  * 3. Render highlight in UI
  */
 export class VaultModeService {
-    private storage: IndexedDBStorage;
-    private selectorEngine: MultiSelectorEngine;
-    private logger: ILogger;
+  private storage: IndexedDBStorage;
+  private selectorEngine: MultiSelectorEngine;
+  private logger: ILogger;
 
-    constructor(
-        storage: IndexedDBStorage,
-        selectorEngine: MultiSelectorEngine,
-        logger: ILogger
-    ) {
-        this.storage = storage;
-        this.selectorEngine = selectorEngine;
-        this.logger = logger;
+  constructor(
+    storage: IndexedDBStorage,
+    selectorEngine: MultiSelectorEngine,
+    logger: ILogger
+  ) {
+    this.storage = storage;
+    this.selectorEngine = selectorEngine;
+    this.logger = logger;
+  }
+
+  /**
+   * Save a highlight to Vault Mode storage
+   *
+   * Flow:
+   * 1. Generate multi-selectors from DOM Range
+   * 2. Store highlight with selectors in IndexedDB
+   * 3. Create HIGHLIGHT_CREATED event
+   *
+   * @param highlight - Highlight data
+   * @param range - DOM Range for selector generation
+   * @param collectionId - Optional collection ID
+   * @returns Promise<void>
+   */
+  async saveHighlight(
+    highlight: HighlightDataV2,
+    range: Range,
+    collectionId?: string
+  ): Promise<void> {
+    try {
+      // Generate multi-selectors from the DOM Range
+      const selectors = this.selectorEngine.createSelectors(range);
+
+      // Store highlight with selector metadata
+      const url = window.location.href.split('#')[0];
+      await this.storage.saveHighlight(highlight, collectionId || null, {
+        selectors,
+        url,
+      });
+
+      // Create event for sync
+      await this.storage.saveEvent({
+        type: 'highlight.created',
+        timestamp: Date.now(),
+        data: {
+          highlightId: highlight.id,
+          url: window.location.href.split('#')[0],
+          collectionId: collectionId || null,
+        },
+        synced: false,
+      });
+
+      this.logger.info('[VAULT] Highlight saved', {
+        id: highlight.id,
+        text: highlight.text.substring(0, 50),
+      });
+    } catch (error) {
+      this.logger.error('[VAULT] Failed to save highlight:', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore highlights for the current URL
+   *
+   * Flow:
+   * 1. Load highlights from IndexedDB for current URL
+   * 2. For each highlight, restore DOM Range using multi-selector
+   * 3. Return restored highlights with their ranges
+   *
+   * @returns Promise with array of restored highlights and ranges
+   */
+  async restoreHighlightsForUrl(): Promise<
+    Array<{
+      highlight: HighlightDataV2;
+      range: Range | null;
+      restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
+    }>
+  > {
+    try {
+      const url = window.location.href.split('#')[0];
+      if (!url) return [];
+
+      const records = await this.storage.getHighlightsByUrl(url);
+
+      this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
+
+      const results = await Promise.all(
+        records.map(async (record) => {
+          if (!record.metadata?.['selectors']) {
+            this.logger.warn('[VAULT] No selectors found for highlight', record.id);
+            return {
+              highlight: record.data,
+              range: null,
+              restoredUsing: 'failed' as const,
+            };
+          }
+
+          const selectors = record.metadata['selectors'] as MultiSelector;
+          const range = await this.restoreHighlightRange(selectors);
+
+          return {
+            highlight: record.data,
+            range,
+            restoredUsing: this.determineRestorationTier(range, selectors),
+          };
+        })
+      );
+
+      const successful = results.filter((r) => r.range !== null).length;
+      this.logger.info(`[VAULT] Restored ${successful}/${records.length} highlights`);
+
+      return results;
+    } catch (error) {
+      this.logger.error('[VAULT] Failed to restore highlights:', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore a single highlight's DOM Range using multi-selector
+   *
+   * Tries all 3 tiers: XPath → Position → Fuzzy
+   *
+   * @param selectors - Multi-selector data
+   * @returns Restored Range or null
+   */
+  private async restoreHighlightRange(selectors: MultiSelector): Promise<Range | null> {
+    try {
+      return await this.selectorEngine.restore(selectors);
+    } catch (error) {
+      this.logger.error('Restoration error:', error as Error);
+      return null;
+    }
+  }
+
+  /**
+   * Determine which tier was used for successful restoration
+   *
+   * @param range - Restored range
+   * @param selectors - Multi-selector data
+   * @returns Tier name
+   */
+  private determineRestorationTier(
+    range: Range | null,
+    selectors: MultiSelector
+  ): 'xpath' | 'position' | 'fuzzy' | 'failed' {
+    if (!range) return 'failed';
+
+    // Try to determine which tier succeeded by testing each
+    const rangeText = range.toString();
+
+    if (rangeText === selectors.xpath.text) {
+      // Text matches exactly - likely XPath or Position
+      try {
+        const xpathNode = document.evaluate(
+          selectors.xpath.xpath,
+          document,
+          null,
+          XPathResult.FIRST_ORDERED_NODE_TYPE,
+          null
+        ).singleNodeValue;
+
+        if (xpathNode) return 'xpath';
+      } catch {
+        // XPath failed, probably Position or Fuzzy
+      }
+
+      // Check if position matches
+      const bodyText = document.body.textContent || '';
+      const posText = bodyText.substring(
+        selectors.position.startOffset,
+        selectors.position.endOffset
+      );
+
+      if (posText === selectors.position.text) {
+        return 'position';
+      }
     }
 
-    /**
-     * Save a highlight to Vault Mode storage
-     * 
-     * Flow:
-     * 1. Generate multi-selectors from DOM Range
-     * 2. Store highlight with selectors in IndexedDB
-     * 3. Create HIGHLIGHT_CREATED event
-     * 
-     * @param highlight - Highlight data
-     * @param range - DOM Range for selector generation
-     * @param collectionId - Optional collection ID
-     * @returns Promise<void>
-     */
-    async saveHighlight(
-        highlight: HighlightDataV2,
-        range: Range,
-        collectionId?: string
-    ): Promise<void> {
-        try {
-            // Generate multi-selectors from the DOM Range
-            const selectors = this.selectorEngine.createSelectors(range);
+    // Must be fuzzy if we got here
+    return 'fuzzy';
+  }
 
-            // Store highlight with selector metadata
-            const url = window.location.href.split('#')[0];
-            await this.storage.saveHighlight(highlight, collectionId || null, {
-                selectors,
-                url,
-            });
+  /**
+   * Delete a highlight from Vault Mode
+   *
+   * @param highlightId - Highlight ID to delete
+   */
+  async deleteHighlight(highlightId: string): Promise<void> {
+    try {
+      await this.storage.deleteHighlight(highlightId);
 
-            // Create event for sync
-            await this.storage.saveEvent({
-                type: 'highlight.created',
-                timestamp: Date.now(),
-                data: {
-                    highlightId: highlight.id,
-                    url: window.location.href.split('#')[0],
-                    collectionId: collectionId || null,
-                },
-                synced: false,
-            });
+      await this.storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        data: { highlightId },
+        synced: false,
+      });
 
-            this.logger.info('[VAULT] Highlight saved', {
-                id: highlight.id,
-                text: highlight.text.substring(0, 50),
-            });
-        } catch (error) {
-            this.logger.error('[VAULT] Failed to save highlight:', error as Error);
-            throw error;
-        }
+      this.logger.info('[VAULT] Highlight deleted', highlightId);
+    } catch (error) {
+      this.logger.error('[VAULT] Failed to delete highlight:', error as Error);
+      throw error;
     }
+  }
 
-    /**
-     * Restore highlights for the current URL
-     * 
-     * Flow:
-     * 1. Load highlights from IndexedDB for current URL
-     * 2. For each highlight, restore DOM Range using multi-selector
-     * 3. Return restored highlights with their ranges
-     * 
-     * @returns Promise with array of restored highlights and ranges
-     */
-    async restoreHighlightsForUrl(): Promise<Array<{
-        highlight: HighlightDataV2;
-        range: Range | null;
-        restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
-    }>> {
-        try {
-            const url = window.location.href.split('#')[0];
-            if (!url) return [];
+  /**
+   * Get statistics about Vault Mode storage
+   */
+  async getStats(): Promise<{
+    highlightCount: number;
+    eventCount: number;
+    collectionCount: number;
+    tagCount: number;
+    unsyncedCount: number;
+  }> {
+    return await this.storage.getStats();
+  }
 
-            const records = await this.storage.getHighlightsByUrl(url);
+  /**
+   * Sync unsynced data to server
+   *
+   * @returns Array of event IDs that were synced
+   */
+  async syncToServer(): Promise<string[]> {
+    try {
+      const unsyncedEvents = await this.storage.getUnsyncedEvents();
+      const unsyncedHighlights = await this.storage.getUnsyncedHighlights();
 
-            this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
+      this.logger.info('[VAULT] Syncing to server', {
+        events: unsyncedEvents.length,
+        highlights: unsyncedHighlights.length,
+      });
 
-            const results = await Promise.all(
-                records.map(async (record) => {
-                    if (!record.metadata?.['selectors']) {
-                        this.logger.warn('[VAULT] No selectors found for highlight', record.id);
-                        return {
-                            highlight: record.data,
-                            range: null,
-                            restoredUsing: 'failed' as const,
-                        };
-                    }
+      // TODO: Implement actual API calls to sync server
+      // For now, just mark as synced locally
 
-                    const selectors = record.metadata['selectors'] as MultiSelector;
-                    const range = await this.restoreHighlightRange(selectors);
+      const eventIds = unsyncedEvents.map((e) => e.eventId);
+      await this.storage.markEventsSynced(eventIds);
 
-                    return {
-                        highlight: record.data,
-                        range,
-                        restoredUsing: this.determineRestorationTier(range, selectors),
-                    };
-                })
-            );
+      for (const highlight of unsyncedHighlights) {
+        await this.storage.markHighlightSynced(highlight.id);
+      }
 
-            const successful = results.filter(r => r.range !== null).length;
-            this.logger.info(`[VAULT] Restored ${successful}/${records.length} highlights`);
+      this.logger.info('[VAULT] Sync complete', { syncedEvents: eventIds.length });
 
-            return results;
-        } catch (error) {
-            this.logger.error('[VAULT] Failed to restore highlights:', error as Error);
-            throw error;
-        }
+      return eventIds;
+    } catch (error) {
+      this.logger.error('[VAULT] Sync failed:', error as Error);
+      throw error;
     }
+  }
 
-    /**
-     * Restore a single highlight's DOM Range using multi-selector
-     * 
-     * Tries all 3 tiers: XPath → Position → Fuzzy
-     * 
-     * @param selectors - Multi-selector data
-     * @returns Restored Range or null
-     */
-    private async restoreHighlightRange(selectors: MultiSelector): Promise<Range | null> {
-        try {
-            return await this.selectorEngine.restore(selectors);
-        } catch (error) {
-            this.logger.error('Restoration error:', error as Error);
-            return null;
-        }
-    }
-
-    /**
-     * Determine which tier was used for successful restoration
-     * 
-     * @param range - Restored range
-     * @param selectors - Multi-selector data
-     * @returns Tier name
-     */
-    private determineRestorationTier(
-        range: Range | null,
-        selectors: MultiSelector
-    ): 'xpath' | 'position' | 'fuzzy' | 'failed' {
-        if (!range) return 'failed';
-
-        // Try to determine which tier succeeded by testing each
-        const rangeText = range.toString();
-
-        if (rangeText === selectors.xpath.text) {
-            // Text matches exactly - likely XPath or Position
-            try {
-                const xpathNode = document.evaluate(
-                    selectors.xpath.xpath,
-                    document,
-                    null,
-                    XPathResult.FIRST_ORDERED_NODE_TYPE,
-                    null
-                ).singleNodeValue;
-
-                if (xpathNode) return 'xpath';
-            } catch {
-                // XPath failed, probably Position or Fuzzy
-            }
-
-            // Check if position matches
-            const bodyText = document.body.textContent || '';
-            const posText = bodyText.substring(
-                selectors.position.startOffset,
-                selectors.position.endOffset
-            );
-
-            if (posText === selectors.position.text) {
-                return 'position';
-            }
-        }
-
-        // Must be fuzzy if we got here
-        return 'fuzzy';
-    }
-
-    /**
-     * Delete a highlight from Vault Mode
-     * 
-     * @param highlightId - Highlight ID to delete
-     */
-    async deleteHighlight(highlightId: string): Promise<void> {
-        try {
-            await this.storage.deleteHighlight(highlightId);
-
-            await this.storage.saveEvent({
-                type: 'highlight.removed',
-                timestamp: Date.now(),
-                data: { highlightId },
-                synced: false,
-            });
-
-            this.logger.info('[VAULT] Highlight deleted', highlightId);
-        } catch (error) {
-            this.logger.error('[VAULT] Failed to delete highlight:', error as Error);
-            throw error;
-        }
-    }
-
-    /**
-     * Get statistics about Vault Mode storage
-     */
-    async getStats(): Promise<{ highlightCount: number; eventCount: number; collectionCount: number; tagCount: number; unsyncedCount: number; }> {
-        return await this.storage.getStats();
-    }
-
-    /**
-     * Sync unsynced data to server
-     * 
-     * @returns Array of event IDs that were synced
-     */
-    async syncToServer(): Promise<string[]> {
-        try {
-            const unsyncedEvents = await this.storage.getUnsyncedEvents();
-            const unsyncedHighlights = await this.storage.getUnsyncedHighlights();
-
-            this.logger.info('[VAULT] Syncing to server', {
-                events: unsyncedEvents.length,
-                highlights: unsyncedHighlights.length,
-            });
-
-            // TODO: Implement actual API calls to sync server
-            // For now, just mark as synced locally
-
-            const eventIds = unsyncedEvents.map(e => e.eventId);
-            await this.storage.markEventsSynced(eventIds);
-
-            for (const highlight of unsyncedHighlights) {
-                await this.storage.markHighlightSynced(highlight.id);
-            }
-
-            this.logger.info('[VAULT] Sync complete', { syncedEvents: eventIds.length });
-
-            return eventIds;
-        } catch (error) {
-            this.logger.error('[VAULT] Sync failed:', error as Error);
-            throw error;
-        }
-    }
-
-    /**
-     * Clear all Vault Mode data (for testing/reset)
-     */
-    async clearAll(): Promise<void> {
-        await this.storage.clearAll();
-        this.logger.info('[VAULT] All Vault Mode data cleared');
-    }
+  /**
+   * Clear all Vault Mode data (for testing/reset)
+   */
+  async clearAll(): Promise<void> {
+    await this.storage.clearAll();
+    this.logger.info('[VAULT] All Vault Mode data cleared');
+  }
 }
 
 /**
@@ -292,24 +300,26 @@ let instance: VaultModeService | null = null;
 
 /**
  * Get or create Vault Mode Service instance
- * 
+ *
  * Implements Singleton pattern with lazy initialization.
- * 
+ *
  * @returns VaultModeService instance
  */
 export function getVaultModeService(): VaultModeService {
-    if (!instance) {
-        const storage = new IndexedDBStorage();
-        const selectorEngine = new MultiSelectorEngine();
-        const logger: ILogger = {
-            debug: (msg, ...args) => console.debug(msg, ...args),
-            info: (msg, ...args) => console.info(msg, ...args),
-            warn: (msg, ...args) => console.warn(msg, ...args),
-            error: (msg, ...args) => console.error(msg, ...args),
-            setLevel: () => { },
-            getLevel: () => 1,
-        };
-        instance = new VaultModeService(storage, selectorEngine, logger);
-    }
-    return instance;
+  if (!instance) {
+    const storage = new IndexedDBStorage();
+    const selectorEngine = new MultiSelectorEngine();
+    const logger: ILogger = {
+      // eslint-disable-next-line no-console
+      debug: (msg, ...args) => console.debug(msg, ...args),
+      // eslint-disable-next-line no-console
+      info: (msg, ...args) => console.info(msg, ...args),
+      warn: (msg, ...args) => console.warn(msg, ...args),
+      error: (msg, ...args) => console.error(msg, ...args),
+      setLevel: () => {},
+      getLevel: () => 1,
+    };
+    instance = new VaultModeService(storage, selectorEngine, logger);
+  }
+  return instance;
 }
