@@ -126,28 +126,21 @@ class TokenEncryption {
     }
 
     /**
-     * Convert ArrayBuffer to base64 string
+     * Convert ArrayBuffer to base64 string (binary-safe)
      */
     private static bufferToBase64(buffer: ArrayBuffer): string {
         const bytes = new Uint8Array(buffer);
-        let binary = '';
-        const length = bytes.byteLength ?? bytes.length;
-        for (let i = 0; i < length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
+        // Use Buffer for proper binary-to-base64 conversion
+        return Buffer.from(bytes).toString('base64');
     }
 
     /**
-     * Convert base64 string to ArrayBuffer
+     * Convert base64 string to ArrayBuffer (binary-safe)
      */
     private static base64ToBuffer(base64: string): ArrayBuffer {
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
-        }
-        return bytes.buffer;
+        // Use Buffer for proper base64-to-binary conversion
+        const buffer = Buffer.from(base64, 'base64');
+        return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
     }
 }
 
