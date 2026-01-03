@@ -14,22 +14,22 @@ import { ModeManager } from '@/content/modes/mode-manager';
 import { SprintMode } from '@/content/modes/sprint-mode';
 import { VaultMode } from '@/content/modes/vault-mode';
 import { WalkMode } from '@/content/modes/walk-mode';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
+import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
+import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
 import { StorageService } from '@/shared/services/storage-service';
+import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
-import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
 
 
 /**
@@ -201,6 +201,7 @@ export function registerServices(container: Container): void {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new WalkMode(repositoryFacade as any, eventBus, logger);
     });
 
@@ -214,6 +215,7 @@ export function registerServices(container: Container): void {
         const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new SprintMode(repositoryFacade as any, storage, eventBus, logger);
     });
 
@@ -226,6 +228,7 @@ export function registerServices(container: Container): void {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new VaultMode(repositoryFacade as any, eventBus, logger);
     });
 

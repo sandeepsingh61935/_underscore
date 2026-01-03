@@ -11,8 +11,9 @@
  * All errors extend AppError and include structured context for debugging.
  */
 
-import { AppError, type ErrorContext } from './app-error';
 import type { ModeType } from '../schemas/mode-state-schemas';
+
+import { AppError, type ErrorContext } from './app-error';
 
 /**
  * Error thrown when state data fails validation
@@ -52,6 +53,7 @@ export class StateValidationError extends AppError {
 /**
  * Safely stringify context, handling circular references
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeStringify(obj: any): any {
     if (obj === null || obj === undefined) {
         return obj;
@@ -77,7 +79,7 @@ function safeStringify(obj: any): any {
             }
             return value;
         }));
-    } catch (error) {
+    } catch (_error) {
         // Fallback if stringify still fails
         return '[Serialization Failed]';
     }
