@@ -129,5 +129,5 @@ export class HighlightClickDetector {
       }
     }
     return false;
-
   }
+}
