@@ -1,6 +1,6 @@
 /**
  * Walk Mode Integration Tests
- * 
+ *
  * Validates Walk Mode integration with:
  * - Mode state manager
  * - Mode switching with cleanup
@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+
 import { WalkMode } from '@/content/modes/walk-mode';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { EventBus } from '@/shared/utils/event-bus';
@@ -39,6 +40,7 @@ describe('Walk Mode - Integration Tests', () => {
             clear: vi.fn(),
             findByContentHash: vi.fn().mockResolvedValue(null),
             getAll: vi.fn().mockResolvedValue([]),
+            findAll: vi.fn().mockResolvedValue([]),
         } as any;
 
         // Mock EventBus
@@ -54,6 +56,8 @@ describe('Walk Mode - Integration Tests', () => {
             debug: vi.fn(),
             error: vi.fn(),
             warn: vi.fn(),
+            setLevel: vi.fn(),
+            getLevel: vi.fn(),
         } as any;
 
         // Create WalkMode instance
@@ -73,11 +77,12 @@ describe('Walk Mode - Integration Tests', () => {
             // Simulate mode activation
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Test text',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Test text',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create highlight
             const id = await walkMode.createHighlight(mockSelection, 'yellow');
@@ -97,15 +102,16 @@ describe('Walk Mode - Integration Tests', () => {
         it('should maintain state consistency during mode lifecycle', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Lifecycle test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Lifecycle test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create multiple highlights
-            const id1 = await walkMode.createHighlight(mockSelection, 'yellow');
-            const id2 = await walkMode.createHighlight(mockSelection, 'blue');
+            await walkMode.createHighlight(mockSelection, 'yellow');
+            await walkMode.createHighlight(mockSelection, 'blue');
 
             // Verify both exist
             expect(mockRepository.add).toHaveBeenCalledTimes(2);
@@ -126,30 +132,33 @@ describe('Walk Mode - Integration Tests', () => {
             // Ensure clean state
             (global.CSS.highlights as Map<string, any>).clear();
 
-            const mockSelection = {
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Switch test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+            // Ensure clean state
+            (global.CSS.highlights as Map<string, any>).clear();
 
             // Create highlights in Walk Mode with unique text
-            const id1 = await walkMode.createHighlight({
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Switch test 1',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection, 'yellow');
+            await walkMode.createHighlight(
+                {
+                    rangeCount: 1,
+                    getRangeAt: () =>
+                        ({
+                            toString: () => 'Switch test 1',
+                            cloneRange: () => ({}),
+                        }) as any,
+                } as unknown as Selection,
+                'yellow'
+            );
 
-            const id2 = await walkMode.createHighlight({
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Switch test 2',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection, 'blue');
+            await walkMode.createHighlight(
+                {
+                    rangeCount: 1,
+                    getRangeAt: () =>
+                        ({
+                            toString: () => 'Switch test 2',
+                            cloneRange: () => ({}),
+                        }) as any,
+                } as unknown as Selection,
+                'blue'
+            );
 
             // Verify highlights exist
             expect((global.CSS.highlights as Map<string, any>).size).toBe(2);
@@ -166,11 +175,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should not persist data after mode switch', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Persistence test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Persistence test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create highlight
             await walkMode.createHighlight(mockSelection, 'yellow');
@@ -179,10 +189,10 @@ describe('Walk Mode - Integration Tests', () => {
             await walkMode.clearAll();
 
             // Create new WalkMode instance (simulate page reload)
-            const newWalkMode = new WalkMode(mockRepository, mockEventBus, mockLogger);
+            new WalkMode(mockRepository, mockEventBus, mockLogger);
 
             // Verify no highlights restored (Walk Mode is ephemeral)
-            const highlights = await mockRepository.getAll();
+            const highlights = await mockRepository.findAll();
             expect(highlights).toHaveLength(0);
         });
     });
@@ -194,11 +204,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should not leak memory on clearAll', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Memory test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Memory test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create 50 highlights
             for (let i = 0; i < 50; i++) {
@@ -223,11 +234,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should properly clean up on repeated create/clear cycles', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Cycle test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Cycle test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Perform 10 create/clear cycles
             for (let cycle = 0; cycle < 10; cycle++) {
@@ -256,38 +268,45 @@ describe('Walk Mode - Integration Tests', () => {
             // Ensure clean state
             (global.CSS.highlights as Map<string, any>).clear();
 
-            const mockSelection = {
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'DOM test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+            // Ensure clean state
+            (global.CSS.highlights as Map<string, any>).clear();
 
             // Create highlights with unique text
-            await walkMode.createHighlight({
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'DOM test 1',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection, 'yellow');
+            await walkMode.createHighlight(
+                {
+                    rangeCount: 1,
+                    getRangeAt: () =>
+                        ({
+                            toString: () => 'DOM test 1',
+                            cloneRange: () => ({}),
+                        }) as any,
+                } as unknown as Selection,
+                'yellow'
+            );
 
-            await walkMode.createHighlight({
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'DOM test 2',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection, 'blue');
+            await walkMode.createHighlight(
+                {
+                    rangeCount: 1,
+                    getRangeAt: () =>
+                        ({
+                            toString: () => 'DOM test 2',
+                            cloneRange: () => ({}),
+                        }) as any,
+                } as unknown as Selection,
+                'blue'
+            );
 
-            await walkMode.createHighlight({
-                rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'DOM test 3',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection, 'green');
+            await walkMode.createHighlight(
+                {
+                    rangeCount: 1,
+                    getRangeAt: () =>
+                        ({
+                            toString: () => 'DOM test 3',
+                            cloneRange: () => ({}),
+                        }) as any,
+                } as unknown as Selection,
+                'green'
+            );
 
             // Verify DOM highlights exist
             expect((global.CSS.highlights as Map<string, any>).size).toBe(3);
@@ -302,11 +321,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should clean up individual highlights from DOM', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Individual cleanup',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Individual cleanup',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create highlight
             const id = await walkMode.createHighlight(mockSelection, 'yellow');
@@ -330,11 +350,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should handle concurrent highlight creation', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Concurrent test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Concurrent test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Create 20 highlights concurrently
             const promises = [];
@@ -346,7 +367,7 @@ describe('Walk Mode - Integration Tests', () => {
 
             // Verify all created
             expect(ids).toHaveLength(20);
-            ids.forEach(id => expect(id).toBeDefined());
+            ids.forEach((id) => expect(id).toBeDefined());
 
             // Verify repository called
             expect(mockRepository.add).toHaveBeenCalled();
@@ -355,11 +376,12 @@ describe('Walk Mode - Integration Tests', () => {
         it('should maintain consistency during concurrent operations', async () => {
             const mockSelection = {
                 rangeCount: 1,
-                getRangeAt: () => ({
-                    toString: () => 'Consistency test',
-                    cloneRange: () => ({}),
-                } as any),
-            } as Selection;
+                getRangeAt: () =>
+                    ({
+                        toString: () => 'Consistency test',
+                        cloneRange: () => ({}),
+                    }) as any,
+            } as unknown as Selection;
 
             // Mix concurrent creates and removes
             const createPromises = [];
@@ -370,7 +392,7 @@ describe('Walk Mode - Integration Tests', () => {
             const ids = await Promise.all(createPromises);
 
             // Remove half concurrently
-            const removePromises = ids.slice(0, 5).map(id => walkMode.removeHighlight(id));
+            const removePromises = ids.slice(0, 5).map((id) => walkMode.removeHighlight(id));
             await Promise.all(removePromises);
 
             // Verify state consistency
