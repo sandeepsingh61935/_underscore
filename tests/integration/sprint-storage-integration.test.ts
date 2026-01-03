@@ -20,7 +20,7 @@ import type { ILogger } from '@/shared/utils/logger';
 
 // Mock Highlight API (not available in Node.js test environment)
 class MockHighlight {
-  constructor(public range: Range) { }
+  constructor(public range: Range) {}
 }
 global.Highlight = MockHighlight as any;
 
