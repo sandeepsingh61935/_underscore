@@ -302,13 +302,9 @@ export function getVaultModeService(): VaultModeService {
         const storage = new IndexedDBStorage();
         const selectorEngine = new MultiSelectorEngine();
         const logger: ILogger = {
-            // eslint-disable-next-line no-console
             debug: (msg, ...args) => console.debug(msg, ...args),
-            // eslint-disable-next-line no-console
             info: (msg, ...args) => console.info(msg, ...args),
-            // eslint-disable-next-line no-console
             warn: (msg, ...args) => console.warn(msg, ...args),
-            // eslint-disable-next-line no-console
             error: (msg, ...args) => console.error(msg, ...args),
             setLevel: () => { },
             getLevel: () => 1,

@@ -28,6 +28,7 @@ export interface V2State {
  */
 interface V1State {
     defaultMode?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any; // May have extra fields
 }
 
@@ -65,6 +66,7 @@ export async function migrateV1ToV2(v1State: V1State | null | undefined): Promis
  * @param rawMode - Raw mode value from v1 state
  * @returns Validated ModeType or 'walk' as fallback
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateAndNormalizeMode(rawMode: any): ModeType {
     // Try to validate with Zod
     const validation = ModeTypeSchema.safeParse(rawMode);

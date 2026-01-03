@@ -87,7 +87,7 @@ export class MigrationEngine {
         state: any,
         fromVersion: number,
         toVersion: number
-    ): Promise<MigrationResult<any>> {
+    ): Promise<MigrationResult<any>> { // eslint-disable-line @typescript-eslint/no-explicit-any
         // No migration needed
         if (fromVersion === toVersion) {
             this.logger.debug('No migration needed', { version: fromVersion });
@@ -178,6 +178,7 @@ export class MigrationEngine {
      * @param state - State to inspect
      * @returns Detected version (1 if no version field)
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     detectVersion(state: any): number {
         if (!state || typeof state !== 'object') {
             return 1; // Assume v1 for invalid state

@@ -420,6 +420,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       // Persist cleanup event
       if (this.storage) {
         await this.storage.saveEvent({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           type: 'highlights.ttl_cleanup' as any,
           timestamp: now,
           eventId: crypto.randomUUID(),

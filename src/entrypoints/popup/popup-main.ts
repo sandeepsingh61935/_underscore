@@ -74,10 +74,8 @@ async function bootstrap(): Promise<void> {
             controller.cleanup();
         });
 
-        // eslint-disable-next-line no-console
         console.log('[Popup] Initialized successfully');
     } catch (error) {
-        // eslint-disable-next-line no-console
         console.error('[Popup] Bootstrap failed', error);
 
         // Show error in UI
