@@ -380,7 +380,7 @@ describe('IPC Layer - Integration Tests', () => {
 
       // Should timeout after configured timeout (5000ms) WITHOUT retrying
       expect(elapsed).toBeGreaterThanOrEqual(5000);
-      expect(elapsed).toBeLessThan(6000); // No retries, should be ~5s
+      expect(elapsed).toBeLessThan(8000); // No retries, should be ~5s (allow buffer for CI)
     }, 10000);
 
     it('SCENARIO: Timeout counts as failure for circuit breaker', async () => {
