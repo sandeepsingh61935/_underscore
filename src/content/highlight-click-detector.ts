@@ -129,10 +129,5 @@ export class HighlightClickDetector {
       }
     }
     return false;
-  } catch(error) {
-    this.logger.warn('Error finding highlight at point', error as Error);
-  }
 
-    return null;
   }
-}
