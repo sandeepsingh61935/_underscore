@@ -13,15 +13,15 @@ import { Container } from '@/shared/di/container';
 import { EventBus } from '@/shared/utils/event-bus'; // Use real EventBus (fast, logic-free)
 
 export interface MockContainerContext {
-    container: Container;
-    mocks: {
-        logger: MockLogger;
-        repository: MockRepository;
-        storage: MockStorage;
-        messaging: MockMessaging;
-        modeManager: MockModeManager;
-        eventBus: EventBus;
-    };
+  container: Container;
+  mocks: {
+    logger: MockLogger;
+    repository: MockRepository;
+    storage: MockStorage;
+    messaging: MockMessaging;
+    modeManager: MockModeManager;
+    eventBus: EventBus;
+  };
 }
 
 /**
@@ -29,33 +29,33 @@ export interface MockContainerContext {
  * useful for unit testing components that depend on DI
  */
 export function createMockContainer(): MockContainerContext {
-    const container = new Container();
+  const container = new Container();
 
-    // Create mocks
-    const logger = new MockLogger();
-    const repository = new MockRepository();
-    const storage = new MockStorage();
-    const messaging = new MockMessaging();
-    const modeManager = new MockModeManager();
-    const eventBus = new EventBus();
+  // Create mocks
+  const logger = new MockLogger();
+  const repository = new MockRepository();
+  const storage = new MockStorage();
+  const messaging = new MockMessaging();
+  const modeManager = new MockModeManager();
+  const eventBus = new EventBus();
 
-    // Register mocks
-    container.registerInstance('logger', logger);
-    container.registerInstance('repository', repository);
-    container.registerInstance('storage', storage);
-    container.registerInstance('messaging', messaging);
-    container.registerInstance('modeManager', modeManager);
-    container.registerInstance('eventBus', eventBus);
+  // Register mocks
+  container.registerInstance('logger', logger);
+  container.registerInstance('repository', repository);
+  container.registerInstance('storage', storage);
+  container.registerInstance('messaging', messaging);
+  container.registerInstance('modeManager', modeManager);
+  container.registerInstance('eventBus', eventBus);
 
-    return {
-        container,
-        mocks: {
-            logger,
-            repository,
-            storage,
-            messaging,
-            modeManager,
-            eventBus,
-        },
-    };
+  return {
+    container,
+    mocks: {
+      logger,
+      repository,
+      storage,
+      messaging,
+      modeManager,
+      eventBus,
+    },
+  };
 }

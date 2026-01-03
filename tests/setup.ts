@@ -8,7 +8,6 @@ import 'fake-indexeddb/auto';
 
 // Augment global type for browser API
 declare global {
-
   var browser: {
     storage: {
       local: {
@@ -21,8 +20,20 @@ declare global {
     runtime: {
       sendMessage: (message: unknown) => Promise<unknown>;
       onMessage: {
-        addListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
-        removeListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
+        addListener: (
+          callback: (
+            message: unknown,
+            sender: unknown,
+            sendResponse: (response?: unknown) => void
+          ) => void
+        ) => void;
+        removeListener: (
+          callback: (
+            message: unknown,
+            sender: unknown,
+            sendResponse: (response?: unknown) => void
+          ) => void
+        ) => void;
       };
     };
     tabs: {

@@ -96,9 +96,7 @@ describe('Crypto Utils', () => {
       const encrypted = await encryptData(data, 'siteA.com');
 
       // Domain B cannot decrypt Domain A's data
-      await expect(
-        decryptData(encrypted, 'siteB.com')
-      ).rejects.toThrow(); // AES-GCM authentication fails
+      await expect(decryptData(encrypted, 'siteB.com')).rejects.toThrow(); // AES-GCM authentication fails
     });
 
     it('should isolate subdomains', async () => {
@@ -110,9 +108,7 @@ describe('Crypto Utils', () => {
       expect(enc1).not.toBe(enc2);
 
       // mail.google.com cannot decrypt docs.google.com data
-      await expect(
-        decryptData(enc1, 'docs.google.com')
-      ).rejects.toThrow();
+      await expect(decryptData(enc1, 'docs.google.com')).rejects.toThrow();
     });
   });
 
@@ -124,15 +120,11 @@ describe('Crypto Utils', () => {
       const tampered = encrypted.slice(0, -5) + 'AAAAA';
 
       // AES-GCM auth tag should detect tampering
-      await expect(
-        decryptData(tampered, 'example.com')
-      ).rejects.toThrow();
+      await expect(decryptData(tampered, 'example.com')).rejects.toThrow();
     });
 
     it('should reject invalid base64 ciphertext', async () => {
-      await expect(
-        decryptData('not-valid-base64!@#$%', 'example.com')
-      ).rejects.toThrow();
+      await expect(decryptData('not-valid-base64!@#$%', 'example.com')).rejects.toThrow();
     });
 
     it('should handle empty string encryption', async () => {

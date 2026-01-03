@@ -5,252 +5,287 @@ import { createMockHighlight, createMockHighlightRecord } from '../../helpers/mo
 import type { IndexedDBStorage } from '@/services/indexeddb-storage';
 import type { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import { VaultModeService } from '@/services/vault-mode-service';
-
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Comprehensive Unit Tests for VaultModeService
- * 
+ *
  * Tests the integration layer in isolation using mocked dependencies.
  * Verifies correct coordination between storage and selector engine.
  */
 describe('VaultModeService - Unit Tests', () => {
-    let service: VaultModeService;
-    let mockStorage: IndexedDBStorage;
-    let mockEngine: MultiSelectorEngine;
-    let mockLogger: Console;
+  let service: VaultModeService;
+  let mockStorage: IndexedDBStorage;
+  let mockEngine: MultiSelectorEngine;
+  let mockLogger: ILogger;
 
-    beforeEach(() => {
-        // Create mock dependencies
-        mockStorage = {
-            saveHighlight: vi.fn(),
-            saveEvent: vi.fn(),
-            getHighlightsByUrl: vi.fn(),
-            deleteHighlight: vi.fn(),
-            getUnsyncedEvents: vi.fn(),
-            getUnsyncedHighlights: vi.fn(),
-            markEventsSynced: vi.fn(),
-            markHighlightSynced: vi.fn(),
-            getStats: vi.fn(),
-            clearAll: vi.fn(),
-        } as any;
+  beforeEach(() => {
+    // Create mock dependencies
+    mockStorage = {
+      saveHighlight: vi.fn(),
+      saveEvent: vi.fn(),
+      getHighlightsByUrl: vi.fn(),
+      deleteHighlight: vi.fn(),
+      getUnsyncedEvents: vi.fn(),
+      getUnsyncedHighlights: vi.fn(),
+      markEventsSynced: vi.fn(),
+      markHighlightSynced: vi.fn(),
+      getStats: vi.fn(),
+      clearAll: vi.fn(),
+    } as any;
 
-        mockEngine = {
-            createSelectors: vi.fn(),
-            restore: vi.fn(),
-        } as any;
+    mockEngine = {
+      createSelectors: vi.fn(),
+      restore: vi.fn(),
+    } as any;
 
-        mockLogger = {
-            info: vi.fn(),
-            warn: vi.fn(),
-            error: vi.fn(),
-            log: vi.fn(),
-        } as any;
+    mockLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      setLevel: vi.fn(),
+      getLevel: vi.fn(),
+    } as unknown as ILogger;
 
-        service = new VaultModeService(mockStorage, mockEngine, mockLogger);
+    service = new VaultModeService(mockStorage, mockEngine, mockLogger);
+  });
+
+  describe('saveHighlight', () => {
+    it('should generate selectors and store highlight with metadata', async () => {
+      const highlight = createMockHighlight({ id: 'test-1', text: 'Test highlight' });
+
+      const range = document.createRange();
+      const mockSelectors = {
+        xpath: {
+          xpath: '/html/body/p[1]',
+          startOffset: 0,
+          endOffset: 10,
+          text: 'Test highlight',
+          textBefore: '',
+          textAfter: '',
+        },
+        position: {
+          startOffset: 0,
+          endOffset: 10,
+          text: 'Test highlight',
+          textBefore: '',
+          textAfter: '',
+        },
+        fuzzy: { text: 'Test highlight', textBefore: '', textAfter: '', threshold: 0.8 },
+        contentHash: 'abc123',
+        createdAt: Date.now(),
+      };
+
+      vi.mocked(mockEngine.createSelectors).mockReturnValue(mockSelectors);
+
+      await service.saveHighlight(highlight, range, 'collection-1');
+
+      // Verify selectors were generated
+      expect(mockEngine.createSelectors).toHaveBeenCalledWith(range);
+
+      // Verify storage was called with metadata
+      expect(mockStorage.saveHighlight).toHaveBeenCalledWith(
+        highlight,
+        'collection-1',
+        expect.objectContaining({
+          selectors: mockSelectors,
+          url: expect.any(String),
+        })
+      );
+
+      // Verify event was created
+      expect(mockStorage.saveEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'highlight.created',
+          data: expect.objectContaining({
+            highlightId: 'test-1',
+          }),
+        })
+      );
+
+      // Verify logging
+      expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    describe('saveHighlight', () => {
-        it('should generate selectors and store highlight with metadata', async () => {
-            const highlight = createMockHighlight({ id: 'test-1', text: 'Test highlight' });
+    it('should handle errors and rethrow', async () => {
+      const highlight = createMockHighlight({ id: 'test-1', text: 'Test' });
 
-            const range = document.createRange();
-            const mockSelectors = {
-                xpath: { xpath: '/html/body/p[1]', startOffset: 0, endOffset: 10, text: 'Test highlight', textBefore: '', textAfter: '' },
-                position: { startOffset: 0, endOffset: 10, text: 'Test highlight', textBefore: '', textAfter: '' },
-                fuzzy: { text: 'Test highlight', textBefore: '', textAfter: '', threshold: 0.8 },
-                contentHash: 'abc123',
-                createdAt: Date.now(),
-            };
+      const range = document.createRange();
+      const error = new Error('Storage failed');
 
-            vi.mocked(mockEngine.createSelectors).mockReturnValue(mockSelectors);
+      vi.mocked(mockEngine.createSelectors).mockReturnValue({} as any);
+      vi.mocked(mockStorage.saveHighlight).mockRejectedValue(error);
 
-            await service.saveHighlight(highlight, range, 'collection-1');
+      await expect(service.saveHighlight(highlight, range)).rejects.toThrow(
+        'Storage failed'
+      );
 
-            // Verify selectors were generated
-            expect(mockEngine.createSelectors).toHaveBeenCalledWith(range);
+      expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
 
-            // Verify storage was called with metadata
-            expect(mockStorage.saveHighlight).toHaveBeenCalledWith(
-                highlight,
-                'collection-1',
-                expect.objectContaining({
-                    selectors: mockSelectors,
-                    url: expect.any(String),
-                })
-            );
+  describe('restoreHighlightsForUrl', () => {
+    it('should restore highlights using multi-selector engine', async () => {
+      const mockRecords = [createMockHighlightRecord('h1')];
+      const mockRange = document.createRange();
 
-            // Verify event was created
-            expect(mockStorage.saveEvent).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'highlight.created',
-                    data: expect.objectContaining({
-                        highlightId: 'test-1',
-                    }),
-                })
-            );
+      vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
+      vi.mocked(mockEngine.restore).mockResolvedValue(mockRange);
 
-            // Verify logging
-            expect(mockLogger.info).toHaveBeenCalled();
-        });
+      const results = await service.restoreHighlightsForUrl();
 
-        it('should handle errors and rethrow', async () => {
-            const highlight = createMockHighlight({ id: 'test-1', text: 'Test' });
+      expect(results).toHaveLength(1);
+      expect(results[0]?.highlight.id).toBe('h1');
+      expect(results[0]?.range).toBe(mockRange);
+      expect(results[0]?.restoredUsing).toBeDefined();
 
-            const range = document.createRange();
-            const error = new Error('Storage failed');
-
-            vi.mocked(mockEngine.createSelectors).mockReturnValue({} as any);
-            vi.mocked(mockStorage.saveHighlight).mockRejectedValue(error);
-
-            await expect(service.saveHighlight(highlight, range)).rejects.toThrow('Storage failed');
-
-            expect(mockLogger.error).toHaveBeenCalled();
-        });
+      expect(mockStorage.getHighlightsByUrl).toHaveBeenCalled();
+      expect(mockEngine.restore).toHaveBeenCalled();
     });
 
-    describe('restoreHighlightsForUrl', () => {
-        it('should restore highlights using multi-selector engine', async () => {
-            const mockRecords = [createMockHighlightRecord('h1')];
-            const mockRange = document.createRange();
+    it('should handle highlights without selectors', async () => {
+      const mockRecords = [
+        {
+          id: 'h1',
+          url: 'https://example.com',
+          data: createMockHighlight({ id: 'h1' }),
+          collectionId: null,
+          tags: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          synced: false,
+          metadata: undefined, // No metadata
+        },
+      ];
 
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
-            vi.mocked(mockEngine.restore).mockResolvedValue(mockRange);
+      vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
 
-            const results = await service.restoreHighlightsForUrl();
+      const results = await service.restoreHighlightsForUrl();
 
-            expect(results).toHaveLength(1);
-            expect(results[0]?.highlight.id).toBe('h1');
-            expect(results[0]?.range).toBe(mockRange);
-            expect(results[0]?.restoredUsing).toBeDefined();
+      expect(results).toHaveLength(1);
+      expect(results[0]?.range).toBeNull();
+      expect(results[0]?.restoredUsing).toBe('failed');
 
-            expect(mockStorage.getHighlightsByUrl).toHaveBeenCalled();
-            expect(mockEngine.restore).toHaveBeenCalled();
-        });
-
-        it('should handle highlights without selectors', async () => {
-            const mockRecords = [{
-                id: 'h1',
-                url: 'https://example.com',
-                data: createMockHighlight({ id: 'h1' }),
-                collectionId: null,
-                tags: [],
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-                synced: false,
-                metadata: undefined, // No metadata
-            }];
-
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
-
-            const results = await service.restoreHighlightsForUrl();
-
-            expect(results).toHaveLength(1);
-            expect(results[0]?.range).toBeNull();
-            expect(results[0]?.restoredUsing).toBe('failed');
-
-            expect(mockLogger.warn).toHaveBeenCalled();
-        });
-
-        it('should continue on restoration failures', async () => {
-            const mockRecords = [createMockHighlightRecord('h1')];
-
-            vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
-            vi.mocked(mockEngine.restore).mockResolvedValue(null); // Restoration failed
-
-            const results = await service.restoreHighlightsForUrl();
-
-            expect(results).toHaveLength(1);
-            expect(results[0]?.range).toBeNull();
-            expect(results[0]?.restoredUsing).toBe('failed');
-        });
+      expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    describe('deleteHighlight', () => {
-        it('should delete highlight and create event', async () => {
-            await service.deleteHighlight('test-123');
+    it('should continue on restoration failures', async () => {
+      const mockRecords = [createMockHighlightRecord('h1')];
 
-            expect(mockStorage.deleteHighlight).toHaveBeenCalledWith('test-123');
-            expect(mockStorage.saveEvent).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'highlight.removed',
-                    data: { highlightId: 'test-123' },
-                })
-            );
-            expect(mockLogger.info).toHaveBeenCalled();
-        });
+      vi.mocked(mockStorage.getHighlightsByUrl).mockResolvedValue(mockRecords as any);
+      vi.mocked(mockEngine.restore).mockResolvedValue(null); // Restoration failed
 
-        it('should handle delete errors', async () => {
-            const error = new Error('Delete failed');
-            vi.mocked(mockStorage.deleteHighlight).mockRejectedValue(error);
+      const results = await service.restoreHighlightsForUrl();
 
-            await expect(service.deleteHighlight('test-123')).rejects.toThrow('Delete failed');
-            expect(mockLogger.error).toHaveBeenCalled();
-        });
+      expect(results).toHaveLength(1);
+      expect(results[0]?.range).toBeNull();
+      expect(results[0]?.restoredUsing).toBe('failed');
+    });
+  });
+
+  describe('deleteHighlight', () => {
+    it('should delete highlight and create event', async () => {
+      await service.deleteHighlight('test-123');
+
+      expect(mockStorage.deleteHighlight).toHaveBeenCalledWith('test-123');
+      expect(mockStorage.saveEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'highlight.removed',
+          data: { highlightId: 'test-123' },
+        })
+      );
+      expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    describe('syncToServer', () => {
-        it('should sync unsynced data and mark as synced', async () => {
-            const mockEvents = [
-                { eventId: 'e1', type: 'highlight.created' as const, timestamp: Date.now(), data: {}, synced: false },
-                { eventId: 'e2', type: 'highlight.removed' as const, timestamp: Date.now(), data: {}, synced: false },
-            ];
+    it('should handle delete errors', async () => {
+      const error = new Error('Delete failed');
+      vi.mocked(mockStorage.deleteHighlight).mockRejectedValue(error);
 
-            const mockHighlights = [{
-                id: 'h1',
-                url: 'https://example.com',
-                data: createMockHighlight({ id: 'h1' }),
-                collectionId: null,
-                tags: [],
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-                synced: false,
-            }];
+      await expect(service.deleteHighlight('test-123')).rejects.toThrow('Delete failed');
+      expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
 
-            vi.mocked(mockStorage.getUnsyncedEvents).mockResolvedValue(mockEvents);
-            vi.mocked(mockStorage.getUnsyncedHighlights).mockResolvedValue(mockHighlights as any);
+  describe('syncToServer', () => {
+    it('should sync unsynced data and mark as synced', async () => {
+      const mockEvents = [
+        {
+          eventId: 'e1',
+          type: 'highlight.created' as const,
+          timestamp: Date.now(),
+          data: {},
+          synced: false,
+        },
+        {
+          eventId: 'e2',
+          type: 'highlight.removed' as const,
+          timestamp: Date.now(),
+          data: {},
+          synced: false,
+        },
+      ];
 
-            const syncedIds = await service.syncToServer();
+      const mockHighlights = [
+        {
+          id: 'h1',
+          url: 'https://example.com',
+          data: createMockHighlight({ id: 'h1' }),
+          collectionId: null,
+          tags: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          synced: false,
+        },
+      ];
 
-            expect(syncedIds).toEqual(['e1', 'e2']);
-            expect(mockStorage.markEventsSynced).toHaveBeenCalledWith(['e1', 'e2']);
-            expect(mockStorage.markHighlightSynced).toHaveBeenCalledWith('h1');
-            expect(mockLogger.info).toHaveBeenCalledTimes(2); // Start and complete
-        });
+      vi.mocked(mockStorage.getUnsyncedEvents).mockResolvedValue(mockEvents);
+      vi.mocked(mockStorage.getUnsyncedHighlights).mockResolvedValue(
+        mockHighlights as any
+      );
 
-        it('should handle sync errors', async () => {
-            const error = new Error('Sync failed');
-            vi.mocked(mockStorage.getUnsyncedEvents).mockRejectedValue(error);
+      const syncedIds = await service.syncToServer();
 
-            await expect(service.syncToServer()).rejects.toThrow('Sync failed');
-            expect(mockLogger.error).toHaveBeenCalled();
-        });
+      expect(syncedIds).toEqual(['e1', 'e2']);
+      expect(mockStorage.markEventsSynced).toHaveBeenCalledWith(['e1', 'e2']);
+      expect(mockStorage.markHighlightSynced).toHaveBeenCalledWith('h1');
+      expect(mockLogger.info).toHaveBeenCalledTimes(2); // Start and complete
     });
 
-    describe('getStats', () => {
-        it('should return storage statistics', async () => {
-            const mockStats = {
-                highlightCount: 10,
-                eventCount: 20,
-                collectionCount: 2,
-                tagCount: 5,
-                unsyncedCount: 3,
-            };
+    it('should handle sync errors', async () => {
+      const error = new Error('Sync failed');
+      vi.mocked(mockStorage.getUnsyncedEvents).mockRejectedValue(error);
 
-            vi.mocked(mockStorage.getStats).mockResolvedValue(mockStats);
-
-            const stats = await service.getStats();
-
-            expect(stats).toEqual(mockStats);
-            expect(mockStorage.getStats).toHaveBeenCalled();
-        });
+      await expect(service.syncToServer()).rejects.toThrow('Sync failed');
+      expect(mockLogger.error).toHaveBeenCalled();
     });
+  });
 
-    describe('clearAll', () => {
-        it('should clear all data', async () => {
-            await service.clearAll();
+  describe('getStats', () => {
+    it('should return storage statistics', async () => {
+      const mockStats = {
+        highlightCount: 10,
+        eventCount: 20,
+        collectionCount: 2,
+        tagCount: 5,
+        unsyncedCount: 3,
+      };
 
-            expect(mockStorage.clearAll).toHaveBeenCalled();
-            expect(mockLogger.info).toHaveBeenCalled();
-        });
+      vi.mocked(mockStorage.getStats).mockResolvedValue(mockStats);
+
+      const stats = await service.getStats();
+
+      expect(stats).toEqual(mockStats);
+      expect(mockStorage.getStats).toHaveBeenCalled();
     });
+  });
+
+  describe('clearAll', () => {
+    it('should clear all data', async () => {
+      await service.clearAll();
+
+      expect(mockStorage.clearAll).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalled();
+    });
+  });
 });
