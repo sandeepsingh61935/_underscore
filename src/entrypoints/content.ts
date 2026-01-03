@@ -492,18 +492,11 @@ export default defineContentScript({
                 await modeStateManager.setMode(newMode);
                 logger.info('[IPC] Mode state updated successfully');
 
-                // 2. Send IMMEDIATE response to unblock popup UI
-                logger.info('[IPC] Sending success response (popup unblocked)');
-                sendResponse({
-                  success: true,
-                  data: { mode: newMode },
-                });
-
-                // 3. Run restoration/clearing in BACKGROUND (non-blocking for IPC)
-                // This prevents the 5-second timeout from triggering
-                logger.info('[IPC] Starting background highlight processing');
+                // 2. Run restoration/clearing SYNCHRONOUSLY (before responding)
+                // This ensures popup receives correct count in response
+                logger.info('[IPC] Starting highlight processing for mode switch');
                 if (newMode === 'sprint') {
-                  logger.info('[IPC-Background] Restoring highlights for Sprint Mode...');
+                  logger.info('[IPC] Restoring highlights for Sprint Mode...');
                   await restoreHighlights({
                     storage,
                     renderer,
@@ -512,17 +505,56 @@ export default defineContentScript({
                     modeManager,
                     commandFactory,
                   });
-                  logger.info('[IPC-Background] Restoration complete');
+                  logger.info('[IPC] Restoration complete');
                 } else {
-                  logger.info('[IPC-Background] Clearing highlights for Walk Mode...');
+                  logger.info('[IPC] Clearing highlights for Walk Mode...');
                   await modeManager.getCurrentMode().clearAll();
-                  logger.info('[IPC-Background] Clearing complete');
+                  logger.info('[IPC] Clearing complete');
                 }
+
+                // 3. Get final count after restoration/clearing
+                const finalCount = repositoryFacade.count();
+                logger.info('[IPC] Final count after mode switch', { count: finalCount });
+
+                // 4. Send response with final state (mode + count)
+                logger.info('[IPC] Sending success response with count');
+                sendResponse({
+                  success: true,
+                  data: {
+                    mode: newMode,
+                    count: finalCount, // Include count in response
+                  },
+                });
+
+                // 5. Broadcast count for other listeners
+                broadcastCount();
               } catch (error) {
                 logger.error('[IPC] SET_MODE failed', error as Error);
                 sendResponse({
                   success: false,
                   error: (error as Error).message || 'Unknown error during mode switch',
+                });
+              }
+            })();
+
+            return true; // Keep channel open for async response
+          } else if (msg && msg.type === 'CLEAR_ALL_HIGHLIGHTS') {
+            logger.info('[IPC] Handling CLEAR_ALL_HIGHLIGHTS');
+
+            (async () => {
+              try {
+                await modeManager.getCurrentMode().clearAll();
+                broadcastCount();
+
+                sendResponse({
+                  success: true,
+                  data: { cleared: true },
+                });
+              } catch (error) {
+                logger.error('[IPC] CLEAR_ALL_HIGHLIGHTS failed', error as Error);
+                sendResponse({
+                  success: false,
+                  error: (error as Error).message,
                 });
               }
             })();
@@ -641,8 +673,8 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
         if (highlightManager) {
           // [OK] CRITICAL FIX: Use mode's unified creation path!
           // This ensures the highlight is registered in mode's internal maps
-          const { generateContentHash } = await import('@/shared/utils/content-hash');
-          const contentHash = await generateContentHash(highlightData.text);
+          // PERFORMANCE: Use stored contentHash instead of regenerating it
+          const contentHash = highlightData.contentHash || highlightData.id;
 
           await modeManager.createFromData({
             id: highlightData.id,
