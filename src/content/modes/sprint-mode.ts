@@ -369,12 +369,11 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Sprint Mode: Persists removal event
    */
   override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
-    this.logger.debug('Sprint Mode: Removing highlight and persisting removal event');
+    this.logger.debug('Sprint Mode: Persisting removal event');
 
-    // CRITICAL FIX: Actually remove the highlight!
-    await this.removeHighlight(event.highlightId);
-
-    // Also persist the removal event for event sourcing
+    // Persist the removal event for event sourcing
+    // NOTE: Do NOT call this.removeHighlight() here - it would cause infinite recursion
+    // The actual removal is already handled by the event emitter
     if (this.storage) {
       await this.storage.saveEvent({
         type: 'highlight.removed',
@@ -451,9 +450,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     return {
       showDeleteIcon: true,
       requireConfirmation: true, // Persistent, ask before deleting
-      confirmationMessage: 'Delete this highlight? (Undo available with Ctrl+Z)',
+      confirmationMessage: 'Delete this highlight?',
       allowUndo: true,
-      iconType: 'trash',
+      iconType: 'remove', // Cross icon for consistency across modes
     };
   }
 }

@@ -25,7 +25,7 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
     if (typeof global.Highlight === 'undefined') {
       // @ts-ignore
       global.Highlight = class Highlight {
-        constructor(..._ranges: Range[]) {}
+        constructor(..._ranges: Range[]) { }
       };
     }
 
@@ -244,8 +244,67 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
       expect(config.showDeleteIcon).toBe(true);
       expect(config.requireConfirmation).toBe(true); // Persistent mode
       expect(config.allowUndo).toBe(true);
-      expect(config.iconType).toBe('trash');
+      expect(config.iconType).toBe('remove'); // Fixed: Issue #4 - Cross icon for consistency
       expect(config.confirmationMessage).toContain('Undo available');
+    });
+  });
+
+  // Regression Tests for Bug Fixes
+  describe('Regression Tests - Bug Fixes', () => {
+    it('[Issue #1] should not cause infinite recursion in onHighlightRemoved', async () => {
+      // Arrange
+      const selection = createMockSelection('Test highlight');
+      const id = await sprintMode.createHighlight(selection, 'yellow');
+
+      // Create a spy to track removeHighlight calls
+      const removeHighlightSpy = vi.spyOn(sprintMode, 'removeHighlight');
+      vi.clearAllMocks();
+
+      const event = {
+        type: 'highlight:removed' as const,
+        highlightId: id,
+        timestamp: new Date(),
+      };
+
+      // Act - Call onHighlightRemoved directly
+      await sprintMode.onHighlightRemoved(event);
+
+      // Assert - onHighlightRemoved should NOT call removeHighlight
+      // This prevents infinite recursion: event → onHighlightRemoved → removeHighlight → event → ...
+      expect(removeHighlightSpy).not.toHaveBeenCalled();
+
+      // Should only persist the event
+      expect(mockStorage.saveEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'highlight.removed',
+          highlightId: id,
+        })
+      );
+    });
+
+    it('[Issue #1] should handle deletion of last highlight without stack overflow', async () => {
+      // Arrange - Create multiple highlights and delete all but one
+      const ids = [];
+      for (let i = 0; i < 5; i++) {
+        const id = await sprintMode.createHighlight(
+          createMockSelection(`Highlight ${i}`),
+          'yellow'
+        );
+        ids.push(id);
+      }
+
+      // Delete all but last
+      for (let i = 0; i < 4; i++) {
+        await sprintMode.removeHighlight(ids[i]!);
+      }
+
+      expect(sprintMode.getAllHighlights().length).toBe(1);
+
+      // Act - Delete the last highlight (this used to cause stack overflow)
+      await expect(sprintMode.removeHighlight(ids[4]!)).resolves.not.toThrow();
+
+      // Assert
+      expect(sprintMode.getAllHighlights().length).toBe(0);
     });
   });
 
