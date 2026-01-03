@@ -151,8 +151,7 @@ export abstract class BaseHighlightMode {
       showDeleteIcon: true,
       requireConfirmation: false,
       allowUndo: true,
-      iconType: 'trash'
+      iconType: 'trash',
     };
   }
 }
-
