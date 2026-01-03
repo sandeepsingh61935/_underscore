@@ -33,6 +33,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
             },
             runtime: {
                 id: 'test-extension-id',
+                sendMessage: vi.fn().mockResolvedValue(undefined),
             },
         } as any;
 

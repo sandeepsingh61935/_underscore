@@ -38,7 +38,13 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
-        global.chrome = { storage: mockChromeStorage, runtime: { id: 'test-ext-id' } } as any;
+        global.chrome = {
+            storage: mockChromeStorage,
+            runtime: {
+                id: 'test-ext-id',
+                sendMessage: vi.fn().mockResolvedValue(undefined),
+            }
+        } as any;
         storageBackingStore = {}; // Reset storage
 
         // Reset default mock implementations (in case tests overrode them)
@@ -132,7 +138,7 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     it('Scenario 3: Migration on Reload (V1 -> V2)', async () => {
         // 1. Seed V1 State
         storageBackingStore = {
-            'mode': 'sprint', // V1 key
+            'defaultMode': 'sprint', // V1 key
             // No metadata
         };
 
@@ -148,8 +154,8 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
 
         // 4. Cleanup check
         // We purposefully DO NOT delete legacy data for safety/backup reasons
-        // expect(storageBackingStore['mode']).toBeUndefined(); 
-        expect(storageBackingStore['mode']).toBe('sprint'); // Legacy data remains
+        // expect(storageBackingStore['defaultMode']).toBeUndefined(); 
+        expect(storageBackingStore['defaultMode']).toBe('sprint'); // Legacy data remains
     });
 
     it('Scenario 4: Error Recovery - Storage Failure', async () => {
@@ -198,7 +204,7 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     it('Scenario 6: Large Data Migration (Edge Case)', async () => {
         // 1. Seed V1 State with large payload
         storageBackingStore = {
-            'mode': 'vault',
+            'defaultMode': 'vault',
             // Add junk data to simulate large store
             'junk_1': 'x'.repeat(5000),
             'junk_2': 'y'.repeat(5000),

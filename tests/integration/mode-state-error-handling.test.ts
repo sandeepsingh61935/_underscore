@@ -11,7 +11,10 @@ const mockChromeStorage = {
         set: vi.fn(),
     },
 };
-global.chrome = { storage: mockChromeStorage } as any;
+global.chrome = {
+    storage: mockChromeStorage,
+    runtime: { sendMessage: vi.fn().mockResolvedValue(undefined) }
+} as any;
 
 const mockLogger = {
     info: vi.fn(),

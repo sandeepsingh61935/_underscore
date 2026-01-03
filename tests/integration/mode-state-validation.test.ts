@@ -1,15 +1,15 @@
 /**
- * @file mode-state-validation.test.ts
- * @description Integration tests for ModeStateManager validation flow
- * 
- * Tests the full validation cycle:
- * setMode -> validate -> persist -> load -> validate -> apply
- * 
- * Follows testing-strategy-v2 Principle #6: Real, tricky test cases.
- * - Uses real chrome.storage mock (behavioral)
- * - Simulates manual corruption of storage
- * - Verifies consistency across restarts
- */
+* @file mode-state-validation.test.ts
+* @description Integration tests for ModeStateManager validation flow
+* 
+* Tests the full validation cycle:
+* setMode -> validate -> persist -> load -> validate -> apply
+* 
+* Follows testing-strategy-v2 Principle #6: Real, tricky test cases.
+* - Uses real chrome.storage mock (behavioral)
+* - Simulates manual corruption of storage
+* - Verifies consistency across restarts
+*/
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ModeStateManager } from '@/content/modes/mode-state-manager';
@@ -43,7 +43,7 @@ const mockChromeStorage = {
 global.chrome = {
     storage: mockChromeStorage,
     runtime: {
-        sendMessage: vi.fn(),
+        sendMessage: vi.fn().mockResolvedValue(undefined),
     },
 } as any;
 
