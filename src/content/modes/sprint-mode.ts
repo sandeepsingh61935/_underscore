@@ -19,7 +19,7 @@
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
-import type { HighlightData } from './highlight-mode.interface';
+import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
@@ -160,8 +160,9 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
     // 2. Add to repository (persistence)
     // CRITICAL: Add to repository cache and storage
+    // CRITICAL: Add to repository cache and storage
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(data as any);
+    await this.repository.add({ ...data, version: 2 } as any);
 
     this.logger.info('Added to repository', { id });
 
@@ -202,7 +203,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     // CRITICAL FIX: Populate repository cache during restore
     // This ensures hover detector can find highlights after page reload
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(data as any);
+    await this.repository.add({ ...data, version: 2 } as any);
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
@@ -351,8 +352,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       ...event.highlight,
       type: event.highlight.type || 'underscore',
       createdAt: event.highlight.createdAt || new Date(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
 
     if (this.storage) {
       await this.storage.saveEvent({
@@ -420,11 +420,12 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
       // Persist cleanup event
       if (this.storage) {
         await this.storage.saveEvent({
-          type: 'highlights.ttl_cleanup',
+          type: 'highlights.ttl_cleanup' as any,
           timestamp: now,
           eventId: crypto.randomUUID(),
           count: expiredIds.length,
           ids: expiredIds,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any); // Custom event type for TTL cleanup
       }
     }
@@ -444,7 +445,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Deletion Configuration  
    * Sprint Mode: Requires confirmation (persistent highlights)
    */
-  override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+  override getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
       requireConfirmation: true,  // Persistent, ask before deleting
