@@ -2,8 +2,8 @@
 
 **Status**: ✅ COMPLETE  
 **Duration**: Week 2  
-**Total Tests**: 45/57 passing (79%)  
-**Commits**: 12 (following granular git policy)
+**Total Tests**: 66/66 passing (100%)  
+**Commits**: 14 (following granular git policy)
 
 ---
 
@@ -195,7 +195,7 @@ const updatedState = await replayer.replayFrom(existingState, newEvents);
 
 ## Test Summary
 
-### Integration Tests (25)
+### Integration Tests (41)
 **EventStore** - [event-store.integration.test.ts](file:///home/sandy/projects/_underscore/tests/integration/events/event-store.integration.test.ts)
 - ✅ Basic operations (5)
 - ✅ Filtering (4)
@@ -203,7 +203,18 @@ const updatedState = await replayer.replayFrom(existingState, newEvents);
 - ✅ Checksum validation (3)
 - ✅ Edge cases & performance (9)
 
-### Unit Tests (20)
+**EventReplayer** - [event-replayer.integration.test.ts](file:///home/sandy/projects/_underscore/tests/integration/events/event-replayer.integration.test.ts)
+- ✅ Basic replay (4)
+- ✅ Complex sequences (4)
+- ✅ Incremental replay (3)
+- ✅ Edge cases (2)
+
+**End-to-End** - [events-integration.test.ts](file:///home/sandy/projects/_underscore/tests/integration/events/events-integration.test.ts)
+- ✅ Full event flow (1)
+- ✅ Sanitization integration (1)
+- ✅ DI container resolution (1)
+
+### Unit Tests (25)
 **EventPublisher** - [event-publisher.test.ts](file:///home/sandy/projects/_underscore/tests/unit/background/events/event-publisher.test.ts)
 - ✅ Basic functionality (4)
 - ✅ Multiple subscribers (3)
@@ -215,7 +226,12 @@ const updatedState = await replayer.replayFrom(existingState, newEvents);
 - ✅ Safe content preservation (2)
 - ✅ Edge cases (1)
 
-**Total**: 45/57 tests passing (79%)
+**EventValidator** - [event-validator.test.ts](file:///home/sandy/projects/_underscore/tests/unit/background/events/event-validator.test.ts)
+- ✅ Valid events (1)
+- ✅ Invalid structure (2)
+- ✅ Invalid payload (2)
+
+**Total**: 66/66 tests passing (100%)
 
 ---
 
