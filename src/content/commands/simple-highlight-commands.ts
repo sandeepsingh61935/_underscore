@@ -18,25 +18,25 @@ import type { ILogger } from '@/shared/utils/logger';
  */
 /**
  * Create highlight command
- * 
+ *
  * **Responsibility**: Manage undo/redo state for highlight creation
- * 
+ *
  * **Design Pattern**: Command Pattern with Dependency Inversion Principle
  * - Depends on IModeManager interface (not concrete classes)
  * - Delegates ALL persistence to modes (Single Responsibility)
  * - Stores minimal state for undo/redo operations
- * 
+ *
  * @remarks
  * Commands do NOT:
  * - Access repository directly (violates SRP)
  * - Save events to storage (mode handles this)
  * - Emit events (mode handles this)
- * 
+ *
  * Commands ONLY:
  * - Store state for undo/redo
  * - Delegate operations to IModeManager
  * - Log operations for debugging
- * 
+ *
  * @see Phase 1.1.2: Refactor CreateHighlightCommand
  * @see IModeManager interface for delegation contract
  */
@@ -64,7 +64,7 @@ export class CreateHighlightCommand implements Command {
 
   /**
    * Execute command: Create highlight via mode manager
-   * 
+   *
    * On first execution: Creates new highlight
    * On redo: Recreates highlight from stored range
    */
@@ -79,7 +79,7 @@ export class CreateHighlightCommand implements Command {
 
         this.logger.debug('Highlight created via mode', {
           id: this.createdHighlightId,
-          colorRole: this.colorRole
+          colorRole: this.colorRole,
         });
       } else {
         // Redo - recreate from serialized range
@@ -90,7 +90,9 @@ export class CreateHighlightCommand implements Command {
 
         const range = deserializeRange(this.serializedRange);
         if (!range) {
-          this.logger.warn('Cannot redo: Range deserialization failed (content may have changed)');
+          this.logger.warn(
+            'Cannot redo: Range deserialization failed (content may have changed)'
+          );
           return;
         }
 
@@ -115,13 +117,13 @@ export class CreateHighlightCommand implements Command {
         });
 
         this.logger.debug('Highlight recreated (redo)', {
-          id: this.createdHighlightId
+          id: this.createdHighlightId,
         });
       }
     } catch (error) {
       this.logger.error('Command execute failed', error as Error, {
         highlightId: this.createdHighlightId,
-        colorRole: this.colorRole
+        colorRole: this.colorRole,
       });
       throw error;
     }
@@ -141,11 +143,11 @@ export class CreateHighlightCommand implements Command {
       await this.modeManager.removeHighlight(this.createdHighlightId);
 
       this.logger.debug('Highlight removed (undo)', {
-        id: this.createdHighlightId
+        id: this.createdHighlightId,
       });
     } catch (error) {
       this.logger.error('Command undo failed', error as Error, {
-        highlightId: this.createdHighlightId
+        highlightId: this.createdHighlightId,
       });
       throw error;
     }
@@ -154,18 +156,18 @@ export class CreateHighlightCommand implements Command {
 
 /**
  * Remove highlight command
- * 
+ *
  * **Responsibility**: Manage undo/redo state for highlight removal
- * 
+ *
  * **Design Pattern**: Command Pattern with Dependency Inversion Principle
  * - Depends on IModeManager interface
  * - Delegates ALL removal/restoration to modes
  * - Stores minimal snapshot for undo
- * 
+ *
  * @remarks
  * Commands do NOT access repository or storage directly.
  * All persistence is delegated to modes via IModeManager.
- * 
+ *
  * @see Phase 1.1.3: Refactor RemoveHighlightCommand
  */
 export class RemoveHighlightCommand implements Command {
@@ -180,7 +182,7 @@ export class RemoveHighlightCommand implements Command {
     private readonly highlightId: string,
     private readonly modeManager: IModeManager,
     private readonly logger: ILogger
-  ) { }
+  ) {}
 
   /**
    * Execute: Remove highlight via mode manager
@@ -194,7 +196,7 @@ export class RemoveHighlightCommand implements Command {
 
         if (!data) {
           this.logger.warn('Cannot remove: Highlight not found', {
-            id: this.highlightId
+            id: this.highlightId,
           });
           return;
         }
@@ -207,10 +209,9 @@ export class RemoveHighlightCommand implements Command {
       await this.modeManager.removeHighlight(this.highlightId);
 
       this.logger.debug('Highlight removed', { id: this.highlightId });
-
     } catch (error) {
       this.logger.error('Remove command failed', error as Error, {
-        id: this.highlightId
+        id: this.highlightId,
       });
       throw error;
     }
@@ -231,12 +232,11 @@ export class RemoveHighlightCommand implements Command {
       await mode.createFromData(this.highlightSnapshot);
 
       this.logger.debug('Highlight restored (undo)', {
-        id: this.highlightId
+        id: this.highlightId,
       });
-
     } catch (error) {
       this.logger.error('Undo remove failed', error as Error, {
-        id: this.highlightId
+        id: this.highlightId,
       });
       throw error;
     }

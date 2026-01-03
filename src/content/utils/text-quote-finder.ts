@@ -67,7 +67,7 @@ export class TextQuoteFinder {
     let node: Text | null;
     while ((node = walker.nextNode() as Text)) {
       textNodes.push(node);
-      fullText += (node.textContent || '');
+      fullText += node.textContent || '';
     }
 
     if (!fullText) return [];
@@ -101,7 +101,10 @@ export class TextQuoteFinder {
   /**
    * Map global text index to specific Text node and offset
    */
-  private mapTextIndexToNode(nodes: Text[], targetIndex: number): { node: Text; offset: number } | null {
+  private mapTextIndexToNode(
+    nodes: Text[],
+    targetIndex: number
+  ): { node: Text; offset: number } | null {
     let currentIndex = 0;
 
     for (const node of nodes) {

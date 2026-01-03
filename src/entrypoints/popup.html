@@ -1,66 +1,64 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>_underscore</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>_underscore</title>
+    <link rel="stylesheet" href="../popup/popup.css" />
+  </head>
 
-  <link rel="stylesheet" href="../popup/popup.css">
-</head>
+  <body>
+    <div id="app">
+      <!-- Loading State -->
+      <div id="loading-state" class="state">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
 
-<body>
-  <div id="app">
-    <!-- Loading State -->
-    <div id="loading-state" class="state">
-      <div class="spinner"></div>
-      <p>Loading...</p>
+      <!-- Error State -->
+      <div id="error-state" class="state hidden"></div>
+
+      <!-- Main UI -->
+      <div id="main-ui" class="state hidden">
+        <header>
+          <h1>⚡ _underscore</h1>
+
+          <select id="mode-selector" aria-label="Select mode">
+            <option value="walk">🚶 Walk</option>
+            <option value="sprint">🏃 Sprint</option>
+            <option value="vault">🔒 Vault</option>
+          </select>
+        </header>
+
+        <main>
+          <section class="stats-card">
+            <span class="stat-value" id="highlight-count">0</span>
+            <span class="stat-label">Highlights</span>
+          </section>
+
+          <section class="quick-actions">
+            <button id="clear-all" class="md-filled-button">Clear All</button>
+          </section>
+
+          <section class="info">
+            <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
+            <ul>
+              <li>Double-tap to highlight</li>
+              <li>Ctrl+U to highlight selection</li>
+              <li>Click to remove</li>
+              <li>Ctrl+Shift+U to clear all</li>
+            </ul>
+          </section>
+        </main>
+
+        <footer>
+          <span>v0.2.0 • Phase 4</span>
+        </footer>
+      </div>
     </div>
 
-    <!-- Error State -->
-    <div id="error-state" class="state hidden"></div>
-
-    <!-- Main UI -->
-    <div id="main-ui" class="state hidden">
-      <header>
-        <h1>⚡ _underscore</h1>
-
-        <select id="mode-selector" aria-label="Select mode">
-          <option value="walk">🚶 Walk</option>
-          <option value="sprint">🏃 Sprint</option>
-          <option value="vault">🔒 Vault</option>
-        </select>
-      </header>
-
-      <main>
-        <section class="stats-card">
-          <span class="stat-value" id="highlight-count">0</span>
-          <span class="stat-label">Highlights</span>
-        </section>
-
-        <section class="quick-actions">
-          <button id="clear-all" class="md-filled-button">Clear All</button>
-        </section>
-
-        <section class="info">
-          <p><strong>Sprint Mode</strong>: Ephemeral highlighting</p>
-          <ul>
-            <li>Double-tap to highlight</li>
-            <li>Ctrl+U to highlight selection</li>
-            <li>Click to remove</li>
-            <li>Ctrl+Shift+U to clear all</li>
-          </ul>
-        </section>
-      </main>
-
-      <footer>
-        <span>v0.2.0 • Phase 4</span>
-      </footer>
-    </div>
-  </div>
-
-  <!-- TypeScript Controller (no inline scripts!) -->
-  <script type="module" src="../popup/main.ts"></script>
-</body>
-
+    <!-- TypeScript Controller (no inline scripts!) -->
+    <script type="module" src="../popup/main.ts"></script>
+  </body>
 </html>

@@ -101,7 +101,9 @@ export default defineContentScript({
       const { ModeStateManager } = await import('@/content/modes/mode-state-manager');
       const modeStateManager = new ModeStateManager(modeManager, logger);
 
-      console.error('[MODE-STATE] Initializing state manager at ' + new Date().toISOString());
+      console.error(
+        '[MODE-STATE] Initializing state manager at ' + new Date().toISOString()
+      );
       await modeStateManager.init(); // Loads user preference
       console.error('[MODE-STATE] Initialized with mode: ' + modeStateManager.getMode());
 
@@ -128,14 +130,14 @@ export default defineContentScript({
       const renderer = new HighlightRenderer(eventBus);
       const detector = new SelectionDetector(eventBus);
 
-
       // Initialize click detector for double-click deletion
       const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
       clickDetector.init();
 
       // Initialize delete icon overlay system (Phase 4.3)
       const { DeleteIconOverlay } = await import('@/content/ui/delete-icon-overlay');
-      const { HighlightHoverDetector } = await import('@/content/ui/highlight-hover-detector');
+      const { HighlightHoverDetector } =
+        await import('@/content/ui/highlight-hover-detector');
 
       const deleteIconOverlay = new DeleteIconOverlay(
         modeManager,
@@ -155,9 +157,12 @@ export default defineContentScript({
       logger.info('[DELETE-ICON] Hover detector initialized');
 
       // Wire hover events to icon overlay
-      eventBus.on('highlight:hover:start', (event: { highlightId: string; boundingRect: DOMRect }) => {
-        deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
-      });
+      eventBus.on(
+        'highlight:hover:start',
+        (event: { highlightId: string; boundingRect: DOMRect }) => {
+          deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
+        }
+      );
 
       eventBus.on('highlight:hover:end', (event: { highlightId: string }) => {
         deleteIconOverlay.hideIcon(event.highlightId);
@@ -202,7 +207,9 @@ export default defineContentScript({
           commandFactory,
         });
       } else {
-        logger.info(`${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`);
+        logger.info(
+          `${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`
+        );
       }
 
       // ===== Orchestrate: Listen to selection events =====
@@ -332,9 +339,7 @@ export default defineContentScript({
         const highlight = repositoryFacade.get(event.highlightId);
         if (highlight) {
           // Use command for undo/redo support
-          const command = commandFactory.createRemoveHighlightCommand(
-            event.highlightId
-          );
+          const command = commandFactory.createRemoveHighlightCommand(event.highlightId);
 
           await commandStack.execute(command);
 
@@ -451,23 +456,23 @@ export default defineContentScript({
           _sender: unknown,
           sendResponse: (response: unknown) => void
         ) => {
-          const msg = message as { type: string; mode?: 'walk' | 'sprint'; payload?: unknown };
+          const msg = message as {
+            type: string;
+            mode?: 'walk' | 'sprint';
+            payload?: unknown;
+          };
 
           if (msg && msg.type === 'GET_HIGHLIGHT_COUNT') {
             sendResponse({
               success: true,
-              data: { count: repositoryFacade.count() }
+              data: { count: repositoryFacade.count() },
             });
-          }
-
-          else if (msg && msg.type === 'GET_MODE') {
+          } else if (msg && msg.type === 'GET_MODE') {
             sendResponse({
               success: true,
-              data: { mode: RepositoryFactory.getMode() }
+              data: { mode: RepositoryFactory.getMode() },
             });
-          }
-
-          else if (msg && msg.type === 'SET_MODE') {
+          } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
             const payloadMode = (msg.payload as { mode?: 'walk' | 'sprint' })?.mode;
             const newMode = msg.mode || payloadMode;
@@ -491,7 +496,7 @@ export default defineContentScript({
                 logger.info('[IPC] Sending success response (popup unblocked)');
                 sendResponse({
                   success: true,
-                  data: { mode: newMode }
+                  data: { mode: newMode },
                 });
 
                 // 3. Run restoration/clearing in BACKGROUND (non-blocking for IPC)
@@ -513,12 +518,11 @@ export default defineContentScript({
                   await modeManager.getCurrentMode().clearAll();
                   logger.info('[IPC-Background] Clearing complete');
                 }
-
               } catch (error) {
                 logger.error('[IPC] SET_MODE failed', error as Error);
                 sendResponse({
                   success: false,
-                  error: (error as Error).message || 'Unknown error during mode switch'
+                  error: (error as Error).message || 'Unknown error during mode switch',
                 });
               }
             })();
@@ -558,7 +562,8 @@ interface RestoreContext {
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { storage, repositoryFacade, highlightManager, modeManager, commandFactory } = context;
+  const { storage, repositoryFacade, highlightManager, modeManager, commandFactory } =
+    context;
   try {
     const events = await storage.loadEvents();
 
@@ -595,7 +600,9 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
       }
     }
 
-    logger.warn(`[TARGET] Final map size: ${activeHighlights.size} highlights to restore`);
+    logger.warn(
+      `[TARGET] Final map size: ${activeHighlights.size} highlights to restore`
+    );
 
     // Render active highlights at their original positions
     let restored = 0;

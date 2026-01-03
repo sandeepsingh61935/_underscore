@@ -3,36 +3,36 @@
 /* Color Tokens */
 :root {
   /* Primary - Lake Blue */
-  --md-sys-color-primary: #5B8DB8;
-  --md-sys-color-on-primary: #FFFFFF;
-  --md-sys-color-primary-container: #D4E4F0;
-  --md-sys-color-on-primary-container: #1A3A4F;
-  
+  --md-sys-color-primary: #5b8db8;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d4e4f0;
+  --md-sys-color-on-primary-container: #1a3a4f;
+
   /* Secondary - Forest Green */
-  --md-sys-color-secondary: #6B8E7A;
-  --md-sys-color-on-secondary: #FFFFFF;
-  --md-sys-color-secondary-container: #D8E8DD;
-  --md-sys-color-on-secondary-container: #253B2C;
-  
+  --md-sys-color-secondary: #6b8e7a;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #d8e8dd;
+  --md-sys-color-on-secondary-container: #253b2c;
+
   /* Surface - Winter White */
-  --md-sys-color-surface: #FAFBFC;
-  --md-sys-color-on-surface: #1A1C1E;
-  --md-sys-color-surface-variant: #E8EAED;
-  --md-sys-color-on-surface-variant: #43474E;
-  
+  --md-sys-color-surface: #fafbfc;
+  --md-sys-color-on-surface: #1a1c1e;
+  --md-sys-color-surface-variant: #e8eaed;
+  --md-sys-color-on-surface-variant: #43474e;
+
   /* Surface containers */
-  --md-sys-color-surface-container: #EDEEF1;
-  --md-sys-color-surface-container-high: #E8EAED;
-  --md-sys-color-surface-container-highest: #E2E4E7;
-  
+  --md-sys-color-surface-container: #edeef1;
+  --md-sys-color-surface-container-high: #e8eaed;
+  --md-sys-color-surface-container-highest: #e2e4e7;
+
   /* Outline */
-  --md-sys-color-outline: #73777F;
-  --md-sys-color-outline-variant: #C3C7CF;
-  
+  --md-sys-color-outline: #73777f;
+  --md-sys-color-outline-variant: #c3c7cf;
+
   /* Error */
-  --md-sys-color-error: #BA1A1A;
-  --md-sys-color-on-error: #FFFFFF;
-  
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+
   /* Typography */
   --md-sys-typescale-title-medium-size: 16px;
   --md-sys-typescale-title-medium-weight: 500;
@@ -40,12 +40,12 @@
   --md-sys-typescale-body-medium-size: 14px;
   --md-sys-typescale-label-large-size: 14px;
   --md-sys-typescale-headline-small-size: 24px;
-  
+
   /* Spacing */
   --md-sys-space-2: 8px;
   --md-sys-space-4: 16px;
   --md-sys-space-6: 24px;
-  
+
   /* Motion */
   --md-sys-motion-duration-short2: 100ms;
   --md-sys-motion-duration-short4: 200ms;
@@ -63,7 +63,10 @@ body {
   width: 360px;
   min-height: 480px;
   padding: var(--md-sys-space-6);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   background: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
 }
@@ -99,7 +102,8 @@ h1 {
   color: var(--md-sys-color-on-surface-variant);
   font-size: var(--md-sys-typescale-label-large-size);
   cursor: pointer;
-  transition: background var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  transition: background var(--md-sys-motion-duration-short4)
+    var(--md-sys-motion-easing-standard);
 }
 
 #mode-selector:hover {
@@ -144,7 +148,8 @@ h1 {
   font-size: var(--md-sys-typescale-label-large-size);
   font-weight: 500;
   cursor: pointer;
-  transition: box-shadow var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  transition: box-shadow var(--md-sys-motion-duration-short4)
+    var(--md-sys-motion-easing-standard);
 }
 
 .md-filled-button:hover {
@@ -182,7 +187,9 @@ h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error Display */

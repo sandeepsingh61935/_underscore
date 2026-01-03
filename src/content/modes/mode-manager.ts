@@ -20,7 +20,7 @@ export class ModeManager implements IModeManager {
   constructor(
     private readonly eventBus: EventBus,
     private readonly logger: ILogger
-  ) { }
+  ) {}
 
   registerMode(mode: IHighlightMode): void {
     this.modes.set(mode.name, mode);
@@ -31,10 +31,10 @@ export class ModeManager implements IModeManager {
     // Validate mode name
     const validation = ModeConfigSchema.safeParse({ modeName });
     if (!validation.success) {
-      throw new ValidationError(
-        `Invalid mode name: ${modeName}`,
-        { modeName, validationIssues: validation.error.issues }
-      );
+      throw new ValidationError(`Invalid mode name: ${modeName}`, {
+        modeName,
+        validationIssues: validation.error.issues,
+      });
     }
 
     const newMode = this.modes.get(modeName);
