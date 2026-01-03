@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { chromium } from '@playwright/test';
+
 
 test.describe('Sprint Mode E2E Tests', () => {
     test.beforeEach(async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Sprint Mode E2E Tests', () => {
             );
 
             let node;
-            while (node = walker.nextNode()) {
+            while ((node = walker.nextNode())) {
                 if (node.textContent?.includes(text)) {
                     const range = document.createRange();
                     range.selectNodeContents(node);
@@ -183,7 +183,7 @@ test.describe('Sprint Mode E2E Tests', () => {
                 CSS.highlights.set('ttl-test', highlight);
 
                 // Store creation time in sessionStorage
-                sessionStorage.setItem('ttl-test-created', Date.now().toString());
+                window.sessionStorage.setItem('ttl-test-created', Date.now().toString());
             }
         });
 
@@ -193,7 +193,7 @@ test.describe('Sprint Mode E2E Tests', () => {
 
         // Simulate TTL check (in real implementation, this would be automatic)
         await page.evaluate(() => {
-            const created = parseInt(sessionStorage.getItem('ttl-test-created') || '0');
+            const created = parseInt(window.sessionStorage.getItem('ttl-test-created') || '0');
             const now = Date.now();
             const TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -210,10 +210,10 @@ test.describe('Sprint Mode E2E Tests', () => {
         await page.evaluate(() => {
             // Set creation time to 5 hours ago
             const fiveHoursAgo = Date.now() - (5 * 60 * 60 * 1000);
-            sessionStorage.setItem('ttl-test-created', fiveHoursAgo.toString());
+            window.sessionStorage.setItem('ttl-test-created', fiveHoursAgo.toString());
 
             // Run TTL check
-            const created = parseInt(sessionStorage.getItem('ttl-test-created') || '0');
+            const created = parseInt(window.sessionStorage.getItem('ttl-test-created') || '0');
             const now = Date.now();
             const TTL_MS = 4 * 60 * 60 * 1000;
 
