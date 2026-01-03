@@ -111,6 +111,22 @@ describe('HighlightRenderer', () => {
         renderer.removeHighlight('non-existent');
       }).not.toThrow();
     });
+
+    it('[Issue #2] should not warn when removing non-existent highlight in ephemeral mode', () => {
+      // Arrange
+      const loggerSpy = vi.spyOn(renderer['logger'], 'warn');
+      const debugSpy = vi.spyOn(renderer['logger'], 'debug');
+
+      // Act - Try to remove non-existent highlight (common in Walk Mode)
+      renderer.removeHighlight('non-existent-id');
+
+      // Assert - Should use debug log, not warn
+      expect(loggerSpy).not.toHaveBeenCalled();
+      expect(debugSpy).toHaveBeenCalledWith(
+        'Attempted to remove non-existent highlight (may already be removed)',
+        { id: 'non-existent-id' }
+      );
+    });
   });
 
   describe('clearAll', () => {
