@@ -41,6 +41,7 @@ A browser extension for intelligent web highlighting with three modes:
 ### Technical Details
 
 **Storage:**
+
 - Location: `chrome.storage.local`
 - Encryption: AES-256-GCM
 - Key Derivation: PBKDF2 (100,000 iterations)
@@ -48,11 +49,13 @@ A browser extension for intelligent web highlighting with three modes:
 - Capacity: ~5MB per domain (browser quota)
 
 **Persistence:**
+
 - Event sourcing for state restoration
 - Automatic cleanup of expired highlights
 - Cross-session support (survives browser restart)
 
 **Security:**
+
 - Domain-based encryption keys
 - Random IV per encryption (forward secrecy)
 - Tampering detection via authentication tags
@@ -61,18 +64,22 @@ A browser extension for intelligent web highlighting with three modes:
 ### Troubleshooting
 
 **Highlights not restoring after page reload?**
+
 - Check browser storage quota (Settings → Privacy → Site Data)
 - Verify highlights haven't exceeded 4-hour TTL
 
 **Highlights disappeared?**
+
 - Expected behavior: Highlights auto-delete after 4 hours
 - Check creation time in extension popup
 
 **Can't see highlights from another domain?**
+
 - By design: Encryption isolates domains for privacy
 - Highlights on `wikipedia.org` won't appear on `example.com`
 
 **Performance issues with many highlights?**
+
 - Sprint Mode handles 100+ highlights efficiently
 - Consider using Walk Mode for quick reading sessions
 
