@@ -12,11 +12,11 @@
  * @version 2.0
  */
 
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { MessageResponse } from '@/shared/schemas/message-schemas';
 import type { ModeType } from '@/content/modes/mode-state-manager';
 import { AppError } from '@/shared/errors/app-error';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { MessageResponse } from '@/shared/schemas/message-schemas';
 
 /**
  * Popup UI state structure
@@ -106,6 +106,7 @@ export class PopupStateManager {
             if (!modeResponse.success) {
                 // Check for legacy/stale response format (mode property exists but success is missing)
                 // This happens when extension is updated but page hasn't been refreshed
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 if ((modeResponse as any).mode) {
                     throw new Error('Content script outdated. Please refresh the page.');
                 }

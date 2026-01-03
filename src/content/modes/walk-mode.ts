@@ -17,7 +17,7 @@
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
-import type { HighlightData } from './highlight-mode.interface';
+import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
@@ -282,7 +282,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
      * Deletion Configuration
      * Walk Mode: Simple, no confirmation (ephemeral)
      */
-    override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+    override getDeletionConfig(): DeletionConfig {
         return {
             showDeleteIcon: true,
             requireConfirmation: false,  // Ephemeral, no need to confirm

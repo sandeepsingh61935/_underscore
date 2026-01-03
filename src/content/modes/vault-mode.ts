@@ -15,7 +15,7 @@
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
-import type { HighlightData } from './highlight-mode.interface';
+import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
@@ -285,7 +285,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
      * Deletion Configuration
      * Vault Mode: Protected deletion with sync check
      */
-    override getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+    override getDeletionConfig(): DeletionConfig {
         return {
             showDeleteIcon: true,
             requireConfirmation: true,

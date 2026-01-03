@@ -66,7 +66,7 @@ export class HighlightHoverDetector {
 
         this.throttleTimeout = window.setTimeout(() => {
             this.throttleTimeout = null;
-            console.log('[HOVER] Mouse move detected', { x: e.clientX, y: e.clientY });
+            this.logger.debug('[HOVER] Mouse move detected', { x: e.clientX, y: e.clientY });
             this.detectHover(e.clientX, e.clientY);
         }, 50); // 50ms throttle for smooth performance
     };

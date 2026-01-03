@@ -12,14 +12,14 @@
  * @version 2.0
  */
 
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { MessageResponse } from '@/shared/schemas/message-schemas';
-import type { ModeType } from '@/content/modes/mode-state-manager';
-import { PopupStateManager, type PopupState } from './popup-state-manager';
 import { ErrorDisplay } from './components/error-display';
-import { AppError } from '@/shared/errors/app-error';
+import { PopupStateManager, type PopupState } from './popup-state-manager';
 
+import type { ModeType } from '@/content/modes/mode-state-manager';
+import { AppError } from '@/shared/errors/app-error';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { MessageResponse } from '@/shared/schemas/message-schemas';
 import { debounce } from '@/shared/utils/async-utils';
 
 /**
@@ -147,7 +147,7 @@ export class PopupController {
     /**
      * Helper to run init steps with context
      */
-    private async runInitStep(stepName: string, operation: () => Promise<any> | void): Promise<any> {
+    private async runInitStep<T>(stepName: string, operation: () => Promise<T> | T): Promise<T> {
         try {
             return await operation();
         } catch (error) {

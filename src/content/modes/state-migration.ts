@@ -29,6 +29,7 @@ export interface StateMigration {
     /** Target version */
     toVersion: number;
     /** Migration function */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     migrate: (state: any) => Promise<any>;
     /** Human-readable description */
     description: string;
@@ -82,6 +83,7 @@ export class MigrationEngine {
      * @returns Migration result
      */
     async migrate(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         state: any,
         fromVersion: number,
         toVersion: number

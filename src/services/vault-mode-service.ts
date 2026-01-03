@@ -1,6 +1,7 @@
 import { IndexedDBStorage } from './indexeddb-storage';
 import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine';
 
+import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**
@@ -28,12 +29,12 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 export class VaultModeService {
     private storage: IndexedDBStorage;
     private selectorEngine: MultiSelectorEngine;
-    private logger: Console;
+    private logger: ILogger;
 
     constructor(
         storage: IndexedDBStorage,
         selectorEngine: MultiSelectorEngine,
-        logger: Console = console
+        logger: ILogger
     ) {
         this.storage = storage;
         this.selectorEngine = selectorEngine;
@@ -86,7 +87,7 @@ export class VaultModeService {
                 text: highlight.text.substring(0, 50),
             });
         } catch (error) {
-            this.logger.error('[VAULT] Failed to save highlight:', error);
+            this.logger.error('[VAULT] Failed to save highlight:', error as Error);
             throw error;
         }
     }
@@ -141,7 +142,7 @@ export class VaultModeService {
 
             return results;
         } catch (error) {
-            this.logger.error('[VAULT] Failed to restore highlights:', error);
+            this.logger.error('[VAULT] Failed to restore highlights:', error as Error);
             throw error;
         }
     }
@@ -158,7 +159,7 @@ export class VaultModeService {
         try {
             return await this.selectorEngine.restore(selectors);
         } catch (error) {
-            this.logger.error('Restoration error:', error);
+            this.logger.error('Restoration error:', error as Error);
             return null;
         }
     }
@@ -229,7 +230,7 @@ export class VaultModeService {
 
             this.logger.info('[VAULT] Highlight deleted', highlightId);
         } catch (error) {
-            this.logger.error('[VAULT] Failed to delete highlight:', error);
+            this.logger.error('[VAULT] Failed to delete highlight:', error as Error);
             throw error;
         }
     }
@@ -270,7 +271,7 @@ export class VaultModeService {
 
             return eventIds;
         } catch (error) {
-            this.logger.error('[VAULT] Sync failed:', error);
+            this.logger.error('[VAULT] Sync failed:', error as Error);
             throw error;
         }
     }
@@ -300,7 +301,19 @@ export function getVaultModeService(): VaultModeService {
     if (!instance) {
         const storage = new IndexedDBStorage();
         const selectorEngine = new MultiSelectorEngine();
-        instance = new VaultModeService(storage, selectorEngine);
+        const logger: ILogger = {
+            // eslint-disable-next-line no-console
+            debug: (msg, ...args) => console.debug(msg, ...args),
+            // eslint-disable-next-line no-console
+            info: (msg, ...args) => console.info(msg, ...args),
+            // eslint-disable-next-line no-console
+            warn: (msg, ...args) => console.warn(msg, ...args),
+            // eslint-disable-next-line no-console
+            error: (msg, ...args) => console.error(msg, ...args),
+            setLevel: () => { },
+            getLevel: () => 1,
+        };
+        instance = new VaultModeService(storage, selectorEngine, logger);
     }
     return instance;
 }

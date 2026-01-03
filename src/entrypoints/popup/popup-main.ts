@@ -10,13 +10,13 @@
 
 import { PopupController } from '@/popup/popup-controller';
 import { Container } from '@/shared/di/container';
-import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { RetryDecorator } from '@/shared/services/retry-decorator';
 import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
+import { RetryDecorator } from '@/shared/services/retry-decorator';
 import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
+import { LoggerFactory } from '@/shared/utils/logger';
 
 /**
  * Bootstrap the popup application
@@ -74,8 +74,10 @@ async function bootstrap(): Promise<void> {
             controller.cleanup();
         });
 
+        // eslint-disable-next-line no-console
         console.log('[Popup] Initialized successfully');
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('[Popup] Bootstrap failed', error);
 
         // Show error in UI
