@@ -1,0 +1,181 @@
+# Component 1: Authentication & Security - Implementation Tasks
+
+**Phase**: Vault Mode Phase 2  
+**Component**: 1 of 7  
+**Duration**: 1.5 weeks (Week 1 + Week 7)  
+**Total Tests**: 80 (36 core + 44 security)
+
+---
+
+## Task Breakdown
+
+### Week 1: Core Authentication (17 hours)
+
+#### Task 1.1: Define Auth Interfaces ⏱️ 2h
+- [x] Create [i-auth-manager.ts](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-auth-manager.ts)
+- [x] Create [i-token-store.ts](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-token-store.ts)
+- [x] Create [i-auth-state-observer.ts](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-auth-state-observer.ts)
+- [x] Define [OAuthProvider](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-auth-manager.ts#17-19) enum (Google, Apple, Facebook, Twitter)
+- [x] Apply Interface Segregation Principle
+
+#### Task 1.2: Implement TokenStore with Encryption ⏱️ 4h
+- [x] Create [token-store.ts](file:///home/sandy/projects/_underscore/src/background/auth/token-store.ts)
+- [x] Implement AES-GCM encryption for tokens
+- [x] Generate unique IV per encryption
+- [x] Add circuit breaker protection
+- [x] Handle storage failures gracefully
+- [x] Write 8 integration tests (all passing ✅)
+
+#### Task 1.3: Implement AuthManager with OAuth ⏱️ 8h
+- [x] Create [auth-manager.ts](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts)
+- [x] Implement all 4 OAuth providers (Google, Apple, Facebook, Twitter)
+- [x] Add automatic token refresh (15min expiry)
+- [x] Emit auth state change events via EventBus
+- [x] Add rate limiting (5 attempts per 15 min)
+- [x] Handle OAuth redirect flow with chrome.identity
+- [x] Write 15 unit tests (chrome.identity mock needs setup fix)
+
+#### Task 1.4: Implement AuthStateObserver ⏱️ 2h
+- [x] Create [auth-state-observer.ts](file:///home/sandy/projects/_underscore/src/background/auth/auth-state-observer.ts)
+- [x] Listen to `AUTH_STATE_CHANGED` events
+- [x] Notify all subscribers on state change
+- [x] Return unsubscribe function
+- [x] Handle subscriber errors without breaking others
+- [x] Write 5 unit tests (all passing ✅)
+
+#### Task 1.5: DI Registration ⏱️ 1h
+- [x] Register all auth services as singletons
+- [x] Verify dependency injection works correctly
+- [x] Write 3 integration tests (all passing ✅)
+
+### Week 7: Security Enhancements (96 hours = 12 days)
+
+#### Task 1.6: Implement E2EEncryptionService 🔴 CRITICAL ⏱️ 2 days
+- [ ] Create `e2e-encryption-service.ts`
+- [ ] Use RSA-OAEP (2048-bit) for highlight encryption
+- [ ] Encrypt data before sending to Supabase
+- [ ] Add key versioning for rotation support
+- [ ] Integrate with SupabaseClient
+- [ ] Performance target: <50ms for 1KB data
+- [ ] Write 15 integration tests
+- [ ] **Security Impact**: GDPR compliance
+
+#### Task 1.7: Implement KeyManager 🔴 HIGH ⏱️ 3 days
+- [ ] Create [key-manager.ts](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-key-manager.ts)
+- [ ] Generate RSA-2048 keypairs for users
+- [ ] Encrypt private key with AES-GCM before storage
+- [ ] Store in chrome.storage.local (encrypted)
+- [ ] Cache keys in memory for performance
+- [ ] Add key rotation support
+- [ ] Add key backup/recovery flow
+- [ ] Write 20 unit tests
+- [ ] **Security Impact**: Data recovery
+
+#### Task 1.8: Implement AuditLogger 🟡 MEDIUM ⏱️ 1 day
+- [ ] Create [audit-logger.ts](file:///home/sandy/projects/_underscore/src/background/auth/interfaces/i-audit-logger.ts)
+- [ ] Log all auth events (login, logout, failed login)
+- [ ] Log data access (read, write, delete)
+- [ ] Log suspicious activity
+- [ ] 90-day retention policy
+- [ ] Brute force detection (5 failed logins = lock)
+- [ ] Write 5 unit tests
+- [ ] **Security Impact**: Compliance and breach detection
+
+#### Task 1.9: Implement CSPValidator 🟡 MEDIUM ⏱️ 0.5 day
+- [ ] Create `csp-validator.ts`
+- [ ] Validate CSP for OAuth redirect pages
+- [ ] Ensure no `unsafe-inline` scripts
+- [ ] Log CSP violations
+- [ ] Write 2 unit tests
+- [ ] **Security Impact**: XSS protection for OAuth
+
+---
+
+## Architecture Compliance
+
+### SOLID Principles
+- [/] **S**: Single Responsibility - Each service has one clear purpose
+- [/] **O**: Open/Closed - Interface-based design for extension
+- [/] **L**: Liskov Substitution - All implementations honor contracts
+- [/] **I**: Interface Segregation - Separate interfaces for auth, token, observer
+- [/] **D**: Dependency Inversion - All services depend on interfaces
+
+### Design Patterns
+- [/] **Repository Pattern**: Token storage abstraction
+- [/] **Observer Pattern**: Auth state change notifications
+- [/] **Strategy Pattern**: Multiple OAuth providers
+- [/] **Decorator Pattern**: Circuit breaker wrapping TokenStore
+- [/] **Facade Pattern**: AuthManager simplifies OAuth complexity
+
+---
+
+## Quality Gates
+
+### Per-Task Gates
+- [ ] 0 TypeScript errors
+- [ ] 0 ESLint errors
+- [ ] 100% Prettier compliance
+- [ ] All tests passing
+- [ ] Code coverage >85%
+
+### Component-Level Gates
+- [ ] All 80 tests passing
+- [ ] E2E encryption verified (15 tests)
+- [ ] XSS protection verified (2 tests)
+- [ ] Audit logging verified (5 tests)
+- [ ] No security vulnerabilities (`npm audit`)
+- [ ] Performance benchmarks met:
+  - [ ] Encryption overhead <50ms (p95, 1KB data)
+  - [ ] Token retrieval <10ms (p95, cached)
+
+---
+
+## Risk Assessment
+
+### Critical Risks 🔴
+1. **Key Loss**: Private keys lost = data unrecoverable
+   - **Mitigation**: Backup flow, recovery mechanism
+2. **Token Leakage**: Plaintext tokens = account takeover
+   - **Mitigation**: AES-GCM encryption, secure storage
+3. **OAuth Redirect Hijack**: XSS in redirect = token stealing
+   - **Mitigation**: CSP validation, nonce verification
+
+### High Risks 🟡
+1. **Rate Limit Bypass**: Brute force attacks
+   - **Mitigation**: Token bucket algorithm, 5/15min limit
+2. **Audit Log Tampering**: Attacker hides tracks
+   - **Mitigation**: Append-only log, checksums
+
+---
+
+## Testing Strategy
+
+### Test Distribution
+- **Unit Tests**: 60 (75%)
+  - AuthManager: 15
+  - KeyManager: 20
+  - TokenStore: 8
+  - AuthStateObserver: 5
+  - E2EEncryptionService: 7
+  - AuditLogger: 3
+  - CSPValidator: 2
+
+- **Integration Tests**: 20 (25%)
+  - TokenStore + CircuitBreaker: 8
+  - AuthManager + EventBus: 5
+  - E2EEncryptionService + SupabaseClient: 5
+  - DI Container: 2
+
+### Edge Cases to Test
+- [ ] Storage quota exceeded during token save
+- [ ] Network failure during OAuth redirect
+- [ ] Concurrent token refresh requests
+- [ ] Key rotation mid-session
+- [ ] Audit log at 90-day limit
+- [ ] CSP violation on OAuth page
+
+---
+
+## Next Steps After Completion
+1. ✅ Component 1 complete
+2. → Begin Component 2: API Client Layer + Scalability
