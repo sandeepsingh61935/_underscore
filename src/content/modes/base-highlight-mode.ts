@@ -6,7 +6,7 @@
  * Concrete modes implement IBasicMode (and optionally IPersistentMode, etc.)
  */
 
-import type { HighlightData } from './highlight-mode.interface';
+import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 
 import {
   getHighlightName,
@@ -42,7 +42,8 @@ export abstract class BaseHighlightMode {
     // CRITICAL FIX: Sync mode.data to repository cache
     // This ensures hover detector can find highlights after mode activation/restore
     for (const [, highlight] of this.data.entries()) {
-      await this.repository.add(highlight as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await this.repository.add({ ...highlight, version: 2 } as any);
     }
   }
 
@@ -145,7 +146,7 @@ export abstract class BaseHighlightMode {
    * Default deletion configuration
    * Modes can override to customize deletion behavior
    */
-  getDeletionConfig(): import('./highlight-mode.interface').DeletionConfig {
+  getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
       requireConfirmation: false,
