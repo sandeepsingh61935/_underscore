@@ -12,6 +12,7 @@ import { registerServices } from '@/shared/di/service-registration';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import { CommandStack } from '@/shared/patterns/command';
 import { RepositoryFactory } from '@/shared/repositories';
+import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { ILogger } from '@/shared/utils/logger';
 
 // Mock DOM dependencies
@@ -45,6 +46,10 @@ describe('Command Flow Integration', () => {
         const sprintMode = container.resolve('sprintMode');
         modeManager.registerMode(walkMode as any);
         modeManager.registerMode(sprintMode as any);
+
+        // Initialize RepositoryFacade (required for modes to function)
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        await repositoryFacade.initialize();
 
         // Mock crypto
         Object.defineProperty(global, 'crypto', {
