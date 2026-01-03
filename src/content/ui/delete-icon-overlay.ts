@@ -5,8 +5,8 @@
  * Architecture: Mode-agnostic UI that delegates to mode configs for behavior
  */
 
-import type { ModeManager } from '@/content/modes/mode-manager';
 import type { DeletionConfig } from '@/content/modes/highlight-mode.interface';
+import type { ModeManager } from '@/content/modes/mode-manager';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { EventName } from '@/shared/types/events';
@@ -194,7 +194,7 @@ export class DeleteIconOverlay {
         // Confirmation
         if (config.requireConfirmation) {
             const message = `Delete ${count} selected highlights?${config.allowUndo ? ' (Undo available with Ctrl+Z)' : ' This cannot be undone.'}`;
-            if (!confirm(message)) {
+            if (!window.confirm(message)) {
                 return;
             }
         }
@@ -230,7 +230,7 @@ export class DeleteIconOverlay {
             // 2. Confirmation dialog (if required)
             if (config.requireConfirmation) {
                 const message = config.confirmationMessage || 'Delete this highlight?';
-                const confirmed = confirm(message);
+                const confirmed = window.confirm(message);
                 if (!confirmed) {
                     this.logger.info('Deletion cancelled by user', { id });
                     return;
