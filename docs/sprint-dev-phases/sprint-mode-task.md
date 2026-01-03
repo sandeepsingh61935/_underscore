@@ -1,9 +1,10 @@
 # Vault Mode Sprint - Complete Task Breakdown
 
-> **Mission**: Build production-ready Vault Mode with 85%+ test coverage, SOLID compliance, and zero technical debt
-> 
+> **Mission**: Build production-ready Vault Mode with 85%+ test coverage, SOLID
+> compliance, and zero technical debt
+>
 > **Timeline**: 34 days (7 weeks)
-> 
+>
 > **Quality Standards**: Strict adherence to project quality framework
 
 ---
@@ -11,6 +12,7 @@
 ## Critical Learnings from Previous Attempts
 
 ### ❌ What NOT to Do
+
 - [ ] ~~Skip dependency injection "to save time"~~ → Leads to untestable code
 - [ ] ~~Implement features before foundation~~ → Technical debt compounds
 - [ ] ~~"We'll add tests later"~~ → Never happens, bugs multiply
@@ -20,6 +22,7 @@
 - [ ] ~~Inline code in HTML~~ → No TypeScript checking, hard to maintain
 
 ### ✅ What TO Do
+
 - [x] **Foundation first**: Interfaces, DI, error handling BEFORE features
 - [x] **Test-driven**: Write tests WITH implementation, not after
 - [x] **Quality gates**: Hard requirements, no exceptions
@@ -35,6 +38,7 @@
 ### 0.1: Interface Extraction (Day 1-2, 12 hours)
 
 #### Task 0.1.1: Create Repository Interfaces
+
 - [x] Create `src/shared/interfaces/i-repository.ts`
   - [x] Define `IRepository<T>` generic interface
     ```typescript
@@ -47,7 +51,9 @@
       clear(): Promise<void>;
     }
     ```
-  - [x] Define [IHighlightRepository](file:///home/sandy/projects/_underscore/src/shared/repositories/i-highlight-repository.ts#17-98) extending `IRepository<HighlightData>`
+  - [x] Define
+        [IHighlightRepository](file:///home/sandy/projects/_underscore/src/shared/repositories/i-highlight-repository.ts#17-98)
+        extending `IRepository<HighlightData>`
     - [x] Add `findByUrl(url: string): HighlightData[]`
     - [x] Add `findByColor(color: string): HighlightData[]`
   - [x] Add JSDoc for all methods
@@ -68,6 +74,7 @@
   - [x] Zero TypeScript errors
 
 #### Task 0.1.2: Create Mode Manager Interface
+
 - [x] Create `src/shared/interfaces/i-mode-manager.ts`
   - [x] Define `IModeManager` interface
     ```typescript
@@ -81,7 +88,9 @@
     }
     ```
   - [x] Add JSDoc
-- [x] Update [ModeManager](file:///home/sandy/projects/_underscore/src/content/modes/mode-manager.ts#12-83) class to implement `IModeManager`
+- [x] Update
+      [ModeManager](file:///home/sandy/projects/_underscore/src/content/modes/mode-manager.ts#12-83)
+      class to implement `IModeManager`
 - [x] **Tests**: Write 6 tests
   - [x] Test: ModeManager implements IModeManager
   - [x] Test: Can register modes
@@ -95,6 +104,7 @@
   - [x] All tests pass
 
 #### Task 0.1.3: Create Storage Interface
+
 - [x] Create `src/shared/interfaces/i-storage.ts`
   - [x] Define `IStorage` interface
     ```typescript
@@ -126,6 +136,7 @@
   - [x] Tests pass
 
 #### Task 0.1.4: Create Messaging Interface (Chrome API Abstraction)
+
 - [x] Create `src/shared/interfaces/i-messaging.ts`
   - [x] Define `IMessaging` interface
     ```typescript
@@ -164,6 +175,7 @@
 ### 0.2: Dependency Injection Setup (Day 2-3, 10 hours)
 
 #### Task 0.2.1: Implement IoC Container
+
 - [x] Create `src/shared/di/container.ts`
   - [x] Implement service registration
     - [x] `registerSingleton<T>(key: string, factory: () => T)`
@@ -197,6 +209,7 @@
   - [x] Documented
 
 #### Task 0.2.2: Register All Services
+
 - [x] Create `src/shared/di/service-registration.ts`
   - [x] Register logger
     ```typescript
@@ -210,14 +223,18 @@
   - [x] Register messaging
   - [x] Register mode manager
   - [x] Register all modes (Walk, Sprint, Vault)
-- [x] Update [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) to use container
+- [x] Update
+      [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+      to use container
+
   ```typescript
   const container = new Container();
   registerServices(container);
-  
+
   const modeManager = container.resolve<IModeManager>('modeManager');
   const repository = container.resolve<IRepository>('repository');
   ```
+
 - [x] **Tests**: Write 8 tests
   - [x] Test: All services registered
   - [x] Test: Can resolve all services
@@ -233,6 +250,7 @@
   - [x] Tests pass
 
 #### Task 0.2.3: Create Mock Implementations
+
 - [x] Create `tests/helpers/mocks/mock-repository.ts`
   - [x] Implement `IRepository` with in-memory map
   - [x] Add helper methods for test assertions
@@ -263,6 +281,7 @@
 ### 0.3: Error Handling Infrastructure (Day 3-4, 8 hours)
 
 #### Task 0.3.1: Create Error Hierarchy
+
 - [x] Create `src/shared/errors/base-error.ts`
   - [x] Define `AppError` base class extending `Error`
     - [x] Add `readonly code: string`
@@ -300,6 +319,7 @@
   - [x] Tests pass
 
 #### Task 0.3.2: Implement Error Boundary
+
 - [x] Create `src/shared/utils/error-boundary.ts`
   - [x] Define `Result<T, E>` type
     ```typescript
@@ -313,7 +333,7 @@
       async execute<T>(
         operation: string,
         fn: () => Promise<T>
-      ): Promise<Result<T, Error>>
+      ): Promise<Result<T, Error>>;
     }
     ```
   - [x] Add logging on error
@@ -332,6 +352,7 @@
   - [x] Tests pass
 
 #### Task 0.3.3: Create Notification Service
+
 - [x] Create `src/shared/services/notification-service.ts`
   - [x] Define `INotificationService` interface
     ```typescript
@@ -362,6 +383,7 @@
 ### 0.4: Validation Layer (Day 4, 6 hours)
 
 #### Task 0.4.1: Create Validation Schemas
+
 - [x] Create `src/shared/validation/mode-schemas.ts`
   - [x] Define ModeType schema
     ```typescript
@@ -398,6 +420,7 @@
   - [x] Tests pass
 
 #### Task 0.4.2: Integrate Validation
+
 - [x] Add validation to `ModeStateManager.setMode()`
   ```typescript
   async setMode(mode: unknown): Promise<void> {
@@ -405,7 +428,9 @@
     // ...
   }
   ```
-- [x] Add validation to [createHighlight](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#114-116) commands
+- [x] Add validation to
+      [createHighlight](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#114-116)
+      commands
 - [x] Add validation to message handlers
 - [x] Add validation to storage operations
 - [x] **Tests**: Write 8 tests
@@ -427,14 +452,19 @@
 ### 0.5: Testing Infrastructure (Day 4-6, 12 hours)
 
 #### Task 0.5.1: Create Test Utilities
+
 - [x] Create `tests/helpers/mock-chrome.ts`
   - [x] Mock `chrome.tabs`
   - [x] Mock `chrome.runtime`
   - [x] Mock `chrome.storage`
   - [x] Add helper to setup/teardown
 - [x] Create `tests/helpers/mock-dom.ts`
-  - [x] Mock [Selection](file:///home/sandy/projects/_underscore/src/content/commands/highlight-commands.ts#230-269) API
-  - [x] Mock [Range](file:///home/sandy/projects/_underscore/src/shared/schemas/highlight-schema.ts#62-63) API
+  - [x] Mock
+        [Selection](file:///home/sandy/projects/_underscore/src/content/commands/highlight-commands.ts#230-269)
+        API
+  - [x] Mock
+        [Range](file:///home/sandy/projects/_underscore/src/shared/schemas/highlight-schema.ts#62-63)
+        API
   - [x] Mock `CSS.highlights`
   - [x] Add helpers for DOM manipulation
 - [x] Create `tests/helpers/test-fixtures.ts`
@@ -463,7 +493,9 @@
   - [x] Documented with examples
 
 #### Task 0.5.2: Configure Test Coverage
-- [x] Update [vitest.config.ts](file:///home/sandy/projects/_underscore/vitest.config.ts)
+
+- [x] Update
+      [vitest.config.ts](file:///home/sandy/projects/_underscore/vitest.config.ts)
   - [x] Set coverage thresholds
     ```typescript
     coverage: {
@@ -475,7 +507,8 @@
     ```
   - [x] Exclude test files from coverage
   - [x] Configure reporters (text, html, lcov)
-- [x] Add coverage scripts to [package.json](file:///home/sandy/projects/_underscore/package.json)
+- [x] Add coverage scripts to
+      [package.json](file:///home/sandy/projects/_underscore/package.json)
 - [x] Configure CI to fail on coverage drop
 - [x] **Tests**: N/A (configuration)
 - [x] **Acceptance Criteria**:
@@ -484,6 +517,7 @@
   - [x] CI configured
 
 #### Task 0.5.3: Setup Integration Test Framework
+
 - [x] Create `tests/integration/setup.ts`
   - [x] Global setup for integration tests
   - [x] Initialize fake IndexedDB
@@ -504,6 +538,7 @@
   - [x] Tests isolated
 
 #### Task 0.5.4: Setup E2E Test Framework
+
 - [x] Configure Playwright for extension testing
 - [x] Create `tests/e2e/fixtures.ts`
   - [x] Extension loading fixture
@@ -528,16 +563,21 @@
 
 ### 1.1: Fix Command Pattern (6 hours) ⏳ IN PROGRESS
 
-**Context**: Current `simple-highlight-commands.ts` violates Phase 0 DI principles. Uses union types with runtime checks, hardcodes dependencies, won't scale to GEN-MODE.
+**Context**: Current `simple-highlight-commands.ts` violates Phase 0 DI
+principles. Uses union types with runtime checks, hardcodes dependencies, won't
+scale to GEN-MODE.
 
-**Goal**: Refactor commands to use ONLY `IModeManager` interface, remove 90+ lines of branching logic.
+**Goal**: Refactor commands to use ONLY `IModeManager` interface, remove 90+
+lines of branching logic.
 
 **Analysis Complete**:
+
 - [x] Identified highlight-commands.ts as dead code (zero imports)
 - [x] Confirmed simple-highlight-commands.ts violates SOLID principles
 - [x] Verified won't scale to GEN-MODE without refactor
 
 #### Task 1.1.1: Delete Dead Code and Fix Duplication (30 min) [x] ✅ COMPLETE
+
 - [x] Delete `highlight-commands.ts` (dead code, zero imports)
 - [x] Remove content.ts line 242: `repositoryFacade.addFromData(highlightData)`
 - [x] Remove content.ts line 594: duplicate `addFromData` call
@@ -545,6 +585,7 @@
 - [x] Add JSDoc explaining no repository calls
 
 **Commits**:
+
 - [x] `phase1.1.1a: delete highlight-commands.ts (dead code)` - 3fd21e5
 - [x] `phase1.1.1b: remove content.ts duplication and legacy code` - committed
 
@@ -552,6 +593,7 @@
 **Quality**: ✅ TS 0 errors, ESLint clean, 270/270 tests pass
 
 #### Task 1.1.2: Refactor CreateHighlightCommand (1.5 hours) [x] ✅ COMPLETE
+
 - [x] Update constructor: Remove union type, use `IModeManager` + `ILogger` only
   ```typescript
   constructor(
@@ -568,6 +610,7 @@
 - [x] Reduce from 152 lines (Actual: 111 lines, gap due to redo logic)
 
 **Tests** (16/16): ✅ All passed
+
 - [x] Calls modeManager.createHighlight() correctly
 - [x] Stores highlight ID for undo
 - [x] Undo calls modeManager.removeHighlight()
@@ -585,14 +628,15 @@
 - [x] No memory leaks
 
 **Commits**:
+
 - [x] `phase1.1.2a: refactor CreateHighlightCommand` - acf5a22
 - [x] `phase1.1.2b: unit tests` - committed
 
 **Acceptance**: ✅ Uses interfaces only, no direct persistence calls
 **Quality**: ✅ 100% test coverage for command logic
 
-
 #### Task 1.1.3: Refactor RemoveHighlightCommand (1 hour) [x] ✅ COMPLETE
+
 - [x] Update constructor: IModeManager + ILogger only
 - [x] Simplify execute(): Delegate to mode
 - [x] Simplify undo(): Delegate to mode
@@ -602,6 +646,7 @@
 **Tests** (10): ✅ 10/10 passing
 
 **Commits**:
+
 - [x] `phase1.1.3a: refactor RemoveHighlightCommand` - 6103ca7
 - [x] `phase1.1.3b: unit tests for RemoveHighlightCommand` - d200579
 
@@ -609,6 +654,7 @@
 **Status**: COMPLETE
 
 #### Task 1.1.4: Update content.ts DI Wiring (30 min) [x] ✅ COMPLETE
+
 - [x] Resolve ILogger from DI container
 - [x] Update CreateHighlightCommand instantiation (lines 281, 601)
   - Remove repositoryFacade, storage args
@@ -616,12 +662,15 @@
 - [x] Update RemoveHighlightCommand instantiation (line 306)
 
 **Commits**:
+
 - [x] `phase1.1.4: wire commands via DI container in content.ts` - committed
 
 **Acceptance**: ✅ Commands instantiated correctly, extension compiles
 
 #### Task 1.1.5: Integration Testing (2 hours) [x] ✅ COMPLETE
+
 **Tests** (5 Comprehensive Flows):
+
 1. [x] Create → Undo → Redo with Walk Mode
 2. [x] Create → Undo → Redo with Sprint Mode
 3. [x] Stack limit enforced
@@ -629,22 +678,25 @@
 5. [x] Error recovery
 
 **Commits**:
+
 - [x] `phase1.1.5: integration tests for command flows` - committed
 
 **Acceptance**: ✅ All critical flows verified with real modes in JSDOM
 
 ### Phase 1.1 Status: ✅ COMPLETE
+
 - All refactoring done (Command Pattern, DI, SOLID)
 - All legacy code removed
 - Content script wiring active
 - Comprehensive test suite (Unit + Integration) passing
 
-
 #### Quality Gate for Phase 1.1
+
 - [x] Zero union types in constructors
 - [x] Interface dependencies only (IModeManager, ILogger)
 - [x] No direct persistence in commands
-- [x] CreateHighlightCommand < 80 lines (Actual: 111 lines - accepted due to atomic redo logic)
+- [x] CreateHighlightCommand < 80 lines (Actual: 111 lines - accepted due to
+      atomic redo logic)
 - [x] Cyclomatic complexity < 5 (Evaluated: 4)
 - [x] Test coverage > 95% on commands (100% covered)
 - [x] All 27 tests passing (Testing: 16+10+5 = 31 tests passing)
@@ -658,38 +710,45 @@
 ### 1.2: Command Factory (Day 9, 8 hours)
 
 #### Task 1.2.1: Implement Command Factory (Granular Strategy)
+
 **Micro-Steps**:
-1. [x] **Skeleton**: Create `src/content/commands/command-factory.ts` with interface
-   - *Commit*: `feat(commands): add CommandFactory scaffolding`
+
+1. [x] **Skeleton**: Create `src/content/commands/command-factory.ts` with
+       interface
+   - _Commit_: `feat(commands): add CommandFactory scaffolding`
 2. [x] **Tests**: Create failing tests for factory instantiation
-   - *Commit*: `test(factory): add initial factory unit tests (red)`
+   - _Commit_: `test(factory): add initial factory unit tests (red)`
 3. [x] **Implementation**: Implement factory methods and DI integration
-   - *Commit*: `feat(commands): implement CommandFactory logic`
+   - _Commit_: `feat(commands): implement CommandFactory logic`
 4. [x] **Wiring**: Update `content.ts` to use factory (Remove direct `new`)
-   - *Commit*: `refactor(content): switch to CommandFactory for command creation`
+   - _Commit_:
+     `refactor(content): switch to CommandFactory for command creation`
 5. [x] **Verification**: Run full suite
-   - *Commit*: `chore(1.2): verify factory integration`
+   - _Commit_: `chore(1.2): verify factory integration`
 
 **Tests** (8 tests):
-  - [x] Test: Factory creates commands
-  - [x] Test: Dependencies injected correctly
-  - [x] Test: Can create all command types
-  - [x] Test: Commands functional
-  - [x] Test: Can override dependencies
-  - [x] Test: Factory is singleton
-  - [x] Test: Memory management
-  - [x] Test: Type safety
+
+- [x] Test: Factory creates commands
+- [x] Test: Dependencies injected correctly
+- [x] Test: Can create all command types
+- [x] Test: Commands functional
+- [x] Test: Can override dependencies
+- [x] Test: Factory is singleton
+- [x] Test: Memory management
+- [x] Test: Type safety
 
 **Acceptance**:
-  - [x] All commands created via factory
-  - [x] Zero hardcoded instantiation in `content.ts`
-  - [x] CI Passing
+
+- [x] All commands created via factory
+- [x] Zero hardcoded instantiation in `content.ts`
+- [x] CI Passing
 
 ---
 
 ## Quality Gates
 
 ### End of Phase 0 Gate
+
 - [x] **Code Coverage**: ≥80% on foundation code
 - [x] **Tests Written**: 62 tests minimum
 - [x] **TypeScript Errors**: 0
@@ -702,6 +761,7 @@
 - [x] **Memory**: No leaks detected
 
 ### End of Phase 1 Gate
+
 - [x] **Code Coverage**: ≥85% on commands
 - [x] **Tests Written**: 58 tests minimum
 - [x] **"Already exists" warning**: GONE
@@ -716,38 +776,45 @@
 ## Remaining Phases Summary
 
 ### Phase 2: State Management (Day 11-14)
+
 - Implement production ModeStateManager
 - Add validation, transition guards, migration
 - 50 tests minimum
 
 ### Phase 3: IPC Layer (Day 15-17)
+
 - Implement robust MessageBus
 - Add retry, queue, timeout, circuit breaker
 - 32 tests minimum
 
 ### Phase 4: Popup UI (Day 18-20)
+
 - Proper TypeScript controller
 - Loading/error states, optimistic updates
 - 25 tests minimum
 
 ### Phase 5: Mode Implementations (Day 21-25)
+
 - Walk Mode (ephemeral)
 - Sprint Mode (session)
 - Vault Mode (IndexedDB + 3-tier anchoring)
 - 75 tests minimum
 
 ### Phase 6: Integration (Day 26-29)
+
 - 50 integration tests
 - 15 E2E tests
 - Full scenario coverage
 
 ### Phase 7: Performance (Day 30-32)
+
 - Benchmarking
 - Optimization
 - Memory leak testing
 - 8 performance tests
 
 ### Phase 8: Documentation (Day 33-34)
+
 - JSDoc on all public APIs
 - User documentation
 - Troubleshooting guide

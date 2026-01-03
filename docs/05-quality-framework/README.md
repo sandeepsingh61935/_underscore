@@ -66,7 +66,7 @@
 - **S**ingle Responsibility
 - **O**pen/Closed
 - **L**iskov Substitution
-- **I**nterface Segregation ⭐ *See Phase 0 Refactoring*
+- **I**nterface Segregation ⭐ _See Phase 0 Refactoring_
 - **D**ependency Inversion
 
 **Performance Principles**:
@@ -78,19 +78,21 @@
 
 ---
 
-### 4. [Mode Capability Discovery Pattern](./04-mode-capability-discovery-pattern.md) ⭐ *NEW*
+### 4. [Mode Capability Discovery Pattern](./04-mode-capability-discovery-pattern.md) ⭐ _NEW_
 
 **Feature detection pattern for multi-mode architecture**
 
 **Purpose**: Enable modes to declaratively advertise their capabilities
 
 **Use Cases**:
+
 - Dynamic UI adaptation (show/hide features)
 - Runtime feature validation
 - Backend quota enforcement
 - Self-documenting code
 
 **Related**:
+
 - [ADR-003: Interface Segregation](../04-adrs/003-interface-segregation-multi-mode.md)
 - [Mode Architecture Pattern](../02-architecture/mode_interface_segregation_pattern.md)
 

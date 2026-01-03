@@ -1,4 +1,4 @@
-# _underscore Testing Strategy
+# \_underscore Testing Strategy
 
 **Version**: 1.0  
 **Date**: 2025-12-31  
@@ -12,12 +12,14 @@
 ### The Problem We're Solving
 
 **Before (Current State)**:
+
 - ❌ Tests validate "does it work?" (functional)
 - ❌ Tests don't validate "does it follow architecture?" (structural)
 - ❌ Missing tests = false confidence
 - ❌ Can't refactor safely without comprehensive coverage
 
 **After (This Framework)**:
+
 - ✅ Tests validate BOTH function AND architecture
 - ✅ Tests enforce SOLID principles, not just outcomes
 - ✅ Architectural compliance is measurable
@@ -26,6 +28,7 @@
 ### Critical Rule from Definition of DONE
 
 > **A task is NOT DONE unless:**
+>
 > 1. ✅ Code compiles (0 TypeScript errors)
 > 2. ✅ Tests written AND passing
 > 3. ✅ Coverage targets met
@@ -58,9 +61,11 @@
 ## Layer 1: Behavioral Unit Tests (50% of Test Suite)
 
 ### Purpose
+
 Verify **functionality** - "Does the code work as expected?"
 
 ### Scope
+
 - Individual functions/methods
 - Interface implementations
 - Mode behavior (Walk/Sprint/Vault)
@@ -85,99 +90,99 @@ import { createTestHighlight } from '../../helpers/test-fixtures';
 
 describe('InMemoryHighlightRepository', () => {
   let repository: InMemoryHighlightRepository;
-  
+
   beforeEach(() => {
     // Arrange: Fresh repository for each test
     repository = new InMemoryHighlightRepository();
   });
-  
+
   // ========================================================================
   // HAPPY PATH TESTS
   // ========================================================================
-  
+
   it('should add highlight and make it retrievable', async () => {
     // Arrange
     const highlight = createTestHighlight({
-      text: 'Test highlight'
+      text: 'Test highlight',
     });
-    
+
     // Act
     await repository.add(highlight);
     const retrieved = await repository.findById(highlight.id);
-    
+
     // Assert
     expect(retrieved).not.toBeNull();
     expect(retrieved?.id).toBe(highlight.id);
     expect(retrieved?.text).toBe('Test highlight');
   });
-  
+
   it('should return all highlights when findAll called', async () => {
     // Arrange
     const highlight1 = createTestHighlight({ text: 'First' });
     const highlight2 = createTestHighlight({ text: 'Second' });
     await repository.add(highlight1);
     await repository.add(highlight2);
-    
+
     // Act
     const all = await repository.findAll();
-    
+
     // Assert
     expect(all).toHaveLength(2);
-    expect(all.map(h => h.text)).toContain('First');
-    expect(all.map(h => h.text)).toContain('Second');
+    expect(all.map((h) => h.text)).toContain('First');
+    expect(all.map((h) => h.text)).toContain('Second');
   });
-  
+
   // ========================================================================
   // ERROR PATH TESTS
   // ========================================================================
-  
+
   it('should return null when finding non-existent highlight', async () => {
     // Act
     const result = await repository.findById('non-existent-id');
-    
+
     // Assert
     expect(result).toBeNull();
   });
-  
+
   it('should throw ValidationError when adding invalid data', async () => {
     // Arrange: Invalid highlight (missing required fields)
     const invalid = {
       id: 'test',
       // Missing: text, contentHash, colorRole, etc.
     } as any;
-    
+
     // Act & Assert
     await expect(repository.add(invalid)).rejects.toThrow();
   });
-  
+
   // ========================================================================
   // EDGE CASE TESTS
   // ========================================================================
-  
+
   it('should be idempotent when adding same highlight twice', async () => {
     // Arrange
     const highlight = createTestHighlight();
-    
+
     // Act
     await repository.add(highlight);
     await repository.add(highlight); // Add again
-    
+
     const all = await repository.findAll();
-    
+
     // Assert: Should not duplicate
     expect(all).toHaveLength(1);
   });
-  
+
   it('should maintain count consistency with findAll', async () => {
     // Arrange
     await repository.add(createTestHighlight());
     await repository.add(createTestHighlight());
     await repository.add(createTestHighlight());
-    
+
     // Act
     const count = repository.count();
     const all = await repository.findAll();
-    
+
     // Assert
     expect(count).toBe(3);
     expect(all.length).toBe(count);
@@ -200,58 +205,58 @@ describe('SprintMode', () => {
   let mode: SprintMode;
   let mockRepository: MockRepository;
   let mockLogger: MockLogger;
-  
+
   beforeEach(() => {
     mockRepository = new MockRepository();
     mockLogger = new MockLogger();
     mode = new SprintMode(mockRepository, mockLogger);
   });
-  
+
   describe('createHighlight()', () => {
     it('should create highlight and persist to repository', async () => {
       // Arrange
       const selection = createMockSelection('test text');
       const color = 'yellow';
-      
+
       // Act
       const id = await mode.createHighlight(selection, color);
-      
+
       // Assert: Repository called
       expect(mockRepository.add).toHaveBeenCalledOnce();
-      
+
       // Assert: Returns valid ID
       expect(id).toBeTruthy();
       expect(typeof id).toBe('string');
-      
+
       // Assert: Highlight retrievable
       const highlight = mockRepository.get(id);
       expect(highlight).not.toBeNull();
       expect(highlight?.text).toBe('test text');
     });
-    
+
     it('should apply CSS Highlight to DOM', async () => {
       // Arrange
       const selection = createMockSelection('test');
       const addSpy = vi.spyOn(CSS.highlights, 'set');
-      
+
       // Act
       await mode.createHighlight(selection, 'yellow');
-      
+
       // Assert: CSS.highlights.set called
       expect(addSpy).toHaveBeenCalled();
     });
   });
-  
+
   describe('onDeactivate()', () => {
     it('should clear all highlights when deactivated', async () => {
       // Arrange
       await mode.createHighlight(createMockSelection('test1'), 'yellow');
       await mode.createHighlight(createMockSelection('test2'), 'blue');
       expect(mockRepository.count()).toBe(2);
-      
+
       // Act
       await mode.onDeactivate();
-      
+
       // Assert: Sprint mode clears on deactivate
       expect(mockRepository.count()).toBe(0);
     });
@@ -275,9 +280,11 @@ describe('SprintMode', () => {
 ## Layer 2: Architectural Tests (30% of Test Suite) ⭐ CRITICAL
 
 ### Purpose
+
 Verify **pattern compliance** - "Does the code follow our architecture?"
 
 ### Scope
+
 - Interface implementation
 - Dependency injection usage
 - SOLID principles
@@ -305,7 +312,7 @@ describe('Repository Interface Compliance', () => {
   it('InMemoryHighlightRepository implements IRepository', () => {
     // Arrange
     const repo = new InMemoryHighlightRepository();
-    
+
     // Assert: Has all required methods
     expect(typeof repo.add).toBe('function');
     expect(typeof repo.findById).toBe('function');
@@ -315,31 +322,31 @@ describe('Repository Interface Compliance', () => {
     expect(typeof repo.exists).toBe('function');
     expect(typeof repo.clear).toBe('function');
   });
-  
+
   it('Repository methods return correct types', async () => {
     const repo = new InMemoryHighlightRepository();
-    
+
     // Assert: Async methods return Promises
     expect(repo.add({} as any)).toBeInstanceOf(Promise);
     expect(repo.findById('test')).toBeInstanceOf(Promise);
     expect(repo.findAll()).toBeInstanceOf(Promise);
-    
+
     // Assert: Sync methods return primitives
     expect(typeof repo.count()).toBe('number');
     expect(typeof repo.exists('test')).toBe('boolean');
   });
-  
+
   it('Repository is substitutable (Liskov Substitution Principle)', async () => {
     // Arrange: Function that accepts IRepository
     async function useRepository(repo: IRepository<any>) {
       await repo.add({ id: 'test' } as any);
       return await repo.findById('test');
     }
-    
+
     // Act: Pass concrete implementation
     const repo = new InMemoryHighlightRepository();
     const result = await useRepository(repo);
-    
+
     // Assert: Works without knowing concrete type
     expect(result).not.toBeNull();
   });
@@ -351,7 +358,7 @@ describe('ModeManager Interface Compliance', () => {
     const mockEventBus = {} as any;
     const mockLogger = { info: vi.fn(), debug: vi.fn(), error: vi.fn() } as any;
     const manager = new ModeManager(mockEventBus, mockLogger);
-    
+
     // Assert: Has all required methods from IModeManager
     expect(typeof manager.registerMode).toBe('function');
     expect(typeof manager.activateMode).toBe('function');
@@ -378,52 +385,52 @@ describe('Dependency Injection Architecture', () => {
     // Arrange
     const container = new Container();
     let instanceCount = 0;
-    
+
     container.registerSingleton('logger', () => {
       instanceCount++;
       return { log: () => {} } as ILogger;
     });
-    
+
     // Act
     const logger1 = container.resolve<ILogger>('logger');
     const logger2 = container.resolve<ILogger>('logger');
-    
+
     // Assert: Same instance returned
     expect(logger1).toBe(logger2);
     expect(instanceCount).toBe(1);
   });
-  
+
   it('Container enforces transient lifecycle', () => {
     // Arrange
     const container = new Container();
     let instanceCount = 0;
-    
+
     container.registerTransient('temp', () => {
       instanceCount++;
       return { id: Math.random() };
     });
-    
+
     // Act
     const obj1 = container.resolve('temp');
     const obj2 = container.resolve('temp');
-    
+
     // Assert: Different instances
     expect(obj1).not.toBe(obj2);
     expect(instanceCount).toBe(2);
   });
-  
+
   it('Container detects circular dependencies', () => {
     // Arrange
     const container = new Container();
-    
+
     container.registerSingleton('A', () => {
       return { b: container.resolve('B') };
     });
-    
+
     container.registerSingleton('B', () => {
       return { a: container.resolve('A') };
     });
-    
+
     // Act & Assert: Should throw
     expect(() => container.resolve('A')).toThrow(/circular/i);
   });
@@ -443,37 +450,40 @@ import { join } from 'path';
 describe('Chrome API Abstraction', () => {
   const checkFileForChromeGlobal = (filePath: string): boolean => {
     const content = readFileSync(join(process.cwd(), filePath), 'utf-8');
-    
+
     // Check for direct chrome.* usage
     const chromeUsageRegex = /\bchrome\.(tabs|runtime|storage)\./;
     return chromeUsageRegex.test(content);
   };
-  
+
   it('Commands do NOT use chrome APIs directly', () => {
     // Commands should be pure - no Chrome dependencies!
     const commandFiles = [
       'src/content/commands/highlight-commands.ts',
       // Add other command files
     ];
-    
+
     for (const file of commandFiles) {
       const hasChrome = checkFileForChromeGlobal(file);
-      expect(hasChrome).toBe(false, `${file} should not use chrome API directly`);
+      expect(hasChrome).toBe(
+        false,
+        `${file} should not use chrome API directly`
+      );
     }
   });
-  
+
   it('Services use IMessaging interface, not chrome APIs', () => {
     const serviceFiles = [
       'src/shared/services/storage-service.ts',
       // Add other services
     ];
-    
+
     for (const file of serviceFiles) {
       const content = readFileSync(join(process.cwd(), file), 'utf-8');
-      
+
       // Should import IMessaging
       expect(content).toMatch(/import.*IMessaging/);
-      
+
       // Should NOT use chrome directly
       expect(content).not.toMatch(/\bchrome\.(tabs|runtime)\./);
     }
@@ -483,21 +493,25 @@ describe('Chrome API Abstraction', () => {
 
 ### Checklist for Architectural Tests
 
-- [ ] **Interface Implementation**: All repositories/managers implement interfaces
+- [ ] **Interface Implementation**: All repositories/managers implement
+      interfaces
 - [ ] **Liskov Substitution**: Implementations are interchangeable
 - [ ] **Dependency Injection**: All services use constructor injection
 - [ ] **No Hardcoded Dependencies**: Zero `new Service()` in business logic
 - [ ] **Chrome API Abstraction**: No direct `chrome.*` in testable code
-- [ ] **SOLID Compliance**: Single Responsibility, Interface Segregation verified
+- [ ] **SOLID Compliance**: Single Responsibility, Interface Segregation
+      verified
 
 ---
 
 ## Layer 3: Integration Tests (15% of Test Suite)
 
 ### Purpose
+
 Verify **cross-layer interaction** - "Do layers work together correctly?"
 
 ### Scope
+
 - Repository ↔ IndexedDB
 - Mode Manager ↔ Modes ↔ Repository
 - Command ↔ Mode ↔ Repository flow
@@ -520,48 +534,48 @@ import { createTestHighlight } from '../helpers/test-fixtures';
 
 describe('Repository + IndexedDB Integration', () => {
   let repository: HighlightRepository;
-  
+
   beforeEach(async () => {
     // Arrange: Real repository with fake IndexedDB
     repository = new HighlightRepository();
     await repository.initialize();
   });
-  
+
   afterEach(async () => {
     // Cleanup
     await repository.clear();
   });
-  
+
   it('should persist highlight to IndexedDB and retrieve it', async () => {
     // Arrange
     const highlight = createTestHighlight({ text: 'Integration test' });
-    
+
     // Act: Add to repository
     await repository.add(highlight);
-    
+
     // Flush to IndexedDB
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Assert: Can retrieve from fresh repository instance
     const freshRepo = new HighlightRepository();
     await freshRepo.initialize();
-    
+
     const retrieved = await freshRepo.findById(highlight.id);
     expect(retrieved).not.toBeNull();
     expect(retrieved?.text).toBe('Integration test');
   });
-  
+
   it('should maintain referential integrity on delete', async () => {
     // Arrange
     const highlight1 = createTestHighlight({ text: 'First' });
     const highlight2 = createTestHighlight({ text: 'Second' });
-    
+
     await repository.add(highlight1);
     await repository.add(highlight2);
-    
+
     // Act: Delete one
     await repository.remove(highlight1.id);
-    
+
     // Assert: Other still exists
     const all = await repository.findAll();
     expect(all).toHaveLength(1);
@@ -585,36 +599,36 @@ import { createMockSelection } from '../helpers/mock-dom';
 describe('VaultMode + Repository Integration', () => {
   let mode: VaultMode;
   let repository: InMemoryHighlightRepository;
-  
+
   beforeEach(() => {
     repository = new InMemoryHighlightRepository();
     const logger = new MockLogger();
     mode = new VaultMode(repository, logger);
   });
-  
+
   it('should create highlight via mode and persist to repository', async () => {
     // Arrange
     const selection = createMockSelection('Vault test');
-    
+
     // Act
     const id = await mode.createHighlight(selection, 'yellow');
-    
+
     // Assert: Highlight in repository
     const highlight = await repository.findById(id);
     expect(highlight).not.toBeNull();
     expect(highlight?.text).toBe('Vault test');
   });
-  
+
   it('should restore highlights from repository on activate', async () => {
     // Arrange: Add highlights directly to repository
     const highlight1 = createTestHighlight({ text: 'First' });
     const highlight2 = createTestHighlight({ text: 'Second' });
     await repository.add(highlight1);
     await repository.add(highlight2);
-    
+
     // Act: Activate mode (should restore)
     await mode.onActivate();
-    
+
     // Assert: Mode has highlights
     const all = mode.getAllHighlights();
     expect(all).toHaveLength(2);
@@ -636,9 +650,11 @@ describe('VaultMode + Repository Integration', () => {
 ## Layer 4: End-to-End Tests (5% of Test Suite)
 
 ### Purpose
+
 Verify **full extension behavior** - "Does the entire feature work?"
 
 ### Scope
+
 - Full user workflows
 - Cross-context communication (content ↔ background ↔ popup)
 - Real Chrome extension environment
@@ -657,40 +673,43 @@ Verify **full extension behavior** - "Does the entire feature work?"
 import { test, expect } from './fixtures';
 
 test.describe('Highlight Creation Workflow', () => {
-  test('user can create and see highlight in all modes', async ({ page, extensionId }) => {
+  test('user can create and see highlight in all modes', async ({
+    page,
+    extensionId,
+  }) => {
     // Step 1: Navigate to test page
     await page.goto('https://example.com/test-article.html');
-    
+
     // Step 2: Select text
     await page.evaluate(() => {
       const range = document.createRange();
       const textNode = document.body.firstChild;
       range.setStart(textNode!, 0);
       range.setEnd(textNode!, 10);
-      
+
       const selection = window.getSelection()!;
       selection.removeAllRanges();
       selection.addRange(range);
     });
-    
+
     // Step 3: Trigger highlight (keyboard shortcut)
     await page.keyboard.press('Control+Shift+H');
-    
+
     // Step 4: Verify highlight appears
     const highlight = page.locator('mark[data-highlight-id]');
     await expect(highlight).toBeVisible();
-    
+
     // Step 5: Open popup
     const popup = await page.context().newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    
+
     // Step 6: Verify highlight count in popup
     const count = popup.locator('[data-testid="highlight-count"]');
     await expect(count).toHaveText('1');
-    
+
     // Step 7: Switch mode
     await popup.click('[data-testid="mode-vault"]');
-    
+
     // Step 8: Verify highlight persists in Vault mode
     await page.reload();
     await expect(highlight).toBeVisible(); // Still there!
@@ -723,17 +742,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
-    
+
     // Coverage thresholds (ENFORCED)
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      exclude: [
-        'tests/**',
-        '**/*.test.ts',
-        '**/types/**',
-        '**/*.d.ts',
-      ],
+      exclude: ['tests/**', '**/*.test.ts', '**/types/**', '**/*.d.ts'],
       thresholds: {
         lines: 80,
         functions: 80,
@@ -741,7 +755,7 @@ export default defineConfig({
         statements: 80,
       },
     },
-    
+
     // Test organization
     include: [
       'tests/unit/**/*.test.ts',
@@ -749,7 +763,7 @@ export default defineConfig({
       'tests/integration/**/*.test.ts',
     ],
   },
-  
+
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
@@ -772,18 +786,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run Unit Tests
         run: npm run test:unit -- --coverage
-      
+
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
         with:
@@ -793,18 +807,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run Architecture Tests
         run: npm run test:architecture
-      
+
       - name: Fail if < 100% architecture compliance
         run: |
           if [ $? -ne 0 ]; then
@@ -816,15 +830,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run Integration Tests
         run: npm run test:integration
 
@@ -832,18 +846,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: TypeScript Check
         run: npm run type-check
-      
+
       - name: Fail on errors
         run: |
           if [ $? -ne 0 ]; then
@@ -852,7 +866,8 @@ jobs:
           fi
 
   quality-gate:
-    needs: [behavioral-tests, architectural-tests, integration-tests, type-check]
+    needs:
+      [behavioral-tests, architectural-tests, integration-tests, type-check]
     runs-on: ubuntu-latest
     steps:
       - name: All Tests Passed
@@ -885,6 +900,7 @@ For Phase 0.1 to be DONE, we need:
 ### Interface Tests (28 tests minimum)
 
 #### Task 0.1.1: Repository Interfaces (8 tests)
+
 - [ ] InMemoryRepository implements IRepository
 - [ ] RepositoryFacade implements IHighlightRepository
 - [ ] All methods defined
@@ -895,6 +911,7 @@ For Phase 0.1 to be DONE, we need:
 - [ ] Liskov substitution (implementations interchangeable)
 
 #### Task 0.1.2: Mode Manager Interface (6 tests)
+
 - [ ] ModeManager implements IModeManager
 - [ ] Can register modes
 - [ ] Can activate modes
@@ -903,6 +920,7 @@ For Phase 0.1 to be DONE, we need:
 - [ ] Mock implementation works
 
 #### Task 0.1.3: Storage Interface (6 tests)
+
 - [ ] StorageService implements IStorage
 - [ ] Save/load events
 - [ ] Clear storage
@@ -911,6 +929,7 @@ For Phase 0.1 to be DONE, we need:
 - [ ] Can swap storage backends
 
 #### Task 0.1.4: Messaging Interface (8 tests)
+
 - [ ] ChromeMessaging implements IMessaging
 - [ ] Can send to tab
 - [ ] Can send to runtime
@@ -987,4 +1006,5 @@ tests/
 4. **All tests passing**
 5. **THEN mark Phase 0.1 complete**
 
-Remember: **Tests are not just for catching bugs. Tests are for enforcing architecture.**
+Remember: **Tests are not just for catching bugs. Tests are for enforcing
+architecture.**

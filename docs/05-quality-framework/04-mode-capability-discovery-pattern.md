@@ -9,9 +9,12 @@
 
 ## Intent
 
-Provide a **declarative, type-safe mechanism** for modes to advertise their capabilities, enabling:
+Provide a **declarative, type-safe mechanism** for modes to advertise their
+capabilities, enabling:
+
 1. **Dynamic UI adaptation** (show/hide features based on mode)
-2. **Runtime feature detection** (check if mode supports a feature before using it)
+2. **Runtime feature detection** (check if mode supports a feature before using
+   it)
 3. **Self-documenting code** (capabilities declared in one place)
 
 ---
@@ -19,11 +22,14 @@ Provide a **declarative, type-safe mechanism** for modes to advertise their capa
 ## Problem
 
 In a multi-mode system with varying feature sets:
-- **UI needs to know**: Should I show the "Export" button? Does this mode support AI?
+
+- **UI needs to know**: Should I show the "Export" button? Does this mode
+  support AI?
 - **Code needs to check**: Can I call `syncToCloud()` on this mode?
 - **Developers need clarity**: What features does Vault Mode support?
 
 **Before capabilities**:
+
 ```typescript
 // ❌ Hardcoded mode checks scattered everywhere
 if (mode.name === 'vault' || mode.name === 'gen') {
@@ -48,28 +54,28 @@ if (mode.name === 'gen') {
 export interface ModeCapabilities {
   /** Storage type: none (Walk), local (Sprint), remote (Vault/Gen) */
   persistence: 'none' | 'local' | 'remote';
-  
+
   /** Undo/redo support */
   undo: boolean;
-  
+
   /** Cross-device sync */
   sync: boolean;
-  
+
   /** Collections/folders */
   collections: boolean;
-  
+
   /** Tagging system */
   tags: boolean;
-  
+
   /** Export functionality */
   export: boolean;
-  
+
   /** AI-powered features */
   ai: boolean;
-  
+
   /** Full-text search */
   search: boolean;
-  
+
   /** Multi-selector restoration (XPath+Position+Fuzzy) */
   multiSelector: boolean;
 }
@@ -92,7 +98,10 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
   };
 }
 
-export class VaultMode extends BaseHighlightMode implements IBasicMode, IPersistentMode {
+export class VaultMode
+  extends BaseHighlightMode
+  implements IBasicMode, IPersistentMode
+{
   readonly capabilities: ModeCapabilities = {
     persistence: 'remote',
     undo: true,
@@ -100,16 +109,19 @@ export class VaultMode extends BaseHighlightMode implements IBasicMode, IPersist
     collections: true,
     tags: true,
     export: true,
-    ai: false,        // ✅ Vault doesn't have AI
+    ai: false, // ✅ Vault doesn't have AI
     search: true,
     multiSelector: true,
   };
 }
 
-export class GenMode extends VaultMode implements IBasicMode, IPersistentMode, IAIMode {
+export class GenMode
+  extends VaultMode
+  implements IBasicMode, IPersistentMode, IAIMode
+{
   readonly capabilities: ModeCapabilities = {
     ...super.capabilities,
-    ai: true,         // ✅ Gen adds AI on top of Vault
+    ai: true, // ✅ Gen adds AI on top of Vault
   };
 }
 ```
@@ -179,7 +191,7 @@ function exportHighlights(mode: IBasicMode) {
   if (!mode.capabilities.export) {
     throw new Error('Export not supported in this mode');
   }
-  
+
   // TypeScript doesn't know mode has export() method
   // Need type guard or cast
   if (isPersistentMode(mode)) {
@@ -188,7 +200,9 @@ function exportHighlights(mode: IBasicMode) {
 }
 
 // Type guard
-function isPersistentMode(mode: IBasicMode): mode is IBasicMode & IPersistentMode {
+function isPersistentMode(
+  mode: IBasicMode
+): mode is IBasicMode & IPersistentMode {
   return mode.capabilities.persistence !== 'none';
 }
 ```
@@ -198,13 +212,13 @@ function isPersistentMode(mode: IBasicMode): mode is IBasicMode & IPersistentMod
 ```tsx
 function HighlightToolbar() {
   const mode = useModeManager();
-  
+
   return (
     <div>
       {/* Always show basic operations */}
       <Button onClick={handleCreate}>Create</Button>
       <Button onClick={handleDelete}>Delete</Button>
-      
+
       {/* Conditional features */}
       {mode.capabilities.undo && (
         <>
@@ -212,18 +226,16 @@ function HighlightToolbar() {
           <Button onClick={handleRedo}>Redo</Button>
         </>
       )}
-      
+
       {mode.capabilities.export && (
         <Button onClick={handleExport}>Export</Button>
       )}
-      
+
       {mode.capabilities.ai && (
         <Button onClick={handleGenerateMindmap}>Generate Mindmap</Button>
       )}
-      
-      {mode.capabilities.sync && (
-        <SyncStatusBadge />
-      )}
+
+      {mode.capabilities.sync && <SyncStatusBadge />}
     </div>
   );
 }
@@ -236,21 +248,21 @@ function HighlightToolbar() {
 app.post('/api/highlights/create', async (req, res) => {
   const user = await auth.getUser(req);
   const mode = user.subscription.mode; // 'sprint' | 'vault' | 'gen'
-  
-  const capabilities = MODE_CAPABILITIES [mode];
-  
+
+  const capabilities = MODE_CAPABILITIES[mode];
+
   if (!capabilities.collections && req.body.collectionId) {
     return res.status(403).json({
-      error: 'Collections not available in your plan'
+      error: 'Collections not available in your plan',
     });
   }
-  
+
   if (!capabilities.ai && req.body.generateMindmap) {
     return res.status(403).json({
-      error: 'AI features require Gen Mode subscription'
+      error: 'AI features require Gen Mode subscription',
     });
   }
-  
+
   // Proceed with creation...
 });
 ```
@@ -261,7 +273,8 @@ app.post('/api/highlights/create', async (req, res) => {
 
 ### Positive ✅
 
-1. **Self-Documenting**: Capabilities are declared in code, not scattered in docs
+1. **Self-Documenting**: Capabilities are declared in code, not scattered in
+   docs
 2. **Type-Safe**: TypeScript enforces `readonly capabilities`
 3. **DRY**: Single source of truth for what each mode supports
 4. **Flexible UI**: UI adapts automatically when modes gain/lose features
@@ -271,7 +284,6 @@ app.post('/api/highlights/create', async (req, res) => {
 
 1. **Duplication**: Capabilities mirror interface implementation
    - **Mitigation**: Consider this documentation, not duplication
-   
 2. **Manual Maintenance**: Must update capabilities when adding features
    - **Mitigation**: TypeScript enforces `ModeCapabilities` shape
 
@@ -297,6 +309,7 @@ src/content/modes/
 ### Adding a New Capability
 
 **Step 1**: Add to interface
+
 ```typescript
 export interface ModeCapabilities {
   // ... existing
@@ -305,11 +318,13 @@ export interface ModeCapabilities {
 ```
 
 **Step 2**: TypeScript will error on all modes without it
+
 ```
 Error: Property 'collaboration' is missing in type...
 ```
 
 **Step 3**: Update each mode
+
 ```typescript
 readonly capabilities: ModeCapabilities = {
   // ... existing
@@ -331,7 +346,8 @@ readonly capabilities: ModeCapabilities = {
 
 ## Related Patterns
 
-1. **Strategy Pattern**: Capabilities enhance strategy by declaring what each strategy can do
+1. **Strategy Pattern**: Capabilities enhance strategy by declaring what each
+   strategy can do
 2. **Feature Flags**: Capabilities are compile-time feature flags
 3. **Capability-Based Security**: Similar concept applied to authorization
 4. **Adapter Pattern**: Capabilities help determine which adapter to use

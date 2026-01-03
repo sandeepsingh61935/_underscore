@@ -1,6 +1,6 @@
 # Phase 4: Hover Delete Icon - Comprehensive Walkthrough
 
-**Project:** _underscore Web Highlighter Extension  
+**Project:** \_underscore Web Highlighter Extension  
 **Phase:** 4.3 - Interactive Deletion System  
 **Date:** January 2, 2026  
 **Status:** ✅ Complete & Production Ready  
@@ -25,18 +25,25 @@
 
 ## Executive Summary
 
-Phase 4 successfully delivered the **Hover Delete Icon** functionality while simultaneously uncovering and resolving a critical architectural flaw in the Dependency Injection system. The phase transformed from a simple UI feature implementation into a comprehensive system stabilization effort.
+Phase 4 successfully delivered the **Hover Delete Icon** functionality while
+simultaneously uncovering and resolving a critical architectural flaw in the
+Dependency Injection system. The phase transformed from a simple UI feature
+implementation into a comprehensive system stabilization effort.
 
 **Key Achievements:**
-- ✅ Implemented mode-aware hover delete system with Material Design 3 aesthetics
+
+- ✅ Implemented mode-aware hover delete system with Material Design 3
+  aesthetics
 - ✅ Fixed critical DI bug affecting all repository operations
-- ✅ Stabilized repository cache synchronization across create/restore/delete flows
+- ✅ Stabilized repository cache synchronization across create/restore/delete
+  flows
 - ✅ Achieved 100% functional coverage of highlight lifecycle
 - ✅ Cleaned codebase of debug artifacts
 - ✅ Validated architectural patterns against quality framework
 
-**Impact:**
-The system now has a robust, fully-synchronized data layer that correctly maintains state across:
+**Impact:** The system now has a robust, fully-synchronized data layer that
+correctly maintains state across:
+
 - In-memory cache (`RepositoryFacade.cache`)
 - DOM visualization (`CSS.highlights`)
 - Persistent storage (`chrome.storage.local`)
@@ -46,12 +53,14 @@ The system now has a robust, fully-synchronized data layer that correctly mainta
 ## Phase Objectives
 
 ### Primary Objectives
+
 1. ✅ Implement hover-activated delete icon for highlights
 2. ✅ Support mode-specific deletion behaviors (Walk/Sprint/Vault)
 3. ✅ Integrate with existing event bus architecture
 4. ✅ Maintain Material Design 3 design language
 
 ### Secondary Objectives (Discovered During Implementation)
+
 1. ✅ Fix repository cache population bug
 2. ✅ Resolve DI container instance mismatch
 3. ✅ Standardize event-driven deletion flow
@@ -63,18 +72,25 @@ The system now has a robust, fully-synchronized data layer that correctly mainta
 
 ### 1. Hover Delete Icon System
 
-**Component:** [DeleteIconOverlay](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts#16-302)  
-**Location:** [src/content/ui/delete-icon-overlay.ts](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts)
+**Component:**
+[DeleteIconOverlay](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts#16-302)  
+**Location:**
+[src/content/ui/delete-icon-overlay.ts](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts)
 
 **Features:**
+
 - **Automatic positioning**: Icon appears at top-right of highlight bounding box
-- **Color matching**: Icon background matches highlight color (yellow/blue/green/orange/purple)
+- **Color matching**: Icon background matches highlight color
+  (yellow/blue/green/orange/purple)
 - **Mode awareness**: Different confirmation messages per mode
 - **Smooth animations**: 200-250ms Material Design 3 transitions
-- **Accessibility**: WCAG AAA compliant with keyboard support (Tab, Enter, Escape)
-- **Batch selection**: Infrastructure for Shift+Click multi-select (prepared, not fully activated)
+- **Accessibility**: WCAG AAA compliant with keyboard support (Tab, Enter,
+  Escape)
+- **Batch selection**: Infrastructure for Shift+Click multi-select (prepared,
+  not fully activated)
 
 **Design:**
+
 - Finnish minimalism + Material Design 3 error palette
 - Berry red error container (`#FFDAD6` light, `#93000A` dark)
 - Compact 20x20px with 4px padding
@@ -83,10 +99,13 @@ The system now has a robust, fully-synchronized data layer that correctly mainta
 
 ### 2. Hover Detection System
 
-**Component:** [HighlightHoverDetector](file:///home/sandy/projects/_underscore/src/content/ui/highlight-hover-detector.ts#13-208)  
-**Location:** [src/content/ui/highlight-hover-detector.ts](file:///home/sandy/projects/_underscore/src/content/ui/highlight-hover-detector.ts)
+**Component:**
+[HighlightHoverDetector](file:///home/sandy/projects/_underscore/src/content/ui/highlight-hover-detector.ts#13-208)  
+**Location:**
+[src/content/ui/highlight-hover-detector.ts](file:///home/sandy/projects/_underscore/src/content/ui/highlight-hover-detector.ts)
 
 **Features:**
+
 - **Performance optimized**: 50ms throttled mousemove detection
 - **CSS.highlights integration**: Uses native browser API for range detection
 - **Precise hit testing**: Rectangle-based intersection detection
@@ -94,6 +113,7 @@ The system now has a robust, fully-synchronized data layer that correctly mainta
 - **Event-driven**: Emits `highlight:hover:start` and `highlight:hover:end`
 
 **Technical Details:**
+
 ```typescript
 // Uses CSS.highlights API for precise detection
 const highlightName = `underscore-${highlight.id}`;
@@ -110,13 +130,14 @@ for (const range of customHighlight.keys()) {
 
 **Behavior by Mode:**
 
-| Mode | Confirmation | Undo Support | Storage Impact |
-|------|-------------|--------------|----------------|
-| **Walk** | No | Yes (in-memory) | None (ephemeral) |
-| **Sprint** | Yes | Yes (command stack) | Event logged to chrome.storage |
-| **Vault** | Yes (stronger) | Yes | Full persistence to IndexedDB |
+| Mode       | Confirmation   | Undo Support        | Storage Impact                 |
+| ---------- | -------------- | ------------------- | ------------------------------ |
+| **Walk**   | No             | Yes (in-memory)     | None (ephemeral)               |
+| **Sprint** | Yes            | Yes (command stack) | Event logged to chrome.storage |
+| **Vault**  | Yes (stronger) | Yes                 | Full persistence to IndexedDB  |
 
 **Event Flow:**
+
 ```
 User clicks icon
   ↓
@@ -142,15 +163,18 @@ Mode-specific handler:
 **Severity:** High  
 **Impact:** Hover detection completely broken
 
-**Problem:**
-Hover detector attempted to access `highlight.liveRanges` from repository data, but repository only stores serialized ranges, not live DOM ranges.
+**Problem:** Hover detector attempted to access `highlight.liveRanges` from
+repository data, but repository only stores serialized ranges, not live DOM
+ranges.
 
 **Error:**
+
 ```
 Cannot read property 'getClientRects' of undefined
 ```
 
 **Root Cause:**
+
 ```typescript
 // BROKEN: liveRanges don't exist in repository data
 for (const range of highlight.liveRanges) {
@@ -158,8 +182,8 @@ for (const range of highlight.liveRanges) {
 }
 ```
 
-**Fix:**
-Changed to use `CSS.highlights` API directly:
+**Fix:** Changed to use `CSS.highlights` API directly:
+
 ```typescript
 // FIXED: Get ranges from CSS.highlights
 const customHighlight = CSS.highlights.get(`underscore-${highlight.id}`);
@@ -169,6 +193,7 @@ for (const range of customHighlight.keys()) {
 ```
 
 **Files Modified:**
+
 - [src/content/ui/highlight-hover-detector.ts](file:///home/sandy/projects/_underscore/src/content/ui/highlight-hover-detector.ts)
 - `src/content/ui/highlight-click-detector.ts`
 
@@ -181,18 +206,19 @@ for (const range of customHighlight.keys()) {
 **Severity:** Critical  
 **Impact:** Hover detection failed after page reload
 
-**Problem:**
-After page reload, highlights were restored to the screen but `repositoryFacade.getAll()` returned empty array.
+**Problem:** After page reload, highlights were restored to the screen but
+`repositoryFacade.getAll()` returned empty array.
 
 **Symptoms:**
+
 ```
 Console: [REPO-DEBUG] add() called, cache size before: 0
 Console: [REPO-DEBUG] add() complete, cache size after: 0  ← WRONG!
 Console: [HOVER-DEBUG] Repo highlights: 0 []
 ```
 
-**Root Cause:**
-`SprintMode.createFromData()` (used during restoration) was missing the `repository.add()` call:
+**Root Cause:** `SprintMode.createFromData()` (used during restoration) was
+missing the `repository.add()` call:
 
 ```typescript
 // BROKEN: Only renders, doesn't populate cache
@@ -203,8 +229,8 @@ async createFromData(data: HighlightData) {
 }
 ```
 
-**Fix:**
-Added repository sync to restoration flow:
+**Fix:** Added repository sync to restoration flow:
+
 ```typescript
 // FIXED: Now populates cache during restore
 async createFromData(data: HighlightData) {
@@ -215,8 +241,11 @@ async createFromData(data: HighlightData) {
 ```
 
 **Files Modified:**
-- [src/content/modes/sprint-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts) (line 154)
-- [src/content/modes/vault-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts) (verified already had the fix)
+
+- [src/content/modes/sprint-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts)
+  (line 154)
+- [src/content/modes/vault-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts)
+  (verified already had the fix)
 
 **Commit:** Fixed repository population during highlight restoration
 
@@ -227,10 +256,10 @@ async createFromData(data: HighlightData) {
 **Severity:** CRITICAL 🔥  
 **Impact:** All repository operations were bypassing the cache
 
-**Problem:**
-Even after Bug #2 fix, repository cache remained empty!
+**Problem:** Even after Bug #2 fix, repository cache remained empty!
 
 **Investigation:**
+
 ```
 CSS.highlights: 9 entries ✅
 Repository cache: 0 entries ❌
@@ -238,8 +267,8 @@ Repository cache: 0 entries ❌
 Modes were calling repository.add() but cache stayed empty!
 ```
 
-**Root Cause Discovery:**
-The Dependency Injection container was injecting **two different repository implementations**:
+**Root Cause Discovery:** The Dependency Injection container was injecting **two
+different repository implementations**:
 
 ```typescript
 // service-registration.ts (BROKEN)
@@ -263,13 +292,16 @@ container.registerTransient<IHighlightMode>('sprintMode', () => {
 ```
 
 **The Issue:**
+
 - **Modes** received `InMemoryHighlightRepository` (storage-only, no cache)
-- **Hover detector** used [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-280) (cache + storage)
+- **Hover detector** used
+  [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-280)
+  (cache + storage)
 - When modes called `repository.add()`, it wrote to storage but **NOT cache**
 - Hover detector read from cache → empty!
 
-**The Fix:**
-Changed all mode registrations to use [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-280):
+**The Fix:** Changed all mode registrations to use
+[RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-280):
 
 ```typescript
 // service-registration.ts (FIXED)
@@ -281,15 +313,18 @@ container.registerTransient<IHighlightMode>('sprintMode', () => {
 // Same fix for walkMode and vaultMode
 ```
 
-**Impact:**
-This single fix resolved **all cache synchronization issues** across:
+**Impact:** This single fix resolved **all cache synchronization issues**
+across:
+
 - Highlight creation
 - Highlight restoration
 - Hover detection
 - Deletion
 
 **Files Modified:**
-- [src/shared/di/service-registration.ts](file:///home/sandy/projects/_underscore/src/shared/di/service-registration.ts) (lines 200-230)
+
+- [src/shared/di/service-registration.ts](file:///home/sandy/projects/_underscore/src/shared/di/service-registration.ts)
+  (lines 200-230)
 
 **Commit:** CRITICAL FIX: Modes now use RepositoryFacade for cache consistency
 
@@ -300,45 +335,47 @@ This single fix resolved **all cache synchronization issues** across:
 **Severity:** Medium  
 **Impact:** Icon created but invisible
 
-**Problem:**
-Icon was being created and added to DOM, but CSS made it invisible.
+**Problem:** Icon was being created and added to DOM, but CSS made it invisible.
 
 **Symptoms:**
+
 ```
 Console: [DELETE-ICON] Hover start: hl-xxx ✅
 Console: Icon created and appended to body ✅
 Visual: No icon visible ❌
 ```
 
-**Root Cause:**
-CSS rule started icon with `opacity: 0` and required a CSS class to show:
+**Root Cause:** CSS rule started icon with `opacity: 0` and required a CSS class
+to show:
 
 ```css
 /* BROKEN */
 .underscore-delete-icon {
-  opacity: 0;  /* Invisible by default */
+  opacity: 0; /* Invisible by default */
 }
 
 .underscore-highlight--hovered .underscore-delete-icon {
-  opacity: 1;  /* Only visible with this class */
+  opacity: 1; /* Only visible with this class */
 }
 ```
 
-**Problem:** No JavaScript code was adding the `underscore-highlight--hovered` class to highlights!
+**Problem:** No JavaScript code was adding the `underscore-highlight--hovered`
+class to highlights!
 
-**Fix:**
-Changed CSS to make icon visible by default:
+**Fix:** Changed CSS to make icon visible by default:
 
 ```css
 /* FIXED */
 .underscore-delete-icon {
-  opacity: 1;  /* Visible by default */
+  opacity: 1; /* Visible by default */
   transform: scale(1);
 }
 ```
 
 **Files Modified:**
-- [src/content/ui/delete-icon.css](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon.css) (lines 27-28)
+
+- [src/content/ui/delete-icon.css](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon.css)
+  (lines 27-28)
 
 **Commit:** Fixed delete icon visibility (CSS opacity)
 
@@ -349,10 +386,11 @@ Changed CSS to make icon visible by default:
 **Severity:** High  
 **Impact:** Highlights weren't actually deleted
 
-**Problem:**
-Icon appeared, confirmation dialog showed, but highlight remained on page.
+**Problem:** Icon appeared, confirmation dialog showed, but highlight remained
+on page.
 
 **Symptoms:**
+
 ```
 User clicks → Confirmation appears ✅
 User confirms → Dialog closes ✅
@@ -361,13 +399,15 @@ Repository: Count unchanged ❌
 ```
 
 **Root Cause:**
-[onHighlightRemoved()](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#265-281) event handler only saved the deletion event but **didn't call [removeHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#80-105)**:
+[onHighlightRemoved()](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#265-281)
+event handler only saved the deletion event but **didn't call
+[removeHighlight()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#80-105)**:
 
 ```typescript
 // BROKEN: Only logs, doesn't delete!
 override async onHighlightRemoved(event: HighlightRemovedEvent) {
   this.logger.debug('Sprint Mode: Persisting highlight removal');
-  
+
   if (this.storage) {
     await this.storage.saveEvent({
       type: 'highlight.removed',
@@ -378,17 +418,16 @@ override async onHighlightRemoved(event: HighlightRemovedEvent) {
 }
 ```
 
-**Fix:**
-Added actual deletion before event logging:
+**Fix:** Added actual deletion before event logging:
 
 ```typescript
 // FIXED: Actually removes highlight!
 override async onHighlightRemoved(event: HighlightRemovedEvent) {
   this.logger.debug('Sprint Mode: Removing highlight and persisting removal event');
-  
+
   // ✅ CRITICAL: Actually delete the highlight
   await this.removeHighlight(event.highlightId);
-  
+
   // Then persist the removal event
   if (this.storage) {
     await this.storage.saveEvent({
@@ -400,7 +439,9 @@ override async onHighlightRemoved(event: HighlightRemovedEvent) {
 ```
 
 **Files Modified:**
-- [src/content/modes/sprint-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts) (lines 269-284)
+
+- [src/content/modes/sprint-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts)
+  (lines 269-284)
 
 **Commit:** Fixed deletion handler to actually remove highlights
 
@@ -411,6 +452,7 @@ override async onHighlightRemoved(event: HighlightRemovedEvent) {
 ### 1. Repository Pattern Clarification
 
 **Before Phase 4:**
+
 ```
 Confused architecture with two repository types:
 - InMemoryHighlightRepository (storage only)
@@ -420,6 +462,7 @@ Modes used either one inconsistently!
 ```
 
 **After Phase 4:**
+
 ```
 Clear separation of concerns:
 - InMemoryHighlightRepository: Backend implementation (async storage)
@@ -429,6 +472,7 @@ ALL modes MUST use RepositoryFacade for consistency!
 ```
 
 **Rationale:**
+
 - **Cache is critical** for UI interactions (hover/click detection)
 - **Modes must write through cache** to keep UI responsive
 - **Single source of truth** for "what highlights exist"
@@ -437,19 +481,20 @@ ALL modes MUST use RepositoryFacade for consistency!
 
 During Phase 4, we validated the mode-specific data layering strategy:
 
-| Mode | Data Layers | Justification |
-|------|-------------|---------------|
-| **Walk** | State only | Ephemeral by design, no persistence needed |
-| **Sprint** | State + Repository (cache + storage) | Session-scoped TTL persistence |
-| **Vault** | State + Repository + IndexedDB | Long-term cross-session persistence |
+| Mode       | Data Layers                          | Justification                              |
+| ---------- | ------------------------------------ | ------------------------------------------ |
+| **Walk**   | State only                           | Ephemeral by design, no persistence needed |
+| **Sprint** | State + Repository (cache + storage) | Session-scoped TTL persistence             |
+| **Vault**  | State + Repository + IndexedDB       | Long-term cross-session persistence        |
 
 **Quality Framework Alignment:**
+
 - ✅ **YAGNI Principle**: Walk Mode doesn't need persistence
 - ✅ **Separation of Concerns**: Each mode owns its persistence strategy
 - ✅ **Strategy Pattern**: Mode interface allows pluggable behavior
 
-**Documentation:**
-Created comprehensive analysis in:
+**Documentation:** Created comprehensive analysis in:
+
 - [layered-architecture-analysis.md](file:///home/sandy/.gemini/antigravity/brain/4fd39629-2e2b-4604-b3d3-ce9304bbdcf1/layered-architecture-analysis.md)
 - [cache-logic-analysis.md](file:///home/sandy/.gemini/antigravity/brain/4fd39629-2e2b-4604-b3d3-ce9304bbdcf1/cache-logic-analysis.md)
 - [honest-comparison.md](file:///home/sandy/.gemini/antigravity/brain/4fd39629-2e2b-4604-b3d3-ce9304bbdcf1/honest-comparison.md)
@@ -457,6 +502,7 @@ Created comprehensive analysis in:
 ### 3. Event-Driven Deletion Flow
 
 **Before:**
+
 ```
 Inconsistent deletion approaches:
 - Some code called removeHighlight() directly
@@ -465,6 +511,7 @@ Inconsistent deletion approaches:
 ```
 
 **After:**
+
 ```
 Unified event-driven flow:
 1. UI emits HIGHLIGHT_REMOVED event
@@ -474,6 +521,7 @@ Unified event-driven flow:
 ```
 
 **Benefits:**
+
 - Single deletion entry point
 - Mode isolation maintained
 - Easy to add undo/redo support
@@ -482,16 +530,19 @@ Unified event-driven flow:
 ### 4. CSS.highlights API Integration
 
 **Before:**
+
 ```
 Relied on mode.data.liveRanges (error-prone, not serializable)
 ```
 
 **After:**
+
 ```
 Uses CSS.highlights API as source of truth for DOM ranges
 ```
 
 **Benefits:**
+
 - **Browser-managed**: Ranges automatically update with DOM changes
 - **Performant**: Native C++ implementation
 - **Reliable**: No manual range tracking
@@ -526,6 +577,7 @@ src/
 ### Key APIs Used
 
 **1. CSS Highlight API**
+
 ```typescript
 // Access highlight ranges
 const highlight = CSS.highlights.get('underscore-hl-123');
@@ -538,12 +590,13 @@ CSS.highlights.delete('underscore-hl-123');
 ```
 
 **2. EventBus Pattern**
+
 ```typescript
 // Emit deletion event
 eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
   type: EventName.HIGHLIGHT_REMOVED,
   highlightId: id,
-  timestamp: Date.now()
+  timestamp: Date.now(),
 });
 
 // Listen for events
@@ -553,12 +606,13 @@ eventBus.on(EventName.HIGHLIGHT_REMOVED, async (event) => {
 ```
 
 **3. Repository Facade**
+
 ```typescript
 // Synchronous cache operations
-repositoryFacade.add(highlight);     // Updates cache + storage
-repositoryFacade.get(id);            // Reads from cache
-repositoryFacade.remove(id);         // Removes from cache + storage
-repositoryFacade.getAll();           // Returns all cached highlights
+repositoryFacade.add(highlight); // Updates cache + storage
+repositoryFacade.get(id); // Reads from cache
+repositoryFacade.remove(id); // Removes from cache + storage
+repositoryFacade.getAll(); // Returns all cached highlights
 ```
 
 ### Deletion Flow (Complete)
@@ -597,6 +651,7 @@ sequenceDiagram
 ### Test Cases
 
 #### TC1: Create and Delete Workflow
+
 **Status:** ✅ PASS
 
 1. Create highlight (double-click text)
@@ -616,6 +671,7 @@ sequenceDiagram
    - **Actual:** ✅ `[REPO-DEBUG] count: 0`
 
 #### TC2: Page Reload Persistence
+
 **Status:** ✅ PASS
 
 1. Create 3 highlights
@@ -630,6 +686,7 @@ sequenceDiagram
    - **Actual:** ✅ Repository correctly populated
 
 #### TC3: Hover Detection After Restore
+
 **Status:** ✅ PASS
 
 1. Create highlight
@@ -640,6 +697,7 @@ sequenceDiagram
    - **Verification:** Repository cache pre-populated during restore
 
 #### TC4: Multi-Highlight Scenarios
+
 **Status:** ✅ PASS
 
 1. Create 5 highlights with different colors
@@ -653,6 +711,7 @@ sequenceDiagram
 ### Console Verification Logs
 
 **During Successful Deletion:**
+
 ```
 [DELETE-ICON] Hover start: hl-1767344054861-br21rb5r1
 [REPO-DEBUG] getAll() called, returning 1 highlights, cache size: 1
@@ -665,14 +724,14 @@ Success! ✅
 
 ### Performance Metrics
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Build (npm run build) | 11.1s | Optimized production build |
-| Extension size | 384.4 kB | Compressed bundle |
-| Hover detection latency | <50ms | Throttled mousemove |
-| Icon animation | 200ms | M3 standard duration |
-| Deletion (visual) | Instant | Synchronous CSS.highlights.delete() |
-| Deletion (persist) | Async | Non-blocking background save |
+| Operation               | Time     | Notes                               |
+| ----------------------- | -------- | ----------------------------------- |
+| Build (npm run build)   | 11.1s    | Optimized production build          |
+| Extension size          | 384.4 kB | Compressed bundle                   |
+| Hover detection latency | <50ms    | Throttled mousemove                 |
+| Icon animation          | 200ms    | M3 standard duration                |
+| Deletion (visual)       | Instant  | Synchronous CSS.highlights.delete() |
+| Deletion (persist)      | Async    | Non-blocking background save        |
 
 ---
 
@@ -681,6 +740,7 @@ Success! ✅
 ### Debug Logging Cleanup
 
 **Removed all temporary debug logs:**
+
 ```typescript
 // Removed from:
 - src/shared/repositories/repository-facade.ts (REPO-DEBUG)
@@ -691,6 +751,7 @@ Success! ✅
 ```
 
 **Retained production logging:**
+
 ```typescript
 // Kept logger.* calls for production debugging
 this.logger.info('Removing highlight', { id });
@@ -701,13 +762,18 @@ this.logger.warn('[HOVER] No CSS highlight found', { id });
 ### Lint Fixes
 
 **Fixed:**
-- Unused variable [id](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts#57-67) in [base-highlight-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts)
+
+- Unused variable
+  [id](file:///home/sandy/projects/_underscore/src/content/ui/delete-icon-overlay.ts#57-67)
+  in
+  [base-highlight-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts)
   ```typescript
   // Before: for (const [id, highlight] of ...)
   // After:  for (const [, highlight] of ...)
   ```
 
 **Build Status:**
+
 ```bash
 ✔ Built extension in 11.1s
 ✔ No TypeScript errors
@@ -719,6 +785,7 @@ this.logger.warn('[HOVER] No CSS highlight found', { id });
 **Issue:** `Sprint.createHighlight()` had duplicate `repository.add()` call
 
 **Before:**
+
 ```typescript
 await this.repository.add(data);
 // ... 3 lines later ...
@@ -726,6 +793,7 @@ await this.repository.add(data); // Duplicate!
 ```
 
 **After:**
+
 ```typescript
 // CRITICAL: Add to repository cache and storage
 await this.repository.add(data);
@@ -788,25 +856,26 @@ DELETE (Click icon)
 
 **All three data layers now stay in sync:**
 
-| Layer | API | Status |
-|-------|-----|--------|
-| **DOM Visual** | `CSS.highlights` | ✅ Synced |
-| **Memory Cache** | `RepositoryFacade.cache` | ✅ Synced |
-| **Persistent Storage** | `chrome.storage.local` | ✅ Synced |
+| Layer                  | API                      | Status    |
+| ---------------------- | ------------------------ | --------- |
+| **DOM Visual**         | `CSS.highlights`         | ✅ Synced |
+| **Memory Cache**       | `RepositoryFacade.cache` | ✅ Synced |
+| **Persistent Storage** | `chrome.storage.local`   | ✅ Synced |
 
 **Verification:**
+
 ```typescript
 // After any operation (create/delete/restore):
-CSS.highlights.size === repositoryFacade.count() === storage.events.length
+(CSS.highlights.size === repositoryFacade.count()) === storage.events.length;
 ```
 
 ### Mode Implementation Status
 
-| Mode | Create | Restore | Delete | Hover | Status |
-|------|--------|---------|--------|-------|--------|
-| **Walk** | ✅ | N/A (ephemeral) | ✅ | ✅ | Complete |
-| **Sprint** | ✅ | ✅ | ✅ | ✅ | Complete |
-| **Vault** | ✅ | ✅ | ✅ | ✅ | Complete |
+| Mode       | Create | Restore         | Delete | Hover | Status   |
+| ---------- | ------ | --------------- | ------ | ----- | -------- |
+| **Walk**   | ✅     | N/A (ephemeral) | ✅     | ✅    | Complete |
+| **Sprint** | ✅     | ✅              | ✅     | ✅    | Complete |
+| **Vault**  | ✅     | ✅              | ✅     | ✅    | Complete |
 
 ---
 
@@ -815,17 +884,20 @@ CSS.highlights.size === repositoryFacade.count() === storage.events.length
 ### What's Ready
 
 ✅ **Infrastructure:**
+
 - Repository pattern validated and working
 - Event-driven architecture stable
 - Mode system extensible
 - DI container properly configured
 
 ✅ **UI Components:**
+
 - Hover detection system reusable
 - Delete icon overlay mode-agnostic
 - CSS.highlights integration proven
 
 ✅ **Testing Foundation:**
+
 - Console verification patterns established
 - Manual test cases documented
 - Performance baselines recorded
@@ -833,6 +905,7 @@ CSS.highlights.size === repositoryFacade.count() === storage.events.length
 ### What Phase 5 Can Build On
 
 **1. Vault Mode Enhancement**
+
 ```typescript
 // Current: Vault uses same repository as Sprint
 // Phase 5: Add IndexedDB backing store
@@ -840,7 +913,7 @@ CSS.highlights.size === repositoryFacade.count() === storage.events.length
 class VaultMode extends BaseHighlightMode {
   constructor(
     repositoryFacade: RepositoryFacade,
-    indexedDB: IIndexedDB,  // ← New
+    indexedDB: IIndexedDB, // ← New
     eventBus: EventBus,
     logger: ILogger
   ) {
@@ -850,6 +923,7 @@ class VaultMode extends BaseHighlightMode {
 ```
 
 **2. Advanced Deletion Features**
+
 ```typescript
 // Infrastructure already exists:
 - Batch selection (Shift+Click logic present)
@@ -863,6 +937,7 @@ class VaultMode extends BaseHighlightMode {
 ```
 
 **3. Cross-Tab Synchronization**
+
 ```typescript
 // Foundation ready:
 - EventBus for local events
@@ -877,16 +952,19 @@ class VaultMode extends BaseHighlightMode {
 ### Known Limitations
 
 **1. Batch Delete Not Fully Active**
+
 - UI infrastructure exists (`selectedHighlights` set)
 - Shift+Click handler implemented
 - Needs: Visual feedback, count badge activation
 
 **2. Keyboard Navigation Incomplete**
+
 - Tab focus works
 - Enter/Escape handlers present
 - Needs: Arrow key navigation between highlights
 
 **3. Dark Mode Not Tested**
+
 - CSS dark mode styles exist
 - Auto-detects `prefers-color-scheme: dark`
 - Needs: Manual verification in dark mode browser
@@ -894,6 +972,7 @@ class VaultMode extends BaseHighlightMode {
 ### Recommended Next Steps
 
 **Immediate (Phase 5 Start):**
+
 1. Review this walkthrough document
 2. Pull latest code from Phase 4
 3. Verify build: `npm run build`
@@ -901,12 +980,14 @@ class VaultMode extends BaseHighlightMode {
 5. Begin Vault Mode IndexedDB integration
 
 **Short-term (Phase 5):**
+
 1. Implement IndexedDB repository backend
 2. Add cross-tab synchronization
 3. Activate batch delete UI
 4. Add deletion undo/redo
 
 **Medium-term (Phase 6?):**
+
 1. Advanced search & filtering
 2. Highlight organization (folders/tags)
 3. Export/import functionality
@@ -919,6 +1000,7 @@ class VaultMode extends BaseHighlightMode {
 ### Debug Commands
 
 **Quick verification in browser console:**
+
 ```javascript
 // Check cache size
 console.log('Cache size:', CSS.highlights.size);
@@ -951,16 +1033,20 @@ ls -lh .output/chrome-mv3/content-scripts/content.js
 Created during Phase 4 for future reference:
 
 1. **[delete-icon-architecture-flow.md](file:///home/sandy/projects/_underscore/docs/02-architecture/delete-icon-architecture-flow.md)**  
-   Flow diagrams and sequence charts
+   Flow
+   diagrams and sequence charts
 
 2. **[cache-logic-analysis.md](file:///home/sandy/projects/_underscore/docs/02-architecture/cache-logic-analysis.md)**  
-   Detailed save/retrieve/delete logic analysis
+   Detailed
+   save/retrieve/delete logic analysis
 
 3. **[layered-architecture-analysis.md](file:///home/sandy/projects/_underscore/docs/02-architecture/layered-architecture-analysis.md)**  
-   Validation of mode data layering strategy
+   Validation
+   of mode data layering strategy
 
 4. **[honest-comparison.md](file:///home/sandy/.gemini/antigravity/brain/4fd39629-2e2b-4604-b3d3-ce9304bbdcf1/honest-comparison.md)**  
-   Current vs. proposed architecture comparison
+   Current
+   vs. proposed architecture comparison
 
 ### Commit History Summary
 
@@ -983,9 +1069,12 @@ Phase 4 Commits (Recommended):
 
 ## Conclusion
 
-Phase 4 transformed from a simple feature request ("add delete icon") into a comprehensive system stabilization effort. The critical DI bug discovery and fix has made the entire highlighting system more robust and reliable.
+Phase 4 transformed from a simple feature request ("add delete icon") into a
+comprehensive system stabilization effort. The critical DI bug discovery and fix
+has made the entire highlighting system more robust and reliable.
 
 **System Maturity:** The codebase is now at a **production-ready** state with:
+
 - Full create/restore/delete cycle working
 - Synchronized data layers
 - Clean, maintainable code

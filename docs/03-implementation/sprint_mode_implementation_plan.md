@@ -416,11 +416,11 @@ Testing:
 
 ### ✅ Sprint 1: Foundation & Core Highlighting (COMPLETE)
 
-**Status**: ✅ All tasks complete + Architectural Hardening
-**Duration**: Completed
-**Branch**: `sprint-1`
+**Status**: ✅ All tasks complete + Architectural Hardening **Duration**:
+Completed **Branch**: `sprint-1`
 
 ### Major Architectural Upgrades (Added Scope) ✅
+
 - [x] **Git Strategy**: Adopted Strict Atomic Commits
 - [x] **Pattern Adoption**:
   - `Command Pattern` for Undo/Redo
@@ -429,9 +429,13 @@ Testing:
 - [x] **Event Sourcing**: Implemented partial event sourcing for persistence
 
 ### Critical Fixes & Adjustments ✅
-- [x] **Toggle-Delete Reverted**: Removed complex toggle-delete; restored standard Highlight → creation, Ctrl+Click → deletion.
-- [x] **Dual Registration Fix**: Solved visual sync issues by cleaning up both legacy and unified keys.
-- [x] **Persistence Integrity**: Fixed `liveRanges` loss during Undo/Redo cycles.
+
+- [x] **Toggle-Delete Reverted**: Removed complex toggle-delete; restored
+      standard Highlight → creation, Ctrl+Click → deletion.
+- [x] **Dual Registration Fix**: Solved visual sync issues by cleaning up both
+      legacy and unified keys.
+- [x] **Persistence Integrity**: Fixed `liveRanges` loss during Undo/Redo
+      cycles.
 
 ### Infrastructure ✅
 
@@ -447,7 +451,8 @@ Testing:
 
 #### SelectionDetector (Refactored)
 
-- [x] **Creation Only**: Responsible ONLY for detecting selections (Single Responsibility Principle).
+- [x] **Creation Only**: Responsible ONLY for detecting selections (Single
+      Responsibility Principle).
 - [x] Double-click detection (300ms window)
 - [x] Keyboard shortcut (Ctrl+U / Cmd+U)
 - [x] **Toggle-Delete Removed**: Reverted to standard behavior per user request.
@@ -466,7 +471,8 @@ Testing:
 
 #### HighlightRenderer (Unified)
 
-- [x] **Dual Registration System**: Handles both legacy ID and unified underscored ID.
+- [x] **Dual Registration System**: Handles both legacy ID and unified
+      underscored ID.
 - [x] **Underscore/underline style** (not background)
 - [x] **Contrast-aware colors** (dark/light adaptation)
 - [x] Shadow DOM isolation

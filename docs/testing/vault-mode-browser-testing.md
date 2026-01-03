@@ -3,6 +3,7 @@
 ## Quick Start (5 minutes)
 
 ### Step 1: Build the Extension
+
 ```bash
 # Build for development (with source maps for debugging)
 npm run build
@@ -28,6 +29,7 @@ npm run build:prod
 ### Step 3: Test Vault Mode Features
 
 #### Test 1: Save a Highlight
+
 1. Navigate to any webpage (e.g., Wikipedia article)
 2. Select some text
 3. Open browser DevTools (F12)
@@ -39,6 +41,7 @@ npm run build:prod
    ```
 
 #### Test 2: Verify Multi-Selector Storage
+
 ```javascript
 // In console, check what was stored:
 const db = await indexedDB.databases();
@@ -51,7 +54,7 @@ request.onsuccess = (event) => {
   const tx = db.transaction(['highlights'], 'readonly');
   const store = tx.objectStore('highlights');
   const getAll = store.getAll();
-  
+
   getAll.onsuccess = () => {
     console.log('Stored highlights:', getAll.result);
     // Each should have metadata.selectors with xpath, position, fuzzy
@@ -60,6 +63,7 @@ request.onsuccess = (event) => {
 ```
 
 #### Test 3: Restore After Page Reload
+
 1. Create a highlight on a page
 2. Reload the page (Ctrl+R or F5)
 3. Highlights should re-appear automatically
@@ -68,29 +72,32 @@ request.onsuccess = (event) => {
    - "✅ Restored X/Y highlights"
 
 #### Test 4: Test 3-Tier Fallback
+
 1. **XPath Test:** Create highlight, reload → should restore
-2. **Position Test:** 
+2. **Position Test:**
    - Create highlight
    - Modify DOM slightly (inspect element, wrap in `<span>`)
    - Reload → should still restore
 3. **Fuzzy Test:**
-   - Create highlight  
+   - Create highlight
    - Edit page content (change words around target)
    - Reload → should still find it if similarity > 80%
 
 ### Step 4: Debug with Browser DevTools
 
 #### Check Logs:
+
 ```javascript
 // Vault Mode service logs
 // Look for these emoji indicators:
 // ✅ = Success
-// ❌ = Error  
+// ❌ = Error
 // 🔄 = Processing
 // ⚠️ = Warning
 ```
 
 #### Inspect IndexedDB Directly:
+
 1. DevTools → Application tab
 2. Storage → IndexedDB → VaultModeDB
 3. Expand to see:
@@ -100,6 +107,7 @@ request.onsuccess = (event) => {
    - `tags` - Categories
 
 #### View Stored Data:
+
 ```javascript
 // Check a highlight's selectors
 const highlight = await storage.getHighlight('some-id');
@@ -132,7 +140,7 @@ const highlight = {
   colorRole: 'yellow',
   type: 'underscore',
   ranges: [],
-  createdAt: new Date()
+  createdAt: new Date(),
 };
 
 // 3. Save
@@ -159,30 +167,39 @@ location.reload();
 ## Common Issues & Solutions
 
 ### Issue: Extension not loading
+
 **Solution:** Check for:
+
 - `manifest.json` in dist/ folder
 - Build completed successfully (`dist/` folder exists)
 - No TypeScript errors
 
 ### Issue: Highlights not saving
+
 **Solution:** Check:
+
 1. DevTools Console for errors
 2. IndexedDB permissions granted
-3. Content script loaded: `chrome://extensions/` → your extension → "Inspect views"
+3. Content script loaded: `chrome://extensions/` → your extension → "Inspect
+   views"
 
 ### Issue: Highlights not restoring
+
 **Solution:** Debug:
+
 ```javascript
 // Check restoration tier used
 const results = await service.restoreHighlightsForUrl();
-results.forEach(r => {
+results.forEach((r) => {
   console.log(`ID: ${r.highlight.id}, Tier: ${r.restoredUsing}`);
 });
 // Should show: 'xpath', 'position', 'fuzzy', or 'failed'
 ```
 
 ### Issue: IndexedDB not visible
+
 **Solution:**
+
 - Refresh DevTools
 - Check Application → Clear storage → IndexedDB is enabled
 - Ensure page has focus (some browsers restrict background tabs)
@@ -210,6 +227,7 @@ results.forEach(r => {
 ## Production Testing Sites
 
 Test on these real-world sites:
+
 1. **Wikipedia** - Static content, good for XPath
 2. **Medium** - Dynamic content, tests fuzzy matching
 3. **GitHub** - Code snippets, tests positioning
@@ -227,7 +245,7 @@ async function stressTest() {
     const highlight = createMockHighlight({ id: `stress-${i}` });
     await service.saveHighlight(highlight, ranges[i]);
   }
-  
+
   // Measure restoration time
   const start = performance.now();
   await service.restoreHighlightsForUrl();

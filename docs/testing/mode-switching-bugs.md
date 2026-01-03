@@ -5,6 +5,7 @@
 ### Case 1: Walk Mode (with highlights) → Sprint Mode
 
 **Current Behavior**:
+
 ```typescript
 // Walk Mode has 5 highlights
 user clicks "Switch to Sprint Mode"
@@ -24,13 +25,15 @@ User creates Sprint highlights
 Repository now has MIXED: Walk + Sprint highlights ❌
 ```
 
-**Problem**: Walk Mode writes to repository but doesn't clean it up on deactivate!
+**Problem**: Walk Mode writes to repository but doesn't clean it up on
+deactivate!
 
 ---
 
 ### Case 2: Sprint Mode (with highlights) → Walk Mode
 
 **Current Behavior**:
+
 ```typescript
 // Sprint Mode has 3 highlights (saved to repository)
 user switches to Walk Mode
@@ -59,6 +62,7 @@ User sees delete icons for invisible highlights! ❌
 **Expected**: Walk Mode is ephemeral, nothing persists
 
 **Current Code** (walk-mode.ts:112):
+
 ```typescript
 // 4. Add to Repository (Memory Only)
 // In Walk Mode, 'repository' is purely ephemeral.
@@ -75,21 +79,23 @@ await this.repository.add(data as any); // ❌ WRITES TO REPO!
 
 ```typescript
 // Repository has NO CONCEPT of which mode owns which highlight!
-repository.cache = Map<id, HighlightData>
+repository.cache = Map<id, HighlightData>;
 
 // When modes switch:
 // - Old mode clears its mode.data ✅
-// - Old mode clears CSS.highlights ✅  
+// - Old mode clears CSS.highlights ✅
 // - Repository.cache? Still has old data ❌
 ```
 
 ### Issue #2: Walk Mode Violates Ephemeral Contract
 
 **Walk Mode SHOULD**:
+
 - ✅ Not persist to chrome.storage
 - ❌ **Should NOT write to repository** (currently DOES!)
 
 **Current Walk Mode** (line 112):
+
 ```typescript
 await this.repository.add(data as any); // ❌ BAD!
 ```
@@ -106,19 +112,19 @@ sequenceDiagram
     participant WalkMode
     participant Repository
     participant SprintMode
-    
+
     Note over WalkMode: 5 highlights created
-    
+
     WalkMode->>WalkMode: mode.data = {h1, h2, h3, h4, h5}
     WalkMode->>CSS: CSS.highlights = {h1-h5}
     WalkMode-->>Repository: ❌ SKIP (ephemeral!)
-    
+
     User->>WalkMode: Switch to Sprint
     WalkMode->>CSS: Clear CSS.highlights ✅
     WalkMode->>WalkMode: Clear mode.data ✅
-    
+
     Note over Repository: Still EMPTY (Walk never added)
-    
+
     SprintMode->>SprintMode: Activate (empty state)
     User->>SprintMode: Create highlights
     SprintMode->>Repository: Add to repository ✅
@@ -136,19 +142,19 @@ sequenceDiagram
     participant SprintMode
     participant Repository
     participant WalkMode
-    
+
     Note over SprintMode: 3 persistent highlights
-    
+
     SprintMode->>SprintMode: mode.data = {h1, h2, h3}
     SprintMode->>Repository: cache = {h1, h2, h3}
-    
+
     User->>SprintMode: Switch to Walk
     SprintMode->>CSS: Clear CSS.highlights ✅
     SprintMode->>SprintMode: Clear mode.data ✅
     SprintMode->>Repository: Clear repository! ✅
-    
+
     Note over Repository: Now EMPTY
-    
+
     WalkMode->>WalkMode: Activate (empty state)
 ```
 
@@ -164,16 +170,16 @@ sequenceDiagram
     participant Page
     participant WalkMode
     participant Storage
-    
+
     Note over WalkMode: User has 10 highlights
-    
+
     User->>Page: Reload page
     Page->>Storage: chrome.storage.local.get()
     Storage-->>Page: {} EMPTY (Walk doesn't persist)
-    
+
     Page->>WalkMode: Activate
     Note over WalkMode: No highlights restored ✅
-    
+
     User->>User: Sees clean page ✅
 ```
 
@@ -189,14 +195,14 @@ sequenceDiagram
 // walk-mode.ts
 async createHighlight(selection: Selection, colorRole: string) {
   // ... create highlight ...
-  
+
   // ✅ Add to mode state
   this.highlights.set(id, highlight);
   this.data.set(id, data);
-  
+
   // ❌ REMOVE THIS:
   // await this.repository.add(data);
-  
+
   // ✅ Walk Mode = CSS only, no repository!
 }
 ```
@@ -207,12 +213,12 @@ async createHighlight(selection: Selection, colorRole: string) {
 // base-highlight-mode.ts
 async onDeactivate() {
   this.logger.info(`${this.name} mode deactivated`);
-  
+
   // 1. Clear visual highlights
   for (const id of this.highlights.keys()) {
     await this.removeHighlight(id);
   }
-  
+
   // 2. Clear repository (if mode had persistence)
   if (this.shouldPersist()) {
     for (const id of this.data.keys()) {
@@ -228,12 +234,12 @@ async onDeactivate() {
 // sprint-mode.ts, vault-mode.ts
 async createFromData(data: HighlightData) {
   // ... create highlight ...
-  
+
   this.data.set(data.id, data);
-  
+
   // ✅ ALWAYS sync to repository
   await this.repository.add(data);
-  
+
   this.eventBus.emit(HIGHLIGHT_CREATED);
 }
 ```
@@ -252,11 +258,11 @@ interface RepositoryEntry {
 
 class RepositoryFacade {
   private cache = new Map<string, RepositoryEntry>();
-  
+
   add(highlight: HighlightData, mode: string) {
     this.cache.set(highlight.id, { data: highlight, mode });
   }
-  
+
   clearMode(mode: string) {
     // Clear all highlights from specific mode
     for (const [id, entry] of this.cache.entries()) {
@@ -272,12 +278,12 @@ class RepositoryFacade {
 
 ## Summary: What Needs Fixing
 
-| Issue | Current | Should Be | Fix |
-|-------|---------|-----------|-----|
-| **Walk writes to repo** | ❌ YES | ❌ NO | Remove `repository.add()` from Walk |
-| **Repo cleared on switch** | ❌ NO | ✅ YES | Add `repository.clearMode()` to [onDeactivate()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#51-58) |
-| **Sprint syncs to repo** | ❌ NO | ✅ YES | Add `repository.add()` to [createFromData()](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#146-161) |
-| **Walk reload restores** | ✅ NO | ✅ NO | Already correct |
+| Issue                      | Current | Should Be | Fix                                                                                                                                      |
+| -------------------------- | ------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Walk writes to repo**    | ❌ YES  | ❌ NO     | Remove `repository.add()` from Walk                                                                                                      |
+| **Repo cleared on switch** | ❌ NO   | ✅ YES    | Add `repository.clearMode()` to [onDeactivate()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#51-58) |
+| **Sprint syncs to repo**   | ❌ NO   | ✅ YES    | Add `repository.add()` to [createFromData()](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#146-161)           |
+| **Walk reload restores**   | ✅ NO   | ✅ NO     | Already correct                                                                                                                          |
 
 ---
 
@@ -291,7 +297,9 @@ class RepositoryFacade {
 ### Q2: Proper sync between mode and repository?
 
 **Current**: ❌ Broken - modes deactivate but don't clear repository  
-**Fixed**: ✅ [onDeactivate()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#51-58) clears repository for that mode
+**Fixed**: ✅
+[onDeactivate()](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#51-58)
+clears repository for that mode
 
 ### Q3: Walk Mode doesn't use repository/persistence?
 

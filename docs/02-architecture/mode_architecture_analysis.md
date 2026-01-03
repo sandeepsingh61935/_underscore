@@ -8,9 +8,13 @@
 
 ## Executive Summary
 
-**Verdict**: Your existing architecture is **EXCELLENT** and already implements most recommended patterns. The proposed "enhancements" are **largely unnecessary** and would add complexity without significant benefit.
+**Verdict**: Your existing architecture is **EXCELLENT** and already implements
+most recommended patterns. The proposed "enhancements" are **largely
+unnecessary** and would add complexity without significant benefit.
 
-**Key Finding**: You have a **production-grade mode-switching system** that follows industry best practices. The main gaps are in **feature isolation** and **transition validation**, not in the core architecture.
+**Key Finding**: You have a **production-grade mode-switching system** that
+follows industry best practices. The main gaps are in **feature isolation** and
+**transition validation**, not in the core architecture.
 
 ---
 
@@ -19,12 +23,20 @@
 ### 1. Strategy Pattern ✅ **ALREADY IMPLEMENTED - EXCELLENT**
 
 **Existing Implementation**:
-- [IHighlightMode](file:///home/sandy/projects/_underscore/src/content/modes/highlight-mode.interface.ts#26-60) interface with clear contract
-- [BaseHighlightMode](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#19-118) abstract class for shared behavior
-- [WalkMode](file:///home/sandy/projects/_underscore/src/content/modes/walk-mode.ts#18-138) and [SprintMode](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#21-196) concrete implementations
-- [ModeManager](file:///home/sandy/projects/_underscore/src/content/modes/mode-manager.ts#12-79) as context/orchestrator
+
+- [IHighlightMode](file:///home/sandy/projects/_underscore/src/content/modes/highlight-mode.interface.ts#26-60)
+  interface with clear contract
+- [BaseHighlightMode](file:///home/sandy/projects/_underscore/src/content/modes/base-highlight-mode.ts#19-118)
+  abstract class for shared behavior
+- [WalkMode](file:///home/sandy/projects/_underscore/src/content/modes/walk-mode.ts#18-138)
+  and
+  [SprintMode](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts#21-196)
+  concrete implementations
+- [ModeManager](file:///home/sandy/projects/_underscore/src/content/modes/mode-manager.ts#12-79)
+  as context/orchestrator
 
 **Code Evidence**:
+
 ```typescript
 // highlight-mode.interface.ts - Clean abstraction
 export interface IHighlightMode {
@@ -39,7 +51,7 @@ export interface IHighlightMode {
 export class ModeManager {
   private currentMode: IHighlightMode | null = null;
   private modes = new Map<string, IHighlightMode>();
-  
+
   async activateMode(modeName: string): Promise<void> {
     // Deactivate current, activate new - textbook pattern!
   }
@@ -50,25 +62,30 @@ export class ModeManager {
 
 **Recommendation**: **KEEP AS-IS**. This is a textbook implementation.
 
-**My Proposed "Enhancement"**: ❌ **NOT NEEDED** - Was redundant with your existing implementation.
+**My Proposed "Enhancement"**: ❌ **NOT NEEDED** - Was redundant with your
+existing implementation.
 
 ---
 
 ### 2. Repository Pattern ✅ **ALREADY IMPLEMENTED - WITH FACADE**
 
 **Existing Implementation**:
+
 - `IHighlightRepository` interface
 - `InMemoryHighlightRepository` concrete implementation
-- [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282) for synchronous access
-- [RepositoryFactory](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#17-73) for instance management
+- [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282)
+  for synchronous access
+- [RepositoryFactory](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#17-73)
+  for instance management
 
 **Code Evidence**:
+
 ```typescript
 // repository-facade.ts - Sophisticated Facade Pattern
 export class RepositoryFacade {
   private cache = new Map<string, HighlightDataV2>();
   private contentHashIndex = new Map<string, string>();
-  
+
   // Synchronous API backed by async persistence
   add(highlight: HighlightDataV2): void {
     this.cache.set(highlight.id, highlight);
@@ -80,6 +97,7 @@ export class RepositoryFacade {
 **Quality Rating**: ⭐⭐⭐⭐⭐ (5/5)
 
 **Strengths**:
+
 - ✅ Facade Pattern correctly abstracts async operations
 - ✅ Write-through cache for performance
 - ✅ Content hash index for deduplication
@@ -87,13 +105,17 @@ export class RepositoryFacade {
 
 **Recommendation**: **PERFECT - NO CHANGES NEEDED**
 
-**My Proposed "Adapter Pattern"**: ⚠️ **PARTIALLY EXISTS** - [RepositoryFactory](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#17-73) already provides swappable implementations, but it's hardcoded to `InMemoryHighlightRepository`. This is fine for current needs.
+**My Proposed "Adapter Pattern"**: ⚠️ **PARTIALLY EXISTS** -
+[RepositoryFactory](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#17-73)
+already provides swappable implementations, but it's hardcoded to
+`InMemoryHighlightRepository`. This is fine for current needs.
 
 ---
 
 ### 3. Dependency Injection ✅ **ALREADY IMPLEMENTED - CONSTRUCTOR INJECTION**
 
 **Existing Implementation**:
+
 ```typescript
 // base-highlight-mode.ts
 constructor(
@@ -120,39 +142,55 @@ modeManager.registerMode(walkMode);
 **Quality Rating**: ⭐⭐⭐⭐ (4/5)
 
 **Strengths**:
+
 - ✅ Constructor injection (best practice)
 - ✅ Dependencies are interfaces
 - ✅ Testable (can inject mocks)
-- ✅ Shared instances (single [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282) across modes)
+- ✅ Shared instances (single
+  [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282)
+  across modes)
 
 **Minor Weakness**:
-- ⚠️ Manual wiring in [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) (no DI container)
+
+- ⚠️ Manual wiring in
+  [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+  (no DI container)
 - For 2-3 modes, this is **perfectly acceptable**
 
-**Recommendation**: **KEEP AS-IS** unless you reach 5+ modes, then consider a lightweight DI container.
+**Recommendation**: **KEEP AS-IS** unless you reach 5+ modes, then consider a
+lightweight DI container.
 
-**My Proposed "DI Container"**: ❌ **OVERKILL** - Manual wiring is simpler and more transparent for this scale.
+**My Proposed "DI Container"**: ❌ **OVERKILL** - Manual wiring is simpler and
+more transparent for this scale.
 
 ---
 
 ### 4. Event-Driven Architecture ✅ **ALREADY IMPLEMENTED - ADR DOCUMENTED**
 
 **Existing Implementation**:
+
 - `EventBus` for Observer Pattern
 - Type-safe events (`EventName` enum)
 - ADR-002 documents the architecture
 - Used throughout the codebase
 
 **Code Evidence**:
+
 ```typescript
 // content.ts - Event-driven orchestration
-eventBus.on<SelectionCreatedEvent>(EventName.SELECTION_CREATED, async (event) => {
-  // Handle selection
-});
+eventBus.on<SelectionCreatedEvent>(
+  EventName.SELECTION_CREATED,
+  async (event) => {
+    // Handle selection
+  }
+);
 
-eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
-  // Persist event
-});
+eventBus.on<HighlightCreatedEvent>(
+  EventName.HIGHLIGHT_CREATED,
+  async (event) => {
+    // Persist event
+  }
+);
 ```
 
 **Quality Rating**: ⭐⭐⭐⭐⭐ (5/5)
@@ -164,12 +202,15 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 ### 5. Command Pattern ✅ **ALREADY IMPLEMENTED**
 
 **Existing Implementation**:
+
 - `CreateHighlightCommand`
 - `RemoveHighlightCommand`
 - `CommandStack` for undo/redo
-- Used in [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+- Used in
+  [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
 
 **Code Evidence**:
+
 ```typescript
 const command = new CreateHighlightCommand(
   event.selection,
@@ -190,9 +231,11 @@ await commandStack.execute(command);
 ### 6. Factory Pattern ✅ **ALREADY IMPLEMENTED**
 
 **Existing Implementation**:
+
 - `RepositoryFactory.getHighlightRepository()`
 - Singleton pattern for repository instances
-- Mode awareness ([setMode()](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#45-55))
+- Mode awareness
+  ([setMode()](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-factory.ts#45-55))
 
 **Quality Rating**: ⭐⭐⭐⭐ (4/5)
 
@@ -204,9 +247,11 @@ await commandStack.execute(command);
 
 ### ❌ 1. **Mode Feature Flags / Configuration** ⚠️ **ACTUALLY USEFUL**
 
-**Problem**: Your modes are currently **hardcoded** with their behavior. There's no centralized place to see what features each mode has.
+**Problem**: Your modes are currently **hardcoded** with their behavior. There's
+no centralized place to see what features each mode has.
 
 **Current State**:
+
 ```typescript
 // WalkMode - Features are implicit in the code
 async createHighlight(...) {
@@ -222,6 +267,7 @@ async createHighlight(...) {
 ```
 
 **Proposed Enhancement**:
+
 ```typescript
 // mode-config.ts - NEW FILE
 export interface ModeFeatures {
@@ -257,39 +303,44 @@ export const ModeConfigs: Record<string, ModeFeatures> = {
 };
 ```
 
-**Benefit**: 
+**Benefit**:
+
 - ✅ **Self-documenting** - Mode capabilities visible at a glance
 - ✅ **Runtime checks** - Modes can query their own config
 - ✅ **Feature detection** for UI (show/hide sync button)
 
 **Effort**: 🟢 LOW (15 minutes)
 
-**Priority**: 🔥 **HIGH** - This is the **ONLY** enhancement I strongly recommend.
+**Priority**: 🔥 **HIGH** - This is the **ONLY** enhancement I strongly
+recommend.
 
 ---
 
 ### ❌ 2. **Transition Validation** ⚠️ **MODERATELY USEFUL**
 
-**Problem**: Currently, any mode can switch to any other mode without validation.
+**Problem**: Currently, any mode can switch to any other mode without
+validation.
 
 **Current State**:
+
 ```typescript
 // mode-manager.ts - No validation
 async activateMode(modeName: string): Promise<void> {
   const newMode = this.modes.get(modeName);
   if (!newMode) throw new Error(`Mode ${modeName} not registered`);
-  
+
   // No validation if transition is allowed!
   if (this.currentMode) {
     await this.currentMode.onDeactivate();
   }
-  
+
   this.currentMode = newMode;
   await this.currentMode.onActivate();
 }
 ```
 
 **Proposed Enhancement**:
+
 ```typescript
 // mode-transitions.ts - NEW FILE
 type TransitionRule = {
@@ -310,20 +361,21 @@ const ALLOWED_TRANSITIONS: TransitionRule[] = [
 async activateMode(modeName: string): Promise<void> {
   const currentName = this.currentMode?.name;
   const rule = ALLOWED_TRANSITIONS.find(r => r.from === currentName && r.to === modeName);
-  
+
   if (!rule) {
     throw new Error(`Transition from ${currentName} to ${modeName} not allowed`);
   }
-  
+
   if (rule.validate && !(await rule.validate())) {
     throw new Error(`Transition validation failed`);
   }
-  
+
   // ... existing logic
 }
 ```
 
-**Benefit**: 
+**Benefit**:
+
 - ✅ Prevents invalid state transitions
 - ✅ User-friendly warnings
 - ✅ Enforces business rules
@@ -336,14 +388,21 @@ async activateMode(modeName: string): Promise<void> {
 
 ### ❌ 3. **Resource Pool** ❌ **NOT NEEDED YET**
 
-**My Initial Recommendation**: Create a `ResourcePool` to allocate/deallocate mode-specific resources.
+**My Initial Recommendation**: Create a `ResourcePool` to allocate/deallocate
+mode-specific resources.
 
-**Reality Check**: 
-- Your modes **ALREADY share** the same [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282) and [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249)
-- Walk Mode simply **doesn't use** storage (conditional in [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts))
+**Reality Check**:
+
+- Your modes **ALREADY share** the same
+  [RepositoryFacade](file:///home/sandy/projects/_underscore/src/shared/repositories/repository-facade.ts#36-282)
+  and
+  [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249)
+- Walk Mode simply **doesn't use** storage (conditional in
+  [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts))
 - This is **simpler and cleaner** than resource pooling
 
 **Code Evidence**:
+
 ```typescript
 // content.ts - Conditional persistence (SMART!)
 eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
@@ -352,7 +411,7 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
     logger.debug('Skipping persistence for Walk Mode');
     return;
   }
-  
+
   // Persist for Sprint Mode
   await storage.saveEvent({...});
 });
@@ -367,6 +426,7 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 **My Initial Recommendation**: Dynamic module loading, lazy loading, etc.
 
 **Reality Check**:
+
 - You have **2 modes** (Walk, Sprint)
 - Total code: ~300 lines combined
 - Bundle size impact: **< 5KB**
@@ -380,6 +440,7 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 ### 1. Event Sourcing (Partial Implementation)
 
 **Observed Pattern**:
+
 ```typescript
 // content.ts - Event persistence
 await storage.saveEvent({
@@ -392,10 +453,10 @@ await storage.saveEvent({
 // Restoration logic
 async function restoreHighlights(context: RestoreContext): Promise<void> {
   const events = await storage.loadEvents();
-  
+
   // Clear projection before rebuilding  ✅ CORRECT!
   repositoryFacade.clear();
-  
+
   // Replay events
   for (const event of events) {
     if (event.type === 'highlight.created') {
@@ -410,12 +471,14 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 **Quality Rating**: ⭐⭐⭐⭐ (4/5)
 
 **Strengths**:
+
 - ✅ Append-only event log
 - ✅ State reconstruction from events
 - ✅ Correctly clears projection before replay
 - ✅ Handles `highlights.cleared` as a waterline event
 
 **Minor Improvement**:
+
 ```typescript
 // Consider extracting event replay into a dedicated class
 class EventProjection {
@@ -443,7 +506,9 @@ class EventProjection {
 
 ### 🚨 **CRITICAL**: Mode-Specific Behavior Leaking into Orchestrator
 
-**Problem**: The [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) file has mode-specific logic scattered throughout:
+**Problem**: The
+[content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+file has mode-specific logic scattered throughout:
 
 ```typescript
 // content.ts - MODE AWARENESS LEAKING ❌
@@ -461,11 +526,15 @@ if (RepositoryFactory.getMode() !== 'walk') {
 ```
 
 **Why This Is Bad**:
-- Adding a new mode requires changing [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) in multiple places
+
+- Adding a new mode requires changing
+  [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+  in multiple places
 - Mode responsibilities are split between mode class and orchestrator
 - **Violates Single Responsibility Principle**
 
 **Proper Solution**:
+
 ```typescript
 // Let the mode decide what to persist!
 
@@ -491,6 +560,7 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 ```
 
 **Benefits**:
+
 - ✅ Mode logic encapsulated in mode class
 - ✅ Adding new mode = add new mode class, no orchestrator changes
 - ✅ Follows Open/Closed Principle
@@ -503,36 +573,42 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 
 ##Pattern Scorecard
 
-| Pattern | Implemented | Quality | Recommendation |
-|---------|------------|---------|----------------|
-| **Strategy Pattern** | ✅ | ⭐⭐⭐⭐⭐ | Keep |
-| **Repository Pattern** | ✅ | ⭐⭐⭐⭐⭐ | Keep |
-| **Facade Pattern** | ✅ | ⭐⭐⭐⭐⭐ | Keep |
-| **Dependency Injection** | ✅ | ⭐⭐⭐⭐ | Keep |
-| **Event-Driven Architecture** | ✅ | ⭐⭐⭐⭐⭐ | Keep |
-| **Command Pattern** | ✅ | ⭐⭐⭐⭐⭐ | Keep |
-| **Event Sourcing** | ✅ | ⭐⭐⭐⭐ | Keep |
-| **Factory Pattern** | ✅ | ⭐⭐⭐⭐ | Keep |
-| **Feature Flags** | ❌ | N/A | **ADD** |
-| **Transition Validation** | ❌ | N/A | **CONSIDER** |
-| **Resource Pool** | ❌ | N/A | **SKIP** |
-| **Plugin Architecture** | ❌ | N/A | **SKIP** |
+| Pattern                       | Implemented | Quality    | Recommendation |
+| ----------------------------- | ----------- | ---------- | -------------- |
+| **Strategy Pattern**          | ✅          | ⭐⭐⭐⭐⭐ | Keep           |
+| **Repository Pattern**        | ✅          | ⭐⭐⭐⭐⭐ | Keep           |
+| **Facade Pattern**            | ✅          | ⭐⭐⭐⭐⭐ | Keep           |
+| **Dependency Injection**      | ✅          | ⭐⭐⭐⭐   | Keep           |
+| **Event-Driven Architecture** | ✅          | ⭐⭐⭐⭐⭐ | Keep           |
+| **Command Pattern**           | ✅          | ⭐⭐⭐⭐⭐ | Keep           |
+| **Event Sourcing**            | ✅          | ⭐⭐⭐⭐   | Keep           |
+| **Factory Pattern**           | ✅          | ⭐⭐⭐⭐   | Keep           |
+| **Feature Flags**             | ❌          | N/A        | **ADD**        |
+| **Transition Validation**     | ❌          | N/A        | **CONSIDER**   |
+| **Resource Pool**             | ❌          | N/A        | **SKIP**       |
+| **Plugin Architecture**       | ❌          | N/A        | **SKIP**       |
 
 ---
 
 ## Final Recommendations (Priority Order)
 
 ### 🔥 **P0: CRITICAL** (Do Now)
-1. **Encapsulate Mode Logic**: Move mode-specific behavior from [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) into mode classes
+
+1. **Encapsulate Mode Logic**: Move mode-specific behavior from
+   [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+   into mode classes
 2. **Add Mode Feature Config**: Create `ModeConfigs` for self-documentation
 
 ### 🔶 **P1: HIGH** (Do Soon)
+
 3. **Transition Validation**: Add allowed transition rules
 
 ### 🟡 **P2: MEDIUM** (Consider)
+
 4. **Extract Event Projection**: Create dedicated class for event replay logic
 
 ### 🟢 **P3: LOW** (Ignore for Now)
+
 5. ~~Plugin Architecture~~ - Overkill
 6. ~~Resource Pool~~ - Already solved differently
 7. ~~DI Container~~ - Manual wiring is fine
@@ -542,6 +618,7 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 ## Conclusion
 
 **Your architecture is EXCELLENT!** You've implemented:
+
 - ✅ Strategy Pattern (textbook implementation)
 - ✅ Repository + Facade Pattern (sophisticated)
 - ✅ Event-Driven Architecture (ADR-documented)
@@ -550,10 +627,14 @@ eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) =>
 - ✅ Dependency Injection (constructor injection)
 
 **The only genuine improvements needed**:
-1. **Feature Flags** - for mode capability discovery
-2. **Encapsulate Mode Logic** - move [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts) conditionals into mode classes
 
-**Everything else I suggested**: Ignore it. Your current design is production-ready.
+1. **Feature Flags** - for mode capability discovery
+2. **Encapsulate Mode Logic** - move
+   [content.ts](file:///home/sandy/projects/_underscore/src/entrypoints/content.ts)
+   conditionals into mode classes
+
+**Everything else I suggested**: Ignore it. Your current design is
+production-ready.
 
 **Architectural Maturity**: 🎖️ **Senior/Staff Level**
 

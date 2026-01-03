@@ -9,16 +9,25 @@
 
 ## Executive Summary
 
-**VERDICT**: My initial analysis was **INCOMPLETE**. With Vault and Gen modes in scope, you **NEED** several of the patterns I initially dismissed as "overkill."
+**VERDICT**: My initial analysis was **INCOMPLETE**. With Vault and Gen modes in
+scope, you **NEED** several of the patterns I initially dismissed as "overkill."
 
-**Critical Finding**: Current architecture is **perfectly adequate for 2 modes** (Walk + Sprint) but **will not scale** to 4 modes with vastly different resource requirements.
+**Critical Finding**: Current architecture is **perfectly adequate for 2 modes**
+(Walk + Sprint) but **will not scale** to 4 modes with vastly different resource
+requirements.
 
 **Major Architectural Gaps Identified**:
-1. ❌ **No Resource Isolation** - All modes share same repository/storage instances
-2. ❌ **No Backend Integration Layer** - Vault Mode needs API client, event sync queue
-3. ❌ **No AI Service Abstraction** - Gen Mode needs Claude API, cost tracking, privacy controls
-4. ❌ **No Mode Feature Discovery** - UI can't query what features each mode supports
-5. ❌ **No Multi-Selector Engine** - Vault Mode requires XPath+Position+Fuzzy matching
+
+1. ❌ **No Resource Isolation** - All modes share same repository/storage
+   instances
+2. ❌ **No Backend Integration Layer** - Vault Mode needs API client, event sync
+   queue
+3. ❌ **No AI Service Abstraction** - Gen Mode needs Claude API, cost tracking,
+   privacy controls
+4. ❌ **No Mode Feature Discovery** - UI can't query what features each mode
+   supports
+5. ❌ **No Multi-Selector Engine** - Vault Mode requires XPath+Position+Fuzzy
+   matching
 6. ❌ **No Sync Conflict Resolution** - Event sourcing implementation missing
 
 ---
@@ -27,16 +36,17 @@
 
 ### Complexity Matrix
 
-| Feature | Walk | Sprint | Vault | Gen |
-|---------|------|--------|-------|-----|
-| **Storage** | None | LocalStorage (TTL) | IndexedDB + Backend | IndexedDB + Backend + AI Cache |
-| **Sync** | None | None | Event Sourcing + Conflict Resolution | Inherited from Vault |
-| **Persistence** | Memory only | 4-hour TTL | Permanent (multi-selector) | Permanent |
-| **Backend API** | None | None | Auth, Events, Sync | Auth, Events, Sync, AI |
-| **Dependencies** | 0 | StorageService | StorageService, APIClient, SyncQueue, MultiSelector | All Vault + AIClient, CostTracker |
-| **Codebase** | ~150 LOC | ~200 LOC | **~2000+ LOC** | **~3000+ LOC** |
+| Feature          | Walk        | Sprint             | Vault                                               | Gen                               |
+| ---------------- | ----------- | ------------------ | --------------------------------------------------- | --------------------------------- |
+| **Storage**      | None        | LocalStorage (TTL) | IndexedDB + Backend                                 | IndexedDB + Backend + AI Cache    |
+| **Sync**         | None        | None               | Event Sourcing + Conflict Resolution                | Inherited from Vault              |
+| **Persistence**  | Memory only | 4-hour TTL         | Permanent (multi-selector)                          | Permanent                         |
+| **Backend API**  | None        | None               | Auth, Events, Sync                                  | Auth, Events, Sync, AI            |
+| **Dependencies** | 0           | StorageService     | StorageService, APIClient, SyncQueue, MultiSelector | All Vault + AIClient, CostTracker |
+| **Codebase**     | ~150 LOC    | ~200 LOC           | **~2000+ LOC**                                      | **~3000+ LOC**                    |
 
-**Key Insight**: Vault Mode is **10x more complex** than Sprint Mode. Gen Mode adds another **50% complexity** on top.
+**Key Insight**: Vault Mode is **10x more complex** than Sprint Mode. Gen Mode
+adds another **50% complexity** on top.
 
 ---
 
@@ -57,10 +67,13 @@
 **Current Implementation**: Excellent with minor improvements needed
 
 **Resources**:
-- [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249) (event persistence with TTL)
+
+- [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249)
+  (event persistence with TTL)
 - `InMemoryHighlightRepository` (ephemeral cache)
 
 **Minor Enhancements Needed**:
+
 - Feature config (see P0 recommendations)
 - Better encapsulation of mode logic
 
@@ -73,39 +86,40 @@
 ```yaml
 Core Components Missing:
   1. Multi-Selector Engine:
-     - XPath selector (fast, brittle)
-     - Position selector (medium, brittle to ads)
-     - Fuzzy text matching (slow, robust)
-     - 3-tier restoration algorithm
-  
+    - XPath selector (fast, brittle)
+    - Position selector (medium, brittle to ads)
+    - Fuzzy text matching (slow, robust)
+    - 3-tier restoration algorithm
+
   2. Event Sourcing System:
-     - Local event store (IndexedDB)
-     - Remote event log (PostgreSQL)
-     - Event replay engine
-     - Conflict resolution (vector clocks)
-  
+    - Local event store (IndexedDB)
+    - Remote event log (PostgreSQL)
+    - Event replay engine
+    - Conflict resolution (vector clocks)
+
   3. Sync Infrastructure:
-     - Background sync queue
-     - Batch sync (every 30s)
-     - Offline queue
-     - Retry logic with exponential backoff
-  
+    - Background sync queue
+    - Batch sync (every 30s)
+    - Offline queue
+    - Retry logic with exponential backoff
+
   4. Backend API Client:
-     - Authentication (JWT + Refresh tokens)
-     - REST API client
-     - WebSocket for real-time updates
-     - Rate limiting
-  
+    - Authentication (JWT + Refresh tokens)
+    - REST API client
+    - WebSocket for real-time updates
+    - Rate limiting
+
   5. Advanced Features:
-     - Collections (drag & drop)
-     - Tags system
-     - Full-text search
-     - Export (Markdown, HTML, PDF, JSON)
+    - Collections (drag & drop)
+    - Tags system
+    - Full-text search
+    - Export (Markdown, HTML, PDF, JSON)
 ```
 
 **Code Estimate**: 2000+ lines
 
 **Dependencies**:
+
 - `Dexie.js` (IndexedDB wrapper)
 - `google-diff-match-patch` (fuzzy matching)
 - HTTP client library
@@ -125,20 +139,20 @@ AI Components Missing:
      - Privacy filter (PII detection)
      - Prompt templates
      - Response caching
-  
+
   2. Mindmap Generator:
      - D3.js / Markmap integration
      - Graph layout algorithms
      - Interactive visualization
      - Export (SVG, PNG, PDF)
-  
+
   3. Advanced AI Features:
      - Summary generation (3 lengths)
      - Entity extraction
      - Cross-document synthesis
      - Contradiction detection
      - Question generation
-  
+
   4. AI Analytics:
      - Usage tracking (API calls per user)
      - Cost attribution
@@ -148,6 +162,7 @@ AI Components Missing:
 **Code Estimate**: 1000+ lines (on top of Vault)
 
 **Dependencies**:
+
 - `@anthropic-ai/sdk` (Claude API)
 - `d3` or `markmap` (visualization)
 - PII detection library
@@ -162,7 +177,9 @@ AI Components Missing:
 **New Assessment**: **ABSOLUTELY ESSENTIAL**
 
 **Why**:
-- Vault Mode has **15+ unique features** (collections, tags, export, search, sync)
+
+- Vault Mode has **15+ unique features** (collections, tags, export, search,
+  sync)
 - Gen Mode has **10+ AI features** (mindmaps, summaries, Q&A)
 - UI needs to know what to show (hide "Export" button in Walk Mode)
 - Backend needs quota enforcement (free tier limits)
@@ -176,23 +193,23 @@ export interface ModeFeatures {
   persistence: 'none' | 'local' | 'remote';
   storage: 'memory' | 'localstorage' | 'indexeddb';
   sync: boolean;
-  
+
   // Features
   collections: boolean;
   tags: boolean;
   search: boolean;
   export: boolean;
   undo: boolean;
-  
+
   // AI (Gen Mode only)
   ai: boolean;
   mindmaps: boolean;
   summaries: boolean;
-  
+
   // Technical
   multiSelector: boolean; // XPath + Fuzzy
   eventSourcing: boolean;
-  
+
   // Limits
   maxHighlights: number | null;
   ttl: number | null; // milliseconds
@@ -216,7 +233,7 @@ export const MODE_CONFIGS: Record<string, ModeFeatures> = {
     maxHighlights: null, // unlimited ephemeral
     ttl: null,
   },
-  
+
   sprint: {
     persistence: 'local',
     storage: 'localstorage',
@@ -234,7 +251,7 @@ export const MODE_CONFIGS: Record<string, ModeFeatures> = {
     maxHighlights: null,
     ttl: 14400000, // 4 hours
   },
-  
+
   vault: {
     persistence: 'remote',
     storage: 'indexeddb',
@@ -252,7 +269,7 @@ export const MODE_CONFIGS: Record<string, ModeFeatures> = {
     maxHighlights: null,
     ttl: null, // permanent
   },
-  
+
   gen: {
     persistence: 'remote',
     storage: 'indexeddb',
@@ -277,7 +294,7 @@ class ExportButton extends HTMLElement {
   connectedCallback() {
     const currentMode = getModeManager().getCurrentMode();
     const config = MODE_CONFIGS[currentMode.name];
-    
+
     if (!config.export) {
       this.style.display = 'none'; // Hide export in Walk/Sprint
     }
@@ -296,12 +313,18 @@ class ExportButton extends HTMLElement {
 **New Assessment**: **ABSOLUTELY REQUIRED**
 
 **Why**:
+
 - Walk Mode: No dependencies
-- Sprint Mode: [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249) only
-- Vault Mode: [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249) + `APIClient` + `SyncQueue` + `MultiSelectorEngine` + `IndexedDBAdapter`
+- Sprint Mode:
+  [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249)
+  only
+- Vault Mode:
+  [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#39-249) +
+  `APIClient` + `SyncQueue` + `MultiSelectorEngine` + `IndexedDBAdapter`
 - Gen Mode: All Vault + `AIClient` + `CostTracker` + `MindmapGenerator`
 
 **Current Problem**:
+
 ```typescript
 // content.ts - HARDCODED RESOURCE ALLOCATION ❌
 const storage = new StorageService();
@@ -325,11 +348,11 @@ export class ModeResourcePool {
     ai?: AIClient;
     sync?: SyncQueue;
   } = {};
-  
+
   async allocate(modeName: string): Promise<ModeResources> {
     const config = MODE_CONFIGS[modeName];
     const resources: ModeResources = {};
-    
+
     // Storage
     if (config.storage === 'localstorage') {
       resources.storage = new StorageService();
@@ -337,18 +360,18 @@ export class ModeResourcePool {
       resources.storage = new IndexedDBStorage();
       await resources.storage.initialize();
     }
-    
+
     // Repository
     if (config.persistence !== 'none') {
       resources.repository = new RepositoryFacade();
       await resources.repository.initialize();
     }
-    
+
     // Multi-selector (Vault+ only)
     if (config.multiSelector) {
       resources.multiSelector = new MultiSelectorEngine();
     }
-    
+
     // API Client (Vault+ only)
     if (config.sync) {
       if (!this.clients.api) {
@@ -358,14 +381,14 @@ export class ModeResourcePool {
         });
       }
       resources.apiClient = this.clients.api;
-      
+
       // Sync Queue
       if (!this.clients.sync) {
         this.clients.sync = new SyncQueue(this.clients.api);
       }
       resources.syncQueue = this.clients.sync;
     }
-    
+
     // AI Client (Gen only)
     if (config.ai) {
       if (!this.clients.ai) {
@@ -377,19 +400,19 @@ export class ModeResourcePool {
       resources.aiClient = this.clients.ai;
       resources.costTracker = new CostTracker();
     }
-    
+
     this.allocated.set(modeName, resources);
     return resources;
   }
-  
+
   async release(modeName: string): Promise<void> {
     const resources = this.allocated.get(modeName);
     if (!resources) return;
-    
+
     // Cleanup
     await resources.storage?.close();
     await resources.repository?.flush();
-    
+
     this.allocated.delete(modeName);
   }
 }
@@ -424,28 +447,28 @@ modeManager.onModeDeactivate(async (modeName) => {
 // backend-services.ts - NEW FILE
 export class BackendServiceLocator {
   private static instance: BackendServiceLocator;
-  
+
   private constructor(
     public readonly auth: AuthService,
-public readonly highlights: HighlightAPI,
+    public readonly highlights: HighlightAPI,
     public readonly sync: SyncService,
     public readonly collections: CollectionAPI,
-    public readonly ai: AIService, // Gen Mode
+    public readonly ai: AIService // Gen Mode
   ) {}
-  
+
   static initialize(apiBaseURL: string, apiKey: string) {
     const auth = new AuthService(apiBaseURL);
     const http = new HTTPClient(apiBaseURL, auth);
-    
+
     this.instance = new BackendServiceLocator(
       auth,
       new HighlightAPI(http),
       new SyncService(http),
       new CollectionAPI(http),
-      new AIService(http),
+      new AIService(http)
     );
   }
-  
+
   static get(): BackendServiceLocator {
     if (!this.instance) {
       throw new Error('Backend services not initialized');
@@ -457,7 +480,7 @@ public readonly highlights: HighlightAPI,
 // vault-mode.ts - USAGE
 class VaultMode extends BaseHighlightMode {
   private backend = BackendServiceLocator.get();
-  
+
   async syncToCloud(): Promise<void> {
     const localEvents = await this.storage.getUnsynced();
     await this.backend.sync.push(localEvents);
@@ -476,11 +499,13 @@ class VaultMode extends BaseHighlightMode {
 **New Assessment**: **VALUABLE BUT NOT CRITICAL**
 
 **Why Reconsider**:
+
 - Gen Mode bundle: ~500KB (D3.js + Anthropic SDK)
 - Walk Mode users shouldn't download this
 - Code splitting would save bandwidth
 
 **However**:
+
 - Modern bundlers (Vite) already do code splitting via dynamic imports
 - Can achieve same result without full plugin system
 
@@ -490,19 +515,19 @@ class VaultMode extends BaseHighlightMode {
 // mode-manager.ts - LAZY LOADING (SIMPLE)
 class ModeManager {
   private modeFactories = new Map<string, () => Promise<IHighlightMode>>();
-  
+
   constructor() {
     this.modeFactories.set('walk', async () => {
       const { WalkMode } = await import('./modes/walk-mode');
       return new WalkMode(...);
     });
-    
+
     this.modeFactories.set('vault', async () => {
       const { VaultMode } = await import('./modes/vault-mode');
       // Vault Mode dynamically imports heavy dependencies
       return new VaultMode(...);
     });
-    
+
     this.modeFactories.set('gen', async () => {
       const { GenMode } = await import('./modes/gen-mode');
       const { D3Renderer } = await import('d3'); // Heavy!
@@ -510,11 +535,11 @@ class ModeManager {
       return new GenMode(...);
     });
   }
-  
+
   async activateMode(modeName: string): Promise<void> {
     const factory = this.modeFactories.get(modeName);
     const newMode = await factory(); // Lazy load!
-    
+
     // ... activation logic
   }
 }
@@ -523,7 +548,8 @@ class ModeManager {
 **Effort**: 🟢 LOW (1 hour)  
 **Impact**: 🟡 MEDIUM - Nice bandwidth savings
 
-**Recommendation**: ⚠️ **IMPLEMENT BASIC VERSION** - Use dynamic imports, skip full plugin system
+**Recommendation**: ⚠️ **IMPLEMENT BASIC VERSION** - Use dynamic imports, skip
+full plugin system
 
 ---
 
@@ -533,6 +559,7 @@ class ModeManager {
 **New Assessment**: **USEFUL FOR 4 MODES**
 
 **Why**:
+
 - Prevent Walk → Gen (must configure Vault first)
 - Warn Sprint → Walk (will lose highlights)
 - Require auth before Vault/Gen activation
@@ -584,19 +611,19 @@ const TRANSITION_RULES: TransitionRule[] = [
 
 ## UPDATED Pattern Scorecard
 
-| Pattern | 2 Modes | 4 Modes | Priority | Effort |
-|---------|---------|---------|----------|--------|
-| **Strategy Pattern** | ✅ Have | ✅ Have | - | - |
-| **Repository Pattern** | ✅ Have | ✅ Have | - | - |
-| **Event Sourcing** | ✅ Have (partial) | ⚠️ Needs backend | P0 | HIGH |
-| **Feature Flags** | ⚠️ Nice | 🔥 **CRITICAL** | P0 | LOW |
-| **Resource Pool** | ❌ Not needed | 🔥 **CRITICAL** | P0 | MEDIUM |
-| **Backend Service Locator** | ❌ Not needed | 🔥 **CRITICAL** | P1 | MEDIUM |
-| **Multi-Selector Engine** | ❌ Not needed | 🔥 **CRITICAL** | P0 | HIGH |
-| **AI Service Layer** | ❌ Not needed | 🔥 **CRITICAL** | P0 | HIGH |
-| **Lazy Loading** | ❌ Overkill | ⚠️ Valuable | P2 | LOW |
-| **Transition Validation** | ⚠️ Nice | ⚠️ Useful | P2 | MEDIUM |
-| **Full Plugin System** | ❌ Overkill | ❌ Still overkill | P3 | - |
+| Pattern                     | 2 Modes           | 4 Modes           | Priority | Effort |
+| --------------------------- | ----------------- | ----------------- | -------- | ------ |
+| **Strategy Pattern**        | ✅ Have           | ✅ Have           | -        | -      |
+| **Repository Pattern**      | ✅ Have           | ✅ Have           | -        | -      |
+| **Event Sourcing**          | ✅ Have (partial) | ⚠️ Needs backend  | P0       | HIGH   |
+| **Feature Flags**           | ⚠️ Nice           | 🔥 **CRITICAL**   | P0       | LOW    |
+| **Resource Pool**           | ❌ Not needed     | 🔥 **CRITICAL**   | P0       | MEDIUM |
+| **Backend Service Locator** | ❌ Not needed     | 🔥 **CRITICAL**   | P1       | MEDIUM |
+| **Multi-Selector Engine**   | ❌ Not needed     | 🔥 **CRITICAL**   | P0       | HIGH   |
+| **AI Service Layer**        | ❌ Not needed     | 🔥 **CRITICAL**   | P0       | HIGH   |
+| **Lazy Loading**            | ❌ Overkill       | ⚠️ Valuable       | P2       | LOW    |
+| **Transition Validation**   | ⚠️ Nice           | ⚠️ Useful         | P2       | MEDIUM |
+| **Full Plugin System**      | ❌ Overkill       | ❌ Still overkill | P3       | -      |
 
 ---
 
@@ -671,13 +698,14 @@ Effort: 2 weeks (builds on Vault)
 ### Decision 1: Backend Choice
 
 **Options**:
-1. **Supabase** (PostgreSQL) 
+
+1. **Supabase** (PostgreSQL)
    - ✅ Event sourcing native
    - ✅ Real-time subscriptions
    - ✅ Full-text search
    - ❌ Costs scale with users
 
-2. **Cloudflare Workers + D1** 
+2. **Cloudflare Workers + D1**
    - ✅ Cheaper at scale
    - ✅ Global edge network
    - ❌ D1 is SQLite (limited features)
@@ -689,6 +717,7 @@ Effort: 2 weeks (builds on Vault)
 ### Decision 2: Event Sourcing Scope
 
 **Options**:
+
 1. **Full Event Sourcing** - All state from events
 2. **Hybrid** - Events + materialized views (current approach ✅)
 3. **Simple CRUD** - No events
@@ -702,6 +731,7 @@ Effort: 2 weeks (builds on Vault)
 ### Decision 3: AI Provider
 
 **Options**:
+
 1. **Claude (Anthropic)** - Best quality, $$
 2. **Groq** - Fastest, cheaper
 3. **OpenAI** - Most popular
@@ -745,10 +775,12 @@ Effort: 2 weeks (builds on Vault)
 **Initial Analysis Status**: ❌ **INCOMPLETE** (only considered 2 modes)
 
 **Revised Verdict**:
+
 - Your current architecture: **Perfect for Walk + Sprint**
 - For Vault + Gen modes: **You need MOST of what I initially suggested**
 
 **Critical Path**:
+
 1. ✅ Keep existing excellent patterns (Strategy, Repository, Events)
 2. 🔥 **ADD**: Feature config, Resource pool, Multi-selector
 3. 🔥 **ADD**: Backend integration layer
@@ -756,7 +788,9 @@ Effort: 2 weeks (builds on Vault)
 5. ⚠️ **CONSIDER**: Lazy loading, transition validation
 
 **Architectural Maturity**:
-- **Current (2 modes)**: Senior level ⭐⭐⭐⭐⭐  
+
+- **Current (2 modes)**: Senior level ⭐⭐⭐⭐⭐
 - **After P0 + P1**: Staff level, ready for Vault/Gen ⭐⭐⭐⭐⭐⭐
 
-**You've built an excellent foundation. Now you need to extend it properly for the advanced modes.**
+**You've built an excellent foundation. Now you need to extend it properly for
+the advanced modes.**

@@ -10,7 +10,8 @@
 
 **One Logical Change = One Commit**
 
-Every commit should represent a **single, self-contained, reversible change** that can be understood in isolation.
+Every commit should represent a **single, self-contained, reversible change**
+that can be understood in isolation.
 
 ---
 
@@ -53,16 +54,16 @@ Every commit should represent a **single, self-contained, reversible change** th
 
 ### Types
 
-| Type | Purpose | Example |
-|------|---------|---------|
-| `feat` | New feature | `feat(modes): add IBasicMode interface` |
-| `refactor` | Code restructuring | `refactor(walk-mode): implement IBasicMode` |
-| `fix` | Bug fix | `fix(content): prevent null pointer in restore` |
-| `docs` | Documentation only | `docs(architecture): add ISP pattern guide` |
-| `test` | Add/update tests | `test(modes): add capability discovery tests` |
-| `chore` | Build/tooling | `chore(deps): update TypeScript to 5.3` |
-| `perf` | Performance improvement | `perf(renderer): use requestIdleCallback` |
-| `style` | Formatting only | `style(content): fix ESLint warnings` |
+| Type       | Purpose                 | Example                                         |
+| ---------- | ----------------------- | ----------------------------------------------- |
+| `feat`     | New feature             | `feat(modes): add IBasicMode interface`         |
+| `refactor` | Code restructuring      | `refactor(walk-mode): implement IBasicMode`     |
+| `fix`      | Bug fix                 | `fix(content): prevent null pointer in restore` |
+| `docs`     | Documentation only      | `docs(architecture): add ISP pattern guide`     |
+| `test`     | Add/update tests        | `test(modes): add capability discovery tests`   |
+| `chore`    | Build/tooling           | `chore(deps): update TypeScript to 5.3`         |
+| `perf`     | Performance improvement | `perf(renderer): use requestIdleCallback`       |
+| `style`    | Formatting only         | `style(content): fix ESLint warnings`           |
 
 ### Scopes
 
@@ -81,17 +82,20 @@ Every commit should represent a **single, self-contained, reversible change** th
 ### 1. Subject Line (First Line)
 
 **Rules**:
+
 - Max 72 characters
 - Imperative mood ("add", not "added" or "adds")
 - No period at end
 - Lowercase after type prefix
 
 **Good**:
+
 - ✅ `feat(modes): add segregated mode interfaces`
 - ✅ `refactor(content): delegate events to mode handlers`
 - ✅ `docs(adr): create ADR-003 for interface segregation`
 
 **Bad**:
+
 - ❌ `Added new interfaces for modes.` (past tense, period)
 - ❌ `refactor: lots of changes` (vague)
 - ❌ `Update files` (no type, no scope, uninformative)
@@ -99,12 +103,14 @@ Every commit should represent a **single, self-contained, reversible change** th
 ### 2. Body (Optional but Recommended)
 
 **Include**:
+
 - **What**: What changed?
 - **Why**: Why was this change needed?
 - **How**: How does it work (if non-obvious)?
 - **Impact**: What does this affect?
 
 **Example**:
+
 ```
 refactor(sprint-mode): implement IBasicMode interface
 
@@ -125,6 +131,7 @@ Related: #ADR-003, Phase 0 Refactoring
 ### 3. Footer (Optional)
 
 **Use For**:
+
 - Breaking changes: `BREAKING CHANGE: IHighlightMode.restore() now optional`
 - Issue references: `Closes #123`
 - Related work: `Related: ADR-003, Phase 0 Refactoring`
@@ -136,6 +143,7 @@ Related: #ADR-003, Phase 0 Refactoring
 ### Example: Breaking Down a Large Change
 
 **❌ Bad (One Large Commit)**:
+
 ```bash
 git commit -m "refactor: update mode system for ISP compliance"
 # Changes: 6 files, 300 lines
@@ -359,15 +367,19 @@ Related: Phase 0 Refactoring"
 ## Benefits of Granular Commits
 
 ### 1. **Easy Code Review**
+
 - Reviewers see one logical change at a time
 - Easier to spot issues
 - Can approve incrementally
 
 ### 2. **Better Git History**
+
 ```bash
 git log --oneline
 ```
+
 Shows clear progression:
+
 ```
 abc1234 docs(quality): reference Phase 0 refactoring
 def5678 docs(architecture): add Phase 0 refactoring index
@@ -376,12 +388,14 @@ ghi9012 docs(patterns): add mode capability discovery pattern
 ```
 
 ### 3. **Surgical Reverts**
+
 ```bash
 # Revert just the capability discovery, keep everything else
 git revert def5678
 ```
 
 ### 4. **Bisect Debugging**
+
 ```bash
 # Find which specific commit introduced a bug
 git bisect start
@@ -391,6 +405,7 @@ git bisect good v1.0
 ```
 
 ### 5. **Cherry-Pick Features**
+
 ```bash
 # Port just the capability discovery to another branch
 git cherry-pick ghi9012
@@ -416,26 +431,33 @@ Before committing, verify:
 ## Anti-Patterns to Avoid
 
 ### ❌ "WIP" Commits
+
 ```bash
 git commit -m "WIP"
 git commit -m "still working"
 git commit -m "almost done"
 ```
+
 **Instead**: Work in a branch, squash before merging, OR make proper commits
 
 ### ❌ "Fix Previous Commit" Commits
+
 ```bash
 git commit -m "feat: add feature X"
 git commit -m "fix: actually add feature X"
 git commit -m "fix: linting errors from feature X"
 ```
-**Instead**: Use `git commit --amend` or `git rebase -i` to fix the original commit
+
+**Instead**: Use `git commit --amend` or `git rebase -i` to fix the original
+commit
 
 ### ❌ Large Batch Commits
+
 ```bash
 git add .
 git commit -m "refactor: lots of stuff"
 ```
+
 **Instead**: Stage files individually, commit incrementally
 
 ---
@@ -443,6 +465,7 @@ git commit -m "refactor: lots of stuff"
 ## Tools and Workflow
 
 ### Interactive Staging
+
 ```bash
 # Stage parts of a file
 git add -p src/content/modes/walk-mode.ts
@@ -455,6 +478,7 @@ git commit
 ```
 
 ### Amending Last Commit
+
 ```bash
 # Fix typo in last commit (not pushed yet)
 git commit --amend
@@ -465,6 +489,7 @@ git commit --amend --no-edit
 ```
 
 ### Interactive Rebase (Clean Up Before Push)
+
 ```bash
 # Clean up last 5 commits before pushing
 git rebase -i HEAD~5

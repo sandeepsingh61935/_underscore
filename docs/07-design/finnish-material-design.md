@@ -34,22 +34,22 @@ Inspired by Finland's 188,000 lakes and clear summer skies.
 
 ```css
 /* Primary - Lake Blue */
---md-sys-color-primary: #5B8DB8;              /* Lake blue */
---md-sys-color-on-primary: #FFFFFF;           /* White text */
---md-sys-color-primary-container: #D4E4F0;    /* Light lake blue */
---md-sys-color-on-primary-container: #1A3A4F; /* Deep water */
+--md-sys-color-primary: #5b8db8; /* Lake blue */
+--md-sys-color-on-primary: #ffffff; /* White text */
+--md-sys-color-primary-container: #d4e4f0; /* Light lake blue */
+--md-sys-color-on-primary-container: #1a3a4f; /* Deep water */
 
 /* Primary variants */
---md-ref-palette-primary-10: #001F2E;         /* Deep lake night */
+--md-ref-palette-primary-10: #001f2e; /* Deep lake night */
 --md-ref-palette-primary-20: #003547;
---md-ref-palette-primary-30: #004D66;
---md-ref-palette-primary-40: #5B8DB8;         /* Base */
---md-ref-palette-primary-50: #75A0C8;
---md-ref-palette-primary-60: #8FB3D8;
---md-ref-palette-primary-80: #D4E4F0;         /* Light */
---md-ref-palette-primary-90: #EAF3F9;
---md-ref-palette-primary-95: #F4F9FC;
---md-ref-palette-primary-99: #FCFEFF;
+--md-ref-palette-primary-30: #004d66;
+--md-ref-palette-primary-40: #5b8db8; /* Base */
+--md-ref-palette-primary-50: #75a0c8;
+--md-ref-palette-primary-60: #8fb3d8;
+--md-ref-palette-primary-80: #d4e4f0; /* Light */
+--md-ref-palette-primary-90: #eaf3f9;
+--md-ref-palette-primary-95: #f4f9fc;
+--md-ref-palette-primary-99: #fcfeff;
 ```
 
 ### Secondary Palette - Forest Green (Finnish Forests)
@@ -58,17 +58,17 @@ Inspired by boreal forests covering 75% of Finland.
 
 ```css
 /* Secondary - Forest Green */
---md-sys-color-secondary: #6B8E7A;            /* Sage/forest green */
---md-sys-color-on-secondary: #FFFFFF;
---md-sys-color-secondary-container: #D8E8DD;  /* Light moss */
---md-sys-color-on-secondary-container: #253B2C; /* Deep forest */
+--md-sys-color-secondary: #6b8e7a; /* Sage/forest green */
+--md-sys-color-on-secondary: #ffffff;
+--md-sys-color-secondary-container: #d8e8dd; /* Light moss */
+--md-sys-color-on-secondary-container: #253b2c; /* Deep forest */
 
 /* Secondary variants */
---md-ref-palette-secondary-10: #0D1F14;
---md-ref-palette-secondary-40: #6B8E7A;       /* Base */
---md-ref-palette-secondary-80: #D8E8DD;
---md-ref-palette-secondary-90: #ECF4EF;
---md-ref-palette-secondary-99: #F8FCF9;
+--md-ref-palette-secondary-10: #0d1f14;
+--md-ref-palette-secondary-40: #6b8e7a; /* Base */
+--md-ref-palette-secondary-80: #d8e8dd;
+--md-ref-palette-secondary-90: #ecf4ef;
+--md-ref-palette-secondary-99: #f8fcf9;
 ```
 
 ### Tertiary Palette - Sunset Amber (Arctic Sunset)
@@ -77,15 +77,15 @@ Inspired by golden hour during Finnish summer nights.
 
 ```css
 /* Tertiary - Sunset Amber */
---md-sys-color-tertiary: #C89A5F;             /* Warm amber */
---md-sys-color-on-tertiary: #3A2A1A;
---md-sys-color-tertiary-container: #F0E5D6;   /* Light sand */
---md-sys-color-on-tertiary-container: #3A2A1A;
+--md-sys-color-tertiary: #c89a5f; /* Warm amber */
+--md-sys-color-on-tertiary: #3a2a1a;
+--md-sys-color-tertiary-container: #f0e5d6; /* Light sand */
+--md-sys-color-on-tertiary-container: #3a2a1a;
 
 /* Tertiary variants */
---md-ref-palette-tertiary-40: #C89A5F;        /* Base */
---md-ref-palette-tertiary-80: #F0E5D6;
---md-ref-palette-tertiary-90: #F7F1E8;
+--md-ref-palette-tertiary-40: #c89a5f; /* Base */
+--md-ref-palette-tertiary-80: #f0e5d6;
+--md-ref-palette-tertiary-90: #f7f1e8;
 ```
 
 ### Neutral Palette - Winter White & Granite Gray
@@ -94,32 +94,32 @@ Inspired by Finnish winter snow and granite bedrock.
 
 ```css
 /* Neutral - Winter & Stone */
---md-sys-color-surface: #FAFBFC;              /* Soft white (not pure) */
---md-sys-color-on-surface: #1A1C1E;           /* Charcoal */
---md-sys-color-surface-variant: #E8EAED;      /* Light gray */
---md-sys-color-on-surface-variant: #43474E;   /* Medium gray */
+--md-sys-color-surface: #fafbfc; /* Soft white (not pure) */
+--md-sys-color-on-surface: #1a1c1e; /* Charcoal */
+--md-sys-color-surface-variant: #e8eaed; /* Light gray */
+--md-sys-color-on-surface-variant: #43474e; /* Medium gray */
 
 /* Surface tones (M3 elevation system) */
---md-sys-color-surface-dim: #D9DBDE;          /* Dimmest */
---md-sys-color-surface-bright: #FAFBFC;       /* Brightest */
---md-sys-color-surface-container-lowest: #FFFFFF;
---md-sys-color-surface-container-low: #F3F4F6;
---md-sys-color-surface-container: #EDEEF1;
---md-sys-color-surface-container-high: #E8EAED;
---md-sys-color-surface-container-highest: #E2E4E7;
+--md-sys-color-surface-dim: #d9dbde; /* Dimmest */
+--md-sys-color-surface-bright: #fafbfc; /* Brightest */
+--md-sys-color-surface-container-lowest: #ffffff;
+--md-sys-color-surface-container-low: #f3f4f6;
+--md-sys-color-surface-container: #edeef1;
+--md-sys-color-surface-container-high: #e8eaed;
+--md-sys-color-surface-container-highest: #e2e4e7;
 
 /* Outline */
---md-sys-color-outline: #73777F;              /* Medium gray outline */
---md-sys-color-outline-variant: #C3C7CF;      /* Light gray outline */
+--md-sys-color-outline: #73777f; /* Medium gray outline */
+--md-sys-color-outline-variant: #c3c7cf; /* Light gray outline */
 ```
 
 ### Error Palette
 
 ```css
 /* Error - Berry Red (Finnish lingonberry) */
---md-sys-color-error: #BA1A1A;
---md-sys-color-on-error: #FFFFFF;
---md-sys-color-error-container: #FFDAD6;
+--md-sys-color-error: #ba1a1a;
+--md-sys-color-on-error: #ffffff;
+--md-sys-color-error-container: #ffdad6;
 --md-sys-color-on-error-container: #410002;
 ```
 
@@ -131,29 +131,29 @@ Inspired by Finnish winter snow and granite bedrock.
 
 ```css
 /* Sunshine Yellow - Midnight sun */
---highlight-sunshine: #F9D71C;
---highlight-sunshine-container: #FFF8DC;
---on-highlight-sunshine: #2D2600;
+--highlight-sunshine: #f9d71c;
+--highlight-sunshine-container: #fff8dc;
+--on-highlight-sunshine: #2d2600;
 
 /* Lake Blue - Finnish lakes */
---highlight-lake: #5B8DB8;
---highlight-lake-container: #E3F2FD;
---on-highlight-lake: #001F2E;
+--highlight-lake: #5b8db8;
+--highlight-lake-container: #e3f2fd;
+--on-highlight-lake: #001f2e;
 
 /* Forest Green - Boreal forest */
---highlight-forest: #6B8E7A;
---highlight-forest-container: #E8F5E9;
---on-highlight-forest: #1B5E20;
+--highlight-forest: #6b8e7a;
+--highlight-forest-container: #e8f5e9;
+--on-highlight-forest: #1b5e20;
 
 /* Sunset Amber - Arctic sunset */
---highlight-sunset: #FFB74D;
---highlight-sunset-container: #FFF3E0;
---on-highlight-sunset: #4A2800;
+--highlight-sunset: #ffb74d;
+--highlight-sunset-container: #fff3e0;
+--on-highlight-sunset: #4a2800;
 
 /* Aurora Purple - Northern lights */
---highlight-aurora: #9575CD;
---highlight-aurora-container: #F3E5F5;
---on-highlight-aurora: #311B92;
+--highlight-aurora: #9575cd;
+--highlight-aurora-container: #f3e5f5;
+--on-highlight-aurora: #311b92;
 ```
 
 ---
@@ -164,16 +164,16 @@ Finnish design prefers flatness, but subtle elevation for interactive elements.
 
 ```css
 /* Elevation levels (tonal elevation via surface tones) */
---md-sys-elevation-level0: 0dp;  /* surface */
---md-sys-elevation-level1: 1dp;  /* surface-container-low */
---md-sys-elevation-level2: 3dp;  /* surface-container */
---md-sys-elevation-level3: 6dp;  /* surface-container-high */
---md-sys-elevation-level4: 8dp;  /* surface-container-highest */
+--md-sys-elevation-level0: 0dp; /* surface */
+--md-sys-elevation-level1: 1dp; /* surface-container-low */
+--md-sys-elevation-level2: 3dp; /* surface-container */
+--md-sys-elevation-level3: 6dp; /* surface-container-high */
+--md-sys-elevation-level4: 8dp; /* surface-container-highest */
 --md-sys-elevation-level5: 12dp; /* Dialogs, menus */
 
 /* Shadows (minimal, Nordic aesthetic) */
 --md-sys-shadow-level1: 0 1px 3px rgba(0, 0, 0, 0.08);
---md-sys-shadow-level2: 0 2px 6px rgba(0, 0, 0, 0.10);
+--md-sys-shadow-level2: 0 2px 6px rgba(0, 0, 0, 0.1);
 --md-sys-shadow-level3: 0 4px 12px rgba(0, 0, 0, 0.12);
 ```
 
@@ -185,13 +185,8 @@ Finnish design prefers flatness, but subtle elevation for interactive elements.
 
 ```css
 /* System fonts prioritizing Nordic/European readability */
---md-sys-typescale-font-family: 
-  system-ui, 
-  -apple-system, 
-  'Segoe UI', 
-  'Helvetica Neue',
-  Arial, 
-  sans-serif;
+--md-sys-typescale-font-family:
+  system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 ```
 
 ### Type Scale (M3 Standard)
@@ -238,13 +233,13 @@ Finnish design prefers generous spacing for breathing room.
 
 ```css
 /* Base spacing unit: 8px */
---md-sys-space-1: 4px;   /* 0.5 unit */
---md-sys-space-2: 8px;   /* 1 unit - base */
---md-sys-space-3: 12px;  /* 1.5 units */
---md-sys-space-4: 16px;  /* 2 units */
---md-sys-space-5: 20px;  /* 2.5 units */
---md-sys-space-6: 24px;  /* 3 units */
---md-sys-space-8: 32px;  /* 4 units */
+--md-sys-space-1: 4px; /* 0.5 unit */
+--md-sys-space-2: 8px; /* 1 unit - base */
+--md-sys-space-3: 12px; /* 1.5 units */
+--md-sys-space-4: 16px; /* 2 units */
+--md-sys-space-5: 20px; /* 2.5 units */
+--md-sys-space-6: 24px; /* 3 units */
+--md-sys-space-8: 32px; /* 4 units */
 --md-sys-space-10: 40px; /* 5 units */
 --md-sys-space-12: 48px; /* 6 units */
 --md-sys-space-16: 64px; /* 8 units */
@@ -315,11 +310,11 @@ Finnish design prefers subtle, functional motion.
 ### Dimensions
 
 ```css
---popup-width: 360px;          /* Slightly wider for comfort */
+--popup-width: 360px; /* Slightly wider for comfort */
 --popup-min-height: 480px;
---popup-padding: 24px;         /* Generous (3 units) */
---popup-gap: 16px;             /* Between sections */
---popup-border-radius: 16px;   /* M3 medium */
+--popup-padding: 24px; /* Generous (3 units) */
+--popup-gap: 16px; /* Between sections */
+--popup-border-radius: 16px; /* M3 medium */
 ```
 
 ---
@@ -334,7 +329,7 @@ Finnish design prefers subtle, functional motion.
   color: var(--md-sys-color-on-primary);
   padding: 10px 24px;
   border: none;
-  border-radius: 20px;          /* M3 full roundness */
+  border-radius: 20px; /* M3 full roundness */
   font-size: var(--md-sys-typescale-label-large-size);
   font-weight: var(--md-sys-typescale-label-large-weight);
   cursor: pointer;
@@ -355,7 +350,7 @@ Finnish design prefers subtle, functional motion.
 ```css
 .md-card {
   background: var(--md-sys-color-surface-container);
-  border-radius: 12px;          /* M3 medium */
+  border-radius: 12px; /* M3 medium */
   padding: var(--md-sys-space-4);
   box-shadow: var(--md-sys-shadow-level1);
 }
@@ -423,11 +418,11 @@ All color combinations meet WCAG AAA (7:1 contrast ratio):
 }
 
 .interactive:hover::before {
-  opacity: 0.08;  /* M3 hover state */
+  opacity: 0.08; /* M3 hover state */
 }
 
 .interactive:active::before {
-  opacity: 0.12;  /* M3 pressed state */
+  opacity: 0.12; /* M3 pressed state */
 }
 ```
 
@@ -452,30 +447,30 @@ Finnish winters have long dark periods - excellent dark mode is essential.
 @media (prefers-color-scheme: dark) {
   :root {
     /* Primary - Brighter lake blue for dark */
-    --md-sys-color-primary: #8FB3D8;
+    --md-sys-color-primary: #8fb3d8;
     --md-sys-color-on-primary: #003547;
-    --md-sys-color-primary-container: #004D66;
-    --md-sys-color-on-primary-container: #D4E4F0;
+    --md-sys-color-primary-container: #004d66;
+    --md-sys-color-on-primary-container: #d4e4f0;
 
     /* Surface - Dark gray with slight blue tint */
-    --md-sys-color-surface: #1A1C1E;
-    --md-sys-color-on-surface: #E2E4E7;
-    --md-sys-color-surface-variant: #43474E;
-    --md-sys-color-on-surface-variant: #C3C7CF;
+    --md-sys-color-surface: #1a1c1e;
+    --md-sys-color-on-surface: #e2e4e7;
+    --md-sys-color-surface-variant: #43474e;
+    --md-sys-color-on-surface-variant: #c3c7cf;
 
     /* Surface containers (darker to lighter) */
-    --md-sys-color-surface-container-lowest: #0F1113;
-    --md-sys-color-surface-container-low: #1A1C1E;
-    --md-sys-color-surface-container: #1E2022;
-    --md-sys-color-surface-container-high: #282A2D;
+    --md-sys-color-surface-container-lowest: #0f1113;
+    --md-sys-color-surface-container-low: #1a1c1e;
+    --md-sys-color-surface-container: #1e2022;
+    --md-sys-color-surface-container-high: #282a2d;
     --md-sys-color-surface-container-highest: #333538;
 
     /* Adjust highlight colors for visibility */
-    --highlight-sunshine: #FDD835;
-    --highlight-lake: #75A0C8;
-    --highlight-forest: #81C784;
-    --highlight-sunset: #FFB74D;
-    --highlight-aurora: #B39DDB;
+    --highlight-sunshine: #fdd835;
+    --highlight-lake: #75a0c8;
+    --highlight-forest: #81c784;
+    --highlight-sunset: #ffb74d;
+    --highlight-aurora: #b39ddb;
   }
 }
 ```
