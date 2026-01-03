@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
+    "@supabase/supabase-js": "^2.89.0",
     "dexie": "^4.2.1",
     "diff-match-patch": "^1.0.5",
     "dompurify": "^3.3.1",
