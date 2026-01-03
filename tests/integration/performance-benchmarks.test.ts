@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Performance Optimization Benchmarks
  * 
@@ -10,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import { SprintMode } from '@/content/modes/sprint-mode';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { EventBus } from '@/shared/utils/event-bus';
@@ -46,7 +48,7 @@ describe('Performance Optimization Benchmarks', () => {
         // Create instances
         logger = new ConsoleLogger('test');
         eventBus = new EventBus(logger);
-        repository = new InMemoryHighlightRepository(logger);
+        repository = new InMemoryHighlightRepository();
         sprintMode = new SprintMode(repository, storage, eventBus, logger);
     });
 
@@ -69,7 +71,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Performance test text ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 const id = await sprintMode.createHighlight(mockSelection, 'yellow');
                 highlights.push(id);
@@ -95,7 +97,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Consistency test ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 await sprintMode.createHighlight(mockSelection, 'yellow');
 
@@ -130,7 +132,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Memory test ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 await sprintMode.createHighlight(mockSelection, 'yellow');
             }
@@ -153,7 +155,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Cleanup test ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 await sprintMode.createHighlight(mockSelection, 'yellow');
             }
@@ -187,10 +189,10 @@ describe('Performance Optimization Benchmarks', () => {
                     toString: () => 'Duplicate text',
                     cloneRange: () => ({}),
                 } as any),
-            } as Selection;
+            } as unknown as Selection;
 
             // Try to create 100 identical highlights
-            for (let i = 0; i < 100; i++) {
+            for (let _i = 0; _i < 100; _i++) {
                 const id = await sprintMode.createHighlight(mockSelection, 'yellow');
                 ids.push(id);
             }
@@ -221,7 +223,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => text,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 const id = await sprintMode.createHighlight(mockSelection, 'yellow');
                 ids.push(id);
@@ -253,7 +255,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Bulk delete ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 const id = await sprintMode.createHighlight(mockSelection, 'yellow');
                 ids.push(id);
@@ -281,7 +283,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Clear all test ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 await sprintMode.createHighlight(mockSelection, 'yellow');
             }
@@ -313,7 +315,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Concurrent ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 return sprintMode.createHighlight(mockSelection, 'yellow');
             });
@@ -336,7 +338,7 @@ describe('Performance Optimization Benchmarks', () => {
                         toString: () => `Concurrent create ${i}`,
                         cloneRange: () => ({}),
                     } as any),
-                } as Selection;
+                } as unknown as Selection;
 
                 return sprintMode.createHighlight(mockSelection, 'yellow');
             });
@@ -353,7 +355,7 @@ describe('Performance Optimization Benchmarks', () => {
                             toString: () => `Concurrent mixed ${i}`,
                             cloneRange: () => ({}),
                         } as any),
-                    } as Selection;
+                    } as unknown as Selection;
 
                     return sprintMode.createHighlight(mockSelection, 'yellow');
                 }),

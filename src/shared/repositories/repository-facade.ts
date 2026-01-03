@@ -214,7 +214,10 @@ export class RepositoryFacade {
    */
   count(): number {
     this.ensureInitialized();
-    console.log('[REPO-DEBUG] count() called, cache.size:', this.cache.size, 'cache keys:', Array.from(this.cache.keys()));
+    this.logger.debug('count() called', {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys()),
+    });
     return this.cache.size;
   }
 
