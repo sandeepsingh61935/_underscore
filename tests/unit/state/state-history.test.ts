@@ -30,6 +30,7 @@ describe('ModeStateManager - State History Tracking', () => {
             },
             runtime: {
                 id: 'test-extension-id',
+                sendMessage: vi.fn().mockResolvedValue(undefined),
             },
         } as any;
 

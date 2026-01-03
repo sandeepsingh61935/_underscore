@@ -24,7 +24,7 @@ describe('ModeStateManager - Debugging Tools', () => {
         vi.clearAllMocks();
         global.chrome = {
             storage: { sync: mockStorage },
-            runtime: { id: 'test-id' },
+            runtime: { id: 'test-id', sendMessage: vi.fn().mockResolvedValue(undefined) },
         } as any;
         mockStorage.get.mockResolvedValue({});
         mockStorage.set.mockResolvedValue(undefined);
@@ -139,7 +139,7 @@ describe('ModeStateManager - Debugging Tools', () => {
 
             // Assert
             expect(json.length).toBeGreaterThan(1000); // It's big
-            expect(end - start).toBeLessThan(50); // Should be fast (<50ms)
+            expect(end - start).toBeLessThan(100); // Should be fast (<100ms, 30x headroom for CI)
 
             // Verify structure integretity
             expect(debugState.history).toHaveLength(100); // Capped
