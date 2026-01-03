@@ -8,7 +8,7 @@ import 'fake-indexeddb/auto';
 
 // Augment global type for browser API
 declare global {
-   
+
   var browser: {
     storage: {
       local: {
@@ -92,7 +92,7 @@ global.browser = {
     },
   },
   runtime: {
-    sendMessage: vi.fn(),
+    sendMessage: vi.fn().mockResolvedValue(undefined),
     onMessage: {
       addListener: vi.fn(),
       removeListener: vi.fn(),
