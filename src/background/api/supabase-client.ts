@@ -19,6 +19,7 @@ import {
     ValidationError,
     NotFoundError,
 } from './api-errors';
+import { HTTPSValidator } from './https-validator';
 
 /**
  * Supabase configuration
@@ -47,6 +48,9 @@ export class SupabaseClient implements IAPIClient {
         private readonly logger: ILogger,
         config: SupabaseConfig
     ) {
+        // Enforce HTTPS for security (prevents MITM attacks)
+        HTTPSValidator.validate(config.url);
+
         this.client = createClient(config.url, config.anonKey);
         this.timeoutMs = config.timeoutMs ?? 5000;
 
