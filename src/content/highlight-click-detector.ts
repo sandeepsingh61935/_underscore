@@ -88,36 +88,50 @@ export class HighlightClickDetector {
 
     try {
       for (const highlight of highlights) {
-        // Get liveRanges from CSS.highlights using underscore- prefix
-        const highlightName = `underscore-${highlight.id}`;
-        const nativeHighlight = CSS.highlights.get(highlightName);
-
-        if (!nativeHighlight) {
-          continue;
-        }
-
-        // Check if point is within any range of this highlight
-        for (const abstractRange of nativeHighlight) {
-          const range = abstractRange as Range;
-          const rects = range.getClientRects();
-
-          for (let i = 0; i < rects.length; i++) {
-            const rect = rects[i];
-            if (
-              rect &&
-              x >= rect.left &&
-              x <= rect.right &&
-              y >= rect.top &&
-              y <= rect.bottom
-            ) {
-              return highlight;
-            }
-          }
+        if (this.isPointInHighlight(highlight, x, y)) {
+          return highlight;
         }
       }
     } catch (error) {
       this.logger.warn('Error finding highlight at point', error as Error);
     }
+
+    return null;
+  }
+
+  /**
+   * Check if a point is inside a highlight's bounding boxes
+   */
+  private isPointInHighlight(highlight: HighlightDataV2, x: number, y: number): boolean {
+    const highlightName = `underscore-${highlight.id}`;
+    const nativeHighlight = CSS.highlights.get(highlightName);
+
+    if (!nativeHighlight) {
+      return false;
+    }
+
+    // Check if point is within any range of this highlight
+    for (const abstractRange of nativeHighlight) {
+      const range = abstractRange as Range;
+      const rects = range.getClientRects();
+
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        if (
+          rect &&
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  } catch(error) {
+    this.logger.warn('Error finding highlight at point', error as Error);
+  }
 
     return null;
   }
