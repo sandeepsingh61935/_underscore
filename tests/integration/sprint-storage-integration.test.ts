@@ -1,6 +1,6 @@
 /**
  * Sprint Mode Storage Persistence Integration Tests
- * 
+ *
  * Validates that Sprint Mode correctly:
  * - Persists highlights to chrome.storage.local with encryption
  * - Restores highlights from storage
@@ -10,244 +10,250 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { SprintMode } from '@/content/modes/sprint-mode';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IStorage } from '@/shared/interfaces/i-storage';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { hashDomain } from '@/shared/utils/crypto-utils';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import { hashDomain } from '@/shared/utils/crypto-utils';
 
 // Mock Highlight API (not available in Node.js test environment)
 class MockHighlight {
-    constructor(public range: Range) { }
+  constructor(public range: Range) { }
 }
 global.Highlight = MockHighlight as any;
 
 // Mock CSS.highlights
 global.CSS = {
-    highlights: new Map(),
+  highlights: new Map(),
 } as any;
 
 describe('Sprint Mode - Storage Persistence Integration', () => {
-    let sprintMode: SprintMode;
-    let mockRepository: IHighlightRepository;
-    let mockStorage: IStorage;
-    let mockEventBus: EventBus;
-    let mockLogger: ILogger;
-    let mockStorageData: Map<string, any>;
+  let sprintMode: SprintMode;
+  let mockRepository: IHighlightRepository;
+  let mockStorage: IStorage;
+  let mockEventBus: EventBus;
+  let mockLogger: ILogger;
+  let mockStorageData: Map<string, any>;
 
-    beforeEach(() => {
-        // Reset CSS.highlights
-        (global.CSS.highlights as Map<string, any>).clear();
+  beforeEach(() => {
+    // Reset CSS.highlights
+    (global.CSS.highlights as Map<string, any>).clear();
 
-        // Reset storage
-        mockStorageData = new Map();
+    // Reset storage
+    mockStorageData = new Map();
 
-        // Mock repository
-        mockRepository = {
-            add: vi.fn(),
-            remove: vi.fn(),
-            clear: vi.fn(),
-            findByContentHash: vi.fn().mockResolvedValue(null),
-            getAll: vi.fn().mockResolvedValue([]),
-        } as any;
+    // Mock repository
+    mockRepository = {
+      add: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      findByContentHash: vi.fn().mockResolvedValue(null),
+      getAll: vi.fn().mockResolvedValue([]),
+    } as any;
 
-        // Mock storage with realistic chrome.storage.local behavior
-        mockStorage = {
-            saveEvent: vi.fn(async (event) => {
-                const domain = 'example.com';
-                const key = await hashDomain(domain);
-
-                // Get existing events
-                const existing = mockStorageData.get(key) || { events: [] };
-                existing.events.push(event);
-
-                // Simulate storage
-                mockStorageData.set(key, existing);
-                return Promise.resolve();
-            }),
-            loadEvents: vi.fn(async () => {
-                const domain = 'example.com';
-                const key = await hashDomain(domain);
-                const data = mockStorageData.get(key);
-                return Promise.resolve(data?.events || []);
-            }),
-            clearEvents: vi.fn(async () => {
-                mockStorageData.clear();
-                return Promise.resolve();
-            }),
-        } as any;
-
-        // Mock EventBus
-        mockEventBus = {
-            emit: vi.fn(),
-            on: vi.fn(),
-            off: vi.fn(),
-        } as any;
-
-        // Mock Logger
-        mockLogger = {
-            info: vi.fn(),
-            debug: vi.fn(),
-            error: vi.fn(),
-            warn: vi.fn(),
-        } as any;
-
-        // Create SprintMode instance
-        sprintMode = new SprintMode(
-            mockRepository,
-            mockStorage,
-            mockEventBus,
-            mockLogger
-        );
-    });
-
-    it('should persist highlight to chrome.storage.local with encryption', async () => {
-        // Create a mock selection
-        const mockSelection = {
-            rangeCount: 1,
-            getRangeAt: () => ({
-                toString: () => 'Test highlight text',
-                cloneRange: () => ({}),
-            } as any),
-        } as Selection;
-
-        // Create highlight
-        const highlightId = await sprintMode.createHighlight(mockSelection, 'yellow');
-
-        // Verify highlight was created
-        expect(highlightId).toBeDefined();
-        expect(mockRepository.add).toHaveBeenCalled();
-
-        // Note: saveEvent is called via event handlers after createHighlight returns
-        // In this test, we're mocking storage so we can verify the mock was set up correctly
-        // The actual event emission happens asynchronously
-
-        // Note: Actual encryption happens in StorageService, which we're mocking
-        // In real implementation, data would be AES-256-GCM encrypted
-    });
-
-    it('should restore highlights from storage on page reload', async () => {
-        // Setup: Pre-populate storage with highlight data
-        const mockEvent = {
-            type: 'highlight:created',
-            highlight: {
-                id: 'test-id-123',
-                text: 'Restored highlight',
-                contentHash: 'hash123',
-                colorRole: 'yellow',
-                ranges: [{
-                    startContainer: '//div[1]',
-                    startOffset: 0,
-                    endContainer: '//div[1]',
-                    endOffset: 10,
-                }],
-                createdAt: new Date(),
-                expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
-            },
-        };
-
-        await mockStorage.saveEvent(mockEvent);
-
-        // Simulate page reload by creating new SprintMode instance
-        const newSprintMode = new SprintMode(
-            mockRepository,
-            mockStorage,
-            mockEventBus,
-            mockLogger
-        );
-
-        // Restore would normally happen in onActivate via event replay
-        // For this test, verify storage can be read
-        const events = await mockStorage.loadEvents();
-        expect(events).toHaveLength(1);
-        expect(events[0].highlight.text).toBe('Restored highlight');
-    });
-
-    it('should handle storage quota exceeded gracefully', async () => {
-        // Mock storage quota exceeded error
-        mockStorage.saveEvent = vi.fn().mockRejectedValue(
-            new Error('QuotaExceededError: Storage quota exceeded')
-        );
-
-        const mockSelection = {
-            rangeCount: 1,
-            getRangeAt: () => ({
-                toString: () => 'Test text',
-                cloneRange: () => ({}),
-            } as any),
-        } as Selection;
-
-        // Should not throw - createHighlight handles errors internally
-        const highlightId = await sprintMode.createHighlight(mockSelection, 'yellow');
-
-        // Highlight should be created (ID returned)
-        expect(highlightId).toBeDefined();
-
-        // Highlight should still exist in memory (fallback)
-        expect(mockRepository.add).toHaveBeenCalled();
-
-        // Note: Error logging happens in event handlers, not in createHighlight
-        // The event emission will fail, but highlight is still created in memory
-    });
-
-    it('should recover from corrupt storage data', async () => {
-        // Setup: Inject corrupt data
+    // Mock storage with realistic chrome.storage.local behavior
+    mockStorage = {
+      saveEvent: vi.fn(async (event) => {
         const domain = 'example.com';
         const key = await hashDomain(domain);
-        mockStorageData.set(key, {
-            events: [
-                { corrupted: 'invalid data structure' }, // Invalid event
-                { type: 'highlight:created', highlight: null }, // Missing data
-                'not-even-an-object', // Completely invalid
-            ]
-        });
 
-        // Mock loadEvents to return corrupt data
-        mockStorage.loadEvents = vi.fn(async () => {
-            const data = mockStorageData.get(key);
-            return Promise.resolve(data?.events || []);
-        });
+        // Get existing events
+        const existing = mockStorageData.get(key) || { events: [] };
+        existing.events.push(event);
 
-        // Should not crash when loading corrupt data
-        const events = await mockStorage.loadEvents();
-        expect(events).toBeDefined();
+        // Simulate storage
+        mockStorageData.set(key, existing);
+        return Promise.resolve();
+      }),
+      loadEvents: vi.fn(async () => {
+        const domain = 'example.com';
+        const key = await hashDomain(domain);
+        const data = mockStorageData.get(key);
+        return Promise.resolve(data?.events || []);
+      }),
+      clearEvents: vi.fn(async () => {
+        mockStorageData.clear();
+        return Promise.resolve();
+      }),
+    } as any;
 
-        // In real implementation, corrupt events would be skipped
-        // and valid events would be restored
+    // Mock EventBus
+    mockEventBus = {
+      emit: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    } as any;
+
+    // Mock Logger
+    mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      setLevel: vi.fn(),
+      getLevel: vi.fn(),
+    } as any;
+
+    // Create SprintMode instance
+    sprintMode = new SprintMode(mockRepository, mockStorage, mockEventBus, mockLogger);
+  });
+
+  it('should persist highlight to chrome.storage.local with encryption', async () => {
+    // Create a mock selection
+    const mockSelection = {
+      rangeCount: 1,
+      getRangeAt: () =>
+        ({
+          toString: () => 'Test highlight text',
+          cloneRange: () => ({}),
+        }) as any,
+    } as unknown as Selection;
+
+    // Create highlight
+    const highlightId = await sprintMode.createHighlight(mockSelection, 'yellow');
+
+    // Verify highlight was created
+    expect(highlightId).toBeDefined();
+    expect(mockRepository.add).toHaveBeenCalled();
+
+    // Note: saveEvent is called via event handlers after createHighlight returns
+    // In this test, we're mocking storage so we can verify the mock was set up correctly
+    // The actual event emission happens asynchronously
+
+    // Note: Actual encryption happens in StorageService, which we're mocking
+    // In real implementation, data would be AES-256-GCM encrypted
+  });
+
+  it('should restore highlights from storage on page reload', async () => {
+    // Setup: Pre-populate storage with highlight data
+    const mockEvent = {
+      type: 'highlight.created',
+      timestamp: Date.now(),
+      data: {
+        id: 'test-id-123',
+        text: 'Restored highlight',
+        contentHash: 'hash123',
+        colorRole: 'yellow',
+        ranges: [
+          {
+            startContainer: '//div[1]',
+            startOffset: 0,
+            endContainer: '//div[1]',
+            endOffset: 10,
+          },
+        ],
+        highlight: {
+          text: 'Restored highlight',
+        },
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+      },
+    } as any;
+
+    await mockStorage.saveEvent(mockEvent);
+
+    // Simulate new session
+    new SprintMode(mockRepository, mockStorage, mockEventBus, mockLogger);
+
+    // Restore would normally happen in onActivate via event replay
+    // For this test, verify storage can be read
+    const events = await mockStorage.loadEvents();
+    expect(events).toHaveLength(1);
+    const event = events[0];
+    expect(event?.type).toBe('highlight.created');
+    if (event && event.type === 'highlight.created') {
+      expect((event as any).data.highlight.text).toBe('Restored highlight');
+    }
+  });
+
+  it('should handle storage quota exceeded gracefully', async () => {
+    // Mock storage quota exceeded error
+    mockStorage.saveEvent = vi
+      .fn()
+      .mockRejectedValue(new Error('QuotaExceededError: Storage quota exceeded'));
+
+    const mockSelection = {
+      rangeCount: 1,
+      getRangeAt: () =>
+        ({
+          toString: () => 'Persist test',
+          cloneRange: () => ({}),
+        }) as any,
+    } as unknown as Selection;
+
+    // Should not throw - createHighlight handles errors internally
+    const highlightId = await sprintMode.createHighlight(mockSelection, 'yellow');
+
+    // Highlight should be created (ID returned)
+    expect(highlightId).toBeDefined();
+
+    // Highlight should still exist in memory (fallback)
+    expect(mockRepository.add).toHaveBeenCalled();
+
+    // Note: Error logging happens in event handlers, not in createHighlight
+    // The event emission will fail, but highlight is still created in memory
+  });
+
+  it('should recover from corrupt storage data', async () => {
+    // Setup: Inject corrupt data
+    const domain = 'example.com';
+    const key = await hashDomain(domain);
+    mockStorageData.set(key, {
+      events: [
+        { corrupted: 'invalid data structure' }, // Invalid event
+        { type: 'highlight:created', highlight: null }, // Missing data
+        'not-even-an-object', // Completely invalid
+      ],
     });
 
-    it('should handle concurrent storage writes', async () => {
-        const mockSelection = {
-            rangeCount: 1,
-            getRangeAt: () => ({
-                toString: () => 'Concurrent text',
-                cloneRange: () => ({}),
-            } as any),
-        } as Selection;
-
-        // Create 5 highlights concurrently
-        const promises = [];
-        for (let i = 0; i < 5; i++) {
-            promises.push(sprintMode.createHighlight(mockSelection, 'yellow'));
-        }
-
-        // Wait for all to complete
-        const ids = await Promise.all(promises);
-
-        // Verify all highlights created
-        expect(ids).toHaveLength(5);
-
-        // Note: Without proper deduplication mock, each call creates unique ID
-        // In real implementation with proper repository, deduplication would work
-        // For this test, we verify no crashes and all IDs are valid
-        ids.forEach(id => expect(id).toBeDefined());
-
-        // Verify repository was called for each highlight
-        expect(mockRepository.add).toHaveBeenCalled();
-
-        // Verify no data corruption in storage
-        const events = await mockStorage.loadEvents();
-        expect(events.length).toBeGreaterThanOrEqual(0); // Events may or may not be present
+    // Mock loadEvents to return corrupt data
+    mockStorage.loadEvents = vi.fn(async () => {
+      const data = mockStorageData.get(key);
+      return Promise.resolve(data?.events || []);
     });
+
+    // Should not crash when loading corrupt data
+    const events = await mockStorage.loadEvents();
+    expect(events).toBeDefined();
+
+    // In real implementation, corrupt events would be skipped
+    // and valid events would be restored
+  });
+
+  it('should handle concurrent storage writes', async () => {
+    const mockSelection = {
+      rangeCount: 1,
+      getRangeAt: () =>
+        ({
+          toString: () => 'Another test',
+          cloneRange: () => ({}),
+        }) as any,
+    } as unknown as Selection;
+
+    // Create 5 highlights concurrently
+    const promises = [];
+    for (let i = 0; i < 5; i++) {
+      promises.push(sprintMode.createHighlight(mockSelection, 'yellow'));
+    }
+
+    // Wait for all to complete
+    const ids = await Promise.all(promises);
+
+    // Verify all highlights created
+    expect(ids).toHaveLength(5);
+
+    // Note: Without proper deduplication mock, each call creates unique ID
+    // In real implementation with proper repository, deduplication would work
+    // For this test, we verify no crashes and all IDs are valid
+    ids.forEach((id) => expect(id).toBeDefined());
+
+    // Verify repository was called for each highlight
+    expect(mockRepository.add).toHaveBeenCalled();
+
+    // Verify no data corruption in storage
+    const events = await mockStorage.loadEvents();
+    expect(events.length).toBeGreaterThanOrEqual(0); // Events may or may not be present
+  });
 });
