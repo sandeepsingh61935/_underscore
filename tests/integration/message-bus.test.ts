@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import { Container } from '@/shared/di/container';
 import { registerServices } from '@/shared/di/service-registration';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { CircuitBreaker, CircuitState } from '@/shared/utils/circuit-breaker';
 import type { Message } from '@/shared/schemas/message-schemas';
+import type { CircuitBreaker } from '@/shared/utils/circuit-breaker';
+import { CircuitState } from '@/shared/utils/circuit-breaker';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Integration Tests for IPC Layer
@@ -25,10 +28,9 @@ const mockChromeRuntime = {
     lastError: null as { message: string } | null,
 };
 
-// @ts-expect-error - Mocking chrome global
 global.chrome = {
     runtime: mockChromeRuntime,
-};
+} as any;
 
 describe('IPC Layer - Integration Tests', () => {
     let container: Container;
@@ -63,7 +65,7 @@ describe('IPC Layer - Integration Tests', () => {
 
             const expectedResponse = { count: 42 };
 
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 // Simulate background script processing
                 mockChromeRuntime.lastError = null;
                 setTimeout(() => callback(expectedResponse), 10);
@@ -96,7 +98,7 @@ describe('IPC Layer - Integration Tests', () => {
             messageBus.subscribe('TEST_EVENT', handler);
 
             // Open the circuit by failing 5 sends
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = { message: 'Service down' };
                 callback(null);
             });
@@ -151,7 +153,7 @@ describe('IPC Layer - Integration Tests', () => {
         it('SCENARIO: MV3 background suspended, recovers on 2nd retry', async () => {
             let attemptCount = 0;
 
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 attemptCount++;
 
                 if (attemptCount <= 2) {
@@ -178,10 +180,10 @@ describe('IPC Layer - Integration Tests', () => {
         });
 
         it('SCENARIO: Network glitch, retry with exponential backoff succeeds', async () => {
-            let callTimestamps: number[] = [];
+            const callTimestamps: number[] = [];
             let attemptCount = 0;
 
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 callTimestamps.push(Date.now());
                 attemptCount++;
 
@@ -210,7 +212,7 @@ describe('IPC Layer - Integration Tests', () => {
         });
 
         it('SCENARIO: Retry exhausted, circuit breaker NOT triggered (within threshold)', async () => {
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = { message: 'Persistent failure' };
                 callback(null);
             });
@@ -231,7 +233,7 @@ describe('IPC Layer - Integration Tests', () => {
 
     describe('Circuit Breaker Integration - Cascading Failure Prevention', () => {
         it('SCENARIO: 5 consecutive failures open circuit, preventing cascading', async () => {
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = { message: 'Background script crashed' };
                 callback(null);
             });
@@ -273,7 +275,7 @@ describe('IPC Layer - Integration Tests', () => {
 
         it('SCENARIO: Circuit opens, recovers after timeout', async () => {
             // Open the circuit
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = { message: 'Service down' };
                 callback(null);
             });
@@ -297,7 +299,7 @@ describe('IPC Layer - Integration Tests', () => {
             await new Promise((resolve) => setTimeout(resolve, 100));
 
             // Service recovers
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = null; // Explicitly clear
                 callback({ recovered: true });
             });
@@ -309,7 +311,7 @@ describe('IPC Layer - Integration Tests', () => {
         it('SCENARIO: Circuit breaker prevents retry storm', async () => {
             let totalChromeCalls = 0;
 
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 totalChromeCalls++;
                 mockChromeRuntime.lastError = { message: 'Overload' };
                 callback(null);
@@ -387,7 +389,7 @@ describe('IPC Layer - Integration Tests', () => {
             const { ChromeMessageBus } = await import('@/shared/services/chrome-message-bus');
             const { RetryDecorator } = await import('@/shared/services/retry-decorator');
             const { CircuitBreakerMessageBus } = await import('@/shared/services/circuit-breaker-message-bus');
-            const logger = container.resolve('logger');
+            const logger = container.resolve<ILogger>('logger');
 
             const fastChrome = new ChromeMessageBus(logger, { timeoutMs: 500 });
             const fastRetry = new RetryDecorator(fastChrome, logger, {
@@ -441,7 +443,7 @@ describe('IPC Layer - Integration Tests', () => {
         });
 
         it('SCENARIO: Malformed response handled gracefully', async () => {
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 // Return malformed response
                 callback(undefined);
             });
@@ -459,7 +461,7 @@ describe('IPC Layer - Integration Tests', () => {
 
     describe('Tricky Edge Cases - Real-World Scenarios', () => {
         it('EDGE: Popup closes mid-request (receiving end does not exist)', async () => {
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = {
                     message: 'Could not establish connection. Receiving end does not exist.',
                 };
@@ -478,7 +480,7 @@ describe('IPC Layer - Integration Tests', () => {
         it('EDGE: Background script restarts during retry backoff', async () => {
             let attemptCount = 0;
 
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 attemptCount++;
 
                 if (attemptCount === 1) {
@@ -564,6 +566,7 @@ describe('IPC Layer - Integration Tests', () => {
 
         it('EDGE: Subscribe/unsubscribe race during message dispatch', async () => {
             const handler1 = vi.fn();
+            // eslint-disable-next-line prefer-const
             let unsubscribe2: (() => void) | undefined;
             const handler2 = vi.fn().mockImplementation(() => {
                 // Unsubscribe self during execution
@@ -583,7 +586,7 @@ describe('IPC Layer - Integration Tests', () => {
 
     describe('Performance & Resource Management', () => {
         it('should not leak memory on repeated send operations', async () => {
-            mockChromeRuntime.sendMessage.mockImplementation((msg, callback) => {
+            mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
                 mockChromeRuntime.lastError = null;
                 callback({ ok: true });
             });
