@@ -48,8 +48,8 @@ export class WebSocketClient implements IWebSocketClient {
             // If private, we should add a getter. 
             // Assuming for now we can access it or will fix SupabaseClient.
 
-            // Use 'any' cast to access private client for now, or better, add a getter to SupabaseClient
-            const supabaseInstance = (this.supabase as any).client;
+            // Use public getter to access Supabase SDK client
+            const supabaseInstance = this.supabase.supabase;
 
             this.channel = supabaseInstance.channel('highlights-sync')
                 .on(
