@@ -173,12 +173,10 @@ export class EncryptedAPIClient implements IAPIClient {
         const encrypted = await this.encryptionService.encrypt(sensitiveData);
 
         // Return highlight with encrypted data
-        // Store encrypted payload in a special field (requires schema update)
+        // Store complete encrypted payload (including keyId, version, timestamp)
         return {
             ...data,
-            // For now, we'll store encrypted data in the text field
-            // TODO: Update schema to have dedicated encryptedData field
-            text: `[ENCRYPTED:${encrypted.data}]`,
+            text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
             ranges: [], // Clear ranges (encrypted in text field)
         } as HighlightDataV2;
     }
@@ -199,16 +197,12 @@ export class EncryptedAPIClient implements IAPIClient {
                 throw new Error('User not authenticated');
             }
 
-            // Extract encrypted payload
-            const encryptedData = data.text.substring(11, data.text.length - 1); // Remove [ENCRYPTED: and ]
+            // Extract encrypted payload (JSON string)
+            const encryptedJson = data.text.substring(11, data.text.length - 1); // Remove [ENCRYPTED: and ]
+            const encryptedPayload = JSON.parse(encryptedJson);
 
-            // Decrypt
-            const decrypted = await this.encryptionService.decrypt({
-                version: 1,
-                keyId: `${currentUser.id}_${Date.now()}`, // TODO: Store actual keyId
-                data: encryptedData,
-                timestamp: Date.now(),
-            });
+            // Decrypt using the stored payload (includes keyId, version, timestamp)
+            const decrypted = await this.encryptionService.decrypt(encryptedPayload);
 
             // Restore original data
             return {
