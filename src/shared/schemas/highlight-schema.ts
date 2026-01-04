@@ -85,6 +85,7 @@ export const HighlightDataSchemaV2 = z.object({
   // Core fields
   id: z.string().uuid(),
   text: z.string().min(1).max(10000),
+  url: z.string().optional(),
 
   // Content hash for deduplication
   contentHash: z.string().length(64), // SHA-256 = 64 hex chars
