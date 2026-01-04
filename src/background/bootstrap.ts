@@ -1,6 +1,7 @@
 
 import { Container } from '@/shared/di/container';
 import { registerServices } from '@/shared/di/service-registration';
+import { registerAuthComponents } from '@/background/auth/auth-container-registration';
 import { registerAPIComponents } from '@/background/api/api-container-registration';
 import { registerEventComponents } from '@/background/events/events-container-registration';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
@@ -31,6 +32,7 @@ export async function initializeBackground(): Promise<Container> {
 
     // 2. Register Services
     registerServices(container);         // Shared (Logger, EventBus, Auth, Storage)
+    registerAuthComponents(container);   // Auth & Security (KeyManager, E2EEncryptionService)
     registerAPIComponents(container);    // API Layer
     registerEventComponents(container);  // Event Sourcing
     registerSyncComponents(container);   // Sync Engine
