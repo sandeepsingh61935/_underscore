@@ -156,6 +156,7 @@ export class ConflictResolver implements IConflictResolver {
                 return (
                     strategy === ResolutionStrategy.LOCAL_WINS ||
                     strategy === ResolutionStrategy.REMOTE_WINS ||
+                    strategy === ResolutionStrategy.LAST_WRITE_WINS ||
                     strategy === ResolutionStrategy.MANUAL
                 );
 
