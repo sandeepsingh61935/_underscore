@@ -22,12 +22,22 @@ export class ConnectionManager {
         this.listenToNetworkChanges();
     }
 
+    private isConnecting = false;
+
     /**
-     * Connect and subscribe to user channel
+     * Connect to the Supabase Realtime service
+     * Uses exponential backoff for retries
      */
-    async connect(userId: string): Promise<void> {
-        this.isManuallyDisconnected = false;
+    public async connect(userId: string): Promise<void> {
+        // Prevent race conditions / spamming
+        if (this.isConnecting || this.wsClient.isConnected()) {
+            this.logger.debug('Already connected or connecting, ignoring connect request');
+            return;
+        }
+
         this.userId = userId;
+        this.isManuallyDisconnected = false;
+        this.isConnecting = true;
 
         try {
             await this.wsClient.subscribe(userId);
@@ -36,6 +46,8 @@ export class ConnectionManager {
         } catch (error) {
             this.logger.error('Failed to connect to realtime service', error as Error);
             await this.handleReconnect();
+        } finally {
+            this.isConnecting = false;
         }
     }
 
