@@ -5,8 +5,7 @@
 
 import { LoggerFactory } from './logger';
 import type { ILogger } from './logger';
-
-type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
+import type { IEventBus, EventHandler } from '../interfaces/i-event-bus';
 
 /**
  * EventBus - Central event coordination using Observer pattern
@@ -27,7 +26,7 @@ type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
  * bus.emit('user:created', { id: '123', name: 'John' });
  * ```
  */
-export class EventBus {
+export class EventBus implements IEventBus {
   private handlers = new Map<string, Set<EventHandler>>();
   private logger: ILogger;
 
