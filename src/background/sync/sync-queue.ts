@@ -201,7 +201,7 @@ export class SyncQueue implements ISyncQueue {
         const entry: QueueEntry = {
             id: event.id,
             event,
-            timestamp: Date.now(),
+            timestamp: event.timestamp, // Use event's original timestamp for chronological ordering
             retryCount: 0,
             priority: this.calculatePriority(event),
         };
@@ -404,11 +404,16 @@ export class SyncQueue implements ISyncQueue {
     }
 
     /**
-     * Trigger sync operation
-     * 
-     * Debounced to prevent excessive sync calls
-     */
+   * Trigger sync operation
+   * 
+   * Debounced to prevent excessive sync calls
+   */
     private triggerSync(): void {
+        // Skip if no network detector (testing scenario)
+        if (!this.networkDetector) {
+            return;
+        }
+
         // Clear existing timeout
         if (this.syncTimeout) {
             clearTimeout(this.syncTimeout);
