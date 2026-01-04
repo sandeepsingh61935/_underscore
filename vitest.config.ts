@@ -46,7 +46,7 @@ export default defineConfig({
     },
 
     // Test match patterns
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts', 'tests/e2e/**/*.test.ts'],
 
     // Setup files
     setupFiles: ['./tests/setup.ts'],
