@@ -13,11 +13,19 @@ import { SupabaseClient } from '@/background/api/supabase-client';
 export function registerRealtimeComponents(container: Container): void {
     // ==================== WebSocket Client ====================
     container.registerSingleton<IWebSocketClient>('webSocketClient', () => {
-        const supabase = container.resolve<SupabaseClient>('apiClient'); // Assuming 'apiClient' is SupabaseClient
+        const supabase = container.resolve<SupabaseClient>('apiClient');
         const eventBus = container.resolve<IEventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
-        return new WebSocketClient(supabase, eventBus, logger);
+        // Optional encryption service for Vault Mode
+        let encryptionService;
+        try {
+            encryptionService = container.resolve<any>('encryptionService');
+        } catch (e) {
+            // Ignore if not registered (Sprint Mode)
+        }
+
+        return new WebSocketClient(supabase, eventBus, logger, encryptionService);
     });
 
     // ==================== Connection Manager ====================

@@ -249,19 +249,34 @@ export class ConflictResolver implements IConflictResolver {
 
         if (!local || !remote) throw new UnresolvableConflictError('Missing events');
 
-        // Deep merge payload?
-        // Very simplified merge: Local props overwrite Remote props, but we keep Remote props that Local doesn't have.
-        // Spread operator does shallow merge.
-
         // Check if payload is object
         if (typeof local.payload === 'object' && local.payload !== null &&
             typeof remote.payload === 'object' && remote.payload !== null) {
 
+            const localPayload = local.payload as any;
+            const remotePayload = remote.payload as any;
+
+            // Basic merge
             const mergedPayload = {
-                ...(remote.payload as object),
-                ...(local.payload as object),
-                // Ensure critical fields from latest (assume LWW for collisions for now)
+                ...remotePayload,
+                ...localPayload,
             };
+
+            // Enhanced merge for metadata/tags
+            if (localPayload.metadata && remotePayload.metadata) {
+                mergedPayload.metadata = {
+                    ...remotePayload.metadata,
+                    ...localPayload.metadata,
+                };
+
+                // Merge tags if they exist
+                if (localPayload.metadata.tags && remotePayload.metadata.tags) {
+                    mergedPayload.metadata.tags = Array.from(new Set([
+                        ...remotePayload.metadata.tags,
+                        ...localPayload.metadata.tags
+                    ]));
+                }
+            }
 
             return {
                 ...local, // Base on local
