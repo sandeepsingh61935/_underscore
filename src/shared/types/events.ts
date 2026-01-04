@@ -136,6 +136,9 @@ export const EventName = {
   REMOTE_HIGHLIGHT_UPDATED: 'remote:highlight:updated',
   REMOTE_HIGHLIGHT_DELETED: 'remote:highlight:deleted',
 
+  // Network
+  NETWORK_STATUS_CHANGED: 'network:status:changed',
+
   // Color
   COLOR_CHANGED: 'color:changed',
 
