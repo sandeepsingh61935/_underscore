@@ -10,13 +10,16 @@ import { AppError } from '../../shared/errors/app-error';
  * Base error class for all conflict-related errors
  */
 export abstract class ConflictError extends AppError {
+    public readonly code: string;
+
     constructor(
         message: string,
         code: string,
         context?: Record<string, unknown>
     ) {
-        super(message, code, context);
+        super(message, context);
         this.name = 'ConflictError';
+        this.code = code;
     }
 }
 

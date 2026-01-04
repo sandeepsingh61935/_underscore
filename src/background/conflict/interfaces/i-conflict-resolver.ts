@@ -4,8 +4,8 @@
  * @see docs/05-quality-framework/01-system-design-patterns.md (Strategy Pattern)
  */
 
-import type { SyncEvent } from '../../events/event-types';
-import type { Conflict, ConflictType } from './i-conflict-detector';
+import type { SyncEvent } from '../../events/interfaces/i-event-store';
+import type { Conflict } from './i-conflict-detector';
 import type { VectorClock } from './i-vector-clock-manager';
 
 /**

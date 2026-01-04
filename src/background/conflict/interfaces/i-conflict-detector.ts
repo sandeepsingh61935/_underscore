@@ -4,8 +4,7 @@
  * @see docs/04-adrs/001-event-sourcing-for-sync.md
  */
 
-import type { SyncEvent } from '../../events/event-types';
-import type { VectorClock } from './i-vector-clock-manager';
+import type { SyncEvent } from '../../events/interfaces/i-event-store';
 
 /**
  * Types of conflicts that can occur during sync
