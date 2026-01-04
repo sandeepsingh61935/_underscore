@@ -89,6 +89,40 @@ export interface HighlightLoadedEvent extends BaseEvent {
 }
 
 // ============================================================================
+// Migration Events
+// ============================================================================
+
+export interface MigrationStartedEvent extends BaseEvent {
+  type: 'migration:started';
+  total: number;
+}
+
+export interface MigrationProgressEvent extends BaseEvent {
+  type: 'migration:progress';
+  migrated: number;
+  total: number;
+  failed: number;
+}
+
+export interface MigrationCompletedEvent extends BaseEvent {
+  type: 'migration:completed';
+  result: {
+    migrated: number;
+    failed: number;
+    skipped: number;
+  };
+}
+
+export interface MigrationFailedEvent extends BaseEvent {
+  type: 'migration:failed';
+  error: Error;
+}
+
+export interface MigrationRolledBackEvent extends BaseEvent {
+  type: 'migration:rolled-back';
+}
+
+// ============================================================================
 // Error Events
 // ============================================================================
 
@@ -115,6 +149,11 @@ export type AppEvent =
   | ThemeChangedEvent
   | HighlightSavedEvent
   | HighlightLoadedEvent
+  | MigrationStartedEvent
+  | MigrationProgressEvent
+  | MigrationCompletedEvent
+  | MigrationFailedEvent
+  | MigrationRolledBackEvent
   | ErrorEvent;
 
 /**
@@ -148,6 +187,13 @@ export const EventName = {
   // Storage (Future)
   HIGHLIGHT_SAVED: 'highlight:saved',
   HIGHLIGHT_LOADED: 'highlight:loaded',
+
+  // Migration
+  MIGRATION_STARTED: 'migration:started',
+  MIGRATION_PROGRESS: 'migration:progress',
+  MIGRATION_COMPLETED: 'migration:completed',
+  MIGRATION_FAILED: 'migration:failed',
+  MIGRATION_ROLLED_BACK: 'migration:rolled-back',
 
   // Errors
   ERROR_OCCURRED: 'error:occurred',
