@@ -131,6 +131,11 @@ export const EventName = {
   HIGHLIGHT_CLICKED: 'highlight:clicked',
   CLEAR_SELECTION: 'clear:selection',
 
+  // Remote Changes (Real-Time Sync)
+  REMOTE_HIGHLIGHT_CREATED: 'remote:highlight:created',
+  REMOTE_HIGHLIGHT_UPDATED: 'remote:highlight:updated',
+  REMOTE_HIGHLIGHT_DELETED: 'remote:highlight:deleted',
+
   // Color
   COLOR_CHANGED: 'color:changed',
 
