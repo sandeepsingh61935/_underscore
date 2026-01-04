@@ -12,13 +12,10 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 import {
     APIError,
     AuthenticationError,
-    NetworkError,
-    RateLimitError,
-    ServerError,
     TimeoutError,
     ValidationError,
-    NotFoundError,
 } from './api-errors';
+import { APIErrorHandler } from './api-error-handler';
 import { HTTPSValidator } from './https-validator';
 
 /**
@@ -383,42 +380,10 @@ export class SupabaseClient implements IAPIClient {
 
     /**
      * Transform Supabase error to domain error
+     * @deprecated Use APIErrorHandler.handle() instead
      */
     private transformError(error: any): APIError {
-        // PostgreSQL error codes
-        const code = error.code || error.status?.toString();
-
-        if (code === '401' || code === '403' || code === 'PGRST301') {
-            return new AuthenticationError(error.message, parseInt(code));
-        }
-
-        if (code === '429') {
-            // Extract Retry-After header if available
-            const retryAfter = error.headers?.['retry-after'];
-            return new RateLimitError(error.message, retryAfter ? parseInt(retryAfter) : undefined);
-        }
-
-        if (code?.startsWith('5') || code === 'PGRST000') {
-            return new ServerError(error.message, parseInt(code));
-        }
-
-        if (code === '400' || code === 'PGRST103') {
-            return new ValidationError(error.message);
-        }
-
-        if (code === '404' || code === 'PGRST116') {
-            return new NotFoundError('Resource', 'unknown');
-        }
-
-        // Network errors
-        if (error.message?.includes('fetch') || error.message?.includes('network')) {
-            return new NetworkError(error.message, error);
-        }
-
-        // Default
-        return new APIError(error.message || 'Unknown API error', 'API_ERROR', {
-            originalError: error,
-        });
+        return APIErrorHandler.handle(error);
     }
 
     /**
