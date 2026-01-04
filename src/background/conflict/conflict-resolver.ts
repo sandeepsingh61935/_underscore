@@ -108,11 +108,16 @@ export class ConflictResolver implements IConflictResolver {
                 lastRemote.vectorClock
             );
 
+            // Determine timestamp: New payload (MERGE) gets new time, Selection (LWW) keeps original time
+            const timestamp = strategy === ResolutionStrategy.MERGE
+                ? Date.now()
+                : resolvedEvent.timestamp;
+
             // Create final resolved event with merged clock
             const finalEvent: SyncEvent = {
                 ...resolvedEvent,
                 vectorClock: mergedClock,
-                timestamp: Date.now(), // New timestamp for resolution
+                timestamp,
             };
 
             // 4. Emit resolution event

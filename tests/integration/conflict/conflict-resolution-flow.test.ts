@@ -75,6 +75,7 @@ describe('Conflict Resolution Integration Flow', () => {
 
         expect(conflicts).toHaveLength(1);
         const conflict = conflicts[0];
+        if (!conflict) throw new Error('No conflict found');
         expect(conflict.type).toBeDefined();
         expect(conflict.entityId).toBe(entityId);
 
@@ -132,9 +133,11 @@ describe('Conflict Resolution Integration Flow', () => {
 
         const conflicts = await detector.detectConflicts([localEvent], [remoteEvent]);
         expect(conflicts).toHaveLength(1);
+        const conflict = conflicts[0];
+        if (!conflict) throw new Error('No conflict found');
 
         // Resolve: Local Wins (Delete wins)
-        const resolved = await resolver.resolve(conflicts[0], ResolutionStrategy.LOCAL_WINS);
+        const resolved = await resolver.resolve(conflict, ResolutionStrategy.LOCAL_WINS);
 
         expect(resolved.type).toBe(SyncEventType.HIGHLIGHT_DELETED);
         expect(resolved.vectorClock).toEqual({ 'A': 2, 'B': 2 });
