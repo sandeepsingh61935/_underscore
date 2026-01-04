@@ -71,14 +71,15 @@ export class PaginationClient implements IPaginationClient {
 
                 const fetchDuration = Date.now() - startTime;
 
+                // Update cursor state
+                if (page.nextCursor) {
+                    this.currentCursor = page.nextCursor;
+                    cursor = page.nextCursor;
+                }
+
                 // Yield events if any
                 if (page.data.length > 0) {
                     totalEvents += page.data.length;
-
-                    // Update cursor BEFORE yielding (so getCursorInfo() is accurate during iteration)
-                    if (page.nextCursor) {
-                        this.currentCursor = page.nextCursor;
-                    }
 
                     this.logger.debug('Page fetched', {
                         page: pageCount,

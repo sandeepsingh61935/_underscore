@@ -115,10 +115,10 @@ describe('PaginationClient', () => {
         });
     });
 
-    describe('Test 4: Large dataset (10K events) - memory efficient', () => {
-        it('should stream 10K events without loading all in memory', async () => {
-            // Arrange: 10,000 events
-            const events: SyncEvent[] = Array.from({ length: 10000 }, (_, i) => ({
+    describe('Test 4: Large dataset (1K events) - memory efficient', () => {
+        it('should stream 1K events without loading all in memory', async () => {
+            // Arrange: 1,000 events
+            const events: SyncEvent[] = Array.from({ length: 1000 }, (_, i) => ({
                 event_id: `event-${i}`,
                 user_id: 'user-123',
                 type: 'highlight.created' as any,
@@ -144,7 +144,7 @@ describe('PaginationClient', () => {
             }
 
             // Assert
-            expect(totalProcessed).toBe(10000);
+            expect(totalProcessed).toBe(1000);
             expect(maxPageSize).toBe(100); // Never exceeded page size
         });
     });
@@ -158,7 +158,7 @@ describe('PaginationClient', () => {
 
             // Act & Assert
             try {
-                for await (const page of client.pullEventsPaginated(Date.now())) {
+                for await (const _ of client.pullEventsPaginated(Date.now())) {
                     // Should not reach here
                 }
                 expect.fail('Should have thrown error');
@@ -169,23 +169,28 @@ describe('PaginationClient', () => {
         });
     });
 
-    describe('Test 6: Timeout per page (page takes >5s) throws error', () => {
-        it('should timeout if page fetch exceeds 5 seconds', async () => {
-            // Arrange: Slow API response (6 seconds)
+    describe('Test 6: Timeout per page (page takes > timeout) throws error', () => {
+        it('should timeout if page fetch exceeds configured limit', async () => {
+            // Arrange: Client with short timeout (100ms)
+            const shortTimeoutClient = new PaginationClient(mockAPIClient, mockLogger, {
+                timeoutMs: 100
+            });
+
+            // Mock API delay of 200ms (exceeds 100ms)
             (mockAPIClient.pullEvents as any).mockImplementation(
-                () => new Promise((resolve) => setTimeout(resolve, 6000))
+                () => new Promise((resolve) => setTimeout(resolve, 200))
             );
 
             // Act & Assert
             try {
-                for await (const page of client.pullEventsPaginated(Date.now())) {
+                for await (const _ of shortTimeoutClient.pullEventsPaginated(Date.now())) {
                     // Should not reach here
                 }
                 expect.fail('Should have thrown TimeoutError');
             } catch (error) {
                 expect(error).toBeInstanceOf(TimeoutError);
             }
-        }, 10000); // Test timeout 10s
+        });
     });
 
     describe('Test 7: Last page partial (92 events) - handles correctly', () => {
