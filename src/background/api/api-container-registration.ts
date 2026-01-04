@@ -10,8 +10,10 @@ import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { IAPIClient } from './interfaces/i-api-client';
 import type { IPaginationClient } from './interfaces/i-pagination-client';
 import type { ICacheManager } from './interfaces/i-cache-manager';
+import type { IEncryptionService } from '@/background/auth/interfaces/i-encryption-service';
 import { SupabaseClient, type SupabaseConfig } from './supabase-client';
 import { ResilientAPIClient } from './resilient-api-client';
+import { EncryptedAPIClient } from './encrypted-api-client';
 import { PaginationClient } from './pagination-client';
 import { CacheManager } from './cache-manager';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
@@ -53,7 +55,7 @@ export function registerAPIComponents(container: Container): void {
 
     /**
      * SupabaseClient (base implementation)
-     * Internal - wrapped by ResilientAPIClient
+     * Internal - wrapped by EncryptedAPIClient
      */
     container.registerSingleton('_supabaseClient', () => {
         const logger = container.resolve<ILogger>('logger');
@@ -64,8 +66,29 @@ export function registerAPIComponents(container: Container): void {
     });
 
     /**
+     * EncryptedAPIClient (security layer)
+     * Wraps SupabaseClient with E2E encryption
+     * 
+     * Features:
+     * - Transparent encryption before pushEvents/createHighlight
+     * - Transparent decryption after pullEvents/getHighlights
+     * - Hybrid encryption (AES-GCM + RSA-OAEP)
+     */
+    container.registerSingleton('_encryptedClient', () => {
+        const logger = container.resolve<ILogger>('logger');
+        const authManager = container.resolve<IAuthManager>('authManager');
+        const baseClient = container.resolve<IAPIClient>('_supabaseClient');
+        const encryptionService = container.resolve<IEncryptionService>('encryptionService');
+
+        return new EncryptedAPIClient(baseClient, encryptionService, authManager, logger);
+    });
+
+    /**
      * ResilientAPIClient (production API client)
-     * Wraps SupabaseClient with retry + circuit breaker
+     * Wraps EncryptedAPIClient with retry + circuit breaker
+     * 
+     * Architecture:
+     * ResilientAPIClient → EncryptedAPIClient → SupabaseClient
      * 
      * Configuration:
      * - Retry: 3 attempts, exponential backoff (100ms, 200ms, 400ms)
@@ -73,10 +96,10 @@ export function registerAPIComponents(container: Container): void {
      */
     container.registerSingleton<IAPIClient>('apiClient', () => {
         const logger = container.resolve<ILogger>('logger');
-        const baseClient = container.resolve<IAPIClient>('_supabaseClient');
+        const encryptedClient = container.resolve<IAPIClient>('_encryptedClient');
 
         return new ResilientAPIClient(
-            baseClient,
+            encryptedClient,
             logger,
             {
                 maxRetries: 3,
