@@ -40,8 +40,12 @@ export interface SupabaseConfig {
  * Wraps Supabase SDK and provides type-safe API operations
  */
 export class SupabaseClient implements IAPIClient {
-    private client: SupabaseSDKClient;
+    private sdkClient: SupabaseSDKClient;
     private readonly timeoutMs: number;
+
+    get supabase(): SupabaseSDKClient {
+        return this.sdkClient;
+    }
 
     constructor(
         private readonly authManager: IAuthManager,
@@ -51,7 +55,7 @@ export class SupabaseClient implements IAPIClient {
         // Enforce HTTPS for security (prevents MITM attacks)
         HTTPSValidator.validate(config.url);
 
-        this.client = createClient(config.url, config.anonKey);
+        this.sdkClient = createClient(config.url, config.anonKey);
         this.timeoutMs = config.timeoutMs ?? 5000;
 
         this.logger.debug('SupabaseClient initialized', {
@@ -71,8 +75,8 @@ export class SupabaseClient implements IAPIClient {
         this.logger.debug('Creating highlight in Supabase', { id: data.id });
 
         try {
-            const { error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('highlights')
                     .insert({
                         id: data.id,
@@ -85,10 +89,10 @@ export class SupabaseClient implements IAPIClient {
                         created_at: data.createdAt.toISOString(),
                         updated_at: new Date().toISOString(),
                     })
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
             this.logger.debug('Highlight created successfully', { id: data.id });
@@ -116,16 +120,16 @@ export class SupabaseClient implements IAPIClient {
             if (updates.colorRole !== undefined) payload['color_role'] = updates.colorRole;
             if (updates.contentHash !== undefined) payload['content_hash'] = updates.contentHash;
 
-            const { error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('highlights')
                     .update(payload)
                     .eq('id', id)
                     .eq('user_id', user.id) // Ensure user owns highlight
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
             this.logger.debug('Highlight updated successfully', { id });
@@ -145,18 +149,18 @@ export class SupabaseClient implements IAPIClient {
 
         try {
             // Soft delete: set deleted_at timestamp
-            const { error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('highlights')
                     .update({
                         deleted_at: new Date().toISOString(),
                     })
                     .eq('id', id)
                     .eq('user_id', user.id)
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
             this.logger.debug('Highlight soft-deleted successfully', { id });
@@ -175,7 +179,7 @@ export class SupabaseClient implements IAPIClient {
         this.logger.debug('Fetching highlights', { url });
 
         try {
-            let query = this.client
+            let query = this.sdkClient
                 .from('highlights')
                 .select('*')
                 .eq('user_id', user.id)
@@ -185,14 +189,14 @@ export class SupabaseClient implements IAPIClient {
                 query = query.eq('url', url);
             }
 
-            const { data, error } = await this.withTimeout(query);
+            const response = await this.withTimeout(query) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
             // Transform Supabase rows to HighlightDataV2
-            const highlights = (data || []).map((row) => this.transformHighlightRow(row));
+            const highlights = (response.data || []).map((row: any) => this.transformHighlightRow(row));
 
             this.logger.debug('Highlights fetched', { count: highlights.length });
             return highlights;
@@ -214,8 +218,8 @@ export class SupabaseClient implements IAPIClient {
 
         try {
             // Batch insert events
-            const { data, error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('sync_events')
                     .insert(
                         events.map((event) => ({
@@ -230,13 +234,13 @@ export class SupabaseClient implements IAPIClient {
                         }))
                     )
                     .select('event_id')
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
-            const syncedIds = (data || []).map((row: { event_id: string }) => row.event_id);
+            const syncedIds = (response.data || []).map((row: { event_id: string }) => row.event_id);
             const failedIds = events
                 .map((e) => e.event_id)
                 .filter((id) => !syncedIds.includes(id));
@@ -267,20 +271,20 @@ export class SupabaseClient implements IAPIClient {
         this.logger.debug('Pulling events from Supabase', { since });
 
         try {
-            const { data, error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('sync_events')
                     .select('*')
                     .eq('user_id', user.id)
                     .gt('timestamp', since)
                     .order('timestamp', { ascending: true }) // CRITICAL: chronological order
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
-            const events = (data || []) as SyncEvent[];
+            const events = (response.data || []) as SyncEvent[];
 
             this.logger.debug('Events pulled', { count: events.length });
             return events;
@@ -306,8 +310,8 @@ export class SupabaseClient implements IAPIClient {
         this.logger.debug('Creating collection', { name });
 
         try {
-            const { data, error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('collections')
                     .insert({
                         user_id: user.id,
@@ -318,13 +322,13 @@ export class SupabaseClient implements IAPIClient {
                     })
                     .select()
                     .single()
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
-            const collection = this.transformCollectionRow(data);
+            const collection = this.transformCollectionRow(response.data);
 
             this.logger.debug('Collection created', { id: collection.id });
             return collection;
@@ -343,18 +347,18 @@ export class SupabaseClient implements IAPIClient {
         this.logger.debug('Fetching collections');
 
         try {
-            const { data, error } = await this.withTimeout(
-                this.client
+            const response = await this.withTimeout(
+                this.sdkClient
                     .from('collections')
                     .select('*, highlights(count)')
                     .eq('user_id', user.id)
-            );
+            ) as any;
 
-            if (error) {
-                throw this.transformError(error);
+            if (response.error) {
+                throw this.transformError(response.error);
             }
 
-            const collections = (data || []).map((row) => this.transformCollectionRow(row));
+            const collections = (response.data || []).map((row: any) => this.transformCollectionRow(row));
 
             this.logger.debug('Collections fetched', { count: collections.length });
             return collections;
