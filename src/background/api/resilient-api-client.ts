@@ -8,7 +8,7 @@ import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { CircuitBreaker, type CircuitBreakerConfig } from '@/shared/utils/circuit-breaker';
-import { NetworkError, ServerError, AuthenticationError, ValidationError, RateLimitError } from './api-errors';
+import { AuthenticationError, ValidationError, RateLimitError } from './api-errors';
 
 /**
  * Retry configuration for API operations
@@ -66,7 +66,13 @@ export class ResilientAPIClient implements IAPIClient {
     ) {
         this.retryConfig = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
         this.circuitBreaker = new CircuitBreaker(
-            { ...DEFAULT_CIRCUIT_CONFIG, ...circuitConfig },
+            {
+                ...DEFAULT_CIRCUIT_CONFIG,
+                ...circuitConfig,
+                // Only treat retryable errors as circuit failures
+                // Non-retryable errors (auth, validation) means service is UP but request was bad
+                isFailure: (error) => !this.isNonRetryableError(error instanceof Error ? error : new Error(String(error)))
+            },
             logger
         );
 

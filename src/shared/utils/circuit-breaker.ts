@@ -29,6 +29,9 @@ export interface CircuitBreakerConfig {
 
   /** Optional name for logging */
   readonly name?: string;
+
+  /** Optional predicate to determine if an error should count as a failure */
+  readonly isFailure?: (error: unknown) => boolean;
 }
 
 /**
@@ -106,7 +109,23 @@ export class CircuitBreaker {
       this.onSuccess();
       return result;
     } catch (error) {
-      this.onFailure();
+      // Check if this error should be counted as a failure
+      if (this.config.isFailure) {
+        if (this.config.isFailure(error)) {
+          this.onFailure();
+        } else {
+          // If not a failure, treat as success for circuit state? 
+          // Usually we just ignore it (don't trip, but don't close if half-open?)
+          // For simplicity, if it's not a failure, we do nothing to state.
+          // Or should we count it as success? 
+          // If a call fails with 400 Bad Request, the system is UP.
+          // So it SHOULD count as success for Half-Open state.
+          this.onSuccess();
+        }
+      } else {
+        // Default: all errors are failures
+        this.onFailure();
+      }
       throw error;
     }
   }
