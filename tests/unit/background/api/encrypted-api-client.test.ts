@@ -7,7 +7,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EncryptedAPIClient } from '@/background/api/encrypted-api-client';
 import type { IAPIClient, SyncEvent, SyncEventType } from '@/background/api/interfaces/i-api-client';
-import type { IEncryptionService, EncryptedHighlight } from '@/background/auth/interfaces/i-encryption-service';
+import type { IEncryptionService } from '@/background/auth/interfaces/i-encryption-service';
+import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
@@ -15,6 +16,7 @@ describe('EncryptedAPIClient', () => {
     let encryptedClient: EncryptedAPIClient;
     let mockInnerClient: IAPIClient;
     let mockEncryptionService: IEncryptionService;
+    let mockAuthManager: IAuthManager;
     let mockLogger: ILogger;
     const testUserId = 'user-123';
 
@@ -46,6 +48,15 @@ describe('EncryptedAPIClient', () => {
             }),
         };
 
+        mockAuthManager = {
+            currentUser: { id: testUserId, email: 'test@example.com', displayName: 'Test User' },
+            isAuthenticated: true,
+            signIn: vi.fn(),
+            signOut: vi.fn(),
+            refreshToken: vi.fn(),
+            onAuthStateChanged: vi.fn(),
+        } as unknown as IAuthManager;
+
         mockLogger = {
             debug: vi.fn(),
             info: vi.fn(),
@@ -58,8 +69,8 @@ describe('EncryptedAPIClient', () => {
         encryptedClient = new EncryptedAPIClient(
             mockInnerClient,
             mockEncryptionService,
-            mockLogger,
-            testUserId
+            mockAuthManager,
+            mockLogger
         );
     });
 

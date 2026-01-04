@@ -7,6 +7,7 @@
 import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces/i-api-client';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IEncryptionService, HighlightData } from '@/background/auth/interfaces/i-encryption-service';
+import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 
 /**
@@ -22,8 +23,8 @@ export class EncryptedAPIClient implements IAPIClient {
     constructor(
         private readonly innerClient: IAPIClient,
         private readonly encryptionService: IEncryptionService,
-        private readonly logger: ILogger,
-        private readonly userId: string // Current user ID for encryption
+        private readonly authManager: IAuthManager,
+        private readonly logger: ILogger
     ) { }
 
     /**
@@ -154,13 +155,18 @@ export class EncryptedAPIClient implements IAPIClient {
      * Encrypt highlight data
      */
     private async encryptHighlight(data: HighlightDataV2): Promise<HighlightDataV2> {
+        const currentUser = this.authManager.currentUser;
+        if (!currentUser) {
+            throw new Error('User not authenticated');
+        }
+
         // Extract sensitive fields
         const sensitiveData: HighlightData = {
             text: data.text,
             url: data.url || '',
             selector: JSON.stringify(data.ranges), // Encrypt ranges as selector
             createdAt: data.createdAt,
-            userId: this.userId,
+            userId: currentUser.id,
         };
 
         // Encrypt
@@ -188,13 +194,18 @@ export class EncryptedAPIClient implements IAPIClient {
         }
 
         try {
+            const currentUser = this.authManager.currentUser;
+            if (!currentUser) {
+                throw new Error('User not authenticated');
+            }
+
             // Extract encrypted payload
             const encryptedData = data.text.substring(11, data.text.length - 1); // Remove [ENCRYPTED: and ]
 
             // Decrypt
             const decrypted = await this.encryptionService.decrypt({
                 version: 1,
-                keyId: `${this.userId}_${Date.now()}`, // TODO: Store actual keyId
+                keyId: `${currentUser.id}_${Date.now()}`, // TODO: Store actual keyId
                 data: encryptedData,
                 timestamp: Date.now(),
             });
