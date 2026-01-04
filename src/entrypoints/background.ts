@@ -11,10 +11,22 @@ const logger = LoggerFactory.getLogger('Background');
 
 export default defineBackground({
   type: 'module',
-  main() {
-    logger.info('Background service worker started (Sprint 1.5)');
+  async main() {
+    logger.info('Background service worker started (Phase 2: Vault Mode)');
+
+    try {
+      // Initialize all background services (DI container)
+      const { initializeBackground } = await import('@/background/bootstrap');
+      await initializeBackground();
+
+      logger.info('Background services initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize background services', error as Error);
+    }
 
     // Set up TTL cleanup alarm (every 5 minutes)
+    // Legacy/Sprint 1.5 logic - keep for now if needed, or replace with DI-managed job?
+    // Keeping it for backward compatibility as per instruction "Migration Service" not done yet.
     browser.alarms.create('ttl-cleanup', { periodInMinutes: 5 });
 
     // Listen for alarm
