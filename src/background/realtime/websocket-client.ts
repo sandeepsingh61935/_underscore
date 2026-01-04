@@ -104,24 +104,26 @@ export class WebSocketClient implements IWebSocketClient {
      * Handle incoming change events from Supabase
      */
     private handleChange(payload: RealtimePostgresChangesPayload<HighlightDataV2>): void {
+        const anyPayload = payload as any;
+        const eventType = anyPayload.eventType;
         this.logger.debug('Received realtime event', {
-            event: payload.eventType,
-            table: payload.table
+            event: eventType,
+            table: anyPayload.table
         });
 
-        switch (payload.eventType) {
+        switch (eventType) {
             case 'INSERT':
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, payload.new);
+                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, anyPayload.new);
                 break;
             case 'UPDATE':
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, payload.new);
+                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, anyPayload.new);
                 break;
             case 'DELETE':
                 // payload.old contains the ID for DELETE events
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, payload.old);
+                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, anyPayload.old);
                 break;
             default:
-                this.logger.warn('Unknown realtime event type', { type: payload.eventType });
+                this.logger.warn('Unknown realtime event type', { type: eventType });
         }
     }
 }

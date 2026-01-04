@@ -1,6 +1,4 @@
 
-import type { RealtimeChannel } from '@supabase/supabase-js';
-
 export interface IWebSocketClient {
     /**
      * Subscribe to real-time updates for a specific user
