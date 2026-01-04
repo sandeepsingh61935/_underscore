@@ -14,6 +14,8 @@ import { EventName, createEvent } from '@/shared/types/events';
 export class LocalToCloudMigrator implements IMigrator {
     private static readonly BATCH_SIZE = 10;
     private static readonly MIGRATION_COMPLETE_KEY = 'migration_v1_v2_complete';
+    private static readonly MAX_CONSECUTIVE_FAILURES = 3;
+    private static isMigrating = false;
 
     constructor(
         private readonly localRepo: IHighlightRepository,
@@ -28,7 +30,14 @@ export class LocalToCloudMigrator implements IMigrator {
      * @returns Promise resolving to migration result statistics
      */
     async migrate(): Promise<MigrationResult> {
+        if (LocalToCloudMigrator.isMigrating) {
+            this.logger.warn('Migration already in progress');
+            throw new Error('Migration already in progress');
+        }
+
+        LocalToCloudMigrator.isMigrating = true;
         const result: MigrationResult = { migrated: 0, failed: 0, skipped: 0 };
+        let consecutiveFailures = 0;
 
         this.logger.info('Starting local-to-cloud migration');
         this.eventBus.emit(
@@ -84,6 +93,13 @@ export class LocalToCloudMigrator implements IMigrator {
 
             // Process in batches
             for (let i = 0; i < total; i += LocalToCloudMigrator.BATCH_SIZE) {
+                // Abort check
+                if (consecutiveFailures >= LocalToCloudMigrator.MAX_CONSECUTIVE_FAILURES) {
+                    const msg = `Aborting migration: ${consecutiveFailures} consecutive failures`;
+                    this.logger.error(msg);
+                    throw new Error(msg);
+                }
+
                 const batch = localHighlights.slice(
                     i,
                     i + LocalToCloudMigrator.BATCH_SIZE
@@ -102,6 +118,7 @@ export class LocalToCloudMigrator implements IMigrator {
                             // Upload to cloud
                             await this.apiClient.createHighlight(highlight);
                             result.migrated++;
+                            consecutiveFailures = 0; // Reset on success
                         } catch (error) {
                             this.logger.error(
                                 'Failed to migrate highlight',
@@ -109,7 +126,7 @@ export class LocalToCloudMigrator implements IMigrator {
                                 { id: highlight.id }
                             );
                             result.failed++;
-                            // Continue processing other highlights
+                            consecutiveFailures++;
                         }
                     })
                 );
@@ -126,10 +143,14 @@ export class LocalToCloudMigrator implements IMigrator {
                 );
             }
 
-            // Mark complete if we attempted everything
-            // Note: We mark complete even if some failed to avoid infinite retry loops on bad data
-            // Future: Implement retry queue for failed items
-            await this.markMigrationComplete();
+            // Only mark complete if we didn't abort/crash and failure rate is low?
+            // For now, if we survived the loop without throwing, we consider it "done" (even if some failed).
+            // Users can retry manually later if we don't set the flag?
+            // But spec says: "Mark migration complete in chrome.storage"
+            // Let's stick to: If we finish the loop, we mark complete. Failures are logged.
+            if (result.failed < total) { // At least something succeeded or total was 0
+                await this.markMigrationComplete();
+            }
 
             this.eventBus.emit(
                 EventName.MIGRATION_COMPLETED,
@@ -150,6 +171,8 @@ export class LocalToCloudMigrator implements IMigrator {
                 })
             );
             throw error;
+        } finally {
+            LocalToCloudMigrator.isMigrating = false;
         }
 
         return result;
