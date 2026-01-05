@@ -6,7 +6,7 @@
 
 import type { SyncEvent } from '@/background/events/interfaces/i-event-store';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { EventBus } from '@/shared/utils/event-bus';
+import type { EventBus } from '@/background/utils/event-bus';
 import pako from 'pako';
 
 /**

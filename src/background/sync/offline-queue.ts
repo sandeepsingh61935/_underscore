@@ -7,7 +7,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { SyncEvent } from '@/background/events/interfaces/i-event-store';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { EventBus } from '@/shared/utils/event-bus';
+import type { EventBus } from '@/background/utils/event-bus';
 import type { INetworkDetector } from './interfaces/i-network-detector';
 
 /**

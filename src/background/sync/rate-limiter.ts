@@ -6,7 +6,7 @@
 
 import type { IRateLimiter, RateLimitConfig, RateLimitMetrics } from './interfaces/i-rate-limiter';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { EventBus } from '@/shared/utils/event-bus';
+import type { EventBus } from '@/background/utils/event-bus';
 
 /**
  * Token bucket for rate limiting

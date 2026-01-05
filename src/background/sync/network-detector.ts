@@ -25,11 +25,23 @@ export class NetworkDetector implements INetworkDetector {
     }
 
     /**
+     * Get the global event target (window or self)
+     */
+    private getGlobalTarget(): EventTarget | null {
+        if (typeof window !== 'undefined') return window;
+        if (typeof self !== 'undefined') return self;
+        return null;
+    }
+
+    /**
      * Setup event listeners for network changes
      */
     private setupEventListeners(): void {
-        window.addEventListener('online', this.handleOnline);
-        window.addEventListener('offline', this.handleOffline);
+        const target = this.getGlobalTarget();
+        if (target) {
+            target.addEventListener('online', this.handleOnline);
+            target.addEventListener('offline', this.handleOffline);
+        }
     }
 
     /**
@@ -106,8 +118,11 @@ export class NetworkDetector implements INetworkDetector {
      * Cleanup - remove event listeners
      */
     destroy(): void {
-        window.removeEventListener('online', this.handleOnline);
-        window.removeEventListener('offline', this.handleOffline);
+        const target = this.getGlobalTarget();
+        if (target) {
+            target.removeEventListener('online', this.handleOnline);
+            target.removeEventListener('offline', this.handleOffline);
+        }
         this.subscribers.clear();
     }
 }

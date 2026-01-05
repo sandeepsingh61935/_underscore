@@ -4,7 +4,7 @@
  * @architecture Dependency Injection - centralized service registration
  */
 
-import type { Container } from '@/shared/di/container';
+import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { ISyncQueue } from '@/background/sync/interfaces/i-sync-queue';
 import type { INetworkDetector } from '@/background/sync/interfaces/i-network-detector';
@@ -15,7 +15,7 @@ import { OfflineQueue } from '@/background/sync/offline-queue';
 import { NetworkDetector } from '@/background/sync/network-detector';
 import { RateLimiter } from '@/background/sync/rate-limiter';
 import { SyncStatus } from '@/background/sync/sync-status';
-import { EventBus } from '@/shared/utils/event-bus';
+import { EventBus } from '@/background/utils/event-bus';
 
 /**
  * Register sync engine components in DI container
