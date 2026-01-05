@@ -1,0 +1,152 @@
+/**
+ * User Menu Styles
+ * Dropdown menu for theme switcher and logout
+ */
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    position: relative;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-name {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.menu-trigger {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--text-secondary);
+    transition: color var(--duration-fast);
+    line-height: 1;
+}
+
+.menu-trigger:hover {
+    color: var(--text-primary);
+}
+
+/* Dropdown Menu */
+.user-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg);
+    border: var(--border-thin) solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    padding: 8px 0;
+    z-index: 1001;
+
+    /* Hidden by default, slides down */
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity var(--duration-normal),
+        transform var(--duration-normal);
+}
+
+.user-menu.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Menu Section Label */
+.menu-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    padding: 8px 16px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Menu Items */
+.menu-item {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: background var(--duration-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.menu-item.active {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+/* Logout Item */
+.menu-logout {
+    color: var(--error);
+}
+
+.logout-icon {
+    font-size: 16px;
+    transform: rotate(180deg);
+}
+
+/* Menu Divider */
+.menu-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 8px 0;
+    opacity: 0.5;
+}
+
+/* Keyboard focus */
+.menu-trigger:focus-visible,
+.menu-item:focus-visible {
+    outline: var(--border-thin) solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .user-menu {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Accessibility: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .user-menu {
+        transition: none;
+    }
+}
