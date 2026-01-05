@@ -60,10 +60,12 @@ export default defineContentScript({
       // Create shared event bus
       // ===== DEPENDENCY INJECTION: Initialize IoC Container =====
       const { Container } = await import('@/shared/di/container');
-      const { registerServices } = await import('@/shared/di/service-registration');
+      const { registerContentServices } = await import(
+        '@/shared/di/content-service-registration'
+      );
 
       const container = new Container();
-      registerServices(container);
+      registerContentServices(container);
 
       // Resolve key services
       const storage = container.resolve<StorageService>('storage');
@@ -438,6 +440,7 @@ export default defineContentScript({
           .sendMessage({
             type: 'HIGHLIGHT_COUNT_UPDATE',
             count: repositoryFacade.count(),
+            timestamp: Date.now(), // Added for schema validation
           })
           .catch(() => {
             // Popup may not be open, ignore error
