@@ -1,0 +1,71 @@
+/**
+ * Theme Tokens - Finnish Material Design
+ * Minimal color palette with Light/Dark/System theme support
+ */
+
+:root {
+  /* === Light Theme (Default) === */
+  --bg: #ffffff;
+  --text-primary: #43474e;
+  --text-secondary: #999999;
+  --text-tertiary: #cccccc;
+  --accent: #5b8db8;
+  --error: #ba1a1a;
+  
+  /* === Spacing Tokens === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* === Animation Timing Tokens === */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  
+  /* === Easing Functions === */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* === Opacity Tokens === */
+  --opacity-locked: 0.4;
+  --opacity-hover: 0.8;
+  --opacity-invisible: 0;
+  --opacity-visible: 1;
+  
+  /* === Border Tokens === */
+  --border-thin: 1px;
+  --border-color: #e0e0e0;
+}
+
+/* === Dark Theme === */
+[data-theme="dark"] {
+  --bg: #1a1c1e;
+  --text-primary: #e2e4e7;
+  --text-secondary: #999999;
+  --text-tertiary: #666666;
+  --accent: #8fb3d8;
+  --error: #f2b8b5;
+  --border-color: #3c4043;
+}
+
+/* === Base Styling === */
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: background var(--duration-normal) var(--ease-standard),
+              color var(--duration-normal) var(--ease-standard);
+}
+
+/* === Reduced Motion Support === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
