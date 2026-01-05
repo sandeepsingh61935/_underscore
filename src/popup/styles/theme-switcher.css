@@ -1,0 +1,71 @@
+/**
+ * Theme Switcher Styles
+ * Invisible by default, reveals on header hover
+ */
+
+.theme-switcher {
+    display: flex;
+    gap: var(--spacing-xs);
+    opacity: var(--opacity-invisible);
+    transition: opacity var(--duration-fast) var(--ease-standard);
+    align-items: center;
+}
+
+/* Reveal on header hover */
+header:hover .theme-switcher {
+    opacity: var(--opacity-visible);
+}
+
+.theme-option {
+    background: none;
+    border: none;
+    padding: var(--spacing-xs);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--duration-fast);
+}
+
+.theme-option:hover {
+    opacity: var(--opacity-hover);
+}
+
+.theme-option svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-secondary);
+    fill: none;
+    stroke-width: 2px;
+}
+
+.theme-option.active svg {
+    stroke: var(--accent);
+}
+
+/* Active indicator - thin underline */
+.theme-option.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--border-thin);
+    background: var(--accent);
+}
+
+/* Keyboard focus */
+.theme-option:focus-visible {
+    outline: var(--border-thin) solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .theme-switcher,
+    .theme-option {
+        transition: none;
+    }
+}
