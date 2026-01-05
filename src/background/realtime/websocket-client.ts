@@ -1,12 +1,11 @@
 
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload, SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 import { IWebSocketClient } from './interfaces/i-websocket-client';
-import { SupabaseClient } from '../api/supabase-client';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { ILogger } from '@/shared/interfaces/i-logger';
 import { IEncryptionService } from '../auth/interfaces/i-encryption-service';
 import { EventName } from '@/shared/types/events';
-import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 
 /**
  * WebSocket client for real-time synchronization
@@ -17,7 +16,7 @@ export class WebSocketClient implements IWebSocketClient {
     private currentUserId?: string;
 
     constructor(
-        private readonly supabase: SupabaseClient,
+        private readonly supabase: SupabaseSDKClient,
         private readonly eventBus: IEventBus,
         private readonly logger: ILogger,
         private readonly encryptionService?: IEncryptionService
@@ -41,31 +40,27 @@ export class WebSocketClient implements IWebSocketClient {
         this.logger.info('Subscribing to realtime updates', { userId });
 
         try {
-            // Access the underlying Supabase SDK client from our wrapper
-            // We need to cast to any or extend SupabaseClient to expose the public 'client' property
-            // For now, we assume public access or use a cast if private. 
-            // NOTE: In the SupabaseClient implementation, 'client' is private. 
-            // We might need to expose a getter or public property in SupabaseClient.
-            // Let's check SupabaseClient implementation in Task 6.1 context.
-            // If private, we should add a getter. 
-            // Assuming for now we can access it or will fix SupabaseClient.
+            // Use Supabase SDK client directly
+            if (!this.supabase || typeof this.supabase.channel !== 'function') {
+                this.logger.error('Supabase SDK client invalid or missing channel method', undefined, {
+                    keys: this.supabase ? Object.keys(this.supabase) : []
+                });
+                return;
+            }
 
-            // Use public getter to access Supabase SDK client
-            const supabaseInstance = this.supabase.supabase;
-
-            this.channel = supabaseInstance.channel('highlights-sync')
+            this.channel = this.supabase.channel('highlights-sync')
                 .on(
                     'postgres_changes',
                     {
                         event: '*',
                         schema: 'public',
                         table: 'highlights',
-                        filter: `user_id=eq.${userId}`,
+                        filter: `user_id = eq.${userId} `,
                     },
                     (payload: RealtimePostgresChangesPayload<HighlightDataV2>) => this.handleChange(payload)
                 )
                 .subscribe((status: string, err?: Error) => {
-                    this.logger.info(`Realtime subscription status: ${status}`, {
+                    this.logger.info(`Realtime subscription status: ${status} `, {
                         userId,
                         error: err
                     });
