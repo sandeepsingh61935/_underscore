@@ -1,5 +1,15 @@
 /* === Finnish Material Design 3 Popup Styles === */
 
+/* Import Theme System */
+@import './styles/theme-tokens.css';
+@import './styles/animations.css';
+@import './styles/theme-switcher.css';
+@import './styles/provider-drawer.css';
+@import './styles/mode-selector.css';
+@import './styles/caution-panel.css';
+@import './styles/user-menu.css';
+
+
 /* Color Tokens */
 :root {
   /* Primary - Lake Blue */
@@ -102,8 +112,7 @@ h1 {
   color: var(--md-sys-color-on-surface-variant);
   font-size: var(--md-sys-typescale-label-large-size);
   cursor: pointer;
-  transition: background var(--md-sys-motion-duration-short4)
-    var(--md-sys-motion-easing-standard);
+  transition: background var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
 
 #mode-selector:hover {
@@ -148,8 +157,7 @@ h1 {
   font-size: var(--md-sys-typescale-label-large-size);
   font-weight: 500;
   cursor: pointer;
-  transition: box-shadow var(--md-sys-motion-duration-short4)
-    var(--md-sys-motion-easing-standard);
+  transition: box-shadow var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
 
 .md-filled-button:hover {
