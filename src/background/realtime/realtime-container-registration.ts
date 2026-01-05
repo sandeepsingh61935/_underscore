@@ -1,11 +1,11 @@
 
-import type { Container } from '@/shared/di/container';
+import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { IWebSocketClient } from '@/background/realtime/interfaces/i-websocket-client';
 import { WebSocketClient } from '@/background/realtime/websocket-client';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
-import { SupabaseClient } from '@/background/api/supabase-client';
+import { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 
 /**
  * Register realtime components in DI container
@@ -13,7 +13,7 @@ import { SupabaseClient } from '@/background/api/supabase-client';
 export function registerRealtimeComponents(container: Container): void {
     // ==================== WebSocket Client ====================
     container.registerSingleton<IWebSocketClient>('webSocketClient', () => {
-        const supabase = container.resolve<SupabaseClient>('apiClient');
+        const supabase = container.resolve<SupabaseSDKClient>('_supabaseSDK'); // Resolve raw SDK client
         const eventBus = container.resolve<IEventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
