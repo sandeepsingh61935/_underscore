@@ -1,9 +1,9 @@
 /**
  * @file service-registration.ts
  * @description Central service registration for dependency injection
- *
- * Registers all application services with the IoC container.
- * Defines the dependency graph and lifecycle for all services.
+ * @deprecated Use background-service-registration.ts or content-service-registration.ts instead.
+ * 
+ * Kept for test compatibility only. Do not use in production code.
  */
 
 import type { Container } from './container';
@@ -195,45 +195,54 @@ export function registerServices(container: Container): void {
   // MODE LAYER (Depends on Mode Manager + Services)
   // ============================================
 
-  /**
-   * Walk Mode - Transient
-   * Ephemeral highlighting (no persistence)
-   * Created fresh when activated
-   */
-  container.registerTransient<IHighlightMode>('walkMode', () => {
-    const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-    const eventBus = container.resolve<EventBus>('eventBus');
-    const logger = container.resolve<ILogger>('logger');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new WalkMode(repositoryFacade as any, eventBus, logger);
-  });
+  // ============================================
+  // MODE LAYER (Content Script Only - requires DOM APIs)
+  // ============================================
 
   /**
-   * Sprint Mode - Transient
-   * Session-based highlighting (TTL persistence)
-   * Created fresh when activated
+   * Mode registrations are conditional because modes use DOM APIs (CSS.highlights, document)
+   * which don't exist in Service Worker context (background script).
+   * 
+   * Detection: Check for 'document' global (exists in browser, not in Service Worker)
    */
-  container.registerTransient<IHighlightMode>('sprintMode', () => {
-    const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-    const storage = container.resolve<IStorage>('storage');
-    const eventBus = container.resolve<EventBus>('eventBus');
-    const logger = container.resolve<ILogger>('logger');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new SprintMode(repositoryFacade as any, storage, eventBus, logger);
-  });
+  if (typeof document !== 'undefined') {
+    /**
+     * Walk Mode - Transient
+     * Ephemeral highlighting (no persistence)
+     */
+    container.registerTransient<IHighlightMode>('walkMode', () => {
+      const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+      const eventBus = container.resolve<EventBus>('eventBus');
+      const logger = container.resolve<ILogger>('logger');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new WalkMode(repositoryFacade as any, eventBus, logger);
+    });
 
-  /**
-   * Vault Mode - Transient
-   * Persistent highlighting (IndexedDB)
-   * Created fresh when activated
-   */
-  container.registerTransient<IHighlightMode>('vaultMode', () => {
-    const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-    const eventBus = container.resolve<EventBus>('eventBus');
-    const logger = container.resolve<ILogger>('logger');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new VaultMode(repositoryFacade as any, eventBus, logger);
-  });
+    /**
+     * Sprint Mode - Transient
+     * Session-based highlighting (TTL persistence)
+     */
+    container.registerTransient<IHighlightMode>('sprintMode', () => {
+      const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+      const storage = container.resolve<IStorage>('storage');
+      const eventBus = container.resolve<EventBus>('eventBus');
+      const logger = container.resolve<ILogger>('logger');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new SprintMode(repositoryFacade as any, storage, eventBus, logger);
+    });
+
+    /**
+     * Vault Mode - Transient
+     * Persistent highlighting (IndexedDB)
+     */
+    container.registerTransient<IHighlightMode>('vaultMode', () => {
+      const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+      const eventBus = container.resolve<EventBus>('eventBus');
+      const logger = container.resolve<ILogger>('logger');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new VaultMode(repositoryFacade as any, eventBus, logger);
+    });
+  }
 
   // ============================================
   // AUTHENTICATION LAYER (Phase 2: Vault Mode)
@@ -269,12 +278,13 @@ export function registerServices(container: Container): void {
    * OAuth authentication with automatic token refresh
    */
   container.registerSingleton('authManager', () => {
+    const supabase = container.resolve<any>('_supabaseSDK');
     const tokenStore = container.resolve('tokenStore');
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
     const { AuthManager } = require('@/background/auth/auth-manager');
-    return new AuthManager(tokenStore, eventBus, logger);
+    return new AuthManager(supabase, tokenStore, eventBus, logger);
   });
 
   /**

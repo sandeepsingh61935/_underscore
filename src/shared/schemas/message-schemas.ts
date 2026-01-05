@@ -46,11 +46,12 @@ export type MessageResponse<T = unknown> =
 
 /**
  * Type-safe message handler function
+ * Can return data for request/response pattern or void for fire-and-forget
  */
-export type MessageHandler<T = unknown> = (
+export type MessageHandler<T = unknown, R = unknown> = (
   payload: T,
   sender: chrome.runtime.MessageSender
-) => void | Promise<void>;
+) => R | Promise<R> | void | Promise<void>;
 
 /**
  * Validates a message and returns typed result

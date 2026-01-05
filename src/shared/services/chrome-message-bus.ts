@@ -40,10 +40,10 @@ export class ChromeMessageBus implements IMessageBus {
   private readonly timeoutMs: number;
   private messageListener:
     | ((
-        message: unknown,
-        sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: unknown) => void
-      ) => boolean | void)
+      message: unknown,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: unknown) => void
+    ) => boolean | void)
     | null = null;
 
   constructor(
@@ -59,7 +59,7 @@ export class ChromeMessageBus implements IMessageBus {
    * Dispatches incoming messages to registered handlers
    */
   private setupMessageListener(): void {
-    this.messageListener = (message, sender, _sendResponse) => {
+    this.messageListener = (message, sender, sendResponse) => {
       // Validate message structure
       let validatedMessage: Message;
       try {
@@ -69,31 +69,69 @@ export class ChromeMessageBus implements IMessageBus {
           message,
           error: error instanceof Error ? error.message : String(error),
         });
-        return false; // Don't keep channel open
+        // Send error back if possible
+        sendResponse({ success: false, error: 'Invalid message structure' });
+        return false;
       }
 
       // Find handlers for this message type
       const messageHandlers = this.handlers.get(validatedMessage.type);
       if (!messageHandlers || messageHandlers.size === 0) {
-        return false; // No handlers, don't keep channel open
+        return false; // No handlers, let other listeners handle it or close
       }
 
-      // Execute handlers asynchronously
+      // Execute handlers asynchronously and send response
+      // Note: We only support single-response for now (first handler wins/returns)
+      // This is a limitation of Chrome's sendResponse
       void (async () => {
-        for (const handler of messageHandlers) {
-          try {
-            await handler(validatedMessage.payload, sender);
-          } catch (error) {
-            this.logger.error(
-              'Message handler error',
-              error instanceof Error ? error : new Error(String(error)),
-              { messageType: validatedMessage.type }
-            );
+        try {
+          // Execute all handlers but only capture the first non-void result if multiple
+          let responseSent = false;
+
+          for (const handler of messageHandlers) {
+            try {
+              const result = await handler(validatedMessage.payload, sender);
+
+              // If we haven't sent a response and we have a result, send it
+              // We assume strict REQ/REP pattern: one handler per message type for 'send'
+              if (!responseSent && result !== undefined) {
+                // If the result is explicitly an object with success/data/error structure, pass it through.
+                // Otherwise wrap it? No, expected return type T implies raw data or specific structure.
+                // The caller expects T.
+                sendResponse(result);
+                responseSent = true;
+              }
+            } catch (handlerError) {
+              this.logger.error(
+                'Message handler error',
+                handlerError instanceof Error ? handlerError : new Error(String(handlerError)),
+                { messageType: validatedMessage.type }
+              );
+
+              // If it crashe during handling, try to send error response
+              if (!responseSent) {
+                sendResponse({
+                  success: false,
+                  error: handlerError instanceof Error ? handlerError.message : 'Unknown handler error'
+                });
+                responseSent = true;
+              }
+            }
           }
+
+          // If no handler returned a value (fire-and-forget), we might still need to close the port?
+          // Chrome closes it automatically if we don't call sendResponse, but we returned true.
+          // If we don't call sendResponse, the sender times out.
+          // So if it was a 'send' (expecting response), we should probably send something if nothing was returned?
+          // But we don't know if the sender used 'send' or if it was a 'publish'.
+          // Safest is to do nothing if no result, assuming fire-and-forget.
+        } catch (error) {
+          // Global error block
+          this.logger.error('Critical message bus error', error as Error);
         }
       })();
 
-      return false; // Handlers are fire-and-forget
+      return true; // Keep channel open for async response
     };
 
     chrome.runtime.onMessage.addListener(this.messageListener);

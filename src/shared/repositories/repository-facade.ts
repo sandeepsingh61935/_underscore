@@ -12,6 +12,7 @@
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
+import { MigrationService } from '../services/migration-service';
 import type { ILogger } from '../utils/logger';
 
 import type { IHighlightRepository } from './i-highlight-repository';
@@ -264,8 +265,7 @@ export class RepositoryFacade {
   async addFromData(data: unknown): Promise<void> {
     this.ensureInitialized();
 
-    // Import migration service dynamically
-    const { MigrationService } = await import('../services/migration-service');
+    // Use statically imported service
     const migration = new MigrationService();
 
     // Auto-migrate to latest version

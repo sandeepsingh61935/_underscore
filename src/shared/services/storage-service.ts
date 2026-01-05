@@ -45,7 +45,16 @@ export class StorageService implements IStorage {
 
   constructor(config: Partial<StorageConfig> = {}) {
     this.logger = LoggerFactory.getLogger('StorageService');
-    this.currentDomain = window.location.hostname;
+
+    // Handle both Window (Browser) and Service Worker (Background) contexts
+    if (typeof window !== 'undefined' && window.location) {
+      this.currentDomain = window.location.hostname;
+    } else if (typeof self !== 'undefined' && self.location) {
+      this.currentDomain = self.location.hostname || 'background-service';
+    } else {
+      this.currentDomain = 'unknown-context';
+    }
+
     this.config = { ...DEFAULT_STORAGE_CONFIG, ...config };
   }
 
