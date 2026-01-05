@@ -335,6 +335,14 @@ export class PopupController {
       }) as EventListener);
     }
 
+    // Auth Container clicks
+    const authContainer = document.getElementById('auth-container');
+    if (authContainer) {
+      this.addEventListener(authContainer, 'click', (async (e: Event) => {
+        await this.handleAuthClick(e);
+      }) as EventListener);
+    }
+
     this.logger.debug(
       `[PopupController] Registered ${this.eventListeners.length} event listeners`
     );
@@ -435,6 +443,9 @@ export class PopupController {
       return;
     }
 
+    // 3. Render Auth State
+    this.renderAuthState(state);
+
     if (state.error) {
       // Note: We're showing a notification/toast here, not a full error screen,
       // to allow the user to see the previous valid state if possible.
@@ -448,6 +459,97 @@ export class PopupController {
 
     // Default: Show main UI
     this.showMainUI();
+  }
+
+  /**
+   * Render Auth UI (Login vs Profile)
+   */
+  private renderAuthState(state: PopupState): void {
+    const authContainer = document.getElementById('auth-container');
+    if (!authContainer) return;
+
+    if (state.auth.isAuthenticated && state.auth.user) {
+      // Logged In: Show Avatar + Name
+      const user = state.auth.user;
+      // Use first letter of name as fallback avatar
+      const initial = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+
+      authContainer.innerHTML = `
+              <div class="user-profile" title="${this.escapeHtml(user.displayName || user.email || '')}">
+                  <div class="user-avatar">
+                      ${user.photoUrl ? `<img src="${this.escapeHtml(user.photoUrl)}" alt="Avatar">` : initial}
+                  </div>
+                  <span class="user-name">${this.escapeHtml(user.displayName || 'User')}</span>
+                  <button class="btn-login-small btn-logout" style="background:transparent; color:var(--md-sys-color-on-surface); padding:4px;">
+                    ✖
+                  </button>
+              </div>
+          `;
+    } else {
+      // Logged Out: Show Login Button
+      authContainer.innerHTML = `
+              <button class="btn-login-small" data-provider="google">
+                  Sign In
+              </button>
+          `;
+    }
+  }
+
+  /**
+   * Handle Auth Clicks (Delegation)
+   */
+  private async handleAuthClick(event: Event): Promise<void> {
+    const target = event.target as HTMLElement;
+
+    // Login
+    const loginBtn = target.closest('.btn-login-small') as HTMLElement;
+    if (loginBtn && !loginBtn.classList.contains('btn-logout')) {
+      const provider = loginBtn.dataset['provider'] || 'google';
+      await this.handleLogin(provider);
+      return;
+    }
+
+    // Logout
+    if (target.closest('.btn-logout')) {
+      await this.handleLogout();
+    }
+  }
+
+  private async handleLogin(provider: string): Promise<void> {
+    try {
+      this.logger.info('Initiating login', { provider });
+      const response = await this.messageBus.send<MessageResponse>('background', {
+        type: 'LOGIN',
+        payload: { provider },
+        timestamp: Date.now()
+      });
+
+      if (!response.success) throw new Error(response.error);
+      this.logger.info('Login successful');
+
+      // Refresh auth state to update UI immediately
+      await this.stateManager.refreshAuthState();
+    } catch (error) {
+      this.logger.error('Login failed', error as Error);
+      this.showErrorNotification('Login failed: ' + (error as Error).message);
+    }
+  }
+
+  private async handleLogout(): Promise<void> {
+    try {
+      this.logger.info('Initiating logout');
+      const response = await this.messageBus.send<MessageResponse>('background', {
+        type: 'LOGOUT',
+        payload: {},
+        timestamp: Date.now()
+      });
+
+      if (!response.success) throw new Error(response.error);
+      this.logger.info('Logout successful');
+    } catch (error) {
+      this.logger.error('Logout failed', error as Error);
+      this.showErrorNotification('Logout failed');
+    }
   }
 
   /**
