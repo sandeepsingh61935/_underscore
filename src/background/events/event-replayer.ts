@@ -5,7 +5,7 @@
  */
 
 import type { SyncEvent, SyncEventType } from './interfaces/i-event-store';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type {
     HighlightCreatedPayload,

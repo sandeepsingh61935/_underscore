@@ -4,7 +4,7 @@
  * @author System Architect
  */
 
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 
 /**
  * Payload for HIGHLIGHT_CREATED event
