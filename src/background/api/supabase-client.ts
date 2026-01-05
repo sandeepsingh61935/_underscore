@@ -6,7 +6,7 @@
 
 import { createClient, SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces/i-api-client';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import {
@@ -47,12 +47,13 @@ export class SupabaseClient implements IAPIClient {
     constructor(
         private readonly authManager: IAuthManager,
         private readonly logger: ILogger,
-        config: SupabaseConfig
+        config: SupabaseConfig,
+        injectedClient?: SupabaseSDKClient
     ) {
         // Enforce HTTPS for security (prevents MITM attacks)
         HTTPSValidator.validate(config.url);
 
-        this.sdkClient = createClient(config.url, config.anonKey);
+        this.sdkClient = injectedClient ?? createClient(config.url, config.anonKey);
         this.timeoutMs = config.timeoutMs ?? 5000;
 
         this.logger.debug('SupabaseClient initialized', {

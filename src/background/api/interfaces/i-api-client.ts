@@ -4,7 +4,7 @@
  * @architecture Following Interface Segregation Principle (ISP)
  */
 
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 
 /**
  * Synchronization event for event sourcing

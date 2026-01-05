@@ -4,7 +4,9 @@
  * @architecture Dependency Injection - centralized service registration
  */
 
-import type { Container } from '@/shared/di/container';
+import { createClient, SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
+import { SupabaseStorageAdapter } from '@/background/auth/supabase-storage-adapter';
+import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { IAPIClient } from './interfaces/i-api-client';
@@ -16,12 +18,13 @@ import { ResilientAPIClient } from './resilient-api-client';
 import { EncryptedAPIClient } from './encrypted-api-client';
 import { PaginationClient } from './pagination-client';
 import { CacheManager } from './cache-manager';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
 
 /**
  * Register API client components in DI container
  * 
  * Registered services:
+ * - '_supabaseSDK' → Shared Supabase JS Client (Auth + Data)
  * - 'apiClient' → ResilientAPIClient (wraps SupabaseClient with retry + circuit breaker)
  * - 'paginationClient' → PaginationClient
  * - 'highlightCache' → CacheManager<string, HighlightDataV2[]>
@@ -54,6 +57,23 @@ export function registerAPIComponents(container: Container): void {
     // ==================== Base API Client ====================
 
     /**
+     * Shared Raw Supabase SDK Client
+     * Configured with persistent storage adapter for Auth
+     */
+    container.registerSingleton<SupabaseSDKClient>('_supabaseSDK', () => {
+        const config = container.resolve<SupabaseConfig>('supabaseConfig');
+
+        return createClient(config.url, config.anonKey, {
+            auth: {
+                storage: new SupabaseStorageAdapter(),
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: false,
+            },
+        });
+    });
+
+    /**
      * SupabaseClient (base implementation)
      * Internal - wrapped by EncryptedAPIClient
      */
@@ -61,8 +81,9 @@ export function registerAPIComponents(container: Container): void {
         const logger = container.resolve<ILogger>('logger');
         const authManager = container.resolve<IAuthManager>('authManager');
         const config = container.resolve<SupabaseConfig>('supabaseConfig');
+        const sdkClient = container.resolve<SupabaseSDKClient>('_supabaseSDK');
 
-        return new SupabaseClient(authManager, logger, config);
+        return new SupabaseClient(authManager, logger, config, sdkClient);
     });
 
     /**
