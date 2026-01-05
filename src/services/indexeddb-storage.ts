@@ -134,16 +134,25 @@ export class IndexedDBStorage extends Dexie {
 
   /**
    * Save a highlight to IndexedDB
+   * 
+   * Note: Strips out liveRanges (non-serializable DOM Range objects)
+   * They will be recreated during restoration from the serialized ranges
    */
   async saveHighlight(
     highlight: HighlightDataV2,
     collectionId: string | null = null,
     metadata?: Record<string, unknown>
   ): Promise<void> {
+    // Strip out non-serializable properties (liveRanges)
+    // IndexedDB cannot clone DOM objects like Range
+    // Only save the schema-compliant HighlightDataV2 data (which has 'ranges', not 'liveRanges')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { liveRanges, ...serializableData } = highlight as any;
+
     await this.highlights.put({
-      id: highlight.id,
+      id: serializableData.id,
       url: window.location.href,
-      data: highlight,
+      data: serializableData, // Now without liveRanges - only serialized ranges
       collectionId,
       tags: [],
       createdAt: Date.now(),
