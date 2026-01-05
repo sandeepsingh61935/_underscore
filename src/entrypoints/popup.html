@@ -23,15 +23,20 @@
       <div id="main-ui" class="state hidden">
         <header>
           <h1>⚡ _underscore</h1>
-
-          <select id="mode-selector" aria-label="Select mode">
-            <option value="walk">🚶 Walk</option>
-            <option value="sprint">🏃 Sprint</option>
-            <option value="vault">🔒 Vault</option>
-          </select>
+          <div id="auth-container" class="auth-wrapper">
+             <!-- Injected by Controller: Login Button or User Avatar -->
+          </div>
         </header>
 
         <main>
+          <section class="mode-section">
+             <label for="mode-selector" class="section-label">Mode</label>
+             <select id="mode-selector" aria-label="Select mode">
+                <option value="walk">🚶 Walk</option>
+                <option value="sprint">🏃 Sprint</option>
+                <option value="vault">🔒 Vault</option>
+             </select>
+          </section>
           <section class="stats-card">
             <span class="stat-value" id="highlight-count">0</span>
             <span class="stat-label">Highlights</span>
