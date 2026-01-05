@@ -11,6 +11,7 @@ import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { Command } from '@/shared/patterns/command';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
+import { generateContentHash } from '@/shared/utils/content-hash';
 
 /**
  * Create highlight command - works with both APIs
@@ -101,7 +102,6 @@ export class CreateHighlightCommand implements Command {
         const text = range.toString();
 
         // Generate content hash for deduplication
-        const { generateContentHash } = await import('@/shared/utils/content-hash');
         const contentHash = await generateContentHash(text);
 
         // Recreate via mode's createFromData - this handles ALL persistence
@@ -182,7 +182,7 @@ export class RemoveHighlightCommand implements Command {
     private readonly highlightId: string,
     private readonly modeManager: IModeManager,
     private readonly logger: ILogger
-  ) {}
+  ) { }
 
   /**
    * Execute: Remove highlight via mode manager

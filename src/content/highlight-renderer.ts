@@ -385,6 +385,7 @@ export class HighlightRenderer {
     // Add click listener for removal
     span.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Emit click event - the command pattern will handle removal
       this.eventBus.emit(
         EventName.HIGHLIGHT_CLICKED,
         createEvent({
@@ -392,14 +393,8 @@ export class HighlightRenderer {
           highlightId: id,
         })
       );
-      // Also emit removal event
-      this.eventBus.emit(
-        EventName.HIGHLIGHT_REMOVED,
-        createEvent({
-          type: EventName.HIGHLIGHT_REMOVED,
-          highlightId: id,
-        })
-      );
+      // NOTE: Do NOT emit HIGHLIGHT_REMOVED here - it creates infinite recursion
+      // The RemoveHighlightCommand will emit it after successful removal
     });
 
     return span;

@@ -57,23 +57,22 @@ export class HighlightClickDetector {
 
   /**
    * Delete highlight (called on Ctrl+Click)
-   * Removes from repository and emits event
+   * Emits HIGHLIGHT_CLICKED event - the command pattern handles actual removal
    */
   private deleteHighlight(highlightId: string): void {
     try {
-      // Remove from repository
-      this.repositoryFacade.remove(highlightId);
-
-      // Emit event for other listeners (storage, UI, etc.)
-      this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
-        type: EventName.HIGHLIGHT_REMOVED,
+      // Emit HIGHLIGHT_CLICKED event - the command pattern will handle removal
+      // NOTE: Do NOT emit HIGHLIGHT_REMOVED or manipulate repository directly
+      // This creates infinite recursion with the event listeners
+      this.eventBus.emit(EventName.HIGHLIGHT_CLICKED, {
+        type: EventName.HIGHLIGHT_CLICKED,
         highlightId,
         timestamp: Date.now(),
       });
 
-      this.logger.info('Highlight deleted', { id: highlightId });
+      this.logger.info('Highlight click emitted (Ctrl+Click)', { id: highlightId });
     } catch (error) {
-      this.logger.error('Failed to delete highlight', error as Error);
+      this.logger.error('Failed to emit highlight click', error as Error);
     }
   }
 

@@ -237,18 +237,14 @@ export class DeleteIconOverlay {
                 }
             }
 
-            // 3. Emit deletion event (for persistence in Sprint Mode)
-            this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
-                type: EventName.HIGHLIGHT_REMOVED,
-                highlightId: id,
-                timestamp: Date.now(),
-            });
-
-            // 4. Actually remove the highlight from the mode
-            // This triggers visual removal (CSS.highlights.delete) and repository update
+            // 3. Remove the highlight from the mode
+            // This triggers visual removal (CSS.highlights.delete), repository update,
+            // and emits HIGHLIGHT_REMOVED event internally
+            // NOTE: Do NOT emit HIGHLIGHT_REMOVED here - it creates infinite recursion
+            // The mode's removeHighlight() will emit it after successful removal
             await this.modeManager.removeHighlight(id);
 
-            // 5. Hide icon
+            // 4. Hide icon
             this.hideIcon(id);
 
             this.logger.info('Highlight deleted via icon', { id, allowUndo: config.allowUndo });
