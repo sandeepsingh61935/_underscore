@@ -1,12 +1,12 @@
-import { Container } from '@/shared/di/container';
+import { Container } from '@/background/di/container';
 import { ILogger } from '@/shared/interfaces/i-logger';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
-import { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 import { IAPIClient } from '@/background/api/interfaces/i-api-client';
 import { LocalToCloudMigrator } from './local-to-cloud-migrator';
 import { MigrationValidator } from './migration-validator';
 import { RollbackService } from './rollback-service';
-import { ChromePersistentStorage } from '@/shared/services/chrome-persistent-storage';
+import { ChromePersistentStorage } from '@/background/services/chrome-persistent-storage';
 
 export function registerMigrationComponents(container: Container): void {
     // Persistent Storage

@@ -4,7 +4,7 @@
  */
 
 import type { IMigrator, MigrationResult } from './interfaces/i-migrator';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 import type { IAPIClient } from '@/background/api/interfaces/i-api-client';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
