@@ -1,0 +1,65 @@
+# Auth Architecture Review & Recommendations
+
+## 1. Executive Summary
+
+The current authentication implementation is **functionally complete** and robust. It correctly handles the "headless" OAuth flow required for Chrome Extensions using `chrome.identity.launchWebAuthFlow`, ensuring alignment with the "Extension" constraints.
+
+ However, an analysis of the codebase versus Supabase best practices reveals a significant deviation in **complexity** regarding session storage. The current implementation uses a custom encryption layer ([KeyManager](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts#30-298) + [TokenEncryption](file:///home/sandy/projects/_underscore/src/background/auth/token-encryption.ts#25-135)) that wraps `chrome.storage.local`. While well-intentioned, this layer uses hardcoded keys, providing "security theater" (obfuscation) rather than true encryption protection, while adding ~400 lines of complex crypto code.
+
+**Recommendation**: **Simplify**. Remove the custom encryption layer and store sessions directly in `chrome.storage.local`. This aligns with standard practices, significantly reduces maintenance burden, and removes code that implies a misleading level of security.
+
+---
+
+## 2. Gap Analysis: Current vs. Supabase Docs
+
+| Feature | Supabase / Community Standard | Current Implementation | Status |
+| :--- | :--- | :--- | :--- |
+| **OAuth Flow** | `launchWebAuthFlow` with `skipBrowserRedirect:true` | Identical (`AuthManager.ts`) | ✅ Aligned |
+| **Session Persistence** | `chrome.storage.local` (Plain) | `chrome.storage.local` (Encrypted) | ⚠️ Over-engineered |
+| **Security** | Rely on browser sandbox | Obfuscated via AES-GCM (Static Key) | ⚠️ Misleading |
+| **Refresh Logic** | Auto-handled by Supabase SDK | Auto-handled by SDK | ✅ Aligned |
+| **Code Complexity** | Low (SDK + Simple Adapter) | High (SDK + Adapter + Crypto + Key Mgmt) | 🔴 Complex |
+
+### Detailed Findings
+
+1.  **OAuth Flow**: The usage of `launchWebAuthFlow` is correct. The standard `supabase.auth.signInWithOAuth` redirect flow does not work reliably in extensions because the callback URL cannot reopen the popup. The manual handling of the redirect URL hash in [AuthManager](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts#25-231) is necessary and correctly implemented.
+
+2.  **Encryption Layer**:
+    -   **Implementation**: `KeyManager.ts` and `TokenEncryption.ts` implement AES-GCM encryption.
+    -   **Issue**: The encryption key is derived from a hardcoded string (`underscore-master-key-v1-do-not-use-in-prod`).
+    -   **Impact**: Anyone who can access the physical storage file (to read the encrypted token) can also read the extension source code (to get the key). Therefore, this does not protect against a compromised machine. It only protects against casual inspection.
+    -   **Cost**: maintaining ~400 lines of crypto code (key derivation, IV management, base64 conversion) is a high price for "obfuscation".
+
+## 3. Options Analysis
+
+### Option A: Retain Current Architecture
+*   **Pros**: Tokens are not visible in plain text if `chrome.storage.local` is inspected.
+*   **Cons**: High complexity; misleading security promise; harder debugging (cannot easily copy-paste tokens for testing).
+
+### Option B: Simplify (Recommended)
+*   **Pros**:
+    *   **Maintaibality**: Deletes ~4 file complexities ([KeyManager](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts#30-298), [TokenEncryption](file:///home/sandy/projects/_underscore/src/background/auth/token-encryption.ts#25-135), complex types).
+    *   **Simplicity**: [SupabaseStorageAdapter](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts#13-73) becomes a simple wrapper around `chrome.storage.local`.
+    *   **Conformity**: Matches standard examples found in Supabase guides.
+    *   **Debugging**: Easier to inspect state in DevTools.
+*   **Cons**: Tokens stored in plaintext (standard for extensions).
+
+### Option C: Upgrade to True Security
+*   **Pros**: Real protection.
+*   **Cons**: Would require the user to enter a "Master Password" every time they open the browser to derive the key. This destroys the "seamless" background experience users expect. **Not recommended for this phase.**
+
+## 4. Recommended Action Plan
+
+**Goal**: Refactor for Simplicity and Maintainability.
+
+1.  **Refactor [SupabaseStorageAdapter](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts#13-73)**:
+    -   Remove [TokenEncryption](file:///home/sandy/projects/_underscore/src/background/auth/token-encryption.ts#25-135) dependency.
+    -   Directly read/write strings to `chrome.storage.local`.
+2.  **Delete Legacy Components**:
+    -   Delete `KeyManager.ts` (and interfaces).
+    -   Delete `TokenEncryption.ts`.
+    -   Update [AuthManager](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts#25-231) to remove [KeyManager](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts#30-298) dependency.
+3.  **Sanitize Storage**:
+    -   (Optional) implement a one-time migration to clear old encrypted tokens to prevent errors, or just let the user re-login.
+
+This change will make the system **Simpler, Easier, and More Maintainable**, directly addressing your request.

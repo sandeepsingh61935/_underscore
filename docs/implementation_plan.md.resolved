@@ -1,0 +1,60 @@
+# Authentication Simplification Plan
+
+# Goal Description
+Simplify the authentication architecture by removing the over-engineered "obfuscation" encryption layer. This reduces code complexity, improves maintainability, and aligns with standard Supabase/Chrome Extension patterns, without significantly degrading real-world security (as the current keys are hardcoded).
+
+## User Review Required
+> [!IMPORTANT]
+> This change removes the AES-GCM encryption of tokens in `chrome.storage.local`. Tokens will be stored in plaintext within the extension's sandboxed storage. This is standard for extensions but technically "less secure" than the previous obfuscation. Confirm this is acceptable.
+
+## Proposed Changes
+
+### Background Service ([src/background/auth](file:///home/sandy/projects/_underscore/src/background/auth))
+
+#### [MODIFY] [supabase-storage-adapter.ts](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts)
+- Remove `TokenEncryption` import and usage.
+- Update [getItem](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts#18-31) to simply return `result[key]` (or `null`).
+- Update [setItem](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts#32-45) to simply call `storageArea.set({ [key]: value })`.
+
+#### [MODIFY] [auth-manager.ts](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts)
+- Remove [KeyManager](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts#30-298) from constructor and dependencies if present (it appeared to be used by the adapter, not directly by manager, but checking imports).
+- Verify [AuthManager](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts#25-231) constructor arguments.
+
+#### [DELETE] [key-manager.ts](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts)
+- Delete entire file.
+
+#### [DELETE] [token-encryption.ts](file:///home/sandy/projects/_underscore/src/background/auth/token-encryption.ts)
+- Delete entire file.
+
+#### [MODIFY] [background/index.ts] or [bootstrap.ts]
+- Update DI registration to stop instantiating [KeyManager](file:///home/sandy/projects/_underscore/src/background/auth/key-manager.ts#30-298).
+
+### Robust Token Refresh (Completion)
+
+#### [MODIFY] [AuthManager.ts]
+- Implement `chrome.alarms` listener.
+- Set up alarm on session creation/refresh.
+- Create `refreshSession` handler that is triggered by alarm.
+- Ensure Supabase SDK `autoRefreshToken` is disabled (or managed) to avoid conflict.
+
+#### [MODIFY] [wxt.config.ts] or [manifest.json]
+- Add `alarms` permission.
+
+## Verification Plan
+
+### Automated Tests
+- Run existing Auth unit tests.
+- Update unit tests for [SupabaseStorageAdapter](file:///home/sandy/projects/_underscore/src/background/auth/supabase-storage-adapter.ts#10-59) to assert simplistic behavior (mock `chrome.storage.local`, verify data passed through unchanged).
+
+### Manual Verification
+1.  **Login Flow**:
+    -   Reload extension.
+    -   Click "Sign In".
+    -   Verify OAuth window opens and closes.
+    -   Verify "Logged In" state in Popup.
+2.  **Persistence**:
+    -   Reload extension (restart service worker).
+    -   Verify user is *still* logged in (session restored from storage).
+3.  **Logout**:
+    -   Click "Sign Out".
+    -   Verify tokens removed from storage.
