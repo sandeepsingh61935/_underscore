@@ -39,6 +39,16 @@ export interface PopupState {
         /** Highlights on current page */
         highlightsOnCurrentPage: number;
     };
+
+    /** Authentication state */
+    auth: {
+        isAuthenticated: boolean;
+        user: {
+            displayName: string;
+            photoUrl?: string;
+            email?: string;
+        } | null;
+    };
 }
 
 /**
@@ -57,6 +67,10 @@ const DEFAULT_STATE: PopupState = {
         totalHighlights: 0,
         highlightsOnCurrentPage: 0,
     },
+    auth: {
+        isAuthenticated: false,
+        user: null
+    }
 };
 
 /**
@@ -115,22 +129,62 @@ export class PopupStateManager {
                 throw new Error(errorMsg);
             }
 
-            // Get stats
-            const statsResponse = await this.messageBus.send<
-                MessageResponse<{ count: number }>
-            >('content', {
-                type: 'GET_HIGHLIGHT_COUNT',
-                payload: { tabId },
-                timestamp: Date.now(),
+            // Get stats (graceful failure for non-content-script pages)
+            let count = 0;
+            try {
+                const statsResponse = await this.messageBus.send<
+                    MessageResponse<{ count: number }>
+                >('content', {
+                    type: 'GET_HIGHLIGHT_COUNT',
+                    payload: { tabId },
+                    timestamp: Date.now(),
+                });
+
+                if (statsResponse.success) {
+                    count = statsResponse.data.count;
+                } else {
+                    this.logger.warn('Failed to fetch stats', statsResponse.error);
+                }
+            } catch (error) {
+                // Ignore "Receiving end does not exist" as it happens on non-injectable pages
+                this.logger.debug('Could not fetch stats from content script (likely restricted page)', error);
+            }
+
+            // Get Auth State (graceful failure if background is initializing)
+            let authState = { isAuthenticated: false, user: null as any };
+            try {
+                const authResponse = await this.messageBus.send<
+                    MessageResponse<{
+                        isAuthenticated: boolean;
+                        user: { displayName: string; photoUrl?: string; email?: string } | null;
+                    }>
+                >('background', {
+                    type: 'GET_AUTH_STATE',
+                    payload: {},
+                    timestamp: Date.now(),
+                });
+
+                if (authResponse.success) {
+                    authState = authResponse.data;
+                } else {
+                    this.logger.error('Failed to fetch auth state', new Error(authResponse.error));
+                }
+            } catch (error) {
+                this.logger.error('Could not fetch auth state from background', error as Error);
+                // We keep default unauthenticated state
+            }
+
+            // Listen for future auth changes (pushed/broadcasted)
+            this.unsubscribeAuth = this.messageBus.subscribe('AUTH_STATE_CHANGED', (data: any) => {
+                this.logger.debug('[PopupStateManager] Auth state update received', data);
+                this.setState({
+                    auth: {
+                        isAuthenticated: data.isAuthenticated,
+                        user: data.user
+                    }
+                });
             });
 
-            let count = 0;
-            if (statsResponse.success) {
-                count = statsResponse.data.count;
-            } else {
-                // If stats fail, it's non-critical, assume 0
-                this.logger.warn('Failed to fetch stats', statsResponse.error);
-            }
 
             // Update state
             this.setState({
@@ -139,6 +193,7 @@ export class PopupStateManager {
                     totalHighlights: count,
                     highlightsOnCurrentPage: count, // In-memory repo is per-page(tab) effectively
                 },
+                auth: authState,
                 loading: false,
                 error: null,
             });
@@ -146,6 +201,7 @@ export class PopupStateManager {
             this.logger.info('[PopupStateManager] Initialized successfully', {
                 mode: modeResponse.data.mode,
                 count: count,
+                auth: authState.isAuthenticated
             });
         } catch (error) {
             this.logger.error('[PopupStateManager] Initialization failed', error as Error);
@@ -160,6 +216,8 @@ export class PopupStateManager {
             throw error;
         }
     }
+
+    private unsubscribeAuth: (() => void) | null = null;
 
     /**
      * Switch mode with optimistic update
@@ -300,6 +358,38 @@ export class PopupStateManager {
     }
 
     /**
+     * Refresh authentication state from background
+     */
+    async refreshAuthState(): Promise<void> {
+        try {
+            const authResponse = await this.messageBus.send<
+                MessageResponse<{
+                    isAuthenticated: boolean;
+                    user: { displayName: string; photoUrl?: string; email?: string } | null;
+                }>
+            >('background', {
+                type: 'GET_AUTH_STATE',
+                payload: {},
+                timestamp: Date.now(),
+            });
+
+            if (authResponse.success) {
+                this.setState({
+                    auth: {
+                        isAuthenticated: authResponse.data.isAuthenticated,
+                        user: authResponse.data.user
+                    }
+                });
+                this.logger.info('[PopupStateManager] Auth state refreshed', authResponse.data);
+            } else {
+                this.logger.error('[PopupStateManager] Failed to refresh auth state', new Error(authResponse.error));
+            }
+        } catch (error) {
+            this.logger.error('[PopupStateManager] Could not refresh auth state', error as Error);
+        }
+    }
+
+    /**
      * Subscribe to state changes
      *
      * @param callback - Function to call on state changes
@@ -361,6 +451,10 @@ export class PopupStateManager {
      */
     cleanup(): void {
         this.subscribers.clear();
+        if (this.unsubscribeAuth) {
+            this.unsubscribeAuth();
+            this.unsubscribeAuth = null;
+        }
         this.logger.debug('[PopupStateManager] Cleaned up');
     }
 }
