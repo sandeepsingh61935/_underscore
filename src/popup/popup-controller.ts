@@ -14,6 +14,12 @@
 
 import { ErrorDisplay } from './components/error-display';
 import { PopupStateManager, type PopupState } from './popup-state-manager';
+import { ThemeManager, type IThemeManager } from './components/theme-manager';
+import { ProviderDrawer, type IProviderDrawer } from './components/provider-drawer';
+import { ModeSelector, type IModeSelector } from './components/mode-selector';
+import { CautionPanel, type ICautionPanel } from './components/caution-panel';
+import { UserMenu, type IUserMenu } from './components/user-menu';
+import { SunIcon, MoonIcon, MonitorIcon, setIcon } from './utils/icons';
 
 import type { ModeType } from '@/content/modes/mode-state-manager';
 import { AppError } from '@/shared/errors/app-error';
@@ -39,7 +45,6 @@ import { debounce } from '@/shared/utils/async-utils';
  */
 export class PopupController {
   // DOM Elements (bound during initialize)
-  private modeSelector!: HTMLSelectElement;
   private highlightCount!: HTMLElement;
   private loadingIndicator!: HTMLElement;
   private errorContainer!: HTMLElement;
@@ -55,9 +60,11 @@ export class PopupController {
   // Dependencies (injected)
   private readonly stateManager: PopupStateManager;
   private readonly errorDisplay: ErrorDisplay;
-
-  // Debounced event handlers (created in constructor)
-  private debouncedModeChange!: () => Promise<void>;
+  private readonly themeManager: IThemeManager;
+  private readonly providerDrawer: IProviderDrawer;
+  private readonly modeSelector: IModeSelector;
+  private readonly cautionPanel: ICautionPanel;
+  private readonly userMenu: IUserMenu;
 
   // State
   private currentTabId: number | null = null;
