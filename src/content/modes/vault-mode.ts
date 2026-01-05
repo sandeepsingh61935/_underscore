@@ -19,6 +19,7 @@ import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
+import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
 import { getVaultModeService } from '@/services/vault-mode-service';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
@@ -81,13 +82,19 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     await this.vaultService.saveHighlight(data as any, range);
 
     // 3. Render
+    const highlightName = getHighlightName('underscore', data.id);
     const highlight = new Highlight(...data.liveRanges);
-    CSS.highlights.set(data.id, highlight);
+    CSS.highlights.set(highlightName, highlight);
     this.highlights.set(data.id, highlight);
     this.data.set(data.id, data);
 
+    // Inject CSS for visual rendering
+    injectHighlightCSS('underscore', data.id, data.colorRole || 'yellow');
+
     // 4. Update Repository (Idempotent check)
-    const alreadyExists = await this.repository.findById(data.id);
+    // Note: repository is RepositoryFacade with sync API (get/has, not findById)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
     if (!alreadyExists) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.repository.add(data as any);
@@ -135,7 +142,9 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     await this.vaultService.clearAll();
 
     for (const id of this.highlights.keys()) {
-      CSS.highlights.delete(id);
+      const highlightName = getHighlightName('underscore', id);
+      CSS.highlights.delete(highlightName);
+      removeHighlightCSS(id);
     }
     this.highlights.clear();
     this.data.clear();
@@ -212,8 +221,12 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     await this.vaultService.saveHighlight(data as any, liveRange);
 
     // 2. Update Runtime API (CSS Highlights)
+    const highlightName = getHighlightName('underscore', id);
     const highlight = new Highlight(range);
-    CSS.highlights.set(id, highlight);
+    CSS.highlights.set(highlightName, highlight);
+
+    // Inject CSS for visual rendering
+    injectHighlightCSS('underscore', id, colorRole || 'yellow');
 
     // 3. Update Internal State
     this.highlights.set(id, highlight);
@@ -234,7 +247,9 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const highlight = this.highlights.get(id);
 
     if (highlight) {
-      CSS.highlights.delete(id);
+      const highlightName = getHighlightName('underscore', id);
+      CSS.highlights.delete(highlightName);
+      removeHighlightCSS(id);
       this.highlights.delete(id);
     }
     this.data.delete(id);
@@ -267,7 +282,9 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         this.data.set(storedData.id, fullData);
 
         // Sync to Repository (Idempotent check)
-        const exists = await this.repository.findById(storedData.id);
+        // Note: repository is RepositoryFacade with sync API (get/has, not findById)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const exists = (this.repository as any).get?.(storedData.id) || (this.repository as any).has?.(storedData.id);
         if (!exists) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await this.repository.add(fullData as any);
