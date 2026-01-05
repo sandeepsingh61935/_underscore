@@ -1,6 +1,6 @@
 
-import { Container } from '@/shared/di/container';
-import { registerServices } from '@/shared/di/service-registration';
+import { Container } from '@/background/di/container';
+import { registerBackgroundServices } from '@/background/di/background-service-registration';
 import { registerAuthComponents } from '@/background/auth/auth-container-registration';
 import { registerAPIComponents } from '@/background/api/api-container-registration';
 import { registerEventComponents } from '@/background/events/events-container-registration';
@@ -8,7 +8,7 @@ import { registerSyncComponents } from '@/background/sync/sync-container-registr
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
 import { registerMigrationComponents } from '@/background/migration/migration-container-registration';
 import { SupabaseConfig } from '@/background/api/supabase-client';
-import { LoggerFactory } from '@/shared/utils/logger';
+import { LoggerFactory } from '@/background/utils/logger';
 import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
 
@@ -28,10 +28,26 @@ export async function initializeBackground(): Promise<Container> {
         url: (import.meta as any).env.VITE_SUPABASE_URL || '',
         anonKey: (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '',
     };
+
+    // Validate configuration
+    if (!supabaseConfig.url || !supabaseConfig.anonKey) {
+        logger.warn('[BOOTSTRAP] Supabase configuration incomplete', {
+            hasUrl: !!supabaseConfig.url,
+            hasAnonKey: !!supabaseConfig.anonKey,
+            env: (import.meta as any).env
+        });
+        logger.warn('[BOOTSTRAP] Auth features will not work. Check .env.development file.');
+    } else {
+        logger.info('[BOOTSTRAP] Supabase configuration loaded', {
+            url: supabaseConfig.url.substring(0, 30) + '...',
+            anonKeyLength: supabaseConfig.anonKey.length
+        });
+    }
+
     container.registerInstance('supabaseConfig', supabaseConfig);
 
-    // 2. Register Services
-    registerServices(container);         // Shared (Logger, EventBus, Auth, Storage)
+    // 2. Register Services (Background-specific - no content script modules)
+    registerBackgroundServices(container);  // Base services + Auth
     registerAuthComponents(container);   // Auth & Security (KeyManager, E2EEncryptionService)
     registerAPIComponents(container);    // API Layer
     registerEventComponents(container);  // Event Sourcing
@@ -48,7 +64,11 @@ export async function initializeBackground(): Promise<Container> {
     const currentUser = authManager.currentUser;
     if (currentUser) {
         logger.info('User authenticated on startup, connecting realtime', { userId: currentUser.id });
-        await connectionManager.connect(currentUser.id);
+        // Don't await connection here to avoid blocking background script initialization
+        // which would delay MessageBus listener registration
+        void connectionManager.connect(currentUser.id).catch(err => {
+            logger.error('Failed to connect realtime on startup', err);
+        });
     }
 
     // Wire auth state changes to connection manager

@@ -5,10 +5,20 @@ export default defineConfig({
   manifest: {
     name: 'Underscore Highlighter',
     description: 'Intelligent web highlighting with Sprint, Vault, and Gen modes',
-    permissions: ['activeTab', 'storage'],
+    permissions: ['activeTab', 'storage', 'alarms', 'identity'],
   },
   vite: () => ({
     build: {
+      target: 'esnext', // Use modern JS
+      modulePreload: {
+        polyfill: false,
+        resolveDependencies: () => [],
+      },
+      rollupOptions: {
+        output: {
+          // manualChunks removed
+        },
+      },
       minify: 'terser',
       terserOptions: {
         format: {
