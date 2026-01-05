@@ -4,7 +4,7 @@
  * @architecture Error Handling Framework (04-error-logging-framework.md)
  */
 
-import { AppError } from '@/shared/errors/app-error';
+import { AppError } from '@/background/errors/app-error';
 
 /**
  * Authentication error base class

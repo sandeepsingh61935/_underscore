@@ -6,8 +6,8 @@
 
 import type { IAuthStateObserver } from './interfaces/i-auth-state-observer';
 import type { AuthStateCallback, UnsubscribeFn } from './interfaces/i-auth-manager';
-import type { ILogger } from '@/shared/utils/logger';
-import { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/background/utils/logger';
+import { EventBus } from '@/background/utils/event-bus';
 
 /**
  * Authentication state observer implementation

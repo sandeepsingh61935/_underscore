@@ -4,7 +4,7 @@
  * @architecture Dependency Injection - centralized service registration
  */
 
-import type { Container } from '@/shared/di/container';
+import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IKeyManager } from './interfaces/i-key-manager';
 import type { IEncryptionService } from './interfaces/i-encryption-service';

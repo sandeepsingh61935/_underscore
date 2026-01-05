@@ -1,15 +1,16 @@
 /**
  * @file auth-manager.ts
- * @description OAuth authentication manager with automatic token refresh
+ * @description OAuth authentication manager using Supabase GoTrue
  * @architecture Strategy Pattern (multiple OAuth providers)
  * @architecture Observer Pattern (auth state change notifications via EventBus)
  */
 
+import { SupabaseClient as SupabaseSDKClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { IAuthManager, AuthState, AuthResult, User, OAuthProviderType } from './interfaces/i-auth-manager';
-import type { ITokenStore, AuthToken } from './interfaces/i-token-store';
-import type { ILogger } from '@/shared/utils/logger';
-import { EventBus } from '@/shared/utils/event-bus';
-import { RateLimiter } from '@/shared/utils/rate-limiter';
+import type { ITokenStore } from './interfaces/i-token-store';
+import type { ILogger } from '@/background/utils/logger';
+import { EventBus } from '@/background/utils/event-bus';
+import { RateLimiter } from '@/background/utils/rate-limiter';
 import { OAuthProvider } from './interfaces/i-auth-manager';
 import {
     AuthenticationError,
@@ -19,48 +20,7 @@ import {
 } from './auth-errors';
 
 /**
- * OAuth provider configuration
- */
-interface OAuthConfig {
-    readonly authUrl: string;
-    readonly clientId: string;
-    readonly scopes: string[];
-    readonly redirectUrl: string;
-}
-
-/**
- * OAuth provider configurations
- * NOTE: In production, these would be environment variables
- */
-const OAUTH_CONFIGS: Record<OAuthProviderType, OAuthConfig> = {
-    [OAuthProvider.GOOGLE]: {
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        clientId: 'YOUR_GOOGLE_CLIENT_ID',
-        scopes: ['profile', 'email'],
-        redirectUrl: chrome.identity.getRedirectURL('google'),
-    },
-    [OAuthProvider.APPLE]: {
-        authUrl: 'https://appleid.apple.com/auth/authorize',
-        clientId: 'YOUR_APPLE_CLIENT_ID',
-        scopes: ['name', 'email'],
-        redirectUrl: chrome.identity.getRedirectURL('apple'),
-    },
-    [OAuthProvider.FACEBOOK]: {
-        authUrl: 'https://www.facebook.com/v12.0/dialog/oauth',
-        clientId: 'YOUR_FACEBOOK_APP_ID',
-        scopes: ['public_profile', 'email'],
-        redirectUrl: chrome.identity.getRedirectURL('facebook'),
-    },
-    [OAuthProvider.TWITTER]: {
-        authUrl: 'https://twitter.com/i/oauth2/authorize',
-        clientId: 'YOUR_TWITTER_CLIENT_ID',
-        scopes: ['tweet.read', 'users.read'],
-        redirectUrl: chrome.identity.getRedirectURL('twitter'),
-    },
-};
-
-/**
- * Authentication manager implementation
+ * Authentication manager implementation using Supabase Auth
  */
 export class AuthManager implements IAuthManager {
     private currentState: AuthState = {
@@ -70,11 +30,12 @@ export class AuthManager implements IAuthManager {
         lastAuthTime: null,
     };
 
-    private refreshTimer?: NodeJS.Timeout;
     private rateLimiter: RateLimiter;
 
     constructor(
-        private readonly tokenStore: ITokenStore,
+        private readonly supabase: SupabaseSDKClient,
+        // @deprecated TokenStore is replaced by SupabaseStorageAdapter but kept for interface compatibility if needed
+        private readonly _tokenStore: ITokenStore,
         private readonly eventBus: EventBus,
         private readonly logger: ILogger
     ) {
@@ -82,13 +43,82 @@ export class AuthManager implements IAuthManager {
         this.rateLimiter = new RateLimiter(
             {
                 maxAttempts: 5,
-                windowMs: 15 * 60 * 1000, // 15 minutes
+                windowMs: 15 * 60 * 1000,
             },
             logger
         );
 
-        // Try to restore auth state from stored token
-        this.restoreAuthState();
+        this.initialize();
+    }
+
+    private async initialize(): Promise<void> {
+        // Setup Alarm Listener for Token Refresh
+        chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
+
+        // Listen for Supabase auth state changes
+        this.supabase.auth.onAuthStateChange((_event, session) => {
+            this.handleSupabaseAuthStateChange(session);
+            this.scheduleRefresh(session);
+        });
+
+        // Initial check
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (session) {
+            this.handleSupabaseAuthStateChange(session);
+            this.scheduleRefresh(session);
+        } else {
+            this.logger.debug('No active session found on init');
+        }
+    }
+
+    /**
+     * Handle Chrome Alarms
+     */
+    private async handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
+        if (alarm.name === 'auth_refresh_token') {
+            this.logger.debug('Refresh token alarm triggered');
+            try {
+                await this.refreshToken();
+            } catch (error) {
+                this.logger.error('Scheduled token refresh failed', error as Error);
+            }
+        }
+    }
+
+    /**
+     * Schedule token refresh alarm
+     * Uses chrome.alarms to wake up service worker
+     */
+    private scheduleRefresh(session: Session | null): void {
+        const ALARM_NAME = 'auth_refresh_token';
+
+        if (!session?.expires_at) {
+            chrome.alarms.clear(ALARM_NAME);
+            return;
+        }
+
+        // Supabase provides expires_at in seconds, Date.now() is ms
+        const expiresAtMs = session.expires_at * 1000;
+        const now = Date.now();
+
+        // Refresh 5 minutes before expiration to be safe
+        const refreshTime = expiresAtMs - (5 * 60 * 1000);
+
+        // If already expired or close to expiring (within 1 min), refresh immediately
+        if (refreshTime <= now) {
+            this.logger.debug('Token executing immediate refresh');
+            this.refreshToken().catch(err => this.logger.error('Immediate refresh failed', err));
+            return;
+        }
+
+        // Schedule alarm
+        this.logger.debug('Scheduling refresh alarm', {
+            refreshTime: new Date(refreshTime).toISOString()
+        });
+
+        chrome.alarms.create(ALARM_NAME, {
+            when: refreshTime
+        });
     }
 
     /**
@@ -111,74 +141,74 @@ export class AuthManager implements IAuthManager {
     async signIn(provider: OAuthProviderType): Promise<AuthResult> {
         this.logger.info('Sign in attempt', { provider });
 
-        // Validate provider
         if (!Object.values(OAuthProvider).includes(provider)) {
             throw new InvalidProviderError(provider);
         }
 
-        // Rate limiting check
         if (!this.rateLimiter.tryAcquire()) {
-            const error = new RateLimitError('Too many login attempts', {
-                provider,
-                attempts: this.rateLimiter.getAttempts(),
-            });
-            this.logger.warn('Rate limit exceeded for sign in', { provider });
+            const error = new RateLimitError('Too many login attempts');
             return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
         }
 
+        let redirectUrl: string | undefined;
+        let authUrl: string | undefined;
+
         try {
-            // Get OAuth configuration
-            const config = OAUTH_CONFIGS[provider];
+            redirectUrl = chrome.identity.getRedirectURL();
 
-            // Launch OAuth flow
-            const redirectUrl = await this.launchOAuthFlow(config);
+            // 1. Get the OAuth URL from Supabase
+            this.logger.debug('Generated redirect URL', { redirectUrl });
 
-            // Parse tokens from redirect URL
-            const { accessToken, refreshToken, expiresIn, userId } = this.parseOAuthRedirect(
-                redirectUrl,
-                provider
-            );
-
-            // Fetch user info
-            const user = await this.fetchUserInfo(accessToken, provider);
-
-            // Create auth token
-            const authToken: AuthToken = {
-                accessToken,
-                refreshToken,
-                expiresAt: new Date(Date.now() + expiresIn * 1000),
-                userId: user.id,
-                provider,
-                scopes: config.scopes,
-            };
-
-            // Save encrypted token
-            await this.tokenStore.saveToken(authToken);
-
-            // Update state
-            this.updateAuthState({
-                isAuthenticated: true,
-                user,
-                provider,
-                lastAuthTime: new Date(),
+            const { data, error } = await this.supabase.auth.signInWithOAuth({
+                provider: provider as any,
+                options: {
+                    redirectTo: redirectUrl,
+                    skipBrowserRedirect: true,
+                },
             });
 
-            // Start auto-refresh timer
-            this.startTokenRefresh(authToken.expiresAt);
+            if (error) throw error;
+            if (!data.url) throw new Error('No OAuth URL returned');
 
-            this.logger.info('Sign in successful', { userId: user.id, provider });
+            authUrl = data.url;
+            this.logger.info('Launching Web Auth Flow', { url: authUrl });
 
-            return { success: true, user };
+            // 2. Launch browser flow
+            const browserResponseUrl = await chrome.identity.launchWebAuthFlow({
+                url: authUrl,
+                interactive: true,
+            });
+
+            if (!browserResponseUrl) {
+                throw new OAuthRedirectError('No URL returned from identity provider');
+            }
+
+            // 3. Parse session from URL
+            if (browserResponseUrl.includes('#error=')) {
+                throw new Error('Identity provider returned an error');
+            }
+
+            // Extract access_token/refresh_token from hash
+            const session = await this.extractSessionFromUrl(browserResponseUrl);
+
+            // 4. Set session in Supabase (persists automatically via adapter)
+            const { error: sessionError } = await this.supabase.auth.setSession(session);
+            if (sessionError) throw sessionError;
+
+            // State will be updated by onAuthStateChange listener
+            return { success: true, user: this.currentState.user! };
+
         } catch (error) {
             this.logger.error('Sign in failed', error as Error, { provider });
 
-            if (error instanceof RateLimitError || error instanceof OAuthRedirectError) {
-                throw error;
-            }
+            if (error instanceof RateLimitError) throw error;
 
-            throw new AuthenticationError('OAuth sign in failed', {
+            const innerMsg = error instanceof Error ? error.message : String(error);
+            const debugInfo = `\nURL: ${authUrl || 'Not generated'}\nRedirect: ${redirectUrl || 'Not generated'}`;
+
+            throw new AuthenticationError(`OAuth failed: ${innerMsg}${debugInfo}`, {
                 provider,
-                error: error instanceof Error ? error.message : String(error),
+                error: innerMsg,
             });
         }
     }
@@ -188,71 +218,17 @@ export class AuthManager implements IAuthManager {
      */
     async signOut(): Promise<void> {
         this.logger.info('Sign out', { userId: this.currentState.user?.id });
-
-        // Stop refresh timer
-        this.stopTokenRefresh();
-
-        // Remove stored token
-        if (this.currentState.user) {
-            await this.tokenStore.removeToken(this.currentState.user.id);
-        }
-
-        // Update state
-        this.updateAuthState({
-            isAuthenticated: false,
-            user: null,
-            provider: null,
-            lastAuthTime: null,
-        });
-
-        this.logger.info('Sign out complete');
+        await this.supabase.auth.signOut();
+        // State update handled by listener
     }
 
     /**
      * Refresh authentication token
+     * Handled automatically by Supabase client, but exposed for manual trigger
      */
     async refreshToken(): Promise<void> {
-        if (!this.currentState.user) {
-            throw new AuthenticationError('No user to refresh token for');
-        }
-
-        this.logger.debug('Refreshing token', { userId: this.currentState.user.id });
-
-        try {
-            // Load current token
-            const currentToken = await this.tokenStore.getToken(this.currentState.user.id);
-
-            if (!currentToken) {
-                throw new AuthenticationError('No token found for user');
-            }
-
-            // Call OAuth provider's token refresh endpoint
-            const newToken = await this.callTokenRefreshEndpoint(
-                currentToken.refreshToken,
-                currentToken.provider as OAuthProviderType
-            );
-
-            // Save new token
-            await this.tokenStore.saveToken(newToken);
-
-            // Reschedule next refresh
-            this.startTokenRefresh(newToken.expiresAt);
-
-            this.logger.info('Token refreshed successfully', {
-                userId: this.currentState.user.id,
-            });
-        } catch (error) {
-            this.logger.error('Token refresh failed', error as Error, {
-                userId: this.currentState.user.id,
-            });
-
-            // On refresh failure, sign out user
-            await this.signOut();
-
-            throw new AuthenticationError('Token refresh failed', {
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
+        const { error } = await this.supabase.auth.refreshSession();
+        if (error) throw error;
     }
 
     /**
@@ -267,164 +243,25 @@ export class AuthManager implements IAuthManager {
      */
     onAuthStateChanged(callback: (state: AuthState) => void | Promise<void>): () => void {
         this.eventBus.on('AUTH_STATE_CHANGED', callback);
-
-        // Return unsubscribe function
         return () => this.eventBus.off('AUTH_STATE_CHANGED', callback);
     }
 
-    /**
-     * Launch OAuth flow using chrome.identity API
-     */
-    private async launchOAuthFlow(config: OAuthConfig): Promise<string> {
-        // Build OAuth URL
-        const authUrl = new URL(config.authUrl);
-        authUrl.searchParams.set('client_id', config.clientId);
-        authUrl.searchParams.set('redirect_uri', config.redirectUrl);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', config.scopes.join(' '));
+    // ==================== Private Helpers ====================
 
-        try {
-            // Launch interactive OAuth flow
-            const redirectUrl = await chrome.identity.launchWebAuthFlow({
-                url: authUrl.toString(),
-                interactive: true,
-            });
-
-            if (!redirectUrl) {
-                throw new OAuthRedirectError('No redirect URL returned from OAuth flow');
-            }
-
-            return redirectUrl;
-        } catch (error) {
-            throw new OAuthRedirectError('OAuth flow failed', {
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    }
-
-    /**
-     * Parse OAuth redirect URL to extract tokens
-     */
-    private parseOAuthRedirect(
-        redirectUrl: string,
-        provider: OAuthProviderType
-    ): {
-        accessToken: string;
-        refreshToken: string;
-        expiresIn: number;
-        userId: string;
-    } {
-        try {
-            const url = new URL(redirectUrl);
-
-            // For demonstration, we're assuming the redirect URL contains tokens
-            // In production, you'd exchange the auth code for tokens via backend
-            const code = url.searchParams.get('code');
-
-            if (!code) {
-                throw new Error('No authorization code in redirect URL');
-            }
-
-            // MOCK: In production, exchange code for tokens via OAuth provider's token endpoint
-            return {
-                accessToken: `access_${code}_${provider}`,
-                refreshToken: `refresh_${code}_${provider}`,
-                expiresIn: 3600, // 1 hour
-                userId: `user_${code}`,
-            };
-        } catch (error) {
-            throw new OAuthRedirectError('Failed to parse OAuth redirect', {
-                provider,
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    }
-
-    /**
-     * Fetch user information from OAuth provider
-     */
-    private async fetchUserInfo(
-        accessToken: string,
-        provider: OAuthProviderType
-    ): Promise<User> {
-        // MOCK: In production, call the provider's user info endpoint
-        // For now, return mock user data
-        return {
-            id: `user_${accessToken.slice(0, 10)}`,
-            email: `user@example.com`,
-            displayName: `User from ${provider}`,
-            photoUrl: undefined,
+    private handleSupabaseAuthStateChange(session: Session | null): void {
+        const newState: AuthState = {
+            isAuthenticated: !!session,
+            user: session ? this.mapSupabaseUser(session.user) : null,
+            provider: session?.user?.app_metadata?.provider as OAuthProviderType || null,
+            lastAuthTime: session ? new Date() : null
         };
+
+        // Only emit if state changed or initially setting it
+        this.updateAuthState(newState);
     }
 
-    /**
-     * Call OAuth provider's token refresh endpoint
-     */
-    private async callTokenRefreshEndpoint(
-        refreshToken: string,
-        provider: OAuthProviderType
-    ): Promise<AuthToken> {
-        // MOCK: In production, call the provider's token refresh endpoint
-        // For now, return mock refreshed token
-        return {
-            accessToken: `refreshed_access_${Date.now()}`,
-            refreshToken: refreshToken, // Usually stays the same
-            expiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour
-            userId: this.currentState.user!.id,
-            provider,
-            scopes: OAUTH_CONFIGS[provider].scopes,
-        };
-    }
-
-    /**
-     * Start automatic token refresh timer
-     * Refreshes 15 minutes before expiry
-     */
-    private startTokenRefresh(expiresAt: Date): void {
-        // Stop existing timer
-        this.stopTokenRefresh();
-
-        // Calculate when to refresh (15min before expiry)
-        const refreshTime = expiresAt.getTime() - 15 * 60 * 1000; // 15min before
-        const delay = refreshTime - Date.now();
-
-        // Only schedule if delay is positive
-        if (delay > 0) {
-            this.refreshTimer = setTimeout(() => {
-                this.refreshToken().catch((error) => {
-                    this.logger.error('Auto token refresh failed', error);
-                });
-            }, delay);
-
-            this.logger.debug('Token refresh scheduled', {
-                expiresAt: expiresAt.toISOString(),
-                refreshIn: Math.floor(delay / 1000) + 's',
-            });
-        } else {
-            // Token already expired or about to expire, refresh immediately
-            this.refreshToken().catch((error) => {
-                this.logger.error('Immediate token refresh failed', error);
-            });
-        }
-    }
-
-    /**
-     * Stop automatic token refresh timer
-     */
-    private stopTokenRefresh(): void {
-        if (this.refreshTimer) {
-            clearTimeout(this.refreshTimer);
-            this.refreshTimer = undefined;
-        }
-    }
-
-    /**
-     * Update authentication state and emit event
-     */
     private updateAuthState(newState: AuthState): void {
         this.currentState = newState;
-
-        // Emit state change event
         this.eventBus.emit('AUTH_STATE_CHANGED', newState);
 
         this.logger.debug('Auth state updated', {
@@ -433,17 +270,28 @@ export class AuthManager implements IAuthManager {
         });
     }
 
-    /**
-     * Restore authentication state from stored token
-     * Called on initialization to maintain session across extension restarts
-     */
-    private async restoreAuthState(): Promise<void> {
-        // This is a placeholder - in production, we'd need to:
-        // 1. Get the last known user ID from somewhere (e.g., chrome.storage.local)
-        // 2. Load their token
-        // 3. Validate it's not expired
-        // 4. Restore the auth state
+    private mapSupabaseUser(sbUser: SupabaseUser): User {
+        return {
+            id: sbUser.id,
+            email: sbUser.email || '',
+            displayName: sbUser.user_metadata?.['full_name'] || sbUser.email || 'User',
+            photoUrl: sbUser.user_metadata?.['avatar_url'],
+        };
+    }
 
-        this.logger.debug('Auth state restoration skipped (no stored user ID)');
+    private async extractSessionFromUrl(url: string): Promise<{ access_token: string; refresh_token: string }> {
+        // URL format: https://<id>.chromiumapp.org/callback#access_token=...&refresh_token=...&...
+        const urlObj = new URL(url);
+        const params = new URLSearchParams(urlObj.hash.substring(1)); // Remove leading #
+
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (!accessToken || !refreshToken) {
+            throw new Error('Tokens not found in redirect URL');
+        }
+
+        return { access_token: accessToken, refresh_token: refreshToken };
     }
 }
+
