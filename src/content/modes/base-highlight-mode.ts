@@ -41,10 +41,13 @@ export abstract class BaseHighlightMode {
 
     // CRITICAL FIX: Sync mode.data to repository cache
     // This ensures hover detector can find highlights after mode activation/restore
+    // Sync with repository (FIXME: This causes infinite recursion if add() triggers events)
+    // Modes should trust the repository is the source of truth, or sync one-way only
+    /*
     for (const [, highlight] of this.data.entries()) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.repository.add({ ...highlight, version: 2 } as any);
     }
+    */
   }
 
   async onDeactivate(): Promise<void> {

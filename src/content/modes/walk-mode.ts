@@ -20,6 +20,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
+import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
@@ -182,7 +183,6 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     await this.repository.update(id, updates as any);
 
     if (updates.colorRole) {
-      const { injectHighlightCSS } = await import('@/content/styles/highlight-styles');
       injectHighlightCSS(updated.type, id, updates.colorRole);
     }
   }
@@ -209,7 +209,6 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
    */
   override async removeHighlight(id: string): Promise<void> {
     // FIXED: Only prefixed key needed after removing double-registration
-    const { getHighlightName } = await import('@/content/styles/highlight-styles');
     const highlightName = getHighlightName('underscore', id);
     if (CSS.highlights.has(highlightName)) CSS.highlights.delete(highlightName);
 

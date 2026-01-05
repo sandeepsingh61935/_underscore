@@ -22,6 +22,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
+import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
@@ -246,7 +247,6 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
     // Re-inject CSS if colorRole changed
     if (updates.colorRole) {
-      const { injectHighlightCSS } = await import('@/content/styles/highlight-styles');
       injectHighlightCSS(updated.type, id, updates.colorRole);
     }
   }
@@ -274,7 +274,6 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.logger.info('Removing highlight', { id });
 
     // FIXED: Only prefixed key needed after removing double-registration
-    const { getHighlightName } = await import('@/content/styles/highlight-styles');
     const highlightName = getHighlightName('underscore', id);
     if (CSS.highlights.has(highlightName)) {
       CSS.highlights.delete(highlightName);
