@@ -139,37 +139,88 @@ export class VaultModeService {
     }>
   > {
     try {
-      const url = window.location.href.split('#')[0];
+      const url = window.location.href.split('#')[0] || '';
       if (!url) return [];
 
-      const records = await this.storage.getHighlightsByUrl(url);
+      // 1. Fetch from Local Storage (IndexedDB) - Contains offline/unsynced work
+      const localRecords = await this.storage.getHighlightsByUrl(url);
 
-      this.logger.info(`[VAULT] Restoring ${records.length} highlights for URL`, { url });
+      // 2. Fetch from Repository (Cloud) - Contains cross-device work
+      // Note: DualWriteRepo wraps InMemory (empty on reload) + Supabase
+      // so this effectively fetches Cloud data
+      let cloudHighlights: HighlightDataV2[] = [];
+      try {
+        cloudHighlights = await this.repository.findByUrl(url);
+      } catch (err) {
+        this.logger.warn('[VAULT] Failed to fetch cloud highlights', err);
+        // Continue with local only
+      }
 
+      this.logger.info(`[VAULT] Restoration sources: Local=${localRecords.length}, Cloud=${cloudHighlights.length}`);
+
+      // 3. Merge & Backfill
+      // We use a Map to deduplicate by ID, prioritizing Local (usually more recent if modified)
+      // but strictly speaking, we want to ensure we have *all* highlights.
+      const mergedHighlights = new Map<string, { data: HighlightDataV2, selectors: MultiSelector | undefined }>();
+
+      // Process Local Records
+      for (const record of localRecords) {
+        // Add to map even if selectors missing (will be marked as failed later)
+        // ensuring we don't silently drop corrupt local data
+        mergedHighlights.set(record.id, {
+          data: record.data,
+          selectors: record.metadata?.['selectors'] as MultiSelector | undefined
+        });
+      }
+
+      // Process Cloud Highlights & Backfill
+      for (const highlight of cloudHighlights) {
+        if (!mergedHighlights.has(highlight.id)) {
+          // This is a NEW item from cloud! 
+          // Extract selector from ranges
+          // Cast through unknown because we store the full MultiSelector in the selector field
+          // even though the schema types it strictly as TextQuoteSelector
+          const selector = highlight.ranges[0]?.selector as unknown as MultiSelector;
+
+          mergedHighlights.set(highlight.id, {
+            data: highlight,
+            selectors: selector
+          });
+
+          if (selector) {
+            // Backfill to IndexedDB so it's available offline next time
+            this.logger.info('[VAULT] Backfilling cloud highlight to local storage', { id: highlight.id });
+            this.storage.saveHighlight(highlight, null, {
+              selectors: selector,
+              url,
+            }).catch(e => this.logger.error('[VAULT] Backfill failed', e));
+          }
+        }
+      }
+
+      this.logger.info(`[VAULT] Restoring ${mergedHighlights.size} merged highlights`);
+
+      // 4. Restore Ranges
       const results = await Promise.all(
-        records.map(async (record) => {
-          if (!record.metadata?.['selectors']) {
-            this.logger.warn('[VAULT] No selectors found for highlight', record.id);
+        Array.from(mergedHighlights.values()).map(async (item) => {
+          if (!item.selectors) {
+            this.logger.warn('[VAULT] No selectors found for highlight', item.data.id);
             return {
-              highlight: record.data,
+              highlight: item.data,
               range: null,
               restoredUsing: 'failed' as const,
             };
           }
 
-          const selectors = record.metadata['selectors'] as MultiSelector;
-          const range = await this.restoreHighlightRange(selectors);
+          const range = await this.restoreHighlightRange(item.selectors);
 
           return {
-            highlight: record.data,
+            highlight: item.data,
             range,
-            restoredUsing: this.determineRestorationTier(range, selectors),
+            restoredUsing: this.determineRestorationTier(range, item.selectors),
           };
         })
       );
-
-      const successful = results.filter((r) => r.range !== null).length;
-      this.logger.info(`[VAULT] Restored ${successful}/${records.length} highlights`);
 
       return results;
     } catch (error) {
@@ -250,14 +301,11 @@ export class VaultModeService {
    */
   async deleteHighlight(highlightId: string): Promise<void> {
     try {
+      // Delete from IndexedDB (local storage)
       await this.storage.deleteHighlight(highlightId);
 
-      await this.storage.saveEvent({
-        type: 'highlight.removed',
-        timestamp: Date.now(),
-        data: { highlightId },
-        synced: false,
-      });
+      // Delete from repository (triggers DualWriteRepository → cloud sync)
+      await this.repository.remove(highlightId);
 
       this.logger.info('[VAULT] Highlight deleted', highlightId);
     } catch (error) {
