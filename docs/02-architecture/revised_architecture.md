@@ -221,20 +221,26 @@ $$ LANGUAGE plpgsql;
 
 ---
 
-### 1.2 Database Selection - POSTGRESQL (Critical Fix #4)
+### 1.2 Database Selection - POSTGRESQL (Supabase)
+ **Decision:** **Supabase (PostgreSQL)** is the primary source of truth, with **IndexDB** as a robust local cache/offline store. This Dual-Write architecture ensures offline-first capabilities.
 
-**Decision:** Use **Supabase (PostgreSQL)**, NOT Turso
+ **Architecture: DualWriteRepository**
+ The application uses a Composite Repository pattern (`DualWriteRepository`) that orchestrates writes to both storage layers:
 
-**Rationale:**
+ 1. **IndexedDBHighlightRepository**: Fast, synchronous-like local storage (Dexie.js-based).
+ 2. **SupabaseHighlightRepository**: Cloud storage for sync and backup.
+ 3. **OfflineQueueService**: Manages retry logic for failed cloud writes (offline resilience).
 
-| Requirement             | Turso (LibSQL) | Supabase (PostgreSQL) |
-| ----------------------- | -------------- | --------------------- |
-| Full-text search        | ❌ No          | ✅ GIN indexes        |
-| JSONB queries           | ⚠️ Limited     | ✅ Native support     |
-| Real-time subscriptions | ❌ No          | ✅ Built-in           |
-| Event sourcing          | ⚠️ Manual      | ✅ Excellent          |
-| Free tier               | 500 DBs        | 500MB storage         |
-| Scalability             | 10k rows       | 10M+ rows             |
+ **Rationale:**
+
+ | Requirement             | Turso (LibSQL) | Supabase (PostgreSQL) |
+ | ----------------------- | -------------- | --------------------- |
+ | Full-text search        | ❌ No          | ✅ GIN indexes        |
+ | JSONB queries           | ⚠️ Limited     | ✅ Native support     |
+ | Real-time subscriptions | ❌ No          | ✅ Built-in           |
+ | Event sourcing          | ⚠️ Manual      | ✅ Excellent          |
+ | Free tier               | 500 DBs        | 500MB storage         |
+ | Scalability             | 10k rows       | 10M+ rows             |
 
 #### Updated Database Schema
 
