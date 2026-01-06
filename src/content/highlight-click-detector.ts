@@ -85,11 +85,20 @@ export class HighlightClickDetector {
     const x = e.clientX;
     const y = e.clientY;
 
+    const matches: HighlightDataV2[] = [];
+
     try {
       for (const highlight of highlights) {
         if (this.isPointInHighlight(highlight, x, y)) {
-          return highlight;
+          matches.push(highlight);
         }
+      }
+
+      // If multiple matches (e.g. nested highlights like "Bluetooth" inside "Classic Bluetooth"),
+      // prioritize the specific one (shortest text length).
+      if (matches.length > 0) {
+        matches.sort((a, b) => a.text.length - b.text.length);
+        return matches[0] || null;
       }
     } catch (error) {
       this.logger.warn('Error finding highlight at point', error as Error);

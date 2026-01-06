@@ -19,7 +19,7 @@ export class HighlightHoverDetector {
     private repositoryFacade: RepositoryFacade,
     private eventBus: EventBus,
     private logger: ILogger
-  ) {}
+  ) { }
 
   /**
    * Initialize hover detection
@@ -134,11 +134,9 @@ export class HighlightHoverDetector {
     const highlights = this.repositoryFacade.getAll();
 
     if (highlights.length === 0) {
-      // If no highlights, clear any existing hover state and return
-      if (this.currentHoveredId) {
-        this.detectHover(x, y); // Will allow hover end
+      if (highlights.length === 0) {
+        return null;
       }
-      return null;
     }
 
     this.logger.debug('[HOVER] Checking highlights at point', {
@@ -147,13 +145,21 @@ export class HighlightHoverDetector {
       highlightCount: highlights.length,
     });
 
+    const matches: HighlightDataV2[] = [];
+
     try {
       // Find highlight under the cursor
       for (const highlight of highlights) {
         if (this.isPointInHighlight(highlight, x, y)) {
           this.logger.debug('[HOVER] Found highlight at point', { id: highlight.id });
-          return highlight;
+          matches.push(highlight);
         }
+      }
+
+      // If multiple matches (e.g. nested highlights), prioritize the specific one
+      if (matches.length > 0) {
+        matches.sort((a, b) => a.text.length - b.text.length);
+        return matches[0] || null;
       }
     } catch (error) {
       this.logger.warn('Error finding highlight at point', error as Error);
