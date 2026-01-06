@@ -3,56 +3,77 @@ import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 
 /**
- * Vault Mode Service - Integration Layer
- *
- * Coordinates between Multi-Selector Engine and IndexedDB Storage.
- * Implements the Facade pattern to provide a simple API for Vault Mode operations.
- *
+ * @file vault-mode-service.ts
+ * @description Vault Mode Service - Integration Layer for highlight persistence
+ * 
+ * Coordinates between Multi-Selector Engine and storage layer.
+ * Implements the Facade pattern following quality framework guidelines.
+ * 
  * Architecture:
  * - Facade Pattern: Hides complexity of multi-selector + storage coordination
- * - Dependency Injection: Accepts storage and selector engine instances
+ * - Dependency Injection: Accepts repository via constructor
  * - Single Responsibility: Only handles integration, delegates to specialists
  *
  * Flow:
  * 1. User creates highlight → saveHighlight()
  * 2. Generate selectors from DOM Range → MultiSelectorEngine.createSelectors()
- * 3. Store highlight + selectors → IndexedDBStorage.saveHighlight()
- * 4. Create event → IndexedDBStorage.saveEvent()
+ * 3. Store highlight + selectors → IHighlightRepository.add()
  *
  * Restoration:
- * 1. Load from storage → IndexedDBStorage.getHighlightsByUrl()
+ * 1. Load from storage  → IHighlightRepository.findAll()
  * 2. Restore DOM Range → MultiSelectorEngine.restore()
  * 3. Render highlight in UI
+ *
+ * @architecture Applies quality framework standards:
+ * - JSDoc comments for all public methods
+ * - Dependency injection via constructor
+ * - Type-safe with strict TypeScript
+ * - Proper error handling and logging
  */
 export class VaultModeService {
-  private storage: IndexedDBStorage;
+  private repository: IHighlightRepository;
+  private storage: IndexedDBStorage; // Keep for event/collection operations (legacy)
   private selectorEngine: MultiSelectorEngine;
   private logger: ILogger;
 
+  /**
+   * Creates a new VaultModeService instance
+   * 
+   * @param repository - Highlight repository for persistence (can be local, cloud, or dual-write)
+   * @param storage - IndexedDBStorage for event sourcing and collections (legacy)
+   * @param selectorEngine - Multi-selector engine for DOM Range operations
+   * @param logger - Logger instance for debugging and monitoring
+   */
   constructor(
+    repository: IHighlightRepository,
     storage: IndexedDBStorage,
     selectorEngine: MultiSelectorEngine,
     logger: ILogger
   ) {
+    this.repository = repository;
     this.storage = storage;
     this.selectorEngine = selectorEngine;
     this.logger = logger;
   }
 
+
   /**
-   * Save a highlight to Vault Mode storage
+   * Save a highlight to storage (local, cloud, or both depending on repository implementation)
    *
    * Flow:
    * 1. Generate multi-selectors from DOM Range
-   * 2. Store highlight with selectors in IndexedDB
-   * 3. Create HIGHLIGHT_CREATED event
+   * 2. Store highlight via repository pattern
+   * 3. Create event for sync tracking
    *
-   * @param highlight - Highlight data
+   * @param highlight - Highlight data to save
    * @param range - DOM Range for selector generation
-   * @param collectionId - Optional collection ID
-   * @returns Promise<void>
+   * @param collectionId - Optional collection ID for organization
+   * @returns Promise that resolves when highlight is saved
+   * 
+   * @throws Error if highlight cannot be saved
    */
   async saveHighlight(
     highlight: HighlightDataV2,
@@ -63,20 +84,24 @@ export class VaultModeService {
       // Generate multi-selectors from the DOM Range
       const selectors = this.selectorEngine.createSelectors(range);
 
-      // Store highlight with selector metadata
+      // Store using repository pattern (local, cloud, or dual-write)
+      await this.repository.add(highlight);
+
+      // Also store in IndexedDB with selector metadata for restoration
+      // This is a temporary dual-write until IndexedDB is fully replaced
       const url = window.location.href.split('#')[0];
       await this.storage.saveHighlight(highlight, collectionId || null, {
         selectors,
         url,
       });
 
-      // Create event for sync
+      // Create event for sync tracking via IndexedDB
       await this.storage.saveEvent({
         type: 'highlight.created',
         timestamp: Date.now(),
         data: {
           highlightId: highlight.id,
-          url: window.location.href.split('#')[0],
+          url,
           collectionId: collectionId || null,
         },
         synced: false,
@@ -85,12 +110,16 @@ export class VaultModeService {
       this.logger.info('[VAULT] Highlight saved', {
         id: highlight.id,
         text: highlight.text.substring(0, 50),
+        repository: 'DualWrite',
       });
     } catch (error) {
-      this.logger.error('[VAULT] Failed to save highlight:', error as Error);
+      this.logger.error('[VAULT] Failed to save highlight', error as Error, {
+        id: highlight.id,
+      });
       throw error;
     }
   }
+
 
   /**
    * Restore highlights for the current URL
@@ -302,11 +331,18 @@ let instance: VaultModeService | null = null;
  * Get or create Vault Mode Service instance
  *
  * Implements Singleton pattern with lazy initialization.
+ * Uses InMemoryHighlightRepository for backward compatibility.
+ * To use DualWriteRepository (cloud sync), construct via DI container instead.
  *
  * @returns VaultModeService instance
+ * @deprecated Use DI container for better testability and cloud sync support
  */
 export function getVaultModeService(): VaultModeService {
   if (!instance) {
+    // Import here to avoid circular dependencies
+    const { InMemoryHighlightRepository } = require('@/background/repositories/in-memory-highlight-repository');
+
+    const repository = new InMemoryHighlightRepository();
     const storage = new IndexedDBStorage();
     const selectorEngine = new MultiSelectorEngine();
     const logger: ILogger = {
@@ -316,10 +352,10 @@ export function getVaultModeService(): VaultModeService {
       info: (msg, ...args) => console.info(msg, ...args),
       warn: (msg, ...args) => console.warn(msg, ...args),
       error: (msg, ...args) => console.error(msg, ...args),
-      setLevel: () => {},
+      setLevel: () => { },
       getLevel: () => 1,
     };
-    instance = new VaultModeService(storage, selectorEngine, logger);
+    instance = new VaultModeService(repository, storage, selectorEngine, logger);
   }
   return instance;
 }
