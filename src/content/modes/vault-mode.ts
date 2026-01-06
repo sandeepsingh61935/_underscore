@@ -27,8 +27,7 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class VaultMode extends BaseHighlightMode implements IPersistentMode {
-  private vaultService = createVaultModeServiceWithCloudSync();
-
+  private vaultService: any; // Type is VaultModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
 
   get name(): 'vault' {
     return 'vault' as const;
@@ -36,6 +35,8 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
   constructor(repository: IHighlightRepository, eventBus: EventBus, logger: ILogger) {
     super(eventBus, logger, repository);
+    // Initialize service here with eventBus
+    this.vaultService = createVaultModeServiceWithCloudSync(eventBus);
   }
 
   override async onActivate(): Promise<void> {
@@ -56,7 +57,11 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   };
 
   override shouldRestore(): boolean {
-    return true;
+    // Vault Mode handles its own restoration via onActivate() -> vaultService.restoreHighlightsForUrl()
+    // We must return FALSE here to prevent content.ts from running the default restoreHighlights()
+    // which would clear the repository and replay incompatible Sprint Mode events.
+    this.logger.info('[DEBUG] VaultMode.shouldRestore() called - returning false');
+    return false;
   }
 
   /**
@@ -188,13 +193,20 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
       throw new Error('Empty text selection');
     }
 
-    // Deduplication
+    // Deduplication via Content Hash REMOVED
+    // Reason: Prevents highlighting same text in different locations (spatial duplicates).
+    // Overlap detection is handled by content.ts before calling this.
+
+    /* 
     const contentHash = await generateContentHash(text);
-    const existing = await this.repository.findByContentHash(contentHash);
+    const existing = await this.vaultService.findByContentHash(contentHash);
     if (existing && existing.id) {
       this.logger.info('[VAULT] Duplicate content detected', { existingId: existing.id });
       return existing.id;
-    }
+    } 
+    */
+
+    const contentHash = await generateContentHash(text);
 
     const id = this.generateId();
     const serializedRange = serializeRange(range);
@@ -241,7 +253,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   override async removeHighlight(id: string): Promise<void> {
-    // 1. Remove from Storage
+    // 1. Remove from Storage (VaultModeService handles repository removal via DualWriteRepository)
     await this.vaultService.deleteHighlight(id);
 
     // 2. Remove from Runtime
@@ -254,7 +266,13 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
       this.highlights.delete(id);
     }
     this.data.delete(id);
-    await this.repository.remove(id);
+
+    // 3. Remove from Session Repository (for UI consistency / HoverDetector)
+    // NOTE: persistence is handled by vaultService above, but we must clear session state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((this.repository as any).remove) {
+      await this.repository.remove(id);
+    }
   }
 
   async restore(_url?: string): Promise<void> {
@@ -268,10 +286,14 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
       const { highlight: storedData, range } = item;
 
       if (range) {
-        // Register in Runtime
+        // Register in Runtime with proper naming convention
+        const highlightName = getHighlightName('underscore', storedData.id);
         const hl = new Highlight(range);
-        CSS.highlights.set(storedData.id, hl);
+        CSS.highlights.set(highlightName, hl);
         this.highlights.set(storedData.id, hl);
+
+        // Inject CSS for visual rendering
+        injectHighlightCSS('underscore', storedData.id, storedData.colorRole || 'yellow');
 
         // Construct full HighlightData with live ranges
         // We cast storedData because it is V2 (persisted) and we need runtime HighlightData

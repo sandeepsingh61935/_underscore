@@ -31,6 +31,7 @@ import type {
   HighlightCreatedEvent,
   HighlightRemovedEvent,
   HighlightClickedEvent,
+  AuthStateChangedEvent,
 } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
@@ -40,6 +41,8 @@ import {
   filterTinyRanges,
   mergeAdjacentRanges,
 } from '@/shared/utils/range-algebra';
+
+import { MODE_NAMES } from '@/content/modes/mode-constants';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -463,6 +466,25 @@ export default defineContentScript({
       eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
       eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
+      // Listen for Auth Changes (Fix: "db call doesnt go on login")
+      eventBus.on<AuthStateChangedEvent>(EventName.AUTH_STATE_CHANGED, async (event) => {
+        logger.info('[AUTH] Auth state changed', { isAuthenticated: event.isAuthenticated });
+
+        // 1. Reload Repository Facade (invalidates cache, re-fetches from DualWriteRepository)
+        await repositoryFacade.reload();
+
+        // 2. Broadcast new count
+        broadcastCount();
+
+        // 3. If Vault Mode is active, re-restore to update UI
+        const currentMode = modeManager.getCurrentMode();
+        if (currentMode.name === MODE_NAMES.VAULT) {
+          logger.info('[AUTH] Vault Mode active - triggering re-restoration');
+          // Cast to VaultMode to access restore method
+          await (currentMode as VaultMode).restore();
+        }
+      });
+
       // Listen for count/mode requests from popup
       browser.runtime.onMessage.addListener(
         (
@@ -488,7 +510,7 @@ export default defineContentScript({
             });
           } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
-            const payloadMode = (msg.payload as { mode?: 'walk' | 'sprint' })?.mode;
+            const payloadMode = (msg.payload as { mode?: 'walk' | 'sprint' | 'vault' })?.mode;
             const newMode = msg.mode || payloadMode;
 
             if (!newMode) {
@@ -509,7 +531,7 @@ export default defineContentScript({
                 // 2. Run restoration/clearing SYNCHRONOUSLY (before responding)
                 // This ensures popup receives correct count in response
                 logger.info('[IPC] Starting highlight processing for mode switch');
-                if (newMode === 'sprint') {
+                if (newMode === MODE_NAMES.SPRINT) {
                   logger.info('[IPC] Restoring highlights for Sprint Mode...');
                   await restoreHighlights({
                     storage,
@@ -520,7 +542,12 @@ export default defineContentScript({
                     commandFactory,
                   });
                   logger.info('[IPC] Restoration complete');
+                } else if (newMode === MODE_NAMES.VAULT) {
+                  // Vault Mode handles its own restoration via onActivate() -> restore()
+                  // Do NOT clear here - it would wipe the highlights that were just loaded!
+                  logger.info('[IPC] Vault Mode - skipping clear (self-managed restoration)');
                 } else {
+                  // Walk Mode - clear everything
                   logger.info('[IPC] Clearing highlights for Walk Mode...');
                   await modeManager.getCurrentMode().clearAll();
                   logger.info('[IPC] Clearing complete');
