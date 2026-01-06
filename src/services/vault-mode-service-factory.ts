@@ -10,7 +10,6 @@
  */
 
 import { VaultModeService } from './vault-mode-service';
-import { IndexedDBStorage } from './indexeddb-storage';
 import { MultiSelectorEngine } from './multi-selector-engine';
 import { InMemoryHighlightRepository } from '@/background/repositories/in-memory-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
@@ -162,11 +161,10 @@ export function createVaultModeServiceWithCloudSync(): VaultModeService {
     }
 
     // 3. Create supporting services
-    const storage = new IndexedDBStorage();
     const selectorEngine = new MultiSelectorEngine();
 
     // 4. Create VaultModeService
-    serviceInstance = new VaultModeService(repository, storage, selectorEngine, logger);
+    serviceInstance = new VaultModeService(repository, selectorEngine, logger);
 
     return serviceInstance;
 }
