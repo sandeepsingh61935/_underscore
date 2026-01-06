@@ -7,6 +7,7 @@ import { registerEventComponents } from '@/background/events/events-container-re
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
 import { registerMigrationComponents } from '@/background/migration/migration-container-registration';
+import { registerRepositoryComponents } from '@/background/repositories/repository-container-registration';
 import { SupabaseConfig } from '@/background/api/supabase-client';
 import { LoggerFactory } from '@/background/utils/logger';
 import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
@@ -50,6 +51,7 @@ export async function initializeBackground(): Promise<Container> {
     registerBackgroundServices(container);  // Base services + Auth
     registerAuthComponents(container);   // Auth & Security (KeyManager, E2EEncryptionService)
     registerAPIComponents(container);    // API Layer
+    registerRepositoryComponents(container); // Repository Layer (NEW)
     registerEventComponents(container);  // Event Sourcing
     registerSyncComponents(container);   // Sync Engine
     registerRealtimeComponents(container); // Realtime Sync
