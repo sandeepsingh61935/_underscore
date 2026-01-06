@@ -141,6 +141,18 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
     return this.findById(id);
   }
 
+  async findByUrl(url: string): Promise<HighlightDataV2[]> {
+    const all = Array.from(this.highlights.values());
+    const matches = all.filter(h => h.url === url);
+
+    this.logger.debug('Found highlights by URL', {
+      url,
+      count: matches.length,
+    });
+
+    return matches;
+  }
+
   async findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]> {
     // TODO: Implement proper range overlap detection
     // For now, return empty array
@@ -158,11 +170,11 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
   // Metadata
   // ============================================
 
-  count(): number {
+  async count(): Promise<number> {
     return this.highlights.size;
   }
 
-  exists(id: string): boolean {
+  async exists(id: string): Promise<boolean> {
     return this.highlights.has(id);
   }
 

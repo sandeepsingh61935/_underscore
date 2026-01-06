@@ -68,17 +68,15 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
     // Synchronous Query Methods (not async in interface)
     // ============================================
 
-    count(): number {
-        // Supabase operations are async, so we can't implement synchronous count
-        // This is a limitation of the interface design
-        this.logger.warn('[SupabaseRepo] Synchronous count() not supported - returning 0');
-        return 0;
+    async count(): Promise<number> {
+        // This is inefficient but functional for now without a dedicated count API
+        const all = await this.supabaseClient.getHighlights();
+        return all.length;
     }
 
-    exists(_id: string): boolean {
-        // Similar limitation - can't do async check synchronously
-        this.logger.warn('[SupabaseRepo] Synchronous exists() not supported - returning false');
-        return false;
+    async exists(id: string): Promise<boolean> {
+        const item = await this.findById(id);
+        return item !== null;
     }
 
     // ============================================
@@ -91,6 +89,11 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
         // Fetch all and filter by content hash
         const all = await this.supabaseClient.getHighlights();
         return all.find(h => h.contentHash === hash) || null;
+    }
+
+    async findByUrl(url: string): Promise<HighlightDataV2[]> {
+        this.logger.debug('[SupabaseRepo] Finding by URL', { url });
+        return await this.supabaseClient.getHighlights(url);
     }
 
     async findOverlapping(_range: SerializedRange): Promise<HighlightDataV2[]> {
