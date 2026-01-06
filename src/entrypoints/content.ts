@@ -199,7 +199,18 @@ export default defineContentScript({
       });
 
       // ===== PAGE LOAD: Restore highlights (Mode decides via shouldRestore())  =====
-      if (modeManager.getCurrentMode().shouldRestore()) {
+      const currentMode = modeManager.getCurrentMode();
+
+      // RESTORATION STRATEGY:
+      // - Sprint Mode: Returns true. Generic restoreHighlights() replays events.
+      // - Vault Mode: Returns false. Self-manages via onActivate() -> restore().
+      // - Future Modes: Implement IMode.shouldRestore() accordingly.
+      const shouldRestore = currentMode.shouldRestore();
+
+      logger.info(`[DEBUG] Page Load: Mode=${currentMode.name} shouldRestore=${shouldRestore}`);
+
+      if (shouldRestore) {
+        logger.info('[DEBUG] Starting default restoration...');
         await restoreHighlights({
           storage,
           renderer,
@@ -210,7 +221,7 @@ export default defineContentScript({
         });
       } else {
         logger.info(
-          `${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral)`
+          `${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral or Self-Managed)`
         );
       }
 
