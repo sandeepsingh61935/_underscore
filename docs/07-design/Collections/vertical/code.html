@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Collections</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1986e6",
+                        "background-light": "#f6f7f8", // Slightly warmer/softer white for Finnish feel
+                        "background-dark": "#111a21",
+                        "card-bg-light": "#fdfdfe", // Lighter white for default cards
+                        "card-bg-dark": "#1a242d", // Slightly lighter dark for default cards
+                        "compartment-bg-light": "#f0f2f5", // Slightly darker tint for compartmentalized items
+                        "compartment-bg-dark": "#16202b", // Slightly darker tint for compartmentalized items in dark mode
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem", // Added for larger card radius
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .font-thin-custom {
+            font-weight: 300;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200 antialiased selection:bg-primary/20 selection:text-primary">
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <header
+            class="w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+            <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3 cursor-pointer group">
+                    <span
+                        class="material-symbols-outlined text-primary text-2xl group-hover:rotate-12 transition-transform duration-300">
+                        check_box_outline_blank
+                    </span>
+                    <h2
+                        class="text-xl font-medium tracking-tight text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                        _underscore</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <button
+                        class="flex items-center justify-center text-slate-500 hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[24px]">settings</span>
+                    </button>
+                    <div class="h-8 w-8 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-700 cursor-pointer hover:ring-2 ring-primary ring-offset-2 ring-offset-background-light dark:ring-offset-background-dark transition-all"
+                        data-alt="User profile avatar showing abstract geometric shapes"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDs4uejmUra7plc0pirWZmxmxTrRLsiO84p2_xUuhNJZMe73n3pVEydd1g11ZPpYs_wOn8SSYoJGzgNPR5F-AHKbyw1HLBSx8j_FrGtsjMjcAnrhAqYdCKxzETENxyb2yJRuFxAR_mWxusCehYmWK4oaz7jLynuGnBBKv5GuX4uDtDfKcgU7BmIvFBoVMzUyw2egMfSrLc9OFyKW_7KrSAi78tLY9OJQlVJ1m-WUg1RDr9n6etPkGPNYhQoD98cXKDJ9mT2NQx96Fk");'>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="flex-1 w-full max-w-[900px] mx-auto px-6 py-12 flex flex-col">
+            <div class="w-full flex justify-center mb-12">
+                <div
+                    class="inline-flex h-12 items-center justify-center rounded-full bg-slate-200/50 dark:bg-slate-800/50 p-1 backdrop-blur-sm">
+                    <label
+                        class="relative flex cursor-pointer items-center justify-center px-6 h-full rounded-full transition-all duration-300 ease-out has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm has-[:checked]:text-primary">
+                        <span class="text-sm font-medium tracking-wide">Vault</span>
+                        <input checked="" class="invisible absolute w-0 h-0" name="mode-selector" type="radio"
+                            value="Vault Mode" />
+                    </label>
+                    <label
+                        class="relative flex cursor-pointer items-center justify-center px-6 h-full rounded-full transition-all duration-300 ease-out has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <span class="text-sm font-medium tracking-wide">xAI</span>
+                        <input class="invisible absolute w-0 h-0" name="mode-selector" type="radio" value="xAI Mode" />
+                    </label>
+                </div>
+            </div>
+            <div class="mb-10 flex flex-col items-center text-center">
+                <h1 class="text-4xl md:text-5xl font-thin-custom tracking-tight text-slate-900 dark:text-white mb-2">
+                    Collections
+                </h1>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-light mt-2 max-w-md">
+                    Securely manage your collected underscores within individual collections.
+                </p>
+            </div>
+            <div class="w-full flex justify-between items-center mb-8">
+                <div
+                    class="inline-flex h-10 items-center justify-center rounded-full bg-slate-200/50 dark:bg-slate-800/50 p-1 backdrop-blur-sm">
+                    <label
+                        class="relative flex cursor-pointer items-center justify-center px-4 h-full rounded-full transition-all duration-300 ease-out has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-sm font-medium tracking-wide text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <span class="">Alphabetical</span>
+                        <input checked="" class="invisible absolute w-0 h-0" name="sort-selector" type="radio"
+                            value="Alphabetical" />
+                    </label>
+                    <label
+                        class="relative flex cursor-pointer items-center justify-center px-4 h-full rounded-full transition-all duration-300 ease-out has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-sm font-medium tracking-wide text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <span class="">By Usage</span>
+                        <input class="invisible absolute w-0 h-0" name="sort-selector" type="radio" value="By Usage" />
+                    </label>
+                    <label
+                        class="relative flex cursor-pointer items-center justify-center px-4 h-full rounded-full transition-all duration-300 ease-out has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-sm font-medium tracking-wide text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <span class="">Recently Added</span>
+                        <input class="invisible absolute w-0 h-0" name="sort-selector" type="radio"
+                            value="Recently Added" />
+                    </label>
+                </div>
+                <div class="inline-flex items-center rounded-full bg-slate-200/50 dark:bg-slate-800/50 p-1">
+                    <button
+                        class="flex items-center justify-center p-2 rounded-full text-primary bg-white shadow-sm dark:bg-slate-700 transition-colors">
+                        <span class="material-symbols-outlined text-lg">view_list</span>
+                    </button>
+                    <button
+                        class="flex items-center justify-center p-2 rounded-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                        <span class="material-symbols-outlined text-lg">grid_view</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col gap-6 w-full">
+                <div
+                    class="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl bg-compartment-bg-light dark:bg-compartment-bg-dark border border-slate-300 dark:border-slate-700 shadow-lg shadow-slate-200/30 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-300/40 dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer">
+                    <div class="flex items-center gap-5 overflow-hidden w-full sm:w-auto mb-4 sm:mb-0">
+                        <div
+                            class="h-14 w-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100 dark:border-slate-600 shadow-inner">
+                            <img alt="New York Times logo icon"
+                                class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk9qc-TbMdVG1oAWsCfTjVvdqvIj0GBT8vsZ2z9Akn-Ohbl2dBAYoEEof-vunJ7c-KSjOwPZvxz_URyZ9H0lPPqTFr8cihv3IJguWo60ovdMpOCGF8ZtU6G78wb5s7L6fhjquNm14DZTCoVE1pIeRqdJRZB-URx9b_C0o60vUuiNR6wP4uyUOVu-k9y1o2JRTUeE2GWcOlZ1FSHP2DdE5tHhvXFjB80-wkK8clJr_uznS6PFhUuUxQtpgjQ4RFngc8ZIemIaNvVig" />
+                        </div>
+                        <div class="flex flex-col truncate">
+                            <p class="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">nytimes.com</p>
+                            <span class="text-sm text-slate-500 dark:text-slate-400 font-light mt-1">News &amp;
+                                Media</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6 shrink-0 w-full sm:w-auto justify-end">
+                        <p
+                            class="text-base font-medium text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors">
+                            24 underscores</p>
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-all text-2xl">arrow_forward</span>
+                    </div>
+                </div>
+                <div
+                    class="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl bg-compartment-bg-light dark:bg-compartment-bg-dark border border-slate-300 dark:border-slate-700 shadow-lg shadow-slate-200/30 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-300/40 dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer">
+                    <div class="flex items-center gap-5 overflow-hidden w-full sm:w-auto mb-4 sm:mb-0">
+                        <div
+                            class="h-14 w-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100 dark:border-slate-600 shadow-inner">
+                            <img alt="Wikipedia logo icon"
+                                class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1j_YGCCN9TaRWIKG3ejUey8HVUm4pKACr_XHp8jasAZ0Rltf6vRGGxnD30K9ABR2AG602x7n5cx38lXcuDvkmfZ0ny_MAjCBbhPVRpBkz2rlH7EEQva_yCIbBJ1TQhS0MmGUAvq8ESrk_CDfG0JmV8nBqJi7rKOZ8ux9lkxiVTz9bT4DpYsS3OWyleTjPPuVls6fnLcNd5k7CT0xYijhgvVXCN65cLoCquBPRYEhpQ95TmNKpRZOiSVfQedKYpdrlQN94PrURY58" />
+                        </div>
+                        <div class="flex flex-col truncate">
+                            <p class="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">wikipedia.org
+                            </p>
+                            <span class="text-sm text-slate-500 dark:text-slate-400 font-light mt-1">Reference</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6 shrink-0 w-full sm:w-auto justify-end">
+                        <p
+                            class="text-base font-medium text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors">
+                            12 underscores</p>
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-all text-2xl">arrow_forward</span>
+                    </div>
+                </div>
+                <div
+                    class="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl bg-compartment-bg-light dark:bg-compartment-bg-dark border border-slate-300 dark:border-slate-700 shadow-lg shadow-slate-200/30 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-300/40 dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer">
+                    <div class="flex items-center gap-5 overflow-hidden w-full sm:w-auto mb-4 sm:mb-0">
+                        <div
+                            class="h-14 w-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100 dark:border-slate-600 shadow-inner">
+                            <img alt="GitHub logo icon"
+                                class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxbSfwtdyOOKyzgR-hXYxYEAYScMI7A3fdzRJ3IapSTi3yYd5CVHs_6pVfrx1OVL1EsidSNsUf4nSwIJ0bUrO6yGQh7fWCCxKnaaQDNccVozUtF8N96Mq7NCkLbIQ66QDnrywvIMukhBPD0afz2SCuB29xWucM7ybUI3kCVlTfbBI3leAveykpLdQ3TOKq8OUWglF9eD0Uo06qkkM6kEmKPB6PNuPn0zjh5G6NnE-AfxJP1Ro_0pAdIozMy61yTF6v0r5eo0_dKi8" />
+                        </div>
+                        <div class="flex flex-col truncate">
+                            <p class="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">github.com</p>
+                            <span class="text-sm text-slate-500 dark:text-slate-400 font-light mt-1">Development</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6 shrink-0 w-full sm:w-auto justify-end">
+                        <p
+                            class="text-base font-medium text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors">
+                            8 underscores</p>
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-all text-2xl">arrow_forward</span>
+                    </div>
+                </div>
+                <div
+                    class="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl bg-compartment-bg-light dark:bg-compartment-bg-dark border border-slate-300 dark:border-slate-700 shadow-lg shadow-slate-200/30 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-300/40 dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer">
+                    <div class="flex items-center gap-5 overflow-hidden w-full sm:w-auto mb-4 sm:mb-0">
+                        <div
+                            class="h-14 w-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100 dark:border-slate-600 shadow-inner">
+                            <img alt="Dribbble logo icon"
+                                class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC66y9A0-HgdZyHe8MqNAU3B9w9isz-W8ay6NqUBEIg7eyvYUpt_hit4RG-dGh-cTCn-s8ryJhcSx7dVu5CBRztjRg1UKaXg-8gAO2Pi3mdEyjU5nF5KfmW05tebCbZLvMHMrHSR2wyw0gQSkKUVWlxPZKR6ER-7D1fU7oilG6XxdTGpC9jXF4x-08LdaVGfhw7JWT_XZ_Zqfil1eUQ6zgOzff_jUtwuNLLvGqBnHFAqq5Ibr0QS_NP48LMmISBqnMHi-RpmJAVJCo" />
+                        </div>
+                        <div class="flex flex-col truncate">
+                            <p class="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">dribbble.com
+                            </p>
+                            <span class="text-sm text-slate-500 dark:text-slate-400 font-light mt-1">Design
+                                Inspiration</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6 shrink-0 w-full sm:w-auto justify-end">
+                        <p
+                            class="text-base font-medium text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors">
+                            3 underscores</p>
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-all text-2xl">arrow_forward</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-center">
+                    <button
+                        class="text-sm text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1 group">
+                        <span
+                            class="material-symbols-outlined text-lg group-hover:rotate-90 transition-transform">add</span>
+                        Add new collection
+                    </button>
+                </div>
+            </div>
+        </main>
+        <footer class="w-full py-8 mt-auto">
+            <div
+                class="max-w-[900px] mx-auto px-6 flex justify-between items-center text-xs text-slate-400 dark:text-slate-600">
+                <p>© 2024 _underscore.</p>
+                <div class="flex gap-6">
+                    <a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="#">Privacy</a>
+                    <a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="#">Help</a>
+                    <a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="#">Terms</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>
