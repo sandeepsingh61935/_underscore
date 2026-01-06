@@ -16,11 +16,21 @@ import type { ILogger } from '@/shared/utils/logger';
 describe('VaultModeService - Unit Tests', () => {
   let service: VaultModeService;
   let mockStorage: IndexedDBStorage;
+  let mockRepository: any;
   let mockEngine: MultiSelectorEngine;
   let mockLogger: ILogger;
 
   beforeEach(() => {
     // Create mock dependencies
+    mockRepository = {
+      add: vi.fn(),
+      findByUrl: vi.fn().mockResolvedValue([]), // Default empty cloud results
+      update: vi.fn(),
+      remove: vi.fn(),
+      findById: vi.fn(),
+      findAll: vi.fn(),
+    };
+
     mockStorage = {
       saveHighlight: vi.fn(),
       saveEvent: vi.fn(),
@@ -48,7 +58,7 @@ describe('VaultModeService - Unit Tests', () => {
       getLevel: vi.fn(),
     } as unknown as ILogger;
 
-    service = new VaultModeService(mockStorage, mockEngine, mockLogger);
+    service = new VaultModeService(mockRepository, mockStorage, mockEngine, mockLogger);
   });
 
   describe('saveHighlight', () => {
@@ -84,6 +94,14 @@ describe('VaultModeService - Unit Tests', () => {
       // Verify selectors were generated
       expect(mockEngine.createSelectors).toHaveBeenCalledWith(range);
 
+      // Verify repository was called (NEW)
+      expect(mockRepository.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: highlight.id,
+          // ranges should contain selector
+        })
+      );
+
       // Verify storage was called with metadata
       expect(mockStorage.saveHighlight).toHaveBeenCalledWith(
         highlight,
@@ -112,13 +130,13 @@ describe('VaultModeService - Unit Tests', () => {
       const highlight = createMockHighlight({ id: 'test-1', text: 'Test' });
 
       const range = document.createRange();
-      const error = new Error('Storage failed');
+      const error = new Error('Repository failed');
 
       vi.mocked(mockEngine.createSelectors).mockReturnValue({} as any);
-      vi.mocked(mockStorage.saveHighlight).mockRejectedValue(error);
+      vi.mocked(mockRepository.add).mockRejectedValue(error);
 
       await expect(service.saveHighlight(highlight, range)).rejects.toThrow(
-        'Storage failed'
+        'Repository failed'
       );
 
       expect(mockLogger.error).toHaveBeenCalled();
@@ -141,6 +159,7 @@ describe('VaultModeService - Unit Tests', () => {
       expect(results[0]?.restoredUsing).toBeDefined();
 
       expect(mockStorage.getHighlightsByUrl).toHaveBeenCalled();
+      expect(mockRepository.findByUrl).toHaveBeenCalled(); // Verify cloud check
       expect(mockEngine.restore).toHaveBeenCalled();
     });
 
