@@ -355,6 +355,26 @@ export class PopupController {
   }
 
   /**
+   * Subscribe to state changes from state manager
+   */
+  private subscribeToStateChanges(): void {
+    this.stateManager.subscribe((state) => {
+      this.logger.debug('[PopupController] State changed', {
+        mode: state.currentMode,
+        isAuthenticated: state.auth.isAuthenticated,
+      });
+
+      // Update UI based on new state
+      this.updateUIFromState(state);
+
+      // Update auth UI (show/hide mode selector, auto-switch to Vault)
+      this.renderAuthState(state);
+    });
+
+    this.logger.debug('[PopupController] Subscribed to state changes');
+  }
+
+  /**
    * Get current active tab with context invalidation handling
    *
    * Chrome extensions can have their context invalidated during:
