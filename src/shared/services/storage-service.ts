@@ -20,6 +20,12 @@ import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Storage service for domain-scoped highlight persistence
+ * 
+ * SCOPE: SPRINT MODE ONLY
+ * This service implements Event Sourcing for the ephemeral "Sprint Mode".
+ * 
+ * DO NOT USE FOR VAULT MODE.
+ * Vault Mode uses the Repository Pattern (DualWriteRepository) for persistence.
  *
  * Features:
  * - Event sourcing (append-only event log)
