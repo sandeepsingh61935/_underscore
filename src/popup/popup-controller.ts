@@ -301,8 +301,8 @@ export class PopupController {
     this.modeSelector.onModeChange(async (mode) => {
       try {
         const currentState = this.stateManager.getState();
-        const isVaultToLocal = 
-          currentState.currentMode === 'vault' && 
+        const isVaultToLocal =
+          currentState.currentMode === 'vault' &&
           (mode === 'walk' || mode === 'sprint') &&
           currentState.auth.isAuthenticated;
 
@@ -419,14 +419,6 @@ export class PopupController {
    */
   private setupEventListeners(): void {
     this.logger.debug('[PopupController] Setting up event listeners');
-    // Mode selector change
-    if (this.modeSelector) {
-      this.addEventListener(
-        this.modeSelector,
-        'change',
-        this.debouncedModeChange as EventListener
-      );
-    }
 
     // Clear all button
     const clearAllBtn = document.getElementById('clear-all');
