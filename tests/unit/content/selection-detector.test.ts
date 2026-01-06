@@ -51,7 +51,7 @@ describe('SelectionDetector', () => {
       detector.init();
     });
 
-    it('should detect double-click within threshold', () => {
+    it('should detect native double-click', () => {
       // Mock selection
       const mockSelection = {
         isCollapsed: false,
@@ -60,11 +60,9 @@ describe('SelectionDetector', () => {
       };
       vi.stubGlobal('getSelection', () => mockSelection);
 
-      // Simulate two clicks within 300ms
-      const mouseUpEvent = new MouseEvent('mouseup');
-
-      document.dispatchEvent(mouseUpEvent); // First click
-      document.dispatchEvent(mouseUpEvent); // Second click (immediately)
+      // Simulate native dblclick
+      const dblClickEvent = new MouseEvent('dblclick');
+      document.dispatchEvent(dblClickEvent);
 
       expect(emitSpy).toHaveBeenCalledWith(
         EventName.SELECTION_CREATED,
@@ -72,28 +70,6 @@ describe('SelectionDetector', () => {
           type: EventName.SELECTION_CREATED,
         })
       );
-
-      vi.unstubAllGlobals();
-    });
-
-    it('should not emit event for clicks outside threshold', async () => {
-      const mockSelection = {
-        isCollapsed: false,
-        toString: () => 'selected text',
-        rangeCount: 1,
-      };
-      vi.stubGlobal('getSelection', () => mockSelection);
-
-      const mouseUpEvent = new MouseEvent('mouseup');
-
-      document.dispatchEvent(mouseUpEvent); // First click
-
-      // Wait longer than threshold (300ms)
-      await new Promise((resolve) => setTimeout(resolve, 350));
-
-      document.dispatchEvent(mouseUpEvent); // Second click (too late)
-
-      expect(emitSpy).not.toHaveBeenCalled();
 
       vi.unstubAllGlobals();
     });
@@ -235,11 +211,51 @@ describe('SelectionDetector', () => {
       };
       vi.stubGlobal('getSelection', () => mockSelection);
 
-      const mouseUpEvent = new MouseEvent('mouseup');
-      document.dispatchEvent(mouseUpEvent);
-      document.dispatchEvent(mouseUpEvent); // Double-click
+      // Simulate native dblclick
+      const dblClickEvent = new MouseEvent('dblclick');
+      document.dispatchEvent(dblClickEvent);
 
       expect(emitSpy).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+  });
+
+  describe('Debounce Logic', () => {
+    beforeEach(() => {
+      detector.init();
+    });
+
+    it('should debounce rapid duplicate selection events', () => {
+      const mockSelection = {
+        isCollapsed: false,
+        toString: () => 'double clicked word',
+        rangeCount: 1,
+        getRangeAt: () => ({
+          compareBoundaryPoints: () => 0
+        })
+      };
+
+      vi.spyOn(document, 'createRange').mockReturnValue({
+        selectNode: () => { },
+        compareBoundaryPoints: () => 0,
+      } as unknown as Range);
+
+      vi.stubGlobal('getSelection', () => mockSelection);
+
+      // Simulate rapid sequence: MouseUp (Double Click) -> Click (Click-within)
+      const mouseUpEvent = new MouseEvent('mouseup');
+      document.dispatchEvent(mouseUpEvent);
+      // Double click logic requires two mouseups in 300ms
+      document.dispatchEvent(mouseUpEvent);
+
+      // Click event coming immediately after
+      const clickEvent = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(clickEvent, 'target', { value: document.createElement('div') });
+      document.dispatchEvent(clickEvent);
+
+      // Should only fire once because of 200ms debounce
+      expect(emitSpy).toHaveBeenCalledTimes(1);
 
       vi.unstubAllGlobals();
     });

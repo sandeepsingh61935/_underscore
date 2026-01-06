@@ -28,8 +28,6 @@ import type { ILogger } from '@/shared/utils/logger';
  * ```
  */
 export class SelectionDetector {
-  private lastClickTime = 0;
-  private readonly doubleClickThreshold = 300; // ms
   private logger: ILogger;
   private initialized = false;
 
@@ -46,8 +44,8 @@ export class SelectionDetector {
       return;
     }
 
-    // Double-click detection
-    document.addEventListener('mouseup', this.handleMouseUp);
+    // Double-click detection (native)
+    document.addEventListener('dblclick', this.handleDoubleClick);
 
     // Click-within-selection detection (for phrases/paragraphs)
     document.addEventListener('click', this.handleClick);
@@ -63,7 +61,7 @@ export class SelectionDetector {
    * Clean up event listeners
    */
   destroy(): void {
-    document.removeEventListener('mouseup', this.handleMouseUp);
+    document.removeEventListener('dblclick', this.handleDoubleClick);
     document.removeEventListener('click', this.handleClick);
     document.removeEventListener('keydown', this.handleKeyDown);
 
@@ -76,6 +74,12 @@ export class SelectionDetector {
    * If user has text selected and clicks within it, trigger highlight
    */
   private handleClick = (event: MouseEvent): void => {
+    // Ignore clicks that are part of a double-click (detail >= 2)
+    // Double-clicks are handled by handleDoubleClick
+    if (event.detail >= 2) {
+      return;
+    }
+
     const selection = window.getSelection();
 
     if (!this.isValidSelection(selection)) {
@@ -112,19 +116,11 @@ export class SelectionDetector {
   }
 
   /**
-   * Handle mouse up event for double-click detection
+   * Handle native double-click event
    */
-  private handleMouseUp = (): void => {
-    const now = Date.now();
-    const timeSinceLastClick = now - this.lastClickTime;
-
-    // Check if this is a double-click (within threshold)
-    if (timeSinceLastClick < this.doubleClickThreshold && timeSinceLastClick >= 0) {
-      this.logger.debug('Double-click detected', { timeSinceLastClick });
-      this.checkAndEmitSelection();
-    }
-
-    this.lastClickTime = now;
+  private handleDoubleClick = (): void => {
+    this.logger.debug('Double-click detected (native)');
+    this.checkAndEmitSelection();
   };
 
   /**
