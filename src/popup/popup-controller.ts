@@ -76,19 +76,39 @@ export class PopupController {
    * @param logger - Structured logger
    * @param stateManager - Optional state manager (for testing)
    * @param errorDisplay - Optional error display (for testing)
+   * @param themeManager - Optional theme manager (for testing)
+   * @param providerDrawer - Optional provider drawer (for testing)
+   * @param modeSelector - Optional mode selector (for testing)
+   * @param cautionPanel - Optional caution panel (for testing)
+   * @param userMenu - Optional user menu (for testing)
    */
   constructor(
     private readonly messageBus: IMessageBus,
     private readonly logger: ILogger,
     stateManager?: PopupStateManager,
-    errorDisplay?: ErrorDisplay
+    errorDisplay?: ErrorDisplay,
+    themeManager?: IThemeManager,
+    providerDrawer?: IProviderDrawer,
+    modeSelector?: IModeSelector,
+    cautionPanel?: ICautionPanel,
+    userMenu?: IUserMenu
   ) {
     this.stateManager = stateManager || new PopupStateManager(messageBus, logger);
     this.errorDisplay = errorDisplay || new ErrorDisplay(logger);
+    this.themeManager = themeManager || new ThemeManager(logger);
 
-    // Create debounced event handlers (prevent race conditions)
-    // 300ms is standard UI debounce time
-    this.debouncedModeChange = debounce(this.handleModeChange.bind(this), 300);
+    // ProviderDrawer and ModeSelector need EventBus - create a simple implementation
+    const eventBus = {
+      emit: (event: string, data: any) => {
+        this.logger.debug('[EventBus] Event emitted', { event, data });
+      },
+      on: () => { },
+      off: () => { },
+    };
+    this.providerDrawer = providerDrawer || new ProviderDrawer(logger, eventBus as any);
+    this.modeSelector = modeSelector || new ModeSelector(logger, eventBus as any);
+    this.cautionPanel = cautionPanel || new CautionPanel(logger);
+    this.userMenu = userMenu || new UserMenu(logger);
 
     this.logger.debug('[PopupController] Initialized with DI');
   }
