@@ -20,14 +20,15 @@ import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
-import { getVaultModeService } from '@/services/vault-mode-service';
+import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-service-factory';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class VaultMode extends BaseHighlightMode implements IPersistentMode {
-  private vaultService = getVaultModeService();
+  private vaultService = createVaultModeServiceWithCloudSync();
+
 
   get name(): 'vault' {
     return 'vault' as const;
