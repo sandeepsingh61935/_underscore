@@ -77,6 +77,35 @@ export class RepositoryFacade {
   }
 
   /**
+   * Reload data from repository (use when auth state changes)
+   * Clears cache and re-fetches fresh data.
+   */
+  async reload(): Promise<void> {
+    this.logger.info('Reloading facade cache...');
+
+    // Clear existing cache
+    this.cache.clear();
+    this.contentHashIndex.clear();
+
+    // Re-fetch everything
+    try {
+      const all = await this.repository.findAll();
+
+      for (const item of all) {
+        this.cache.set(item.id, item);
+        this.contentHashIndex.set(item.contentHash, item.id);
+      }
+
+      this.logger.info('Repository facade reloaded', {
+        count: this.cache.size,
+      });
+    } catch (error) {
+      this.logger.error('Failed to reload facade', error as Error);
+      throw error;
+    }
+  }
+
+  /**
    * Ensure facade is initialized
    */
   private ensureInitialized(): void {
