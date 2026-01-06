@@ -582,6 +582,8 @@ export class PopupController {
     const authContainer = document.getElementById('auth-container');
     if (!authContainer) return;
 
+    const modeSection = document.querySelector('.mode-section') as HTMLElement;
+
     if (state.auth.isAuthenticated && state.auth.user) {
       // Logged In: Show Avatar + Name + Menu
       const user = state.auth.user;
@@ -620,6 +622,22 @@ export class PopupController {
       this.userMenu.deinitialize();
       this.setupUserMenu();
       this.userMenu.initialize();
+
+      // Hide mode selector when authenticated
+      if (modeSection) modeSection.style.display = 'none';
+      this.modeSelector.unlockMode('vault');
+
+      // Auto-switch to Vault if in local mode
+      if (state.currentMode === 'walk' || state.currentMode === 'sprint') {
+        setTimeout(async () => {
+          try {
+            await this.stateManager.switchModeOptimistically('vault');
+            this.logger.info('[PopupController] Auto-switched to Vault mode after login');
+          } catch (error) {
+            this.logger.error('[PopupController] Auto-switch to Vault failed', error as Error);
+          }
+        }, 300);
+      }
     } else {
       // Logged Out: Show Login Button
       authContainer.innerHTML = `
@@ -627,6 +645,14 @@ export class PopupController {
                   Sign In
               </button>
           `;
+
+      // Show mode selector when logged out
+      if (modeSection) modeSection.style.display = 'block';
+      this.modeSelector.lockMode('vault');
+
+      // Update hint
+      const hintElement = document.querySelector('.mode-hint');
+      if (hintElement) hintElement.textContent = 'sign in to unlock vault';
     }
   }
 
