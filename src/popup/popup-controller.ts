@@ -583,22 +583,43 @@ export class PopupController {
     if (!authContainer) return;
 
     if (state.auth.isAuthenticated && state.auth.user) {
-      // Logged In: Show Avatar + Name
+      // Logged In: Show Avatar + Name + Menu
       const user = state.auth.user;
-      // Use first letter of name as fallback avatar
       const initial = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+      const currentTheme = this.themeManager.getTheme();
 
       authContainer.innerHTML = `
-              <div class="user-profile" title="${this.escapeHtml(user.displayName || user.email || '')}">
-                  <div class="user-avatar">
-                      ${user.photoUrl ? `<img src="${this.escapeHtml(user.photoUrl)}" alt="Avatar">` : initial}
-                  </div>
-                  <span class="user-name">${this.escapeHtml(user.displayName || 'User')}</span>
-                  <button class="btn-login-small btn-logout" style="background:transparent; color:var(--md-sys-color-on-surface); padding:4px;">
-                    ✖
-                  </button>
-              </div>
-          `;
+        <div class="user-profile">
+          <div class="user-avatar">
+            ${user.photoUrl ? `<img src="${this.escapeHtml(user.photoUrl)}" alt="Avatar">` : initial}
+          </div>
+          <span class="user-name">${this.escapeHtml(user.displayName || 'User')}</span>
+          <button class="menu-trigger" aria-label="User menu">⋮</button>
+          
+          <div class="user-menu" role="menu" aria-hidden="true">
+            <div class="menu-label">Theme</div>
+            <button class="menu-item ${currentTheme === 'light' ? 'active' : ''}" data-theme="light" role="menuitem">
+              ☀️ Light
+            </button>
+            <button class="menu-item ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark" role="menuitem">
+              🌙 Dark
+            </button>
+            <button class="menu-item ${currentTheme === 'system' ? 'active' : ''}" data-theme="system" role="menuitem">
+              🖥️ System
+            </button>
+            <div class="menu-divider"></div>
+            <button class="menu-logout menu-item" role="menuitem">
+              <span class="logout-icon">→</span>
+              Logout
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Re-initialize UserMenu after HTML injection
+      this.userMenu.deinitialize();
+      this.setupUserMenu();
+      this.userMenu.initialize();
     } else {
       // Logged Out: Show Login Button
       authContainer.innerHTML = `
