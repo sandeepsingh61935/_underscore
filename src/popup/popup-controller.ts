@@ -238,7 +238,6 @@ export class PopupController {
 
     // Critical elements (must exist for popup to function)
     const criticalSelectors = {
-      'mode-selector': 'Mode selection dropdown',
       'highlight-count': 'Statistics display',
       'loading-state': 'Loading indicator',
       'error-state': 'Error state container',
@@ -264,7 +263,6 @@ export class PopupController {
     }
 
     // Assign elements (we know they exist now)
-    this.modeSelector = document.getElementById('mode-selector') as HTMLSelectElement;
     this.highlightCount = document.getElementById('highlight-count')!;
     this.loadingIndicator = document.getElementById('loading-state')!;
     this.errorContainer = document.getElementById('error-state')!;
