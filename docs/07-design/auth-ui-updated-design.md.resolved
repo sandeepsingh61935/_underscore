@@ -1,0 +1,610 @@
+# Auth UI - Updated Minimalist Design
+**Version**: 2.0  
+**Date**: 2026-01-05  
+**Updates**: xAI mode, slide animations, theme support, animated icons
+
+---
+
+## 🎯 Key Updates
+
+### 1. Four Modes (Updated)
+- **Walk**: Ephemeral, account-independent ⚠️ (Caution on entry if auth)
+- **Sprint**: Persistent, account-independent ⚠️ (Caution on entry if auth)
+- **Vault**: Cloud sync, account-dependent 🔒
+- **xAI**: AI-powered mode, account-dependent 🔒
+
+### 2. Interaction Flows (New)
+- **Sliding Provider Drawer**: Clicking "Sign in" slides out a horizontal drawer with icons (replaces modal)
+- **Invisible Theme Switcher**: Header icons invisible by default, reveal on hover
+- **Logout Caution**: Switching to Walk/Sprint while auth triggers "Logout & Switch" slide-up
+- **Mode Slide**: Underline slides smoothy between modes (200ms)
+
+### 3. Theme Support
+- **Light Theme**: White background, dark text
+- **Dark Theme**: Dark background (#1a1c1e), light text
+- **System Theme**: Auto-adapts to OS preference
+- Theme switcher in header with minimal icons
+
+### 4. Animated Provider Icons
+- Minimalist outlined/stroke icons (Lucide/Tabler style)
+- Subtle animations on hover/click
+- No brand colors - monochrome gray
+- 20px size, 2px stroke width
+
+---
+
+## 📱 Visual Mockups
+
+### 1. Light Theme with xAI Mode
+
+![Light theme with theme switcher and xAI mode](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/minimal_auth_with_theme_1767599103542.png)
+
+**Features**:
+- Theme switcher in header (shown in **revealed** state): ☀️ 🌙 🖥️
+- *Note*: Theme icons are invisible by default and reveal on hover (see Interaction Visuals).
+- Four modes: Walk, Sprint, Vault, xAI
+- "xAI" active with sliding underline
+- Vault and xAI locked (40% opacity) when unauthenticated
+- Helper text: "sign in to unlock vault and xai"
+
+---
+
+### 2. Dark Theme
+
+![Dark theme variant](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/minimal_dark_theme_1767599125186.png)
+
+**Features**:
+- Inverted color palette
+- Dark background (#1a1c1e)
+- Light text (#e2e4e7)
+- Moon icon active in theme switcher
+- Same layout, different colors
+- Maintains minimalist aesthetic
+
+---
+
+### 3. Provider Icon Style (Reference)
+
+> **Note**: This mockup demonstrates the *icon style and animations* only. The actual interaction uses the **Sliding Drawer** (see below), not a vertical list.
+
+![Provider icons with animation states](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/provider_icons_animated_1767599148816.png)
+
+**Icon Animations**:
+- **Google**: Subtle rotation (360° over 400ms)
+- **Apple**: Scale pulse (1.0 → 1.1 → 1.0)
+- **X**: Fade opacity (1.0 → 0.7 → 1.0)
+- **Facebook**: Bounce (translateY: 0 → -2px → 0)
+
+**Style**:
+- Outlined/stroke icons (not filled)
+- 20px size, 2px stroke
+- Dark gray (#43474e)
+- Animations trigger on hover
+- Text underline appears on hover
+
+---
+
+### 4. Mode Slide Animation
+
+![Slide animation sequence](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/mode_slide_animation_1767599167271.png)
+
+**Animation Sequence**:
+1. **Before**: Underline under "Sprint"
+2. **During**: Underline slides toward "xAI" (200ms)
+3. **After**: Underline positioned under "xAI"
+
+**Implementation**:
+```css
+.mode-underline {
+  position: absolute;
+  bottom: -4px;
+  height: 1px;
+  background: #666666;
+  transition: left 200ms cubic-bezier(0.2, 0, 0, 1),
+              width 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+```
+
+---
+
+### 5. Theme Comparison
+
+![Light, Dark, and System themes side-by-side](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/theme_comparison_1767599192603.png)
+
+**Theme Specifications**:
+
+| Element | Light Theme | Dark Theme |
+|---------|-------------|------------|
+| Background | #FFFFFF | #1a1c1e |
+| Primary text | #43474e | #e2e4e7 |
+| Secondary text | #999999 | #999999 |
+| Tertiary text | #cccccc | #666666 |
+| Accent | #5b8db8 | #8fb3d8 |
+| Locked opacity | 40% | 40% |
+
+---
+
+## 🎨 Design Specifications
+
+### Mode Selector
+
+**HTML Structure**:
+```html
+<div class="mode-selector">
+  <label class="mode-label">MODE</label>
+  <div class="mode-options">
+    <button class="mode-option" data-mode="walk">Walk</button>
+    <button class="mode-option" data-mode="sprint">Sprint</button>
+    <button class="mode-option locked" data-mode="vault">Vault</button>
+    <button class="mode-option locked" data-mode="xai">xAI</button>
+    <div class="mode-underline"></div>
+  </div>
+  <p class="mode-hint">sign in to unlock vault and xai</p>
+</div>
+```
+
+**CSS**:
+```css
+.mode-options {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  padding-bottom: 8px;
+}
+
+.mode-option {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: #666666;
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.mode-option.active {
+  color: #43474e;
+}
+
+.mode-option.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mode-underline {
+  position: absolute;
+  bottom: 0;
+  height: 1px;
+  background: #666666;
+  transition: left 200ms cubic-bezier(0.2, 0, 0, 1),
+              width 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+```
+
+**JavaScript (Slide Logic)**:
+```typescript
+function updateModeUnderline(activeMode: HTMLElement) {
+  const underline = document.querySelector('.mode-underline');
+  const left = activeMode.offsetLeft;
+  const width = activeMode.offsetWidth;
+  
+  underline.style.left = `${left}px`;
+  underline.style.width = `${width}px`;
+}
+
+// On mode click
+modeButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    if (!button.classList.contains('locked')) {
+      updateModeUnderline(button);
+    }
+  });
+});
+```
+
+---
+
+### Theme Switcher
+
+**HTML Structure**:
+```html
+<div class="theme-switcher">
+  <button class="theme-option" data-theme="light" aria-label="Light theme">
+    <svg><!-- sun icon --></svg>
+  </button>
+  <button class="theme-option" data-theme="dark" aria-label="Dark theme">
+    <svg><!-- moon icon --></svg>
+  </button>
+  <button class="theme-option active" data-theme="system" aria-label="System theme">
+    <svg><!-- monitor icon --></svg>
+  </button>
+</div>
+```
+
+**CSS**:
+```css
+.theme-switcher {
+  display: flex;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.theme-option {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.theme-option svg {
+  width: 12px;
+  height: 12px;
+  stroke: #999999;
+  fill: none;
+  stroke-width: 2px;
+}
+
+.theme-option.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #666666;
+}
+```
+
+**JavaScript (Theme Logic)**:
+```typescript
+function applyTheme(theme: 'light' | 'dark' | 'system') {
+  if (theme === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.body.dataset.theme = prefersDark ? 'dark' : 'light';
+  } else {
+    document.body.dataset.theme = theme;
+  }
+  
+  localStorage.setItem('theme', theme);
+}
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  if (localStorage.getItem('theme') === 'system') {
+    document.body.dataset.theme = e.matches ? 'dark' : 'light';
+  }
+});
+```
+
+**CSS Variables (Theme-aware)**:
+```css
+:root {
+  --bg: #FFFFFF;
+  --text-primary: #43474e;
+  --text-secondary: #999999;
+  --text-tertiary: #cccccc;
+  --accent: #5b8db8;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1c1e;
+  --text-primary: #e2e4e7;
+  --text-secondary: #999999;
+  --text-tertiary: #666666;
+  --accent: #8fb3d8;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+```
+
+---
+
+### Provider Icons (Animated)
+
+**Recommended Icon Library**:
+- **Lucide Icons**: https://lucide.dev (1000+ minimal SVG icons)
+- **Tabler Icons**: https://tabler.io/icons (4900+ icons with animation support)
+- **line-md**: https://github.com/cyberalien/line-md (animated SVG icons)
+
+**Icon Specifications**:
+```css
+.provider-icon {
+  width: 20px;
+  height: 20px;
+  stroke: #43474e;
+  fill: none;
+  stroke-width: 2px;
+  transition: transform 200ms, opacity 200ms;
+}
+
+/* Google - Rotate */
+.provider-google:hover .provider-icon {
+  animation: rotate 400ms ease-in-out;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Apple - Pulse */
+.provider-apple:hover .provider-icon {
+  animation: pulse 400ms ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* X - Fade */
+.provider-x:hover .provider-icon {
+  animation: fade 400ms ease-in-out;
+}
+
+@keyframes fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Facebook - Bounce */
+.provider-facebook:hover .provider-icon {
+  animation: bounce 400ms ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+```
+
+**SVG Icon Examples** (Lucide style):
+```html
+<!-- Google (simplified "G") -->
+<svg viewBox="0 0 24 24" class="provider-icon">
+  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.11 0 4.02.82 5.45 2.15l-2.21 2.13C14.31 7.42 13.21 7 12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5c2.28 0 4.19-1.54 4.79-3.63H12v-2.91h7.89c.09.49.14 1 .14 1.54 0 5.52-3.7 9-8.03 9z"/>
+</svg>
+
+<!-- Apple (simplified apple) -->
+<svg viewBox="0 0 24 24" class="provider-icon">
+  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+</svg>
+
+<!-- X (simplified X mark) -->
+<svg viewBox="0 0 24 24" class="provider-icon">
+  <path d="M18 6L6 18M6 6l12 12"/>
+</svg>
+
+<!-- Facebook (simplified "f") -->
+<svg viewBox="0 0 24 24" class="provider-icon">
+  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+</svg>
+```
+
+---
+
+## 🎨 Interaction Visuals
+
+### 1. Sliding Provider Drawer
+
+![Sequence showing provider drawer sliding out](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/sliding_provider_drawer_sequence_1767600008939.png)
+
+**Interaction**:
+- Click "Sign in" → Text fades out
+- Drawer slides in from right → Reveal icons
+- User clicks provider symbol
+- **Animation**: 300ms `cubic-bezier(0.4, 0, 0.2, 1)`
+
+---
+
+### 2. Invisible Theme Switcher
+
+![Implicit theme switcher revealing on hover](/home/sandy/.gemini/antigravity/brain/c088bc91-67cf-4e4b-80c6-73eb2dedc86b/invisible_theme_switcher_1767600030075.png)
+
+**Interaction**:
+- **Default**: Header appears empty (clean)
+- **Hover**: Theme icons fade in/slide out
+- **Philosophy**: "Distraction-free unless needed"
+
+---
+
+## 🔄 User Flows (Updated)
+
+### Flow 1: Sliding Drawer (Sign In)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Header
+    participant Drawer
+    
+    User->>Header: Click "Sign in"
+    Header->>Header: Fade out text
+    Header->>Drawer: Slide in from right (300ms)
+    Drawer->>User: Show Google/Apple/X/FB icons
+    User->>Drawer: Click Icon
+    Drawer->>Drawer: Animate selection
+```
+
+### Flow 2: Logout Caution (Walk/Sprint)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ModeSelector
+    participant CautionPanel
+    
+    Note over User, ModeSelector: User is Authenticated (Vault)
+    User->>ModeSelector: Click "Walk"
+    ModeSelector->>CautionPanel: Slide up Bottom Sheet
+    CautionPanel->>User: "Highlights in Walk mode won't sync"
+    
+    alt User Confirms
+        User->>CautionPanel: Click "Logout & Switch"
+        CautionPanel->>ModeSelector: Trigger Logout
+        ModeSelector->>ModeSelector: Switch to Walk
+    else User Cancels
+        User->>CautionPanel: Click "Cancel"
+        CautionPanel->>ModeSelector: Slide down (Revert)
+    end
+```
+
+---
+
+## 📐 Implementation Checklist
+
+### Phase 1: Core Updates
+- [ ] Update mode list: Replace "Archive" with "xAI"
+- [ ] Add theme switcher component to header
+- [ ] Implement CSS custom properties for theming
+- [ ] Add system theme detection logic
+
+### Phase 2: Animations
+- [ ] Create slide animation for mode underline
+- [ ] Add provider icon hover animations
+- [ ] Test animations with `prefers-reduced-motion`
+- [ ] Optimize animation performance (60fps)
+
+### Phase 3: Icon Integration
+- [ ] Install Lucide or Tabler icon library
+- [ ] Create provider icon components
+- [ ] Add animation classes
+- [ ] Test icon accessibility (ARIA labels)
+
+### Phase 4: Theme Support
+- [ ] Implement light theme CSS
+- [ ] Implement dark theme CSS
+- [ ] Add system theme auto-detection
+- [ ] Persist theme preference in localStorage
+- [ ] Test theme switching performance
+
+---
+
+## 🎯 Technical Specifications
+
+### Animation Performance
+
+**Target**: 60fps (16.67ms per frame)
+
+**Optimizations**:
+- Use `transform` and `opacity` only (GPU-accelerated)
+- Avoid animating `width`, `height`, `left` directly
+- Use `will-change` sparingly
+- Implement `prefers-reduced-motion` support
+
+**Example**:
+```css
+@media (prefers-reduced-motion: reduce) {
+  .mode-underline,
+  .provider-icon {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+```
+
+### Theme Detection
+
+**System Theme**:
+```typescript
+const getSystemTheme = (): 'light' | 'dark' => {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches 
+    ? 'dark' 
+    : 'light';
+};
+
+// Listen for changes
+window.matchMedia('(prefers-color-scheme: dark)')
+  .addEventListener('change', (e) => {
+    if (currentTheme === 'system') {
+      applyTheme(e.matches ? 'dark' : 'light');
+    }
+  });
+```
+
+### Icon Library Integration
+
+**Option 1: Lucide (Recommended)**
+```bash
+npm install lucide-react
+```
+
+```typescript
+import { Sun, Moon, Monitor, Circle } from 'lucide-react';
+
+// Usage
+<Sun size={12} strokeWidth={2} />
+```
+
+**Option 2: Tabler Icons**
+```bash
+npm install @tabler/icons-react
+```
+
+```typescript
+import { IconSun, IconMoon, IconDeviceDesktop } from '@tabler/icons-react';
+
+// Usage
+<IconSun size={12} stroke={2} />
+```
+
+**Option 3: Custom SVG (Minimal)**
+- Copy SVG paths from Lucide/Tabler
+- Inline in HTML for minimal bundle size
+- Add animation classes manually
+
+---
+
+## 📊 Design Metrics (Updated)
+
+| Metric | Previous | Updated | Change |
+|--------|----------|---------|--------|
+| Modes | 3 (Walk, Sprint, Vault) | 4 (Walk, Sprint, Vault, xAI) | +1 |
+| Themes | 1 (Light only) | 3 (Light, Dark, System) | +2 |
+| Animations | 0 | 5 (slide + 4 icon hovers) | +5 |
+| Icon library | None | Lucide/Tabler | New |
+| CSS variables | 6 | 10 (theme-aware) | +4 |
+| Accessibility | WCAG AA | WCAG AA + reduced motion | Enhanced |
+
+---
+
+## ✅ Accessibility Compliance
+
+### Theme Switcher
+- **ARIA labels**: Each theme button has descriptive label
+- **Keyboard nav**: Tab to cycle, Enter/Space to select
+- **Visual indicator**: Active theme has underline
+- **Screen reader**: Announces current theme on change
+
+### Mode Selector
+- **Locked state**: `aria-disabled="true"` + tooltip
+- **Active state**: `aria-current="true"`
+- **Keyboard nav**: Arrow keys to navigate, Enter to select
+- **Focus visible**: Thin outline on keyboard focus
+
+### Animations
+- **Reduced motion**: All animations disabled via media query
+- **Duration**: Max 400ms (within WCAG guidelines)
+- **Purpose**: Functional, not decorative
+
+---
+
+## 🚀 Next Steps
+
+1. **Review mockups** with team
+2. **Choose icon library** (Lucide recommended)
+3. **Implement theme system** (CSS custom properties)
+4. **Add slide animation** to mode selector
+5. **Test accessibility** (keyboard, screen reader, reduced motion)
+6. **Performance audit** (ensure 60fps animations)
+
+---
+
+**Document Owner**: Sandy  
+**Icon Libraries**: Lucide, Tabler, line-md  
+**Version**: 2.0  
+**Last Updated**: 2026-01-05

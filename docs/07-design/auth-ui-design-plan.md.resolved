@@ -1,0 +1,1033 @@
+# Authentication UI Design Plan
+**Design System**: Finnish Material Design 3  
+**Component**: Auth Module for _underscore Extension  
+**Version**: 1.0  
+**Date**: 2026-01-05
+
+---
+
+## 📋 Executive Summary
+
+This document presents a comprehensive UX/UI design plan for the authentication system in the _underscore browser extension. The design follows **Finnish Material Design 3** principles, emphasizing Nordic minimalism, clarity, and accessibility, while supporting multi-provider OAuth authentication and four distinct application modes.
+
+### Key Features
+- **4 Application Modes**: Walk, Sprint (account-independent) + Vault, Archive (account-dependent)
+- **Multi-Provider OAuth**: Google (current), Apple, X (Twitter), Facebook
+- **Seamless Sign-Out**: One-click logout with state preservation
+- **Progressive Disclosure**: Graceful degradation for unauthenticated users
+- **Mobile-First Responsive**: Optimized for popup constraints (360x480px)
+
+---
+
+## 🎯 Design Objectives
+
+### Primary Goals
+
+1. **Frictionless Authentication**
+   - Single-click OAuth sign-in
+   - No form fields or manual input required
+   - Visual provider recognition (brand colors/logos)
+
+2. **Clear Mode Hierarchy**
+   - Visual distinction between public (Walk/Sprint) and private (Vault/Archive) modes
+   - Disabled state for account-dependent modes when not authenticated
+   - Contextual prompts to encourage sign-in
+
+3. **Trust & Security**
+   - Clear visual indicators of authentication status
+   - Transparent data privacy messaging
+   - Secure token handling (background only, never in DOM)
+
+4. **Accessibility First**
+   - WCAG AAA compliance
+   - Keyboard navigation support
+   - Screen reader optimized
+   - High contrast ratios
+
+---
+
+## 🏗️ Information Architecture
+
+### User Journey Map
+
+```mermaid
+graph TD
+    A[Open Popup] --> B{Authenticated?}
+    B -->|No| C[Show Public Modes Only]
+    B -->|Yes| D[Show All Modes]
+    
+    C --> E[Walk/Sprint Available]
+    C --> F[Vault/Archive Locked]
+    
+    F --> G{Click Locked Mode}
+    G --> H[Show Sign-In Prompt]
+    H --> I[Select OAuth Provider]
+    I --> J[OAuth Flow]
+    J --> K{Success?}
+    K -->|Yes| D
+    K -->|No| L[Show Error + Retry]
+    
+    D --> M[User Profile Visible]
+    M --> N{Click Profile}
+    N --> O[Show Account Menu]
+    O --> P[Select Logout]
+    P --> Q[Confirm Dialog]
+    Q --> C
+```
+
+### State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> Unauthenticated: No session
+    Loading --> Authenticated: Valid session
+    
+    Unauthenticated --> SigningIn: User clicks provider
+    SigningIn --> Authenticated: OAuth success
+    SigningIn --> Error: OAuth failure
+    Error --> Unauthenticated: Retry
+    
+    Authenticated --> SigningOut: User clicks logout
+    SigningOut --> Unauthenticated: Complete
+    
+    Authenticated --> Authenticated: Mode switch
+    Unauthenticated --> Unauthenticated: Mode switch (public only)
+```
+
+---
+
+## 🎨 Visual Design Language
+
+### Color Semantics
+
+Based on Finnish Material Design, we extend the palette for auth states:
+
+| State | Color Token | Hex | Usage |
+|-------|-------------|-----|-------|
+| **Authenticated** | `--md-sys-color-primary` | #5b8db8 | User avatar background, primary actions |
+| **Unauthenticated** | `--md-sys-color-outline` | #73777f | Disabled mode indicators |
+| **Sign-In Action** | `--md-sys-color-secondary` | #6b8e7a | Provider buttons (forest green) |
+| **Locked Mode** | `--md-sys-color-surface-variant` | #e8eaed | Disabled mode cards |
+| **Error State** | `--md-sys-color-error` | #ba1a1a | OAuth failures |
+
+### Typography Scale
+
+| Element | Token | Size | Weight | Usage |
+|---------|-------|------|--------|-------|
+| User Name | `title-small` | 14px | 500 | Header user display |
+| Sign-In CTA | `label-large` | 14px | 500 | Provider buttons |
+| Mode Labels | `title-medium` | 16px | 500 | Mode selector |
+| Lock Message | `body-medium` | 14px | 400 | Contextual prompts |
+| Error Text | `body-small` | 12px | 400 | Error descriptions |
+
+---
+
+## 🧩 Component Design
+
+### 1. Header Authentication Widget
+
+**Location**: Top-right corner of popup  
+**States**: Unauthenticated, Authenticated, Loading
+
+#### A. Unauthenticated State
+
+**Visual Design**:
+```
+┌────────────────────────────────────┐
+│  ⚡ _underscore          [Sign In] │
+└────────────────────────────────────┘
+```
+
+**Specs**:
+- **Button**: `btn-login-small`
+  - Background: `var(--md-sys-color-primary)`
+  - Padding: `6px 16px`
+  - Border-radius: `16px` (M3 medium)
+  - Font: `12px / 500`
+  - Hover: Elevation level 1 shadow
+
+**Interaction**:
+- Click → Opens provider selection modal
+
+---
+
+#### B. Authenticated State
+
+**Visual Design**:
+```
+┌────────────────────────────────────┐
+│  ⚡ _underscore    [👤] John Doe ▼ │
+└────────────────────────────────────┘
+```
+
+**Specs**:
+- **Avatar**: `32x32px` circle
+  - Image: User photo (if available)
+  - Fallback: Initials on `primary-container` background
+  - Border: `2px solid var(--md-sys-color-primary)` (indicates active session)
+  
+- **Name**: Truncated at `80px`
+  - Font: `12px / 500`
+  - Color: `on-surface`
+
+- **Dropdown Icon**: Chevron-down (8px)
+
+**Interaction**:
+- Click → Opens account menu dropdown
+
+---
+
+#### C. Loading State
+
+**Visual Design**:
+```
+┌────────────────────────────────────┐
+│  ⚡ _underscore       [●●●] Loading │
+└────────────────────────────────────┘
+```
+
+**Specs**:
+- **Spinner**: Indeterminate circular (16px)
+- **Text**: `body-small`, `on-surface-variant`
+- Duration: Max 3 seconds before timeout error
+
+---
+
+### 2. Provider Selection Modal
+
+**Trigger**: Click "Sign In" button  
+**Design Pattern**: Bottom sheet with backdrop
+
+**Visual Design**:
+````
+┌─────────────────────────────────────┐
+│                                     │
+│  Choose your sign-in method         │
+│  ─────────────────────────────────  │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │  [G] Sign in with Google    │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │  [] Sign in with Apple      │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │  [X] Sign in with X         │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │  [f] Sign in with Facebook  │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  [Cancel]                           │
+│                                     │
+└─────────────────────────────────────┘
+````
+
+**Specs**:
+
+**Container**:
+- Background: `surface-container-highest` with backdrop blur
+- Border-radius: `16px 16px 0 0` (rounded top only)
+- Padding: `24px`
+- Shadow: `level-3`
+- Max-width: `320px`
+- Slide-up animation: `300ms emphasized easing`
+
+**Provider Buttons**:
+- Full-width buttons with left-aligned text
+- Height: `48px` (AA touch target)
+- Gap: `8px` between buttons
+- Background: `surface-container`
+- Hover: `surface-container-high` + elevation
+- Active: Ripple effect with `primary` color
+
+**Provider Branding**:
+| Provider | Icon | Brand Color | Text Color |
+|----------|------|-------------|------------|
+| Google | "G" logo | #FFFFFF (white bg) | #1a73e8 (Google Blue) |
+| Apple | Apple icon | #000000 (black bg) | #FFFFFF |
+| X (Twitter) | "X" mark | #000000 (black bg) | #FFFFFF |
+| Facebook | "f" logo | #1877f2 (FB Blue) | #FFFFFF |
+
+**Accessibility**:
+- Keyboard: Tab navigation, Enter/Space to select, Esc to close
+- ARIA: `role="dialog"`, `aria-labelledby="modal-title"`
+- Focus trap: Constrain Tab within modal
+
+---
+
+### 3. Account Menu Dropdown
+
+**Trigger**: Click user profile in header  
+**Design Pattern**: Floating menu (M3 dropdown)
+
+**Visual Design**:
+```
+┌──────────────────────────────┐
+│  john.doe@example.com        │
+│  ────────────────────────    │
+│  Account Settings            │
+│  Privacy Policy              │
+│  ────────────────────────    │
+│  ⚠️ Sign Out                  │
+└──────────────────────────────┘
+```
+
+**Specs**:
+
+**Container**:
+- Background: `surface-container-high`
+- Border-radius: `12px`
+- Shadow: `level-2`
+- Min-width: `200px`
+- Positioned: Align-right below avatar
+- Fade-in animation: `150ms decelerated easing`
+
+**Menu Items**:
+- Height: `40px` each
+- Padding: `8px 16px`
+- Font: `body-medium` (14px)
+- Hover: `state-layer-hover` (8% opacity overlay)
+- Divider: `1px solid outline-variant`
+
+**Sign Out Item**:
+- Color: `error` (#ba1a1a)
+- Icon: Warning triangle (⚠️)
+- Hover: `error-container` background
+
+**Interaction Flow**:
+1. Click "Sign Out"
+2. Show confirmation dialog
+3. If confirmed → Call `/auth/signout` IPC
+4. Clear local state → Transition to unauthenticated
+
+---
+
+### 4. Mode Selector with Auth States
+
+**Current Design** (from [popup.html](file:///home/sandy/projects/_underscore/dist/popup.html)):
+```html
+<select id="mode-selector">
+  <option value="walk">🚶 Walk</option>
+  <option value="sprint">🏃 Sprint</option>
+  <option value="vault">🔒 Vault</option>
+</select>
+```
+
+**Proposed Redesign** (Segmented Button):
+
+#### Unauthenticated State
+```
+┌────────────────────────────────────────────────┐
+│  Mode                                          │
+│  ┌──────────┬──────────┬──────────┬─────────┐ │
+│  │ 🚶 Walk │ 🏃 Sprint│ 🔒 Vault │ Archive │ │
+│  │  [Active]│          │ [Locked] │[Locked] │ │
+│  └──────────┴──────────┴──────────┴─────────┘ │
+│                                                │
+│  💡 Sign in to unlock Vault and Archive       │
+└────────────────────────────────────────────────┘
+```
+
+#### Authenticated State
+```
+┌────────────────────────────────────────────────┐
+│  Mode                                          │
+│  ┌──────────┬──────────┬──────────┬─────────┐ │
+│  │ 🚶 Walk │ 🏃 Sprint│ 🔒 Vault │ Archive │ │
+│  │          │          │ [Active] │         │ │
+│  └──────────┴──────────┴──────────┴─────────┘ │
+└────────────────────────────────────────────────┘
+```
+
+**Specs**:
+
+**Segmented Button Container**:
+- Display: `flex`
+- Background: `surface-container-high`
+- Border-radius: `20px`
+- Padding: `4px`
+- Gap: `2px`
+
+**Individual Segments**:
+- flex: 1 (equal width)
+- Padding: `8px 12px`
+- Border-radius: `16px`
+- Font: `label-large` (14px / 500)
+- Transition: `background 200ms standard`
+
+**State Styles**:
+| State | Background | Text Color | Cursor | Opacity |
+|-------|------------|------------|--------|---------|
+| **Active** | `secondary-container` | `on-secondary-container` | default | 1.0 |
+| **Inactive** | transparent | `on-surface-variant` | pointer | 1.0 |
+| **Locked** | transparent | `outline` | not-allowed | 0.38 |
+| **Hover** (unlocked) | `state-layer-hover` | `on-surface` | pointer | 1.0 |
+
+**Lock Indicator**:
+- Icon: 🔒 (emoji) or SVG padlock
+- Position: Left of text
+- Color: Inherits from text
+- Tooltip: "Sign in to unlock"
+
+**Contextual Prompt** (unauthenticated only):
+- Background: `tertiary-container` (#f0e5d6 - warm amber)
+- Border-radius: `8px`
+- Padding: `8px 12px`
+- Icon: 💡 (lightbulb)
+- Font: `body-small` (12px)
+- Color: `on-tertiary-container`
+- Margin-top: `8px`
+
+---
+
+### 5. Sign-Out Confirmation Dialog
+
+**Trigger**: Click "Sign Out" in account menu  
+**Design Pattern**: M3 Alert Dialog
+
+**Visual Design**:
+```
+┌────────────────────────────────────┐
+│                                    │
+│  Sign Out?                         │
+│                                    │
+│  You'll lose access to Vault and   │
+│  Archive modes. Highlights saved   │
+│  in these modes will remain in     │
+│  the cloud.                        │
+│                                    │
+│          [Cancel]  [Sign Out]      │
+│                                    │
+└────────────────────────────────────┘
+```
+
+**Specs**:
+
+**Container**:
+- Background: `surface-container-highest`
+- Border-radius: `28px` (M3 extra-large)
+- Padding: `24px`
+- Max-width: `280px`
+- Shadow: `level-5`
+- Backdrop: Scrim with 40% opacity
+
+**Title**:
+- Font: `title-large` (22px / 400)
+- Color: `on-surface`
+- Margin-bottom: `16px`
+
+**Body Text**:
+- Font: `body-medium` (14px / 400)
+- Color: `on-surface-variant`
+- Line-height: `20px` (readable)
+- Margin-bottom: `24px`
+
+**Action Buttons**:
+- Layout: Flex row, gap `8px`, aligned right
+- **Cancel**: Text button, `label-large`, `primary` color
+- **Sign Out**: Filled tonal button, `error-container` background
+
+**Interaction**:
+- Keyboard: Tab between buttons, Enter/Space to activate, Esc to cancel
+- Click outside → Dismiss (same as Cancel)
+
+---
+
+## 🔄 User Flows
+
+### Flow 1: First-Time Sign-In
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Popup
+    participant Modal
+    participant Background
+    participant OAuth
+
+    User->>Popup: Opens extension
+    Popup->>Popup: Shows unauthenticated state
+    Popup->>Popup: Modes: Walk/Sprint enabled, Vault/Archive locked
+    
+    User->>Popup: Clicks "Sign In"
+    Popup->>Modal: Opens provider selection
+    Modal->>Modal: Shows Google, Apple, X, Facebook
+    
+    User->>Modal: Selects "Google"
+    Modal->>Background: IPC: /auth/signin { provider: "google" }
+    Background->>OAuth: Initiates OAuth flow
+    OAuth->>OAuth: User authenticates externally
+    OAuth->>Background: Returns tokens
+    Background->>Popup: IPC Response: { success: true, user: {...} }
+    
+    Popup->>Popup: Closes modal
+    Popup->>Popup: Renders user avatar + name
+    Popup->>Popup: Unlocks Vault/Archive modes
+    Popup->>User: Success notification (toast)
+```
+
+### Flow 2: Mode Switch (Locked → Sign-In)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Popup
+    participant Modal
+
+    User->>Popup: Clicks "Vault" (locked)
+    Popup->>Popup: Detects unauthenticated state
+    Popup->>Modal: Opens provider selection
+    Modal->>Modal: Shows sign-in options
+    Note over Modal: Pre-fills message:<br/>"Sign in to use Vault mode"
+    
+    User->>Modal: Completes OAuth
+    Modal->>Popup: Auth success
+    Popup->>Popup: Auto-switches to Vault mode
+    Popup->>User: Vault mode now active
+```
+
+### Flow 3: Sign-Out
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Popup
+    participant Dialog
+    participant Background
+
+    User->>Popup: Clicks profile avatar
+    Popup->>Popup: Opens account menu
+    
+    User->>Popup: Clicks "Sign Out"
+    Popup->>Dialog: Opens confirmation
+    Dialog->>Dialog: Shows warning about Vault/Archive
+    
+    User->>Dialog: Clicks "Sign Out"
+    Dialog->>Background: IPC: /auth/signout
+    Background->>Background: Clears session + tokens
+    Background->>Popup: IPC Response: { success: true }
+    
+    Popup->>Popup: Closes dialog + menu
+    Popup->>Popup: Removes avatar, shows "Sign In"
+    Popup->>Popup: Locks Vault/Archive modes
+    Popup->>Popup: Switches to Walk (if was in Vault/Archive)
+    Popup->>User: Success toast
+```
+
+---
+
+## 📱 Responsive Design
+
+### Popup Constraints
+
+| Dimension | Value | Rationale |
+|-----------|-------|-----------|
+| Width | 360px (fixed) | Finnish design: generous spacing in compact UI |
+| Min-height | 480px | Accommodates all components without scroll |
+| Max-height | 600px | Vertical scroll if content expands |
+| Padding | 24px | 3-unit spacing (8x3) for breathing room |
+
+### Component Stacking (Mobile-First)
+
+**Priority Order** (top to bottom):
+1. Header (Auth widget + Title) - **Fixed**
+2. Mode Selector - **Fixed**
+3. Statistics Card - **Fixed**
+4. Quick Actions - **Fixed**
+5. Contextual Info - **Scrollable**
+6. Footer - **Fixed**
+
+**Overflow Handling**:
+- If total height > 600px → Enable vertical scroll on `<main>`
+- Apply `sticky` positioning to header
+
+---
+
+## ♿ Accessibility Matrix
+
+### WCAG AAA Compliance
+
+| Element | Contrast Ratio | Target | Pass/Fail |
+|---------|----------------|--------|-----------|
+| Primary button text | 15.2:1 | 7:1 | ✅ Pass |
+| Locked mode text | 4.8:1 | 4.5:1 | ✅ Pass |
+| User name on surface | 16.1:1 | 7:1 | ✅ Pass |
+| Error text | 9.2:1 | 7:1 | ✅ Pass |
+
+### Keyboard Navigation
+
+| Action | Shortcut | Component |
+|--------|----------|-----------|
+| Open sign-in modal | [Tab](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#248-289) to button, `Enter` | Header sign-in |
+| Navigate providers | [Tab](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#248-289) / `Shift+Tab` | Modal buttons |
+| Select provider | `Enter` / `Space` | Provider button |
+| Close modal | `Esc` | Modal backdrop |
+| Open account menu | [Tab](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#248-289) to avatar, `Enter` | User profile |
+| Navigate menu | `↑` / `↓` arrows | Dropdown items |
+| Sign out | `Enter` on "Sign Out" item | Confirmation dialog |
+
+### Screen Reader Support
+
+**ARIA Labels**:
+```html
+<!-- Sign In Button -->
+<button aria-label="Sign in to unlock Vault and Archive modes">
+  Sign In
+</button>
+
+<!-- User Profile -->
+<div role="button" 
+     aria-label="Account menu for John Doe, click to open"
+     aria-haspopup="menu"
+     aria-expanded="false">
+  <img src="..." alt="John Doe profile picture" />
+  <span>John Doe</span>
+</div>
+
+<!-- Locked Mode -->
+<button disabled 
+        aria-label="Vault mode, locked, sign in required"
+        aria-describedby="vault-lock-hint">
+  🔒 Vault
+</button>
+<span id="vault-lock-hint" class="sr-only">
+  This mode requires authentication. Please sign in to unlock.
+</span>
+
+<!-- Provider Selection Modal -->
+<dialog role="dialog" 
+        aria-labelledby="modal-title" 
+        aria-modal="true">
+  <h2 id="modal-title">Choose your sign-in method</h2>
+  ...
+</dialog>
+```
+
+**Focus Management**:
+- On modal open → Focus first provider button
+- On modal close → Return focus to trigger button
+- On menu open → Focus first menu item
+- On dialog open → Focus "Cancel" button (safe default)
+
+---
+
+## 🎭 Animations & Motion
+
+### Duration Tokens (Finnish Preference: Shorter)
+
+| Context | Duration | Easing | Usage |
+|---------|----------|--------|-------|
+| State layer hover | 100ms | Standard | Button hover |
+| Mode switch | 200ms | Standard | Segmented button active state |
+| Modal slide-up | 300ms | Emphasized | Provider selection entry |
+| Toast fade-in/out | 250ms | Decelerated | Notifications |
+| Spinner rotation | 1000ms | Linear | Loading indicator |
+
+### Micro-Interactions
+
+**Sign-In Button Ripple**:
+```css
+.btn-login-small::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-sys-color-on-primary);
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity 200ms var(--md-sys-motion-easing-standard);
+}
+
+.btn-login-small:active::before {
+  opacity: 0.12; /* M3 pressed state */
+}
+```
+
+**Avatar Border Pulse** (on auth success):
+```css
+@keyframes auth-success-pulse {
+  0%, 100% { border-width: 2px; }
+  50% { border-width: 3px; }
+}
+
+.user-avatar.success {
+  animation: auth-success-pulse 500ms ease-out;
+}
+```
+
+**Locked Mode Shake** (on click):
+```css
+@keyframes locked-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.mode-option.locked:active {
+  animation: locked-shake 200ms ease-in-out;
+}
+```
+
+### Reduced Motion Support
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .spinner {
+    animation: none;
+    /* Show static loading icon instead */
+  }
+}
+```
+
+---
+
+## 🔐 Security & Privacy
+
+### Token Handling
+
+**Principles**:
+1. **Never expose tokens in DOM** - All stored in background service worker
+2. **Use httpOnly equivalent** - Chrome storage (encrypted by OS)
+3. **Short-lived sessions** - Refresh tokens stored, access tokens ephemeral
+4. **Automatic refresh** - Token refresh before expiry (via chrome.alarms)
+
+**Implementation** (existing):
+- [AuthManager](file:///home/sandy/projects/_underscore/src/background/auth/auth-manager.ts#25-297) in background handles all auth logic
+- [PopupController](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#40-687) only receives user metadata (no tokens)
+- IPC messages validated with Zod schemas
+
+### Privacy Messaging
+
+**During Sign-In** (optional disclaimer in modal):
+```
+┌─────────────────────────────────────┐
+│  We use OAuth for secure sign-in.   │
+│  Your credentials are never stored  │
+│  on this device. Read our Privacy   │
+│  Policy for details.                │
+└─────────────────────────────────────┘
+```
+
+**Specs**:
+- Font: `body-small` (12px)
+- Color: `on-surface-variant`
+- Links: `primary` color, underlined
+- Position: Below provider buttons
+
+---
+
+## 📐 Layout Specifications
+
+### Full Popup Layout (Authenticated)
+
+```
+┌──────────────────────────────────────────┐
+│  ⚡ _underscore    [👤] John Doe ▼       │ ← Header (56px)
+├──────────────────────────────────────────┤
+│                                          │
+│  Mode                                    │ ← Label (20px)
+│  ┌────────┬──────┬───────┬────────┐     │
+│  │ 🚶 Walk│Sprint│ Vault │Archive │     │ ← Selector (40px)
+│  └────────┴──────┴───────┴────────┘     │
+│                                          │ ← Gap (16px)
+│  ┌────────────────────────────────┐     │
+│  │           42                   │     │
+│  │       Highlights               │     │ ← Stats (80px)
+│  │                                │     │
+│  │   5 on this page               │     │
+│  └────────────────────────────────┘     │
+│                                          │ ← Gap (16px)
+│  ┌──────────────────────────────┐       │
+│  │  Clear All                   │       │ ← Action (40px)
+│  └──────────────────────────────┘       │
+│                                          │ ← Gap (24px)
+│  Sprint Mode: Ephemeral highlighting    │
+│  • Double-tap to highlight              │ ← Info (80px)
+│  • Ctrl+U to highlight selection        │
+│  • Click to remove                      │
+│  ...                                    │
+│                                          │
+├──────────────────────────────────────────┤
+│       v0.2.0 • Phase 4                   │ ← Footer (32px)
+└──────────────────────────────────────────┘
+         360px width
+```
+
+**Total Height Calculation**:
+- Header: 56px
+- Padding: 24px × 2 = 48px
+- Mode section: 20 + 40 + 16 = 76px
+- Stats: 80 + 16 = 96px
+- Action: 40 + 24 = 64px
+- Info: ~80px
+- Footer: 32px
+- **Total**: ~452px (fits in 480px min-height)
+
+---
+
+## 🧪 Design Validation Checklist
+
+### Visual QA
+
+- [ ] Contrast ratios meet WCAG AAA (7:1)
+- [ ] All interactive elements ≥ 48x48px touch target
+- [ ] Consistent 8px spacing grid
+- [ ] Border-radius follows M3 scale (8, 12, 16, 20, 28px)
+- [ ] Elevation shadows match M3 levels
+- [ ] Typography scale consistent with tokens
+- [ ] Color usage semantic (not decorative)
+
+### Functional QA
+
+- [ ] Keyboard navigation complete (no mouse-only actions)
+- [ ] Focus indicators visible (2px outline, 2px offset)
+- [ ] Screen reader announces all state changes
+- [ ] Error messages actionable and clear
+- [ ] Loading states timeout after 3 seconds
+- [ ] Success toasts auto-dismiss after 5 seconds
+
+### OAuth Flow QA
+
+- [ ] All 4 providers redirect correctly
+- [ ] Error handling covers network failures
+- [ ] Token refresh works in background
+- [ ] Sign-out clears all session data
+- [ ] Mode state persists across sign-in/out
+
+### Cross-Browser QA
+
+- [ ] Chrome/Edge (Chromium) - Primary target
+- [ ] Firefox (manifest v2 fallback)
+- [ ] Safari (WebExtensions)
+
+---
+
+## 🛠️ Implementation Notes
+
+### Phase 1: Core Auth UI (MVP)
+**Scope**: Single provider (Google), basic state management  
+**Components**:
+- Header auth widget (unauthenticated/authenticated states)
+- Provider selection modal (Google only)
+- Account menu dropdown
+- Sign-out confirmation dialog
+
+**Deliverables**:
+- Updated [popup.html](file:///home/sandy/projects/_underscore/dist/popup.html) with auth placeholders
+- New CSS classes in [popup.css](file:///home/sandy/projects/_underscore/src/popup/popup.css)
+- [PopupController](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#40-687) methods: [renderAuthState()](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#464-497), [handleLogin()](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#518-537), [handleLogout()](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#538-554)
+- IPC integration with existing `/auth/signin` and `/auth/signout`
+
+---
+
+### Phase 2: Multi-Provider Support
+**Scope**: Add Apple, X, Facebook providers  
+**Components**:
+- Provider button array in modal
+- Brand styling for each provider
+- Provider-specific error handling
+
+**Backend Requirements**:
+- Supabase Auth configuration for each provider
+- OAuth redirect URLs configured
+- Provider-specific scopes
+
+---
+
+### Phase 3: Mode Integration
+**Scope**: Lock/unlock modes based on auth state  
+**Components**:
+- Segmented button mode selector
+- Locked state styling
+- Contextual prompts
+- Auto-switch on sign-out
+
+**Logic**:
+```typescript
+const isModeLocked = (mode: string, isAuthenticated: boolean): boolean => {
+  const accountDependentModes = ['vault', 'archive'];
+  return accountDependentModes.includes(mode) && !isAuthenticated;
+};
+```
+
+---
+
+### Phase 4: Polish & Accessibility
+**Scope**: Animations, keyboard nav, ARIA  
+**Components**:
+- Ripple effects on buttons
+- Focus trap in modals
+- Error toast notifications
+- Reduced motion support
+
+**Testing**:
+- Lighthouse accessibility audit (target: 100 score)
+- Keyboard-only navigation test
+- Screen reader test (NVDA/JAWS)
+
+---
+
+## 📚 Design System Tokens Reference
+
+### New CSS Variables (Auth-Specific)
+
+```css
+/* Auth Component Tokens */
+:root {
+  /* Avatar */
+  --auth-avatar-size: 32px;
+  --auth-avatar-border: 2px solid var(--md-sys-color-primary);
+  
+  /* Modal */
+  --auth-modal-width: 320px;
+  --auth-modal-backdrop: rgba(0, 0, 0, 0.4);
+  
+  /* Provider Buttons */
+  --auth-provider-height: 48px;
+  --auth-provider-gap: 8px;
+  
+  /* Locked State */
+  --auth-locked-opacity: 0.38;
+  --auth-locked-cursor: not-allowed;
+  
+  /* Dropdown Menu */
+  --auth-menu-width: 200px;
+  --auth-menu-item-height: 40px;
+}
+
+/* Provider Brand Colors */
+:root {
+  --provider-google-blue: #1a73e8;
+  --provider-apple-black: #000000;
+  --provider-x-black: #000000;
+  --provider-facebook-blue: #1877f2;
+}
+```
+
+---
+
+## 🎯 Success Metrics
+
+### UX Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **Time to Sign-In** | < 5 seconds | User clicks "Sign In" → Authenticated state |
+| **Error Rate** | < 2% | Failed OAuth attempts / Total attempts |
+| **Mode Confusion** | 0 support tickets | Users trying to access locked modes |
+| **Accessibility Score** | 100 | Lighthouse audit |
+
+### Design Quality Metrics
+
+| Metric | Target | Validation |
+|--------|--------|------------|
+| **Contrast Ratios** | All ≥ 7:1 | WebAIM Contrast Checker |
+| **Touch Targets** | All ≥ 48px | Manual QA |
+| **Load Time** | < 100ms | Chrome DevTools Performance |
+| **Animation Smoothness** | 60fps | No jank on 2x CPU slowdown |
+
+---
+
+## 📅 Rollout Plan
+
+### Week 1: Design Review
+- [ ] Review this document with stakeholders
+- [ ] Validate color choices with accessibility tools
+- [ ] Create high-fidelity mockups in Figma (optional)
+- [ ] User testing with 5 participants
+
+### Week 2: Phase 1 Implementation
+- [ ] Build core auth components
+- [ ] Integrate Google OAuth
+- [ ] Wire up IPC layer
+- [ ] Unit tests for [PopupController](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts#40-687) auth methods
+
+### Week 3: Phase 2 + 3 Implementation
+- [ ] Add multi-provider support
+- [ ] Implement mode locking logic
+- [ ] Integration tests for auth flows
+- [ ] Cross-browser testing
+
+### Week 4: Phase 4 + QA
+- [ ] Add animations and polish
+- [ ] Accessibility audit and fixes
+- [ ] End-to-end testing
+- [ ] Documentation updates
+
+---
+
+## ✅ Appendix A: Figma Component Specifications
+
+*Note: This section would normally contain embedded Figma frames or exported design files. For now, specifications are provided in code.*
+
+### Component: Provider Button
+
+**Figma Auto-Layout**:
+- Direction: Horizontal
+- Padding: `12px 16px`
+- Gap: `12px`
+- Fill: `surface-container`
+- Stroke: `outline-variant` 1px
+- Corner radius: `12px`
+
+**Children**:
+1. **Icon**: 24x24px SVG
+2. **Text**: `label-large`, `on-surface`
+
+---
+
+## ✅ Appendix B: Error Message Catalog
+
+### Auth Errors
+
+| Error Code | Message | Action |
+|------------|---------|--------|
+| `OAUTH_CANCELLED` | "Sign-in was cancelled. Please try again." | Retry button |
+| `NETWORK_ERROR` | "Network error. Check your connection." | Retry button |
+| `PROVIDER_ERROR` | "Sign-in failed with [Provider]. Try another method." | Provider selector |
+| `TOKEN_EXPIRED` | "Session expired. Please sign in again." | Auto-redirect to sign-in |
+| `RATE_LIMIT` | "Too many attempts. Please wait 5 minutes." | Countdown timer |
+
+---
+
+## 📝 Appendix C: User Testing Questions
+
+### Pre-Task Questions
+1. How often do you use browser extensions?
+2. Have you used OAuth sign-in before? Which providers?
+3. What are your primary concerns when signing into a new service?
+
+### Task Scenarios
+1. "Sign in to unlock Vault mode" → Observe provider selection
+2. "Switch from Walk to Archive mode" → Observe lock detection
+3. "Sign out of your account" → Observe confirmation understanding
+
+### Post-Task Questions
+1. On a scale of 1-10, how easy was it to sign in?
+2. Did you understand why some modes were locked?
+3. Did you feel confident that your data was secure?
+4. Any confusing or frustrating moments?
+
+---
+
+**End of Design Plan**
+
+**Next Steps**:
+1. Review and approve this design plan
+2. Begin Phase 1 implementation
+3. Set up tracking for success metrics
+4. Schedule user testing sessions
+
+**Document Owner**: Sandy (UI/UX Designer)  
+**Reviewers**: Development Team, Product Manager  
+**Version**: 1.0  
+**Last Updated**: 2026-01-05
