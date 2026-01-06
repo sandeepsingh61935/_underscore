@@ -78,16 +78,34 @@ export class VaultModeService {
   ): Promise<void> {
     try {
       // Generate multi-selectors from the DOM Range
-      this.selectorEngine.createSelectors(range);
+      const selectors = this.selectorEngine.createSelectors(range);
 
       // Store using repository pattern (local, cloud, or dual-write)
       // Note: We embed selectors directly into the highlight ranges
       // This eliminates the need for separate IndexedDB selector storage
-      await this.repository.add(highlight);
+
+      // key: Ensure we don't save DOM objects (liveRanges) to IndexedDB
+      // clone the object to avoid mutating the runtime instance if shared
+      const payload = { ...highlight };
+
+      // Remove runtime-only properties that cause DataCloneError
+      if ('liveRanges' in payload) {
+        delete (payload as any).liveRanges;
+      }
+
+      // Attach the generated selectors to the first range
+      if (payload.ranges && payload.ranges.length > 0) {
+        payload.ranges[0] = {
+          ...payload.ranges[0],
+          selector: selectors
+        };
+      }
+
+      await this.repository.add(payload);
 
       this.logger.info('[VAULT] Highlight saved', {
-        id: highlight.id,
-        text: highlight.text.substring(0, 50),
+        id: payload.id,
+        text: payload.text.substring(0, 50),
         repository: 'DualWrite',
       });
     } catch (error) {
@@ -221,6 +239,19 @@ export class VaultModeService {
 
     // Must be fuzzy if we got here
     return 'fuzzy';
+  }
+
+  /**
+   * Find a highlight by its content hash (for deduplication)
+   * 
+   * @param contentHash - Hash of the text content
+   * @returns Highlight object if found, null otherwise
+   */
+  async findByContentHash(contentHash: string): Promise<HighlightDataV2 | null> {
+    if ('findByContentHash' in this.repository && typeof (this.repository as any).findByContentHash === 'function') {
+      return (this.repository as any).findByContentHash(contentHash);
+    }
+    return null;
   }
 
   /**

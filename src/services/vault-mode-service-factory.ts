@@ -11,7 +11,7 @@
 
 import { VaultModeService } from './vault-mode-service';
 import { MultiSelectorEngine } from './multi-selector-engine';
-import { InMemoryHighlightRepository } from '@/background/repositories/in-memory-highlight-repository';
+import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { SupabaseClient, type SupabaseConfig } from '@/background/api/supabase-client';
@@ -19,6 +19,11 @@ import { createClient } from '@supabase/supabase-js';
 import { SupabaseStorageAdapter } from '@/background/auth/supabase-storage-adapter';
 import { LoggerFactory } from '@/background/utils/logger';
 import type { IAuthManager, User } from '@/background/auth/interfaces/i-auth-manager';
+import { OfflineQueueService } from '@/background/services/offline-queue-service';
+
+// Update imports to include EventBus
+import type { EventBus } from '@/shared/utils/event-bus';
+import { EventName } from '@/shared/types/events';
 
 /**
  * Singleton instances
@@ -34,10 +39,11 @@ let authManagerInstance: IAuthManager | null = null;
 class ContentScriptAuthManager implements IAuthManager {
     private supabaseSDK: any;
     private _currentUser: User | null = null;
+    private initPromise: Promise<void>;
 
-    constructor(supabaseSDK: any) {
+    constructor(supabaseSDK: any, private eventBus?: EventBus) {
         this.supabaseSDK = supabaseSDK;
-        void this.initAuthState();
+        this.initPromise = this.initAuthState();
     }
 
     private async initAuthState() {
@@ -46,16 +52,44 @@ class ContentScriptAuthManager implements IAuthManager {
             const { data } = await this.supabaseSDK.auth.getSession();
             this.updateUser(data.session);
 
-            // 2. Subscribe to changes
+            // 2. Subscribe to Supabase SDK changes
             this.supabaseSDK.auth.onAuthStateChange((_event: string, session: any) => {
+                console.log('[AuthManager] Supabase onAuthStateChange fired', { hasSession: !!session });
                 this.updateUser(session);
             });
+
+            // 3. Listen to chrome.storage changes (for auth changes from background script)
+            // This catches when background script completes login
+            if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+                chrome.storage.onChanged.addListener((changes, areaName) => {
+                    console.log('[AuthManager] Storage changed', { areaName, keys: Object.keys(changes) });
+
+                    // Check if auth-related storage changed
+                    // Supabase stores session under a key like "sb-<project-ref>-auth-token"
+                    const authKeyChanged = Object.keys(changes).some(key =>
+                        key.includes('sb-') && key.includes('-auth-token')
+                    );
+
+                    if (areaName === 'local' && authKeyChanged) {
+                        console.log('[AuthManager] Chrome storage auth change detected, refreshing session');
+                        // Re-fetch current session
+                        this.supabaseSDK.auth.getSession().then((result: any) => {
+                            console.log('[AuthManager] Session refreshed', { hasSession: !!result.data?.session });
+                            this.updateUser(result.data?.session);
+                        }).catch((err: any) => {
+                            console.warn('[AuthManager] Failed to refresh session after storage change', err);
+                        });
+                    }
+                });
+            }
         } catch (error) {
             console.warn('[VaultFactory] Failed to initialize auth state', error);
         }
     }
 
     private updateUser(session: any) {
+        const previousUser = this._currentUser;
+
         if (session?.user) {
             this._currentUser = {
                 id: session.user.id,
@@ -64,6 +98,22 @@ class ContentScriptAuthManager implements IAuthManager {
             };
         } else {
             this._currentUser = null;
+        }
+
+        // Emit auth state change if status changed
+        const isAuthenticated = this._currentUser !== null;
+        const wasAuthenticated = previousUser !== null;
+
+        if (isAuthenticated !== wasAuthenticated || (isAuthenticated && this._currentUser?.id !== previousUser?.id)) {
+            console.log('[AuthManager] Auth state changed:', { isAuthenticated, userId: this._currentUser?.id });
+
+            if (this.eventBus) {
+                this.eventBus.emit(EventName.AUTH_STATE_CHANGED, {
+                    isAuthenticated,
+                    user: this._currentUser,
+                    timestamp: Date.now()
+                });
+            }
         }
     }
 
@@ -76,7 +126,9 @@ class ContentScriptAuthManager implements IAuthManager {
     }
 
     // IAuthManager Implementation
-    async initialize(): Promise<void> { }
+    async initialize(): Promise<void> {
+        return this.initPromise;
+    }
     async signIn(): Promise<any> { throw new Error('Not implemented in content script context'); }
     async signOut(): Promise<void> { throw new Error('Not implemented in content script context'); }
     async refreshToken(): Promise<void> { }
@@ -94,7 +146,7 @@ class ContentScriptAuthManager implements IAuthManager {
  * 
  * @returns VaultModeService instance with DualWriteRepository
  */
-export function createVaultModeServiceWithCloudSync(): VaultModeService {
+export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultModeService {
     if (serviceInstance) {
         return serviceInstance;
     }
@@ -116,7 +168,7 @@ export function createVaultModeServiceWithCloudSync(): VaultModeService {
     }
 
     // 2. Create repositories
-    const localRepo = new InMemoryHighlightRepository();
+    const localRepo = new IndexedDBHighlightRepository(logger);
 
     let repository;
 
@@ -133,7 +185,7 @@ export function createVaultModeServiceWithCloudSync(): VaultModeService {
 
         // Create simple auth manager
         if (!authManagerInstance) {
-            authManagerInstance = new ContentScriptAuthManager(supabaseSDK);
+            authManagerInstance = new ContentScriptAuthManager(supabaseSDK, eventBus);
         }
 
         // Create Supabase repository
@@ -145,11 +197,17 @@ export function createVaultModeServiceWithCloudSync(): VaultModeService {
         );
         const cloudRepo = new SupabaseHighlightRepository(supabaseClient, logger);
 
+
+
+        // Create Offline Queue Service
+        const offlineQueue = new OfflineQueueService(cloudRepo, authManagerInstance!, logger);
+
         // Create dual-write repository
         repository = new DualWriteRepository(
             localRepo,
             cloudRepo,
             authManagerInstance!, // Non-null assertion: we just created it above
+            offlineQueue,
             logger
         );
 

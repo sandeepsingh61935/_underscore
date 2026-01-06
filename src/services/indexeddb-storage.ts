@@ -151,7 +151,7 @@ export class IndexedDBStorage extends Dexie {
 
     await this.highlights.put({
       id: serializableData.id,
-      url: window.location.href,
+      url: window.location.href.split('#')[0] || '',
       data: serializableData, // Now without liveRanges - only serialized ranges
       collectionId,
       tags: [],
