@@ -24,8 +24,7 @@ export async function initializeVaultMode(): Promise<void> {
     const service = createVaultModeServiceWithCloudSync();
 
 
-    // This will create the DB schema on first run
-    await service.getStats();
+
 
     // Restore highlights for current page
     const restored = await service.restoreHighlightsForUrl();
