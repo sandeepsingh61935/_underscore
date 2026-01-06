@@ -707,6 +707,19 @@ export class PopupController {
 
       if (!response.success) throw new Error(response.error);
       this.logger.info('Logout successful');
+
+      // Refresh auth state first
+      await this.stateManager.refreshAuthState();
+
+      // Then switch to Walk mode after a delay
+      setTimeout(async () => {
+        try {
+          await this.stateManager.switchModeOptimistically('walk');
+          this.logger.info('[PopupController] Auto-switched to Walk mode after logout');
+        } catch (error) {
+          this.logger.error('[PopupController] Auto-switch to Walk failed', error as Error);
+        }
+      }, 400);
     } catch (error) {
       this.logger.error('Logout failed', error as Error);
       this.showErrorNotification('Logout failed');
