@@ -280,6 +280,81 @@ export class PopupController {
   }
 
   /**
+   * Setup provider drawer callbacks
+   */
+  private setupProviderDrawer(): void {
+    this.providerDrawer.onProviderSelect(async (provider) => {
+      try {
+        this.logger.info('[PopupController] Provider selected', { provider });
+        await this.handleLogin(provider);
+      } catch (error) {
+        this.logger.error('[PopupController] Provider login failed', error as Error);
+      }
+    });
+    this.logger.debug('[PopupController] Provider drawer setup complete');
+  }
+
+  /**
+   * Setup mode selector callbacks
+   */
+  private setupModeSelector(): void {
+    this.modeSelector.onModeChange(async (mode) => {
+      try {
+        const currentState = this.stateManager.getState();
+        const isVaultToLocal = 
+          currentState.currentMode === 'vault' && 
+          (mode === 'walk' || mode === 'sprint') &&
+          currentState.auth.isAuthenticated;
+
+        if (isVaultToLocal) {
+          this.cautionPanel.show(mode);
+          this.modeSelector.setActiveMode(currentState.currentMode);
+          return;
+        }
+
+        await this.stateManager.switchModeOptimistically(mode);
+      } catch (error) {
+        this.logger.error('[PopupController] Mode switch failed', error as Error);
+      }
+    });
+    this.logger.debug('[PopupController] Mode selector setup complete');
+  }
+
+  /**
+   * Setup caution panel callbacks
+   */
+  private setupCautionPanel(): void {
+    this.cautionPanel.onConfirm(async () => {
+      try {
+        await this.handleLogout();
+      } catch (error) {
+        this.logger.error('[PopupController] Caution confirm failed', error as Error);
+      }
+    });
+    this.cautionPanel.onCancel(() => {
+      this.logger.debug('[PopupController] Caution cancelled');
+    });
+    this.logger.debug('[PopupController] Caution panel setup complete');
+  }
+
+  /**
+   * Setup user menu callbacks
+   */
+  private setupUserMenu(): void {
+    this.userMenu.onThemeChange(async (theme) => {
+      try {
+        await this.themeManager.setTheme(theme);
+      } catch (error) {
+        this.logger.error('[PopupController] Theme change failed', error as Error);
+      }
+    });
+    this.userMenu.onLogout(async () => {
+      await this.handleLogout();
+    });
+    this.logger.debug('[PopupController] User menu setup complete');
+  }
+
+  /**
    * Get current active tab with context invalidation handling
    *
    * Chrome extensions can have their context invalidated during:
