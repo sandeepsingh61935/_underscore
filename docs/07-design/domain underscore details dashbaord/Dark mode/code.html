@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Domain Underscore Details</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1387ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for ultra-minimalist look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #233748;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #3b5a75;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased selection:bg-primary/30 selection:text-primary">
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <!-- Header -->
+        <header
+            class="sticky top-0 z-10 w-full backdrop-blur-md bg-background-light/80 dark:bg-background-dark/80 border-b border-gray-200 dark:border-[#233748]">
+            <div class="mx-auto flex max-w-[960px] items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-3 select-none cursor-pointer group">
+                    <div
+                        class="flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+                        <span class="material-symbols-outlined" style="font-size: 28px;">terminal</span>
+                    </div>
+                    <h1
+                        class="text-xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                        _underscore</h1>
+                </div>
+                <button
+                    class="flex items-center justify-center w-10 h-10 rounded hover:bg-gray-200 dark:hover:bg-[#233748] transition-colors text-slate-600 dark:text-[#92afc9] hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">light_mode</span>
+                </button>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main class="flex-1 w-full flex justify-center py-8 sm:py-12">
+            <div class="w-full max-w-[800px] px-6 flex flex-col">
+                <!-- Breadcrumbs -->
+                <nav class="mb-12">
+                    <a class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary dark:text-[#92afc9] dark:hover:text-primary transition-colors group"
+                        href="#">
+                        <span class="material-symbols-outlined transition-transform group-hover:-translate-x-1"
+                            style="font-size: 16px;">arrow_back</span>
+                        Back to Dashboard
+                    </a>
+                </nav>
+                <!-- Page Heading -->
+                <div class="mb-16">
+                    <div
+                        class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-l-4 border-primary pl-6">
+                        <div>
+                            <h2
+                                class="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-2">
+                                google.com</h2>
+                            <p class="text-slate-500 dark:text-[#92afc9] text-lg font-normal">12 underscores saved</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button
+                                class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#92afc9] bg-transparent hover:bg-gray-200 dark:hover:bg-[#233748] rounded transition-colors">
+                                Export
+                            </button>
+                            <button
+                                class="px-4 py-2 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Underscore List -->
+                <div class="flex flex-col gap-10">
+                    <!-- List Item 1 -->
+                    <article
+                        class="group relative flex flex-col gap-3 p-6 -mx-6 rounded-lg transition-all hover:bg-white dark:hover:bg-[#16222d] border border-transparent hover:border-gray-200 dark:hover:border-[#233748]">
+                        <div class="flex justify-between items-start gap-4">
+                            <p
+                                class="text-lg sm:text-xl font-medium leading-relaxed text-slate-800 dark:text-gray-100 selection:bg-primary/20">
+                                The minimalist design movement originated in the 20th century as a reaction against the
+                                complexity and ornamentation of previous art styles.
+                            </p>
+                            <!-- Action buttons (visible on hover/focus) -->
+                            <div
+                                class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#233748] rounded transition-colors"
+                                    title="Copy to clipboard">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-[#5a7285]">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                            <time datetime="2023-10-25T14:00">captured 2 hours ago</time>
+                            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-[#233748]"></span>
+                            <span>/search/minimalism</span>
+                        </div>
+                    </article>
+                    <!-- List Item 2 -->
+                    <article
+                        class="group relative flex flex-col gap-3 p-6 -mx-6 rounded-lg transition-all hover:bg-white dark:hover:bg-[#16222d] border border-transparent hover:border-gray-200 dark:hover:border-[#233748]">
+                        <div class="flex justify-between items-start gap-4">
+                            <p
+                                class="text-lg sm:text-xl font-medium leading-relaxed text-slate-800 dark:text-gray-100 selection:bg-primary/20">
+                                Search algorithms prioritize user intent over keyword stuffing. Modern SEO focuses on
+                                answering the user's question directly.
+                            </p>
+                            <div
+                                class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#233748] rounded transition-colors"
+                                    title="Copy to clipboard">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-[#5a7285]">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                            <time datetime="2023-10-24">captured yesterday</time>
+                            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-[#233748]"></span>
+                            <span>/webmasters/guidelines</span>
+                        </div>
+                    </article>
+                    <!-- List Item 3 -->
+                    <article
+                        class="group relative flex flex-col gap-3 p-6 -mx-6 rounded-lg transition-all hover:bg-white dark:hover:bg-[#16222d] border border-transparent hover:border-gray-200 dark:hover:border-[#233748]">
+                        <div class="flex justify-between items-start gap-4">
+                            <p
+                                class="text-lg sm:text-xl font-medium leading-relaxed text-slate-800 dark:text-gray-100 selection:bg-primary/20">
+                                Core Web Vitals are a set of specific factors that Google considers important in a
+                                webpage's overall user experience.
+                            </p>
+                            <div
+                                class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#233748] rounded transition-colors"
+                                    title="Copy to clipboard">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-[#5a7285]">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                            <time datetime="2023-10-20">Oct 20, 2023</time>
+                            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-[#233748]"></span>
+                            <span>/developers/vitals</span>
+                        </div>
+                    </article>
+                    <!-- List Item 4 (Short) -->
+                    <article
+                        class="group relative flex flex-col gap-3 p-6 -mx-6 rounded-lg transition-all hover:bg-white dark:hover:bg-[#16222d] border border-transparent hover:border-gray-200 dark:hover:border-[#233748]">
+                        <div class="flex justify-between items-start gap-4">
+                            <p
+                                class="text-lg sm:text-xl font-medium leading-relaxed text-slate-800 dark:text-gray-100 selection:bg-primary/20">
+                                Material Design 3
+                            </p>
+                            <div
+                                class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#233748] rounded transition-colors"
+                                    title="Copy to clipboard">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-[#5a7285]">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                            <time datetime="2023-10-15">Oct 15, 2023</time>
+                            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-[#233748]"></span>
+                            <span>/design/spec</span>
+                        </div>
+                    </article>
+                    <!-- List Item 5 (Code snippet style) -->
+                    <article
+                        class="group relative flex flex-col gap-3 p-6 -mx-6 rounded-lg transition-all hover:bg-white dark:hover:bg-[#16222d] border border-transparent hover:border-gray-200 dark:hover:border-[#233748]">
+                        <div class="flex justify-between items-start gap-4">
+                            <div class="w-full">
+                                <p
+                                    class="text-lg sm:text-xl font-medium leading-relaxed text-slate-800 dark:text-gray-100 selection:bg-primary/20 font-mono bg-gray-100 dark:bg-[#0c1218] p-3 rounded text-sm sm:text-base border border-gray-200 dark:border-[#233748]">
+                                    const observer = new IntersectionObserver(callback, options);
+                                </p>
+                            </div>
+                            <div
+                                class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#233748] rounded transition-colors"
+                                    title="Copy to clipboard">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-[#5a7285]">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">code</span>
+                            <time datetime="2023-10-12">Oct 12, 2023</time>
+                            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-[#233748]"></span>
+                            <span>/docs/api</span>
+                        </div>
+                    </article>
+                </div>
+                <!-- End of list indicator -->
+                <div class="mt-20 flex justify-center">
+                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#233748]"></div>
+                    <div class="mx-1 h-1 w-1 rounded-full bg-slate-300 dark:bg-[#233748]"></div>
+                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#233748]"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
