@@ -109,6 +109,11 @@ export interface IAuthManager {
     refreshToken(): Promise<void>;
 
     /**
+     * Initialize authentication state (e.g. load from storage)
+     */
+    initialize(): Promise<void>;
+
+    /**
      * Get current authentication state
      *
      * @returns Current auth state snapshot
