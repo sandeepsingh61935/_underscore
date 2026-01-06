@@ -71,21 +71,17 @@ export interface IRepository<T> {
   /**
    * Get total count of items
    *
-   * @returns Number of items in repository
-   *
-   * @remarks
-   * Synchronous for performance
-   * May require initialization before accurate count
+   * @returns Promise resolving to number of items in repository
    */
-  count(): number;
+  count(): Promise<number>;
 
   /**
    * Check if item exists
    *
    * @param id - Unique identifier of the item
-   * @returns true if item exists, false otherwise
+   * @returns Promise resolving to true if item exists, false otherwise
    */
-  exists(id: string): boolean;
+  exists(id: string): Promise<boolean>;
 
   /**
    * Remove all items from repository

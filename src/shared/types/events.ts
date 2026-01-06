@@ -132,6 +132,13 @@ export interface ErrorEvent extends BaseEvent {
   context?: string;
 }
 
+export interface AuthStateChangedEvent extends BaseEvent {
+  type: 'auth:state:changed';
+  isAuthenticated: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  user?: any;
+}
+
 // ============================================================================
 // Union Types
 // ============================================================================
@@ -154,7 +161,8 @@ export type AppEvent =
   | MigrationCompletedEvent
   | MigrationFailedEvent
   | MigrationRolledBackEvent
-  | ErrorEvent;
+  | ErrorEvent
+  | AuthStateChangedEvent;
 
 /**
  * Event names as const enum for type safety and autocomplete
@@ -197,6 +205,9 @@ export const EventName = {
 
   // Errors
   ERROR_OCCURRED: 'error:occurred',
+
+  // Auth
+  AUTH_STATE_CHANGED: 'auth:state:changed',
 } as const;
 
 /**

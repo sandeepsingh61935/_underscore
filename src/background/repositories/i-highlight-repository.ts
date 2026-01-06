@@ -28,8 +28,8 @@ export interface IHighlightRepository extends IRepository<HighlightDataV2> {
   // findById(id: string): Promise<HighlightDataV2 | null>
   // remove(id: string): Promise<void>
   // findAll(): Promise<HighlightDataV2[]>
-  // count(): number
-  // exists(id: string): boolean
+  // count(): Promise<number>
+  // exists(id: string): Promise<boolean>
   // clear(): Promise<void>
 
   // ============================================
@@ -57,6 +57,11 @@ export interface IHighlightRepository extends IRepository<HighlightDataV2> {
    * Returns empty array if no overlaps
    */
   findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
+
+  /**
+   * Find highlights by Page URL
+   */
+  findByUrl(url: string): Promise<HighlightDataV2[]>;
 
   // ============================================
   // Bulk Operations
