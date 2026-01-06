@@ -1,15 +1,15 @@
 <!DOCTYPE html>
+<html class="light" lang="en">
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Provider Selection Modal</title>
-<!-- Material Symbols Link -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Tailwind Config -->
-<script id="tailwind-config">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Login Providers</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -18,65 +18,93 @@
                         "primary": "#5b8db9",
                         "background-light": "#f6f7f7",
                         "background-dark": "#15191d",
+                        "text-primary": "#111518",
+                        "text-secondary": "#607485",
+                        "badge-light": "#e0e3e6",
+                        "badge-dark": "#2c3036",
+                        "badge-dark-border": "#3c4046", "badge-light-shadow": "#cdd0d3",
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
                 },
             },
         }
     </script>
-<!-- Google Fonts: Inter -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        .login-provider-link {
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .badge-debossed-light {
+            box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1), inset -1px -1px 3px var(--badge-light-shadow);
+        }
+
+        .dark .badge-debossed-dark {
+            box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px var(--badge-dark-border);
+        }
+    </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display antialiased text-gray-900 dark:text-white">
-<div class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4">
-<!-- Backdrop -->
-<div class="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm z-0"></div>
-<!-- Modal Container -->
-<!-- Sharp corners (rounded-sm from theme), hairline border, white bg -->
-<div class="relative z-10 w-full max-w-[400px] flex flex-col bg-white dark:bg-[#1a2026] border border-gray-200 dark:border-gray-700 shadow-xl rounded overflow-hidden">
-<!-- Content Container -->
-<div class="flex flex-col p-10 md:p-12">
-<!-- Header -->
-<h1 class="text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-10">
-                    Sign in
-                </h1>
-<!-- Provider List -->
-<!-- Presented as plain text links, vertical stack, plenty of whitespace -->
-<nav class="flex flex-col gap-6">
-<a class="group flex items-center justify-between w-full outline-none focus:outline-none" href="#">
-<span class="text-lg font-normal text-gray-900 dark:text-gray-100 group-hover:text-primary group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4 transition-all duration-200 ease-out group-focus:text-primary group-focus:underline group-focus:decoration-primary group-focus:underline-offset-4">
-                            Google
-                        </span>
-</a>
-<a class="group flex items-center justify-between w-full outline-none focus:outline-none" href="#">
-<span class="text-lg font-normal text-gray-900 dark:text-gray-100 group-hover:text-primary group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4 transition-all duration-200 ease-out group-focus:text-primary group-focus:underline group-focus:decoration-primary group-focus:underline-offset-4">
-                            Apple
-                        </span>
-</a>
-<a class="group flex items-center justify-between w-full outline-none focus:outline-none" href="#">
-<span class="text-lg font-normal text-gray-900 dark:text-gray-100 group-hover:text-primary group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4 transition-all duration-200 ease-out group-focus:text-primary group-focus:underline group-focus:decoration-primary group-focus:underline-offset-4">
-                            X
-                        </span>
-</a>
-<a class="group flex items-center justify-between w-full outline-none focus:outline-none" href="#">
-<span class="text-lg font-normal text-gray-900 dark:text-gray-100 group-hover:text-primary group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4 transition-all duration-200 ease-out group-focus:text-primary group-focus:underline group-focus:decoration-primary group-focus:underline-offset-4">
-                            Facebook
-                        </span>
-</a>
-</nav>
-<!-- Footer Action -->
-<div class="mt-12 pt-4 border-t border-transparent">
-<a class="text-sm text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200" href="#">
-                        Cancel
-                    </a>
-</div>
-</div>
-</div>
-</div>
-</body></html>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+    <header class="w-full max-w-screen-xl flex justify-between items-center py-4 px-0 md:px-4 mb-auto">
+        <div class="flex items-center gap-2">
+            <div
+                class="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-badge-light dark:bg-badge-dark text-text-primary dark:text-white badge-debossed-light dark:badge-debossed-dark">
+                <span
+                    class="absolute text-3xl md:text-4xl font-extrabold leading-none select-none -translate-y-[2px] opacity-90">_</span>
+            </div>
+            <h1 class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
+                underscore
+            </h1>
+        </div>
+        <div>
+            <a class="text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline text-lg md:text-xl font-light underline-offset-4 hover:underline"
+                href="#">
+                Sign In
+            </a>
+        </div>
+    </header>
+    <div class="w-full max-w-[480px] flex flex-col items-center flex-grow justify-center py-10">
+        <div class="w-full flex justify-center mb-10">
+            <p class="text-text-secondary dark:text-gray-400 text-xs font-medium tracking-[0.2em] uppercase">Sign in
+                with</p>
+        </div>
+        <div class="flex flex-col items-center gap-6 w-full">
+            <a class="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none no-underline"
+                href="#">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+                    Google
+                </span>
+            </a>
+            <a class="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none no-underline"
+                href="#">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+                    Apple
+                </span>
+            </a>
+            <a class="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none no-underline"
+                href="#">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+                    X
+                </span>
+            </a>
+            <a class="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none no-underline"
+                href="#">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+                    Facebook
+                </span>
+            </a>
+        </div>
+    </div>
+    <div class="w-full mb-auto md:mb-8"></div>
+
+</body>
+
+</html>

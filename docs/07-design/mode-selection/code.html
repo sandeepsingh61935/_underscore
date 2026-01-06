@@ -1,13 +1,15 @@
 <!DOCTYPE html>
+<html class="light" lang="en">
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Mode Selector: Unauthenticated</title>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Mode Selector: Unauthenticated</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -18,65 +20,87 @@
                         "background-dark": "#15191d",
                         "text-primary": "#111518",
                         "text-secondary": "#607485",
+                        "badge-light": "#e0e3e6",
+                        "badge-dark": "#2c3036",
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
                 },
             },
         }
     </script>
-<style>
-        /* Custom smooth transition for hover effects */
+    <style>
         .mode-item {
             transition: color 0.2s ease, transform 0.2s ease;
         }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex items-center justify-center p-4">
-<!-- Main Container: Centered, Minimalist Card-like structure but flat -->
-<div class="w-full max-w-[480px] flex flex-col items-center">
-<!-- Header Label -->
-<div class="w-full flex justify-center mb-10">
-<p class="text-text-secondary dark:text-gray-400 text-xs font-medium tracking-[0.2em] uppercase">Mode</p>
-</div>
-<!-- Mode Selection List -->
-<div class="flex flex-col items-center gap-6 w-full">
-<!-- Active Option: Walk -->
-<button class="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none">
-<span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+    <header class="w-full max-w-screen-xl flex justify-between items-center py-4 px-0 md:px-4 mb-auto">
+        <div class="flex items-center gap-2">
+            <div
+                class="relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-badge-light dark:bg-badge-dark shadow-inner dark:shadow-none text-text-primary dark:text-white -mt-0.5">
+                <span
+                    class="absolute text-2xl md:text-3xl font-extrabold leading-none select-none -translate-y-[2px]">_</span>
+            </div>
+            <h1 class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
+                underscore
+            </h1>
+        </div>
+        <div>
+            <a class="text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline text-lg md:text-xl font-light underline-offset-4 hover:underline"
+                href="#">
+                Sign In
+            </a>
+        </div>
+    </header>
+    <div class="w-full max-w-[480px] flex flex-col items-center flex-grow justify-center py-10">
+        <div class="w-full flex justify-center mb-10">
+            <p class="text-text-secondary dark:text-gray-400 text-xs font-medium tracking-[0.2em] uppercase">Mode</p>
+        </div>
+        <div class="flex flex-col items-center gap-6 w-full">
+            <button
+                class="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
                     Walk
                 </span>
-<!-- Subtle indicator for active focus or selection could go here, but kept clean as per request -->
-</button>
-<!-- Active Option: Sprint -->
-<button class="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none">
-<span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
+            </button>
+            <button
+                class="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none">
+                <span
+                    class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
                     Sprint
                 </span>
-</button>
-<!-- Spacer for visual grouping -->
-<div class="h-4 w-full"></div>
-<!-- Locked Option: Vault -->
-<div aria-disabled="true" class="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed">
-<span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
+            </button>
+            <div class="h-4 w-full"></div>
+            <div aria-disabled="true"
+                class="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed">
+                <span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
                     Vault
                 </span>
-</div>
-<!-- Locked Option: Archive -->
-<div aria-disabled="true" class="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed">
-<span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
+            </div>
+            <div aria-disabled="true"
+                class="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed">
+                <span class="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
                     Archive
                 </span>
-</div>
-</div>
-<!-- Footer / Helper Text -->
-<div class="mt-16 text-center">
-<a class="group flex items-center gap-1.5 text-sm text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline" href="#">
-<span>Sign in to unlock vault and archive</span>
-<span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
-</a>
-</div>
-</div>
-</body></html>
+            </div>
+        </div>
+        <div class="mt-16 text-center">
+            <a class="group flex items-center gap-1.5 text-sm text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline"
+                href="#">
+                <span>Sign in to unlock vault and archive</span>
+                <span
+                    class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+            </a>
+        </div>
+    </div>
+    <div class="w-full mb-auto md:mb-8"></div>
+</body>
+
+</html>
