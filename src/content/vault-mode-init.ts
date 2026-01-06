@@ -3,9 +3,11 @@
  *
  * This module initializes the Vault Mode service and sets up
  * the connection between the UI and the storage layer.
+ * 
+ * Now uses DualWriteRepository for automatic Supabase sync when authenticated.
  */
 
-import { getVaultModeService } from '@/services/vault-mode-service';
+import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-service-factory';
 
 /**
  * Initialize Vault Mode
@@ -13,12 +15,14 @@ import { getVaultModeService } from '@/services/vault-mode-service';
  * - Opens IndexedDB connection
  * - Creates database schema if needed
  * - Restores any existing highlights for current URL
+ * - Enables cloud sync to Supabase when authenticated
  */
 export async function initializeVaultMode(): Promise<void> {
   try {
-    console.warn('[VAULT] Initializing Vault Mode...');
+    console.warn('[VAULT] Initializing Vault Mode with cloud sync...');
 
-    const service = getVaultModeService();
+    const service = createVaultModeServiceWithCloudSync();
+
 
     // This will create the DB schema on first run
     await service.getStats();
