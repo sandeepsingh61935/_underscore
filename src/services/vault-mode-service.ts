@@ -95,18 +95,6 @@ export class VaultModeService {
         url,
       });
 
-      // Create event for sync tracking via IndexedDB
-      await this.storage.saveEvent({
-        type: 'highlight.created',
-        timestamp: Date.now(),
-        data: {
-          highlightId: highlight.id,
-          url,
-          collectionId: collectionId || null,
-        },
-        synced: false,
-      });
-
       this.logger.info('[VAULT] Highlight saved', {
         id: highlight.id,
         text: highlight.text.substring(0, 50),
