@@ -28,14 +28,19 @@ describe('Cross-Mode Integration Tests', () => {
     storage = new IndexedDBStorage();
     const engine = new MultiSelectorEngine();
     const mockLogger = {
-      debug: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      setLevel: () => {},
+      debug: () => { },
+      info: () => { },
+      warn: () => { },
+      error: () => { },
+      setLevel: () => { },
       getLevel: () => 1,
     } as any;
-    vaultService = new VaultModeService(storage, engine, mockLogger);
+
+    // Import repository for new constructor signature
+    const { InMemoryHighlightRepository } = await import('@/background/repositories/in-memory-highlight-repository');
+    const repository = new InMemoryHighlightRepository();
+
+    vaultService = new VaultModeService(repository, storage, engine, mockLogger);
 
     await storage.open();
 
@@ -256,14 +261,20 @@ describe('Cross-Mode Integration Tests', () => {
 
       // Simulate page reload by creating new service instance
       const mockLogger = {
-        debug: () => {},
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        setLevel: () => {},
+        debug: () => { },
+        info: () => { },
+        warn: () => { },
+        error: () => { },
+        setLevel: () => { },
         getLevel: () => 1,
       } as any;
+
+      // Import repository for new constructor signature
+      const { InMemoryHighlightRepository } = await import('@/background/repositories/in-memory-highlight-repository');
+      const newRepository = new InMemoryHighlightRepository();
+
       const newService = new VaultModeService(
+        newRepository,
         storage,
         new MultiSelectorEngine(),
         mockLogger
