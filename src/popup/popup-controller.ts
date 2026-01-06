@@ -144,6 +144,15 @@ export class PopupController {
       // Initialize state manager
       await this.stateManager.initialize(this.currentTabId);
 
+      // Initialize components
+      this.themeManager.initialize();
+      this.providerDrawer.initialize();
+      this.setupProviderDrawer();
+      this.modeSelector.initialize();
+      this.setupModeSelector();
+      this.cautionPanel.initialize();
+      this.setupCautionPanel();
+
       // Setup event listeners
       this.setupEventListeners();
 
