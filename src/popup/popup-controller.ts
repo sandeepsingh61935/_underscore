@@ -469,14 +469,7 @@ export class PopupController {
     );
   }
 
-  /**
-   * Subscribe to state changes from state manager
-   */
-  private subscribeToStateChanges(): void {
-    this.stateManager.subscribe((state: PopupState) => {
-      this.updateUIFromState(state);
-    });
-  }
+
 
   /**
    * Handle mode change from user
