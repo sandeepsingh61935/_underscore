@@ -50,7 +50,9 @@ export function registerRepositoryComponents(container: Container): void {
      * Fast, in-memory storage for local-first architecture
      */
     container.registerSingleton<IHighlightRepository>('localRepository', () => {
-        return new InMemoryHighlightRepository();
+        const logger = container.resolve<ILogger>('logger');
+        const { IndexedDBHighlightRepository } = require('@/background/repositories/indexed-db-highlight-repository');
+        return new IndexedDBHighlightRepository(logger);
     });
 
     // ==================== Cloud Repository ====================
@@ -64,6 +66,21 @@ export function registerRepositoryComponents(container: Container): void {
         const logger = container.resolve<ILogger>('logger');
 
         return new SupabaseHighlightRepository(supabaseClient, logger);
+    });
+
+    // ==================== Offline Queue ====================
+
+    /**
+     * OfflineQueueService - Singleton
+     * Manages retries for failed cloud operations
+     */
+    container.registerSingleton('offlineQueueService', () => {
+        const cloudRepo = container.resolve<SupabaseHighlightRepository>('supabaseHighlightRepository' as any);
+        const authManager = container.resolve<IAuthManager>('authManager');
+        const logger = container.resolve<ILogger>('logger');
+
+        const { OfflineQueueService } = require('@/background/services/offline-queue-service');
+        return new OfflineQueueService(cloudRepo, authManager, logger);
     });
 
     // ==================== Dual-Write Repository (Primary) ====================
@@ -80,11 +97,13 @@ export function registerRepositoryComponents(container: Container): void {
      * This is the primary repository used by VaultModeService
      */
     container.registerSingleton<IHighlightRepository>('highlightRepository', () => {
-        const localRepo = container.resolve<InMemoryHighlightRepository>('localRepository' as any);
+        const localRepo = container.resolve<IHighlightRepository>('localRepository' as any);
         const cloudRepo = container.resolve<SupabaseHighlightRepository>('supabaseHighlightRepository' as any);
         const authManager = container.resolve<IAuthManager>('authManager');
+        const offlineQueue = container.resolve<any>('offlineQueueService');
         const logger = container.resolve<ILogger>('logger');
 
-        return new DualWriteRepository(localRepo, cloudRepo, authManager, logger);
+        return new DualWriteRepository(localRepo, cloudRepo, authManager, offlineQueue, logger);
     });
 }
+

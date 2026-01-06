@@ -10,10 +10,11 @@
 
 import type { IHighlightRepository } from './i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
-import type { InMemoryHighlightRepository } from './in-memory-highlight-repository';
+
 import type { SupabaseHighlightRepository } from './supabase-highlight-repository';
 import type { IAuthManager } from '../auth/interfaces/i-auth-manager';
 import type { ILogger } from '../utils/logger';
+import type { OfflineQueueService } from '@/background/services/offline-queue-service';
 
 /**
  * Dual-write repository for local-first, cloud-synced storage
@@ -28,9 +29,10 @@ import type { ILogger } from '../utils/logger';
  */
 export class DualWriteRepository implements IHighlightRepository {
     constructor(
-        private readonly localRepo: InMemoryHighlightRepository,
+        private readonly localRepo: IHighlightRepository,
         private readonly cloudRepo: SupabaseHighlightRepository,
         private readonly authManager: IAuthManager,
+        private readonly offlineQueue: OfflineQueueService,
         private readonly logger: ILogger
     ) { }
 
@@ -44,7 +46,7 @@ export class DualWriteRepository implements IHighlightRepository {
         this.logger.debug('[DualWrite] Added to local', { id: highlight.id });
 
         // Write to cloud async if authenticated
-        this.writeToCloudAsync(() => this.cloudRepo.add(highlight), 'add', highlight.id);
+        this.writeToCloudAsync(() => this.cloudRepo.add(highlight), 'add', highlight.id, highlight);
     }
 
     async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
@@ -53,7 +55,7 @@ export class DualWriteRepository implements IHighlightRepository {
         this.logger.debug('[DualWrite] Updated in local', { id });
 
         // Update cloud async if authenticated
-        this.writeToCloudAsync(() => this.cloudRepo.update(id, updates), 'update', id);
+        this.writeToCloudAsync(() => this.cloudRepo.update(id, updates), 'update', id, updates);
     }
 
     async remove(id: string): Promise<void> {
@@ -83,6 +85,59 @@ export class DualWriteRepository implements IHighlightRepository {
         return await this.localRepo.findByContentHash(hash);
     }
 
+    async findByUrl(url: string): Promise<HighlightDataV2[]> {
+        // 0. Ensure auth state is initialized (prevents race condition on load)
+        await this.authManager.initialize();
+
+        // 1. Get from local (always fast)
+        const localPromise = this.localRepo.findByUrl(url);
+
+        // 2. Get from cloud (if authenticated)
+        let cloudPromise: Promise<HighlightDataV2[]> = Promise.resolve([]);
+
+        if (this.authManager.currentUser) {
+            cloudPromise = this.cloudRepo.findByUrl(url).catch(error => {
+                this.logger.error('[DualWrite] Failed to fetch from cloud', error);
+                return [];
+            });
+        }
+
+        // 3. Wait for both to ensure cross-device sync on load
+        const [localItems, cloudItems] = await Promise.all([localPromise, cloudPromise]);
+
+        // 4. Merge results (deduplicate by ID)
+        // If an item is in cloud but not local, we should backfill it to local
+        // but that requires write access which might be side-effecty for a "find" method.
+        // For now, we just return the merged view.
+        // The calling service (VaultModeService) can handle backfilling persistence if needed.
+
+        const mergedMap = new Map<string, HighlightDataV2>();
+
+        // Add local items first
+        localItems.forEach(item => mergedMap.set(item.id, item));
+
+        // Add/Overwrite with cloud items (Cloud is source of truth? Or Local?)
+        // Usually local has unsynced changes, so local should win overlapping IDs.
+        // But cloud has items we don't know about.
+        cloudItems.forEach(item => {
+            if (!mergedMap.has(item.id)) {
+                mergedMap.set(item.id, item);
+            }
+        });
+
+        const merged = Array.from(mergedMap.values());
+
+        if (cloudItems.length > 0) {
+            this.logger.debug('[DualWrite] Merged local and cloud items', {
+                localCount: localItems.length,
+                cloudCount: cloudItems.length,
+                total: merged.length
+            });
+        }
+
+        return merged;
+    }
+
     async findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]> {
         return await this.localRepo.findOverlapping(range);
     }
@@ -91,12 +146,12 @@ export class DualWriteRepository implements IHighlightRepository {
     // Metadata (Local Only)
     // ============================================
 
-    count(): number {
-        return this.localRepo.count();
+    async count(): Promise<number> {
+        return await this.localRepo.count();
     }
 
-    exists(id: string): boolean {
-        return this.localRepo.exists(id);
+    async exists(id: string): Promise<boolean> {
+        return await this.localRepo.exists(id);
     }
 
     // ============================================
@@ -111,7 +166,7 @@ export class DualWriteRepository implements IHighlightRepository {
         // Add to cloud async if authenticated
         this.writeToCloudAsync(
             () => this.cloudRepo.addMany(highlights),
-            'addMany',
+            'add' as any, // Treat addMany as add for simplicity in queue types
             `${highlights.length} highlights`
         );
     }
@@ -135,8 +190,9 @@ export class DualWriteRepository implements IHighlightRepository {
      */
     private writeToCloudAsync(
         operation: () => Promise<void>,
-        operationName: string,
-        identifier: string
+        operationName: 'add' | 'update' | 'remove',
+        identifier: string,
+        payload?: any
     ): void {
         // Check if user is authenticated
         if (!this.authManager.currentUser) {
@@ -156,11 +212,35 @@ export class DualWriteRepository implements IHighlightRepository {
                 });
             })
             .catch((error) => {
-                // Log error but don't fail the operation
+                // Log error
                 this.logger.error('[DualWrite] Cloud write failed (local still succeeded)', error, {
                     operation: operationName,
                     id: identifier,
                 });
+
+                // Attempt to queue for offline retry
+                this.queueForRetry(operationName, identifier, payload, error);
             });
     }
+
+    private queueForRetry(
+        type: 'add' | 'update' | 'remove',
+        targetId: string,
+        payload: any,
+        error: any
+    ): void {
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+        // Simple retry check: Offline OR 5xx error OR Network Error
+        // For now, we queue almost everything except auth errors (which are handled by "if authenticated" check usually,
+        // but token expiry might happen during filtering).
+
+        // We assume token refresh happens in AuthManager, so 401 might be retryable after refresh?
+        // Let's be aggressive: Queue it. OfflineQueueService handles retries.
+
+        this.logger.info('[DualWrite] Queueing operation for retry', { type, targetId });
+        this.offlineQueue.enqueue(type, targetId, payload).catch(err => {
+            this.logger.error('[DualWrite] Failed to enqueue offline operation', err);
+        });
+    }
 }
+
