@@ -42,6 +42,126 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   override async onActivate(): Promise<void> {
     await super.onActivate();
     await this.restore();
+
+    // Subscribe to bridged events from background (Real-Time Sync)
+    // We use runtime.onMessage because EventBus is not shared between context (Background <-> Content)
+    chrome.runtime.onMessage.addListener(this.handleRuntimeMessage.bind(this));
+  }
+
+  override async onDeactivate(): Promise<void> {
+    await super.onDeactivate();
+    // Remove listener (optional, as listener is tied to content script lifecycle)
+    chrome.runtime.onMessage.removeListener(this.handleRuntimeMessage.bind(this));
+  }
+
+  /**
+   * Handle bridged events from background
+   */
+  private async handleRuntimeMessage(message: any, sender: any, sendResponse: any): Promise<void> {
+    // Only handle internal bridged events
+    if (!message || !message.type || !message.type.startsWith('REMOTE_HIGHLIGHT')) return;
+
+    this.logger.debug('[VAULT] Received remote event', { type: message.type, id: message.payload?.id });
+
+    try {
+      switch (message.type) {
+        case 'REMOTE_HIGHLIGHT_CREATED':
+          await this.handleRemoteHighlightCreated(message.payload);
+          break;
+        case 'REMOTE_HIGHLIGHT_UPDATED':
+          // TODO: Implement update
+          break;
+        case 'REMOTE_HIGHLIGHT_DELETED':
+          // TODO: Implement delete
+          break;
+      }
+    } catch (error) {
+      this.logger.error('[VAULT] Failed to handle remote event', error as Error);
+    }
+  }
+
+  /**
+   * Handle remote highlight creation
+   * CRITICAL: Must use { skipSync: true } to prevent infinite loops
+   */
+  private async handleRemoteHighlightCreated(data: HighlightData): Promise<void> {
+    // 1. Deduplication Check
+    if (this.highlights.has(data.id)) {
+      this.logger.debug('[VAULT] Skipping remote highlight (already exists)', { id: data.id });
+      return;
+    }
+
+    this.logger.info('[VAULT] Process remote highlight', { id: data.id });
+
+    // 2. Restore logic (similar to restore(), but for single item)
+    // We need to find the range. Since we have selectors in 'data', we can try to restore it.
+    // However, createFromData assumes 'liveRanges' are present if we want to render immediately.
+    // But data from cloud DOES NOT have live ranges.
+    // We must use the selectors to FIND the range first.
+
+    // This is tricky: createFromData expects liveRanges. 
+    // We should probably use VaultModeService.restoreHighlightsForUrl LOGIC but for a single item.
+    // Or, we can reuse logic.
+
+    // Let's manually restore the range using selectors if available
+    try {
+      // We need to re-construct the selectors from the data
+      // Ideally we use the service to do this, but service.restoreHighlightsForUrl works on ALL items in DB.
+      // Here we have an in-memory item not yet in DB (or strictly speaking, it IS in cloud DB).
+
+      // HACK: We can just use the SelectorEngine directly if exposed, OR
+      // we can instantiate a temporary object to restore.
+      // Actually, let's defer to a new method createFromRemoteData checks for selectors.
+
+      // For now, let's try to assume we can save it to local DB first (skipSync=true), 
+      // and THEN call restore() for just that ID? 
+      // No, restore() fetches ALL.
+
+      // Better:
+      // 1. Save to Local DB (skipSync=true)
+      // 2. Call internal restore logic for just this item (we might need to expose restoration logic for single item on service)
+
+      // For MVP of THIS task, let's try to pass it to createFromData if we can get a range.
+      // If we can't get a range immediately (e.g. text not found), we save it to DB anyway so it appears on next reload.
+
+      // Step 1: Save to DB (Local Only)
+      // We need to cast because 'data' might be V2 from wire vs interface
+      // We need to ensure selectors are present.
+
+      // Actually, if we just save it to DB, we can't render it without a range.
+      // So we MUST find the range.
+
+      // Let's implement a simple "find range from selector" here or use service.
+      // Since `vaultService` is private, we might need to assume it has what we need or add a method.
+      // But `vaultService` has `restoreHighlightRange`. We should expose it or make it public.
+      // It is currently private.
+
+      // Workaround: Use `createFromData` requires `liveRanges`.
+      // If we received data, it has `ranges` array with selectors.
+      // We can parse the selector.
+
+      this.logger.warn('[VAULT] Remote highlight handling requires range restoration - Partial Implementation: Saving to DB only for refresh');
+
+      // Save to repository (Persistent)
+      // We need to access repository directly or via service options
+      // We updated saveHighlight to take options!
+
+      // We can't call saveHighlight without a range...
+      // Catch-22: saveHighlight generates selectors FROM range.
+      // But here we HAVE selectors and NO range.
+
+      // We should call repository.add() directly!
+      await this.repository.add(data as any, { skipSync: true });
+
+      this.logger.info('[VAULT] Saved remote highlight to local DB. Reload to see it (Range restoration pending)');
+
+      // TODO: Trigger a "lazy restore" or "specific restore" if possible.
+      // For now, saving to DB ensures it's there.
+      // To make it appear INSTANTLY involves calling the selector engine.
+
+    } catch (e) {
+      this.logger.error('Failed to handle remote highlight', e as Error);
+    }
   }
 
   readonly capabilities: ModeCapabilities = {
@@ -67,7 +187,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   /**
    * Create highlight from existing data (e.g., Undo/Restore)
    */
-  async createFromData(data: HighlightData): Promise<void> {
+  async createFromData(data: HighlightData, options?: { skipSync?: boolean }): Promise<void> {
     // 1. Ensure live ranges exist
     if (!data.liveRanges || data.liveRanges.length === 0) {
       this.logger.warn('[VAULT] createFromData called without live ranges', data.id);
@@ -75,17 +195,11 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     }
 
     // 2. Persist
-    // Note: For Undo, we might want to "restore" deleted record vs create new.
-    // But createFromData treats it as "put this back".
-    // Use saveToStorage to handle metadata/selectors if present?
-    // Or re-generate selectors? Re-generating is safer for "current" DOM.
-
-    // If data has ranges but no selectors, we might need range to gen selectors.
     const range = data.liveRanges[0]!;
 
     // Use saveHighlight to ensure persistence + selectors
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.vaultService.saveHighlight(data as any, range);
+    await this.vaultService.saveHighlight(data as any, range, { skipSync: options?.skipSync });
 
     // 3. Render
     const highlightName = getHighlightName('underscore', data.id);
@@ -103,7 +217,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
     if (!alreadyExists) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.repository.add(data as any);
+      await this.repository.add(data as any, { skipSync: options?.skipSync });
     } else {
       this.logger.debug('[VAULT] Skipping duplicate repo add during create', {
         id: data.id,
