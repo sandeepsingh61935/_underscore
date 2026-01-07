@@ -181,6 +181,66 @@ export class VaultModeService {
   }
 
   /**
+   * Restore a single highlight (Public API)
+   * Useful for real-time sync / instant rendering
+   * 
+   * @param highlight - Highlight to restore
+   * @returns Restoration result with range and tier used
+   */
+  async restoreHighlight(highlight: HighlightDataV2): Promise<{
+    range: Range | null;
+    restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
+  }> {
+    try {
+      this.logger.info('[VAULT] Restoring single highlight', {
+        id: highlight.id,
+        hasRanges: !!highlight.ranges,
+        rangesType: typeof highlight.ranges,
+        rangesIsArray: Array.isArray(highlight.ranges)
+      });
+
+      if (!highlight.ranges || !Array.isArray(highlight.ranges) || highlight.ranges.length === 0) {
+        // Fallback: Check for flat 'selectors' property (Legacy/DB schema difference?)
+        if ((highlight as any).selectors) {
+          this.logger.info('[VAULT] Found flat "selectors" property, using as fallback');
+          const selector = (highlight as any).selectors as MultiSelector;
+          const range = await this.restoreHighlightRange(selector);
+          return {
+            range,
+            restoredUsing: this.determineRestorationTier(range, selector),
+          };
+        }
+
+        this.logger.warn('[VAULT] Invalid ranges in highlight payload', highlight);
+        return { range: null, restoredUsing: 'failed' };
+      }
+
+      const selector = highlight.ranges[0]?.selector as unknown as MultiSelector;
+
+      if (!selector) {
+        this.logger.warn('[VAULT] No selectors found for highlight', highlight.id);
+        return {
+          range: null,
+          restoredUsing: 'failed',
+        };
+      }
+
+      const range = await this.restoreHighlightRange(selector);
+
+      return {
+        range,
+        restoredUsing: this.determineRestorationTier(range, selector),
+      };
+    } catch (error) {
+      this.logger.error('[VAULT] Failed to restore single highlight', error as Error);
+      return {
+        range: null,
+        restoredUsing: 'failed',
+      };
+    }
+  }
+
+  /**
    * Restore a single highlight's DOM Range using multi-selector
    *
    * Tries all 3 tiers: XPath → Position → Fuzzy
