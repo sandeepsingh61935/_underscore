@@ -48,6 +48,22 @@ export class WebSocketClient implements IWebSocketClient {
                 return;
             }
 
+            // Get the current session to get the access token
+            const { data: { session } } = await this.supabase.auth.getSession();
+            if (!session?.access_token) {
+                this.logger.warn('[WebSocketClient] No active session found during subscribe');
+                return;
+            }
+
+            this.logger.info('[WebSocketClient] Initializing connection with auth token', {
+                userId,
+                tokenLength: session.access_token.length
+            });
+
+            // Set the access token on the Supabase client for Realtime auth
+            // This is essential for Supabase to recognize the WebSocket connection as authenticated
+            this.supabase.realtime.setAuth(session.access_token);
+
             this.channel = this.supabase.channel('highlights-sync')
                 .on(
                     'postgres_changes',
@@ -55,7 +71,7 @@ export class WebSocketClient implements IWebSocketClient {
                         event: '*',
                         schema: 'public',
                         table: 'highlights',
-                        filter: `user_id = eq.${userId} `,
+                        filter: `user_id=eq.${userId}`,
                     },
                     (payload: RealtimePostgresChangesPayload<HighlightDataV2>) => this.handleChange(payload)
                 )
