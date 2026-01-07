@@ -169,7 +169,19 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     this.logger.info('[VAULT] Handling remote updated', { id });
 
-    // 1. Update local repository
+    // Conflict Detection: Log when update arrives for existing highlight
+    // Note: Without updatedAt timestamps, we can't determine "who wins"
+    // This just provides observability for potential concurrent edits
+    const localHighlight = this.data.get(id);
+    if (localHighlight) {
+      this.logger.info('[VAULT] 📊 Update received for existing highlight (potential concurrent edit)', {
+        highlightId: id,
+        hasLocalVersion: true,
+        resolution: 'Last-Write-Wins (accepting remote)'
+      });
+    }
+
+    // 1. Update local repository (LWW resolution)
     await (this.repository as any).update(id, data, { skipSync: true });
 
     // 2. Update properties if changed (e.g. Color)
@@ -179,9 +191,6 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     // Update internal data
     this.data.set(id, data as any);
-
-    // TODO: If range changed (complex), we might need to re-restore.
-    // For now, assuming color/metadata updates.
   }
 
   readonly capabilities: ModeCapabilities = {
