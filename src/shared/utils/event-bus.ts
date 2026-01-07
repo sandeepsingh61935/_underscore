@@ -37,13 +37,18 @@ export class EventBus implements IEventBus {
   /**
    * Subscribe to an event
    */
-  on<T = unknown>(event: string, handler: EventHandler<T>): void {
+  on<T = unknown>(event: string, handler: EventHandler<T>): () => void {
     if (!this.handlers.has(event)) {
       this.handlers.set(event, new Set());
     }
 
     this.handlers.get(event)!.add(handler as EventHandler);
     this.logger.debug(`Listener added for "${event}"`);
+    
+    // Return unsubscribe function
+    return () => {
+      this.off(event, handler);
+    };
   }
 
   /**

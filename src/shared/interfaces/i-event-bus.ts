@@ -18,7 +18,7 @@ export interface IEventBus {
      * @param event - Event name
      * @param handler - Function to handle event data
      */
-    on<T = unknown>(event: string, handler: EventHandler<T>): void;
+    on<T = unknown>(event: string, handler: EventHandler<T>): () => void;
 
     /**
      * Unsubscribe from an event
