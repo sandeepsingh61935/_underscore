@@ -1,0 +1,185 @@
+# Realtime Sync Analysis: Collections Table
+
+## Question: Do we need Supabase Realtime on `domain_collections` table?
+
+**Short Answer**: **YES**
+
+---
+
+## Use Case Analysis
+
+### Scenario 1: Collection Rename (Display Name)
+```
+Device A: User renames "wikipedia.org" → "My Research Wiki"
+Device B: Should instantly show "My Research Wiki" (not "wikipedia.org")
+```
+
+**Without Realtime**: Device B shows stale name until page refresh.  
+**With Realtime**: Device B updates instantly (< 3 seconds).
+
+**Verdict**: Realtime needed ✅
+
+---
+
+### Scenario 2: AI Category Assignment
+```
+Device A: Neural Mode suggests category "Reference" for wikipedia.org
+Device B: Should instantly show category badge
+```
+
+**Without Realtime**: Device B doesn't see category.  
+**With Realtime**: Device B updates instantly.
+
+**Verdict**: Realtime needed ✅
+
+---
+
+### Scenario 3: Collection Soft Delete
+```
+Device A: User deletes "github.com" collection
+Device B: Should instantly hide the collection from list
+```
+
+**Without Realtime**: Device B still shows deleted collection (stale).  
+**With Realtime**: Device B removes it instantly.
+
+**Verdict**: Realtime needed ✅
+
+---
+
+### Scenario 4: Auto-Creation on New Domain
+```
+Device A: User highlights on new domain "medium.com"
+          → Auto-creates "medium.com" collection
+Device B: Should instantly show new collection in list
+```
+
+**Without Realtime**: Device B doesn't know about new collection.  
+**With Realtime**: Device B adds it instantly.
+
+**Verdict**: Realtime needed ✅
+
+---
+
+## Consistency with Highlights
+
+**Highlights table**: Has Realtime enabled
+- Instant sync across devices
+- Core feature of Vault Mode Phase 2
+
+**Collections table**: Related to highlights
+- Collections organize highlights
+- Should have same UX (instant sync)
+
+**Verdict**: Consistency requires Realtime ✅
+
+---
+
+## Performance Impact
+
+**Highlights table Realtime**:
+- High frequency (user creating/editing highlights constantly)
+- Potential for many events per minute
+
+**Collections table Realtime**:
+- Low frequency (collections rarely change after creation)
+- Mostly metadata edits (display name, category)
+- Very few events (< 1 per minute typically)
+
+**Verdict**: Minimal performance impact ✅
+
+---
+
+## Implementation Complexity
+
+**Already have WebSocket infrastructure** from Phase 2:
+- [WebSocketClient](file:///home/sandy/projects/_underscore/src/background/realtime/websocket-client.ts#14-200) implemented
+- [EventBridge](file:///home/sandy/projects/_underscore/src/background/services/event-bridge.ts#12-63) for background → content communication
+- Real-time sync working for highlights
+
+**Adding collections Realtime**:
+- Same pattern (subscribe to table changes)
+- Reuse existing [WebSocketClient](file:///home/sandy/projects/_underscore/src/background/realtime/websocket-client.ts#14-200)
+- Minimal additional code (~50 lines)
+
+**Verdict**: Low implementation cost ✅
+
+---
+
+## Recommendation
+
+### **Enable Realtime on `domain_collections` table**
+
+**Migration addition**:
+```sql
+-- 5. Enable Realtime for Collections
+ALTER PUBLICATION supabase_realtime ADD TABLE public.domain_collections;
+```
+
+**WebSocket subscription** (in [WebSocketClient](file:///home/sandy/projects/_underscore/src/background/realtime/websocket-client.ts#14-200)):
+```typescript
+// Subscribe to collection changes
+this.subscription = supabase
+  .channel('collection-changes')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',  // INSERT, UPDATE, DELETE
+      schema: 'public',
+      table: 'domain_collections',
+      filter: `user_id=eq.${userId}`,
+    },
+    (payload) => this.handleCollectionChange(payload)
+  )
+  .subscribe();
+```
+
+**Event handling** (in [VaultMode](file:///home/sandy/projects/_underscore/src/content/modes/vault-mode.ts#30-485) or `CollectionService`):
+```typescript
+private handleCollectionChange(payload: any) {
+  const collection = payload.new;
+  
+  switch (payload.eventType) {
+    case 'INSERT':
+      // New collection created on another device
+      this.addCollectionToUI(collection);
+      break;
+    
+    case 'UPDATE':
+      // Collection metadata changed (rename, category)
+      this.updateCollectionInUI(collection);
+      break;
+    
+    case 'DELETE':
+      // Collection soft-deleted
+      this.removeCollectionFromUI(collection.id);
+      break;
+  }
+}
+```
+
+---
+
+## Effort Estimate
+
+**Additional work**: +1 hour
+- Add Realtime subscription to migration
+- Add WebSocket handler for collection changes
+- Update UI on collection events
+- Test multi-device sync
+
+**Updated total effort**: 2 days + 1 hour = 2.1 days
+
+---
+
+## Summary
+
+| Criteria | Assessment |
+|----------|------------|
+| **Use Case Necessity** | ✅ Critical for multi-device UX |
+| **Consistency** | ✅ Matches highlights behavior |
+| **Performance Impact** | ✅ Minimal (low frequency) |
+| **Implementation Cost** | ✅ Low (reuse existing infra) |
+| **User Experience** | ✅ Significantly improved |
+
+**Final Verdict**: **YES, enable Realtime on `domain_collections` table.**

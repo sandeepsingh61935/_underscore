@@ -1,0 +1,38 @@
+# SyncQueue - Honest Analysis
+
+## What is it?
+A buffering layer between the User and the API.
+- **Now**: User highlights -> API Request (Immediate)
+- **With SyncQueue**: User highlights -> Buffer -> (Wait X ms) -> Bulk API Request
+
+## The Problem It Solves
+**"Chatty" Network Traffic**.
+If a user highlights 10 separate phrases in 5 seconds (e.g., rapid skim-reading and marking):
+- **Current**: 10 separate HTTP requests.
+- **With Queue**: 1 batched HTTP request.
+
+## Honest Assessment
+
+### Logic for "YES" (Implement It)
+1. **Network Efficiency**: Reduces overhead (headers, handshake) significantly.
+2. **Rate Limiting**: Prevents hitting Supabase rate limits (if any).
+3. **Offline-ish**: Handles flaky connections better (retrying 1 batch is easier than 10 requests).
+4. **Professional Polish**: It's "good engineering" practices.
+
+### Logic for "NO" (Skip It)
+1. **Premature Optimization**: Supabase is fast. 10 requests in 5 seconds is nothing for a modern DB.
+2. **Complexity**: Adds timers, batching logic, error handling for partial batch failures.
+3. **UX Latency**: The "Save" status is delayed by the buffer time (e.g., 500ms).
+4. **YAGNI**: Do you actually have users highlighting that fast?
+
+## Verdict
+
+**Priority: LOW / DEFERRABLE**
+
+**Recommendation**: 
+Skip it for now.
+1. It complicates the codebase (which we just cleaned up).
+2. The current implementation (direct writes) is robust enough for 99% of use cases.
+3. You can add it later *transparently* without breaking anything if network logs show too much traffic.
+
+**Decision**: Mark as "Post-Launch Optimization".
