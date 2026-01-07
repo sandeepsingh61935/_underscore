@@ -145,3 +145,17 @@ global.console = {
 export const restoreConsole = (): void => {
   global.console = originalConsole;
 };
+
+// Mock Highlight API (not available in jsdom)
+if (typeof Highlight === 'undefined') {
+  (global as any).Highlight = class Highlight {
+    constructor(public range: Range) {}
+  };
+}
+
+// Mock CSS.highlights API (not available in jsdom)
+if (typeof CSS === 'undefined' || !(CSS as any).highlights) {
+  (global as any).CSS = {
+    highlights: new Map(),
+  };
+}
