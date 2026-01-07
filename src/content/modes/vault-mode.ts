@@ -23,6 +23,7 @@ import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/cont
 import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-service-factory';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -59,20 +60,20 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
    */
   private async handleRuntimeMessage(message: any, sender: any, sendResponse: any): Promise<void> {
     // Only handle internal bridged events
-    if (!message || !message.type || !message.type.startsWith('REMOTE_HIGHLIGHT')) return;
+    if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
-    this.logger.debug('[VAULT] Received remote event', { type: message.type, id: message.payload?.id });
+    this.logger.info('[VAULT] 📨 Received remote event', { type: message.type, id: message.payload?.id });
 
     try {
       switch (message.type) {
-        case 'REMOTE_HIGHLIGHT_CREATED':
+        case EventName.REMOTE_HIGHLIGHT_CREATED: // 'remote:highlight:created'
           await this.handleRemoteHighlightCreated(message.payload);
           break;
-        case 'REMOTE_HIGHLIGHT_UPDATED':
-          // TODO: Implement update
+        case EventName.REMOTE_HIGHLIGHT_UPDATED: // 'remote:highlight:updated'
+          await this.handleRemoteHighlightUpdated(message.payload);
           break;
-        case 'REMOTE_HIGHLIGHT_DELETED':
-          // TODO: Implement delete
+        case EventName.REMOTE_HIGHLIGHT_DELETED: // 'remote:highlight:deleted'
+          await this.handleRemoteHighlightDeleted(message.payload);
           break;
       }
     } catch (error) {
