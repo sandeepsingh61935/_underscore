@@ -58,7 +58,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   /**
    * Handle bridged events from background
    */
-  private async handleRuntimeMessage(message: any, sender: any, sendResponse: any): Promise<void> {
+  private async handleRuntimeMessage(message: any, _sender: any, _sendResponse: any): Promise<void> {
     // Only handle internal bridged events
     if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
@@ -94,75 +94,94 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     this.logger.info('[VAULT] Process remote highlight', { id: data.id });
 
-    // 2. Restore logic (similar to restore(), but for single item)
-    // We need to find the range. Since we have selectors in 'data', we can try to restore it.
-    // However, createFromData assumes 'liveRanges' are present if we want to render immediately.
-    // But data from cloud DOES NOT have live ranges.
-    // We must use the selectors to FIND the range first.
-
-    // This is tricky: createFromData expects liveRanges. 
-    // We should probably use VaultModeService.restoreHighlightsForUrl LOGIC but for a single item.
-    // Or, we can reuse logic.
-
-    // Let's manually restore the range using selectors if available
     try {
-      // We need to re-construct the selectors from the data
-      // Ideally we use the service to do this, but service.restoreHighlightsForUrl works on ALL items in DB.
-      // Here we have an in-memory item not yet in DB (or strictly speaking, it IS in cloud DB).
-
-      // HACK: We can just use the SelectorEngine directly if exposed, OR
-      // we can instantiate a temporary object to restore.
-      // Actually, let's defer to a new method createFromRemoteData checks for selectors.
-
-      // For now, let's try to assume we can save it to local DB first (skipSync=true), 
-      // and THEN call restore() for just that ID? 
-      // No, restore() fetches ALL.
-
-      // Better:
-      // 1. Save to Local DB (skipSync=true)
-      // 2. Call internal restore logic for just this item (we might need to expose restoration logic for single item on service)
-
-      // For MVP of THIS task, let's try to pass it to createFromData if we can get a range.
-      // If we can't get a range immediately (e.g. text not found), we save it to DB anyway so it appears on next reload.
-
       // Step 1: Save to DB (Local Only)
-      // We need to cast because 'data' might be V2 from wire vs interface
-      // We need to ensure selectors are present.
+      await (this.repository as any).add(data as any, { skipSync: true });
 
-      // Actually, if we just save it to DB, we can't render it without a range.
-      // So we MUST find the range.
+      this.logger.info('[VAULT] Saved remote highlight to local DB. Attempting instant render...');
 
-      // Let's implement a simple "find range from selector" here or use service.
-      // Since `vaultService` is private, we might need to assume it has what we need or add a method.
-      // But `vaultService` has `restoreHighlightRange`. We should expose it or make it public.
-      // It is currently private.
+      // Instant Render: Restore range and inject CSS
+      const restoreResult = await this.vaultService.restoreHighlight(data as any);
 
-      // Workaround: Use `createFromData` requires `liveRanges`.
-      // If we received data, it has `ranges` array with selectors.
-      // We can parse the selector.
+      if (restoreResult.range) {
+        // Create CSS Highlight
+        const highlightName = getHighlightName('underscore', data.id);
+        const highlight = new Highlight(restoreResult.range);
+        CSS.highlights.set(highlightName, highlight);
 
-      this.logger.warn('[VAULT] Remote highlight handling requires range restoration - Partial Implementation: Saving to DB only for refresh');
+        // Inject CSS
+        injectHighlightCSS('underscore', data.id, data.colorRole || 'yellow');
 
-      // Save to repository (Persistent)
-      // We need to access repository directly or via service options
-      // We updated saveHighlight to take options!
+        // Update Internal State
+        this.highlights.set(data.id, highlight);
+        this.data.set(data.id, data as any);
 
-      // We can't call saveHighlight without a range...
-      // Catch-22: saveHighlight generates selectors FROM range.
-      // But here we HAVE selectors and NO range.
-
-      // We should call repository.add() directly!
-      await this.repository.add(data as any, { skipSync: true });
-
-      this.logger.info('[VAULT] Saved remote highlight to local DB. Reload to see it (Range restoration pending)');
-
-      // TODO: Trigger a "lazy restore" or "specific restore" if possible.
-      // For now, saving to DB ensures it's there.
-      // To make it appear INSTANTLY involves calling the selector engine.
+        this.logger.info('[VAULT] ✨ Instant render successful', {
+          id: data.id,
+          tier: restoreResult.restoredUsing
+        });
+      } else {
+        this.logger.warn('[VAULT] Instant render failed - range could not be restored');
+      }
 
     } catch (e) {
       this.logger.error('Failed to handle remote highlight', e as Error);
     }
+  }
+
+  /**
+   * Handle remote highlight deletion
+   */
+  private async handleRemoteHighlightDeleted(payload: { id: string }): Promise<void> {
+    const id = payload?.id;
+    if (!id) return;
+
+    this.logger.info('[VAULT] Handling remote deleted', { id });
+
+    // 1. Remove from local repository (skipping cloud sync)
+    // Note: Cast because repository generic interface might not have skipSync in type definition depending on version,
+    // but generic IHighlightRepository should allow options or specific implementation does.
+    if ((this.repository as any).remove) {
+      await (this.repository as any).remove(id, { skipSync: true });
+    }
+
+    // 2. Remove from Runtime
+    const highlightName = getHighlightName('underscore', id);
+    const exists = CSS.highlights.get(highlightName);
+
+    if (exists) {
+      CSS.highlights.delete(highlightName);
+      removeHighlightCSS(id);
+      this.logger.info('[VAULT] Removed CSS highlight', { id });
+    }
+
+    // 3. Update internal state
+    this.highlights.delete(id);
+    this.data.delete(id);
+  }
+
+  /**
+   * Handle remote highlight update
+   */
+  private async handleRemoteHighlightUpdated(data: HighlightData): Promise<void> {
+    const id = data?.id;
+    if (!id) return;
+
+    this.logger.info('[VAULT] Handling remote updated', { id });
+
+    // 1. Update local repository
+    await (this.repository as any).update(id, data, { skipSync: true });
+
+    // 2. Update properties if changed (e.g. Color)
+    if (data.colorRole) {
+      injectHighlightCSS('underscore', id, data.colorRole);
+    }
+
+    // Update internal data
+    this.data.set(id, data as any);
+
+    // TODO: If range changed (complex), we might need to re-restore.
+    // For now, assuming color/metadata updates.
   }
 
   readonly capabilities: ModeCapabilities = {
@@ -218,7 +237,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
     if (!alreadyExists) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.repository.add(data as any, { skipSync: options?.skipSync });
+      await (this.repository as any).add(data as any, { skipSync: options?.skipSync });
     } else {
       this.logger.debug('[VAULT] Skipping duplicate repo add during create', {
         id: data.id,
@@ -241,14 +260,10 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     // Update runtime
     this.data.set(id, updated);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(updated as any); // Updates existing in repo
-    // Correction: Repository Pattern typically separates add vs update. InMemory implementation 'add' usually overwrites or throws.
-    // If 'add' throws on duplicate, we should use 'update'.
-    // However, standard IRepository 'add' is often idempotent upsert in simple implementations, or strict.
-    // Looking at InMemoryHighlightRepository behavior (impl inferred): Map.set(id, item) -> Upsert.
-    // If specific update method exists on interface, use it.
+    await (this.repository as any).add(updated as any); // Updates existing in repo
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.update(id, updates as any);
+    await (this.repository as any).update(id, updates as any);
 
     // Update storage
     // Assuming ranges didn't change, we use the first live range
@@ -307,19 +322,6 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     if (!text) {
       throw new Error('Empty text selection');
     }
-
-    // Deduplication via Content Hash REMOVED
-    // Reason: Prevents highlighting same text in different locations (spatial duplicates).
-    // Overlap detection is handled by content.ts before calling this.
-
-    /* 
-    const contentHash = await generateContentHash(text);
-    const existing = await this.vaultService.findByContentHash(contentHash);
-    if (existing && existing.id) {
-      this.logger.info('[VAULT] Duplicate content detected', { existingId: existing.id });
-      return existing.id;
-    } 
-    */
 
     const contentHash = await generateContentHash(text);
 
@@ -390,7 +392,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     // NOTE: persistence is handled by vaultService above, but we must clear session state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((this.repository as any).remove) {
-      await this.repository.remove(id);
+      await (this.repository as any).remove(id);
     }
   }
 
@@ -466,10 +468,6 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
       iconType: 'trash',
       beforeDelete: async (_id: string) => {
         // Future: Check if highlight is synced across devices
-        // const isSynced = await this.vaultService.checkSyncStatus(id);
-        // if (isSynced) {
-        //   return confirm('This highlight is synced across devices. Delete anyway?');
-        // }
         return true;
       },
     };
