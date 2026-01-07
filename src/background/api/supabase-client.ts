@@ -79,7 +79,7 @@ export class SupabaseClient implements IAPIClient {
                     .insert({
                         id: data.id,
                         user_id: user.id,
-                        url: window.location.href, // Current page URL
+                        url: data.url || '', // Use URL from highlight data, not background context
                         text: data.text,
                         color_role: data.colorRole,
                         selectors: data.ranges[0]?.selector,
