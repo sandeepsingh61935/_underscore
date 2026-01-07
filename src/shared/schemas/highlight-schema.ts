@@ -72,18 +72,16 @@ export const ColorRoleSchema = z.enum([
 export type ColorRole = z.infer<typeof ColorRoleSchema>;
 
 // ============================================
-// VERSION 2 SCHEMA (CURRENT)
+// HIGHLIGHT DATA SCHEMA
 // ============================================
 
 /**
- * Highlight Data V2 - Current version with semantic color roles
+ * Highlight Data Schema - Core highlight data structure
  */
 export const HighlightDataSchemaV2 = z.object({
-  // Version marker
-  version: z.literal(2).default(2),
-
   // Core fields
   id: z.string().uuid(),
+  userId: z.string().uuid().optional(), // Added for RLS
   text: z.string().min(1).max(10000),
   url: z.string().optional(),
 
@@ -109,7 +107,7 @@ export const HighlightDataSchemaV2 = z.object({
   // Optional metadata
   metadata: z
     .object({
-      source: z.enum(['user', 'migration', 'sync']).default('user'),
+      source: z.enum(['user', 'sync']).default('user'),
       tags: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
@@ -118,39 +116,9 @@ export const HighlightDataSchemaV2 = z.object({
 
 export type HighlightDataV2 = z.infer<typeof HighlightDataSchemaV2>;
 
-// ============================================
-// VERSION 1 SCHEMA (LEGACY)
-// ============================================
-
-/**
- * Highlight Data V1 - Legacy version with hex colors
- * Used for migration only
- */
-export const HighlightDataSchemaV1 = z.object({
-  version: z.literal(1).optional(),
-  id: z.string(),
-  text: z.string(),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i), // Hex color
-  type: z.literal('underscore'),
-  ranges: z.array(SerializedRangeSchema),
-  createdAt: z.coerce.date().optional(),
-});
-
-export type HighlightDataV1 = z.infer<typeof HighlightDataSchemaV1>;
-
-// ============================================
-// UNION SCHEMA (FOR MIGRATION)
-// ============================================
-
-/**
- * Union of all versions for migration support
- */
-export const HighlightDataSchema = z.union([
-  HighlightDataSchemaV2,
-  HighlightDataSchemaV1,
-]);
-
-export type HighlightData = z.infer<typeof HighlightDataSchema>;
+// Alias for backward compatibility during transition
+export const HighlightDataSchema = HighlightDataSchemaV2;
+export type HighlightData = HighlightDataV2;
 
 // ============================================
 // EVENT SCHEMAS

@@ -5,13 +5,11 @@
 
 // Highlight schemas
 export {
-  HighlightDataSchemaV1,
   HighlightDataSchemaV2,
   HighlightDataSchema,
   HighlightEventSchema,
   SerializedRangeSchema,
   ColorRoleSchema,
-  type HighlightDataV1,
   type HighlightDataV2,
   type HighlightData,
   type HighlightEvent,
