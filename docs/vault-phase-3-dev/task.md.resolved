@@ -1,0 +1,182 @@
+# Consolidate Project Architecture - Task Tracker
+
+**Objective**: Create comprehensive architecture document and complete Vault Phase 2 integration
+
+---
+
+## Phase 1: Architecture Documentation ✅ COMPLETE
+
+### Discovery & Analysis
+- [x] Explore all architecture directories and documents
+- [x] Identify key architectural patterns and components
+- [x] Document inconsistencies and stale information
+- [x] Map feature evolution and changes
+
+### Architecture Document Creation
+- [x] Create master architecture document structure
+- [x] Document system overview and context
+- [x] Create high-level architecture diagrams (using Mermaid)
+- [x] Document core components and their responsibilities
+- [x] Create component interaction flow diagrams
+- [x] Document data flow and state management
+- [x] Document security architecture
+- [x] Create use case scenarios with sequence diagrams
+- [x] Document technology stack and dependencies
+- [x] Document deployment architecture
+- [x] Create ADR summary section
+- [x] Add integration patterns and IPC architecture
+- [x] Document mode system architecture
+- [x] Add performance considerations
+
+### Validation & Refinement
+- [x] Review for completeness and accuracy
+- [x] Ensure all diagrams are clear and professional
+- [x] Validate against actual codebase
+- [x] Correct Vault Phase 2 completion status (was 100%, actually 70%)
+- [x] Create detailed integration gap analysis
+
+**Deliverables**:
+- ✅ [MASTER_ARCHITECTURE.md](file:///home/sandy/.gemini/antigravity/brain/62674b25-c301-4e12-b372-539c9bdf5396/MASTER_ARCHITECTURE.md) - Comprehensive system architecture
+- ✅ [vault_phase2_integration_tasks.md](file:///home/sandy/.gemini/antigravity/brain/62674b25-c301-4e12-b372-539c9bdf5396/vault_phase2_integration_tasks.md) - Integration analysis with 5 tasks
+
+---
+
+## Phase 2: Vault Mode Phase 2 Integration
+
+> **Status**: Ready to begin (user approved integration plan with "LGTM")
+> 
+> **Estimated Effort**: 6-7 days for priority tasks (1, 2, 5)
+
+- [x] **Task 1: Real-Time Sync Integration (Phase 2 Component)**
+  - [x] Implementing WebSocket Client (Supabase Realtime) <!-- id: 5 -->
+  - [x] Implementing Event Bridge (Background <-> Content) <!-- id: 6 -->
+  - [x] Integrate with Vault Mode (Live Updates) <!-- id: 7 -->
+  - [x] **Testing & Verification**
+    - [x] Unit Tests for WebSocketClient
+    - [x] Verify E2E Sync (Profile A -> Profile B)
+    - [x] Fix Instant Rendering (Range Restoration)
+    - [x] Fix Delete Sync (Soft Delete Handling)
+    - [x] Fix Clear All Sync (Batch Soft Delete)
+    - [x] Manual Verification Confirmed by User
+
+**Duration**: 1 day  
+**Priority**: Highest user impact
+
+### Task 2: Conflict Resolution Integration ✅ COMPLETE (Observability Only)
+- [x] Integrate ConflictDetector into DualWriteRepository.findByUrl() (Logged only)
+- [x] Call ConflictResolver for detected conflicts (LWW strategy confirmed)
+- [x] Honest Analysis: Concluded manual resolution UI is unnecessary (rare conflicts)
+- [x] Implemented conflict logging for observability
+- [x] **Decision**: Defer manual UI indefinitely. LWW is sufficient.
+
+### Task 3: Event Sourcing Integration ❌ CANCELLED
+- **Decision**: Skipped to avoid over-engineering. Repository pattern is sufficient.
+
+### Task 4: SyncQueue Batching Integration ⏸️ DEFERRED
+- **Decision**: Deferred for future enhancement. Direct writes are sufficient for current scale.
+
+### Task 5: Migration Service Integration ❌ CANCELLED
+- **Reason**: No existing users, no legacy data.
+- [x] Deleted MigrationService and V1 schema to simplify codebase.
+
+---
+
+## Phase 2 Completion Summary
+
+**Status**: ✅ COMPLETE
+- **Real-Time Sync**: Fully implemented (WebSocket, EventBridge, Vault Mode)
+- **Conflict Resolution**: Simplified to "Last-Write-Wins" with logging (No UI)
+- **Migration**: Removed unnecessary complexity
+- **Optimization**: SyncQueue deferred until needed
+
+## Next Steps
+
+**Ready for Phase 3: Vault UI & Search** (or other priorities)
+
+---
+
+## Phase 3: Collections Feature (Domain-Based) 🔄 IN PROGRESS
+
+**Approach**: Choice 1 (Domain-Based, Auto-Grouped)  
+**Effort**: 2 days  
+**Quality Framework**: Applied
+
+### Schema Migration
+- [ ] Create migration file `002_add_domain_collections.sql`
+- [ ] Run migration on Supabase
+- [ ] Verify RLS policies and indexes
+
+### TypeScript Schemas (Zod)
+- [ ] Create `collection-schema.ts` with DomainCollectionSchema
+- [ ] Export from schemas/index.ts
+
+### Repository Layer
+- [ ] Create `i-collection-repository.ts` interface
+- [ ] Implement `SupabaseCollectionRepository`
+- [ ] Add methods to SupabaseClient
+- [ ] Register in DI container
+
+### Testing (80%+ Coverage)
+- [ ] Unit tests for collection schema
+- [ ] Unit tests for Supabase repository
+- [ ] Integration tests for collection flow
+
+### UI Integration
+- [ ] Collections list view (vertical design)
+- [ ] Auto-create collection on highlight
+- [ ] Collection detail view
+- [ ] Sorting: Alphabetical, By Usage, Recently Added
+- [ ] **Realtime Sync** (Multi-Device)
+  - [ ] Add Realtime publication in migration (`ALTER PUBLICATION supabase_realtime ADD TABLE domain_collections`)
+  - [ ] Subscribe to `domain_collections` changes in WebSocketClient
+  - [ ] Handle INSERT events (new collection created on another device)
+  - [ ] Handle UPDATE events (collection renamed/categorized on another device)
+  - [ ] Handle DELETE events (collection soft-deleted on another device)
+  - [ ] Update UI state on remote collection changes
+  - [ ] Test multi-device sync (Profile A → Profile B)
+
+### Documentation
+- [ ] Update MASTER_ARCHITECTURE.md
+- [ ] Add JSDoc comments to all methods
+
+### Quality Gates
+- [ ] 0 ESLint errors
+- [ ] 0 TypeScript errors
+- [ ] All tests passing
+- [ ] ≥80% test coverage
+- [ ] Clean build
+
+**Detailed Plan**: See [collections_implementation_plan.md](file:///home/sandy/.gemini/antigravity/brain/62674b25-c301-4e12-b372-539c9bdf5396/collections_implementation_plan.md)
+
+---
+
+## Deferred Features (Future Work)
+
+### Manual Collections (Chrome-Style Bookmarks)
+- **Type**: Choice 2 approach
+- **Effort**: 5 days
+- **Status**: Deferred
+- **Requirements**:
+  - [ ] Junction table `highlight_collections`
+  - [ ] Many-to-many relationship support
+  - [ ] Manual assignment UI
+  - [ ] Multi-collection support
+  - [ ] Updated UI design (show collection names, not domains)
+
+### AI Categorization (Neural Mode)
+- **Effort**: 3 days
+- **Status**: Deferred until Neural Mode exists
+- **Requirements**:
+  - [ ] Category suggestion API
+  - [ ] User override UI
+  - [ ] AI service integration
+
+### SyncQueue Batching Optimization
+- **Effort**: 2 days
+- **Status**: Deferred
+- **Reason**: Direct writes sufficient for current scale
+- **Requirements**:
+  - [ ] Batch multiple sync operations
+  - [ ] Gzip compression for payload reduction
+  - [ ] Priority queue implementation
+
