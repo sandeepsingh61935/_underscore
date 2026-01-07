@@ -12,6 +12,7 @@ import { SupabaseConfig } from '@/background/api/supabase-client';
 import { LoggerFactory } from '@/background/utils/logger';
 import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
+import { EventBridge } from '@/background/services/event-bridge';
 
 const logger = LoggerFactory.getLogger('Bootstrap');
 
@@ -60,7 +61,10 @@ export async function initializeBackground(): Promise<Container> {
     // 3. Initialize & Wire Signals
     const authManager = container.resolve<IAuthManager>('authManager');
     const connectionManager = container.resolve<ConnectionManager>('connectionManager');
-    // const eventBus = container.resolve<IEventBus>('eventBus'); // Already used by managers
+
+    // Initialize Event Bridge
+    const eventBridge = container.resolve<EventBridge>('eventBridge');
+    eventBridge.initialize();
 
     // Auto-connect if already logged in
     const currentUser = authManager.currentUser;
