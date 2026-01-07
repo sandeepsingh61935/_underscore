@@ -1,0 +1,488 @@
+# Collections Schema - Deep Analysis
+
+## Core Question: What IS a Collection?
+
+### Two Fundamentally Different Approaches:
+
+---
+
+## Approach A: **Domain-Based Auto-Grouping** (Simple)
+
+### Concept:
+Collections = **Automatic grouping by website domain**
+
+```
+Collection = One unique domain
+- wikipedia.org → "Wikipedia Collection"
+- github.com → "GitHub Collection"
+```
+
+### Relationship:
+**1:many (Domain → Highlights)**
+- Each highlight belongs to ONE domain (from its URL)
+- Highlights **implicitly** belong to domain collection
+
+### Schema (NO Junction Table):
+
+```sql
+-- Collections = Domain metadata
+CREATE TABLE collections (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    domain TEXT UNIQUE NOT NULL,  -- "wikipedia.org" (derived from highlights)
+    
+    -- User metadata
+    display_name TEXT,              -- "My Research Wiki" (optional override)
+    category TEXT,                  -- "Reference" (optional)
+    icon_url TEXT,
+    
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ
+);
+
+-- Highlights (NO CHANGE - domain extracted from URL)
+CREATE TABLE highlights (
+    id TEXT PRIMARY KEY,
+    user_id UUID,
+    url TEXT NOT NULL,              -- Domain extracted: new URL(url).hostname
+    text TEXT,
+    -- ...
+);
+
+-- NO junction table needed
+-- Relationship is implicit via `url` field
+```
+
+### How It Works:
+
+```typescript
+// Get highlights for collection
+function getCollectionHighlights(collectionId: string): Highlight[] {
+  const collection = getCollection(collectionId);
+  const domain = collection.domain; // "wikipedia.org"
+  
+  // Query highlights by domain
+  return highlights.filter(h => new URL(h.url).hostname === domain);
+}
+
+// Get collections (computed from highlights)
+function getCollections(): Collection[] {
+  const domains = [...new Set(highlights.map(h => new URL(h.url).hostname))];
+  
+  return domains.map(domain => ({
+    id: `auto-${domain}`,
+    domain: domain,
+    displayName: collectionMetadata[domain]?.displayName || domain,
+    highlightCount: highlights.filter(h => new URL(h.url).hostname === domain).length,
+  }));
+}
+```
+
+### Pros:
+- ✅ Simple schema (no junction table)
+- ✅ Zero maintenance (auto-created when highlighting new domain)
+- ✅ Natural mental model ("my GitHub highlights")
+- ✅ Fast queries (indexed by URL domain)
+- ✅ No data integrity issues
+
+### Cons:
+- ❌ Can't have one highlight in multiple collections
+- ❌ Can't create arbitrary collections ("My PhD Research" across domains)
+- ❌ Tied to domain structure
+
+### Good For:
+- 90% of users who organize by website
+- MVP/Phase 1
+- Users with 100s of highlights across 10-20 domains
+
+---
+
+## Approach B: **User-Defined Manual Collections** (Complex)
+
+### Concept:
+Collections = **User-created groups** (like folders/playlists)
+
+```
+Collection = Arbitrary user creation
+- "My PhD Research" → highlights from 5 different domains
+- "Climate Papers" → highlights from 10 domains
+```
+
+### Relationship:
+**Many:many (Collections ↔ Highlights)**
+- One highlight can be in multiple collections
+- One collection contains highlights from any domain
+
+### Schema (WITH Junction Table):
+
+```sql
+-- Collections = User-created groups
+CREATE TABLE collections (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,             -- User-defined "My PhD Research"
+    description TEXT,
+    
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ
+);
+
+-- Highlights (no change)
+CREATE TABLE highlights (
+    id TEXT PRIMARY KEY,
+    user_id UUID,
+    url TEXT,
+    text TEXT,
+    -- ...
+);
+
+-- Junction table (many-to-many)
+CREATE TABLE highlight_collections (
+    highlight_id TEXT REFERENCES highlights(id) ON DELETE CASCADE,
+    collection_id UUID REFERENCES collections(id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    PRIMARY KEY (highlight_id, collection_id)
+);
+```
+
+### How It Works:
+
+```typescript
+// Get highlights for collection (JOIN required)
+function getCollectionHighlights(collectionId: string): Highlight[] {
+  return db.query(`
+    SELECT h.*
+    FROM highlights h
+    JOIN highlight_collections hc ON h.id = hc.highlight_id
+    WHERE hc.collection_id = $1
+    AND h.deleted_at IS NULL
+  `, [collectionId]);
+}
+
+// Add highlight to multiple collections
+function addToCollections(highlightId: string, collectionIds: string[]) {
+  for (const cid of collectionIds) {
+    db.insert('highlight_collections', { highlight_id: highlightId, collection_id: cid });
+  }
+}
+```
+
+### Pros:
+- ✅ Flexible ("Research" collection across domains)
+- ✅ One highlight in multiple collections
+- ✅ Power users love it
+
+### Cons:
+- ❌ Complex schema (junction table)
+- ❌ Manual maintenance (user must assign)
+- ❌ Data integrity issues (orphaned references)
+- ❌ Slower queries (JOIN on every read)
+- ❌ Sync complexity (3 tables to sync)
+
+### Good For:
+- Power users (PhD students, researchers)
+- Phase 2/3 (after MVP)
+- Users who need cross-domain organization
+
+---
+
+## UI Design Analysis: Which Approach?
+
+Looking at your **vertical list design**:
+
+```
+Collections
+- Alphabetical | By Usage | Recently Added
+
+nytimes.com      - News & Media        - 24 underscores →
+wikipedia.org    - Reference           - 12 underscores →
+github.com       - Development         - 8 underscores  →
+```
+
+### This UI Suggests: **Approach A (Domain-Based)**
+
+**Evidence**:
+1. Collection names are **domains** (`nytimes.com`, not "My News")
+2. "By Usage" sort = highlight count per domain
+3. "Recently Added" = most recent highlight on that domain
+4. Categories are **metadata on domains**, not collection types
+
+### If Approach B (Manual), UI would show:
+```
+Collections
+- "My PhD Research" - 45 underscores → (from 5 domains)
+- "Climate Papers" - 23 underscores → (from 10 domains)
+- "Reading List" - 12 underscores → (from 3 domains)
+```
+
+**Verdict**: Your UI design aligns with **Approach A (Domain-Based)**.
+
+---
+
+## Deeper Schema Questions
+
+### Q1: Should highlights have a `collection_id` foreign key?
+
+**Approach A**: NO (implicit via domain extraction)
+```sql
+-- No FK needed
+-- Domain = new URL(highlight.url).hostname
+```
+
+**Approach B**: NO (junction table instead)
+```sql
+-- Many-to-many via junction table
+```
+
+**Verdict**: **NO foreign key needed** in either approach.
+
+---
+
+### Q2: How to compute `highlightCount`?
+
+**Option 1: Computed on-the-fly** (Simple, Always Accurate)
+```sql
+-- Every time user opens collections view
+SELECT 
+  domain,
+  COUNT(*) as highlight_count
+FROM highlights
+WHERE user_id = $1 AND deleted_at IS NULL
+GROUP BY domain;
+```
+
+**Option 2: Cached field** (Fast, Can Drift)
+```sql
+ALTER TABLE collections ADD COLUMN highlight_count INT DEFAULT 0;
+
+-- Update via trigger
+CREATE TRIGGER update_collection_count
+AFTER INSERT OR DELETE ON highlights
+FOR EACH ROW EXECUTE FUNCTION refresh_count();
+```
+
+**Option 3: Materialized View** (Middle Ground)
+```sql
+CREATE MATERIALIZED VIEW collection_stats AS
+SELECT domain, COUNT(*) as count FROM highlights GROUP BY domain;
+
+REFRESH MATERIALIZED VIEW collection_stats;  -- Periodic refresh
+```
+
+**Recommendation**: Start with **Option 1** (computed). Add caching only if slow.
+
+---
+
+### Q3: What about "Add new collection" button?
+
+**Approach A (Domain-Based)**:
+- Button is misleading/confusing
+- Collections auto-appear when you highlight a new domain
+- **Remove button** or change to "Track New Domain" (advanced)
+
+**Approach B (Manual)**:
+- Button makes sense ("Create new collection")
+- User types name, description
+- Then assigns highlights manually
+
+**Recommendation**: If Approach A, **remove the button** or make it "Add domain metadata" (optional).
+
+---
+
+### Q4: Category field - How is it populated?
+
+**Option 1: User Manual Entry**
+```typescript
+// User explicitly sets category
+updateCollection(id, { category: "Reference" });
+```
+
+**Option 2: Domain Heuristics**
+```typescript
+const DOMAIN_CATEGORIES = {
+  'wikipedia.org': 'Reference',
+  'github.com': 'Development',
+  'nytimes.com': 'News & Media',
+  'stackoverflow.com': 'Development',
+  // ...
+};
+
+function inferCategory(domain: string): string | undefined {
+  return DOMAIN_CATEGORIES[domain];
+}
+```
+
+**Option 3: AI Classification** (Neural Mode)
+```typescript
+const category = await ai.classify(domain, highlightTexts);
+```
+
+**Recommendation**: 
+- Start with **Option 2** (heuristics) as default
+- Allow **Option 1** (manual override)
+- Add **Option 3** (AI) in Neural Mode
+
+---
+
+## Performance Analysis
+
+### Approach A (Domain-Based, No Junction)
+
+**Query: Get highlights for collection**
+```sql
+-- Simple WHERE clause
+SELECT * FROM highlights 
+WHERE user_id = $1 
+AND url LIKE 'https://wikipedia.org%'
+AND deleted_at IS NULL;
+
+-- With functional index for speed
+CREATE INDEX idx_highlights_domain ON highlights(user_id, (regexp_replace(url, '^https?://([^/]+).*', '\1')));
+```
+
+**Performance**: O(1) with index. **~5ms** for 1000 highlights.
+
+---
+
+### Approach B (Manual, With Junction)
+
+**Query: Get highlights for collection**
+```sql
+-- JOIN required
+SELECT h.* 
+FROM highlights h
+JOIN highlight_collections hc ON h.id = hc.highlight_id
+WHERE hc.collection_id = $1
+AND h.deleted_at IS NULL;
+```
+
+**Performance**: O(N) with JOIN. **~20-50ms** for 1000 highlights.
+
+**Storage Overhead**:
+- Junction table: 1 row per (highlight, collection) pair
+- 1000 highlights × 3 collections = 3000 junction rows
+
+---
+
+## Sync Complexity
+
+### Approach A:
+- Sync 2 tables: `highlights`, `collections` (metadata only)
+- Collections are **derived** from highlights
+
+### Approach B:
+- Sync 3 tables: `highlights`, `collections`, `highlight_collections`
+- Conflict resolution 3× harder
+- Offline queue 3× larger
+
+**Verdict**: Approach A is **significantly simpler** to sync.
+
+---
+
+## Migration Strategy
+
+### If You Pick A, Then Want B Later:
+
+```sql
+-- Easy migration (add junction table, backfill)
+CREATE TABLE highlight_collections (...);
+
+-- Auto-create "All Wikipedia" collection per domain
+INSERT INTO highlight_collections (highlight_id, collection_id)
+SELECT h.id, c.id
+FROM highlights h
+JOIN collections c ON c.domain = (regexp_replace(h.url, '^https?://([^/]+).*', '\1'));
+```
+
+**Verdict**: Can always upgrade A → B. **Cannot downgrade B → A**.
+
+---
+
+## Recommendation
+
+### Start with **Approach A (Domain-Based)**
+
+**Why**:
+1. Matches your UI design
+2. Simpler schema (no junction table)
+3. Faster queries
+4. Easier sync
+5. Natural mental model
+6. Covers 90% of use cases
+
+**Revised Schema**:
+```sql
+CREATE TABLE collections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    domain TEXT NOT NULL,           -- "wikipedia.org" (UNIQUE per user)
+    
+    -- Optional user customization
+    display_name TEXT,               -- Override domain name
+    category TEXT,                   -- "Reference" (heuristic or manual)
+    icon_url TEXT,
+    color TEXT,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    
+    UNIQUE(user_id, domain)
+);
+
+-- Highlights (NO CHANGE)
+-- No junction table needed
+```
+
+### Later (Phase 3), Add **Approach B** as "Smart Collections"
+
+```sql
+-- Keep domain-based collections (renamed "auto_collections")
+-- Add manual collections (new table "smart_collections")
+-- Add junction table for smart collections only
+```
+
+---
+
+## Final Schema Proposal
+
+```sql
+-- Phase 1: Domain-Based Collections (Simple)
+CREATE TABLE collections (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    domain TEXT NOT NULL,                    -- Auto-populated from highlights
+    display_name TEXT,                       -- User can override
+    category TEXT,                           -- Heuristic or manual
+    icon_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    
+    UNIQUE(user_id, domain)
+);
+
+-- Index for domain extraction from highlights
+CREATE INDEX idx_highlights_domain_extraction 
+ON highlights(user_id, (substring(url from 'https?://([^/]+)')));
+
+-- Phase 2+: Add many-to-many for "Smart Collections" (future)
+```
+
+**Effort**: 3 days (vs 6 days for many-to-many approach)
+
+---
+
+## Summary
+
+**Your UI → Domain-Based (Approach A)**
+
+**Recommendation**: 
+- ✅ Start simple (domain-based, no junction)
+- ✅ Add many-to-many later if users demand it
+- ✅ 90% of users don't need manual collections
+
+**Key Decision**: Remove "Add collection" button OR make collections auto-created.
