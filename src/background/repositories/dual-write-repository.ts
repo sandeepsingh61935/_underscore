@@ -8,7 +8,7 @@
  * - Authentication-aware: skips cloud when offline/unauthenticated
  */
 
-import type { IHighlightRepository } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 
 import type { SupabaseHighlightRepository } from './supabase-highlight-repository';
@@ -40,28 +40,51 @@ export class DualWriteRepository implements IHighlightRepository {
     // Core CRUD Operations (Dual Write)
     // ============================================
 
-    async add(highlight: HighlightDataV2): Promise<void> {
+    async add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void> {
         // Write to local immediately (fast, reliable)
         await this.localRepo.add(highlight);
         this.logger.info('[DualWrite] ✅ Saved to local IndexedDB', { id: highlight.id });
 
+        if (options?.skipSync) {
+            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id: highlight.id });
+            return;
+        }
+
         // Write to cloud async if authenticated
-        this.writeToCloudAsync(() => this.cloudRepo.add(highlight), 'add', highlight.id, highlight);
+        // Inject userId from AuthManager to satisfy RLS
+        const currentUser = this.authManager.currentUser;
+        if (currentUser) {
+            const dataWithUser = { ...highlight, userId: currentUser.id };
+            this.writeToCloudAsync(() => this.cloudRepo.add(dataWithUser), 'add', highlight.id, dataWithUser);
+        } else {
+            // Let writeToCloudAsync handle unauthenticated logic (it skips)
+            this.writeToCloudAsync(() => this.cloudRepo.add(highlight), 'add', highlight.id, highlight);
+        }
     }
 
-    async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+    async update(id: string, updates: Partial<HighlightDataV2>, options?: RepositoryOptions): Promise<void> {
         // Update local first
         await this.localRepo.update(id, updates);
         this.logger.info('[DualWrite] Updated in local', { id });
+
+        if (options?.skipSync) {
+            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id });
+            return;
+        }
 
         // Update cloud async if authenticated
         this.writeToCloudAsync(() => this.cloudRepo.update(id, updates), 'update', id, updates);
     }
 
-    async remove(id: string): Promise<void> {
+    async remove(id: string, options?: RepositoryOptions): Promise<void> {
         // Remove from local first
         await this.localRepo.remove(id);
         this.logger.info('[DualWrite] Removed from local', { id });
+
+        if (options?.skipSync) {
+            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id });
+            return;
+        }
 
         // Remove from cloud async if authenticated
         this.writeToCloudAsync(() => this.cloudRepo.remove(id), 'remove', id);
@@ -89,6 +112,12 @@ export class DualWriteRepository implements IHighlightRepository {
         // 0. Ensure auth state is initialized (prevents race condition on load)
         await this.authManager.initialize();
 
+        this.logger.info('[DualWrite] findByUrl called', {
+            url,
+            isAuthenticated: this.authManager.isAuthenticated,
+            userId: this.authManager.currentUser?.id
+        });
+
         // 1. Get from local (always fast)
         const localPromise = this.localRepo.findByUrl(url);
 
@@ -96,43 +125,61 @@ export class DualWriteRepository implements IHighlightRepository {
         let cloudPromise: Promise<HighlightDataV2[]> = Promise.resolve([]);
 
         if (this.authManager.currentUser) {
+            this.logger.info('[DualWrite] User authenticated, fetching from cloud...', { userId: this.authManager.currentUser.id });
             cloudPromise = this.cloudRepo.findByUrl(url).catch(error => {
                 this.logger.error('[DualWrite] Failed to fetch from cloud', error);
                 return [];
             });
+        } else {
+            this.logger.warn('[DualWrite] User NOT authenticated, skipping cloud fetch');
         }
 
         // 3. Wait for both to ensure cross-device sync on load
         const [localItems, cloudItems] = await Promise.all([localPromise, cloudPromise]);
 
-        // 4. Merge results (deduplicate by ID)
-        // If an item is in cloud but not local, we should backfill it to local
-        // but that requires write access which might be side-effecty for a "find" method.
-        // For now, we just return the merged view.
-        // The calling service (VaultModeService) can handle backfilling persistence if needed.
+        this.logger.info('[DualWrite] Fetch results', {
+            localCount: localItems.length,
+            cloudCount: cloudItems.length,
+            url
+        });
 
+        // 4. Merge results + Read Repair (backfill cloud → local)
         const mergedMap = new Map<string, HighlightDataV2>();
+        const cloudOnlyIds: string[] = [];
 
         // Add local items first
         localItems.forEach(item => mergedMap.set(item.id, item));
 
-        // Add/Overwrite with cloud items (Cloud is source of truth? Or Local?)
-        // Usually local has unsynced changes, so local should win overlapping IDs.
-        // But cloud has items we don't know about.
+        // Add cloud items and track which are missing locally
         cloudItems.forEach(item => {
             if (!mergedMap.has(item.id)) {
                 mergedMap.set(item.id, item);
+                cloudOnlyIds.push(item.id);
             }
         });
 
         const merged = Array.from(mergedMap.values());
 
-        if (cloudItems.length > 0) {
-            this.logger.debug('[DualWrite] Merged local and cloud items', {
-                localCount: localItems.length,
-                cloudCount: cloudItems.length,
-                total: merged.length
+        this.logger.info('[DualWrite] Merge complete', {
+            localCount: localItems.length,
+            cloudCount: cloudItems.length,
+            mergedTotal: merged.length,
+            cloudOnlyCount: cloudOnlyIds.length
+        });
+
+        // Read Repair: Backfill cloud-only highlights to local IndexedDB
+        // This ensures cross-profile sync (Profile A creates, Profile B fetches and persists locally)
+        if (cloudOnlyIds.length > 0) {
+            this.logger.info('[DualWrite] 🔧 Read Repair: Backfilling cloud highlights to local', {
+                count: cloudOnlyIds.length,
+                ids: cloudOnlyIds
             });
+
+            // Fire-and-forget backfill (don't block the read operation)
+            this.backfillToLocal(cloudItems.filter(item => cloudOnlyIds.includes(item.id)))
+                .catch(error => {
+                    this.logger.error('[DualWrite] Read Repair failed', error);
+                });
         }
 
         return merged;
@@ -221,6 +268,38 @@ export class DualWriteRepository implements IHighlightRepository {
                 // Attempt to queue for offline retry
                 this.queueForRetry(operationName, identifier, payload, error);
             });
+    }
+
+    /**
+     * Read Repair: Backfill cloud-only highlights to local IndexedDB
+     * Ensures eventual consistency across browser profiles
+     */
+    private async backfillToLocal(highlights: HighlightDataV2[]): Promise<void> {
+        if (highlights.length === 0) {
+            return;
+        }
+
+        this.logger.info('[DualWrite] Starting read repair backfill', {
+            count: highlights.length
+        });
+
+        for (const highlight of highlights) {
+            try {
+                // Write ONLY to local (skipSync would be redundant here, but explicit)
+                await this.localRepo.add(highlight);
+                this.logger.debug('[DualWrite] Backfilled highlight to local', {
+                    id: highlight.id
+                });
+            } catch (error) {
+                this.logger.error('[DualWrite] Failed to backfill highlight', error as Error, {
+                    id: highlight.id
+                });
+            }
+        }
+
+        this.logger.info('[DualWrite] Read repair backfill complete', {
+            count: highlights.length
+        });
     }
 
     private queueForRetry(
