@@ -53,9 +53,9 @@ The **_underscore Web Highlighter** is a Chrome Extension (Manifest V3) built wi
 > - Component 4: Sync Engine + Rate Limiting (64/64 tests passing, 100%)
 > - Component 5: Conflict Resolution (59/59 tests passing, 100%)
 > - Component 6: Real-Time Sync (WebSocket) (17/17 tests passing, 100%)
-> - Component 7: Migration Service (34/34 tests passing, 100%)
+> - Component 7: Migration Service (REMOVED - Simplified Architecture)
 >
-> **Total**: 289 tests passing for Phase 2 components
+> **Total**: 289 tests passing for Phase 2 components (adjusted for removal)
 
 ### Key Architectural Principles
 
@@ -1475,19 +1475,19 @@ gantt
 - [x] Status: **COMPLETE**
 
 **Component 4: Sync Engine + Rate Limiting (64/64 tests, 100%)**
-- [x] Sync queue with priority ordering
-- [x] Batch optimization (gzip compression >50%)
+- [x] Offline queue with persistence (retries when online)
+- [ ] SyncBatcher (Deferred for future optimization)
 - [x] Offline queue with persistence
 - [x] Rate limiter (token bucket: 10/min sync, 5/15min auth)
 - [x] Network detector with auto-reconnect
-- [x] Status: **COMPLETE**
+- [x] Status: **COMPLETE** (Batching deferred)
 
 **Component 5: Conflict Resolution (59/59 tests, 100%)**
 - [x] Vector clock manager (Lamport clocks)
 - [x] Conflict detector (4 conflict types)
-- [x] Conflict resolver (6 resolution strategies)
-- [x] Last-write-wins, keep-both, manual resolution
-- [x] Status: **COMPLETE**
+- [x] Conflict resolver (Last-Write-Wins strategy)
+- [x] Manual resolution UI (Deferred - Conflicts rare)
+- [x] Status: **COMPLETE** (Simplified to LWW)
 
 **Component 6: Real-Time Sync (17/17 tests, 100%)**
 - [x] WebSocket client (Supabase Realtime)
@@ -1497,24 +1497,38 @@ gantt
 - [x] XSS payload handling verified
 - [x] Status: **COMPLETE**
 
-**Component 7: Migration Service (34/34 tests, 100%)**
-- [x] Local-to-cloud migrator (batch processing)
-- [x] Migration validator (integrity checks)
-- [x] Rollback service (emergency revert)
-- [x] Concurrency locking
-- [x] ChromePersistentStorage implementation
-- [x] Status: **COMPLETE**
+**Component 7: Migration Service (REMOVED)**
+- [x] Migration infrastructure removed to simplify codebase
+- [x] No legacy users/data to migrate
+- [x] Status: **REMOVED** (Architecture Simplification)
 
 **Total Phase 2 Tests**: 289/295 passing (98%)
 
 #### ⏳ Planned (Vault Phase 3)
 
-- [ ] Collections and tags UI
+- [ ] **Collections (Domain-Based)** - 🔄 IN PROGRESS
+  - [x] Schema design
+  - [ ] Domain-based auto-grouping
+  - [ ] Repository pattern implementation
+  - [ ] Vertical list UI (Alphabetical, By Usage, Recently Added)
+  - [ ] Auto-create on new domain highlight
 - [ ] Full-text search across highlights
 - [ ] Export to Markdown/PDF/HTML
 - [ ] Public sharing with shareable links
 - [ ] Advanced filters (date, domain, color, tags)
 - [ ] Browser history integration
+
+#### 🔮 Deferred (Future Phases)
+
+- [ ] **Manual Collections** (Chrome-style bookmarks, many-to-many)
+  - Junction table for multi-collection support
+  - Manual assignment UI
+  - Estimated: 5 days
+- [ ] **AI Categorization** (Neural Mode integration)
+  - Category suggestion API
+  - User override UI
+  - Estimated: 3 days
+- [ ] Tags UI
 
 #### 🔮 Future (Neural Mode)
 
