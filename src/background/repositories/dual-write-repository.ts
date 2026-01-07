@@ -43,7 +43,7 @@ export class DualWriteRepository implements IHighlightRepository {
     async add(highlight: HighlightDataV2): Promise<void> {
         // Write to local immediately (fast, reliable)
         await this.localRepo.add(highlight);
-        this.logger.debug('[DualWrite] Added to local', { id: highlight.id });
+        this.logger.info('[DualWrite] ✅ Saved to local IndexedDB', { id: highlight.id });
 
         // Write to cloud async if authenticated
         this.writeToCloudAsync(() => this.cloudRepo.add(highlight), 'add', highlight.id, highlight);
@@ -52,7 +52,7 @@ export class DualWriteRepository implements IHighlightRepository {
     async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
         // Update local first
         await this.localRepo.update(id, updates);
-        this.logger.debug('[DualWrite] Updated in local', { id });
+        this.logger.info('[DualWrite] Updated in local', { id });
 
         // Update cloud async if authenticated
         this.writeToCloudAsync(() => this.cloudRepo.update(id, updates), 'update', id, updates);
@@ -61,7 +61,7 @@ export class DualWriteRepository implements IHighlightRepository {
     async remove(id: string): Promise<void> {
         // Remove from local first
         await this.localRepo.remove(id);
-        this.logger.debug('[DualWrite] Removed from local', { id });
+        this.logger.info('[DualWrite] Removed from local', { id });
 
         // Remove from cloud async if authenticated
         this.writeToCloudAsync(() => this.cloudRepo.remove(id), 'remove', id);
@@ -196,7 +196,7 @@ export class DualWriteRepository implements IHighlightRepository {
     ): void {
         // Check if user is authenticated
         if (!this.authManager.currentUser) {
-            this.logger.debug('[DualWrite] Skipping cloud write (not authenticated)', {
+            this.logger.info('[DualWrite] Skipping cloud write (not authenticated)', {
                 operation: operationName,
                 id: identifier,
             });
@@ -206,7 +206,7 @@ export class DualWriteRepository implements IHighlightRepository {
         // Fire-and-forget cloud write
         operation()
             .then(() => {
-                this.logger.debug('[DualWrite] Cloud write succeeded', {
+                this.logger.info('[DualWrite] ☁️ Synced to Supabase cloud', {
                     operation: operationName,
                     id: identifier,
                 });
