@@ -6,7 +6,7 @@
  * Provides abstraction between domain layer and Supabase API.
  */
 
-import type { IHighlightRepository } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { SupabaseClient } from '../api/supabase-client';
 import type { ILogger } from '../utils/logger';
@@ -30,7 +30,7 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
     // Core CRUD Operations
     // ============================================
 
-    async add(highlight: HighlightDataV2): Promise<void> {
+    async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
         this.logger.debug('[SupabaseRepo] Adding highlight', { id: highlight.id });
         await this.supabaseClient.createHighlight(highlight);
     }
@@ -44,12 +44,12 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
         return all.find(h => h.id === id) || null;
     }
 
-    async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+    async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
         this.logger.debug('[SupabaseRepo] Updating highlight', { id, fields: Object.keys(updates) });
         await this.supabaseClient.updateHighlight(id, updates);
     }
 
-    async remove(id: string): Promise<void> {
+    async remove(id: string, _options?: RepositoryOptions): Promise<void> {
         this.logger.debug('[SupabaseRepo] Removing highlight', { id });
         await this.supabaseClient.deleteHighlight(id);
     }
