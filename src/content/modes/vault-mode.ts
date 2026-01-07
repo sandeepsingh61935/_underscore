@@ -212,10 +212,14 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
 
+    // Normalize URL (remove hash fragment for consistent querying)
+    const url = window.location.href.split('#')[0] || window.location.href;
+
     const data: HighlightData = {
       id,
       text,
       contentHash,
+      url, // CRITICAL: Must include URL for findByUrl() to work
       colorRole: colorRole || 'yellow', // Default color if missing
       type: 'underscore',
       ranges: [serializedRange],
@@ -277,10 +281,16 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
   async restore(_url?: string): Promise<void> {
     // Use VaultModeService to restore from IndexedDB
+    this.logger.info('[VAULT] 🔄 Starting restore process...');
 
     const restored = await this.vaultService.restoreHighlightsForUrl();
 
-    this.logger.info(`[VAULT] Restoring ${restored.length} highlights`);
+    this.logger.info(`[VAULT] ✅ Restoring ${restored.length} highlights`);
+
+    if (restored.length === 0) {
+      this.logger.warn('[VAULT] ⚠️ No highlights found to restore. Check if highlights were saved with correct URL.');
+      return;
+    }
 
     for (const item of restored) {
       const { highlight: storedData, range } = item;
@@ -294,6 +304,8 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
         // Inject CSS for visual rendering
         injectHighlightCSS('underscore', storedData.id, storedData.colorRole || 'yellow');
+
+        this.logger.info(`[VAULT] ✅ Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
 
         // Construct full HighlightData with live ranges
         // We cast storedData because it is V2 (persisted) and we need runtime HighlightData
@@ -314,8 +326,12 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         } else {
           this.logger.debug('[VAULT] Skipping duplicate restore', { id: storedData.id });
         }
+      } else {
+        this.logger.warn(`[VAULT] ❌ Failed to restore range for highlight: ${storedData.id}`);
       }
     }
+
+    this.logger.info(`[VAULT] 🎉 Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
   }
 
   async sync(): Promise<void> {

@@ -138,10 +138,12 @@ export class VaultModeService {
       const url = window.location.href.split('#')[0] || '';
       if (!url) return [];
 
+      this.logger.info(`[VAULT] 🔍 Querying highlights for URL: ${url}`);
+
       // Fetch from Repository (DualWriteRepo handles local + cloud merging)
       const highlights = await this.repository.findByUrl(url);
 
-      this.logger.info(`[VAULT] Restoring ${highlights.length} highlights from repository`);
+      this.logger.info(`[VAULT] 📦 Found ${highlights.length} highlights from repository`);
 
       // Restore Ranges
       const results = await Promise.all(
