@@ -31,15 +31,19 @@ export class EventBridge {
      * Forward event to all active tabs
      */
     private async forwardToContentScript(eventName: string, payload: any): Promise<void> {
-        this.logger.debug(`[EventBridge] Forwarding ${eventName} to content scripts`, { id: payload.id });
+        this.logger.info(`[EventBridge] 📤 Forwarding ${eventName} to content scripts`, { id: payload?.id });
 
         try {
             // Send to current active tab(s)
             // Using WXT browser polyfill
             const tabs = await browser.tabs.query({});
 
+            this.logger.info(`[EventBridge] Found ${tabs.length} tabs to notify`);
+
             for (const tab of tabs) {
                 if (tab.id) {
+                    this.logger.info(`[EventBridge] Sending to tab ${tab.id}`, { url: tab.url?.substring(0, 50) });
+
                     // Fire and forget
                     browser.tabs.sendMessage(tab.id, {
                         type: eventName,
@@ -47,7 +51,7 @@ export class EventBridge {
                         timestamp: Date.now()
                     }).catch(err => {
                         // Ignore connection errors (tab might not have content script)
-                        // this.logger.debug('[EventBridge] Failed to send to tab', { tabId: tab.id, error: err });
+                        this.logger.debug('[EventBridge] Tab not ready for messages', { tabId: tab.id });
                     });
                 }
             }
