@@ -223,8 +223,12 @@ export class DualWriteRepository implements IHighlightRepository {
         await this.localRepo.clear();
         this.logger.warn('[DualWrite] Cleared local storage');
 
-        // Note: We don't clear cloud automatically (destructive operation)
-        // User must explicitly delete from Supabase if needed
+        // Clear cloud async (Soft Delete All)
+        this.writeToCloudAsync(
+            () => this.cloudRepo.clear(),
+            'remove' as any, // Treat clear as remove type for simplicity
+            'ALL_HIGHLIGHTS'
+        );
     }
 
     // ============================================
