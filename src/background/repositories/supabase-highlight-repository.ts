@@ -60,8 +60,8 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
     }
 
     async clear(): Promise<void> {
-        this.logger.warn('[SupabaseRepo] Clear operation not implemented for Supabase');
-        throw new Error('Clear not supported for Supabase repository - use remove() for individual deletes');
+        this.logger.warn('[SupabaseRepo] Clearing all highlights (Soft Delete)');
+        await this.supabaseClient.softDeleteAllHighlights();
     }
 
     // ============================================
