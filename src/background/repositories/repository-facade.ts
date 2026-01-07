@@ -12,7 +12,6 @@
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
-import { MigrationService } from '../services/migration-service';
 import type { ILogger } from '../utils/logger';
 
 import type { IHighlightRepository } from './i-highlight-repository';
@@ -255,28 +254,6 @@ export class RepositoryFacade {
     // Persist async in background
     this.repository.addMany(highlights).catch((error) => {
       this.logger.error('Background bulk add failed', error);
-    });
-  }
-
-  /**
-   * Add from data (backward compatibility with HighlightStore)
-   * Automatically migrates old format to V2
-   */
-  async addFromData(data: unknown): Promise<void> {
-    this.ensureInitialized();
-
-    // Use statically imported service
-    const migration = new MigrationService();
-
-    // Auto-migrate to latest version
-    const v2Data = await migration.migrateToLatest(data);
-
-    // Add migrated data
-    this.add(v2Data);
-
-    this.logger.info('Data added (with migration if needed)', {
-      id: v2Data.id,
-      wasMigrated: migration.needsMigration(data),
     });
   }
 }

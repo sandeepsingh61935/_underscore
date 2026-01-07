@@ -12,11 +12,9 @@
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
-import { MigrationService } from '../services/migration-service';
 import type { ILogger } from '../utils/logger';
 
 import type { IHighlightRepository } from './i-highlight-repository';
-import { RepositoryFactory } from './repository-factory';
 
 /**
  * Synchronous Repository Facade
@@ -26,7 +24,7 @@ import { RepositoryFactory } from './repository-factory';
  *
  * Usage:
  * ```typescript
- * const facade = new RepositoryFacade();
+ * const facade = new RepositoryFacade(repository);
  * await facade.initialize();  // Once at startup
  *
  * // Then use synchronously
@@ -41,8 +39,9 @@ export class RepositoryFacade {
   private initialized = false;
   private logger: ILogger;
 
-  constructor(repository?: IHighlightRepository) {
-    this.repository = repository || RepositoryFactory.getHighlightRepository();
+  constructor(repository: IHighlightRepository) {
+    if (!repository) throw new Error('Repository is required');
+    this.repository = repository;
     this.logger = LoggerFactory.getLogger('RepositoryFacade');
   }
 
@@ -72,35 +71,6 @@ export class RepositoryFacade {
       });
     } catch (error) {
       this.logger.error('Failed to initialize facade', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Reload data from repository (use when auth state changes)
-   * Clears cache and re-fetches fresh data.
-   */
-  async reload(): Promise<void> {
-    this.logger.info('Reloading facade cache...');
-
-    // Clear existing cache
-    this.cache.clear();
-    this.contentHashIndex.clear();
-
-    // Re-fetch everything
-    try {
-      const all = await this.repository.findAll();
-
-      for (const item of all) {
-        this.cache.set(item.id, item);
-        this.contentHashIndex.set(item.contentHash, item.id);
-      }
-
-      this.logger.info('Repository facade reloaded', {
-        count: this.cache.size,
-      });
-    } catch (error) {
-      this.logger.error('Failed to reload facade', error as Error);
       throw error;
     }
   }
@@ -284,28 +254,6 @@ export class RepositoryFacade {
     // Persist async in background
     this.repository.addMany(highlights).catch((error) => {
       this.logger.error('Background bulk add failed', error);
-    });
-  }
-
-  /**
-   * Add from data (backward compatibility with HighlightStore)
-   * Automatically migrates old format to V2
-   */
-  async addFromData(data: unknown): Promise<void> {
-    this.ensureInitialized();
-
-    // Use statically imported service
-    const migration = new MigrationService();
-
-    // Auto-migrate to latest version
-    const v2Data = await migration.migrateToLatest(data);
-
-    // Add migrated data
-    this.add(v2Data);
-
-    this.logger.info('Data added (with migration if needed)', {
-      id: v2Data.id,
-      wasMigrated: migration.needsMigration(data),
     });
   }
 }
