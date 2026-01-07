@@ -67,14 +67,15 @@ export class VaultModeService {
    *
    * @param highlight - Highlight data to save
    * @param range - DOM Range for selector generation
-   * @param collectionId - Optional collection ID for organization
+   * @param options - Repository options (e.g. skipSync)
    * @returns Promise that resolves when highlight is saved
-   * 
+   *
    * @throws Error if highlight cannot be saved
    */
   async saveHighlight(
     highlight: HighlightDataV2,
-    range: Range
+    range: Range,
+    options?: RepositoryOptions
   ): Promise<void> {
     try {
       // Generate multi-selectors from the DOM Range
@@ -101,12 +102,13 @@ export class VaultModeService {
         };
       }
 
-      await this.repository.add(payload);
+      await this.repository.add(payload, options);
 
       this.logger.info('[VAULT] Highlight saved', {
         id: payload.id,
         text: payload.text.substring(0, 50),
         repository: 'DualWrite',
+        skippedSync: !!options?.skipSync
       });
     } catch (error) {
       this.logger.error('[VAULT] Failed to save highlight', error as Error, {
