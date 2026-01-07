@@ -9,7 +9,7 @@ import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-sche
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
-import type { IHighlightRepository } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
 
 /**
  * In-memory highlight repository
@@ -29,7 +29,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
   // CRUD Operations
   // ============================================
 
-  async add(highlight: HighlightDataV2): Promise<void> {
+  async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
     // Idempotent - no error if already exists
     if (this.highlights.has(highlight.id)) {
       this.logger.warn('Highlight already exists, skipping', {
@@ -51,7 +51,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
     });
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+  async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
     const existing = this.highlights.get(id);
 
     if (!existing) {
@@ -82,7 +82,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
     });
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, _options?: RepositoryOptions): Promise<void> {
     const highlight = this.highlights.get(id);
 
     if (!highlight) {
