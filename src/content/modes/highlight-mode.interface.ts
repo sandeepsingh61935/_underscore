@@ -18,6 +18,7 @@ export interface HighlightData {
   id: string;
   text: string;
   contentHash: string; // SHA-256 hash for deduplication
+  url: string; // Page URL where highlight was created (normalized, without hash)
 
   /** Semantic color role (e.g., 'yellow', 'blue') - maps to CSS design tokens */
   colorRole: string;
