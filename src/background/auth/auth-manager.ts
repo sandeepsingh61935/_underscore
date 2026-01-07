@@ -30,6 +30,7 @@ export class AuthManager implements IAuthManager {
         lastAuthTime: null,
     };
 
+    private initializationPromise: Promise<void> | null = null;
     private rateLimiter: RateLimiter;
 
     constructor(
@@ -48,27 +49,38 @@ export class AuthManager implements IAuthManager {
             logger
         );
 
-        this.initialize();
+        // Start initialization immediately
+        this.initialize().catch(err => {
+            this.logger.error('Auth initialization failed', err);
+        });
     }
 
-    private async initialize(): Promise<void> {
-        // Setup Alarm Listener for Token Refresh
-        chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
-
-        // Listen for Supabase auth state changes
-        this.supabase.auth.onAuthStateChange((_event, session) => {
-            this.handleSupabaseAuthStateChange(session);
-            this.scheduleRefresh(session);
-        });
-
-        // Initial check
-        const { data: { session } } = await this.supabase.auth.getSession();
-        if (session) {
-            this.handleSupabaseAuthStateChange(session);
-            this.scheduleRefresh(session);
-        } else {
-            this.logger.debug('No active session found on init');
+    public async initialize(): Promise<void> {
+        if (this.initializationPromise) {
+            return this.initializationPromise;
         }
+
+        this.initializationPromise = (async () => {
+            // Setup Alarm Listener for Token Refresh
+            chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
+
+            // Listen for Supabase auth state changes
+            this.supabase.auth.onAuthStateChange((_event, session) => {
+                this.handleSupabaseAuthStateChange(session);
+                this.scheduleRefresh(session);
+            });
+
+            // Initial check
+            const { data: { session } } = await this.supabase.auth.getSession();
+            if (session) {
+                this.handleSupabaseAuthStateChange(session);
+                this.scheduleRefresh(session);
+            } else {
+                this.logger.debug('No active session found on init');
+            }
+        })();
+
+        return this.initializationPromise;
     }
 
     /**
