@@ -46,7 +46,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
     this.logger.debug('Added highlight', {
       id: highlight.id,
-      contentHash: highlight.contentHash.substring(0, 16) + '...',
+      contentHash: highlight.contentHash ? highlight.contentHash.substring(0, 16) + '...' : 'undefined',
       totalCount: this.highlights.size,
     });
   }
@@ -133,7 +133,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
     if (!id) {
       this.logger.debug('No highlight found for content hash', {
-        hash: hash.substring(0, 16) + '...',
+        hash: hash ? hash.substring(0, 16) + '...' : 'undefined',
       });
       return null;
     }
