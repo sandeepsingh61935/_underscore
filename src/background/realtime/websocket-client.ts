@@ -82,7 +82,7 @@ export class WebSocketClient implements IWebSocketClient {
                     });
 
                     if (status === 'SUBSCRIBED') {
-                        this.logger.debug('Successfully subscribed to highlights channel');
+                        this.logger.info('[WebSocketClient] ✅ Successfully subscribed to highlights channel');
                     } else if (status === 'CHANNEL_ERROR') {
                         this.logger.error('Realtime channel error', err || new Error('Unknown channel error'));
                     }
@@ -119,9 +119,11 @@ export class WebSocketClient implements IWebSocketClient {
     private async handleChange(payload: RealtimePostgresChangesPayload<HighlightDataV2>): Promise<void> {
         const anyPayload = payload as any;
         const eventType = anyPayload.eventType;
-        this.logger.debug('Received realtime event', {
+        this.logger.info('[WebSocketClient] 📨 Received realtime event', {
             event: eventType,
-            table: anyPayload.table
+            table: anyPayload.table,
+            hasNew: !!anyPayload.new,
+            hasOld: !!anyPayload.old
         });
 
         // 1. Process payload to decrypt if needed
@@ -140,6 +142,7 @@ export class WebSocketClient implements IWebSocketClient {
         // 2. Emit events
         switch (eventType) {
             case 'INSERT':
+                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_CREATED', { id: data?.id });
                 this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, data);
                 break;
             case 'UPDATE':
@@ -155,6 +158,7 @@ export class WebSocketClient implements IWebSocketClient {
                 break;
             case 'DELETE':
                 // payload.old contains the ID for DELETE events
+                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_DELETED', { id: anyPayload.old?.id });
                 this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, anyPayload.old);
                 break;
             default:
