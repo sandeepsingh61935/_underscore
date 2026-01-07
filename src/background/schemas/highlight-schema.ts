@@ -84,6 +84,7 @@ export const HighlightDataSchemaV2 = z.object({
 
   // Core fields
   id: z.string().uuid(),
+  userId: z.string().uuid().optional(), // Added for RLS
   text: z.string().min(1).max(10000),
   url: z.string().optional(),
 
