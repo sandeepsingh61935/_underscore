@@ -1,9 +1,10 @@
-
+import { LoggerFactory } from '@/background/utils/logger';
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { IWebSocketClient } from '@/background/realtime/interfaces/i-websocket-client';
 import { WebSocketClient } from '@/background/realtime/websocket-client';
+import { EventBridge } from '../services/event-bridge';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
 import { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 
@@ -35,5 +36,14 @@ export function registerRealtimeComponents(container: Container): void {
         const logger = container.resolve<ILogger>('logger');
 
         return new ConnectionManager(wsClient, eventBus, logger);
+    });
+
+    // ==================== Event Bridge ====================
+    container.registerSingleton('eventBridge', () => {
+        const c = container; // Alias for closure if needed, or use container directly
+        return new EventBridge(
+            c.resolve<IEventBus>('eventBus'),
+            LoggerFactory.getLogger('EventBridge')
+        );
     });
 }
