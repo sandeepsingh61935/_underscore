@@ -66,15 +66,29 @@ export async function initializeBackground(): Promise<Container> {
     const eventBridge = container.resolve<EventBridge>('eventBridge');
     eventBridge.initialize();
 
+    logger.info('[BOOTSTRAP] Starting auth initialization...');
+
+    // CRITICAL: Wait for auth initialization before checking user state
+    // Otherwise currentUser will always be null on startup
+    await authManager.initialize();
+
+    logger.info('[BOOTSTRAP] Auth initialization complete', {
+        isAuthenticated: authManager.isAuthenticated,
+        hasUser: !!authManager.currentUser,
+        userId: authManager.currentUser?.id
+    });
+
     // Auto-connect if already logged in
     const currentUser = authManager.currentUser;
     if (currentUser) {
-        logger.info('User authenticated on startup, connecting realtime', { userId: currentUser.id });
+        logger.info('[BOOTSTRAP] User authenticated on startup, connecting realtime', { userId: currentUser.id });
         // Don't await connection here to avoid blocking background script initialization
         // which would delay MessageBus listener registration
         void connectionManager.connect(currentUser.id).catch(err => {
-            logger.error('Failed to connect realtime on startup', err);
+            logger.error('[BOOTSTRAP] Failed to connect realtime on startup', err);
         });
+    } else {
+        logger.warn('[BOOTSTRAP] No authenticated user on startup, skipping realtime connection');
     }
 
     // Wire auth state changes to connection manager
