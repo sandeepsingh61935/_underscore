@@ -48,14 +48,16 @@ export class WebSocketClient implements IWebSocketClient {
                 return;
             }
 
-            // Get the current session to get the access token
+            // CRITICAL: Get the access token from the current session
+            // Supabase Realtime requires the JWT token to authenticate the WebSocket connection
             const { data: { session } } = await this.supabase.auth.getSession();
-            if (!session?.access_token) {
-                this.logger.warn('[WebSocketClient] No active session found during subscribe');
-                return;
+
+            if (!session || !session.access_token) {
+                this.logger.error('Cannot subscribe to realtime: No active session or access token');
+                throw new Error('No active session for realtime subscription');
             }
 
-            this.logger.info('[WebSocketClient] Initializing connection with auth token', {
+            this.logger.info('[WebSocketClient] Setting access token for realtime channel', {
                 userId,
                 tokenLength: session.access_token.length
             });
@@ -76,7 +78,7 @@ export class WebSocketClient implements IWebSocketClient {
                     (payload: RealtimePostgresChangesPayload<HighlightDataV2>) => this.handleChange(payload)
                 )
                 .subscribe((status: string, err?: Error) => {
-                    this.logger.info(`Realtime subscription status: ${status} `, {
+                    this.logger.info(`Realtime subscription status: ${status}`, {
                         userId,
                         error: err
                     });
@@ -134,8 +136,6 @@ export class WebSocketClient implements IWebSocketClient {
             } catch (error) {
                 this.logger.error('Failed to decrypt realtime highlight', error as Error, { id: data.id });
                 // Continue with encrypted data or handle failure?
-                // Emitting encrypted data might break UI, so we might want to skip or emit failure.
-                // For now, emit with error marker as in EncryptedAPIClient.
             }
         }
 
