@@ -168,6 +168,36 @@ export class SupabaseClient implements IAPIClient {
         }
     }
 
+    async softDeleteAllHighlights(): Promise<void> {
+        const user = this.authManager.currentUser;
+        if (!user) {
+            throw new AuthenticationError('User not authenticated');
+        }
+
+        this.logger.warn('Soft-deleting ALL highlights for user', { userId: user.id });
+
+        try {
+            const response = await this.withTimeout(
+                this.sdkClient
+                    .from('highlights')
+                    .update({
+                        deleted_at: new Date().toISOString(),
+                    })
+                    .eq('user_id', user.id)
+                    .is('deleted_at', null) // Only update active ones
+            ) as any;
+
+            if (response.error) {
+                throw this.transformError(response.error);
+            }
+
+            this.logger.info('All highlights soft-deleted successfully');
+        } catch (error) {
+            this.logger.error('Failed to clear highlights', error as Error);
+            throw error;
+        }
+    }
+
     async getHighlights(url?: string): Promise<HighlightDataV2[]> {
         const user = this.authManager.currentUser;
         if (!user) {
