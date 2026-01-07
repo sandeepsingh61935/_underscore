@@ -143,7 +143,15 @@ export class WebSocketClient implements IWebSocketClient {
                 this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, data);
                 break;
             case 'UPDATE':
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, data);
+                // Check for Soft Delete (deleted_at is set)
+                if (data?.deleted_at) {
+                    this.logger.info('[WebSocketClient] Detected Soft Delete via UPDATE -> Emitting REMOTE_HIGHLIGHT_DELETED', { id: data?.id });
+                    // DELETED event expects { id: ... } payload
+                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, { id: data.id });
+                } else {
+                    this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_UPDATED', { id: data?.id });
+                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, data);
+                }
                 break;
             case 'DELETE':
                 // payload.old contains the ID for DELETE events
