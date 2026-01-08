@@ -46,7 +46,7 @@ export default defineConfig({
     },
 
     // Test match patterns
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts', 'tests/e2e/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx', 'tests/integration/**/*.test.ts', 'tests/e2e/**/*.test.ts'],
 
     // Setup files
     setupFiles: ['./tests/setup.ts'],
@@ -59,6 +59,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@/ui-system': path.resolve(__dirname, './src/ui-system'),
       '@/content': path.resolve(__dirname, './src/content'),
       '@/background': path.resolve(__dirname, './src/background'),
       '@/popup': path.resolve(__dirname, './src/popup'),
