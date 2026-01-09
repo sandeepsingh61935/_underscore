@@ -1,24 +1,22 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
 
 interface LogoProps {
     className?: string;
     showText?: boolean;
 }
 
-export function Logo({ className, showText = true }: LogoProps) {
+/**
+ * Logo Component - Direct copy from design mockup
+ * Source: /docs/07-design/mode-selection/mode-selection-code.html
+ */
+export function Logo({ className = '', showText = true }: LogoProps) {
     return (
-        <div className={cn("flex items-center gap-3", className)}>
-            {/* Icon with debossed effect */}
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-bg-alt-light dark:bg-bg-elevated-dark shadow-debossed-light dark:shadow-debossed-dark flex-shrink-0">
-                <span className="absolute text-4xl font-extrabold leading-none select-none -translate-y-[2px] text-text-primary-light dark:text-text-primary-dark opacity-90">
-                    _
-                </span>
+        <div className={`flex items-center gap-2 ${className}`}>
+            <div className="relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-badge-light dark:bg-badge-dark shadow-inner dark:shadow-none text-text-primary dark:text-white -mt-0.5">
+                <span className="absolute text-2xl md:text-3xl font-extrabold leading-none select-none -translate-y-[2px]">_</span>
             </div>
-
-            {/* Brand text */}
             {showText && (
-                <h1 className="text-text-primary-light dark:text-text-primary-dark text-3xl font-light tracking-tight select-none">
+                <h1 className="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
                     underscore
                 </h1>
             )}
