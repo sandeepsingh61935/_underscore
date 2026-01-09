@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Logo } from '../../../ui-system/components/primitives/Logo';
 import { EmptyCollectionsState } from '../components/EmptyCollectionsState';
 import { AccountMenu } from '../../../ui-system/components/AccountMenu';
+import { Card } from '../../../ui-system/components/primitives/Card';
 import { useTheme } from '../../../ui-system/hooks/useTheme';
 import { Settings, User, List, Grid, ArrowRight, Lock } from 'lucide-react';
 
@@ -77,14 +78,14 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
     };
 
     return (
-        <div className="w-[360px] h-[600px] bg-bg-base-light dark:bg-bg-base-dark font-display flex flex-col relative">
+        <div className="w-[360px] h-[600px] bg-surface font-display flex flex-col relative">
             {/* Header */}
-            <header className="w-full border-b border-border-light dark:border-border-dark bg-bg-surface-light/80 dark:bg-bg-surface-dark/80 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-outline bg-surface-container/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="px-4 h-14 flex items-center justify-between">
                     <Logo showText={true} />
                     <button
                         onClick={() => setShowMenu(!showMenu)}
-                        className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:ring-2 ring-primary ring-offset-2 ring-offset-bg-base-light dark:ring-offset-bg-base-dark transition-all"
+                        className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:ring-2 ring-primary ring-offset-2 ring-offset-surface transition-all"
                     >
                         <User size={14} className="text-primary" />
                     </button>
@@ -106,7 +107,7 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
             )}
 
             {/* Material Design 3 Primary Tabs - Mode Switcher */}
-            <div className="w-full border-b border-outline-light dark:border-outline-dark">
+            <div className="w-full border-b border-outline">
                 <div className="flex">
                     {modes.map((modeConfig) => {
                         const isActive = mode === modeConfig.id;
@@ -123,8 +124,8 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                                     ${isActive
                                         ? 'text-primary'
                                         : isLocked
-                                            ? 'text-on-surface-variant-light dark:text-on-surface-variant-dark opacity-40 cursor-not-allowed'
-                                            : 'text-on-surface-variant-light dark:text-on-surface-variant-dark hover:text-on-surface-light dark:hover:text-on-surface-dark'
+                                            ? 'text-on-surface-variant opacity-40 cursor-not-allowed'
+                                            : 'text-on-surface-variant hover:text-on-surface'
                                     }
                                 `}
                             >
@@ -160,10 +161,10 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                 <main className="flex-1 overflow-y-auto px-4 pt-2 pb-6">
                     {/* Collections Header */}
                     <div className="mb-8 flex flex-col items-center text-center">
-                        <h1 className="text-4xl font-light tracking-tight text-text-primary-light dark:text-text-primary-dark mb-2">
+                        <h1 className="text-headline-large text-on-surface mb-2">
                             Collections
                         </h1>
-                        <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-light max-w-[280px]">
+                        <p className="text-body-medium text-on-surface-variant max-w-[280px]">
                             Securely manage your collected underscores within individual collections.
                         </p>
                     </div>
@@ -171,14 +172,14 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                     {/* Controls: Sorting + View Toggle */}
                     <div className="w-full flex justify-between items-center mb-6">
                         {/* Sorting Tabs */}
-                        <div className="inline-flex h-10 items-center justify-center rounded-full bg-bg-alt-light dark:bg-bg-alt-dark p-1">
+                        <div className="inline-flex h-10 items-center justify-center rounded-full bg-surface-container p-1">
                             <button
                                 onClick={() => setSortBy('alphabetical')}
                                 className={`
-                                    px-3 h-full rounded-full text-xs font-medium transition-all duration-200
+                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
                                     ${sortBy === 'alphabetical'
-                                        ? 'bg-bg-surface-light dark:bg-bg-surface-dark shadow-sm text-primary'
-                                        : 'text-text-secondary-light dark:text-text-secondary-dark'
+                                        ? 'bg-surface-container-highest shadow-sm text-primary'
+                                        : 'text-on-surface-variant'
                                     }
                                 `}
                             >
@@ -187,10 +188,10 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                             <button
                                 onClick={() => setSortBy('usage')}
                                 className={`
-                                    px-3 h-full rounded-full text-xs font-medium transition-all duration-200
+                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
                                     ${sortBy === 'usage'
-                                        ? 'bg-bg-surface-light dark:bg-bg-surface-dark shadow-sm text-primary'
-                                        : 'text-text-secondary-light dark:text-text-secondary-dark'
+                                        ? 'bg-surface-container-highest shadow-sm text-primary'
+                                        : 'text-on-surface-variant'
                                     }
                                 `}
                             >
@@ -199,10 +200,10 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                             <button
                                 onClick={() => setSortBy('recent')}
                                 className={`
-                                    px-3 h-full rounded-full text-xs font-medium transition-all duration-200
+                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
                                     ${sortBy === 'recent'
-                                        ? 'bg-bg-surface-light dark:bg-bg-surface-dark shadow-sm text-primary'
-                                        : 'text-text-secondary-light dark:text-text-secondary-dark'
+                                        ? 'bg-surface-container-highest shadow-sm text-primary'
+                                        : 'text-on-surface-variant'
                                     }
                                 `}
                             >
@@ -211,14 +212,14 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                         </div>
 
                         {/* View Toggle */}
-                        <div className="inline-flex items-center rounded-full bg-bg-alt-light dark:bg-bg-alt-dark p-1">
+                        <div className="inline-flex items-center rounded-full bg-surface-container p-1">
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`
                                     p-1.5 rounded-full transition-all
                                     ${viewMode === 'list'
-                                        ? 'bg-bg-surface-light dark:bg-bg-surface-dark text-primary shadow-sm'
-                                        : 'text-text-secondary-light dark:text-text-secondary-dark'
+                                        ? 'bg-surface-container-highest text-primary shadow-sm'
+                                        : 'text-on-surface-variant'
                                     }
                                 `}
                             >
@@ -229,8 +230,8 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                                 className={`
                                     p-1.5 rounded-full transition-all
                                     ${viewMode === 'grid'
-                                        ? 'bg-bg-surface-light dark:bg-bg-surface-dark text-primary shadow-sm'
-                                        : 'text-text-secondary-light dark:text-text-secondary-dark'
+                                        ? 'bg-surface-container-highest text-primary shadow-sm'
+                                        : 'text-on-surface-variant'
                                     }
                                 `}
                             >
@@ -242,14 +243,15 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                     {/* Material Design 3 Filled Cards - Collections */}
                     <div className="flex flex-col gap-2">
                         {sortedCollections.map((collection) => (
-                            <div
+                            <Card
                                 key={collection.id}
+                                interactive
                                 onClick={() => onCollectionClick?.(collection.domain)}
-                                className="group flex items-center justify-between p-4 rounded-md bg-surface-container-highest-light dark:bg-surface-container-highest-dark hover:bg-surface-container-high-light dark:hover:bg-surface-container-high-dark transition-colors duration-200 cursor-pointer"
+                                className="group flex items-center justify-between"
                             >
                                 <div className="flex items-center gap-4 overflow-hidden flex-1">
                                     {/* Favicon/Icon - 40dp (same as MD3 list items) */}
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-surface-container-light dark:bg-surface-container-dark flex items-center justify-center text-on-surface-variant-light dark:text-on-surface-variant-dark">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
                                         <span className="text-label-large uppercase">
                                             {collection.domain.charAt(0)}
                                         </span>
@@ -258,11 +260,11 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                                     {/* Domain Info */}
                                     <div className="flex flex-col truncate">
                                         {/* Title Large (22px) per MD3 */}
-                                        <p className="text-title-large text-on-surface-light dark:text-on-surface-dark truncate">
+                                        <p className="text-title-large text-on-surface truncate">
                                             {collection.domain}
                                         </p>
                                         {/* Body Medium (14px) for category */}
-                                        <span className="text-body-medium text-on-surface-variant-light dark:text-on-surface-variant-dark">
+                                        <span className="text-body-medium text-on-surface-variant">
                                             {collection.category}
                                         </span>
                                     </div>
@@ -271,18 +273,15 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
                                 {/* Count + Arrow */}
                                 <div className="flex items-center gap-4 shrink-0">
                                     {/* Label Large (14px) for count */}
-                                    <p className="text-label-large text-on-surface-variant-light dark:text-on-surface-variant-dark group-hover:text-primary transition-colors">
+                                    <p className="text-label-large text-on-surface-variant group-hover:text-primary transition-colors">
                                         {collection.count} underscores
                                     </p>
                                     <ArrowRight
                                         size={20}
-                                        className="text-on-surface-variant-light dark:text-on-surface-variant-dark group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                                        className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-all"
                                     />
                                 </div>
-
-                                {/* State layer */}
-                                <div className="absolute inset-0 state-layer-hover pointer-events-none" />
-                            </div>
+                            </Card>
                         ))}
                     </div>
 
@@ -297,8 +296,8 @@ export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectio
             )}
 
             {/* Footer */}
-            <footer className="w-full py-4 mt-auto border-t border-border-light dark:border-border-dark">
-                <p className="text-center text-xs text-text-secondary-light dark:text-text-secondary-dark">
+            <footer className="w-full py-4 mt-auto border-t border-outline">
+                <p className="text-center text-label-small text-on-surface-variant">
                     © 2024 _underscore.
                 </p>
             </footer>
