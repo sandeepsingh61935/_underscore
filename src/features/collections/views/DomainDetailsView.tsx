@@ -78,9 +78,9 @@ export function DomainDetailsView({ domain, onBack }: DomainDetailsViewProps) {
     };
 
     return (
-        <div className="w-[360px] h-[600px] bg-bg-base-light dark:bg-bg-base-dark font-display flex flex-col">
+        <div className="w-[360px] h-[600px] bg-surface font-display flex flex-col">
             {/* Header */}
-            <header className="w-full border-b border-border-light dark:border-border-dark bg-bg-surface-light/80 dark:bg-bg-surface-dark/80 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-outline bg-surface-container/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="px-4 h-14 flex items-center justify-between">
                     <Logo showText={true} />
                 </div>
@@ -92,7 +92,7 @@ export function DomainDetailsView({ domain, onBack }: DomainDetailsViewProps) {
                 <nav className="mb-8">
                     <button
                         onClick={onBack}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors group"
+                        className="inline-flex items-center gap-2 text-label-medium text-on-surface-variant hover:text-primary transition-colors group"
                     >
                         <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
                         Back to Dashboard
@@ -103,10 +103,10 @@ export function DomainDetailsView({ domain, onBack }: DomainDetailsViewProps) {
                 <div className="mb-10">
                     <div className="flex flex-col gap-4 border-l-4 border-primary pl-4">
                         <div>
-                            <h2 className="text-3xl font-black tracking-tight text-text-primary-light dark:text-text-primary-dark mb-2">
+                            <h2 className="text-headline-large text-on-surface mb-2">
                                 {domain}
                             </h2>
-                            <p className="text-text-secondary-light dark:text-text-secondary-dark text-base">
+                            <p className="text-body-large text-on-surface-variant">
                                 {underscores.length} underscore{underscores.length !== 1 ? 's' : ''} saved
                             </p>
                         </div>
@@ -115,7 +115,7 @@ export function DomainDetailsView({ domain, onBack }: DomainDetailsViewProps) {
                         <div className="flex gap-2">
                             <button
                                 onClick={handleExport}
-                                className="px-4 py-2 text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark bg-transparent hover:bg-bg-alt-light dark:hover:bg-bg-alt-dark rounded transition-colors"
+                                className="px-4 py-2 text-label-medium text-on-surface-variant bg-transparent hover:bg-surface-container rounded-md transition-colors"
                             >
                                 Export
                             </button>
@@ -147,9 +147,9 @@ export function DomainDetailsView({ domain, onBack }: DomainDetailsViewProps) {
 
                 {/* End indicator */}
                 <div className="mt-16 flex justify-center gap-1">
-                    <div className="h-1 w-1 rounded-full bg-border-light dark:bg-border-dark"></div>
-                    <div className="h-1 w-1 rounded-full bg-border-light dark:bg-border-dark"></div>
-                    <div className="h-1 w-1 rounded-full bg-border-light dark:bg-border-dark"></div>
+                    <div className="h-1 w-1 rounded-full bg-outline"></div>
+                    <div className="h-1 w-1 rounded-full bg-outline"></div>
+                    <div className="h-1 w-1 rounded-full bg-outline"></div>
                 </div>
             </div>
         </div>
