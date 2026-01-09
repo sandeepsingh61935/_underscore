@@ -1,0 +1,1064 @@
+# UI Component & Interaction Specification
+## _underscore Browser Extension
+
+> **Purpose**: Comprehensive specification for UI AI collaboration  
+> **Last Updated**: 2026-01-09  
+> **Project**: _underscore - Web Highlighting Extension
+
+---
+
+## Table of Contents
+
+1. [Application Overview](#application-overview)
+2. [Application Modes](#application-modes)
+3. [Pages & Views](#pages--views)
+4. [Reusable Components](#reusable-components)
+5. [State Management](#state-management)
+6. [Navigation Flows](#navigation-flows)
+7. [Component Interactions](#component-interactions)
+8. [Design Tokens](#design-tokens)
+9. [API & Data Structures](#api--data-structures)
+
+---
+
+## Application Overview
+
+### Purpose
+_underscore is a browser extension for intelligent web highlighting with multiple operational modes.
+
+### Technology Stack
+- **Framework**: TypeScript, Chrome Extension Manifest V3
+- **UI**: Custom components with Material Design 3 guidelines
+- **State**: Reactive state management with Observer pattern
+- **Styling**: Tailwind CSS with custom design tokens
+- **Build**: WXT/Vite
+
+### Core Concepts
+- **Mode-Based Architecture**: Different highlighting behaviors (Walk, Sprint, Vault, Neural)
+- **Authentication States**: Logged out vs. Logged in experiences
+- **Domain-Scoped Collections**: Highlights organized by website domain
+- **IPC Communication**: Message bus between popup, background, and content scripts
+
+---
+
+## Application Modes
+
+### 1. Walk Mode 🚶
+- **Purpose**: Ephemeral highlighting (memory only)
+- **Persistence**: None - highlights disappear on page reload
+- **Authentication**: Not required
+- **State**: Always available
+
+### 2. Sprint Mode 🏃
+- **Purpose**: 4-hour TTL with encrypted storage
+- **Persistence**: Local storage with 4-hour expiry
+- **Encryption**: AES-256-GCM, domain-scoped keys
+- **Authentication**: Not required
+- **State**: Always available
+
+### 3. Vault Mode 🔐 
+- **Purpose**: Permanent storage with cross-device sync
+- **Persistence**: Cloud sync via Supabase
+- **Authentication**: **REQUIRED** (Google, Apple, X, Facebook)
+- **State**: Only available when authenticated
+- **Features**:
+  - Collections by domain
+  - Cross-device sync
+  - Permanent storage
+
+### 4. Neural Mode 🧠
+- **Purpose**: AI-powered insights and knowledge synthesis
+- **Persistence**: Cloud storage
+- **Authentication**: **REQUIRED**
+- **State**: Only available when authenticated
+- **Features**:
+  - AI analysis of highlights
+  - Knowledge graph generation
+  - Intelligent recommendations
+
+---
+
+## Pages & Views
+
+### 1. Welcome/Landing Page
+
+**File**: [docs/07-design/welcome/welcome-code.html](file:///home/sandy/projects/_underscore/docs/07-design/welcome/welcome-code.html)
+
+**Purpose**: First-time user experience or logged-out state
+
+**Layout**:
+```
+┌─────────────────────────────────┐
+│  Header                          │
+│  [_underscore logo] [Sign In]   │
+├─────────────────────────────────┤
+│                                  │
+│         [Hero Icon]              │
+│                                  │
+│     Simply organized.            │
+│                                  │
+│  Your browser extension for      │
+│  minimalist note-taking.         │
+│                                  │
+│         [↓ Arrow]                │
+│                                  │
+├─────────────────────────────────┤
+│  Footer                          │
+│  © 2023 _underscore inc.         │
+│  Privacy | Help | Terms          │
+└─────────────────────────────────┘
+```
+
+**Components**:
+- Header with logo and Sign In link
+- Centered hero section with icon
+- Marketing copy
+- Animated scroll indicator
+- Footer with links
+
+**State**:
+- Static page, no dynamic state
+- Shows when extension is first opened or user is logged out
+
+**Interactions**:
+- Click "Sign In" → Navigate to Sign-in page
+
+---
+
+### 2. Sign-In Page
+
+**File**: [docs/07-design/sign-in/sign-in-code.html](file:///home/sandy/projects/_underscore/docs/07-design/sign-in/sign-in-code.html)
+
+**Purpose**: OAuth provider selection
+
+**Layout**:
+```
+┌─────────────────────────────────┐
+│  Header                          │
+│  [_underscore logo] [Sign In]   │
+├─────────────────────────────────┤
+│                                  │
+│         SIGN IN WITH             │
+│                                  │
+│         Google                   │
+│         Apple                    │
+│         X                        │
+│         Facebook                 │
+│                                  │
+└─────────────────────────────────┘
+```
+
+**Components**:
+- Header with debossed logo badge
+- "SIGN IN WITH" label (uppercase, tracked)
+- Provider buttons (Google, Apple, X, Facebook)
+
+**State**:
+- `isAuthenticating`: boolean - Loading state during OAuth flow
+- `authError`: string | null - Error message if auth fails
+
+**Interactions**:
+- Click provider → Trigger OAuth flow
+- OAuth success → Navigate to Mode Selection (authenticated)
+- OAuth failure → Show error message
+
+**Design Notes**:
+- Logo has debossed effect (inset shadow)
+- Provider names use large, light typography (3xl-4xl)
+- Hover effect: text color changes to primary
+
+---
+
+### 3. Mode Selection Page
+
+**File**: [docs/07-design/mode-selection/mode-selection-code.html](file:///home/sandy/projects/_underscore/docs/07-design/mode-selection/mode-selection-code.html)
+
+**Purpose**: Select operational mode
+
+**Layout (Unauthenticated)**:
+```
+┌─────────────────────────────────┐
+│  Header                          │
+│  [_underscore logo] [Sign In]   │
+├─────────────────────────────────┤
+│                                  │
+│            MODE                  │
+│                                  │
+│         Focus      ✓             │
+│         Capture    ✓             │
+│                                  │
+│         Memory     🔒            │
+│         Neural     🔒            │
+│                                  │
+│  Sign in to unlock vault         │
+│  and archive →                   │
+│                                  │
+└─────────────────────────────────┘
+```
+
+**Layout (Authenticated)**:
+```
+┌─────────────────────────────────┐
+│  Header                          │
+│  [_] underscore    [👤 Menu]    │
+├─────────────────────────────────┤
+│                                  │
+│            MODE                  │
+│                                  │
+│         Focus      ✓             │
+│         Capture    ✓             │
+│         Memory     ✓             │
+│         Neural     ✓             │
+│                                  │
+└─────────────────────────────────┘
+```
+
+**Components**:
+- Header (changes based on auth state)
+- Mode label (uppercase, tracked)
+- Mode buttons
+- CTA prompt (unauthenticated only)
+- User menu (authenticated only)
+
+**State**:
+```typescript
+{
+  currentMode: 'walk' | 'sprint' | 'vault' | 'neural',
+  isAuthenticated: boolean,
+  availableModes: ModeType[],
+  user: {
+    displayName: string,
+    photoUrl?: string,
+    email?: string
+  } | null
+}
+```
+
+**Interactions**:
+- Click available mode → Switch mode + close popup
+- Click locked mode → Trigger sign-in flow
+- Click "Sign in to unlock" → Navigate to Sign-in page
+- Click user avatar → Open user menu dropdown
+
+**Mode Mapping**:
+- "Focus" = Walk Mode
+- "Capture" = Sprint Mode  
+- "Memory" = Vault Mode
+- "Neural" = Neural Mode (future)
+
+**Design Notes**:
+- Disabled modes have 40% opacity
+- Hover effect on available modes: color changes to primary
+- Spacer between free and premium modes
+
+---
+
+### 4. Collections Page (Vault Mode)
+
+**File**: [docs/07-design/Collections/vertical/vertical-code.html](file:///home/sandy/projects/_underscore/docs/07-design/Collections/vertical/vertical-code.html)
+
+**Purpose**: Browse highlights organized by domain
+
+**Layout**:
+```
+┌─────────────────────────────────────┐
+│  Header                              │
+│  [_underscore]  [Settings] [Avatar] │
+├─────────────────────────────────────┤
+│  [Vault] [xAI]                      │
+│                                      │
+│        Collections                   │
+│  Securely manage your collected      │
+│  underscores...                      │
+│                                      │
+│  [Alphabetical|By Usage|Recent]      │
+│                      [List|Grid]     │
+│                                      │
+│  ┌──────────────────────────────┐  │
+│  │ [📰] nytimes.com              │  │
+│  │      News & Media              │  │
+│  │                  24 underscores →│  │
+│  └──────────────────────────────┘  │
+│                                      │
+│  [+ Add new collection]              │
+│                                      │
+├─────────────────────────────────────┤
+│  Footer                              │
+│  © 2024 | Privacy | Help | Terms    │
+└─────────────────────────────────────┘
+```
+
+**Components**:
+- Header with logo, settings, and user avatar
+- Mode toggle (Vault / xAI)
+- Page title and description
+- Sort controls (Alphabetical / By Usage / Recently Added)
+- View toggle (List / Grid)
+- Collection cards
+- "Add new collection" button
+- Footer
+
+**State**:
+```typescript
+{
+  collections: DomainCollection[],
+  sortBy: 'alphabetical' | 'usage' | 'recent',
+  viewMode: 'list' | 'grid',
+  loading: boolean,
+  error: string | null
+}
+
+interface DomainCollection {
+  domain: string,
+  category: string,
+  favicon: string,
+  highlightCount: number,
+  lastModified: Date
+}
+```
+
+**Interactions**:
+- Click collection card → Navigate to Domain Details
+- Click sort option → Reorder collections
+- Click view toggle → Switch between list/grid
+- Click "+ Add new collection" → Create new collection dialog
+- Click settings icon → Open settings
+- Click avatar → Open user menu
+
+**Design Notes**:
+- Cards have compartmentalized background (slightly darker)
+- Hover effect: elevated shadow, arrow moves right
+- Domain favicons displayed in rounded squares
+- Count format: "X underscores"
+
+---
+
+### 5. Domain Details Page
+
+**File**: [docs/07-design/domain underscore details dashbaord/Dark mode/dark-mode-code.html](file:///home/sandy/projects/_underscore/docs/07-design/domain%20underscore%20details%20dashbaord/Dark%20mode/dark-mode-code.html)
+
+**Purpose**: View all highlights for a specific domain
+
+**Layout**:
+```
+┌─────────────────────────────────────┐
+│  Header                              │
+│  [_underscore]         [🌙]         │
+├─────────────────────────────────────┤
+│  ← Back to Dashboard                 │
+│                                      │
+│  ┃ google.com                        │
+│  ┃ 12 underscores saved              │
+│  ┃              [Export] [Clear All] │
+│                                      │
+│  ┌──────────────────────────────┐  │
+│  │ The minimalist design...      │  │
+│  │                    [📋] [🗑]  │  │
+│  │ 🕐 captured 2 hours ago       │  │
+│  │ • /search/minimalism          │  │
+│  └──────────────────────────────┘  │
+│                                      │
+│  [More highlight items...]           │
+│                                      │
+│  • • •                              │
+└─────────────────────────────────────┘
+```
+
+**Components**:
+- Header with theme toggle
+- Breadcrumb navigation
+- Domain header with accent border
+- Action buttons (Export, Clear All)
+- Highlight list items
+- Pagination indicator
+
+**State**:
+```typescript
+{
+  domain: string,
+  highlights: Highlight[],
+  loading: boolean,
+  theme: 'light' | 'dark' | 'sepia'
+}
+
+interface Highlight {
+  id: string,
+  text: string,
+  url: string,
+  path: string,
+  createdAt: Date,
+  isCode: boolean
+}
+```
+
+**Interactions**:
+- Click "← Back to Dashboard" → Navigate to Collections
+- Click theme toggle → Cycle through themes
+- Click "Export" → Download highlights as JSON/CSV
+- Click "Clear All" → Show confirmation dialog → Delete all
+- Hover highlight → Show action buttons
+- Click copy icon → Copy text to clipboard
+- Click delete icon → Delete highlight
+- Click highlight text → Navigate to original URL
+
+**Design Notes**:
+- Action buttons hidden on desktop, revealed on hover
+- Code snippets have monospace font + different background
+- Metadata shows timestamp and URL path
+- Border-left accent on domain header (4px, primary color)
+
+---
+
+### 6. Account Menu Dropdown
+
+**File**: [docs/07-design/account menu/account-menu-code.html](file:///home/sandy/projects/_underscore/docs/07-design/account%20menu/account-menu-code.html)
+
+**Purpose**: User settings and account actions
+
+**Layout**:
+```
+┌──────────────────────┐
+│ john.doe@example.com │
+├──────────────────────┤
+│ Settings             │
+│ Privacy              │
+├──────────────────────┤
+│ Sign out             │
+└──────────────────────┘
+```
+
+**Components**:
+- User identity header (email)
+- Menu items (Settings, Privacy)
+- Destructive action (Sign out)
+
+**State**:
+```typescript
+{
+  isOpen: boolean,
+  user: {
+    email: string,
+    displayName: string,
+    photoUrl?: string
+  }
+}
+```
+
+**Interactions**:
+- Click outside → Close menu
+- Click avatar → Toggle menu
+- Click "Settings" → Open settings page
+- Click "Privacy" → Open privacy settings
+- Click "Sign out" → Confirm → Logout → Reset to unauthenticated state
+
+**Design Notes**:
+- Email in uppercase, tracked letters
+- Hover effect: subtle underline on menu items
+- Sign out text is red-colored (destructive)
+- Dividers between sections
+
+---
+
+## Reusable Components
+
+### 1. Header Component
+
+**Variants**:
+- Unauthenticated: Logo + "Sign In" link
+- Authenticated: Logo + Settings + User Avatar
+
+**Props**:
+```typescript
+{
+  isAuthenticated: boolean,
+  user?: {
+    displayName: string,
+    photoUrl?: string
+  },
+  onSignInClick?: () => void,
+  onSettingsClick?: () => void,
+  onUserMenuToggle?: () => void
+}
+```
+
+---
+
+### 2. Mode Selector Component
+
+**File**: [src/popup/components/mode-selector.ts](file:///home/sandy/projects/_underscore/src/popup/components/mode-selector.ts)
+
+**Purpose**: Mode selection UI with authentication-aware state
+
+**Props**:
+```typescript
+{
+  currentMode: ModeType,
+  availableModes: ModeType[],
+  isAuthenticated: boolean,
+  onModeChange: (mode: ModeType) => void,
+  onSignInRequired: () => void
+}
+```
+
+**State**:
+```typescript
+{
+  modes: {
+    type: ModeType,
+    label: string,
+    icon?: string,
+    requiresAuth: boolean,
+    enabled: boolean
+  }[]
+}
+```
+
+**Events**:
+- `mode-changed`: Emitted when mode switches
+- `signin-required`: Emitted when locked mode clicked
+
+---
+
+### 3. Provider Drawer Component
+
+**File**: [src/popup/components/provider-drawer.ts](file:///home/sandy/projects/_underscore/src/popup/components/provider-drawer.ts)
+
+**Purpose**: OAuth provider selection
+
+**Props**:
+```typescript
+{
+  providers: ('google' | 'apple' | 'twitter' | 'facebook')[],
+  onProviderSelect: (provider: string) => void,
+  isLoading?: boolean
+}
+```
+
+**Events**:
+- `provider-selected`: Emitted with provider name
+
+---
+
+### 4. User Menu Component
+
+**File**: [src/popup/components/user-menu.ts](file:///home/sandy/projects/_underscore/src/popup/components/user-menu.ts)
+
+**Purpose**: Authenticated user dropdown menu
+
+**Props**:
+```typescript
+{
+  user: {
+    displayName: string,
+    photoUrl?: string,
+    email?: string
+  },
+  isOpen: boolean,
+  onClose: () => void,
+  onLogout: () => void,
+  onSettings: () => void
+}
+```
+
+**Events**:
+- `logout`: User requests logout
+- `settings`: Navigate to settings
+- `close`: Close menu
+
+---
+
+### 5. Theme Manager Component
+
+**File**: [src/popup/components/theme-manager.ts](file:///home/sandy/projects/_underscore/src/popup/components/theme-manager.ts)
+
+**Purpose**: Theme switching (light/dark/sepia)
+
+**Props**:
+```typescript
+{
+  currentTheme: 'light' | 'dark' | 'sepia',
+  onThemeChange: (theme: string) => void
+}
+```
+
+**Events**:
+- `theme-changed`: Emitted with new theme
+
+---
+
+### 6. Caution Panel Component
+
+**File**: [src/popup/components/caution-panel.ts](file:///home/sandy/projects/_underscore/src/popup/components/caution-panel.ts)
+
+**Purpose**: Warning messages and alerts
+
+**Props**:
+```typescript
+{
+  message: string,
+  type: 'info' | 'warning' | 'error',
+  dismissible?: boolean,
+  onDismiss?: () => void
+}
+```
+
+---
+
+## State Management
+
+### PopupState Structure
+
+**File**: [src/popup/popup-state-manager.ts](file:///home/sandy/projects/_underscore/src/popup/popup-state-manager.ts)
+
+```typescript
+interface PopupState {
+  // Current Mode
+  currentMode: 'walk' | 'sprint' | 'vault' | 'neural',
+  
+  // UI State
+  loading: boolean,
+  error: AppError | null,
+  
+  // Statistics
+  stats: {
+    totalHighlights: number,
+    highlightsOnCurrentPage: number
+  },
+  
+  // Authentication
+  auth: {
+    isAuthenticated: boolean,
+    user: {
+      displayName: string,
+      photoUrl?: string,
+      email?: string
+    } | null
+  }
+}
+```
+
+### State Transitions
+
+```mermaid
+stateDiagram-v2
+    [*] --> Loading: Initialize
+    Loading --> Unauthenticated: Auth Check Failed
+    Loading --> Authenticated: Auth Check Success
+    
+    Unauthenticated --> SignIn: Click Sign In
+    SignIn --> Authenticating: Select Provider
+    Authenticating --> Authenticated: OAuth Success
+    Authenticating --> Error: OAuth Failed
+    Error --> SignIn: Retry
+    
+    Authenticated --> ModeSelection: Default View
+    ModeSelection --> Authenticated: Mode Changed
+    
+    Authenticated --> Unauthenticated: Logout
+```
+
+### State Observer Pattern
+
+```typescript
+class PopupStateManager {
+  private state: PopupState
+  private subscribers: ((state: PopupState) => void)[]
+  
+  subscribe(callback: (state: PopupState) => void): () => void
+  setState(update: Partial<PopupState>): void
+  getState(): Readonly<PopupState>
+}
+```
+
+---
+
+## Navigation Flows
+
+### Unauthenticated Flow
+
+```mermaid
+graph TD
+    A[Extension Opens] --> B{First Time?}
+    B -->|Yes| C[Welcome Page]
+    B -->|No| D[Mode Selection]
+    
+    C --> E[Click Sign In]
+    E --> F[Sign-In Page]
+    
+    D --> G{Mode Click}
+    G -->|Walk/Sprint| H[Switch Mode + Close]
+    G -->|Vault/Neural| F
+    
+    F --> I[Select Provider]
+    I --> J[OAuth Flow]
+    J -->|Success| K[Authenticated Mode Selection]
+    J -->|Failure| L[Show Error]
+    L --> F
+```
+
+### Authenticated Flow
+
+```mermaid
+graph TD
+    A[Extension Opens] --> B[Mode Selection]
+    
+    B --> C{Mode Click}
+    C -->|Any Mode| D[Switch Mode + Close]
+    
+    B --> E{Avatar Click}
+    E --> F[User Menu Opens]
+    
+    F --> G{Menu Action}
+    G -->|Settings| H[Settings Page]
+    G -->|Privacy| I[Privacy Page]
+    G -->|Sign Out| J[Logout]
+    
+    J --> K[Return to Unauthenticated]
+```
+
+### Vault Mode Navigation
+
+```mermaid
+graph TD
+    A[Vault Mode Active] --> B[Collections Page]
+    
+    B --> C{User Action}
+    C -->|Click Collection| D[Domain Details Page]
+    C -->|Add Collection| E[Create Dialog]
+    C -->|Settings| F[Settings]
+    
+    D --> G{Action}
+    G -->|Back Button| B
+    G -->|Click Highlight| H[Navigate to URL]
+    G -->|Export| I[Download File]
+    G -->|Clear All| J[Confirm Dialog]
+    
+    J -->|Confirm| K[Delete All + Refresh]
+    J -->|Cancel| D
+```
+
+---
+
+## Component Interactions
+
+### IPC Communication Pattern
+
+All communication between popup, background, and content scripts uses the Message Bus pattern.
+
+**Message Structure**:
+```typescript
+interface Message {
+  type: string,
+  payload: unknown,
+  timestamp: number,
+  sender: 'popup' | 'background' | 'content'
+}
+
+interface MessageResponse {
+  success: boolean,
+  data?: unknown,
+  error?: {
+    code: string,
+    message: string
+  }
+}
+```
+
+### Key IPC Flows
+
+#### 1. Mode Switch Flow
+```
+┌────────┐         ┌────────────┐         ┌─────────┐
+│ Popup  │         │ Background │         │ Content │
+└───┬────┘         └─────┬──────┘         └────┬────┘
+    │                    │                      │
+    │ MODE_CHANGE        │                      │
+    ├──────────────────> │                      │
+    │                    │                      │
+    │                    │ CLEAR_HIGHLIGHTS     │
+    │                    ├────────────────────> │
+    │                    │                      │
+    │                    │ <──── ACK ────────── │
+    │                    │                      │
+    │                    │ RESTORE_HIGHLIGHTS  │
+    │                    ├────────────────────> │
+    │                    │                      │
+    │ <── SUCCESS ────── │                      │
+    │                    │                      │
+```
+
+#### 2. Authentication Flow
+```
+┌────────┐         ┌────────────┐
+│ Popup  │         │ Background │
+└───┬────┘         └─────┬──────┘
+    │                    │
+    │ AUTH_LOGIN         │
+    ├──────────────────> │
+    │                    │
+    │                    │ [OAuth Flow]
+    │                    │
+    │ <── AUTH_STATE ─── │
+    │                    │
+    │ REFRESH_STATS      │
+    ├──────────────────> │
+    │                    │
+    │ <── STATS ──────── │
+```
+
+#### 3. Highlight Operations
+```
+┌────────┐         ┌────────────┐         ┌─────────┐
+│ Popup  │         │ Background │         │ Content │
+└───┬────┘         └─────┬──────┘         └────┬────┘
+    │                    │                      │
+    │                    │ <── HIGHLIGHT_CREATED │
+    │                    │                      │
+    │                    │ [Store in DB]        │
+    │                    │                      │
+    │ GET_STATS          │                      │
+    ├──────────────────> │                      │
+    │                    │                      │
+    │ <── STATS ──────── │                      │
+```
+
+---
+
+## Design Tokens
+
+### Colors
+
+**Light Mode**:
+```css
+--primary: #5b8db9
+--background-light: #f6f7f7
+--text-primary: #111518
+--text-secondary: #607485
+--badge-light: #e0e3e6
+```
+
+**Dark Mode**:
+```css
+--background-dark: #15191d
+--badge-dark: #2c3036
+--text-primary-dark: #ffffff
+--text-secondary-dark: #92afc9
+```
+
+### Typography
+
+**Font Family**:
+- Display: Inter, sans-serif
+
+**Font Weights**:
+- Light: 300
+- Regular: 400
+- Medium: 500
+- Semibold: 600
+- Bold: 700
+- Extrabold: 800
+
+**Font Sizes**:
+- xs: 0.75rem (12px)
+- sm: 0.875rem (14px)
+- base: 1rem (16px)
+- lg: 1.125rem (18px)
+- xl: 1.25rem (20px)
+- 2xl: 1.5rem (24px)
+- 3xl: 1.875rem (30px)
+- 4xl: 2.25rem (36px)
+- 5xl: 3rem (48px)
+
+### Spacing
+
+**Border Radius**:
+- default: 0.125rem (2px)
+- lg: 0.25rem (4px)
+- xl: 0.5rem (8px)
+- 2xl: 1rem (16px)
+- full: 0.75rem (12px for pill shapes)
+
+---
+
+## API & Data Structures
+
+### Highlight Entity
+
+```typescript
+interface Highlight {
+  id: string,                    // UUID
+  text: string,                  // Selected text
+  url: string,                   // Full URL
+  domain: string,                // Domain (e.g., "google.com")
+  path: string,                  // URL path
+  createdAt: Date,
+  updatedAt: Date,
+  userId?: string,               // Only for Vault/Neural modes
+  mode: 'walk' | 'sprint' | 'vault' | 'neural',
+  
+  // Position data for restoration
+  range: {
+    startOffset: number,
+    endOffset: number,
+    startContainerPath: string,
+    endContainerPath: string
+  },
+  
+  // Content hash for validation
+  contentHash: string,
+  
+  // Sprint mode specific
+  expiresAt?: Date,              // For Sprint mode
+  
+  // Vault mode specific
+  collectionId?: string,         // Domain collection
+  tags?: string[]
+}
+```
+
+### Collection Entity
+
+```typescript
+interface Collection {
+  id: string,
+  domain: string,
+  category: string,
+  favicon: string,
+  highlightCount: number,
+  lastModified: Date,
+  userId: string
+}
+```
+
+### User Entity
+
+```typescript
+interface User {
+  id: string,
+  email: string,
+  displayName: string,
+  photoUrl?: string,
+  provider: 'google' | 'apple' | 'twitter' | 'facebook',
+  createdAt: Date
+}
+```
+
+---
+
+## Key Constraints & Rules
+
+### Authentication Rules
+1. Walk and Sprint modes: No authentication required
+2. Vault and Neural modes: Authentication required
+3. Mode selector shows locked state for premium modes when logged out
+4. Logging out resets mode to Walk
+
+### Mode Switching Rules
+1. Switching modes clears current page highlights
+2. Switching modes triggers restoration from new mode's storage
+3. Optimistic UI update with rollback on failure
+4. Loading state during mode switch
+
+### Data Isolation Rules
+1. Sprint mode: Domain-scoped encryption keys
+2. Vault mode: User-scoped data with domain collections
+3. Walk mode: No persistence, memory only
+4. No cross-mode data sharing
+
+### UI/UX Rules
+1. Mobile-first responsive design
+2. Action buttons hidden on desktop, shown on hover
+3. Destructive actions require confirmation
+4. Loading states on all async operations
+5. Error messages with retry options
+
+---
+
+## Development Notes
+
+### Component Architecture
+- All components follow SOLID principles
+- Dependency Injection for testability
+- Observer pattern for state reactivity
+- Interface-driven design
+
+### Testing Strategy
+- Unit tests for state management
+- Integration tests for IPC flows
+- E2E tests for critical user paths
+- Playwright for browser automation
+
+### Performance Considerations
+- Mode switch optimized (removed redundant content hash)
+- Lazy loading for collections
+- Pagination for large highlight lists
+- Debounced search and filters
+
+---
+
+## Extension Points for UI AI
+
+When implementing UI:
+
+1. **Maintain Design Consistency**:
+   - Use design tokens from specification
+   - Follow Material Design 3 guidelines
+   - Keep minimalist aesthetic
+
+2. **State Management**:
+   - Use reactive pattern (Observer)
+   - Implement optimistic updates
+   - Handle error states gracefully
+
+3. **Authentication Awareness**:
+   - Check `isAuthenticated` before rendering
+   - Show/hide components based on auth state
+   - Handle sign-in/sign-out transitions
+
+4. **IPC Communication**:
+   - Use message bus for all cross-context communication
+   - Follow message structure exactly
+   - Handle async responses with loading states
+
+5. **Accessibility**:
+   - Semantic HTML elements
+   - ARIA labels where needed
+   - Keyboard navigation support
+   - Focus management
+
+6. **Responsive Design**:
+   - Mobile-first approach
+   - Breakpoints: sm (640px), md (768px), lg (1024px)
+   - Touch-friendly hit areas (min 44x44px)
+
+---
+
+## Appendix: File References
+
+### Design Mockups
+- [welcome-code.html](file:///home/sandy/projects/_underscore/docs/07-design/welcome/welcome-code.html) - Welcome page
+- [sign-in-code.html](file:///home/sandy/projects/_underscore/docs/07-design/sign-in/sign-in-code.html) - Sign-in page
+- [mode-selection-code.html](file:///home/sandy/projects/_underscore/docs/07-design/mode-selection/mode-selection-code.html) - Mode selector
+- [vertical-code.html](file:///home/sandy/projects/_underscore/docs/07-design/Collections/vertical/vertical-code.html) - Collections page
+- [dark-mode-code.html](file:///home/sandy/projects/_underscore/docs/07-design/domain%20underscore%20details%20dashbaord/Dark%20mode/dark-mode-code.html) - Domain details
+- [account-menu-code.html](file:///home/sandy/projects/_underscore/docs/07-design/account%20menu/account-menu-code.html) - User menu
+
+### Source Code
+- [popup-controller.ts](file:///home/sandy/projects/_underscore/src/popup/popup-controller.ts) - Main popup controller
+- [popup-state-manager.ts](file:///home/sandy/projects/_underscore/src/popup/popup-state-manager.ts) - State management
+- [mode-selector.ts](file:///home/sandy/projects/_underscore/src/popup/components/mode-selector.ts) - Mode selector component
+- [user-menu.ts](file:///home/sandy/projects/_underscore/src/popup/components/user-menu.ts) - User menu component
+- [provider-drawer.ts](file:///home/sandy/projects/_underscore/src/popup/components/provider-drawer.ts) - Provider drawer
+- [theme-manager.ts](file:///home/sandy/projects/_underscore/src/popup/components/theme-manager.ts) - Theme manager
+- [caution-panel.ts](file:///home/sandy/projects/_underscore/src/popup/components/caution-panel.ts) - Caution panel
+
+### Architecture Documentation
+- [mode_architecture_analysis.md](file:///home/sandy/projects/_underscore/docs/02-architecture/mode_architecture_analysis.md) - Mode architecture
+- [06-material-design-guidelines.md](file:///home/sandy/projects/_underscore/docs/05-quality-framework/06-material-design-guidelines.md) - MD3 guidelines
+- [vault_mode_phase2_implementation_plan.md](file:///home/sandy/projects/_underscore/docs/03-implementation/vault_mode_phase2_implementation_plan.md) - Vault implementation
+
+---
+
+**End of Specification**
+
+> This document provides a comprehensive overview of all UI components, pages, states, and interactions in the _underscore browser extension. Use this as a reference when implementing or modifying UI elements.
