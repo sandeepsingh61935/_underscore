@@ -21,16 +21,16 @@ export function UnderscoreCard({
     onDelete,
 }: UnderscoreCardProps) {
     return (
-        <article className="group relative flex flex-col gap-3 p-4 -mx-4 rounded-lg transition-all hover:bg-bg-surface-light dark:hover:bg-bg-surface-dark border border-transparent hover:border-border-light dark:hover:border-border-dark">
+        <article className="group relative flex flex-col gap-3 p-4 -mx-4 rounded-md transition-all hover:bg-surface-container border border-transparent hover:border-outline">
             <div className="flex justify-between items-start gap-4">
                 {isCode ? (
                     <div className="w-full">
-                        <p className="text-base font-medium leading-relaxed text-text-primary-light dark:text-text-primary-dark font-mono bg-bg-alt-light dark:bg-bg-alt-dark p-3 rounded text-sm border border-border-light dark:border-border-dark">
+                        <p className="text-body-large text-on-surface font-mono bg-surface-container p-3 rounded-sm border border-outline">
                             {text}
                         </p>
                     </div>
                 ) : (
-                    <p className="text-base font-medium leading-relaxed text-text-primary-light dark:text-text-primary-dark">
+                    <p className="text-body-large text-on-surface">
                         {text}
                     </p>
                 )}
@@ -39,14 +39,14 @@ export function UnderscoreCard({
                 <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                     <button
                         onClick={() => onCopy(id)}
-                        className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary hover:bg-bg-alt-light dark:hover:bg-bg-alt-dark rounded transition-colors"
+                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-sm transition-colors"
                         title="Copy to clipboard"
                     >
                         <Copy size={18} />
                     </button>
                     <button
                         onClick={() => onDelete(id)}
-                        className="p-2 text-text-muted-light dark:text-text-muted-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container rounded-sm transition-colors"
                         title="Delete"
                     >
                         <Trash2 size={18} />
@@ -55,10 +55,10 @@ export function UnderscoreCard({
             </div>
 
             {/* Metadata */}
-            <div className="flex items-center gap-2 text-xs text-text-secondary-light dark:text-text-secondary-dark">
+            <div className="flex items-center gap-2 text-label-small text-on-surface-variant">
                 <Clock size={14} />
                 <time>{timestamp}</time>
-                <span className="w-1 h-1 rounded-full bg-border-light dark:bg-border-dark"></span>
+                <span className="w-1 h-1 rounded-full bg-outline"></span>
                 <span>{url}</span>
             </div>
         </article>
