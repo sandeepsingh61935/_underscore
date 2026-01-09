@@ -23,10 +23,10 @@ export function CollectionCard({
         <div
             onClick={onClick}
             className={cn(
-                "group cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:shadow-card-light dark:hover:shadow-card-dark bg-bg-surface-light dark:bg-bg-surface-dark",
+                "group cursor-pointer rounded-md border p-4 transition-all duration-short hover:shadow-elevation-2 bg-surface-container",
                 isActive
                     ? "border-primary ring-1 ring-primary"
-                    : "border-border-light dark:border-border-dark hover:border-primary/50"
+                    : "border-outline hover:border-primary/50"
             )}
         >
             <div className="flex items-start justify-between mb-2">
@@ -35,7 +35,7 @@ export function CollectionCard({
                 </Text>
             </div>
 
-            <div className="flex items-center gap-4 text-text-secondary-light dark:text-text-secondary-dark">
+            <div className="flex items-center gap-4 text-on-surface-variant">
                 <div className="flex items-center gap-1.5">
                     <Hash size={14} />
                     <Text variant="tiny" className="font-medium">
