@@ -4,7 +4,7 @@ Based on [Material Design 3 Elevation](https://m3.material.io/styles/elevation/o
 ## 1. Core Philosophy
 **"Depth through Color, not just Shadow."**
 In MD3, elevation is primarily depicted by **Surface Tones** (lighter = higher), with shadows playing a secondary, supporting role. This ensures depth is visible even in low-contrast environments (like Dark Mode) where shadows fail.
-
+ Material Design 3 Color System
 ## 2. Elevation Levels (0-5)
 
 ### Level 0: The Baseline
