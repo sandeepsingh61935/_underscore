@@ -32,20 +32,20 @@ const Text = forwardRef<HTMLElement, TextProps>(
             <Component
                 ref={ref}
                 className={cn(
-                    'font-display text-text-primary-light dark:text-text-primary-dark transition-colors',
+                    'font-display text-on-surface transition-colors',
 
-                    // Variants
-                    variant === 'h1' && 'text-3xl md:text-4xl font-light tracking-tight',
-                    variant === 'h2' && 'text-xl md:text-2xl font-normal',
-                    variant === 'h3' && 'text-lg font-medium',
-                    variant === 'body' && 'text-base font-normal leading-relaxed',
-                    variant === 'small' && 'text-sm',
-                    variant === 'tiny' && 'text-xs',
-                    variant === 'label' && 'text-sm font-medium',
-                    variant === 'link' && 'text-sm text-primary hover:underline cursor-pointer',
+                    // Variants - now using MD3 typography scale
+                    variant === 'h1' && 'text-headline-large',
+                    variant === 'h2' && 'text-headline-medium',
+                    variant === 'h3' && 'text-title-large',
+                    variant === 'body' && 'text-body-large',
+                    variant === 'small' && 'text-body-medium',
+                    variant === 'tiny' && 'text-label-small',
+                    variant === 'label' && 'text-label-medium',
+                    variant === 'link' && 'text-label-medium text-primary hover:underline cursor-pointer',
 
                     // Modifiers
-                    muted && 'text-text-muted-light dark:text-text-muted-dark',
+                    muted && 'text-on-surface-variant',
 
                     className
                 )}
