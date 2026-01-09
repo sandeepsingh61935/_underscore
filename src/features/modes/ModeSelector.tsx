@@ -22,11 +22,11 @@ export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeS
                         onClick={() => onSelect(mode.id)}
                         disabled={disabled}
                         className={cn(
-                            "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-200 border rounded-lg",
+                            "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-short border rounded-md",
                             // Active State
                             isActive
-                                ? "border-primary bg-primary/5 dark:bg-primary/10"
-                                : "border-border-light dark:border-border-dark hover:border-text-secondary-light/30 bg-bg-surface-light dark:bg-bg-surface-dark",
+                                ? "border-primary bg-primary/5"
+                                : "border-outline hover:border-on-surface-variant bg-surface-container",
 
                             disabled && "opacity-50 cursor-not-allowed"
                         )}
@@ -36,14 +36,14 @@ export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeS
                                 variant={isActive ? "h2" : "h2"}
                                 className={cn(
                                     "font-light tracking-tight transition-colors",
-                                    isActive ? "text-primary" : "text-text-primary-light dark:text-text-primary-dark group-hover:text-primary"
+                                    isActive ? "text-primary" : "text-on-surface group-hover:text-primary"
                                 )}
                             >
                                 {mode.name}
                             </Text>
 
                             {mode.badge && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-bg-alt-light dark:bg-bg-alt-dark text-text-secondary-light">
+                                <span className="px-2 py-0.5 text-label-small rounded-full bg-surface-container-highest text-on-surface-variant">
                                     {mode.badge}
                                 </span>
                             )}
@@ -53,7 +53,7 @@ export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeS
                             variant="body"
                             className={cn(
                                 "line-clamp-2",
-                                isActive ? "text-text-primary-light dark:text-text-primary-dark" : "text-text-secondary-light dark:text-text-secondary-dark"
+                                isActive ? "text-on-surface" : "text-on-surface-variant"
                             )}
                         >
                             {mode.description}
