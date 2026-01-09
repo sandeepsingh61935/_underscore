@@ -88,7 +88,7 @@ function PopupApp() {
 
     if (currentView === View.LOADING) {
         return (
-            <div className="w-[360px] h-[600px] flex items-center justify-center bg-bg-base-light dark:bg-bg-base-dark">
+            <div className="w-[360px] h-[600px] flex items-center justify-center bg-surface">
                 <Spinner size={32} />
             </div>
         );
