@@ -1,12 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration for E2E tests
+ * Playwright configuration for E2E and Visual Regression tests
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  // Test directory
-  testDir: './tests/e2e',
+  // Test directories
+  testDir: './tests',
+  testMatch: ['**/*.spec.ts'],
 
   // Maximum time one test can run
   timeout: 30000,
@@ -28,9 +29,6 @@ export default defineConfig({
 
   // Shared settings for all the projects below
   use: {
-    // Base URL for navigation
-    baseURL: 'https://example.com',
-
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
 
@@ -39,39 +37,39 @@ export default defineConfig({
 
     // Video on failure
     video: 'retain-on-failure',
-
-    // Browser context options
-    viewport: { width: 1280, height: 720 },
-
-    // Emulate browser locale
-    locale: 'en-US',
-
-    // Emulate timezone
-    timezoneId: 'America/New_York',
   },
 
   // Configure projects for major browsers
   projects: [
+    // Visual regression tests (Storybook)
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'visual',
+      testMatch: '**/visual/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:6006',
+      },
     },
 
-    // Uncomment to test on Firefox and WebKit
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    // E2E tests (example.com)
+    {
+      name: 'e2e',
+      testMatch: '**/e2e/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'https://example.com',
+        viewport: { width: 1280, height: 720 },
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+      },
+    },
   ],
 
-  // Run your local dev server before starting the tests (if needed)
-  // webServer: {
-  //   command: 'npm run dev',
-  //   port: 3000,
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  // Run Storybook before visual tests
+  webServer: {
+    command: 'npm run storybook',
+    url: 'http://localhost:6006',
+    reuseExistingServer: true, // Use existing Storybook instance
+    timeout: 120000,
+  },
 });
