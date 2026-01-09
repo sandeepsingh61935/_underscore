@@ -27,7 +27,7 @@ export function CollectionList({
 
     if (collections.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border-light dark:border-border-dark rounded-lg">
+            <div className="flex flex-col items-center justify-center py-12 border border-dashed border-outline rounded-md">
                 <Text variant="h3" muted>No collections details</Text>
                 <Text variant="small" muted className="mt-1">
                     Highlights will appear here grouped by domain.
