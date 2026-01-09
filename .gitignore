@@ -58,3 +58,6 @@ Thumbs.db
 *.Identifier
 .wxt/
 .output/
+
+*storybook.log
+storybook-static
