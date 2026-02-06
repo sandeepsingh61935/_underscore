@@ -5,7 +5,7 @@ import type { User } from '../../background/auth/interfaces/i-auth-manager';
 
 
 
-interface AppContextType {
+export interface AppContextType {
     // Authentication
     isAuthenticated: boolean;
     user: User | null;
@@ -26,7 +26,7 @@ interface AppContextType {
     setIsLoading: (loading: boolean) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Authentication state

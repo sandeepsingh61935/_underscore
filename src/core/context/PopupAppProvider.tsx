@@ -1,29 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
+import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
-interface PopupAppContextType {
-    // Authentication - passed via props, not localStorage
-    isAuthenticated: boolean;
-    user: User | null;
-    login: (user: User) => void;
-    logout: () => void;
 
-    // Mode Management
-    currentMode: Mode;
-    setMode: (mode: Mode) => void;
-    availableModes: Mode[];
-
-    // Theme
-    theme: Theme;
-    setTheme: (theme: Theme) => void;
-
-    // Loading states
-    isLoading: boolean;
-    setIsLoading: (loading: boolean) => void;
-}
-
-const PopupAppContext = createContext<PopupAppContextType | undefined>(undefined);
 
 interface PopupAppProviderProps {
     children: React.ReactNode;
@@ -105,7 +85,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         setThemeState(newTheme);
     }, []);
 
-    const value: PopupAppContextType = {
+    const value: AppContextType = {
         isAuthenticated: propIsAuthenticated,
         user: propUser,
         login,
@@ -119,25 +99,17 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         setIsLoading,
     };
 
-    return <PopupAppContext.Provider value={value}>{children}</PopupAppContext.Provider>;
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
 export const usePopupApp = () => {
-    const context = useContext(PopupAppContext);
+    const context = useContext(AppContext);
     if (context === undefined) {
         throw new Error('usePopupApp must be used within PopupAppProvider');
     }
     return context;
 };
 
-/**
- * useApp hook that works with both AppProvider and PopupAppProvider
- * This allows shared components like Header to work in both contexts
- */
-export const useApp = () => {
-    const context = useContext(PopupAppContext);
-    if (context === undefined) {
-        throw new Error('useApp must be used within PopupAppProvider');
-    }
-    return context;
-};
+// Re-export useApp from here is not needed as consumers should import from AppProvider
+// But for compatibility if anything was importing useApp from here (though they shouldn't)
+export { useApp } from './AppProvider';
