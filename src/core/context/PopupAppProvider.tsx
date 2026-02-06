@@ -2,11 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
-
-
-
-interface AppContextType {
-    // Authentication
+interface PopupAppContextType {
+    // Authentication - passed via props, not localStorage
     isAuthenticated: boolean;
     user: User | null;
     login: (user: User) => void;
@@ -26,18 +23,36 @@ interface AppContextType {
     setIsLoading: (loading: boolean) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const PopupAppContext = createContext<PopupAppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Authentication state
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<User | null>(null);
+interface PopupAppProviderProps {
+    children: React.ReactNode;
+    /** User from useCurrentUser - single source of truth */
+    user: User | null;
+    /** Auth state from useCurrentUser */
+    isAuthenticated: boolean;
+    /** Optional logout handler */
+    onLogout?: () => void;
+}
 
+/**
+ * Popup-specific AppProvider that receives auth state via props
+ * instead of managing it via localStorage.
+ * 
+ * This eliminates the dual-auth race condition between useCurrentUser
+ * (Chrome messaging) and AppProvider (localStorage).
+ */
+export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
+    children,
+    user: propUser,
+    isAuthenticated: propIsAuthenticated,
+    onLogout
+}) => {
     // Mode state
     const [currentMode, setCurrentMode] = useState<Mode>('walk');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Theme state - get from localStorage or system preference
+    // Theme state - still use localStorage for theme preference
     const [theme, setThemeState] = useState<Theme>(() => {
         const saved = localStorage.getItem('underscore-theme') as Theme | null;
         if (saved) return saved;
@@ -50,7 +65,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // Available modes depends on auth state
-    const availableModes: Mode[] = isAuthenticated
+    const availableModes: Mode[] = propIsAuthenticated
         ? ['walk', 'sprint', 'vault', 'neural']
         : ['walk', 'sprint'];
 
@@ -64,49 +79,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('underscore-theme', theme);
     }, [theme]);
 
-    const login = useCallback((newUser: User) => {
-        setUser(newUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('underscore-user', JSON.stringify(newUser));
+    // No-op login - auth is managed by useCurrentUser
+    const login = useCallback((_user: User) => {
+        console.warn('[PopupAppProvider] login() called but auth is managed by useCurrentUser');
     }, []);
 
+    // Logout delegates to the prop handler
     const logout = useCallback(() => {
-        setUser(null);
-        setIsAuthenticated(false);
-        setCurrentMode('walk'); // Reset to walk mode on logout
-        localStorage.removeItem('underscore-user');
-    }, []);
+        if (onLogout) {
+            onLogout();
+        } else {
+            console.warn('[PopupAppProvider] logout() called but no onLogout handler provided');
+        }
+    }, [onLogout]);
 
     const setMode = useCallback((mode: Mode) => {
         // Vault and Neural require authentication
-        if ((mode === 'vault' || mode === 'neural') && !isAuthenticated) {
+        if ((mode === 'vault' || mode === 'neural') && !propIsAuthenticated) {
             return;
         }
         setCurrentMode(mode);
-    }, [isAuthenticated]);
+    }, [propIsAuthenticated]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
     }, []);
 
-    // Restore auth state from localStorage on mount
-    useEffect(() => {
-        const saved = localStorage.getItem('underscore-user');
-        if (saved) {
-            try {
-                const savedUser = JSON.parse(saved) as User;
-                setUser(savedUser);
-                setIsAuthenticated(true);
-            } catch (e) {
-                console.error('Failed to restore user', e);
-                localStorage.removeItem('underscore-user');
-            }
-        }
-    }, []);
-
-    const value: AppContextType = {
-        isAuthenticated,
-        user,
+    const value: PopupAppContextType = {
+        isAuthenticated: propIsAuthenticated,
+        user: propUser,
         login,
         logout,
         currentMode,
@@ -118,13 +119,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsLoading,
     };
 
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    return <PopupAppContext.Provider value={value}>{children}</PopupAppContext.Provider>;
 };
 
-export const useApp = () => {
-    const context = useContext(AppContext);
+export const usePopupApp = () => {
+    const context = useContext(PopupAppContext);
     if (context === undefined) {
-        throw new Error('useApp must be used within AppProvider');
+        throw new Error('usePopupApp must be used within PopupAppProvider');
+    }
+    return context;
+};
+
+/**
+ * useApp hook that works with both AppProvider and PopupAppProvider
+ * This allows shared components like Header to work in both contexts
+ */
+export const useApp = () => {
+    const context = useContext(PopupAppContext);
+    if (context === undefined) {
+        throw new Error('useApp must be used within PopupAppProvider');
     }
     return context;
 };

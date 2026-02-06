@@ -23,7 +23,7 @@ import { z } from 'zod';
  * ModeTypeSchema.parse('walk'); // ✅ Valid
  * ModeTypeSchema.parse('invalid'); // ❌ Throws ZodError
  */
-export const ModeTypeSchema = z.enum(['walk', 'sprint', 'vault']);
+export const ModeTypeSchema = z.enum(['walk', 'sprint', 'vault', 'neural']);
 
 /**
  * Inferred TypeScript type from schema

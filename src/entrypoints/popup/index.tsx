@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { AppProvider } from '../../core/context/AppProvider';
+import { AppProvider, useApp } from '../../core/context/AppProvider';
 import { AppShell } from '../../ui-system/layout/AppShell';
 import { AuthView } from './views/AuthView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
@@ -58,11 +58,29 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function PopupApp() {
-    const { user, isLoading } = useCurrentUser();
+    const { user, isLoading, logout } = useCurrentUser();
+    const { login: appLogin, logout: appLogout, user: appUser } = useApp();
     const [currentView, setCurrentView] = useState<View>(View.LOADING);
     const [hasSeenModeSelection, setHasSeenModeSelection] = useState(false);
     const [selectedMode, setSelectedMode] = useState<'focus' | 'capture' | 'memory' | 'neural'>('focus');
     const [selectedDomain, setSelectedDomain] = useState<string>('');
+
+    // Sync useCurrentUser with AppProvider so Header dropdown works
+    useEffect(() => {
+        if (user && !appUser) {
+            // User logged in via Chrome messaging - sync to AppProvider
+            appLogin({
+                id: user.id,
+                email: user.email,
+                displayName: user.displayName || user.name || 'User',
+                photoUrl: user.photoUrl || user.avatarUrl,
+                provider: 'google', // Default provider
+            });
+        } else if (!user && appUser) {
+            // User logged out via Chrome messaging - sync to AppProvider
+            appLogout();
+        }
+    }, [user, appUser, appLogin, appLogout]);
 
     useEffect(() => {
         if (isLoading) return;
@@ -109,7 +127,8 @@ function PopupApp() {
         setCurrentView(View.COLLECTIONS);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await logout();
         setCurrentView(View.MODE_SELECTION);
     };
 
@@ -145,7 +164,7 @@ function PopupApp() {
             {currentView === View.COLLECTIONS && (
                 <CollectionsView
                     mode={selectedMode}
-                    onModeChange={handleModeChange}
+                    onModeChange={handleModeChange as any}
                     onSignInClick={user ? undefined : handleSignInClick}
                     onCollectionClick={handleCollectionClick}
                     onLogout={handleLogout}

@@ -15,12 +15,23 @@ interface Collection {
 type SortBy = 'alphabetical' | 'usage' | 'recent';
 type ViewMode = 'list' | 'grid';
 
-export function CollectionsView() {
+interface CollectionsViewProps {
+    /** Custom logout handler for popup context */
+    onLogout?: () => void;
+    mode?: string;
+    onModeChange?: (mode: string) => void;
+    onSignInClick?: () => void;
+    onCollectionClick?: (domain: string) => void;
+    userEmail?: string;
+    isAuthenticated?: boolean;
+}
+
+export function CollectionsView({ onLogout, onCollectionClick: onCollectionClickProp }: CollectionsViewProps = {}) {
     const navigate = useNavigate();
     const { isAuthenticated } = useApp();
     const [sortBy, setSortBy] = useState<SortBy>('alphabetical');
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [mode, setMode] = useState<'vault' | 'xai'>('vault');
+    const [mode, setMode] = useState<'vault' | 'xai' | 'neural'>('vault');
 
     React.useEffect(() => {
         if (!isAuthenticated) {
@@ -86,7 +97,7 @@ export function CollectionsView() {
 
     return (
         <div className="min-h-screen flex flex-col bg-background text-foreground">
-            <Header />
+            <Header onLogout={onLogout} />
 
             <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12 flex flex-col">
                 {/* Mode Toggle */}
@@ -97,8 +108,8 @@ export function CollectionsView() {
                                 key={m}
                                 onClick={() => setMode(m as 'vault' | 'xai')}
                                 className={`relative flex cursor-pointer items-center justify-center px-6 h-full rounded-full transition-all duration-300 ${mode === m
-                                        ? 'bg-card text-primary shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground'
+                                    ? 'bg-card text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 <span className="text-sm font-medium tracking-wide capitalize">
@@ -126,8 +137,8 @@ export function CollectionsView() {
                                 key={sort}
                                 onClick={() => setSortBy(sort)}
                                 className={`relative flex cursor-pointer items-center justify-center px-4 h-full rounded-full transition-all duration-300 text-sm font-medium tracking-wide ${sortBy === sort
-                                        ? 'bg-card text-primary shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground'
+                                    ? 'bg-card text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {sort === 'alphabetical' && 'Alphabetical'}
@@ -142,8 +153,8 @@ export function CollectionsView() {
                         <button
                             onClick={() => setViewMode('list')}
                             className={`flex items-center justify-center p-2 rounded-full transition-all ${viewMode === 'list'
-                                    ? 'bg-card text-primary shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <List className="w-5 h-5" />
@@ -151,8 +162,8 @@ export function CollectionsView() {
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`flex items-center justify-center p-2 rounded-full transition-all ${viewMode === 'grid'
-                                    ? 'bg-card text-primary shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <LayoutGrid className="w-5 h-5" />
