@@ -23,12 +23,28 @@ interface CollectionsViewProps {
     onSignInClick?: () => void;
     onCollectionClick?: (domain: string) => void;
     userEmail?: string;
+    user?: {
+        id: string;
+        email: string;
+        displayName: string;
+        photoUrl?: string;
+    } | null;
     isAuthenticated?: boolean;
 }
 
-export function CollectionsView({ onLogout, onCollectionClick: onCollectionClickProp }: CollectionsViewProps = {}) {
+export function CollectionsView({ 
+    onLogout, 
+    onCollectionClick: onCollectionClickProp,
+    user: propUser,
+    isAuthenticated: propIsAuthenticated
+}: CollectionsViewProps = {}) {
     const navigate = useNavigate();
-    const { isAuthenticated } = useApp();
+    const appContext = useApp();
+    
+    // Prefer props if provided (fixes re-login state sync issues), fallback to context
+    const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
+    const user = propUser ?? appContext.user;
+    
     const [sortBy, setSortBy] = useState<SortBy>('alphabetical');
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [mode, setMode] = useState<'vault' | 'xai' | 'neural'>('vault');
@@ -97,7 +113,11 @@ export function CollectionsView({ onLogout, onCollectionClick: onCollectionClick
 
     return (
         <div className="min-h-screen flex flex-col bg-background text-foreground">
-            <Header onLogout={onLogout} />
+            <Header 
+                onLogout={onLogout} 
+                user={user}
+                isAuthenticated={isAuthenticated}
+            />
 
             <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12 flex flex-col">
                 {/* Mode Toggle */}

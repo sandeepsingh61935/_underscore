@@ -154,7 +154,7 @@ function PopupApp() {
                     onSignInClick={user ? undefined : handleSignInClick}
                     onCollectionClick={handleCollectionClick}
                     onLogout={handleLogout}
-                    userEmail={user?.email}
+                    user={user}
                     isAuthenticated={!!user}
                 />
             )}
