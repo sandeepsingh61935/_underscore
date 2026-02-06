@@ -1,114 +1,117 @@
 import React from 'react';
-import { Logo } from '../../ui-system/components/primitives/Logo';
-import { modeRegistry } from '../modes/registry';
+import { useNavigate } from 'react-router-dom';
+import { Header } from '@/ui-system/components/layout/Header';
+import { useApp } from '@/core/context/AppProvider';
 
-interface ModeSelectionViewProps {
-    onModeSelect: (modeId: string) => void;
-    onSignInClick: () => void;
+interface ModeOption {
+    id: 'walk' | 'sprint' | 'vault' | 'neural';
+    label: string;
+    requiresAuth: boolean;
 }
 
-/**
- * Mode Selection View - Direct copy from design mockup
- * Source: /docs/07-design/mode-selection/mode-selection-code.html
- */
-export function ModeSelectionView({ onModeSelect, onSignInClick }: ModeSelectionViewProps) {
-    const modes = modeRegistry.getAvailable(false); // Unauthenticated user
-    const allModes = [
-        modeRegistry.get('focus'),
-        modeRegistry.get('capture'),
-        modeRegistry.get('memory'),
-        modeRegistry.get('neural'),
-    ].filter(Boolean);
+export function ModeSelectionView() {
+    const navigate = useNavigate();
+    const { isAuthenticated, setMode } = useApp();
+
+    const modes: ModeOption[] = [
+        {
+            id: 'walk',
+            label: 'Focus',
+            requiresAuth: false,
+        },
+        {
+            id: 'sprint',
+            label: 'Capture',
+            requiresAuth: false,
+        },
+        {
+            id: 'vault',
+            label: 'Memory',
+            requiresAuth: true,
+        },
+        {
+            id: 'neural',
+            label: 'Archive',
+            requiresAuth: true,
+        },
+    ];
+
+    const handleModeClick = (mode: 'walk' | 'sprint' | 'vault' | 'neural') => {
+        if ((mode === 'vault' || mode === 'neural') && !isAuthenticated) {
+            navigate('/sign-in');
+            return;
+        }
+        setMode(mode);
+        // Close popup/navigate as needed for extension
+        if (mode === 'vault') {
+            navigate('/collections');
+        }
+    };
+
+    const freeModes = modes.filter(m => !m.requiresAuth);
+    const premiumModes = modes.filter(m => m.requiresAuth);
 
     return (
-        <div className="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
-            <header className="w-full max-w-screen-xl flex justify-between items-center py-4 px-0 md:px-4 mb-auto">
-                <Logo showText={true} />
-                <div>
-                    <a
-                        className="text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline text-lg md:text-xl font-light underline-offset-4 hover:underline cursor-pointer"
-                        onClick={onSignInClick}
-                    >
-                        Sign In
-                    </a>
-                </div>
-            </header>
+        <div className="min-h-screen flex flex-col bg-background text-foreground">
+            <Header />
 
-            <div className="w-full max-w-[480px] flex flex-col items-center flex-grow justify-center py-10">
-                <div className="w-full flex justify-center mb-10">
-                    <p className="text-text-secondary dark:text-gray-400 text-xs font-medium tracking-[0.2em] uppercase">Mode</p>
-                </div>
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
+                <div className="w-full max-w-lg flex flex-col items-center">
+                    {/* Title */}
+                    <h1 className="text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground mb-12 md:mb-16">
+                        Mode
+                    </h1>
 
-                <div className="flex flex-col items-center gap-6 w-full">
-                    {allModes.map((mode, index) => {
-                        if (!mode) return null;
-
-                        const isAvailable = modes.some(m => m.id === mode.id);
-
-                        // Add spacer after Capture (index 1)
-                        if (index === 2) {
-                            return (
-                                <React.Fragment key={`spacer-${mode.id}`}>
-                                    <div className="h-4 w-full"></div>
-                                    {isAvailable ? (
-                                        <button
-                                            className="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none"
-                                            onClick={() => onModeSelect(mode.id)}
-                                        >
-                                            <span className="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
-                                                {mode.name}
-                                            </span>
-                                        </button>
-                                    ) : (
-                                        <div
-                                            aria-disabled="true"
-                                            className="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed"
-                                        >
-                                            <span className="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
-                                                {mode.name}
-                                            </span>
-                                        </div>
-                                    )}
-                                </React.Fragment>
-                            );
-                        }
-
-                        return isAvailable ? (
+                    {/* Modes Container */}
+                    <div className="w-full flex flex-col items-center gap-6 md:gap-8">
+                        {/* Free Modes */}
+                        {freeModes.map((mode) => (
                             <button
                                 key={mode.id}
-                                className="mode-item group relative flex items-center justify-center w-full py-2 bg-transparent border-none cursor-pointer focus:outline-none"
-                                onClick={() => onModeSelect(mode.id)}
+                                onClick={() => handleModeClick(mode.id)}
+                                className="group relative flex items-center justify-center py-2 bg-transparent border-none cursor-pointer focus:outline-none transition-colors duration-200"
                             >
-                                <span className="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
-                                    {mode.name}
+                                <span className="text-3xl md:text-4xl font-light tracking-tight text-foreground group-hover:text-primary transition-colors">
+                                    {mode.label}
                                 </span>
                             </button>
-                        ) : (
+                        ))}
+
+                        {/* Spacer */}
+                        <div className="h-4 w-full md:h-6"></div>
+
+                        {/* Premium Modes */}
+                        {premiumModes.map((mode) => (
                             <div
                                 key={mode.id}
-                                aria-disabled="true"
-                                className="flex items-center justify-center w-full py-2 opacity-40 select-none cursor-not-allowed"
+                                className={`relative flex items-center justify-center py-2 ${isAuthenticated ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'
+                                    }`}
+                                onClick={() => isAuthenticated && handleModeClick(mode.id)}
+                                role={isAuthenticated ? 'button' : undefined}
                             >
-                                <span className="text-text-primary dark:text-white text-3xl md:text-4xl font-light tracking-tight">
-                                    {mode.name}
+                                <span className={`text-3xl md:text-4xl font-light tracking-tight text-foreground ${isAuthenticated ? 'group-hover:text-primary transition-colors' : ''
+                                    }`}>
+                                    {mode.label}
                                 </span>
                             </div>
-                        );
-                    })}
-                </div>
+                        ))}
+                    </div>
 
-                <div className="mt-16 text-center">
-                    <a
-                        className="group flex items-center gap-1.5 text-sm text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors no-underline cursor-pointer"
-                        onClick={onSignInClick}
-                    >
-                        <span>Sign in to unlock vault and archive</span>
-                        <span className="text-[16px] group-hover:translate-x-0.5 transition-transform">→</span>
-                    </a>
+                    {/* Call to Action */}
+                    {!isAuthenticated && (
+                        <div className="mt-16 text-center">
+                            <button
+                                onClick={() => navigate('/sign-in')}
+                                className="group flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                                <span>Sign in to unlock vault and archive</span>
+                                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
-            </div>
-
-            <div className="w-full mb-auto md:mb-8"></div>
+            </main>
         </div>
     );
 }
