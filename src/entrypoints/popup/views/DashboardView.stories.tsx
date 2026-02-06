@@ -26,7 +26,7 @@ export const Default: Story = {};
 
 export const WithUserMenu: Story = {
     render: () => (
-        <div className="w-[360px] h-[600px]">
+        <div className="w-[420px] h-[600px]">
             <DashboardView />
         </div>
     ),
