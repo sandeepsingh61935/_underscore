@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { AppProvider } from '../../core/context/AppProvider';
 import { AppShell } from '../../ui-system/layout/AppShell';
 import { AuthView } from './views/AuthView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
@@ -8,6 +11,7 @@ import { DomainDetailsView } from '../../features/collections/views/DomainDetail
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
 import '../../ui-system/theme/global.css';
+import './base.css';
 
 enum View {
     LOADING = 'LOADING',
@@ -15,6 +19,42 @@ enum View {
     COLLECTIONS = 'COLLECTIONS',
     DOMAIN_DETAILS = 'DOMAIN_DETAILS',
     AUTH = 'AUTH',
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+    constructor(props: { children: ReactNode }) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.error('Popup Error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="w-[400px] h-[600px] p-4 bg-surface text-on-surface flex flex-col items-center justify-center text-center">
+                    <h2 className="text-xl font-bold text-error mb-2">Something went wrong</h2>
+                    <p className="text-sm text-on-surface-variant mb-4">
+                        {this.state.error?.message || 'Unknown error'}
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-medium"
+                    >
+                        Reload Extension
+                    </button>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
 }
 
 function PopupApp() {
@@ -88,7 +128,7 @@ function PopupApp() {
 
     if (currentView === View.LOADING) {
         return (
-            <div className="w-[360px] h-[600px] flex items-center justify-center bg-bg-base-light dark:bg-bg-base-dark">
+            <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
                 <Spinner size={32} />
             </div>
         );
@@ -134,7 +174,13 @@ if (container) {
     const root = createRoot(container);
     root.render(
         <React.StrictMode>
-            <PopupApp />
+            <ErrorBoundary>
+                <MemoryRouter>
+                    <AppProvider>
+                        <PopupApp />
+                    </AppProvider>
+                </MemoryRouter>
+            </ErrorBoundary>
         </React.StrictMode>
     );
 } else {

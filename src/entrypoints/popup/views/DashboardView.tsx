@@ -28,9 +28,9 @@ export function DashboardView({ onLogout }: DashboardViewProps) {
     if (!user) return null; // Should be handled by router, but safety check
 
     return (
-        <div className="w-[360px] h-[600px] flex flex-col bg-bg-base-light dark:bg-bg-base-dark">
+        <div className="w-[400px] h-[600px] flex flex-col bg-surface">
             {/* Header */}
-            <header className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark bg-bg-surface-light/80 dark:bg-bg-surface-dark/80 backdrop-blur-md sticky top-0 z-10">
+            <header className="flex items-center justify-between px-4 py-3 border-b border-outline bg-surface-container/80 backdrop-blur-md sticky top-0 z-10">
                 <Logo className="scale-75 origin-left" showText={true} />
                 <UserMenu user={user} onLogout={handleLogout} />
             </header>

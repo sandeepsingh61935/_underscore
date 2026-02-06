@@ -1,130 +1,117 @@
 import React from 'react';
-import { Logo } from '../../ui-system/components/primitives/Logo';
-import { modeRegistry } from '../modes/registry';
-import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Header } from '@/ui-system/components/layout/Header';
+import { useApp } from '@/core/context/AppProvider';
 
-interface ModeSelectionViewProps {
-    onModeSelect: (modeId: string) => void;
-    onSignInClick: () => void;
+interface ModeOption {
+    id: 'walk' | 'sprint' | 'vault' | 'neural';
+    label: string;
+    requiresAuth: boolean;
 }
 
-export function ModeSelectionView({ onModeSelect, onSignInClick }: ModeSelectionViewProps) {
-    const modes = modeRegistry.getAvailable(false); // Unauthenticated user
-    const allModes = [
-        modeRegistry.get('focus'),
-        modeRegistry.get('capture'),
-        modeRegistry.get('memory'),
-        modeRegistry.get('neural'),
-    ].filter(Boolean);
+export function ModeSelectionView() {
+    const navigate = useNavigate();
+    const { isAuthenticated, setMode } = useApp();
+
+    const modes: ModeOption[] = [
+        {
+            id: 'walk',
+            label: 'Focus',
+            requiresAuth: false,
+        },
+        {
+            id: 'sprint',
+            label: 'Capture',
+            requiresAuth: false,
+        },
+        {
+            id: 'vault',
+            label: 'Memory',
+            requiresAuth: true,
+        },
+        {
+            id: 'neural',
+            label: 'Archive',
+            requiresAuth: true,
+        },
+    ];
+
+    const handleModeClick = (mode: 'walk' | 'sprint' | 'vault' | 'neural') => {
+        if ((mode === 'vault' || mode === 'neural') && !isAuthenticated) {
+            navigate('/sign-in');
+            return;
+        }
+        setMode(mode);
+        // Close popup/navigate as needed for extension
+        if (mode === 'vault') {
+            navigate('/collections');
+        }
+    };
+
+    const freeModes = modes.filter(m => !m.requiresAuth);
+    const premiumModes = modes.filter(m => m.requiresAuth);
 
     return (
-        <div className="w-[360px] h-[600px] bg-bg-base-light dark:bg-bg-base-dark font-display antialiased flex flex-col items-center justify-between p-6">
-            {/* Header with Logo + Sign In */}
-            <header className="w-full flex justify-between items-center">
-                <Logo showText={true} />
-                <button
-                    onClick={onSignInClick}
-                    className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors text-lg font-light underline-offset-4 hover:underline"
-                >
-                    Sign In
-                </button>
-            </header>
+        <div className="min-h-screen flex flex-col bg-background text-foreground">
+            <Header />
 
-            {/* Main Content - Centered */}
-            <div className="flex-1 flex flex-col items-center justify-center w-full -mt-12">
-                {/* MODE Label */}
-                <div className="flex justify-center mb-10">
-                    <p className="text-text-secondary-light dark:text-text-secondary-dark text-xs font-medium tracking-[0.2em] uppercase">
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
+                <div className="w-full max-w-lg flex flex-col items-center">
+                    {/* Title */}
+                    <h1 className="text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground mb-12 md:mb-16">
                         Mode
-                    </p>
-                </div>
+                    </h1>
 
-                {/* Mode Selection Buttons */}
-                <div className="flex flex-col items-center gap-6 w-full">
-                    {allModes.map((mode, index) => {
-                        if (!mode) return null;
-
-                        const isAvailable = modes.some(m => m.id === mode.id);
-
-                        // Add spacer after Capture (index 1)
-                        if (index === 2) {
-                            return (
-                                <React.Fragment key={`spacer-${mode.id}`}>
-                                    <div className="h-4" />
-                                    <button
-                                        disabled={!isAvailable}
-                                        onClick={() => isAvailable && onModeSelect(mode.id)}
-                                        className={`
-                      group relative flex items-center justify-center w-full py-2
-                      bg-transparent border-none
-                      ${isAvailable
-                                                ? 'cursor-pointer'
-                                                : 'opacity-40 cursor-not-allowed select-none'
-                                            }
-                      focus:outline-none
-                    `}
-                                    >
-                                        <span
-                                            className={`
-                        text-4xl font-light tracking-tight
-                        ${isAvailable
-                                                    ? 'text-text-primary-light dark:text-text-primary-dark group-hover:text-primary transition-colors'
-                                                    : 'text-text-primary-light dark:text-text-primary-dark'
-                                                }
-                      `}
-                                        >
-                                            {mode.name}
-                                        </span>
-                                    </button>
-                                </React.Fragment>
-                            );
-                        }
-
-                        return (
+                    {/* Modes Container */}
+                    <div className="w-full flex flex-col items-center gap-6 md:gap-8">
+                        {/* Free Modes */}
+                        {freeModes.map((mode) => (
                             <button
                                 key={mode.id}
-                                disabled={!isAvailable}
-                                onClick={() => isAvailable && onModeSelect(mode.id)}
-                                className={`
-                  group relative flex items-center justify-center w-full py-2
-                  bg-transparent border-none
-                  ${isAvailable
-                                        ? 'cursor-pointer'
-                                        : 'opacity-40 cursor-not-allowed select-none'
-                                    }
-                  focus:outline-none
-                `}
+                                onClick={() => handleModeClick(mode.id)}
+                                className="group relative flex items-center justify-center py-2 bg-transparent border-none cursor-pointer focus:outline-none transition-colors duration-200"
                             >
-                                <span
-                                    className={`
-                    text-4xl font-light tracking-tight
-                    ${isAvailable
-                                            ? 'text-text-primary-light dark:text-text-primary-dark group-hover:text-primary transition-colors'
-                                            : 'text-text-primary-light dark:text-text-primary-dark'
-                                        }
-                  `}
-                                >
-                                    {mode.name}
+                                <span className="text-3xl md:text-4xl font-light tracking-tight text-foreground group-hover:text-primary transition-colors">
+                                    {mode.label}
                                 </span>
                             </button>
-                        );
-                    })}
-                </div>
+                        ))}
 
-                {/* Sign-in Hint */}
-                <div className="mt-16 text-center">
-                    <button
-                        onClick={onSignInClick}
-                        className="group flex items-center gap-1.5 text-sm text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors"
-                    >
-                        <span>Sign in to unlock vault and archive</span>
-                        <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                </div>
-            </div>
+                        {/* Spacer */}
+                        <div className="h-4 w-full md:h-6"></div>
 
-            {/* Footer Spacer */}
-            <div className="mb-8" />
+                        {/* Premium Modes */}
+                        {premiumModes.map((mode) => (
+                            <div
+                                key={mode.id}
+                                className={`relative flex items-center justify-center py-2 ${isAuthenticated ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'
+                                    }`}
+                                onClick={() => isAuthenticated && handleModeClick(mode.id)}
+                                role={isAuthenticated ? 'button' : undefined}
+                            >
+                                <span className={`text-3xl md:text-4xl font-light tracking-tight text-foreground ${isAuthenticated ? 'group-hover:text-primary transition-colors' : ''
+                                    }`}>
+                                    {mode.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Call to Action */}
+                    {!isAuthenticated && (
+                        <div className="mt-16 text-center">
+                            <button
+                                onClick={() => navigate('/sign-in')}
+                                className="group flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                                <span>Sign in to unlock vault and archive</span>
+                                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 }

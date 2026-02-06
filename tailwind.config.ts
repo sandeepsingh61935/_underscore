@@ -7,87 +7,230 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
-            // Material Design 3 Typography Scale
-            fontSize: {
-                // Display
-                'display-large': ['57px', { lineHeight: '64px', letterSpacing: '-0.25px', fontWeight: '400' }],
-                'display-medium': ['45px', { lineHeight: '52px', letterSpacing: '0', fontWeight: '400' }],
-                'display-small': ['36px', { lineHeight: '44px', letterSpacing: '0', fontWeight: '400' }],
-
-                // Headline
-                'headline-large': ['32px', { lineHeight: '40px', letterSpacing: '0', fontWeight: '400' }],
-                'headline-medium': ['28px', { lineHeight: '36px', letterSpacing: '0', fontWeight: '400' }],
-                'headline-small': ['24px', { lineHeight: '32px', letterSpacing: '0', fontWeight: '400' }],
-
-                // Title
-                'title-large': ['22px', { lineHeight: '28px', letterSpacing: '0', fontWeight: '400' }],
-                'title-medium': ['16px', { lineHeight: '24px', letterSpacing: '0.15px', fontWeight: '500' }],
-                'title-small': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '500' }],
-
-                // Body
-                'body-large': ['16px', { lineHeight: '24px', letterSpacing: '0.5px', fontWeight: '400' }],
-                'body-medium': ['14px', { lineHeight: '20px', letterSpacing: '0.25px', fontWeight: '400' }],
-                'body-small': ['12px', { lineHeight: '16px', letterSpacing: '0.4px', fontWeight: '400' }],
-
-                // Label
-                'label-large': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '500' }],
-                'label-medium': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '500' }],
-                'label-small': ['11px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '500' }],
-            },
-
-            // Material Design 3 Font Family
-            fontFamily: {
-                'sans': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
-            },
-
-            // Material Design 3 Colors
+            // ===== Material Design 3 Colors (All 46 tokens) =====
             colors: {
-                // Primary
-                primary: {
-                    DEFAULT: '#5b8db9', // Your blue (acceptable in MD3)
-                    container: '#d1e4f3',
-                },
+                // Primary family
+                'primary': 'var(--md-sys-color-primary)',
+                'on-primary': 'var(--md-sys-color-on-primary)',
+                'primary-container': 'var(--md-sys-color-primary-container)',
+                'on-primary-container': 'var(--md-sys-color-on-primary-container)',
+                'primary-fixed': 'var(--md-sys-color-primary-fixed)',
+                'on-primary-fixed': 'var(--md-sys-color-on-primary-fixed)',
+                'primary-fixed-dim': 'var(--md-sys-color-primary-fixed-dim)',
+                'on-primary-fixed-variant': 'var(--md-sys-color-on-primary-fixed-variant)',
 
-                // Surface Container System (Light Mode)
-                'surface-container-lowest-light': '#FFFFFF',
-                'surface-container-low-light': '#F7F2FA',
-                'surface-container-light': '#F3EDF7',
-                'surface-container-high-light': '#ECE6F0',
-                'surface-container-highest-light': '#E6E0E9',
+                // Secondary family
+                'secondary': 'var(--md-sys-color-secondary)',
+                'on-secondary': 'var(--md-sys-color-on-secondary)',
+                'secondary-container': 'var(--md-sys-color-secondary-container)',
+                'on-secondary-container': 'var(--md-sys-color-on-secondary-container)',
+                'secondary-fixed': 'var(--md-sys-color-secondary-fixed)',
+                'on-secondary-fixed': 'var(--md-sys-color-on-secondary-fixed)',
+                'secondary-fixed-dim': 'var(--md-sys-color-secondary-fixed-dim)',
+                'on-secondary-fixed-variant': 'var(--md-sys-color-on-secondary-fixed-variant)',
 
-                // Surface Container System (Dark Mode)
-                'surface-container-lowest-dark': '#0F0D13',
-                'surface-container-low-dark': '#1D1B20',
-                'surface-container-dark': '#211F26',
-                'surface-container-high-dark': '#2B2930',
-                'surface-container-highest-dark': '#36343B',
+                // Tertiary family
+                'tertiary': 'var(--md-sys-color-tertiary)',
+                'on-tertiary': 'var(--md-sys-color-on-tertiary)',
+                'tertiary-container': 'var(--md-sys-color-tertiary-container)',
+                'on-tertiary-container': 'var(--md-sys-color-on-tertiary-container)',
+                'tertiary-fixed': 'var(--md-sys-color-tertiary-fixed)',
+                'on-tertiary-fixed': 'var(--md-sys-color-on-tertiary-fixed)',
+                'tertiary-fixed-dim': 'var(--md-sys-color-tertiary-fixed-dim)',
+                'on-tertiary-fixed-variant': 'var(--md-sys-color-on-tertiary-fixed-variant)',
 
-                // Surface
-                'surface-light': '#FEF7FF',
-                'surface-dark': '#1C1B1F',
+                // Error family
+                'error': 'var(--md-sys-color-error)',
+                'on-error': 'var(--md-sys-color-on-error)',
+                'error-container': 'var(--md-sys-color-error-container)',
+                'on-error-container': 'var(--md-sys-color-on-error-container)',
 
-                // On Surface
-                'on-surface-light': '#1C1B1F',
-                'on-surface-dark': '#E6E1E5',
+                // Surface & background
+                'surface-dim': 'var(--md-sys-color-surface-dim)',
+                'surface': 'var(--md-sys-color-surface)',
+                'surface-bright': 'var(--md-sys-color-surface-bright)',
+                'surface-container-lowest': 'var(--md-sys-color-surface-container-lowest)',
+                'surface-container-low': 'var(--md-sys-color-surface-container-low)',
+                'surface-container': 'var(--md-sys-color-surface-container)',
+                'surface-container-high': 'var(--md-sys-color-surface-container-high)',
+                'surface-container-highest': 'var(--md-sys-color-surface-container-highest)',
+                'on-surface': 'var(--md-sys-color-on-surface)',
+                'on-surface-variant': 'var(--md-sys-color-on-surface-variant)',
 
-                // On Surface Variant
-                'on-surface-variant-light': '#49454F',
-                'on-surface-variant-dark': '#CAC4D0',
+                // Inverse
+                'inverse-surface': 'var(--md-sys-color-inverse-surface)',
+                'inverse-on-surface': 'var(--md-sys-color-inverse-on-surface)',
+                'inverse-primary': 'var(--md-sys-color-inverse-primary)',
 
                 // Outline
-                'outline-light': '#79747E',
-                'outline-dark': '#938F99',
+                'outline': 'var(--md-sys-color-outline)',
+                'outline-variant': 'var(--md-sys-color-outline-variant)',
 
-                // Outline Variant
-                'outline-variant-light': '#CAC4D0',
-                'outline-variant-dark': '#49454F',
+                // Special
+                'scrim': 'var(--md-sys-color-scrim)',
+                'shadow': 'var(--md-sys-color-shadow)',
+
+                // Design mockup colors (from /docs/07-design HTML mockups)
+                'background-light': '#f6f7f7',
+                'background-dark': '#15191d',
+                'text-primary': '#111518',
+                'text-secondary': '#607485',
+                'badge-light': '#e0e3e6',
+                'badge-dark': '#2c3036',
+                'badge-dark-border': '#3c4046',
+                'badge-light-shadow': '#cdd0d3',
+
+                // ===== Spark Realm HSL Color System =====
+                border: 'hsl(var(--border))',
+                input: 'hsl(var(--input))',
+                ring: 'hsl(var(--ring))',
+                background: 'hsl(var(--background))',
+                foreground: 'hsl(var(--foreground))',
+                // Note: 'primary' is already defined above for MD3
+                // We extension it here for Spark Realm compatibility
+                // primary: {
+                //     DEFAULT: 'hsl(var(--primary))',
+                //     foreground: 'hsl(var(--primary-foreground))',
+                // },
+                // secondary: {
+                //     DEFAULT: 'hsl(var(--secondary))',
+                //     foreground: 'hsl(var(--secondary-foreground))',
+                // },
+                destructive: {
+                    DEFAULT: 'hsl(var(--destructive))',
+                    foreground: 'hsl(var(--destructive-foreground))',
+                },
+                muted: {
+                    DEFAULT: 'hsl(var(--muted))',
+                    foreground: 'hsl(var(--muted-foreground))',
+                },
+                accent: {
+                    DEFAULT: 'hsl(var(--accent))',
+                    foreground: 'hsl(var(--accent-foreground))',
+                },
+                popover: {
+                    DEFAULT: 'hsl(var(--popover))',
+                    foreground: 'hsl(var(--popover-foreground))',
+                },
+                card: {
+                    DEFAULT: 'hsl(var(--card))',
+                    foreground: 'hsl(var(--card-foreground))',
+                },
             },
 
-            // Material Design 3 Spacing (4dp base)
+            // ===== Material Design 3 Typography Scale =====
+            fontSize: {
+                // Display
+                'display-large': ['var(--md-sys-typescale-display-large-size)', {
+                    lineHeight: 'var(--md-sys-typescale-display-large-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-display-large-weight)'
+                }],
+                'display-medium': ['var(--md-sys-typescale-display-medium-size)', {
+                    lineHeight: 'var(--md-sys-typescale-display-medium-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-display-medium-weight)'
+                }],
+                'display-small': ['var(--md-sys-typescale-display-small-size)', {
+                    lineHeight: 'var(--md-sys-typescale-display-small-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-display-small-weight)'
+                }],
+
+                // Headline
+                'headline-large': ['var(--md-sys-typescale-headline-large-size)', {
+                    lineHeight: 'var(--md-sys-typescale-headline-large-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-headline-large-weight)'
+                }],
+                'headline-medium': ['var(--md-sys-typescale-headline-medium-size)', {
+                    lineHeight: 'var(--md-sys-typescale-headline-medium-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-headline-medium-weight)'
+                }],
+                'headline-small': ['var(--md-sys-typescale-headline-small-size)', {
+                    lineHeight: 'var(--md-sys-typescale-headline-small-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-headline-small-weight)'
+                }],
+
+                // Title
+                'title-large': ['var(--md-sys-typescale-title-large-size)', {
+                    lineHeight: 'var(--md-sys-typescale-title-large-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-title-large-weight)'
+                }],
+                'title-medium': ['var(--md-sys-typescale-title-medium-size)', {
+                    lineHeight: 'var(--md-sys-typescale-title-medium-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)'
+                }],
+                'title-small': ['var(--md-sys-typescale-title-small-size)', {
+                    lineHeight: 'var(--md-sys-typescale-title-small-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-title-small-weight)'
+                }],
+
+                // Body
+                'body-large': ['var(--md-sys-typescale-body-large-size)', {
+                    lineHeight: 'var(--md-sys-typescale-body-large-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-body-large-weight)'
+                }],
+                'body-medium': ['var(--md-sys-typescale-body-medium-size)', {
+                    lineHeight: 'var(--md-sys-typescale-body-medium-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-body-medium-weight)'
+                }],
+                'body-small': ['var(--md-sys-typescale-body-small-size)', {
+                    lineHeight: 'var(--md-sys-typescale-body-small-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-body-small-weight)'
+                }],
+
+                // Label
+                'label-large': ['var(--md-sys-typescale-label-large-size)', {
+                    lineHeight: 'var(--md-sys-typescale-label-large-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-label-large-weight)'
+                }],
+                'label-medium': ['var(--md-sys-typescale-label-medium-size)', {
+                    lineHeight: 'var(--md-sys-typescale-label-medium-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-label-medium-weight)'
+                }],
+                'label-small': ['var(--md-sys-typescale-label-small-size)', {
+                    lineHeight: 'var(--md-sys-typescale-label-small-line-height)',
+                    fontWeight: 'var(--md-sys-typescale-label-small-weight)'
+                }],
+            },
+
+            // ===== Font Family (Inter for Spark Realm) =====
+            fontFamily: {
+                'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+                'display': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+            },
+
+            // ===== Material Design 3 Shape (Border Radius) =====
+            borderRadius: {
+                'none': 'var(--md-sys-shape-corner-none)',
+                'xs': 'var(--md-sys-shape-corner-extra-small)',    // 4px
+                'sm': 'var(--md-sys-shape-corner-small)',          // 8px
+                'md': 'var(--md-sys-shape-corner-medium)',         // 12px
+                'lg': 'var(--md-sys-shape-corner-large)',          // 16px
+                'xl': 'var(--md-sys-shape-corner-extra-large)',    // 28px
+                'full': 'var(--md-sys-shape-corner-full)',         // 9999px
+            },
+
+            // ===== Material Design 3 Motion (Transitions) =====
+            transitionTimingFunction: {
+                'standard': 'var(--md-sys-motion-easing-standard)',
+                'emphasized': 'var(--md-sys-motion-easing-emphasized)',
+                'decelerate': 'var(--md-sys-motion-easing-decelerate)',
+                'accelerate': 'var(--md-sys-motion-easing-accelerate)',
+            },
+
+            transitionDuration: {
+                'short': 'var(--md-sys-motion-duration-short)',      // 200ms
+                'medium': 'var(--md-sys-motion-duration-medium)',    // 300ms
+                'long': 'var(--md-sys-motion-duration-long)',        // 500ms
+            },
+
+            // ===== Material Design 3 Spacing (4dp base) =====
             spacing: {
+                '0.5': '2px',
                 '1': '4px',
+                '1.5': '6px',
                 '2': '8px',
+                '2.5': '10px',
                 '3': '12px',
+                '3.5': '14px',
                 '4': '16px',
                 '5': '20px',
                 '6': '24px',
@@ -99,27 +242,26 @@ export default {
                 '12': '48px',
                 '14': '56px',
                 '16': '64px',
+                '20': '80px',
+                '24': '96px',
             },
 
-            // Material Design 3 Border Radius
-            borderRadius: {
-                'none': '0',
-                'xs': '4px',
-                'sm': '8px',
-                'md': '12px',
-                'lg': '16px',
-                'xl': '20px',
-                '2xl': '28px',
-                'full': '9999px',
-            },
-
-            // Material Design 3 Elevation (Shadows)
+            // ===== Material Design 3 Elevation (Shadows) =====
             boxShadow: {
                 'elevation-1': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
                 'elevation-2': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)',
                 'elevation-3': '0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3)',
                 'elevation-4': '0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3)',
                 'elevation-5': '0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px rgba(0, 0, 0, 0.3)',
+            },
+
+            // ===== MD3 Opacity Tokens =====
+            opacity: {
+                'disabled': '0.38',  // MD3 spec for disabled states
+                '38': '0.38',        // Shorthand for disabled opacity
+                'hover': '0.08',     // MD3 state layer hover
+                'focus': '0.12',     // MD3 state layer focus/press
+                'drag': '0.16',      // MD3 state layer drag
             },
         },
     },

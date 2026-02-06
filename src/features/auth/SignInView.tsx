@@ -1,90 +1,83 @@
 import React from 'react';
-import { Logo } from '../../ui-system/components/primitives/Logo';
+import { useNavigate } from 'react-router-dom';
+import { Header } from '@/ui-system/components/layout/Header';
+import { useApp } from '@/core/context/AppProvider';
 
-interface SignInViewProps {
-    onGoogleLogin: () => void;
-    onAppleLogin?: () => void;
-    onXLogin?: () => void;
-    onFacebookLogin?: () => void;
-    onBackToModeSelection?: () => void;
-}
+export function SignInView() {
+    const navigate = useNavigate();
+    const { login, setIsLoading, isLoading } = useApp();
 
-export function SignInView({
-    onGoogleLogin,
-    onAppleLogin,
-    onXLogin,
-    onFacebookLogin,
-    onBackToModeSelection
-}: SignInViewProps) {
+    const handleProviderClick = async (provider: 'google' | 'apple' | 'twitter' | 'facebook') => {
+        setIsLoading(true);
+
+        try {
+            // Simulate OAuth flow
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Mock user data based on provider
+            const mockUser = {
+                id: `${provider}-${Date.now()}`,
+                email: `user@${provider}.com`,
+                displayName: 'Demo User',
+                provider: provider,
+                photoUrl: `https://ui-avatars.com/api/?name=Demo+User&background=random`,
+            };
+
+            login(mockUser);
+            navigate('/mode');
+        } catch (err) {
+            console.error('Auth error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const providers: Array<{
+        id: 'google' | 'apple' | 'twitter' | 'facebook';
+        label: string;
+    }> = [
+            { id: 'google', label: 'Google' },
+            { id: 'apple', label: 'Apple' },
+            { id: 'twitter', label: 'X' },
+            { id: 'facebook', label: 'Facebook' },
+        ];
+
     return (
-        <div className="w-[360px] h-[600px] bg-bg-base-light dark:bg-bg-base-dark font-display antialiased flex flex-col items-center justify-between p-6">
-            {/* Header with Logo + Back link */}
-            <header className="w-full flex justify-between items-center">
-                <Logo showText={true} />
-                {onBackToModeSelection && (
-                    <button
-                        onClick={onBackToModeSelection}
-                        className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors text-lg font-light underline-offset-4 hover:underline"
-                    >
-                        Mode
-                    </button>
-                )}
-            </header>
+        <div className="min-h-screen flex flex-col bg-background text-foreground">
+            <Header showUserMenu={false} />
 
-            {/* Main Content - Centered */}
-            <div className="flex-1 flex flex-col items-center justify-center w-full -mt-8">
-                {/* SIGN IN WITH Label */}
-                <div className="flex justify-center mb-10">
-                    <p className="text-text-secondary-light dark:text-text-secondary-dark text-xs font-medium tracking-[0.2em] uppercase">
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
+                <div className="w-full max-w-lg flex flex-col items-center">
+                    {/* Title */}
+                    <h1 className="text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground mb-12 md:mb-16">
                         Sign in with
-                    </p>
+                    </h1>
+
+                    {/* Provider Links */}
+                    <div className="w-full flex flex-col items-center gap-6 md:gap-8">
+                        {providers.map((provider) => (
+                            <button
+                                key={provider.id}
+                                onClick={() => handleProviderClick(provider.id)}
+                                disabled={isLoading}
+                                className="group relative flex items-center justify-center py-2 bg-transparent border-none cursor-pointer focus:outline-none transition-colors duration-200"
+                            >
+                                <span className="text-3xl md:text-4xl font-light tracking-tight text-foreground group-hover:text-primary transition-colors disabled:opacity-50">
+                                    {provider.label}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Loading State */}
+                    {isLoading && (
+                        <div className="mt-12 text-sm text-muted-foreground">
+                            Signing in...
+                        </div>
+                    )}
                 </div>
-
-                {/* Provider Links */}
-                <div className="flex flex-col items-center gap-6 w-full">
-                    <button
-                        onClick={onGoogleLogin}
-                        className="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none cursor-pointer"
-                    >
-                        <span className="text-text-primary-light dark:text-text-primary-dark text-4xl font-light tracking-tight group-hover:text-primary transition-colors">
-                            Google
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={onAppleLogin}
-                        disabled={!onAppleLogin}
-                        className="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        <span className={`text-text-primary-light dark:text-text-primary-dark text-4xl font-light tracking-tight ${onAppleLogin ? 'group-hover:text-primary' : ''} transition-colors`}>
-                            Apple
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={onXLogin}
-                        disabled={!onXLogin}
-                        className="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        <span className={`text-text-primary-light dark:text-text-primary-dark text-4xl font-light tracking-tight ${onXLogin ? 'group-hover:text-primary' : ''} transition-colors`}>
-                            X
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={onFacebookLogin}
-                        disabled={!onFacebookLogin}
-                        className="login-provider-link group relative flex items-center justify-center w-full py-2 bg-transparent border-none focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        <span className={`text-text-primary-light dark:text-text-primary-dark text-4xl font-light tracking-tight ${onFacebookLogin ? 'group-hover:text-primary' : ''} transition-colors`}>
-                            Facebook
-                        </span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Footer Spacer */}
-            <div className="mb-8" />
+            </main>
         </div>
     );
 }

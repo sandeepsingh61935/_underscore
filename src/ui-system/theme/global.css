@@ -1,5 +1,5 @@
-/* Import Roboto font from Google Fonts - MUST be first */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+/* Import Inter font from Google Fonts - Primary font for Spark Realm design */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @config "../../../tailwind.config.ts";
 @tailwind base;
@@ -8,37 +8,450 @@
 
 @layer base {
 
-    /* Set Roboto as default font */
-    * {
+    /* ===================================
+       Material Design 3 Token System
+       Generated from seed: #5b8db9 (Underscore Blue)
+       Always use semantic tokens, never hardcoded values
+       =================================== */
+
+    :root {
+        /* ===== MD3 Color Tokens (Light Mode) ===== */
+
+        /* Primary Family */
+        --md-sys-color-primary: #4a6fa2;
+        --md-sys-color-on-primary: #ffffff;
+        --md-sys-color-primary-container: #d5e3ff;
+        --md-sys-color-on-primary-container: #001a3e;
+        --md-sys-color-primary-fixed: #d5e3ff;
+        --md-sys-color-on-primary-fixed: #001a3e;
+        --md-sys-color-primary-fixed-dim: #a8c8ff;
+        --md-sys-color-on-primary-fixed-variant: #325788;
+
+        /* Secondary Family */
+        --md-sys-color-secondary: #565f71;
+        --md-sys-color-on-secondary: #ffffff;
+        --md-sys-color-secondary-container: #dae2f9;
+        --md-sys-color-on-secondary-container: #131c2b;
+        --md-sys-color-secondary-fixed: #dae2f9;
+        --md-sys-color-on-secondary-fixed: #131c2b;
+        --md-sys-color-secondary-fixed-dim: #bec6dc;
+        --md-sys-color-on-secondary-fixed-variant: #3e4759;
+
+        /* Tertiary Family */
+        --md-sys-color-tertiary: #705575;
+        --md-sys-color-on-tertiary: #ffffff;
+        --md-sys-color-tertiary-container: #fbd7fc;
+        --md-sys-color-on-tertiary-container: #28132e;
+        --md-sys-color-tertiary-fixed: #fbd7fc;
+        --md-sys-color-on-tertiary-fixed: #28132e;
+        --md-sys-color-tertiary-fixed-dim: #debe0;
+        --md-sys-color-on-tertiary-fixed-variant: #573d5c;
+
+        /* Error Family */
+        --md-sys-color-error: #ba1a1a;
+        --md-sys-color-on-error: #ffffff;
+        --md-sys-color-error-container: #ffdad6;
+        --md-sys-color-on-error-container: #410002;
+
+        /* Surface & Background */
+        --md-sys-color-surface-dim: #d9d9e2;
+        --md-sys-color-surface: #f9f9ff;
+        --md-sys-color-surface-bright: #f9f9ff;
+        --md-sys-color-surface-container-lowest: #ffffff;
+        --md-sys-color-surface-container-low: #f3f3fc;
+        --md-sys-color-surface-container: #ededf6;
+        --md-sys-color-surface-container-high: #e7e8f0;
+        --md-sys-color-surface-container-highest: #e2e2ea;
+        --md-sys-color-on-surface: #191c20;
+        --md-sys-color-on-surface-variant: #43474e;
+
+        /* Inverse */
+        --md-sys-color-inverse-surface: #2e3135;
+        --md-sys-color-inverse-on-surface: #f0f0f7;
+        --md-sys-color-inverse-primary: #a8c8ff;
+
+        /* Outline */
+        --md-sys-color-outline: #73777f;
+        --md-sys-color-outline-variant: #c3c6cf;
+
+        /* Special */
+        --md-sys-color-scrim: #000000;
+        --md-sys-color-shadow: #000000;
+
+        /* ===== MD3 Typography Tokens ===== */
+
+        /* Display (Hero text) */
+        --md-sys-typescale-display-large-size: 57px;
+        --md-sys-typescale-display-large-line-height: 64px;
+        --md-sys-typescale-display-large-weight: 400;
+
+        --md-sys-typescale-display-medium-size: 45px;
+        --md-sys-typescale-display-medium-line-height: 52px;
+        --md-sys-typescale-display-medium-weight: 400;
+
+        --md-sys-typescale-display-small-size: 36px;
+        --md-sys-typescale-display-small-line-height: 44px;
+        --md-sys-typescale-display-small-weight: 400;
+
+        /* Headline (Page/Section titles) */
+        --md-sys-typescale-headline-large-size: 32px;
+        --md-sys-typescale-headline-large-line-height: 40px;
+        --md-sys-typescale-headline-large-weight: 400;
+
+        --md-sys-typescale-headline-medium-size: 28px;
+        --md-sys-typescale-headline-medium-line-height: 36px;
+        --md-sys-typescale-headline-medium-weight: 400;
+
+        --md-sys-typescale-headline-small-size: 24px;
+        --md-sys-typescale-headline-small-line-height: 32px;
+        --md-sys-typescale-headline-small-weight: 400;
+
+        /* Title (Card titles, Dialog headers) */
+        --md-sys-typescale-title-large-size: 22px;
+        --md-sys-typescale-title-large-line-height: 28px;
+        --md-sys-typescale-title-large-weight: 400;
+
+        --md-sys-typescale-title-medium-size: 16px;
+        --md-sys-typescale-title-medium-line-height: 24px;
+        --md-sys-typescale-title-medium-weight: 500;
+
+        --md-sys-typescale-title-small-size: 14px;
+        --md-sys-typescale-title-small-line-height: 20px;
+        --md-sys-typescale-title-small-weight: 500;
+
+        /* Body (Paragraphs, Descriptions) */
+        --md-sys-typescale-body-large-size: 16px;
+        --md-sys-typescale-body-large-line-height: 24px;
+        --md-sys-typescale-body-large-weight: 400;
+
+        --md-sys-typescale-body-medium-size: 14px;
+        --md-sys-typescale-body-medium-line-height: 20px;
+        --md-sys-typescale-body-medium-weight: 400;
+
+        --md-sys-typescale-body-small-size: 12px;
+        --md-sys-typescale-body-small-line-height: 16px;
+        --md-sys-typescale-body-small-weight: 400;
+
+        /* Label (Buttons, Chips, Captions) */
+        --md-sys-typescale-label-large-size: 14px;
+        --md-sys-typescale-label-large-line-height: 20px;
+        --md-sys-typescale-label-large-weight: 500;
+
+        --md-sys-typescale-label-medium-size: 12px;
+        --md-sys-typescale-label-medium-line-height: 16px;
+        --md-sys-typescale-label-medium-weight: 500;
+
+        --md-sys-typescale-label-small-size: 11px;
+        --md-sys-typescale-label-small-line-height: 16px;
+        --md-sys-typescale-label-small-weight: 500;
+
+        /* ===== MD3 Shape Tokens ===== */
+        --md-sys-shape-corner-none: 0px;
+        --md-sys-shape-corner-extra-small: 4px;
+        --md-sys-shape-corner-small: 8px;
+        --md-sys-shape-corner-medium: 12px;
+        --md-sys-shape-corner-large: 16px;
+        --md-sys-shape-corner-extra-large: 28px;
+        --md-sys-shape-corner-full: 9999px;
+
+        /* ===== MD3 Motion/Easing Tokens ===== */
+        --md-sys-motion-easing-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+        --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0.0, 0, 1.0);
+        --md-sys-motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+        --md-sys-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+        --md-sys-motion-duration-short: 200ms;
+        --md-sys-motion-duration-medium: 300ms;
+        --md-sys-motion-duration-long: 500ms;
+
+        /* ===== Spark Realm HSL Color System (Light Mode) ===== */
+        /* Tailwind expects the following color variables as HSL values */
+
+        /* Light Mode Colors */
+        --background: 220 8% 97.5%;
+        --foreground: 220 13% 13%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 220 13% 13%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 220 13% 13%;
+
+        --primary: 216 85% 50%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 220 8% 94%;
+        --secondary-foreground: 220 13% 13%;
+
+        --muted: 220 8% 94%;
+        --muted-foreground: 220 9% 50%;
+
+        --accent: 216 85% 50%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 220 8% 94%;
+        --input: 220 8% 94%;
+        --ring: 216 85% 50%;
+
+        --radius: 0.5rem;
+
+        /* _underscore specific tokens */
+        --underscore-compartment: 220 8% 94%;
+        --underscore-text-secondary: 220 9% 50%;
+
+        /* ===== Semantic Typography System ===== */
+        /* Modular Scale: 1.25x (Major Third) - Industry standard for elegant hierarchy */
+        /* Web App Context (default) - Base 16px for optimal reading */
+
+        --typography-base-size: 16px;
+        --typography-scale: 1.25;
+
+        /* Heading Scale */
+        --typography-heading-1: 2rem;
+        /* 32px - Hero headlines */
+        --typography-heading-2: 1.625rem;
+        /* 26px - Page titles */
+        --typography-heading-3: 1.313rem;
+        /* 21px - Section headings */
+        --typography-heading-4: 1.063rem;
+        /* 17px - Sub-sections */
+
+        /* Body Text */
+        --typography-body-large: 1rem;
+        /* 16px - Primary content */
+        --typography-body: 0.875rem;
+        /* 14px - Standard text */
+        --typography-body-small: 0.75rem;
+        /* 12px - Supporting text */
+
+        /* UI Elements */
+        --typography-label: 0.875rem;
+        /* 14px - Form labels, buttons */
+        --typography-caption: 0.75rem;
+        /* 12px - Metadata, timestamps */
+        --typography-overline: 0.625rem;
+        /* 10px - Section labels, uppercase */
+
+        /* Line Heights (unitless for better scaling) */
+        --typography-leading-tight: 1.25;
+        --typography-leading-normal: 1.5;
+        --typography-leading-relaxed: 1.75;
+
+        /* Font Weights */
+        --typography-weight-light: 300;
+        --typography-weight-normal: 400;
+        --typography-weight-medium: 500;
+        --typography-weight-semibold: 600;
+        --typography-weight-bold: 700;
+        --typography-weight-black: 800;
+    }
+
+    /* Dark Mode Overrides */
+    .dark {
+        /* Primary Family */
+        --md-sys-color-primary: #a8c8ff;
+        --md-sys-color-on-primary: #003061;
+        --md-sys-color-primary-container: #1b4678;
+        --md-sys-color-on-primary-container: #d5e3ff;
+
+        /* Secondary Family */
+        --md-sys-color-secondary: #bec6dc;
+        --md-sys-color-on-secondary: #283041;
+        --md-sys-color-secondary-container: #3e4759;
+        --md-sys-color-on-secondary-container: #dae2f9;
+
+        /* Tertiary Family */
+        --md-sys-color-tertiary: #debe0;
+        --md-sys-color-on-tertiary: #3f2844;
+        --md-sys-color-tertiary-container: #573d5c;
+        --md-sys-color-on-tertiary-container: #fbd7fc;
+
+        /* Error Family */
+        --md-sys-color-error: #ffb4ab;
+        --md-sys-color-on-error: #690005;
+        --md-sys-color-error-container: #93000a;
+        --md-sys-color-on-error-container: #ffdad6;
+
+        /* Surface & Background */
+        --md-sys-color-surface-dim: #111418;
+        --md-sys-color-surface: #111418;
+        --md-sys-color-surface-bright: #37393e;
+        --md-sys-color-surface-container-lowest: #0c0e13;
+        --md-sys-color-surface-container-low: #191c20;
+        --md-sys-color-surface-container: #1d2024;
+        --md-sys-color-surface-container-high: #282a2f;
+        --md-sys-color-surface-container-highest: #32353a;
+        --md-sys-color-on-surface: #e2e2ea;
+        --md-sys-color-on-surface-variant: #c3c6cf;
+
+        /* Inverse */
+        --md-sys-color-inverse-surface: #e2e2ea;
+        --md-sys-color-inverse-on-surface: #2e3135;
+        --md-sys-color-inverse-primary: #4a6fa2;
+
+        /* Outline */
+        --md-sys-color-outline: #8d9199;
+        --md-sys-color-outline-variant: #43474e;
+
+        /* ===== Spark Realm HSL Color System (Dark Mode) ===== */
+
+        /* Dark Mode Colors */
+        --background: 220 14% 12%;
+        --foreground: 0 0% 100%;
+
+        --card: 220 13% 16%;
+        --card-foreground: 0 0% 100%;
+
+        --popover: 220 13% 16%;
+        --popover-foreground: 0 0% 100%;
+
+        --primary: 216 85% 50%;
+        --primary-foreground: 220 14% 12%;
+
+        --secondary: 220 10% 20%;
+        --secondary-foreground: 0 0% 100%;
+
+        --muted: 220 10% 20%;
+        --muted-foreground: 220 9% 70%;
+
+        --accent: 216 85% 50%;
+        --accent-foreground: 220 14% 12%;
+
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 220 10% 20%;
+        --input: 220 10% 20%;
+        --ring: 216 85% 50%;
+
+        /* _underscore specific tokens */
+        --underscore-compartment: 220 10% 18%;
+        --underscore-text-secondary: 220 9% 70%;
+    }
+
+    /* Sepia Mode (optional theme variant) */
+    .sepia {
+        /* Sepia Colors */
+        --background: 40 10% 94%;
+        --foreground: 20 10% 15%;
+
+        --card: 40 20% 98%;
+        --card-foreground: 20 10% 15%;
+
+        --popover: 40 20% 98%;
+        --popover-foreground: 20 10% 15%;
+
+        --primary: 30 35% 50%;
+        --primary-foreground: 40 10% 94%;
+
+        --secondary: 40 10% 85%;
+        --secondary-foreground: 20 10% 15%;
+
+        --muted: 40 10% 85%;
+        --muted-foreground: 20 10% 40%;
+
+        --accent: 30 35% 50%;
+        --accent-foreground: 40 10% 94%;
+
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 40 10% 85%;
+        --input: 40 10% 85%;
+        --ring: 30 35% 50%;
+
+        /* _underscore specific tokens */
+        --underscore-compartment: 40 10% 88%;
+        --underscore-text-secondary: 20 10% 40%;
+    }
+
+    /* Extension Context - Compact Typography for 320-800px Popup */
+    .extension-context {
+        /* Reduced base size for compact viewports */
+        --typography-base-size: 14px;
+
+        /* Adjusted heading scale (proportionally smaller) */
+        --typography-heading-1: 1.25rem;
+        /* 20px - Popup hero */
+        --typography-heading-2: 1.125rem;
+        /* 18px - Popup titles */
+        --typography-heading-3: 1rem;
+        /* 16px - Sections */
+        --typography-heading-4: 0.938rem;
+        /* 15px - Sub-sections */
+
+        /* Body text (slightly more compact) */
+        --typography-body-large: 0.875rem;
+        /* 14px - Primary content */
+        --typography-body: 0.813rem;
+        /* 13px - Standard text */
+        --typography-body-small: 0.75rem;
+        /* 12px - Supporting text */
+
+        /* UI elements stay readable */
+        --typography-label: 0.813rem;
+        /* 13px - Buttons,labels */
+        --typography-caption: 0.688rem;
+        /* 11px - Metadata */
+        --typography-overline: 0.625rem;
+        /* 10px - Overlines */
+    }
+
+    /* Set Inter as default font */
+    *,
+    *::before,
+    *::after {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        /* Explicitly reset borders - this fixes black border issue */
+        border-width: 0;
+        border-style: solid;
+        border-color: hsl(var(--border));
     }
 
     html {
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
     }
 
     body {
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
         min-height: 100vh;
+        /* Use Spark Realm background/foreground */
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
     }
 
-    /* Material Design 3 focus states */
-    button:focus-visible {
-        outline: 2px solid #5b8db9;
+    /* Material Design 3 focus states - SCOPED to extension only */
+    #app button:focus-visible {
+        outline: 2px solid var(--md-sys-color-primary);
         outline-offset: 2px;
     }
 
-    input:focus-visible,
-    textarea:focus-visible {
-        outline: 2px solid #5b8db9;
+    #app input:focus-visible,
+    #app textarea:focus-visible {
+        outline: 2px solid var(--md-sys-color-primary);
         outline-offset: 0;
     }
 
-    /* Selection color */
-    ::selection {
-        background-color: rgba(91, 141, 185, 0.2);
+    /* Selection color using primary - SCOPED to extension only */
+    #app ::selection {
+        background-color: color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
+    }
+
+    /* Text wrapping utilities from Spark Realm */
+    :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    pre,
+    code {
+        overflow-x: auto;
+        white-space: pre;
     }
 }
 
@@ -53,6 +466,73 @@
         display: none;
     }
 
+    /* ===== Semantic Typography Utilities ===== */
+    /* Apply these classes instead of raw text-* utilities for automatic context switching */
+
+    .typography-heading-1 {
+        font-size: var(--typography-heading-1);
+        line-height: var(--typography-leading-tight);
+        font-weight: var(--typography-weight-bold);
+        letter-spacing: -0.02em;
+    }
+
+    .typography-heading-2 {
+        font-size: var(--typography-heading-2);
+        line-height: var(--typography-leading-tight);
+        font-weight: var(--typography-weight-semibold);
+        letter-spacing: -0.01em;
+    }
+
+    .typography-heading-3 {
+        font-size: var(--typography-heading-3);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-semibold);
+    }
+
+    .typography-heading-4 {
+        font-size: var(--typography-heading-4);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-medium);
+    }
+
+    .typography-body-large {
+        font-size: var(--typography-body-large);
+        line-height: var(--typography-leading-relaxed);
+        font-weight: var(--typography-weight-normal);
+    }
+
+    .typography-body {
+        font-size: var(--typography-body);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-normal);
+    }
+
+    .typography-body-small {
+        font-size: var(--typography-body-small);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-normal);
+    }
+
+    .typography-label {
+        font-size: var(--typography-label);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-medium);
+    }
+
+    .typography-caption {
+        font-size: var(--typography-caption);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-normal);
+    }
+
+    .typography-overline {
+        font-size: var(--typography-overline);
+        line-height: var(--typography-leading-normal);
+        font-weight: var(--typography-weight-medium);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
     /* Material Design 3 State Layers */
     .state-layer-hover {
         position: relative;
@@ -64,7 +544,7 @@
         inset: 0;
         background-color: currentColor;
         opacity: 0;
-        transition: opacity 200ms;
+        transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
     }
 
     .state-layer-hover:hover::before {
@@ -73,5 +553,21 @@
 
     .state-layer-hover:active::before {
         opacity: 0.12;
+    }
+
+    .state-layer-hover:focus-visible::before {
+        opacity: 0.12;
+    }
+
+    /* Reduced motion support (Critical for accessibility) */
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 }
