@@ -23,7 +23,7 @@ export const Default: Story = {};
 
 export const InContext: Story = {
     render: () => (
-        <div className="w-[360px] h-[400px] bg-surface p-4 flex items-center justify-center">
+        <div className="w-[420px] h-[400px] bg-surface p-4 flex items-center justify-center">
             <EmptyCollectionsState />
         </div>
     ),

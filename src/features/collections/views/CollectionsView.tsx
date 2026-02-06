@@ -1,305 +1,260 @@
-import React, { useState, useMemo } from 'react';
-import { Logo } from '../../../ui-system/components/primitives/Logo';
-import { EmptyCollectionsState } from '../components/EmptyCollectionsState';
-import { AccountMenu } from '../../../ui-system/components/AccountMenu';
-import { Card } from '../../../ui-system/components/primitives/Card';
-import { useTheme } from '../../../ui-system/hooks/useTheme';
-import { Settings, User, List, Grid, ArrowRight, Lock } from 'lucide-react';
-
-interface CollectionsViewProps {
-    mode: 'focus' | 'capture' | 'memory' | 'neural';
-    onModeChange: (mode: 'focus' | 'capture' | 'memory' | 'neural') => void;
-    onSignInClick?: () => void;
-    onCollectionClick?: (domain: string) => void;
-    onLogout?: () => void;
-    userEmail?: string;
-    isAuthenticated?: boolean;
-}
-
-type SortOption = 'alphabetical' | 'usage' | 'recent';
-type ViewMode = 'list' | 'grid';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Header } from '@/ui-system/components/layout/Header';
+import { useApp } from '@/core/context/AppProvider';
+import { LayoutGrid, List, Plus, ChevronRight } from 'lucide-react';
 
 interface Collection {
     id: string;
     domain: string;
     category: string;
-    count: number;
-    favicon?: string;
+    highlightCount: number;
+    lastModified: Date;
 }
 
-export function CollectionsView({ mode, onModeChange, onSignInClick, onCollectionClick, onLogout, userEmail, isAuthenticated = false }: CollectionsViewProps) {
-    const [sortBy, setSortBy] = useState<SortOption>('alphabetical');
+type SortBy = 'alphabetical' | 'usage' | 'recent';
+type ViewMode = 'list' | 'grid';
+
+export function CollectionsView() {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useApp();
+    const [sortBy, setSortBy] = useState<SortBy>('alphabetical');
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [showMenu, setShowMenu] = useState(false);
-    const { theme, setTheme } = useTheme();
+    const [mode, setMode] = useState<'vault' | 'xai'>('vault');
 
-    // Mock collections data - TODO: Replace with actual data from useCollections hook
-    const [collections] = useState<Collection[]>([
-        { id: '1', domain: 'nytimes.com', category: 'News & Media', count: 24 },
-        { id: '2', domain: 'wikipedia.org', category: 'Reference', count: 12 },
-        { id: '3', domain: 'github.com', category: 'Development', count: 8 },
-        { id: '4', domain: 'dribbble.com', category: 'Design Inspiration', count: 3 },
-    ]);
-
-    // Sort collections based on selected option
-    const sortedCollections = useMemo(() => {
-        const sorted = [...collections];
-
-        switch (sortBy) {
-            case 'alphabetical':
-                return sorted.sort((a, b) => a.domain.localeCompare(b.domain));
-            case 'usage':
-                return sorted.sort((a, b) => b.count - a.count); // Descending order
-            case 'recent':
-                // For now, just reverse alphabetical as we don't have timestamps
-                return sorted.sort((a, b) => b.domain.localeCompare(a.domain));
-            default:
-                return sorted;
+    React.useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/mode');
         }
-    }, [collections, sortBy]);
+    }, [isAuthenticated, navigate]);
 
-    const hasCollections = sortedCollections.length > 0;
-
-    // Mode configuration
-    const modes = [
-        { id: 'focus' as const, label: 'Focus', requiresAuth: false },
-        { id: 'capture' as const, label: 'Capture', requiresAuth: false },
-        { id: 'memory' as const, label: 'Memory', requiresAuth: true },
-        { id: 'neural' as const, label: 'Neural', requiresAuth: true },
+    // Mock collection data with real favicon URLs
+    const mockCollections: Collection[] = [
+        {
+            id: '1',
+            domain: 'nytimes.com',
+            category: 'News & Media',
+            highlightCount: 24,
+            lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        },
+        {
+            id: '2',
+            domain: 'wikipedia.org',
+            category: 'Reference',
+            highlightCount: 12,
+            lastModified: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        },
+        {
+            id: '3',
+            domain: 'github.com',
+            category: 'Development',
+            highlightCount: 8,
+            lastModified: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        },
+        {
+            id: '4',
+            domain: 'dribbble.com',
+            category: 'Design Inspiration',
+            highlightCount: 3,
+            lastModified: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        },
     ];
 
-    const handleModeClick = (modeId: typeof mode) => {
-        const selectedMode = modes.find(m => m.id === modeId);
-        if (selectedMode?.requiresAuth && !isAuthenticated) {
-            // Don't switch to auth-required mode if not authenticated
-            return;
+    const sortedCollections = [...mockCollections].sort((a, b) => {
+        switch (sortBy) {
+            case 'alphabetical':
+                return a.domain.localeCompare(b.domain);
+            case 'usage':
+                return b.highlightCount - a.highlightCount;
+            case 'recent':
+                return b.lastModified.getTime() - a.lastModified.getTime();
+            default:
+                return 0;
         }
-        onModeChange(modeId);
+    });
+
+    const handleCollectionClick = (collection: Collection) => {
+        navigate(`/domain/${collection.domain}`, { state: { collection } });
+    };
+
+    const faviconUrls: Record<string, string> = {
+        'nytimes.com': 'https://www.nytimes.com/favicon.ico',
+        'wikipedia.org': 'https://en.wikipedia.org/favicon.ico',
+        'github.com': 'https://github.com/favicon.ico',
+        'dribbble.com': 'https://dribbble.com/favicon.ico',
     };
 
     return (
-        <div className="w-[360px] h-[600px] bg-surface font-display flex flex-col relative">
-            {/* Header */}
-            <header className="w-full border-b border-outline bg-surface-container/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="px-4 h-14 flex items-center justify-between">
-                    <Logo showText={true} />
-                    <button
-                        onClick={() => setShowMenu(!showMenu)}
-                        className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:ring-2 ring-primary ring-offset-2 ring-offset-surface transition-all"
-                    >
-                        <User size={14} className="text-primary" />
-                    </button>
-                </div>
-            </header>
+        <div className="min-h-screen flex flex-col bg-background text-foreground">
+            <Header />
 
-            {/* Account Menu */}
-            {showMenu && (
-                <AccountMenu
-                    isAuthenticated={isAuthenticated}
-                    userEmail={userEmail}
-                    currentTheme={theme}
-                    onSettingsClick={() => console.log('Settings clicked')}
-                    onPrivacyClick={() => console.log('Privacy clicked')}
-                    onThemeChange={setTheme}
-                    onSignOut={onLogout}
-                    onClose={() => setShowMenu(false)}
-                />
-            )}
-
-            {/* Material Design 3 Primary Tabs - Mode Switcher */}
-            <div className="w-full border-b border-outline">
-                <div className="flex">
-                    {modes.map((modeConfig) => {
-                        const isActive = mode === modeConfig.id;
-                        const isLocked = modeConfig.requiresAuth && !isAuthenticated;
-
-                        return (
+            <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12 flex flex-col">
+                {/* Mode Toggle */}
+                <div className="w-full flex justify-center mb-12">
+                    <div className="inline-flex h-12 items-center justify-center rounded-full bg-secondary/50 p-1">
+                        {['vault', 'xai'].map((m) => (
                             <button
-                                key={modeConfig.id}
-                                onClick={() => handleModeClick(modeConfig.id)}
-                                disabled={isLocked}
-                                className={`
-                                    relative flex-1 h-12 flex items-center justify-center gap-1.5
-                                    transition-colors duration-200
-                                    ${isActive
-                                        ? 'text-primary'
-                                        : isLocked
-                                            ? 'text-on-surface-variant opacity-40 cursor-not-allowed'
-                                            : 'text-on-surface-variant hover:text-on-surface'
-                                    }
-                                `}
+                                key={m}
+                                onClick={() => setMode(m as 'vault' | 'xai')}
+                                className={`relative flex cursor-pointer items-center justify-center px-6 h-full rounded-full transition-all duration-300 ${mode === m
+                                        ? 'bg-card text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                             >
-                                {/* Label - Title Small (14px, weight 500) */}
-                                <span className="text-title-small">
-                                    {modeConfig.label}
+                                <span className="text-sm font-medium tracking-wide capitalize">
+                                    {m === 'xai' ? 'xAI' : 'Vault'}
                                 </span>
-
-                                {/* Lock icon for locked modes */}
-                                {isLocked && (
-                                    <Lock size={12} className="opacity-60" />
-                                )}
-
-                                {/* Active Indicator - 3dp underline */}
-                                {isActive && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-sm" />
-                                )}
-
-                                {/* State layer for hover/press */}
-                                {!isLocked && !isActive && (
-                                    <div className="absolute inset-0 state-layer-hover" />
-                                )}
                             </button>
-                        );
-                    })}
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            {/* Content Area */}
-            {!hasCollections ? (
-                <EmptyCollectionsState />
-            ) : (
-                <main className="flex-1 overflow-y-auto px-4 pt-2 pb-6">
-                    {/* Collections Header */}
-                    <div className="mb-8 flex flex-col items-center text-center">
-                        <h1 className="text-headline-large text-on-surface mb-2">
-                            Collections
-                        </h1>
-                        <p className="text-body-medium text-on-surface-variant max-w-[280px]">
-                            Securely manage your collected underscores within individual collections.
-                        </p>
+                {/* Page Header */}
+                <div className="mb-10 flex flex-col items-center text-center">
+                    <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-2">Collections</h1>
+                    <p className="text-muted-foreground text-sm font-light mt-2 max-w-md">
+                        Securely manage your collected underscores within individual domain collections.
+                    </p>
+                </div>
+
+                {/* Controls */}
+                <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                    {/* Sort Controls */}
+                    <div className="inline-flex h-10 items-center justify-center rounded-full bg-secondary/50 p-1">
+                        {(['alphabetical', 'usage', 'recent'] as const).map((sort) => (
+                            <button
+                                key={sort}
+                                onClick={() => setSortBy(sort)}
+                                className={`relative flex cursor-pointer items-center justify-center px-4 h-full rounded-full transition-all duration-300 text-sm font-medium tracking-wide ${sortBy === sort
+                                        ? 'bg-card text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                {sort === 'alphabetical' && 'Alphabetical'}
+                                {sort === 'usage' && 'By Usage'}
+                                {sort === 'recent' && 'Recently Added'}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Controls: Sorting + View Toggle */}
-                    <div className="w-full flex justify-between items-center mb-6">
-                        {/* Sorting Tabs */}
-                        <div className="inline-flex h-10 items-center justify-center rounded-full bg-surface-container p-1">
-                            <button
-                                onClick={() => setSortBy('alphabetical')}
-                                className={`
-                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
-                                    ${sortBy === 'alphabetical'
-                                        ? 'bg-surface-container-highest shadow-sm text-primary'
-                                        : 'text-on-surface-variant'
-                                    }
-                                `}
-                            >
-                                Alphabetical
-                            </button>
-                            <button
-                                onClick={() => setSortBy('usage')}
-                                className={`
-                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
-                                    ${sortBy === 'usage'
-                                        ? 'bg-surface-container-highest shadow-sm text-primary'
-                                        : 'text-on-surface-variant'
-                                    }
-                                `}
-                            >
-                                By Usage
-                            </button>
-                            <button
-                                onClick={() => setSortBy('recent')}
-                                className={`
-                                    px-3 h-full rounded-full text-label-medium transition-all duration-short
-                                    ${sortBy === 'recent'
-                                        ? 'bg-surface-container-highest shadow-sm text-primary'
-                                        : 'text-on-surface-variant'
-                                    }
-                                `}
-                            >
-                                Recent
-                            </button>
-                        </div>
-
-                        {/* View Toggle */}
-                        <div className="inline-flex items-center rounded-full bg-surface-container p-1">
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`
-                                    p-1.5 rounded-full transition-all
-                                    ${viewMode === 'list'
-                                        ? 'bg-surface-container-highest text-primary shadow-sm'
-                                        : 'text-on-surface-variant'
-                                    }
-                                `}
-                            >
-                                <List size={16} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`
-                                    p-1.5 rounded-full transition-all
-                                    ${viewMode === 'grid'
-                                        ? 'bg-surface-container-highest text-primary shadow-sm'
-                                        : 'text-on-surface-variant'
-                                    }
-                                `}
-                            >
-                                <Grid size={16} />
-                            </button>
-                        </div>
+                    {/* View Toggle */}
+                    <div className="inline-flex items-center rounded-full bg-secondary/50 p-1">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`flex items-center justify-center p-2 rounded-full transition-all ${viewMode === 'list'
+                                    ? 'bg-card text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <List className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`flex items-center justify-center p-2 rounded-full transition-all ${viewMode === 'grid'
+                                    ? 'bg-card text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <LayoutGrid className="w-5 h-5" />
+                        </button>
                     </div>
+                </div>
 
-                    {/* Material Design 3 Filled Cards - Collections */}
-                    <div className="flex flex-col gap-2">
+                {/* Collections List/Grid */}
+                {viewMode === 'list' ? (
+                    <div className="flex flex-col gap-3 w-full">
                         {sortedCollections.map((collection) => (
-                            <Card
+                            <button
                                 key={collection.id}
-                                interactive
-                                onClick={() => onCollectionClick?.(collection.domain)}
-                                className="group flex items-center justify-between"
+                                onClick={() => handleCollectionClick(collection)}
+                                className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-xl bg-card border border-border shadow-sm shadow-black/5 hover:shadow-md hover:shadow-black/10 transition-all duration-300 cursor-pointer text-left"
                             >
-                                <div className="flex items-center gap-4 overflow-hidden flex-1">
-                                    {/* Favicon/Icon - 40dp (same as MD3 list items) */}
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-                                        <span className="text-label-large uppercase">
-                                            {collection.domain.charAt(0)}
-                                        </span>
+                                <div className="flex items-center gap-5 overflow-hidden w-full sm:w-auto mb-4 sm:mb-0">
+                                    <div className="h-14 w-14 shrink-0 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground overflow-hidden border border-border/50 shadow-inner">
+                                        <img
+                                            alt={`${collection.domain} favicon`}
+                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                            src={faviconUrls[collection.domain]}
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                        />
                                     </div>
-
-                                    {/* Domain Info */}
                                     <div className="flex flex-col truncate">
-                                        {/* Title Large (22px) per MD3 */}
-                                        <p className="text-title-large text-on-surface truncate">
+                                        <p className="text-base font-medium text-foreground truncate group-hover:text-primary transition-colors">
                                             {collection.domain}
                                         </p>
-                                        {/* Body Medium (14px) for category */}
-                                        <span className="text-body-medium text-on-surface-variant">
+                                        <span className="text-sm text-muted-foreground font-light mt-1">
                                             {collection.category}
                                         </span>
                                     </div>
                                 </div>
-
-                                {/* Count + Arrow */}
-                                <div className="flex items-center gap-4 shrink-0">
-                                    {/* Label Large (14px) for count */}
-                                    <p className="text-label-large text-on-surface-variant group-hover:text-primary transition-colors">
-                                        {collection.count} underscores
+                                <div className="flex items-center gap-6 shrink-0 w-full sm:w-auto justify-end">
+                                    <p className="text-base font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                                        {collection.highlightCount} underscores
                                     </p>
-                                    <ArrowRight
-                                        size={20}
-                                        className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-all"
-                                    />
+                                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                 </div>
-                            </Card>
+                            </button>
                         ))}
                     </div>
-
-                    {/* Add New Collection Button */}
-                    <div className="mt-4 flex justify-center">
-                        <button className="text-xs text-primary font-medium hover:text-primary-hover transition-colors flex items-center gap-1">
-                            <span className="text-base">+</span>
-                            Add new collection
-                        </button>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                        {sortedCollections.map((collection) => (
+                            <button
+                                key={collection.id}
+                                onClick={() => handleCollectionClick(collection)}
+                                className="group flex flex-col items-center p-6 rounded-xl bg-card border border-border shadow-sm shadow-black/5 hover:shadow-lg hover:shadow-black/10 transition-all duration-200 cursor-pointer relative overflow-hidden"
+                            >
+                                <div className="h-20 w-20 shrink-0 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground overflow-hidden border border-border/50 shadow-inner mb-4">
+                                    <img
+                                        alt={`${collection.domain} favicon`}
+                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                        src={faviconUrls[collection.domain]}
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                        }}
+                                    />
+                                </div>
+                                <p className="text-base font-medium text-foreground truncate w-full text-center mb-1">
+                                    {collection.domain}
+                                </p>
+                                <span className="text-xs text-muted-foreground font-light text-center mb-4">
+                                    {collection.category}
+                                </span>
+                                <div className="absolute bottom-3 right-3 text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors px-2 py-1 rounded-md bg-secondary/50">
+                                    {collection.highlightCount}
+                                </div>
+                            </button>
+                        ))}
                     </div>
-                </main>
-            )}
+                )}
+
+                {/* Add New Collection Button */}
+                <div className="mt-8 flex justify-center">
+                    <button className="text-sm text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1 group">
+                        <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                        Add new collection
+                    </button>
+                </div>
+            </main>
 
             {/* Footer */}
-            <footer className="w-full py-4 mt-auto border-t border-outline">
-                <p className="text-center text-label-small text-on-surface-variant">
-                    © 2024 _underscore.
-                </p>
+            <footer className="w-full py-8 mt-auto">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 flex justify-between items-center text-xs text-muted-foreground">
+                    <p>© 2024 _underscore.</p>
+                    <div className="flex gap-6">
+                        <a href="#privacy" className="hover:text-foreground transition-colors">
+                            Privacy
+                        </a>
+                        <a href="#help" className="hover:text-foreground transition-colors">
+                            Help
+                        </a>
+                        <a href="#terms" className="hover:text-foreground transition-colors">
+                            Terms
+                        </a>
+                    </div>
+                </div>
             </footer>
         </div>
     );
