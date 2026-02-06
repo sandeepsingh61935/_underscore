@@ -79,6 +79,43 @@ export default {
                 'badge-dark': '#2c3036',
                 'badge-dark-border': '#3c4046',
                 'badge-light-shadow': '#cdd0d3',
+
+                // ===== Spark Realm HSL Color System =====
+                border: 'hsl(var(--border))',
+                input: 'hsl(var(--input))',
+                ring: 'hsl(var(--ring))',
+                background: 'hsl(var(--background))',
+                foreground: 'hsl(var(--foreground))',
+                // Note: 'primary' is already defined above for MD3
+                // We extension it here for Spark Realm compatibility
+                // primary: {
+                //     DEFAULT: 'hsl(var(--primary))',
+                //     foreground: 'hsl(var(--primary-foreground))',
+                // },
+                // secondary: {
+                //     DEFAULT: 'hsl(var(--secondary))',
+                //     foreground: 'hsl(var(--secondary-foreground))',
+                // },
+                destructive: {
+                    DEFAULT: 'hsl(var(--destructive))',
+                    foreground: 'hsl(var(--destructive-foreground))',
+                },
+                muted: {
+                    DEFAULT: 'hsl(var(--muted))',
+                    foreground: 'hsl(var(--muted-foreground))',
+                },
+                accent: {
+                    DEFAULT: 'hsl(var(--accent))',
+                    foreground: 'hsl(var(--accent-foreground))',
+                },
+                popover: {
+                    DEFAULT: 'hsl(var(--popover))',
+                    foreground: 'hsl(var(--popover-foreground))',
+                },
+                card: {
+                    DEFAULT: 'hsl(var(--card))',
+                    foreground: 'hsl(var(--card-foreground))',
+                },
             },
 
             // ===== Material Design 3 Typography Scale =====
@@ -154,10 +191,10 @@ export default {
                 }],
             },
 
-            // ===== Material Design 3 Font Family =====
+            // ===== Font Family (Inter for Spark Realm) =====
             fontFamily: {
-                'sans': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
-                'display': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+                'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+                'display': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
             },
 
             // ===== Material Design 3 Shape (Border Radius) =====

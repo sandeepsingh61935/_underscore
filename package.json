@@ -13,6 +13,8 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
+    "dev:web": "vite --config vite.config.web.ts",
+    "build:web": "vite build --config vite.config.web.ts",
     "build": "wxt build",
     "build:firefox": "wxt build --browser firefox",
     "zip": "wxt zip",
@@ -62,6 +64,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
+    "@vitejs/plugin-react": "^5.1.2",
     "@vitest/browser-playwright": "^4.0.16",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
@@ -83,6 +86,7 @@
     "tailwindcss": "^4.1.18",
     "terser": "^5.44.1",
     "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "vitest": "^4.0.16",
     "wxt": "^0.20.13"
   },
@@ -92,7 +96,13 @@
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.89.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.2.1",
     "diff-match-patch": "^1.0.5",
@@ -101,6 +111,7 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-router-dom": "^7.12.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.2.1"
   }
