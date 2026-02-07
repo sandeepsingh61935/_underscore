@@ -21,16 +21,24 @@ interface Highlight {
     isCode: boolean;
 }
 
-export function DomainDetailsView() {
+interface DomainDetailsViewProps {
+    domain?: string;
+    onBack?: () => void;
+}
+
+export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsViewProps) {
     const navigate = useNavigate();
-    const { domain } = useParams<{ domain: string }>();
+    const { domain: paramDomain } = useParams<{ domain: string }>();
     const { isAuthenticated } = useApp();
     const [showClearDialog, setShowClearDialog] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
+    // Use prop if available (popup), otherwise param (router)
+    const domain = propDomain || paramDomain || '';
+
     React.useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/mode');
+            navigate('/mode'); // This might need adjustment for popup context
         }
     }, [isAuthenticated, navigate]);
 
@@ -125,7 +133,7 @@ export function DomainDetailsView() {
                     {/* Breadcrumb */}
                     <nav className="mb-12">
                         <button
-                            onClick={() => navigate('/collections')}
+                            onClick={() => onBack ? onBack() : navigate('/collections')}
                             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
                         >
                             <span className="transition-transform group-hover:-translate-x-1">←</span>
