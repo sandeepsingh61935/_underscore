@@ -31,11 +31,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('Popup Error:', error, errorInfo);
     }
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             return (
                 <div className="w-[400px] h-[600px] p-4 bg-surface text-on-surface flex flex-col items-center justify-center text-center">
@@ -63,7 +63,6 @@ function PopupApp() {
     // No need for manual sync effect
 
     const [currentView, setCurrentView] = useState<View>(View.LOADING);
-    const [hasSeenModeSelection, setHasSeenModeSelection] = useState(false);
     const [selectedMode, setSelectedMode] = useState<'focus' | 'capture' | 'memory' | 'neural'>('focus');
     const [selectedDomain, setSelectedDomain] = useState<string>('');
 
@@ -73,7 +72,6 @@ function PopupApp() {
 
         // Check if user has seen mode selection (stored in localStorage)
         const seenModeSelection = localStorage.getItem('underscore_seen_mode_selection') === 'true';
-        setHasSeenModeSelection(seenModeSelection);
 
         if (!seenModeSelection) {
             setCurrentView(View.MODE_SELECTION);
@@ -90,7 +88,6 @@ function PopupApp() {
 
         // Mark mode selection as seen
         localStorage.setItem('underscore_seen_mode_selection', 'true');
-        setHasSeenModeSelection(true);
 
         // Set selected mode and navigate to collections
         const validModes = ['focus', 'capture', 'memory', 'neural'] as const;
@@ -105,7 +102,6 @@ function PopupApp() {
 
     const handleSignInClick = () => {
         localStorage.setItem('underscore_seen_mode_selection', 'true');
-        setHasSeenModeSelection(true);
         setCurrentView(View.AUTH);
     };
 
@@ -139,8 +135,12 @@ function PopupApp() {
         );
     }
 
+    // Determine layout props based on view
+    const showHeader = currentView !== View.AUTH;
+    const noPadding = currentView === View.AUTH;
+
     return (
-        <AppShell>
+        <AppShell showHeader={showHeader} noPadding={noPadding}>
             {currentView === View.MODE_SELECTION && (
                 <ModeSelectionView
                     onModeSelect={handleModeSelect}
