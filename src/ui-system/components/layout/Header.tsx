@@ -16,12 +16,34 @@ import {
 interface HeaderProps {
     showUserMenu?: boolean;
     onSignInClick?: () => void;
+    /** Custom logout handler for popup context */
+    onLogout?: () => void;
+    /** User data - if provided, uses this instead of useApp() */
+    user?: {
+        id: string;
+        email: string;
+        displayName: string;
+        photoUrl?: string;
+    } | null;
+    /** Auth state - if provided, uses this instead of useApp() */
+    isAuthenticated?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ showUserMenu = true, onSignInClick }) => {
-    const { isAuthenticated, user, logout, theme, setTheme } = useApp();
+export const Header: React.FC<HeaderProps> = ({
+    showUserMenu = true,
+    onSignInClick,
+    onLogout,
+    user: propUser,
+    isAuthenticated: propIsAuthenticated,
+}) => {
+    const appContext = useApp();
     const navigate = useNavigate();
     const [showSettings, setShowSettings] = useState(false);
+
+    // Use props if provided, otherwise fall back to context
+    const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
+    const user = propUser ?? appContext.user;
+    const { logout, theme, setTheme } = appContext;
 
     const themes: Array<{ id: 'light' | 'dark' | 'sepia'; label: string; icon: React.ReactNode }> = [
         { id: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
@@ -30,8 +52,14 @@ export const Header: React.FC<HeaderProps> = ({ showUserMenu = true, onSignInCli
     ];
 
     const handleLogout = () => {
-        logout();
-        navigate('/');
+        if (onLogout) {
+            // Use custom logout handler (for popup)
+            onLogout();
+        } else {
+            // Default behavior (for web app)
+            logout();
+            navigate('/');
+        }
     };
 
     return (
