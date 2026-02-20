@@ -1,10 +1,5 @@
 /**
- * Material Design 3 Chip Component
- * 
- * Implements MD3 chip specifications with two variants:
- * - filter: For filtering content (toggleable)
- * - input: For user input/tags (with remove action)
- * 
+ * MD3 Chip Component
  * @see https://m3.material.io/components/chips/overview
  */
 
@@ -13,26 +8,9 @@ import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    /**
-     * Chip variant
-     * - filter: Toggleable filter chips
-     * - input: Input chips with close button
-     */
     variant?: 'filter' | 'input';
-
-    /**
-     * Selected state (for filter chips)
-     */
     selected?: boolean;
-
-    /**
-     * Show close/remove icon (for input chips)
-     */
     onRemove?: () => void;
-
-    /**
-     * Icon to display before label
-     */
     icon?: React.ReactNode;
 }
 
@@ -42,25 +20,13 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
             <button
                 ref={ref}
                 className={cn(
-                    // Base styles
                     'inline-flex items-center justify-center gap-2',
-
-                    // MD3 Shape: Small rounded (8dp)
-                    'rounded-sm',
-
-                    // MD3 Typography: Label Large
+                    'rounded-sm',                   // 8px
                     'text-label-large',
-
-                    // Height and padding
                     'h-[32px] px-4',
-
-                    // MD3 Transitions
                     'transition-all duration-short ease-standard',
-
-                    // Focus ring
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
 
-                    // Filter chip styles
                     variant === 'filter' && [
                         !selected && [
                             'bg-transparent',
@@ -76,7 +42,6 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                         ],
                     ],
 
-                    // Input chip styles
                     variant === 'input' && [
                         'bg-surface-container-high',
                         'text-on-surface',
@@ -84,9 +49,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                         'hover:bg-surface-container-highest',
                     ],
 
-                    // Disabled state
-                    'disabled:opacity-40 disabled:pointer-events-none',
-
+                    'disabled:opacity-disabled disabled:pointer-events-none',
                     className
                 )}
                 {...props}
@@ -96,10 +59,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                 {variant === 'input' && onRemove && (
                     <button
                         type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRemove();
-                        }}
+                        onClick={(e) => { e.stopPropagation(); onRemove(); }}
                         className="w-[18px] h-[18px] flex items-center justify-center hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)] rounded-full transition-colors"
                         aria-label="Remove"
                     >
