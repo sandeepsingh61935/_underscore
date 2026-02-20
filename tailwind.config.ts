@@ -70,52 +70,6 @@ export default {
                 'scrim': 'var(--md-sys-color-scrim)',
                 'shadow': 'var(--md-sys-color-shadow)',
 
-                // Design mockup colors (from /docs/07-design HTML mockups)
-                'background-light': '#f6f7f7',
-                'background-dark': '#15191d',
-                'text-primary': '#111518',
-                'text-secondary': '#607485',
-                'badge-light': '#e0e3e6',
-                'badge-dark': '#2c3036',
-                'badge-dark-border': '#3c4046',
-                'badge-light-shadow': '#cdd0d3',
-
-                // ===== Spark Realm HSL Color System =====
-                border: 'hsl(var(--border))',
-                input: 'hsl(var(--input))',
-                ring: 'hsl(var(--ring))',
-                background: 'hsl(var(--background))',
-                foreground: 'hsl(var(--foreground))',
-                // Note: 'primary' is already defined above for MD3
-                // We extension it here for Spark Realm compatibility
-                // primary: {
-                //     DEFAULT: 'hsl(var(--primary))',
-                //     foreground: 'hsl(var(--primary-foreground))',
-                // },
-                // secondary: {
-                //     DEFAULT: 'hsl(var(--secondary))',
-                //     foreground: 'hsl(var(--secondary-foreground))',
-                // },
-                destructive: {
-                    DEFAULT: 'hsl(var(--destructive))',
-                    foreground: 'hsl(var(--destructive-foreground))',
-                },
-                muted: {
-                    DEFAULT: 'hsl(var(--muted))',
-                    foreground: 'hsl(var(--muted-foreground))',
-                },
-                accent: {
-                    DEFAULT: 'hsl(var(--accent))',
-                    foreground: 'hsl(var(--accent-foreground))',
-                },
-                popover: {
-                    DEFAULT: 'hsl(var(--popover))',
-                    foreground: 'hsl(var(--popover-foreground))',
-                },
-                card: {
-                    DEFAULT: 'hsl(var(--card))',
-                    foreground: 'hsl(var(--card-foreground))',
-                },
             },
 
             // ===== Material Design 3 Typography Scale =====
@@ -191,7 +145,7 @@ export default {
                 }],
             },
 
-            // ===== Font Family (Inter for Spark Realm) =====
+            // ===== Font Family =====
             fontFamily: {
                 'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
                 'display': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
