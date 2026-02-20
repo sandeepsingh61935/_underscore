@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Privacy — _underscore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfc;
+            --bg-card: #ffffff;
+            --text-primary: #0f1419;
+            --text-secondary: #536471;
+            --text-tertiary: #8b98a5;
+            --accent: #5b8db9;
+            --accent-soft: rgba(91, 141, 185, 0.08);
+            --accent-text: #4a7da8;
+            --border: #eef1f3;
+            --border-hover: #dfe3e8;
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --radius-full: 9999px;
+            --logo-bg: #1a1d23;
+            --logo-shadow: rgba(0, 0, 0, 0.2);
+            --logo-text: #ffffff;
+            --logo-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
+            --logo-inner-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: transparent;
+        }
+
+        .dark {
+            --bg: #0e1015;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --text-primary: #e4e7ec;
+            --text-secondary: #8b95a5;
+            --text-tertiary: #4b5563;
+            --accent: #6da3cc;
+            --accent-soft: rgba(109, 163, 204, 0.10);
+            --accent-text: #93bbda;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.10);
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            --logo-bg: #f8f9fa;
+            --logo-shadow: rgba(0, 0, 0, 0.4);
+            --logo-text: #111827;
+            --logo-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.0) 100%);
+            --logo-inner-shadow: inset 0 2px 4px rgba(255, 255, 255, 1), inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.0) 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.3s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === HEADER === */
+        header {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--logo-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px var(--logo-shadow), var(--logo-outer-shadow), var(--logo-inner-shadow);
+            overflow: hidden;
+        }
+
+        .logo-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            right: 4px;
+            height: 45%;
+            background: var(--logo-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 10px;
+            right: 10px;
+            height: 30%;
+            background: var(--logo-ambient-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge span {
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--logo-text);
+            position: relative;
+            z-index: 1;
+            transform: translateY(-2px);
+            text-shadow: var(--logo-text-shadow);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        /* === CONTENT === */
+        .content {
+            width: 100%;
+            max-width: 640px;
+            padding: 0 24px 48px;
+            flex: 1;
+        }
+
+        .back-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.15s ease;
+        }
+
+        .back-nav:hover {
+            color: var(--accent);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 32px;
+        }
+
+        /* Article typography */
+        .article {
+            line-height: 1.7;
+        }
+
+        .article h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .article p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .article ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .article li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        .article strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .article a {
+            color: var(--accent-text);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent-soft);
+            transition: border-color 0.15s ease;
+        }
+
+        .article a:hover {
+            border-color: var(--accent);
+        }
+
+        /* Highlight box */
+        .callout {
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            background: var(--accent-soft);
+            border-left: 3px solid var(--accent);
+            margin: 20px 0;
+        }
+
+        .callout p {
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 14px;
+        }
+
+        /* Separator */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 32px 0;
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-rest);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a class="logo" href="mode-selection.html">
+            <div class="logo-badge"><span>_</span></div>
+            <span class="logo-text">underscore</span>
+        </a>
+    </header>
+
+    <div class="content">
+        <a class="back-nav" href="settings.html">← Back</a>
+        <h1 class="page-title">Privacy Policy</h1>
+        <div class="last-updated">Last updated: February 20, 2026</div>
+
+        <div class="article">
+            <div class="callout">
+                <p><strong>Your privacy matters.</strong> _underscore is built with privacy as a core principle.
+                    We collect as little data as possible and never sell your information.</p>
+            </div>
+
+            <h2>What We Collect</h2>
+            <p>We collect only what's necessary to provide you with our services:</p>
+            <ul>
+                <li><strong>Account information:</strong> Your email address and display name from your OAuth provider
+                    (Google or Apple).</li>
+                <li><strong>Highlight data:</strong> The text you highlight, the source URL, and a timestamp — only when
+                    using Memory or Neural mode.</li>
+                <li><strong>Usage analytics:</strong> Anonymous session counts and feature usage to improve the product.
+                    Never tied to your identity.</li>
+            </ul>
+
+            <h2>What We Don't Collect</h2>
+            <ul>
+                <li>Your browsing history or the pages you visit</li>
+                <li>The full content of any web page</li>
+                <li>Anything from Focus or Capture mode (100% local)</li>
+                <li>Keystroke data, mouse movements, or screen recordings</li>
+            </ul>
+
+            <h2>End-to-End Encryption</h2>
+            <p>All highlights stored in Memory mode are encrypted on your device before being sent to our servers. We
+                use <strong>RSA-2048</strong> encryption, meaning even we cannot read your highlights. Only your device
+                holds the decryption key.</p>
+
+            <div class="divider"></div>
+
+            <h2>Data Storage</h2>
+            <p>Your data is stored securely using industry-standard infrastructure. We use Supabase with row-level
+                security policies to ensure your data is isolated from other users.</p>
+
+            <h2>Your Rights</h2>
+            <p>You have the right to:</p>
+            <ul>
+                <li><strong>Export</strong> all your data at any time (Settings → Export)</li>
+                <li><strong>Delete</strong> all your data permanently (Settings → Delete all)</li>
+                <li><strong>Review</strong> what we store — your Collections page shows everything</li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <h2>Contact</h2>
+            <p>Questions about your privacy? Reach us at <a
+                    href="mailto:privacy@underscore.inc">privacy@underscore.inc</a>.</p>
+        </div>
+    </div>
+
+    <button class="theme-toggle"
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">🌙</button>
+
+    <script>
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+    </script>
+</body>
+
+</html>
