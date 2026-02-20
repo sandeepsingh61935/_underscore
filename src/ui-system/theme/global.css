@@ -1,4 +1,4 @@
-/* Import Inter font from Google Fonts - Primary font for Spark Realm design */
+/* Import Inter font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @config "../../../tailwind.config.ts";
@@ -214,73 +214,7 @@
         --md-sys-color-outline-variant: #43474e;
     }
 
-    /* Sepia Mode (optional theme variant) */
-    .sepia {
-        /* Sepia Colors */
-        --background: 40 10% 94%;
-        --foreground: 20 10% 15%;
 
-        --card: 40 20% 98%;
-        --card-foreground: 20 10% 15%;
-
-        --popover: 40 20% 98%;
-        --popover-foreground: 20 10% 15%;
-
-        --primary: 30 35% 50%;
-        --primary-foreground: 40 10% 94%;
-
-        --secondary: 40 10% 85%;
-        --secondary-foreground: 20 10% 15%;
-
-        --muted: 40 10% 85%;
-        --muted-foreground: 20 10% 40%;
-
-        --accent: 30 35% 50%;
-        --accent-foreground: 40 10% 94%;
-
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 100%;
-
-        --border: 40 10% 85%;
-        --input: 40 10% 85%;
-        --ring: 30 35% 50%;
-
-        /* _underscore specific tokens */
-        --underscore-compartment: 40 10% 88%;
-        --underscore-text-secondary: 20 10% 40%;
-    }
-
-    /* Extension Context - Compact Typography for 320-800px Popup */
-    .extension-context {
-        /* Reduced base size for compact viewports */
-        --typography-base-size: 14px;
-
-        /* Adjusted heading scale (proportionally smaller) */
-        --typography-heading-1: 1.25rem;
-        /* 20px - Popup hero */
-        --typography-heading-2: 1.125rem;
-        /* 18px - Popup titles */
-        --typography-heading-3: 1rem;
-        /* 16px - Sections */
-        --typography-heading-4: 0.938rem;
-        /* 15px - Sub-sections */
-
-        /* Body text (slightly more compact) */
-        --typography-body-large: 0.875rem;
-        /* 14px - Primary content */
-        --typography-body: 0.813rem;
-        /* 13px - Standard text */
-        --typography-body-small: 0.75rem;
-        /* 12px - Supporting text */
-
-        /* UI elements stay readable */
-        --typography-label: 0.813rem;
-        /* 13px - Buttons,labels */
-        --typography-caption: 0.688rem;
-        /* 11px - Metadata */
-        --typography-overline: 0.625rem;
-        /* 10px - Overlines */
-    }
 
     /* Set Inter as default font */
     *,
@@ -289,10 +223,10 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-        /* Explicitly reset borders - this fixes black border issue */
+        /* Explicitly reset borders */
         border-width: 0;
         border-style: solid;
-        border-color: hsl(var(--border));
+        border-color: var(--md-sys-color-outline-variant);
     }
 
     html {
@@ -302,9 +236,8 @@
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
         min-height: 100vh;
-        /* Use Spark Realm background/foreground */
-        background: hsl(var(--background));
-        color: hsl(var(--foreground));
+        background: var(--md-sys-color-surface);
+        color: var(--md-sys-color-on-surface);
     }
 
     /* Material Design 3 focus states - SCOPED to extension only */
@@ -324,7 +257,7 @@
         background-color: color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
     }
 
-    /* Text wrapping utilities from Spark Realm */
+    /* Text wrapping */
     :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -346,73 +279,6 @@
 
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
-    }
-
-    /* ===== Semantic Typography Utilities ===== */
-    /* Apply these classes instead of raw text-* utilities for automatic context switching */
-
-    .typography-heading-1 {
-        font-size: var(--typography-heading-1);
-        line-height: var(--typography-leading-tight);
-        font-weight: var(--typography-weight-bold);
-        letter-spacing: -0.02em;
-    }
-
-    .typography-heading-2 {
-        font-size: var(--typography-heading-2);
-        line-height: var(--typography-leading-tight);
-        font-weight: var(--typography-weight-semibold);
-        letter-spacing: -0.01em;
-    }
-
-    .typography-heading-3 {
-        font-size: var(--typography-heading-3);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-semibold);
-    }
-
-    .typography-heading-4 {
-        font-size: var(--typography-heading-4);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-medium);
-    }
-
-    .typography-body-large {
-        font-size: var(--typography-body-large);
-        line-height: var(--typography-leading-relaxed);
-        font-weight: var(--typography-weight-normal);
-    }
-
-    .typography-body {
-        font-size: var(--typography-body);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-normal);
-    }
-
-    .typography-body-small {
-        font-size: var(--typography-body-small);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-normal);
-    }
-
-    .typography-label {
-        font-size: var(--typography-label);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-medium);
-    }
-
-    .typography-caption {
-        font-size: var(--typography-caption);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-normal);
-    }
-
-    .typography-overline {
-        font-size: var(--typography-overline);
-        line-height: var(--typography-leading-normal);
-        font-weight: var(--typography-weight-medium);
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
     }
 
     /* Material Design 3 State Layers */
