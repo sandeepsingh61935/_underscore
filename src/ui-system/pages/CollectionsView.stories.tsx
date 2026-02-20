@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { CollectionsView, Collection } from './CollectionsView';
 
@@ -62,6 +63,10 @@ const mockCollections: Collection[] = [
 export const Default: Story = {
     args: {
         collections: mockCollections,
+        mode: 'focus',
+        onModeChange: () => console.log('Change mode clicked'),
+        onCollectionClick: (collection) => console.log('Collection clicked:', collection),
+        onAddNew: () => console.log('Add new clicked'),
     },
     render: (args) => (
         <div className="w-[400px] h-[500px] p-4 bg-background">

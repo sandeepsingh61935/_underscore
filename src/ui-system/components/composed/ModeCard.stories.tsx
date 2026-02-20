@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { ModeCard } from './ModeCard';
 import { Zap, Archive, Brain, Footprints } from 'lucide-react';

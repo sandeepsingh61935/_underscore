@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { DomainDetailsView } from './DomainDetailsView';
 import type { Highlight } from '../components/composed/HighlightCard';
@@ -94,7 +95,7 @@ export const SingleHighlight: Story = {
     args: {
         domain: 'blog.example.com',
         favicon: 'https://github.com/favicon.ico',
-        highlights: [mockHighlights[0]],
+        highlights: mockHighlights.slice(0, 1),
     },
     render: (args) => (
         <div className="w-[400px] h-[550px] p-4 bg-background">

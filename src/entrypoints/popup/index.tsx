@@ -97,7 +97,19 @@ function PopupApp() {
     };
 
     const handleModeChange = (newMode: 'focus' | 'capture' | 'memory' | 'neural') => {
-        setSelectedMode(newMode);
+        // If mode is changing to something else, or if we want to go back to selection
+        // Actually, if we want to return to mode selection, we should have a specific handler
+        // But the CollectionsView calls this to switch modes OR go back.
+        // Let's assume if the user clicks "Change Mode", they want to go back to the selection screen.
+        // But the prop is onModeChange.
+        // If we want to support switching directly, we set selectedMode.
+        // If we want to support "Back", we should expose a way to do that.
+
+        // Update: The UI in CollectionsView calls this with a specific mode.
+        // If we want to support "Change Mode", we should probably navigate to MODE_SELECTION?
+        // But the button in CollectionsView is "Change Mode".
+        // Let's treat this prop as "Request Mode Change" -> Go to Selection.
+        setCurrentView(View.MODE_SELECTION);
     };
 
     const handleSignInClick = () => {

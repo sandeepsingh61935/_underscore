@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
-import { CollectionsView } from './CollectionsView';
+import { CollectionsView, Collection } from '@/ui-system/pages/CollectionsView';
 
 /**
  * Collections View
@@ -9,6 +9,9 @@ import { CollectionsView } from './CollectionsView';
  * **Dimensions**: 360px × 600px (Chrome extension popup)
  * 
  * Main collections management view with sorting and view mode toggles.
+ * 
+ * Note: This story uses the presentational CollectionsView from ui-system/pages
+ * which doesn't require Router or AppProvider context.
  */
 const meta = {
     title: 'Views/CollectionsView',
@@ -25,68 +28,90 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const mockCollections: Collection[] = [
+    {
+        id: '1',
+        domain: 'nytimes.com',
+        category: 'News & Media',
+        count: 24,
+        lastAccessed: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        favicon: 'https://www.nytimes.com/favicon.ico',
+    },
+    {
+        id: '2',
+        domain: 'github.com',
+        category: 'Development',
+        count: 18,
+        lastAccessed: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        favicon: 'https://github.com/favicon.ico',
+    },
+    {
+        id: '3',
+        domain: 'medium.com',
+        category: 'Reading',
+        count: 12,
+        lastAccessed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        favicon: 'https://medium.com/favicon.ico',
+    },
+    {
+        id: '4',
+        domain: 'dribbble.com',
+        category: 'Design',
+        count: 6,
+        lastAccessed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        favicon: 'https://dribbble.com/favicon.ico',
+    },
+];
+
 /**
  * Default collections view with sample data
  */
 export const Default: Story = {
     args: {
-        onModeClick: (mode: string) => console.log('Mode clicked:', mode),
+        collections: mockCollections,
+        onCollectionClick: (collection) => console.log('Collection clicked:', collection.domain),
+        onAddNew: () => console.log('Add new collection'),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Matches 2-d grid layout design mockup',
-            },
-        },
-    },
-};
-
-/**
- * Empty state (no collections yet)
- */
-export const EmptyState: Story = {
-    render: () => (
-        <div className="h-[600px] bg-surface">
-            <CollectionsView onModeClick={() => { }} />
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background p-4">
+            <CollectionsView {...args} />
         </div>
     ),
-    parameters: {
-        docs: {
-            description: {
-                story: 'Shows empty state message when user has no collections',
-            },
-        },
-    },
 };
 
 /**
- * Grid view (2-d layout)
+ * Empty state (no collections)
  */
-export const GridView: Story = {
+export const EmptyState: Story = {
     args: {
-        onModeClick: () => { },
+        collections: [],
+        onCollectionClick: (collection) => console.log('Collection clicked:', collection.domain),
+        onAddNew: () => console.log('Add new collection'),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Grid layout (2-d) from design mockup - cards with elevation shadows',
-            },
-        },
-    },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background p-4">
+            <CollectionsView {...args} />
+        </div>
+    ),
 };
 
 /**
- * List view (vertical layout)
+ * Many collections
  */
-export const ListView: Story = {
+export const ManyCollections: Story = {
     args: {
-        onModeClick: () => { },
+        collections: [
+            ...mockCollections,
+            { id: '5', domain: 'stackoverflow.com', category: 'Q&A', count: 42, lastAccessed: new Date() },
+            { id: '6', domain: 'twitter.com', category: 'Social', count: 15, lastAccessed: new Date() },
+            { id: '7', domain: 'reddit.com', category: 'Social', count: 8, lastAccessed: new Date() },
+            { id: '8', domain: 'notion.so', category: 'Productivity', count: 31, lastAccessed: new Date() },
+        ],
+        onCollectionClick: (collection) => console.log('Collection clicked:', collection.domain),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Vertical list layout from design mockup',
-            },
-        },
-    },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background p-4">
+            <CollectionsView {...args} />
+        </div>
+    ),
 };

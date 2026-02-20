@@ -1,5 +1,52 @@
 import type { Preview } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 import '../src/ui-system/theme/global.css';
+
+// Mock Chrome API for Storybook environment
+if (typeof window !== 'undefined' && typeof (window as any).chrome === 'undefined') {
+    (window as any).chrome = {
+        runtime: {
+            sendMessage: async (message: any) => {
+                console.log('[Mock Chrome] sendMessage:', message);
+                // Return mock responses based on message type
+                if (message.type === 'GET_AUTH_STATE') {
+                    return { success: false, data: null };
+                }
+                if (message.type === 'LOGIN') {
+                    return {
+                        success: true,
+                        data: {
+                            user: {
+                                id: 'mock-user-id',
+                                email: 'demo@example.com',
+                                displayName: 'Demo User',
+                            }
+                        }
+                    };
+                }
+                if (message.type === 'LOGOUT') {
+                    return { success: true };
+                }
+                return { success: false, error: 'Unknown message type' };
+            },
+            onMessage: {
+                addListener: (callback: any) => {
+                    console.log('[Mock Chrome] onMessage.addListener registered');
+                },
+                removeListener: (callback: any) => {
+                    console.log('[Mock Chrome] onMessage.removeListener');
+                },
+            },
+            id: 'mock-extension-id',
+        },
+        storage: {
+            local: {
+                get: async (keys: string[]) => ({}),
+                set: async (items: any) => { },
+            },
+        },
+    };
+}
 
 const preview: Preview = {
     parameters: {
@@ -37,16 +84,18 @@ const preview: Preview = {
             },
         },
     },
-    // Wrap all stories in #app div to apply MD3 styles correctly
+    // Wrap all stories in MemoryRouter and #app div
     decorators: [
         (Story, context) => {
             // Apply dark mode class based on background selection
             const isDark = context.globals.backgrounds?.value === '#111418';
 
             return (
-                <div id="app" className={isDark ? 'dark' : ''}>
-                    <Story />
-                </div>
+                <MemoryRouter>
+                    <div id="app" className={isDark ? 'dark' : ''}>
+                        <Story />
+                    </div>
+                </MemoryRouter>
             );
         },
     ],

@@ -115,9 +115,9 @@ export function HighlightCard({
                     <button
                         onClick={() => onNavigate(highlight.urlPath!)}
                         className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                        title="Open source"
+                        aria-label="Open source page"
                     >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" aria-hidden="true" />
                     </button>
                 )}
 
@@ -130,9 +130,9 @@ export function HighlightCard({
                                 ? "text-green-600 dark:text-green-400"
                                 : "text-muted-foreground hover:text-foreground"
                         )}
-                        title={copied ? "Copied!" : "Copy"}
+                        aria-label={copied ? "Copied to clipboard" : "Copy highlight text"}
                     >
-                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
                     </button>
                 )}
 
@@ -140,9 +140,9 @@ export function HighlightCard({
                     <button
                         onClick={handleDelete}
                         className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        title="Delete"
+                        aria-label="Delete highlight"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                 )}
             </div>

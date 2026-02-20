@@ -28,6 +28,7 @@ export function CollectionCard({
     return (
         <button
             onClick={onClick}
+            aria-label={`Open ${domain} collection with ${count} ${count === 1 ? 'highlight' : 'highlights'}`}
             className={cn(
                 "group relative flex items-center gap-4 p-4 w-full text-left",
                 "bg-card hover:bg-secondary/50 border border-border rounded-xl",
@@ -71,7 +72,7 @@ export function CollectionCard({
             </div>
 
             {/* Arrow - animates on hover */}
-            <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-secondary/50 group-hover:bg-primary/10 transition-colors">
+            <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-secondary/50 group-hover:bg-primary/10 transition-colors" aria-hidden="true">
                 <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
             </div>
         </button>

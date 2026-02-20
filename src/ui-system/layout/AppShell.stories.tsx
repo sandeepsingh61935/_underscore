@@ -1,7 +1,8 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { AppShell } from './AppShell';
 import { MemoryRouter } from 'react-router-dom';
-import { PopupAppProvider } from '../../../core/context/PopupAppProvider';
+import { PopupAppProvider } from '@/core/context/PopupAppProvider';
 
 const meta: Meta<typeof AppShell> = {
     title: 'UI System/Layout/AppShell',
@@ -9,7 +10,7 @@ const meta: Meta<typeof AppShell> = {
     decorators: [
         (Story) => (
             <MemoryRouter>
-                <PopupAppProvider>
+                <PopupAppProvider user={null} isAuthenticated={false}>
                     <Story />
                 </PopupAppProvider>
             </MemoryRouter>

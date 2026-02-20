@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
-import { SignInView } from './SignInView';
+import { SignInView } from '@/ui-system/pages/SignInView';
 
 /**
  * Sign In View
@@ -9,6 +9,9 @@ import { SignInView } from './SignInView';
  * **Dimensions**: 360px × 600px (Chrome extension popup)
  * 
  * OAuth provider selection screen with disabled state handling.
+ * 
+ * Note: This story uses the presentational SignInView component
+ * that doesn't require Router or AppProvider context.
  */
 const meta = {
     title: 'Views/SignInView',
@@ -26,60 +29,64 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Default sign-in view - Google only active
+ * Default sign-in view - Google active, Apple disabled
  */
 export const Default: Story = {
     args: {
-        onGoogleLogin: () => console.log('Google login clicked'),
-        onBackToModeSelection: () => console.log('Back to mode selection'),
+        onProviderSelect: (provider) => console.log('Provider selected:', provider),
+        onBack: () => console.log('Back clicked'),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Matches design mockup - only Google provider enabled by default',
-            },
-        },
-    },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background">
+            <SignInView {...args} />
+        </div>
+    ),
 };
 
 /**
- * All providers disabled except Google
+ * With back button
  */
-export const WithDisabledProviders: Story = {
+export const WithBack: Story = {
     args: {
-        onGoogleLogin: () => console.log('Google login'),
-        onAppleLogin: undefined,  // Disabled (38% opacity)
-        onXLogin: undefined,      // Disabled (38% opacity)
-        onFacebookLogin: undefined, // Disabled (38% opacity)
-        onBackToModeSelection: () => console.log('Back'),
+        onProviderSelect: (provider) => console.log('Provider selected:', provider),
+        onBack: () => console.log('Back clicked'),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: '**Critical**: Disabled providers use 38% opacity per MD3 spec (not 40%!)',
-            },
-        },
-    },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background">
+            <SignInView {...args} />
+        </div>
+    ),
 };
 
 /**
- * All providers active (testing state)
+ * Loading state
  */
-export const AllProvidersActive: Story = {
+export const Loading: Story = {
     args: {
-        onGoogleLogin: () => console.log('Google login'),
-        onAppleLogin: () => console.log('Apple login'),
-        onXLogin: () => console.log('X login'),
-        onFacebookLogin: () => console.log('Facebook login'),
-        onBackToModeSelection: () => console.log('Back'),
+        onProviderSelect: (provider) => console.log('Provider selected:', provider),
+        isLoading: true,
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Testing scenario - all OAuth providers active and clickable',
-            },
-        },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background">
+            <SignInView {...args} />
+        </div>
+    ),
+};
+
+/**
+ * Error state
+ */
+export const WithError: Story = {
+    args: {
+        onProviderSelect: (provider) => console.log('Provider selected:', provider),
+        onBack: () => console.log('Back clicked'),
+        error: 'Failed to sign in. Please check your internet connection and try again.',
     },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background">
+            <SignInView {...args} />
+        </div>
+    ),
 };
 
 /**
@@ -87,14 +94,11 @@ export const AllProvidersActive: Story = {
  */
 export const NoBackButton: Story = {
     args: {
-        onGoogleLogin: () => console.log('Google login'),
-        onBackToModeSelection: undefined, // Hide "Mode" button
+        onProviderSelect: (provider) => console.log('Provider selected:', provider),
     },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Initial sign-in flow without back navigation',
-            },
-        },
-    },
+    render: (args) => (
+        <div className="w-[400px] h-[600px] border shadow-xl bg-background">
+            <SignInView {...args} />
+        </div>
+    ),
 };
