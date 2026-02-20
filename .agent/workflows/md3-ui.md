@@ -5,98 +5,130 @@ description: How to create Material Design 3 compliant UI components with proper
 # Material Design 3 UI Development Workflow
 
 ## Pre-Requisites
+// turbo-all
 Before creating any UI, the AI must verify:
-1. The existing design token system in `tailwind.config.ts` or CSS variables
-2. Existing component patterns in the codebase for consistency
-3. The specific MD3 component specification from [m3.material.io](https://m3.material.io)
+1. Read `/md3-tokens-reference` workflow for the complete token → Tailwind mapping
+2. Check existing component patterns in `src/ui-system/components/primitives/`
+3. Run `/ui-preflight` checklist before writing code
+
+---
 
 ## Step 1: Research the MD3 Specification
-// turbo
-When creating a new component, FIRST search the web for:
+When creating or modifying a component, FIRST search the web for:
 ```
-"Material Design 3 [component name] specification"
+"Material Design 3 [component name] specification site:m3.material.io"
 ```
 
-Then extract:
+Extract:
 - **States**: enabled, disabled, hovered, focused, pressed, selected
 - **Anatomy**: container, label, icon slots, supporting text
 - **Dimensions**: minimum touch target (48dp), padding, spacing
-- **Color tokens**: primary, on-primary, surface-variant, outline, etc.
+- **Color roles**: which MD3 color tokens apply (primary? surface? error?)
 
-## Step 2: Define the Design Token Mapping
-BEFORE writing any CSS/styles, document the token mapping:
+## Step 2: Document the Token Mapping
+BEFORE writing styles, create a comment block:
 
-```
-Container:
-  - background: surface OR surface-variant OR primary-container
-  - shape: small (4dp) OR medium (12dp) OR large (16dp)
-  - elevation: level0-level5
-
-Content:
-  - text: on-surface OR on-primary-container
-  - icon: on-surface-variant OR primary
-
-States:
-  - hover: state-layer at 8% opacity
-  - focus: state-layer at 12% opacity + focus ring
-  - pressed: state-layer at 12% opacity
-```
-
-## Step 3: Verify Against Existing Design System
-Check the project's existing tokens:
-- Does `--md-sys-color-primary` exist?
-- Is the typography scale defined (display, headline, title, body, label)?
-- Are shape tokens (corner radius) defined?
-
-If not, document what needs to be added to the design system first.
-
-## Step 4: Implement with State Layer Pattern
-MD3 uses a **state layer overlay pattern** for interactive states:
-
-```css
-.md3-interactive {
-  position: relative;
-  overflow: hidden;
-}
-
-.md3-interactive::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: currentColor;
-  opacity: 0;
-  transition: opacity 200ms;
-}
-
-.md3-interactive:hover::before { opacity: 0.08; }
-.md3-interactive:focus-visible::before { opacity: 0.12; }
-.md3-interactive:active::before { opacity: 0.12; }
+```tsx
+/**
+ * MD3 Token Mapping:
+ *
+ * Container:
+ *   bg:       bg-surface-container         → surface-container
+ *   shape:    rounded-md                   → 12px medium corner
+ *   shadow:   shadow-elevation-1           → level 1
+ *
+ * Content:
+ *   text:     text-on-surface              → primary text
+ *   subtext:  text-on-surface-variant      → secondary text
+ *
+ * States:
+ *   hover:    8% on-surface state layer    → color-mix
+ *   focus:    12% + focus ring             → ring-2 ring-primary
+ *   press:    12% state layer              → color-mix
+ *   disabled: opacity-disabled             → 38%
+ */
 ```
 
-## Step 5: Accessibility Checklist
-BEFORE considering the component complete:
-- [ ] Color contrast ratio ≥ 4.5:1 for normal text
-- [ ] Touch targets ≥ 48x48dp
-- [ ] Focus indicator visible (2dp outline-offset)
-- [ ] ARIA roles and labels as needed
-- [ ] Keyboard navigation works (Tab, Enter, Space, Escape)
+## Step 3: Implement Using Tailwind Utilities
 
-## Step 6: Visual Verification Loop
-1. Render the component in Storybook or isolation
-2. Compare against the MD3 reference image/spec
-3. Check all states: default, hover, focus, pressed, disabled
-4. Verify dark mode compatibility
+### Pattern: Base Component Structure
+```tsx
+className={cn(
+    // Base layout
+    'inline-flex items-center justify-center gap-2',
 
-## Anti-Patterns to Avoid
-❌ Using arbitrary colors like `#3B82F6` without mapping to tokens
-❌ Hardcoding pixel values instead of using spacing scale
-❌ Ignoring the state layer pattern for hover/focus
-❌ Missing focus-visible styling
-❌ Not testing in both light and dark themes
-❌ Skipping the research step and "winging it"
+    // MD3 Shape
+    'rounded-md',                        // 12px medium corner
 
-## Reference Links
-- [M3 Components](https://m3.material.io/components)
-- [M3 Color System](https://m3.material.io/styles/color)
-- [M3 Typography](https://m3.material.io/styles/typography)
-- [M3 Motion](https://m3.material.io/styles/motion)
+    // MD3 Color roles
+    'bg-surface-container',
+    'text-on-surface',
+
+    // MD3 Typography
+    'text-label-large',
+
+    // MD3 Touch target
+    'min-h-[48px]',
+
+    // MD3 Motion
+    'transition-all duration-short ease-standard',
+
+    // MD3 State layers
+    'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]',
+    'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]',
+
+    // MD3 Focus ring
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+
+    // MD3 Disabled
+    'disabled:opacity-disabled disabled:pointer-events-none',
+
+    className
+)}
+```
+
+### Key Rules
+1. **Always use semantic tokens** — never hardcode colors like `bg-blue-500`
+2. **State layers use `color-mix()`** — NOT custom opacity or bg-opacity
+3. **Touch targets are 48px minimum** — `min-h-[48px]` on all interactive elements
+4. **Focus ring uses primary** — `ring-primary` with `ring-2`
+5. **Disabled is 38% opacity** — `opacity-disabled` from MD3 spec
+6. **Motion is always specified** — `duration-short ease-standard` minimum
+
+## Step 4: Write Storybook Stories
+Every component MUST have a `.stories.tsx` file with:
+- Default state story
+- All variant stories
+- Disabled state story
+- Combined showcase story
+
+## Step 5: Accessibility
+- All buttons: `aria-label` when icon-only
+- Dialogs: `role="dialog"`, `aria-modal="true"`, focus trap
+- Inputs: connected labels, error announcements
+- Color contrast: minimum 4.5:1 for text (WCAG AA)
+
+## Step 6: Visual Verification
+After implementation:
+1. Check light mode appearance
+2. Check dark mode (toggle `.dark` class)
+3. Verify focus ring visibility
+4. Test disabled state opacity
+5. Confirm hover/press state layers
+
+---
+
+## Anti-Patterns Table
+
+| ❌ NEVER | ✅ ALWAYS | Why |
+|----------|----------|-----|
+| `bg-blue-500` | `bg-primary` | Semantic tokens = auto dark mode |
+| `text-gray-600` | `text-on-surface-variant` | Semantic color roles |
+| `border-gray-200` | `border-outline-variant` | MD3 outline token |
+| `shadow-lg` | `shadow-elevation-3` | MD3 5-level system |
+| `hover:opacity-80` | `hover:bg-[color-mix(...)]` | MD3 state layers |
+| `h-10` for button | `min-h-[48px]` | MD3 48px minimum |
+| `transition` (no easing) | `duration-short ease-standard` | Always specify MD3 motion |
+| `dark:bg-gray-900` | _(CSS variables auto-switch)_ | Theme via CSS vars only |
+| `style={{ color: '#hex' }}` | Tailwind utility | No inline styles |
+| `opacity-40` for disabled | `opacity-disabled` | MD3 spec = 38% |
