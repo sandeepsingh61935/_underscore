@@ -1,12 +1,5 @@
 /**
- * Material Design 3 Dialog Component
- * 
- * Implements MD3 dialog specification with:
- * - 28dp extra-large rounded corners
- * - Scrim overlay
- * - Enter/exit animations
- * - Focus trapping
- * 
+ * MD3 Dialog Component
  * @see https://m3.material.io/components/dialogs/overview
  */
 
@@ -15,106 +8,41 @@ import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export interface DialogProps {
-    /**
-     * Controls dialog visibility
-     */
     open: boolean;
-
-    /**
-     * Callback when dialog should close
-     */
     onClose: () => void;
-
-    /**
-     * Dialog title
-     */
     title?: string;
-
-    /**
-     * Dialog content
-     */
     children: React.ReactNode;
-
-    /**
-     * Footer actions
-     */
     actions?: React.ReactNode;
-
-    /**
-     * Don't show close button
-     */
     hideCloseButton?: boolean;
-
-    /**
-     * Custom className for dialog container
-     */
     className?: string;
 }
 
-export function Dialog({
-    open,
-    onClose,
-    title,
-    children,
-    actions,
-    hideCloseButton,
-    className,
-}: DialogProps) {
+export function Dialog({ open, onClose, title, children, actions, hideCloseButton, className }: DialogProps): React.ReactNode {
     const dialogRef = useRef<HTMLDivElement>(null);
 
-    // Handle escape key
     useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && open) {
-                onClose();
-            }
-        };
-
+        const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape' && open) onClose(); };
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
     }, [open, onClose]);
 
-    // Lock body scroll when dialog is open
     useEffect(() => {
-        if (open) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-
-        return () => {
-            document.body.style.overflow = '';
-        };
+        document.body.style.overflow = open ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
     }, [open]);
 
-    // Focus trap
     useEffect(() => {
         if (open && dialogRef.current) {
-            const focusableElements = dialogRef.current.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            const firstElement = focusableElements[0] as HTMLElement;
-            const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
+            const focusable = dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const first = focusable[0] as HTMLElement;
+            const last = focusable[focusable.length - 1] as HTMLElement;
             const handleTab = (e: KeyboardEvent) => {
                 if (e.key !== 'Tab') return;
-
-                if (e.shiftKey) {
-                    if (document.activeElement === firstElement) {
-                        e.preventDefault();
-                        lastElement?.focus();
-                    }
-                } else {
-                    if (document.activeElement === lastElement) {
-                        e.preventDefault();
-                        firstElement?.focus();
-                    }
-                }
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
             };
-
             document.addEventListener('keydown', handleTab);
-            firstElement?.focus();
-
+            first?.focus();
             return () => document.removeEventListener('keydown', handleTab);
         }
     }, [open]);
@@ -123,18 +51,11 @@ export function Dialog({
 
     return (
         <>
-            {/* Scrim overlay */}
             <div
-                className={cn(
-                    'fixed inset-0 z-50 bg-scrim/40',
-                    'animate-in fade-in duration-medium',
-                    'backdrop-blur-sm'
-                )}
+                className="fixed inset-0 z-50 bg-scrim/40 animate-in fade-in duration-medium backdrop-blur-sm"
                 onClick={onClose}
                 aria-hidden="true"
             />
-
-            {/* Dialog */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div
                     ref={dialogRef}
@@ -142,46 +63,26 @@ export function Dialog({
                     aria-modal="true"
                     aria-labelledby={title ? 'dialog-title' : undefined}
                     className={cn(
-                        // MD3 Shape: Extra large rounded corners (28dp)
-                        'rounded-xl',
-
-                        // MD3 Surface: Surface container highest
+                        'rounded-xl',                        // MD3 extra-large (28px)
                         'bg-surface-container-highest',
                         'text-on-surface',
-
-                        // Sizing
                         'w-full max-w-md max-h-[90vh]',
-
-                        // Flex layout
                         'flex flex-col',
-
-                        // MD3 Elevation
                         'shadow-elevation-3',
-
-                        // Animations
                         'animate-in zoom-in-95 fade-in duration-medium ease-emphasized',
-
                         className
                     )}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Header */}
                     {(title || !hideCloseButton) && (
                         <div className="flex items-center justify-between p-6 pb-4">
-                            {title && (
-                                <h2
-                                    id="dialog-title"
-                                    className="text-headline-small text-on-surface"
-                                >
-                                    {title}
-                                </h2>
-                            )}
+                            {title && <h2 id="dialog-title" className="text-headline-small text-on-surface">{title}</h2>}
                             {!hideCloseButton && (
                                 <button
                                     type="button"
                                     onClick={onClose}
                                     className={cn(
-                                        'w-[40px] h-[40px] flex items-center justify-center',
+                                        'w-[48px] h-[48px] flex items-center justify-center',
                                         'rounded-full',
                                         'text-on-surface-variant',
                                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)]',
@@ -197,17 +98,9 @@ export function Dialog({
                             )}
                         </div>
                     )}
-
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto px-6 py-4 text-body-medium text-on-surface-variant">
-                        {children}
-                    </div>
-
-                    {/* Actions */}
+                    <div className="flex-1 overflow-y-auto px-6 py-4 text-body-medium text-on-surface-variant">{children}</div>
                     {actions && (
-                        <div className="flex items-center justify-end gap-2 p-6 pt-4 border-t border-outline-variant">
-                            {actions}
-                        </div>
+                        <div className="flex items-center justify-end gap-2 p-6 pt-4 border-t border-outline-variant">{actions}</div>
                     )}
                 </div>
             </div>
