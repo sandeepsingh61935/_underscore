@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Domain Details — _underscore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #ffffff;
+            --text-primary: #0f1419;
+            --text-secondary: #536471;
+            --text-tertiary: #8b98a5;
+            --accent: #5b8db9;
+            --accent-soft: rgba(91, 141, 185, 0.08);
+            --accent-text: #4a7da8;
+            --border: #eef1f3;
+            --border-hover: #dfe3e8;
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-full: 9999px;
+            --logo-bg: #1a1d23;
+            --logo-shadow: rgba(0, 0, 0, 0.2);
+            --logo-text: #ffffff;
+            --logo-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
+            --logo-inner-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: transparent;
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        .dark {
+            --bg: #0e1015;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --text-primary: #e4e7ec;
+            --text-secondary: #8b95a5;
+            --text-tertiary: #4b5563;
+            --accent: #6da3cc;
+            --accent-soft: rgba(109, 163, 204, 0.10);
+            --accent-text: #93bbda;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.10);
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --logo-bg: #f8f9fa;
+            --logo-shadow: rgba(0, 0, 0, 0.4);
+            --logo-text: #111827;
+            --logo-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.0) 100%);
+            --logo-inner-shadow: inset 0 2px 4px rgba(255, 255, 255, 1), inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.0) 100%);
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.3s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === HEADER === */
+        header {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--logo-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px var(--logo-shadow), var(--logo-outer-shadow), var(--logo-inner-shadow);
+            overflow: hidden;
+        }
+
+        .logo-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            right: 4px;
+            height: 45%;
+            background: var(--logo-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 10px;
+            right: 10px;
+            height: 30%;
+            background: var(--logo-ambient-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge span {
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--logo-text);
+            position: relative;
+            z-index: 1;
+            transform: translateY(-2px);
+            text-shadow: var(--logo-text-shadow);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-avatar:hover {
+            box-shadow: var(--shadow-hover);
+            transform: scale(1.05);
+        }
+
+        /* === CONTENT === */
+        .content {
+            width: 100%;
+            max-width: 640px;
+            padding: 0 24px 24px;
+            flex: 1;
+        }
+
+        /* Back nav */
+        .back-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.15s ease;
+        }
+
+        .back-nav:hover {
+            color: var(--accent);
+        }
+
+        /* Domain header */
+        .domain-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .domain-favicon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: var(--accent-soft);
+            flex-shrink: 0;
+        }
+
+        .domain-info {
+            flex: 1;
+        }
+
+        .domain-name {
+            font-size: 22px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .domain-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+
+        /* Action bar */
+        .action-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .action-btn:hover {
+            color: var(--accent);
+            border-color: var(--border-hover);
+        }
+
+        .action-btn.danger:hover {
+            color: #e53e3e;
+            border-color: #fed7d7;
+        }
+
+        /* Export format chips in action bar */
+        .export-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 6px 4px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+        }
+
+        .export-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-right: 4px;
+        }
+
+        .format-chip {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .format-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .format-chip.active {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent-text);
+        }
+
+        /* Highlight items */
+        .highlights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .highlight-item {
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: var(--card-reflection);
+            pointer-events: none;
+        }
+
+        .highlight-item:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-rest);
+        }
+
+        .highlight-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent);
+            padding-left: 12px;
+        }
+
+        .highlight-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .highlight-source {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+        }
+
+        .highlight-time {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .highlight-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .highlight-item:hover .highlight-actions {
+            opacity: 1;
+        }
+
+        .highlight-action-btn {
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .highlight-action-btn:hover {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-rest);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a class="logo" href="mode-selection.html">
+            <div class="logo-badge"><span>_</span></div>
+            <span class="logo-text">underscore</span>
+        </a>
+        <div class="user-avatar" title="Demo User">D</div>
+    </header>
+
+    <div class="content">
+        <a class="back-nav" href="collections.html">← Collections</a>
+
+        <!-- Domain header -->
+        <div class="domain-header">
+            <div class="domain-favicon">📰</div>
+            <div class="domain-info">
+                <div class="domain-name">medium.com</div>
+                <div class="domain-stats">
+                    <span>23 highlights</span>
+                    <span>·</span>
+                    <span>Dec 2025 – Feb 2026</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-bar">
+            <button class="action-btn">📋 Copy all</button>
+            <div class="export-group">
+                <span class="export-label">📤</span>
+                <button class="format-chip">PDF</button>
+                <button class="format-chip">TXT</button>
+                <button class="format-chip">JSON</button>
+                <button class="format-chip">CSV</button>
+                <button class="format-chip">MD</button>
+            </div>
+            <button class="action-btn danger">🗑 Clear all</button>
+        </div>
+
+        <!-- Highlights -->
+        <div class="highlights-list">
+            <div class="highlight-item">
+                <div class="highlight-text">
+                    "The key insight is that attention mechanisms allow the model to focus on relevant parts
+                    of the input sequence, regardless of their position."
+                </div>
+                <div class="highlight-meta">
+                    <span class="highlight-source">/understanding-transformers-from-scratch</span>
+                    <div class="highlight-actions">
+                        <button class="highlight-action-btn">Copy</button>
+                        <button class="highlight-action-btn">Delete</button>
+                    </div>
+                    <span class="highlight-time">2h ago</span>
+                </div>
+            </div>
+
+            <div class="highlight-item">
+                <div class="highlight-text">
+                    "Event sourcing stores every change as an immutable event, creating a complete audit
+                    trail and enabling temporal queries."
+                </div>
+                <div class="highlight-meta">
+                    <span class="highlight-source">/event-sourcing-made-simple</span>
+                    <div class="highlight-actions">
+                        <button class="highlight-action-btn">Copy</button>
+                        <button class="highlight-action-btn">Delete</button>
+                    </div>
+                    <span class="highlight-time">1 day ago</span>
+                </div>
+            </div>
+
+            <div class="highlight-item">
+                <div class="highlight-text">
+                    "Progressive disclosure reduces cognitive load by showing only the most relevant options
+                    at each step, revealing complexity on demand."
+                </div>
+                <div class="highlight-meta">
+                    <span class="highlight-source">/ux-patterns-for-knowledge-workers</span>
+                    <div class="highlight-actions">
+                        <button class="highlight-action-btn">Copy</button>
+                        <button class="highlight-action-btn">Delete</button>
+                    </div>
+                    <span class="highlight-time">3 days ago</span>
+                </div>
+            </div>
+
+            <div class="highlight-item">
+                <div class="highlight-text">
+                    "Shadow DOM provides true style encapsulation — CSS rules inside a shadow tree don't
+                    leak out, and styles from the outer page don't bleed in."
+                </div>
+                <div class="highlight-meta">
+                    <span class="highlight-source">/web-components-beyond-basics</span>
+                    <div class="highlight-actions">
+                        <button class="highlight-action-btn">Copy</button>
+                        <button class="highlight-action-btn">Delete</button>
+                    </div>
+                    <span class="highlight-time">1 week ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="theme-toggle"
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">🌙</button>
+
+    <script>
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+    </script>
+</body>
+
+</html>
