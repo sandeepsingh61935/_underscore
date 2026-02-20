@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Collections — _underscore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #ffffff;
+            --text-primary: #0f1419;
+            --text-secondary: #536471;
+            --text-tertiary: #8b98a5;
+            --accent: #5b8db9;
+            --accent-soft: rgba(91, 141, 185, 0.08);
+            --accent-text: #4a7da8;
+            --border: #eef1f3;
+            --border-hover: #dfe3e8;
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --radius-full: 9999px;
+            --logo-bg: #1a1d23;
+            --logo-shadow: rgba(0, 0, 0, 0.2);
+            --logo-text: #ffffff;
+            --logo-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
+            --logo-inner-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: transparent;
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        .dark {
+            --bg: #0e1015;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --text-primary: #e4e7ec;
+            --text-secondary: #8b95a5;
+            --text-tertiary: #4b5563;
+            --accent: #6da3cc;
+            --accent-soft: rgba(109, 163, 204, 0.10);
+            --accent-text: #93bbda;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.10);
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --logo-bg: #f8f9fa;
+            --logo-shadow: rgba(0, 0, 0, 0.4);
+            --logo-text: #111827;
+            --logo-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.0) 100%);
+            --logo-inner-shadow: inset 0 2px 4px rgba(255, 255, 255, 1), inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.0) 100%);
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.3s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === HEADER === */
+        header {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--logo-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px var(--logo-shadow), var(--logo-outer-shadow), var(--logo-inner-shadow);
+            overflow: hidden;
+        }
+
+        .logo-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            right: 4px;
+            height: 45%;
+            background: var(--logo-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 10px;
+            right: 10px;
+            height: 30%;
+            background: var(--logo-ambient-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge span {
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--logo-text);
+            position: relative;
+            z-index: 1;
+            transform: translateY(-2px);
+            text-shadow: var(--logo-text-shadow);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-avatar:hover {
+            box-shadow: var(--shadow-hover);
+            transform: scale(1.05);
+        }
+
+        /* === CONTENT === */
+        .content {
+            width: 100%;
+            max-width: 640px;
+            padding: 0 24px 24px;
+            flex: 1;
+        }
+
+        /* Search */
+        .search-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .search-icon {
+            font-size: 16px;
+            color: var(--text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-primary);
+            outline: none;
+            font-family: inherit;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        /* Section header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+        }
+
+        .item-count {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* Collection cards */
+        .collection-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .collection-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-rest);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .collection-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: var(--card-reflection);
+            pointer-events: none;
+        }
+
+        .collection-card:hover {
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .collection-card:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: var(--shadow-active);
+        }
+
+        /* Favicon */
+        .favicon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            background: var(--accent-soft);
+        }
+
+        .collection-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .collection-domain {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.15s ease;
+        }
+
+        .collection-card:hover .collection-domain {
+            color: var(--accent-text);
+        }
+
+        .collection-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .collection-arrow {
+            font-size: 18px;
+            color: var(--text-tertiary);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .collection-card:hover .collection-arrow {
+            opacity: 1;
+            color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        /* Sort dropdown */
+        .sort-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .sort-select {
+            padding: 6px 28px 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b98a5' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            transition: border-color 0.15s ease;
+        }
+
+        .sort-select:hover {
+            border-color: var(--border-hover);
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        /* Mode reminder */
+        .mode-reminder {
+            text-align: center;
+            padding: 20px 16px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .mode-reminder a {
+            color: var(--accent-text);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid var(--accent-soft);
+            transition: border-color 0.15s ease;
+        }
+
+        .mode-reminder a:hover {
+            border-color: var(--accent);
+        }
+
+        /* Mode badge */
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: var(--radius-full);
+            background: var(--accent-soft);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent-text);
+            margin-bottom: 16px;
+        }
+
+        .mode-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: var(--radius-full);
+            background: var(--accent);
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-rest);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a class="logo" href="mode-selection.html">
+            <div class="logo-badge"><span>_</span></div>
+            <span class="logo-text">underscore</span>
+        </a>
+        <div class="user-avatar" title="Demo User">D</div>
+    </header>
+
+    <div class="content">
+        <!-- Current mode indicator -->
+        <div class="mode-badge"><span class="dot"></span> Capture mode</div>
+
+        <!-- Search -->
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search collections…" />
+        </div>
+
+        <!-- Sort & Section header -->
+        <div class="sort-bar">
+            <span class="section-title">Collections</span>
+            <select class="sort-select">
+                <option>A → Z</option>
+                <option selected>Most highlights</option>
+                <option>Newest first</option>
+                <option>Oldest first</option>
+            </select>
+        </div>
+
+        <div class="collection-list">
+            <a class="collection-card" href="domain-details.html">
+                <div class="favicon">📰</div>
+                <div class="collection-info">
+                    <div class="collection-domain">medium.com</div>
+                    <div class="collection-meta">
+                        <span>23 highlights</span>
+                        <span>·</span>
+                        <span>2 days ago</span>
+                    </div>
+                </div>
+                <span class="collection-arrow">→</span>
+            </a>
+
+            <a class="collection-card" href="domain-details.html">
+                <div class="favicon">📄</div>
+                <div class="collection-info">
+                    <div class="collection-domain">developer.mozilla.org</div>
+                    <div class="collection-meta">
+                        <span>15 highlights</span>
+                        <span>·</span>
+                        <span>5 days ago</span>
+                    </div>
+                </div>
+                <span class="collection-arrow">→</span>
+            </a>
+
+            <a class="collection-card" href="domain-details.html">
+                <div class="favicon">🧬</div>
+                <div class="collection-info">
+                    <div class="collection-domain">arxiv.org</div>
+                    <div class="collection-meta">
+                        <span>8 highlights</span>
+                        <span>·</span>
+                        <span>1 week ago</span>
+                    </div>
+                </div>
+                <span class="collection-arrow">→</span>
+            </a>
+
+            <a class="collection-card" href="domain-details.html">
+                <div class="favicon">💻</div>
+                <div class="collection-info">
+                    <div class="collection-domain">github.com</div>
+                    <div class="collection-meta">
+                        <span>5 highlights</span>
+                        <span>·</span>
+                        <span>2 weeks ago</span>
+                    </div>
+                </div>
+                <span class="collection-arrow">→</span>
+            </a>
+        </div>
+
+        <!-- Mode reminder -->
+        <div class="mode-reminder">
+            Switch modes anytime in <a href="settings.html">Settings</a>
+        </div>
+    </div>
+
+    <button class="theme-toggle"
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">🌙</button>
+
+    <script>
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+    </script>
+</body>
+
+</html>
