@@ -1,11 +1,10 @@
 /**
- * Material Design 3 Button Component
- * 
- * Implements MD3 button specifications with three variants:
- * - filled: High-emphasis primary actions
- * - outlined: Medium-emphasis secondary actions  
- * - text: Low-emphasis tertiary actions
- * 
+ * MD3 Button Component
+ *
+ * Variants: filled, outlined, text
+ * Uses MD3 design tokens: primary colors, label-large typography,
+ * corner-full shape, state layers on hover/focus/press.
+ *
  * @see https://m3.material.io/components/buttons/overview
  */
 
@@ -14,22 +13,8 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    /**
-     * Visual style following MD3 button types
-     * - filled: Primary actions (high emphasis)
-     * - outlined: Secondary actions (medium emphasis)
-     * - text: Tertiary actions (low emphasis)
-     */
     variant?: 'filled' | 'outlined' | 'text';
-
-    /**
-     * Loading state - shows spinner
-     */
     isLoading?: boolean;
-
-    /**
-     * Icon to display before text
-     */
     icon?: React.ReactNode;
 }
 
@@ -40,62 +25,54 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 ref={ref}
                 disabled={disabled || isLoading}
                 className={cn(
-                    // Base styles - MD3 specifications
+                    // Base
                     'inline-flex items-center justify-center gap-2',
 
-                    // MD3 Shape: Full rounded (pill shape)
+                    // MD3 Shape: Full rounded (pill)
                     'rounded-full',
 
-                    // MD3 Typography: Label Large (14px, medium weight)
-                    'text-[var(--md-sys-typescale-label-large-size)]',
-                    'leading-[var(--md-sys-typescale-label-large-line-height)]',
-                    'font-[var(--md-sys-typescale-label-large-weight)]',
+                    // MD3 Typography: Label Large (14px, 500)
+                    'text-label-large',
 
-                    // MD3 Minimum touch target: 48dp height
+                    // MD3 Minimum touch target: 48px height
                     'min-h-[48px] px-6',
 
-                    // Transitions using MD3 motion tokens
-                    'transition-all duration-[var(--md-sys-motion-duration-short)] ease-[var(--md-sys-motion-easing-standard)]',
+                    // MD3 Motion
+                    'transition-all duration-short ease-standard',
 
-                    // Focus ring using primary color
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] focus-visible:ring-offset-2',
+                    // Focus ring
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
 
-                    // Disabled state - MD3 spec 38% opacity
+                    // MD3 Disabled: 38% opacity
                     'disabled:opacity-disabled disabled:pointer-events-none',
 
-                    // Variant: Filled Button
+                    // Variant: Filled
                     variant === 'filled' && [
-                        'bg-[var(--md-sys-color-primary)]',
-                        'text-[var(--md-sys-color-on-primary)]',
-                        // State layer on hover (8% opacity overlay)
-                        'hover:shadow-[inset_0_0_0_100vmax_rgba(255,255,255,0.08)]',
-                        // State layer on active (12% opacity overlay)
-                        'active:shadow-[inset_0_0_0_100vmax_rgba(255,255,255,0.12)]',
-                        // Subtle elevation shadow
-                        'shadow-sm',
+                        'bg-primary',
+                        'text-on-primary',
+                        'shadow-elevation-1',
+                        // MD3 state layer: 8% hover, 12% press
+                        'hover:shadow-elevation-2',
+                        'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]',
+                        'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]',
                     ],
 
-                    // Variant: Outlined Button
+                    // Variant: Outlined
                     variant === 'outlined' && [
                         'bg-transparent',
-                        'text-[var(--md-sys-color-primary)]',
-                        'border border-[var(--md-sys-color-outline)]',
-                        // State layer on hover
+                        'text-primary',
+                        'border border-outline',
                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]',
-                        // State layer on active
                         'active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]',
                     ],
 
-                    // Variant: Text Button
+                    // Variant: Text
                     variant === 'text' && [
                         'bg-transparent',
-                        'text-[var(--md-sys-color-primary)]',
-                        // State layer on hover
+                        'text-primary',
                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]',
-                        // State layer on active
                         'active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]',
-                        // No border
-                        'px-4', // Less horizontal padding for text buttons
+                        'px-3',
                     ],
 
                     className
