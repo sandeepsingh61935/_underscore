@@ -2,73 +2,30 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { Logo } from './Logo';
 
-/**
- * Logo Component
- * 
- * Underscore logo with MD3 styling
- */
 const meta = {
     title: 'UI/Primitives/Logo',
     component: Logo,
-    parameters: {
-        layout: 'centered',
-    },
+    parameters: { layout: 'centered' },
     tags: ['autodocs'],
-    argTypes: {
-        size: {
-            control: 'select',
-            options: ['sm', 'md', 'lg'],
-        },
-    },
+    argTypes: { showText: { control: 'boolean' } },
 } satisfies Meta<typeof Logo>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * Default logo (medium size)
- */
-export const Default: Story = {
-    args: {
-        size: 'md',
-    },
-};
+export const Default: Story = { args: { showText: true } };
+export const IconOnly: Story = { args: { showText: false } };
 
-/**
- * Small logo (for compact headers)
- */
-export const Small: Story = {
-    args: {
-        size: 'sm',
-    },
-};
-
-/**
- * Large logo (for welcome screens)
- */
-export const Large: Story = {
-    args: {
-        size: 'lg',
-    },
-};
-
-/**
- * Logo variants showcase
- */
-export const AllSizes: Story = {
+export const AllVariants: Story = {
     render: () => (
-        <div className="flex items-end gap-8 p-4">
-            <div className="text-center">
-                <Logo size="sm" />
-                <p className="text-label-small text-on-surface-variant mt-2">Small</p>
+        <div className="flex flex-col items-start gap-8 p-4">
+            <div>
+                <Logo showText />
+                <p className="text-label-small text-on-surface-variant mt-2">With text</p>
             </div>
-            <div className="text-center">
-                <Logo size="md" />
-                <p className="text-label-small text-on-surface-variant mt-2">Medium</p>
-            </div>
-            <div className="text-center">
-                <Logo size="lg" />
-                <p className="text-label-small text-on-surface-variant mt-2">Large</p>
+            <div>
+                <Logo showText={false} />
+                <p className="text-label-small text-on-surface-variant mt-2">Icon only</p>
             </div>
         </div>
     ),
