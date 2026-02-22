@@ -6,6 +6,18 @@
 /// <reference types="wxt/client" />
 
 /**
+ * Supabase environment variable declarations
+ */
+interface ImportMeta {
+  readonly env: {
+    readonly VITE_SUPABASE_URL?: string;
+    readonly VITE_SUPABASE_ANON_KEY?: string;
+    readonly VITE_GOOGLE_CLIENT_ID?: string;
+    [key: string]: string | boolean | undefined;
+  };
+}
+
+/**
  * WXT global type declarations
  */
 
@@ -22,4 +34,4 @@ declare global {
   const defineBackground: typeof defineBackground;
 }
 
-export {};
+export { };
