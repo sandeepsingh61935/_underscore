@@ -130,6 +130,8 @@ class ContentScriptAuthManager implements IAuthManager {
         return this.initPromise;
     }
     async signIn(): Promise<any> { throw new Error('Not implemented in content script context'); }
+    async signInWithEmail(): Promise<any> { throw new Error('Not implemented in content script context'); }
+    async signUpWithEmail(): Promise<any> { throw new Error('Not implemented in content script context'); }
     async signOut(): Promise<void> { throw new Error('Not implemented in content script context'); }
     async refreshToken(): Promise<void> { }
     getAuthState(): any { return { isAuthenticated: this.isAuthenticated, user: this.currentUser }; }
@@ -155,8 +157,8 @@ export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultM
 
     // 1. Get Supabase configuration
     const supabaseConfig: SupabaseConfig = {
-        url: (import.meta as any).env.VITE_SUPABASE_URL || '',
-        anonKey: (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '',
+        url: import.meta.env.VITE_SUPABASE_URL || '',
+        anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     };
 
     // Check if Supabase is configured
