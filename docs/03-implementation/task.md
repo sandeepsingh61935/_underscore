@@ -25,9 +25,9 @@
 - [x] 404
 
 ## Phase 4: Overlays & Components
-- [ ] Account Menu dropdown
-- [ ] Sign Out confirmation
-- [ ] Dark mode variants
+- [x] Account Menu dropdown
+- [x] Sign Out confirmation
+- [x] Dark mode variants
 
 ## Phase 5: Handoff to React
 - [ ] Extract tokens into [tailwind.config.ts](file:///home/sandy/projects/_underscore/tailwind.config.ts)

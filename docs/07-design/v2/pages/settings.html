@@ -88,7 +88,7 @@
             width: 100%;
             max-width: 640px;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding: 24px;
         }
@@ -148,16 +148,14 @@
             text-shadow: var(--logo-text-shadow);
         }
 
-        .logo-text {
-            font-size: 26px;
-            font-weight: 300;
-            letter-spacing: -0.02em;
-        }
-
         .user-avatar {
             width: 36px;
             height: 36px;
             border-radius: var(--radius-full);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s ease;
             background: var(--accent);
             display: flex;
             align-items: center;
@@ -165,9 +163,131 @@
             color: #ffffff;
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
+        }
+
+        .user-avatar:hover {
+            box-shadow: var(--shadow-hover);
+            transform: scale(1.05);
+        }
+
+        /* === ACCOUNT MENU === */
+        .avatar-wrap {
+            position: relative;
+        }
+
+        .account-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 220px;
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            transition: all 0.15s ease;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-hover);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .account-menu::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        .dark .account-menu::before {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+
+        .account-menu.open {
+            display: block;
+            animation: menuIn 0.15s ease-out;
+        }
+
+        @keyframes menuIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .menu-user-info {
+            padding: 14px 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .menu-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .menu-user-email {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .menu-items {
+            padding: 6px 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.12s ease;
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .menu-item:hover {
+            background: var(--accent-soft);
+            color: var(--accent-text);
+        }
+
+        .menu-item-icon {
+            font-size: 15px;
+            opacity: 0.7;
+        }
+
+        .menu-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        .menu-item.danger {
+            color: #e05252;
+        }
+
+        .menu-item.danger:hover {
+            background: rgba(224, 82, 82, 0.08);
+            color: #e05252;
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
         }
 
         .user-avatar:hover {
@@ -488,20 +608,30 @@
             box-shadow: var(--shadow-hover);
             transform: translateY(-1px);
         }
+
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
 <body>
     <header>
-        <a class="logo" href="mode-selection.html">
+        <a class="logo" href="collections.html">
             <div class="logo-badge"><span>_</span></div>
             <span class="logo-text">underscore</span>
         </a>
-        <div class="user-avatar" title="Demo User">D</div>
     </header>
 
     <div class="content">
-        <a class="back-nav" href="mode-selection.html">← Back</a>
+        <a class="back-nav" href="collections.html">← Collections</a>
         <h1 class="page-title">Settings</h1>
 
         <!-- Account -->
@@ -642,6 +772,24 @@
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
             document.querySelector('.theme-toggle-fixed').textContent = '☀️';
+        }
+
+        function toggleMenu() {
+            document.getElementById('accountMenu').classList.toggle('open');
+        }
+
+        document.addEventListener('click', function (e) {
+            const wrap = document.querySelector('.avatar-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('accountMenu').classList.remove('open');
+            }
+        });
+
+        function handleSignOut() {
+            document.getElementById('accountMenu').classList.remove('open');
+            if (confirm('Sign out of _underscore?')) {
+                window.location.href = 'welcome.html';
+            }
         }
     </script>
 </body>

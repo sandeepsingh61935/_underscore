@@ -174,6 +174,242 @@
             transform: scale(1.05);
         }
 
+        /* === ACCOUNT MENU === */
+        .avatar-wrap {
+            position: relative;
+        }
+
+        .account-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 220px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-hover);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .account-menu::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        .dark .account-menu::before {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+
+        .account-menu.open {
+            display: block;
+            animation: menuIn 0.15s ease-out;
+        }
+
+        @keyframes menuIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .menu-user-info {
+            padding: 14px 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .menu-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .menu-user-email {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .menu-items {
+            padding: 6px 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.12s ease;
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .menu-item:hover {
+            background: var(--accent-soft);
+            color: var(--accent-text);
+        }
+
+        .menu-item-icon {
+            font-size: 15px;
+            opacity: 0.7;
+        }
+
+        .menu-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        .menu-item.danger {
+            color: #e05252;
+        }
+
+        .menu-item.danger:hover {
+            background: rgba(224, 82, 82, 0.08);
+            color: #e05252;
+        }
+
+        /* === SIGN-OUT MODAL === */
+        .signout-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .signout-overlay.open {
+            display: flex;
+            animation: fadeIn 0.15s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .signout-card {
+            width: 90%;
+            max-width: 320px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-hover);
+            padding: 28px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: cardIn 0.18s ease-out;
+        }
+
+        @keyframes cardIn {
+            from {
+                transform: scale(0.95) translateY(8px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .signout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        .dark .signout-card::before {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+
+        .signout-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .signout-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .signout-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .signout-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .signout-btn {
+            padding: 9px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .signout-btn:hover {
+            border-color: var(--border-hover);
+        }
+
+        .signout-btn.confirm {
+            background: #e05252;
+            color: #fff;
+            border-color: #e05252;
+        }
+
+        .signout-btn.confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(224, 82, 82, 0.3);
+        }
+
         /* === CONTENT === */
         .content {
             width: 100%;
@@ -437,7 +673,23 @@
             <div class="logo-badge"><span>_</span></div>
             <span class="logo-text">underscore</span>
         </a>
-        <div class="user-avatar" title="Demo User">D</div>
+        <div class="avatar-wrap">
+            <div class="user-avatar" title="Demo User" onclick="toggleMenu()">D</div>
+            <div class="account-menu" id="accountMenu">
+                <div class="menu-user-info">
+                    <div class="menu-user-name">Demo User</div>
+                    <div class="menu-user-email">user@example.com</div>
+                </div>
+                <div class="menu-items">
+                    <a class="menu-item" href="settings.html"><span class="menu-item-icon">⚙️</span> Settings</a>
+                    <a class="menu-item" href="mode-selection.html"><span class="menu-item-icon">⚡</span> Switch
+                        mode</a>
+                    <div class="menu-separator"></div>
+                    <button class="menu-item danger" onclick="handleSignOut()"><span class="menu-item-icon">↩</span>
+                        Sign out</button>
+                </div>
+            </div>
+        </div>
     </header>
 
     <div class="content">
@@ -534,6 +786,19 @@
         </div>
     </div>
 
+    <!-- Sign-out confirmation modal -->
+    <div class="signout-overlay" id="signoutOverlay" onclick="closeSignoutIfBackdrop(event)">
+        <div class="signout-card">
+            <div class="signout-icon">👋</div>
+            <div class="signout-title">Sign out?</div>
+            <div class="signout-desc">You'll lose access to your saved collections until you sign in again.</div>
+            <div class="signout-actions">
+                <button class="signout-btn" onclick="closeSignout()">Cancel</button>
+                <button class="signout-btn confirm" onclick="confirmSignout()">Sign out</button>
+            </div>
+        </div>
+    </div>
+
     <button class="theme-toggle"
         onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">🌙</button>
 
@@ -541,6 +806,35 @@
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
             document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+
+        function toggleMenu() {
+            document.getElementById('accountMenu').classList.toggle('open');
+        }
+
+        document.addEventListener('click', function (e) {
+            const wrap = document.querySelector('.avatar-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('accountMenu').classList.remove('open');
+            }
+        });
+
+        function handleSignOut() {
+            document.getElementById('accountMenu').classList.remove('open');
+            openSignout();
+        }
+
+        function openSignout() {
+            document.getElementById('signoutOverlay').classList.add('open');
+        }
+        function closeSignout() {
+            document.getElementById('signoutOverlay').classList.remove('open');
+        }
+        function closeSignoutIfBackdrop(e) {
+            if (e.target === document.getElementById('signoutOverlay')) closeSignout();
+        }
+        function confirmSignout() {
+            window.location.href = 'welcome.html';
         }
     </script>
 </body>
