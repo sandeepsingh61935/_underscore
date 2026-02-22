@@ -5,7 +5,11 @@ interface AppShellProps {
     className?: string;
 }
 
-export function AppShell({ children, className }: AppShellProps) {
-    // Simple wrapper - let views control their own layout
-    return <>{children}</>;
+export function AppShell({ children }: AppShellProps) {
+    // Global container establishing safe areas so UI never touches window edges
+    return (
+        <div className="w-full h-full flex flex-col items-center overflow-hidden relative">
+            {children}
+        </div>
+    );
 }
