@@ -164,6 +164,39 @@
         --md-sys-motion-duration-medium: 300ms;
         --md-sys-motion-duration-long: 500ms;
 
+        /* ===== Elevation (CSS shadow tokens) ===== */
+        --elevation-1: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+        --elevation-2: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+        --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
+
+        /* ===================================================
+           Style C Hybrid Semantic Aliases → MD3 tokens
+           Use these in React components for mockup fidelity
+           =================================================== */
+        --bg: var(--md-sys-color-surface);
+        --bg-card: var(--md-sys-color-surface-container-lowest);
+        --bg-elevated: var(--md-sys-color-surface-container-low);
+        --text-primary: var(--md-sys-color-on-surface);
+        --text-secondary: var(--md-sys-color-on-surface-variant);
+        --text-tertiary: var(--md-sys-color-outline);
+        --accent: var(--md-sys-color-primary);
+        --accent-soft: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+        --accent-text: var(--md-sys-color-primary);
+        --border: var(--md-sys-color-outline-variant);
+        --border-hover: var(--md-sys-color-outline);
+        --radius: var(--md-sys-shape-corner-medium);
+        --radius-sm: var(--md-sys-shape-corner-small);
+        --radius-lg: var(--md-sys-shape-corner-large);
+        --radius-full: var(--md-sys-shape-corner-full);
+        --shadow-rest: var(--elevation-1);
+        --shadow-hover: var(--elevation-3);
+
+        /* Logo badge (light mode) */
+        --logo-bg: #1a1a1a;
+        --logo-text: #ffffff;
+        --logo-text-shadow: none;
+        --logo-ambient-reflection: rgba(255, 255, 255, 0.15);
+
     }
 
     /* Dark Mode Overrides */
@@ -212,6 +245,12 @@
         /* Outline */
         --md-sys-color-outline: #8d9199;
         --md-sys-color-outline-variant: #43474e;
+
+        /* Logo badge (dark mode — inverted pearl) */
+        --logo-bg: #e8e8ec;
+        --logo-text: #1a1a1a;
+        --logo-text-shadow: none;
+        --logo-ambient-reflection: rgba(255, 255, 255, 0.06);
     }
 
 
@@ -261,6 +300,33 @@
     :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
         overflow-wrap: anywhere;
         word-break: break-word;
+    }
+
+    /* ===== Global Scrollbar Styling ===== */
+    /* Thin, subtle, and responsive to light/dark themes */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+        background-color: transparent;
+    }
+
+    ::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--md-sys-color-outline-variant);
+        border-radius: var(--md-sys-shape-corner-full);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--md-sys-color-outline);
+    }
+
+    /* Firefox fallback */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--md-sys-color-outline-variant) transparent;
     }
 
     pre,
