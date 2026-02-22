@@ -1,99 +1,99 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '@/ui-system/components/layout/Header';
+import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
+import { Logo } from '@/ui-system/components/primitives/Logo';
+import { TrustSignal } from '@/ui-system/components/primitives/TrustSignal';
 
-export function WelcomePage() {
+export interface WelcomePageProps {
+    onStartClick?: () => void;
+}
+
+/**
+ * Welcome Page — landing experience
+ * Centered layout: Logo (lg) + tagline + CTA → /mode + trust signal + footer
+ */
+export function WelcomePage({ onStartClick }: WelcomePageProps = {}) {
     const navigate = useNavigate();
     const { isAuthenticated } = useApp();
 
     React.useEffect(() => {
-        // Redirect if already authenticated
-        if (isAuthenticated) {
+        if (isAuthenticated && !onStartClick) {
             navigate('/mode');
         }
-    }, [isAuthenticated, navigate]);
-
-    const handleSignIn = () => {
-        navigate('/sign-in');
-    };
+    }, [isAuthenticated, navigate, onStartClick]);
 
     return (
-        <div className="min-h-screen flex flex-col bg-background text-foreground">
-            <Header onSignInClick={handleSignIn} />
+        <div
+            className="h-full overflow-y-auto w-full flex flex-col items-center justify-center"
+            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+        >
+            <div className="flex flex-col items-center text-center max-w-[480px] px-6 py-12 gap-0">
+                {/* Logo badge */}
+                <Logo size="lg" showText={false} className="mb-6" />
 
-            {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center px-4 py-16 md:py-24">
-                <div className="text-center max-w-2xl">
-                    {/* Icon */}
-                    <div className="mb-8 md:mb-12 flex justify-center">
-                        <div className="w-20 h-20 md:w-24 md:h-24 bg-primary/10 rounded-2xl flex items-center justify-center">
-                            <svg
-                                className="w-12 h-12 md:w-14 md:h-14 text-primary"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z"
-                                />
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M13 5h2a2 2 0 012 2v12a2 2 0 01-2 2h-2"
-                                />
-                            </svg>
-                        </div>
-                    </div>
+                {/* App name */}
+                <h1
+                    className="text-[36px] font-light tracking-[-0.02em] mb-4"
+                    style={{ color: 'var(--text-primary)' }}
+                >
+                    underscore
+                </h1>
 
-                    {/* Heading */}
-                    <h1 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
-                        Simply organized.
-                    </h1>
+                {/* Tagline */}
+                <p
+                    className="text-[16px] leading-relaxed mb-10"
+                    style={{ color: 'var(--text-secondary)' }}
+                >
+                    Highlight what matters.<br />
+                    Everything else fades away.
+                </p>
 
-                    {/* Subheading */}
-                    <p className="text-lg md:text-xl text-muted-foreground mb-8 md:mb-12 leading-relaxed">
-                        Your browser extension for minimalist note-taking.
-                    </p>
+                {/* CTA */}
+                <button
+                    onClick={() => {
+                        if (onStartClick) onStartClick();
+                        else navigate('/mode');
+                    }}
+                    className="flex items-center gap-2 px-8 py-[14px] rounded-[var(--radius)] text-[15px] font-medium tracking-[0.01em] text-white border-none cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 mb-6"
+                    style={{
+                        background: 'var(--accent)',
+                        boxShadow: '0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent)',
+                    }}
+                >
+                    Get started <span>→</span>
+                </button>
 
-                    {/* Description */}
-                    <div className="mb-12 md:mb-16 space-y-4 text-muted-foreground">
-                        <p>
-                            Highlight what matters. Everything else fades away.
-                        </p>
-                        <p>
-                            Secure, encrypted, and designed for focus.
-                        </p>
-                    </div>
-
-                    {/* Scroll Indicator */}
-                    <div className="flex justify-center animate-bounce">
-                        <div className="text-4xl">↓</div>
-                    </div>
-                </div>
-            </main>
+                {/* Trust signal */}
+                <TrustSignal />
+            </div>
 
             {/* Footer */}
-            <footer className="border-t border-border bg-card">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-                    <p>© 2024 _underscore inc.</p>
-                    <div className="flex gap-6">
-                        <a href="#privacy" className="hover:text-foreground transition-colors">
-                            Privacy
-                        </a>
-                        <a href="#help" className="hover:text-foreground transition-colors">
-                            Help
-                        </a>
-                        <a href="#terms" className="hover:text-foreground transition-colors">
-                            Terms
-                        </a>
-                    </div>
-                </div>
-            </footer>
+            <div
+                className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4"
+                style={{ borderTop: '1px solid var(--border)' }}
+            >
+                <Link
+                    to="/privacy"
+                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
+                    style={{ color: 'var(--text-tertiary)' }}
+                >
+                    Privacy
+                </Link>
+                <a
+                    href="#terms"
+                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
+                    style={{ color: 'var(--text-tertiary)' }}
+                >
+                    Terms
+                </a>
+                <a
+                    href="#help"
+                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
+                    style={{ color: 'var(--text-tertiary)' }}
+                >
+                    Help
+                </a>
+            </div>
         </div>
     );
 }
