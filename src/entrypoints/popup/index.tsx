@@ -8,6 +8,8 @@ import { AuthView } from './views/AuthView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
+import { WelcomePage } from '../../pages/WelcomePage';
+import { SettingsPage } from '../../pages/SettingsPage';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
 import '../../ui-system/theme/global.css';
@@ -15,10 +17,12 @@ import './base.css';
 
 enum View {
     LOADING = 'LOADING',
+    WELCOME = 'WELCOME',
     MODE_SELECTION = 'MODE_SELECTION',
     COLLECTIONS = 'COLLECTIONS',
     DOMAIN_DETAILS = 'DOMAIN_DETAILS',
     AUTH = 'AUTH',
+    SETTINGS = 'SETTINGS',
 }
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -31,11 +35,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('Popup Error:', error, errorInfo);
     }
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             return (
                 <div className="w-[400px] h-[600px] p-4 bg-surface text-on-surface flex flex-col items-center justify-center text-center">
@@ -60,52 +64,86 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 function PopupApp() {
     const { user, logout, isLoading } = useApp(); // Use from context now!
     // Auth sync is now handled by PopupAppProvider via props
-    // No need for manual sync effect
 
     const [currentView, setCurrentView] = useState<View>(View.LOADING);
-    const [hasSeenModeSelection, setHasSeenModeSelection] = useState(false);
-    const [selectedMode, setSelectedMode] = useState<'focus' | 'capture' | 'memory' | 'neural'>('focus');
+    const [previousView, setPreviousView] = useState<View | null>(null);
     const [selectedDomain, setSelectedDomain] = useState<string>('');
+    const [isStorageReady, setIsStorageReady] = useState(false);
 
-
+    // Initialization
     useEffect(() => {
         if (isLoading) return;
 
-        // Check if user has seen mode selection (stored in localStorage)
-        const seenModeSelection = localStorage.getItem('underscore_seen_mode_selection') === 'true';
-        setHasSeenModeSelection(seenModeSelection);
+        async function initStorage() {
+            try {
+                const data = await browser.storage.local.get([
+                    'underscore_seen_welcome',
+                    'underscore_seen_mode_selection',
+                    'underscore_last_popup_view'
+                ]);
+                const hasSeenWelcome = data['underscore_seen_welcome'] === 'true';
+                const hasSeenModeSelection = data['underscore_seen_mode_selection'] === 'true';
+                const lastView = data['underscore_last_popup_view'] as View;
 
-        if (!seenModeSelection) {
-            setCurrentView(View.MODE_SELECTION);
-        } else if (!user) {
-            setCurrentView(View.AUTH);
-        } else {
-            // Authenticated users go straight to Collections
-            setCurrentView(View.COLLECTIONS);
+                if (!hasSeenWelcome) {
+                    setCurrentView(View.WELCOME);
+                    return;
+                }
+
+                if (user) {
+                    // If user is already logged in, skip mode selection and prefer collections/details/settings
+                    if (lastView === View.DOMAIN_DETAILS || lastView === View.SETTINGS) {
+                        setCurrentView(lastView);
+                    } else {
+                        setCurrentView(View.COLLECTIONS);
+                    }
+                } else if (!hasSeenModeSelection) {
+                    setCurrentView(View.MODE_SELECTION);
+                } else {
+                    // Not logged in but seen mode selection
+                    if (lastView === View.MODE_SELECTION || lastView === View.AUTH || lastView === View.SETTINGS) {
+                        setCurrentView(lastView);
+                    } else {
+                        setCurrentView(View.MODE_SELECTION);
+                    }
+                }
+            } catch (err) {
+                console.error("Storage load failed", err);
+                setCurrentView(View.WELCOME);
+            } finally {
+                setIsStorageReady(true);
+            }
         }
-    }, [user, isLoading]);
 
-    const handleModeSelect = (modeId: string) => {
+        initStorage();
+    }, [isLoading]);
+
+    // Persist View State
+    useEffect(() => {
+        if (!isStorageReady) return;
+
+        if (currentView === View.COLLECTIONS || currentView === View.MODE_SELECTION || currentView === View.DOMAIN_DETAILS) {
+            browser.storage.local.set({ underscore_last_popup_view: currentView }).catch(console.error);
+        }
+    }, [currentView, isStorageReady]);
+
+    const handleStartWelcome = async () => {
+        await browser.storage.local.set({ underscore_seen_welcome: 'true' });
+        setCurrentView(View.MODE_SELECTION);
+    };
+
+    const handleModeSelect = async (modeId: string) => {
         console.log('[PopupApp] Mode selected:', modeId);
 
         // Mark mode selection as seen
-        localStorage.setItem('underscore_seen_mode_selection', 'true');
-        setHasSeenModeSelection(true);
+        await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
 
-        // Set selected mode and navigate to collections
-        const validModes = ['focus', 'capture', 'memory', 'neural'] as const;
-        const mode = validModes.includes(modeId as any) ? (modeId as typeof validModes[number]) : 'focus';
-        setSelectedMode(mode);
+        // Note: Mode gets set via contexts/hooks within the view or globally
         setCurrentView(View.COLLECTIONS);
     };
 
-    const handleModeChange = (newMode: 'focus' | 'capture' | 'memory' | 'neural') => {
-        setSelectedMode(newMode);
-    };
-
-    const handleSignInClick = () => {
-        localStorage.setItem('underscore_seen_mode_selection', 'true');
-        setHasSeenModeSelection(true);
+    const handleSignInClick = async () => {
+        await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
         setCurrentView(View.AUTH);
     };
 
@@ -131,29 +169,51 @@ function PopupApp() {
         setCurrentView(View.COLLECTIONS);
     };
 
-    if (currentView === View.LOADING) {
+    const handleSettingsClick = () => {
+        setPreviousView(currentView);
+        setCurrentView(View.SETTINGS);
+    };
+
+    const handleSettingsChangeMode = () => {
+        setPreviousView(currentView);
+        setCurrentView(View.MODE_SELECTION);
+    };
+
+    const handleModeSelectionBack = () => {
+        if (previousView && previousView !== View.MODE_SELECTION) {
+            setCurrentView(previousView);
+            setPreviousView(null);
+        } else {
+            setCurrentView(View.COLLECTIONS);
+        }
+    };
+
+    if (currentView === View.LOADING || !isStorageReady) {
         return (
             <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
-                <Spinner size={32} />
+                <Spinner size="lg" />
             </div>
         );
     }
 
     return (
         <AppShell>
+            {currentView === View.WELCOME && (
+                <WelcomePage onStartClick={handleStartWelcome} />
+            )}
             {currentView === View.MODE_SELECTION && (
                 <ModeSelectionView
                     onModeSelect={handleModeSelect}
                     onSignInClick={handleSignInClick}
+                    onBack={previousView ? handleModeSelectionBack : undefined}
                 />
             )}
             {currentView === View.COLLECTIONS && (
                 <CollectionsView
-                    mode={selectedMode}
-                    onModeChange={handleModeChange as any}
                     onSignInClick={user ? undefined : handleSignInClick}
                     onCollectionClick={handleCollectionClick}
                     onLogout={handleLogout}
+                    onSettingsClick={handleSettingsClick}
                     user={user}
                     isAuthenticated={!!user}
                 />
@@ -168,6 +228,12 @@ function PopupApp() {
                 <AuthView
                     onLoginSuccess={handleLoginSuccess}
                     onBackToModeSelection={handleBackToModeSelection}
+                />
+            )}
+            {currentView === View.SETTINGS && (
+                <SettingsPage
+                    onBack={handleBackToCollections}
+                    onChangeMode={handleSettingsChangeMode}
                 />
             )}
         </AppShell>
@@ -196,7 +262,7 @@ function PopupAppWithProviders() {
     if (isLoading) {
         return (
             <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
-                <Spinner size={32} />
+                <Spinner size="lg" />
             </div>
         );
     }
