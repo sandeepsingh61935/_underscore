@@ -10,11 +10,13 @@ export interface User {
     photoUrl?: string;
 }
 
-interface AuthState {
-    isAuthenticated: boolean;
+export interface AuthStateData {
     user: User | null;
-    provider: OAuthProviderType | null;
+    verificationStatus?: 'idle' | 'awaiting' | 'failed';
+    verificationExpiresAt?: number | null;
 }
+
+
 
 /**
  * Hook to access current user auth state from background AuthManager
@@ -22,6 +24,8 @@ interface AuthState {
  */
 export function useCurrentUser() {
     const [user, setUser] = useState<User | null>(null);
+    const [verificationStatus, setVerificationStatus] = useState<'idle' | 'awaiting' | 'failed'>('idle');
+    const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -41,9 +45,13 @@ export function useCurrentUser() {
 
                 if (response?.success && response.data) {
                     setUser(response.data.user);
+                    setVerificationStatus(response.data.verificationStatus || 'idle');
+                    setVerificationExpiresAt(response.data.verificationExpiresAt || null);
                 } else {
                     console.warn('[useCurrentUser] Failed to get auth state:', response?.error);
                     setUser(null);
+                    setVerificationStatus('idle');
+                    setVerificationExpiresAt(null);
                 }
             } catch (err) {
                 if (!mounted) return;
@@ -57,11 +65,13 @@ export function useCurrentUser() {
 
         fetchAuthState();
 
-        // Listen for auth state changes from background
         const handleMessage = (message: any) => {
             if (message?.type === 'AUTH_STATE_CHANGED') {
                 console.log('[useCurrentUser] Auth state changed:', message);
-                setUser(message.user || message.payload?.user || null);
+                const payload = message.payload || message;
+                setUser(payload.user || null);
+                setVerificationStatus(payload.verificationStatus || 'idle');
+                setVerificationExpiresAt(payload.verificationExpiresAt || null);
             }
         };
 
@@ -73,7 +83,7 @@ export function useCurrentUser() {
         };
     }, []);
 
-    // Login function - triggers OAuth via background
+    // Login function
     const login = useCallback(async (provider: OAuthProviderType = 'google') => {
         setIsLoading(true);
         setError(null);
@@ -86,19 +96,117 @@ export function useCurrentUser() {
                 timestamp: Date.now()
             });
 
-            console.log('[useCurrentUser] LOGIN response:', response);
+            console.log('[useCurrentUser] Received LOGIN response:', response);
 
-            if (response?.success && response.data?.user) {
-                setUser(response.data.user);
-                return { success: true, user: response.data.user };
-            } else {
-                const errorMsg = response?.error || 'Login failed';
+            if (!response || !response.success) {
+                const errorMsg = response?.error || 'Login failed - no response from background context';
+                console.error('[useCurrentUser] Login failed:', errorMsg);
                 setError(errorMsg);
                 return { success: false, error: errorMsg };
             }
+
+            if (response.data && response.data.user) {
+                console.log('[useCurrentUser] Login successful, setting user state');
+                setUser(response.data.user);
+            }
+
+            return { success: true };
         } catch (err) {
+            // Handle offline case specifically
+            if (!navigator.onLine || (err && err.toString().includes('fetch'))) {
+                const errorMsg = 'Please connect to the internet to sign in.';
+                setError(errorMsg);
+                return { success: false, error: errorMsg };
+            }
+
             const errorMsg = (err as Error).message;
             console.error('[useCurrentUser] Login error:', err);
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Email Login function
+    const loginWithEmail = useCallback(async (email: string, password: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('[useCurrentUser] Sending LOGIN_EMAIL request to background...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'LOGIN_EMAIL',
+                payload: { email, password },
+                timestamp: Date.now()
+            });
+
+            console.log('[useCurrentUser] Received LOGIN_EMAIL response:', response);
+
+            if (!response || !response.success) {
+                const errorMsg = response?.error || 'Email login failed - no response from background context';
+                console.error('[useCurrentUser] Email login failed:', errorMsg);
+                setError(errorMsg);
+                return { success: false, error: errorMsg };
+            }
+
+            if (response.data && response.data.user) {
+                console.log('[useCurrentUser] Email login successful, setting user state');
+                setUser(response.data.user);
+            }
+
+            if (response.data) {
+                setVerificationStatus(response.data.verificationStatus || 'idle');
+                setVerificationExpiresAt(response.data.verificationExpiresAt || null);
+            }
+
+            return { success: true };
+        } catch (err) {
+            const errorMsg = (err as Error).message;
+            console.error('[useCurrentUser] Email login error:', err);
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Email Registration function
+    const registerWithEmail = useCallback(async (email: string, password: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('[useCurrentUser] Sending REGISTER_EMAIL request to background...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'REGISTER_EMAIL',
+                payload: { email, password },
+                timestamp: Date.now()
+            });
+
+            console.log('[useCurrentUser] Received REGISTER_EMAIL response:', response);
+
+            if (!response || !response.success) {
+                const errorMsg = response?.error || 'Email registration failed - no response from background context';
+                console.error('[useCurrentUser] Email registration failed:', errorMsg);
+                setError(errorMsg);
+                return { success: false, error: errorMsg };
+            }
+
+            if (response.data && response.data.user) {
+                console.log('[useCurrentUser] Email registration successful, setting user state');
+                setUser(response.data.user);
+            }
+
+            if (response.data) {
+                setVerificationStatus(response.data.verificationStatus || 'idle');
+                setVerificationExpiresAt(response.data.verificationExpiresAt || null);
+            }
+
+            return { success: true };
+        } catch (err) {
+            const errorMsg = (err as Error).message;
+            console.error('[useCurrentUser] Email registration error:', err);
             setError(errorMsg);
             return { success: false, error: errorMsg };
         } finally {
@@ -118,6 +226,8 @@ export function useCurrentUser() {
                 timestamp: Date.now()
             });
             setUser(null);
+            setVerificationStatus('idle');
+            setVerificationExpiresAt(null);
         } catch (err) {
             console.error('[useCurrentUser] Logout error:', err);
             setError((err as Error).message);
@@ -126,5 +236,15 @@ export function useCurrentUser() {
         }
     }, []);
 
-    return { user, isLoading, error, login, logout };
+    return {
+        user,
+        verificationStatus,
+        verificationExpiresAt,
+        isLoading,
+        error,
+        login,
+        loginWithEmail,
+        registerWithEmail,
+        logout
+    };
 }
