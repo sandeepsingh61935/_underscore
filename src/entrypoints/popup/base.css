@@ -1,4 +1,10 @@
 /* Extension Popup Base Dimensions */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
     width: 400px;
     height: 600px;
