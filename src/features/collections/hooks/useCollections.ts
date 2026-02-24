@@ -14,18 +14,33 @@ export function useCollections() {
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        // TODO: Replace with real DI injection of SupabaseCollectionRepository via MessageBus
         const fetchCollections = async () => {
             try {
-                await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network
-                setCollections([
-                    { id: '1', domain: 'wikipedia.org', highlightCount: 12, lastActive: new Date() },
-                    { id: '2', domain: 'medium.com', highlightCount: 5, lastActive: new Date(Date.now() - 86400000) },
-                    { id: '3', domain: 'stackoverflow.com', highlightCount: 8, lastActive: new Date(Date.now() - 172800000) },
-                ]);
-                setIsLoading(false);
+                if (!chrome?.runtime) {
+                    throw new Error('Chrome runtime unavailable');
+                }
+
+                console.log('[useCollections] Requesting GET_COLLECTIONS from background');
+                const response = await chrome.runtime.sendMessage({
+                    type: 'GET_COLLECTIONS',
+                    timestamp: Date.now()
+                });
+
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to fetch collections: no response');
+                }
+
+                // Map stringified dates back to Date objects
+                const parsedCollections = (response.data.collections || []).map((col: any) => ({
+                    ...col,
+                    lastActive: new Date(col.lastActive)
+                }));
+
+                setCollections(parsedCollections);
             } catch (err) {
+                console.error('[useCollections] Error:', err);
                 setError(err instanceof Error ? err : new Error('Failed to fetch collections'));
+            } finally {
                 setIsLoading(false);
             }
         };

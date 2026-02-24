@@ -3,9 +3,10 @@
  * @description Defines valid mode transitions and their rules
  *
  * State machine rules for mode switching:
- * - Walk: Ephemeral highlighting (default)
- * - Sprint: Persistent highlighting
- * - Vault: Archived/permanent highlighting
+ * - Walk (Focus):   Ephemeral highlighting (default)
+ * - Sprint (Capture): Persistent highlighting
+ * - Vault (Memory):  Archived/permanent highlighting
+ * - Neural:         AI-powered connections across highlights
  *
  * Transition matrix enforces business rules and user experience.
  */
@@ -31,7 +32,7 @@ export interface TransitionRule {
 }
 
 /**
- * Complete transition matrix (3x3 = 9 transitions)
+ * Complete transition matrix (4x4 = 16 transitions)
  *
  * Design decisions:
  * - All transitions are allowed (UX flexibility)
@@ -45,24 +46,33 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'walk',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Walk mode (ephemeral highlighting)',
+      reason: 'Already in Focus mode (session-only highlighting)',
     },
     sprint: {
       from: 'walk',
       to: 'sprint',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Sprint mode will enable persistent highlighting',
+      reason: 'Your Focus highlights will be saved to Capture',
     },
     vault: {
       from: 'walk',
       to: 'vault',
       allowed: true,
       requiresConfirmation: true,
-      reason:
-        'Switching to Vault mode will permanently archive highlights. This action persists data.',
+      reason: 'Your Focus highlights will be saved to Memory for long-term recall',
       guard: async () => {
         // Future: Check if user has unsaved highlights
+        return true;
+      },
+    },
+    neural: {
+      from: 'walk',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: true,
+      reason: 'Your Focus highlights will be saved to Neural for smart, connected notes',
+      guard: async () => {
         return true;
       },
     },
@@ -73,8 +83,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'walk',
       allowed: true,
       requiresConfirmation: true,
-      reason:
-        'Switching to Walk mode will stop persisting new highlights. Existing highlights will remain.',
+      reason: 'Your Capture collections will be copied into this Focus session',
       guard: async () => {
         // Future: Warn about pending highlights
         return true;
@@ -85,17 +94,26 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'sprint',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Sprint mode (persistent highlighting)',
+      reason: 'Already in Capture mode (persistent highlighting)',
     },
     vault: {
       from: 'sprint',
       to: 'vault',
       allowed: true,
       requiresConfirmation: true,
-      reason:
-        'Switching to Vault mode will archive all highlights permanently. Data will persist.',
+      reason: 'Your Capture highlights will be saved to Memory for long-term recall',
       guard: async () => {
         // Future: Confirm vault archival
+        return true;
+      },
+    },
+    neural: {
+      from: 'sprint',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: true,
+      reason: 'Your Capture highlights will be saved to Neural for smart, connected notes',
+      guard: async () => {
         return true;
       },
     },
@@ -106,8 +124,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'walk',
       allowed: true,
       requiresConfirmation: true,
-      reason:
-        'Switching to Walk mode may result in highlight data being lost if not saved',
+      reason: 'Your Memory highlights will be copied into this Focus session',
       guard: async () => {
         // Future: Warn about data loss
         return true;
@@ -118,14 +135,54 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'sprint',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Sprint mode will maintain persistent highlighting',
+      reason: 'Your Memory highlights will be copied into Capture mode',
     },
     vault: {
       from: 'vault',
       to: 'vault',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Vault mode (archived highlighting)',
+      reason: 'Already in Memory mode (long-term knowledge base)',
+    },
+    neural: {
+      from: 'vault',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Switching to Neural will connect your Memory highlights with AI-powered insights',
+    },
+  },
+  neural: {
+    walk: {
+      from: 'neural',
+      to: 'walk',
+      allowed: true,
+      requiresConfirmation: true,
+      reason: 'Your Neural highlights will be copied into this Focus session',
+      guard: async () => {
+        return true;
+      },
+    },
+    sprint: {
+      from: 'neural',
+      to: 'sprint',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Your Neural highlights will be copied into Capture mode',
+    },
+    vault: {
+      from: 'neural',
+      to: 'vault',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Your Neural highlights will become a personal knowledge base in Memory',
+    },
+    neural: {
+      from: 'neural',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Already in Neural mode (AI-powered connections)',
     },
   },
 };

@@ -8,15 +8,28 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { AuthManager } from '@/background/auth/auth-manager';
 import type { ITokenStore } from '@/background/auth/interfaces/i-token-store';
 import type { ILogger } from '@/shared/utils/logger';
-import { EventBus } from '@/shared/utils/event-bus';
+import { EventBus } from '@/background/utils/event-bus';
 import { OAuthProvider } from '@/background/auth/interfaces/i-auth-manager';
 import { RateLimitError, OAuthRedirectError } from '@/background/auth/auth-errors';
 import { SupabaseClient, Session, User } from '@supabase/supabase-js';
+import { browser } from 'wxt/browser';
+
+vi.mock('wxt/browser', () => ({
+    browser: {
+        storage: {
+            local: {
+                get: vi.fn(),
+                set: vi.fn(),
+                remove: vi.fn()
+            }
+        }
+    }
+}));
 
 // Mock chrome.identity API
 global.chrome = {
     identity: {
-        getRedirectURL: vi.fn((provider: string) => `https://extension-id.chromiumapp.org`),
+        getRedirectURL: vi.fn((_provider: string) => `https://extension-id.chromiumapp.org`),
         launchWebAuthFlow: vi.fn(),
     },
     alarms: {
@@ -48,6 +61,7 @@ class MockLogger implements ILogger {
     info = vi.fn();
     warn = vi.fn();
     error = vi.fn();
+    fatal = vi.fn();
     setLevel = vi.fn();
     getLevel = vi.fn(() => 1);
 }
@@ -91,6 +105,14 @@ describe('AuthManager Unit Tests', () => {
                     data: { url: 'https://auth.supabase.co/authorize?...' },
                     error: null
                 }),
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: mockUser, session: mockSession },
+                    error: null
+                }),
+                signUp: vi.fn().mockResolvedValue({
+                    data: { user: mockUser, session: mockSession },
+                    error: null
+                }),
                 signOut: vi.fn().mockResolvedValue({ error: null }),
                 getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
                 setSession: vi.fn().mockResolvedValue({ data: { session: mockSession }, error: null }),
@@ -105,16 +127,24 @@ describe('AuthManager Unit Tests', () => {
         // Reset chrome.identity mock
         vi.mocked(chrome.identity.launchWebAuthFlow).mockReset();
 
+        // Ensure chrome.runtime is defined for tests checking lastError
+        if (!chrome.runtime) (chrome as any).runtime = {};
+        chrome.runtime.lastError = undefined;
+
         authManager = new AuthManager(
             mockSupabase as unknown as SupabaseClient,
-            mockTokenStore,
             mockEventBus,
             mockLogger
         );
+
+        // Map environment variables for testing
+        vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-google-client-id.apps.googleusercontent.com');
     });
 
     afterEach(() => {
+        vi.unstubAllEnvs();
         vi.clearAllMocks();
+        Object.defineProperty(chrome.runtime, 'lastError', { value: undefined, configurable: true });
     });
 
     /**
@@ -122,9 +152,19 @@ describe('AuthManager Unit Tests', () => {
      */
     it('should successfully sign in with Google OAuth', async () => {
         // Arrange
-        vi.mocked(chrome.identity.launchWebAuthFlow).mockResolvedValue(
-            'https://extension-id.chromiumapp.org/#access_token=acc123&refresh_token=ref123'
+        mockSupabase.auth.signInWithOAuth = vi.fn().mockResolvedValue({
+            data: { url: 'https://mock.supabase.co/auth/v1/authorize' },
+            error: null
+        });
+
+        chrome.identity.launchWebAuthFlow = vi.fn().mockResolvedValue(
+            'https://extension-id.chromiumapp.org/#access_token=mockAccess&refresh_token=mockRefresh'
         );
+
+        mockSupabase.auth.setSession = vi.fn().mockResolvedValue({
+            data: { user: mockUser, session: mockSession },
+            error: null
+        });
 
         // Act
         const result = await authManager.signIn(OAuthProvider.GOOGLE);
@@ -133,14 +173,20 @@ describe('AuthManager Unit Tests', () => {
         if (authStateCallback) authStateCallback('SIGNED_IN', mockSession);
 
         // Assert
-        expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({
+        expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
             provider: 'google',
-            options: expect.objectContaining({ skipBrowserRedirect: true })
-        }));
-        expect(chrome.identity.launchWebAuthFlow).toHaveBeenCalled();
+            options: {
+                redirectTo: expect.any(String),
+                skipBrowserRedirect: true
+            }
+        });
+        expect(chrome.identity.launchWebAuthFlow).toHaveBeenCalledWith({
+            url: 'https://mock.supabase.co/auth/v1/authorize',
+            interactive: true
+        });
         expect(mockSupabase.auth.setSession).toHaveBeenCalledWith({
-            access_token: 'acc123',
-            refresh_token: 'ref123'
+            access_token: 'mockAccess',
+            refresh_token: 'mockRefresh'
         });
 
         expect(result.success).toBe(true);
@@ -152,7 +198,21 @@ describe('AuthManager Unit Tests', () => {
      * Test 2: TRICKY - Rate limiting kicks in after 5 attempts
      */
     it('should enforce rate limiting after 5 failed sign-in attempts', async () => {
-        vi.mocked(chrome.identity.launchWebAuthFlow).mockRejectedValue(new Error('User cancelled'));
+        // Mock the OAuth flow to fail immediately at the setSession step
+        mockSupabase.auth.signInWithOAuth = vi.fn().mockResolvedValue({
+            data: { url: 'https://mock.supabase.co/auth/v1/authorize' },
+            error: null
+        });
+
+        chrome.identity.launchWebAuthFlow = vi.fn().mockResolvedValue(
+            'https://extension-id.chromiumapp.org/#access_token=bad&refresh_token=bad'
+        );
+
+        // Supabase rejects the token
+        mockSupabase.auth.setSession = vi.fn().mockResolvedValue({
+            data: { user: null, session: null },
+            error: new Error('Invalid token')
+        });
 
         // 5 failures
         for (let i = 0; i < 5; i++) {
@@ -172,18 +232,102 @@ describe('AuthManager Unit Tests', () => {
      * Test 3: TRICKY - Concurrent sign-in attempts
      */
     it('should handle concurrent sign-in attempts', async () => {
-        vi.mocked(chrome.identity.launchWebAuthFlow).mockResolvedValue(
-            'https://extension-id.chromiumapp.org/#access_token=acc123&refresh_token=ref123'
-        );
+        let callCount = 0;
+
+        mockSupabase.auth.signInWithOAuth = vi.fn().mockImplementation(() => {
+            callCount++;
+            return Promise.resolve({
+                data: { url: `https://mock.supabase.co/auth/v1/authorize?attempt=${callCount}` },
+                error: null
+            });
+        });
+
+        chrome.identity.launchWebAuthFlow = vi.fn().mockImplementation(() => {
+            return new Promise(resolve => {
+                setTimeout(() => resolve('https://ext.chromiumapp.org/#access_token=t&refresh_token=t'), 10);
+            });
+        });
+
+        mockSupabase.auth.setSession = vi.fn().mockResolvedValue({
+            data: { user: mockUser, session: mockSession },
+            error: null
+        });
 
         // Trigger 3 concurrent sign-ins
         const results = await Promise.all([
-            authManager.signIn(OAuthProvider.GOOGLE),
-            authManager.signIn(OAuthProvider.GOOGLE),
-            authManager.signIn(OAuthProvider.GOOGLE),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
         ]);
 
         expect(results.every(r => r.success)).toBe(true);
+        // Ensure signInWithOAuth was only called ONCE despite 3 concurrent requests (Singleton Promise architecture)
+        expect(callCount).toBe(1);
+    });
+
+    /**
+     * Test 3b: NEW - Successful Email/Password sign in
+     */
+    it('should successfully sign in with Email and Password', async () => {
+        // Act
+        const result = await authManager.signInWithEmail('test@example.com', 'password123');
+
+        // Assert
+        expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
+            email: 'test@example.com',
+            password: 'password123'
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.user?.email).toBe('user@example.com'); // Mapped from mockUser
+    });
+
+    /**
+     * Test 3c: NEW - Successful Email/Password sign up
+     */
+    it('should successfully sign up with Email and Password', async () => {
+        // Act
+        const result = await authManager.signUpWithEmail('new@example.com', 'securepass');
+
+        // Assert
+        expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
+            email: 'new@example.com',
+            password: 'securepass'
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.user?.email).toBe('user@example.com');
+    });
+
+    /**
+     * Test 3d: NEW - Email sign in rate limiting
+     */
+    it('should enforce rate limiting on Email sign in after 5 failed attempts', async () => {
+        mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: { user: null }, error: new Error('Invalid credentials') });
+
+        // 5 failures
+        for (let i = 0; i < 5; i++) {
+            await authManager.signInWithEmail('test@example.com', 'wrongpass').catch(() => { });
+        }
+
+        // 6th attempt
+        const result = await authManager.signInWithEmail('test@example.com', 'wrongpass');
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('RATE_LIMIT');
+    });
+
+    /**
+     * Test 3e: NEW - Email sign in Supabase error handling
+     */
+    it('should handle Supabase auth errors during Email sign in gracefully', async () => {
+        mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: { user: null }, error: new Error('Invalid Login Credentials') });
+
+        const result = await authManager.signInWithEmail('test@example.com', 'wrongpass');
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('AUTH_ERROR');
+        expect(result.error?.message).toBe('Invalid Login Credentials');
     });
 
     /**
@@ -206,11 +350,16 @@ describe('AuthManager Unit Tests', () => {
      * Test 5: TRICKY - OAuth redirect without tokens
      */
     it('should throw if redirect URL has no tokens', async () => {
-        vi.mocked(chrome.identity.launchWebAuthFlow).mockResolvedValue(
-            'https://extension-id.chromiumapp.org/#error=access_denied'
+        mockSupabase.auth.signInWithOAuth = vi.fn().mockResolvedValue({
+            data: { url: 'https://mock.supabase.co/auth/v1/authorize' },
+            error: null
+        });
+
+        chrome.identity.launchWebAuthFlow = vi.fn().mockResolvedValue(
+            'https://ext.chromiumapp.org/#error=access_denied&error_description=User+cancelled'
         );
 
-        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow();
+        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow('Missing authentication tokens');
     });
 
     /**

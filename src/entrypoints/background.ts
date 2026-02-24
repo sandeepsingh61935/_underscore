@@ -46,6 +46,10 @@ export default defineBackground({
       authManager = container.resolve<IAuthManager>('authManager');
       logger.info('[INIT] AuthManager resolved');
 
+      logger.info('[INIT] Resolving repositoryFacade from container...');
+      const repositoryFacade = container.resolve<any>('repositoryFacade');
+      logger.info('[INIT] RepositoryFacade resolved');
+
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {
         logger.info('Handling LOGIN request', { payload });
@@ -66,6 +70,51 @@ export default defineBackground({
         }
       });
 
+      // Login Email Handler
+      messageBus.subscribe('LOGIN_EMAIL', async (payload: { email?: string; password?: string }) => {
+        logger.info('Handling LOGIN_EMAIL request', { email: payload.email });
+        if (!payload.email || !payload.password) {
+          throw new Error('Email and password are required');
+        }
+
+        try {
+          const result = await authManager.signInWithEmail(payload.email, payload.password);
+          logger.info('AuthManager returned email login result', { success: result.success });
+
+          if (!result.success) {
+            const msg = result.error?.message || 'Email login failed (Unknown reason)';
+            logger.error('Email login failed explicitly', new Error(msg));
+            throw new Error(msg);
+          }
+          return { success: true, data: { user: result.user } };
+        } catch (error) {
+          logger.error('Email login handler caught error', error as Error);
+          throw error;
+        }
+      });
+
+      // Register Email Handler
+      messageBus.subscribe('REGISTER_EMAIL', async (payload: { email?: string; password?: string }) => {
+        logger.info('Handling REGISTER_EMAIL request', { email: payload.email });
+        if (!payload.email || !payload.password) {
+          throw new Error('Email and password are required');
+        }
+
+        try {
+          const result = await authManager.signUpWithEmail(payload.email, payload.password);
+          logger.info('AuthManager returned email register result', { success: result.success });
+
+          if (!result.success) {
+            const msg = result.error?.message || 'Email registration failed (Unknown reason)';
+            logger.error('Email registration failed explicitly', new Error(msg));
+            throw new Error(msg);
+          }
+          return { success: true, data: { user: result.user } };
+        } catch (error) {
+          logger.error('Email registration handler caught error', error as Error);
+          throw error;
+        }
+      });
       // Logout Handler
       messageBus.subscribe('LOGOUT', async () => {
         logger.info('Handling LOGOUT request');
@@ -92,6 +141,79 @@ export default defineBackground({
           isAuthenticated: state.isAuthenticated,
           user: state.user
         });
+      });
+
+      // --- Collections API handlers ---
+
+      // Get Collections (Grouped by Domain) Handler
+      messageBus.subscribe('GET_COLLECTIONS', async () => {
+        logger.info('Handling GET_COLLECTIONS request');
+        try {
+          const highlights = await repositoryFacade.findAll();
+
+          // Group by domain
+          const domainMap = new Map<string, { count: number, lastActive: number }>();
+
+          for (const hl of highlights) {
+            try {
+              const url = new URL(hl.url);
+              // Strip www. prefix for cleaner display
+              const domain = url.hostname.replace(/^www\./, '');
+
+              const existing = domainMap.get(domain);
+              const hlTime = new Date(hl.updatedAt || hl.createdAt).getTime();
+
+              if (existing) {
+                existing.count += 1;
+                existing.lastActive = Math.max(existing.lastActive, hlTime);
+              } else {
+                domainMap.set(domain, { count: 1, lastActive: hlTime });
+              }
+            } catch (e) {
+              // Skip invalid URLs
+              logger.warn('Skipped highlight with invalid URL during collection grouping', hl.url);
+            }
+          }
+
+          // Map to array and sort by most recently active
+          const collections = Array.from(domainMap.entries()).map(([domain, data], index) => ({
+            id: String(index + 1), // Generate arbitrary ID for UI iteration
+            domain,
+            highlightCount: data.count,
+            lastActive: new Date(data.lastActive)
+          })).sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+
+          return { success: true, data: { collections } };
+        } catch (error) {
+          logger.error('GET_COLLECTIONS failed', error as Error);
+          throw error;
+        }
+      });
+
+      // Get Highlights By Domain Handler
+      messageBus.subscribe('GET_HIGHLIGHTS_BY_DOMAIN', async (payload: { domain: string }) => {
+        logger.info('Handling GET_HIGHLIGHTS_BY_DOMAIN request', { domain: payload.domain });
+        if (!payload.domain) {
+          throw new Error('Domain required');
+        }
+
+        try {
+          const allHighlights = await repositoryFacade.findAll();
+          const filteredHighlights = allHighlights.filter((hl: any) => {
+            try {
+              const url = new URL(hl.url);
+              const hlDomain = url.hostname.replace(/^www\./, '');
+              return hlDomain === payload.domain;
+            } catch {
+              return false;
+            }
+          });
+
+          return { success: true, data: { highlights: filteredHighlights } };
+        } catch (error) {
+          logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
+          throw error;
+        }
       });
 
       logger.info('Auth IPC handlers registered');

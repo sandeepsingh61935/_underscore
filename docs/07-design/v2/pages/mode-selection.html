@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Mode Selection — _underscore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #ffffff;
+            --text-primary: #0f1419;
+            --text-secondary: #536471;
+            --text-tertiary: #8b98a5;
+            --accent: #5b8db9;
+            --accent-soft: rgba(91, 141, 185, 0.08);
+            --accent-text: #4a7da8;
+            --border: #eef1f3;
+            --border-hover: #dfe3e8;
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-full: 9999px;
+            --logo-bg: #1a1d23;
+            --logo-shadow: rgba(0, 0, 0, 0.2);
+            --logo-text: #ffffff;
+            --logo-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
+            --logo-inner-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: transparent;
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        .dark {
+            --bg: #0e1015;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --text-primary: #e4e7ec;
+            --text-secondary: #8b95a5;
+            --text-tertiary: #4b5563;
+            --accent: #6da3cc;
+            --accent-soft: rgba(109, 163, 204, 0.10);
+            --accent-text: #93bbda;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.10);
+            --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            --logo-bg: #f8f9fa;
+            --logo-shadow: rgba(0, 0, 0, 0.4);
+            --logo-text: #111827;
+            --logo-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            --logo-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.0) 100%);
+            --logo-inner-shadow: inset 0 2px 4px rgba(255, 255, 255, 1), inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+            --logo-outer-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --logo-ambient-reflection: linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.0) 100%);
+            --card-reflection: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.0) 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px;
+            transition: background 0.3s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === HEADER === */
+        header {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--logo-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px var(--logo-shadow), var(--logo-outer-shadow), var(--logo-inner-shadow);
+            overflow: hidden;
+        }
+
+        .logo-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            right: 4px;
+            height: 45%;
+            background: var(--logo-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 10px;
+            right: 10px;
+            height: 30%;
+            background: var(--logo-ambient-reflection);
+            border-radius: var(--radius-full);
+            pointer-events: none;
+        }
+
+        .logo-badge span {
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--logo-text);
+            position: relative;
+            z-index: 1;
+            transform: translateY(-2px);
+            text-shadow: var(--logo-text-shadow);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        /* Avatar / Sign-in */
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: all 0.15s ease;
+        }
+
+        .user-avatar:hover {
+            box-shadow: var(--shadow-hover);
+            transform: scale(1.05);
+        }
+
+        .header-signin {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 8px 0;
+            transition: color 0.15s ease;
+            font-family: inherit;
+        }
+
+        .header-signin:hover {
+            color: var(--accent);
+        }
+
+        /* === MAIN === */
+        main {
+            width: 100%;
+            max-width: 480px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-bottom: 32px;
+        }
+
+        .mode-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* === MODE CARD === */
+        .mode-card {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-rest);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            text-align: left;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: var(--card-reflection);
+            pointer-events: none;
+        }
+
+        .mode-card:hover {
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .mode-card:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: var(--shadow-active);
+        }
+
+        .mode-card:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .mode-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .mode-name {
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            transition: color 0.15s ease;
+        }
+
+        .mode-card:hover .mode-name {
+            color: var(--accent-text);
+        }
+
+        .mode-desc {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-tertiary);
+        }
+
+        .mode-arrow {
+            font-size: 18px;
+            color: var(--text-tertiary);
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+
+        .mode-card:hover .mode-arrow {
+            opacity: 1;
+            color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        /* Mode hint — appears below description */
+        .mode-hint {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* Locked */
+        .mode-card.locked {
+            opacity: 0.55;
+            cursor: default;
+        }
+
+        .mode-card.locked:hover {
+            transform: none;
+            box-shadow: var(--shadow-rest);
+            border-color: var(--border);
+            background: var(--bg-card);
+        }
+
+        .mode-card.locked:hover .mode-name {
+            color: var(--text-primary);
+        }
+
+        .mode-card.locked:hover .mode-arrow {
+            opacity: 0;
+        }
+
+        .mode-card .lock-icon {
+            display: none;
+            font-size: 14px;
+            color: var(--text-tertiary);
+        }
+
+        .mode-card.locked .lock-icon {
+            display: block;
+        }
+
+        .mode-card.locked .mode-arrow {
+            display: none;
+        }
+
+        /* Sign-in nudge for locked modes */
+        .signin-nudge {
+            width: 100%;
+            text-align: center;
+            padding: 16px 20px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .signin-nudge a {
+            color: var(--accent-text);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid var(--accent-soft);
+            transition: border-color 0.15s ease;
+        }
+
+        .signin-nudge a:hover {
+            border-color: var(--accent);
+        }
+
+        .mode-divider {
+            height: 8px;
+            width: 100%;
+        }
+
+        /* === MODE SWITCH MODAL (shown when switching between modes) === */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            width: 90%;
+            max-width: 380px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-hover);
+            padding: 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: var(--card-reflection);
+            pointer-events: none;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .modal-btn:hover {
+            border-color: var(--border-hover);
+        }
+
+        .modal-btn.primary {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(91, 141, 185, 0.3);
+        }
+
+        /* Spinner */
+        .spinner-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .spinner-overlay.active {
+            display: flex;
+        }
+
+        .spinner-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-hover);
+            padding: 32px 40px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: var(--radius-full);
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* === FOOTER === */
+        footer {
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            padding: 16px 0 0;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        .footer-link .arrow {
+            transition: transform 0.15s ease;
+        }
+
+        .footer-link:hover .arrow {
+            transform: translateX(3px);
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-rest);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a class="logo" href="welcome.html">
+            <div class="logo-badge"><span>_</span></div>
+            <span class="logo-text">underscore</span>
+        </a>
+    </header>
+
+    <main>
+        <div class="section-label">Mode</div>
+        <div class="mode-list">
+            <!-- Focus — no auth required -->
+            <button class="mode-card" onclick="handleModeSelect('focus')">
+                <div class="mode-info">
+                    <span class="mode-name">Focus</span>
+                    <span class="mode-desc">Distraction-free browsing</span>
+                    <span class="mode-hint">Session-only — highlights clear when you close the page</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+
+            <!-- Capture — no auth required -->
+            <button class="mode-card" onclick="handleModeSelect('capture')">
+                <div class="mode-info">
+                    <span class="mode-name">Capture</span>
+                    <span class="mode-desc">Save and organize content</span>
+                    <span class="mode-hint">Access your collections anywhere, across all devices</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+
+            <div class="mode-divider"></div>
+
+            <!-- Memory — requires auth -->
+            <button class="mode-card locked" onclick="handleLockedMode()">
+                <div class="mode-info">
+                    <span class="mode-name">Memory</span>
+                    <span class="mode-desc">Recall past sessions</span>
+                    <span class="mode-hint">Your highlights become a personal knowledge base</span>
+                </div>
+                <span class="lock-icon">🔒</span>
+                <span class="mode-arrow">→</span>
+            </button>
+
+            <!-- Neural — requires auth -->
+            <button class="mode-card locked" onclick="handleLockedMode()">
+                <div class="mode-info">
+                    <span class="mode-name">Neural</span>
+                    <span class="mode-desc">AI-powered insights</span>
+                    <span class="mode-hint">Turn your highlights into smart, connected notes</span>
+                </div>
+                <span class="lock-icon">🔒</span>
+                <span class="mode-arrow">→</span>
+            </button>
+        </div>
+
+        <!-- Sign-in nudge for locked modes -->
+        <div class="signin-nudge">
+            <a href="sign-in.html">Create an account</a> to unlock your full knowledge workspace
+        </div>
+    </main>
+
+    <!-- MODE SWITCH MODAL — shown when user switches between modes -->
+    <div class="modal-overlay" id="switchModal">
+        <div class="modal">
+            <div class="modal-title" id="switchTitle">Switching to Capture</div>
+            <div class="modal-desc" id="switchDesc">
+                Your Focus highlights will be saved to Capture so nothing is lost.
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="confirmSwitch()">Switch & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSFER SPINNER — shown during data migration -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-card">
+            <div class="spinner"></div>
+            <div class="spinner-text">Moving your highlights…</div>
+        </div>
+    </div>
+
+    <button class="theme-toggle"
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">🌙</button>
+
+    <script>
+        // Theme
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+
+        // Current mode (simulated)
+        let currentMode = null;
+
+        // Mode switching messages
+        const switchMessages = {
+            'focus→capture': {
+                title: 'Switching to Capture',
+                desc: 'Your Focus highlights will be saved to Capture so nothing is lost.',
+                btn: 'Switch & Save'
+            },
+            'capture→focus': {
+                title: 'Switching to Focus',
+                desc: 'Your Capture collections will be copied into this Focus session.',
+                btn: 'Switch & Copy'
+            },
+            'focus→memory': {
+                title: 'Switching to Memory',
+                desc: 'Your Focus highlights will be saved to Memory for long-term recall.',
+                btn: 'Switch & Save'
+            },
+            'focus→neural': {
+                title: 'Switching to Neural',
+                desc: 'Your Focus highlights will be saved to Memory before activating Neural.',
+                btn: 'Switch & Save'
+            },
+            'capture→memory': {
+                title: 'Switching to Memory',
+                desc: 'Your Capture collections will be saved to Memory for long-term recall.',
+                btn: 'Switch & Save'
+            },
+            'capture→neural': {
+                title: 'Switching to Neural',
+                desc: 'Your Capture collections will be saved to Memory before activating Neural.',
+                btn: 'Switch & Save'
+            },
+            'memory→focus': {
+                title: 'Switching to Focus',
+                desc: 'Your Memory collections will be copied into this Focus session.',
+                btn: 'Switch & Copy'
+            },
+            'memory→capture': {
+                title: 'Switching to Capture',
+                desc: 'Your Memory collections will be copied into Capture.',
+                btn: 'Switch & Copy'
+            },
+            'neural→focus': {
+                title: 'Switching to Focus',
+                desc: 'Your Neural collections will be copied into this Focus session.',
+                btn: 'Switch & Copy'
+            },
+            'neural→capture': {
+                title: 'Switching to Capture',
+                desc: 'Your Neural collections will be copied into Capture.',
+                btn: 'Switch & Copy'
+            }
+        };
+
+        function handleModeSelect(mode) {
+            if (currentMode && currentMode !== mode) {
+                // Show switch modal
+                const key = currentMode + '→' + mode;
+                const msg = switchMessages[key];
+                if (msg) {
+                    document.getElementById('switchTitle').textContent = msg.title;
+                    document.getElementById('switchDesc').textContent = msg.desc;
+                    document.querySelector('#switchModal .modal-btn.primary').textContent = msg.btn;
+                    document.getElementById('switchModal').classList.add('active');
+                    window._pendingMode = mode;
+                    return;
+                }
+            }
+            activateMode(mode);
+        }
+
+        function handleLockedMode() {
+            // Locked modes — do nothing, sign-in nudge is visible
+        }
+
+        function closeModal() {
+            document.getElementById('switchModal').classList.remove('active');
+        }
+
+        function confirmSwitch() {
+            closeModal();
+            // Show spinner
+            document.getElementById('spinnerOverlay').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('spinnerOverlay').classList.remove('active');
+                activateMode(window._pendingMode);
+            }, 1800);
+        }
+
+        function activateMode(mode) {
+            currentMode = mode;
+            // Navigate to collections
+            window.location.href = 'collections.html';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,25 +1,59 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 
+type LogoSize = 'sm' | 'md' | 'lg';
+
 interface LogoProps {
     className?: string;
     showText?: boolean;
+    size?: LogoSize;
 }
 
+const sizeMap: Record<LogoSize, { badge: string; underscore: string; text: string; gap: string }> = {
+    sm: { badge: 'w-7 h-7', underscore: 'text-lg', text: 'text-xl', gap: 'gap-2' },
+    md: { badge: 'w-9 h-9', underscore: 'text-2xl', text: 'text-[26px]', gap: 'gap-[10px]' },
+    lg: { badge: 'w-12 h-12', underscore: 'text-3xl', text: 'text-[32px]', gap: 'gap-3' },
+};
+
 /**
- * Logo Component
- * Source: /docs/07-design/mode-selection/mode-selection-code.html
+ * Glassmorphic Logo — matches Style C Hybrid mockups
+ * Uses CSS vars from global.css: --logo-bg, --logo-text, --logo-ambient-reflection
  */
-export function Logo({ className = '', showText = true }: LogoProps) {
+export function Logo({ className = '', showText = true, size = 'md' }: LogoProps) {
+    const s = sizeMap[size];
     return (
-        <div className={cn('flex items-center gap-2', className)}>
-            <div className="relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-surface-container-high shadow-inner text-on-surface -mt-0.5">
-                <span className="absolute text-2xl md:text-3xl font-extrabold leading-none select-none -translate-y-[2px]">_</span>
+        <div className={cn('flex items-center', s.gap, className)}>
+            {/* Badge */}
+            <div
+                className={cn(
+                    'relative flex items-center justify-center rounded-full overflow-hidden',
+                    s.badge
+                )}
+                style={{
+                    background: 'var(--logo-bg)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1)',
+                }}
+            >
+                {/* Ambient reflection */}
+                <div
+                    className="absolute bottom-0 left-[10px] right-[10px] h-[30%] rounded-full pointer-events-none"
+                    style={{ background: 'var(--logo-ambient-reflection)' }}
+                />
+                <span
+                    className={cn('font-extrabold leading-none select-none relative z-[1] -translate-y-[2px]', s.underscore)}
+                    style={{ color: 'var(--logo-text)', textShadow: 'var(--logo-text-shadow)' }}
+                >
+                    _
+                </span>
             </div>
+            {/* Text */}
             {showText && (
-                <h1 className="text-on-surface text-3xl md:text-4xl font-light tracking-tight">
+                <span
+                    className={cn('font-light tracking-[-0.02em]', s.text)}
+                    style={{ color: 'var(--text-primary)' }}
+                >
                     underscore
-                </h1>
+                </span>
             )}
         </div>
     );

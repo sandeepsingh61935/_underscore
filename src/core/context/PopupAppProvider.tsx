@@ -44,6 +44,33 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         return 'light';
     });
 
+    // Initialize mode from active tab
+    useEffect(() => {
+        const fetchCurrentTabMode = async () => {
+            try {
+                // Only run in extension context
+                if (!chrome?.tabs) return;
+
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!tab?.id) return;
+
+                const response = await chrome.tabs.sendMessage(tab.id, {
+                    type: 'GET_MODE',
+                    timestamp: Date.now()
+                });
+
+                if (response && response.mode) {
+                    console.log('[PopupAppProvider] Initialized mode from tab:', response.mode);
+                    setCurrentMode(response.mode as Mode);
+                }
+            } catch (err) {
+                // Ignore errors; content script might not be injected on some pages (e.g. chrome://)
+            }
+        };
+
+        fetchCurrentTabMode();
+    }, []);
+
     // Available modes depends on auth state
     const availableModes: Mode[] = propIsAuthenticated
         ? ['walk', 'sprint', 'vault', 'neural']
@@ -73,12 +100,31 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
     }, [onLogout]);
 
-    const setMode = useCallback((mode: Mode) => {
+    const setMode = useCallback(async (mode: Mode) => {
         // Vault and Neural require authentication
         if ((mode === 'vault' || mode === 'neural') && !propIsAuthenticated) {
             return;
         }
+
+        // 1. Optimistically update local React state
         setCurrentMode(mode);
+
+        // 2. Transmit state down to content script immediately
+        try {
+            if (chrome?.tabs) {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (tab?.id) {
+                    await chrome.tabs.sendMessage(tab.id, {
+                        type: 'SET_MODE',
+                        mode: mode,
+                        timestamp: Date.now()
+                    });
+                    console.log(`[PopupAppProvider] Transmitted SET_MODE (${mode}) to tab ${tab.id}`);
+                }
+            }
+        } catch (err) {
+            console.error('[PopupAppProvider] Failed to dispatch mode change to tab:', err);
+        }
     }, [propIsAuthenticated]);
 
     const setTheme = useCallback((newTheme: Theme) => {

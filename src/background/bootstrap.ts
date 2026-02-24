@@ -26,8 +26,8 @@ export async function initializeBackground(): Promise<Container> {
     // 1. Configuration
     // TODO: Load from env or secure storage
     const supabaseConfig: SupabaseConfig = {
-        url: (import.meta as any).env.VITE_SUPABASE_URL || '',
-        anonKey: (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '',
+        url: import.meta.env.VITE_SUPABASE_URL || '',
+        anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     };
 
     // Validate configuration
@@ -35,7 +35,7 @@ export async function initializeBackground(): Promise<Container> {
         logger.warn('[BOOTSTRAP] Supabase configuration incomplete', {
             hasUrl: !!supabaseConfig.url,
             hasAnonKey: !!supabaseConfig.anonKey,
-            env: (import.meta as any).env
+            envKeys: Object.keys(import.meta.env)
         });
         logger.warn('[BOOTSTRAP] Auth features will not work. Check .env.development file.');
     } else {

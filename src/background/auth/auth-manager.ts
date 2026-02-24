@@ -7,7 +7,6 @@
 
 import { SupabaseClient as SupabaseSDKClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { IAuthManager, AuthState, AuthResult, User, OAuthProviderType } from './interfaces/i-auth-manager';
-import type { ITokenStore } from './interfaces/i-token-store';
 import type { ILogger } from '@/background/utils/logger';
 import { EventBus } from '@/background/utils/event-bus';
 import { RateLimiter } from '@/background/utils/rate-limiter';
@@ -16,7 +15,6 @@ import {
     AuthenticationError,
     RateLimitError,
     InvalidProviderError,
-    OAuthRedirectError,
 } from './auth-errors';
 
 /**
@@ -28,15 +26,19 @@ export class AuthManager implements IAuthManager {
         user: null,
         provider: null,
         lastAuthTime: null,
+        verificationStatus: 'idle',
+        verificationExpiresAt: null,
     };
+
+    private readonly VERIFICATION_STORAGE_KEY = 'auth_verification_state';
+    private readonly VERIFICATION_ALARM_NAME = 'auth_verification_timeout';
+    private readonly VERIFICATION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
     private initializationPromise: Promise<void> | null = null;
     private rateLimiter: RateLimiter;
 
     constructor(
         private readonly supabase: SupabaseSDKClient,
-        // @deprecated TokenStore is replaced by SupabaseStorageAdapter but kept for interface compatibility if needed
-        private readonly _tokenStore: ITokenStore,
         private readonly eventBus: EventBus,
         private readonly logger: ILogger
     ) {
@@ -77,6 +79,8 @@ export class AuthManager implements IAuthManager {
                 this.scheduleRefresh(session);
             } else {
                 this.logger.debug('No active session found on init');
+                // Check if we are awaiting verification
+                await this.restoreVerificationState();
             }
         })();
 
@@ -94,6 +98,9 @@ export class AuthManager implements IAuthManager {
             } catch (error) {
                 this.logger.error('Scheduled token refresh failed', error as Error);
             }
+        } else if (alarm.name === this.VERIFICATION_ALARM_NAME) {
+            this.logger.debug('Verification timeout alarm triggered');
+            await this.clearVerificationState();
         }
     }
 
@@ -147,6 +154,8 @@ export class AuthManager implements IAuthManager {
         return this.currentState.user;
     }
 
+    private activeAuthPromise: Promise<AuthResult> | null = null;
+
     /**
      * Sign in with OAuth provider
      */
@@ -162,53 +171,79 @@ export class AuthManager implements IAuthManager {
             return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
         }
 
+        // Return existing auth flow if one is in progress
+        if (this.activeAuthPromise) {
+            this.logger.info('Auth flow already in progress, returning existing promise');
+            return this.activeAuthPromise;
+        }
+
+        this.activeAuthPromise = this._executeSignIn(provider).finally(() => {
+            this.activeAuthPromise = null;
+        });
+
+        return this.activeAuthPromise;
+    }
+
+    private async _executeSignIn(provider: OAuthProviderType): Promise<AuthResult> {
         let redirectUrl: string | undefined;
-        let authUrl: string | undefined;
 
         try {
             redirectUrl = chrome.identity.getRedirectURL();
 
-            // 1. Get the OAuth URL from Supabase
-            this.logger.debug('Generated redirect URL', { redirectUrl });
+            if (provider !== 'google') {
+                throw new Error(`Native OAuth flow not implemented for provider: ${provider}`);
+            }
 
-            const { data, error } = await this.supabase.auth.signInWithOAuth({
-                provider: provider as any,
+            this.logger.info('Initiating Supabase OAuth flow', { provider, redirectUrl });
+
+            // 1. Get the OAuth URL from Supabase (skip browser redirect)
+            const { data, error: oauthError } = await this.supabase.auth.signInWithOAuth({
+                provider: 'google',
                 options: {
                     redirectTo: redirectUrl,
                     skipBrowserRedirect: true,
                 },
             });
 
-            if (error) throw error;
-            if (!data.url) throw new Error('No OAuth URL returned');
+            if (oauthError) throw oauthError;
+            if (!data?.url) throw new Error('No OAuth URL returned from Supabase');
 
-            authUrl = data.url;
-            this.logger.info('Launching Web Auth Flow', { url: authUrl });
+            this.logger.info('Launching Chrome Web Auth Flow');
 
-            // 2. Launch browser flow
-            const browserResponseUrl = await chrome.identity.launchWebAuthFlow({
-                url: authUrl,
+            // 2. Launch the interactive browser flow
+            const responseUrl = await chrome.identity.launchWebAuthFlow({
+                url: data.url,
                 interactive: true,
             });
 
-            if (!browserResponseUrl) {
-                throw new OAuthRedirectError('No URL returned from identity provider');
+            if (!responseUrl) {
+                throw new Error('No redirect URL returned from Chrome Web Auth Flow');
             }
 
-            // 3. Parse session from URL
-            if (browserResponseUrl.includes('#error=')) {
-                throw new Error('Identity provider returned an error');
+            // 3. Parse the hash parameters from the redirect URL
+            // Supabase returns access_token and refresh_token in the URL hash
+            const url = new URL(responseUrl);
+            const hashParams = new URLSearchParams(url.hash.substring(1)); // Remove the leading '#'
+
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+
+            if (!accessToken || !refreshToken) {
+                const errorParams = hashParams.get('error_description') || hashParams.get('error') || 'Unknown error';
+                throw new Error(`Missing authentication tokens: ${errorParams}`);
             }
 
-            // Extract access_token/refresh_token from hash
-            const session = await this.extractSessionFromUrl(browserResponseUrl);
+            // 4. Set the session in Supabase
+            const { data: sessionData, error: sessionError } = await this.supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+            });
 
-            // 4. Set session in Supabase (persists automatically via adapter)
-            const { error: sessionError } = await this.supabase.auth.setSession(session);
             if (sessionError) throw sessionError;
+            if (!sessionData.user) throw new Error('No user returned after setting session');
 
             // State will be updated by onAuthStateChange listener
-            return { success: true, user: this.currentState.user! };
+            return { success: true, user: this.mapSupabaseUser(sessionData.user) };
 
         } catch (error) {
             this.logger.error('Sign in failed', error as Error, { provider });
@@ -216,12 +251,92 @@ export class AuthManager implements IAuthManager {
             if (error instanceof RateLimitError) throw error;
 
             const innerMsg = error instanceof Error ? error.message : String(error);
-            const debugInfo = `\nURL: ${authUrl || 'Not generated'}\nRedirect: ${redirectUrl || 'Not generated'}`;
+            const debugInfo = `\nRedirect: ${redirectUrl || 'Not generated'}`;
 
             throw new AuthenticationError(`OAuth failed: ${innerMsg}${debugInfo}`, {
                 provider,
                 error: innerMsg,
             });
+        }
+    }
+
+    /**
+     * Sign in with Email and Password
+     */
+    async signInWithEmail(email: string, password: string): Promise<AuthResult> {
+        this.logger.info('Email sign in attempt', { email });
+
+        if (!this.rateLimiter.tryAcquire()) {
+            const error = new RateLimitError('Too many login attempts');
+            return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
+        }
+
+        try {
+            const { data, error } = await this.supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) {
+                this.logger.error('Email sign in failed due to Supabase error', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: error.message } };
+            }
+
+            if (!data.user) {
+                return { success: false, error: { code: 'AUTH_ERROR', message: 'No user returned from sign in' } };
+            }
+
+            // State will be updated by onAuthStateChange listener
+            return { success: true, user: this.mapSupabaseUser(data.user) };
+
+        } catch (error) {
+            this.logger.error('Email sign in threw exception', error as Error, { email });
+            const innerMsg = error instanceof Error ? error.message : String(error);
+            return { success: false, error: { code: 'EXCEPTION', message: innerMsg } };
+        }
+    }
+
+    /**
+     * Sign up with Email and Password
+     */
+    async signUpWithEmail(email: string, password: string): Promise<AuthResult> {
+        this.logger.info('Email sign up attempt', { email });
+
+        if (!this.rateLimiter.tryAcquire()) {
+            const error = new RateLimitError('Too many sign up attempts');
+            return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
+        }
+
+        try {
+            const { data, error } = await this.supabase.auth.signUp({
+                email,
+                password,
+            });
+
+            if (error) {
+                this.logger.error('Email sign up failed due to Supabase error', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: error.message } };
+            }
+
+            if (!data.user) {
+                return { success: false, error: { code: 'AUTH_ERROR', message: 'No user returned from sign up' } };
+            }
+
+            // Since it's a new sign up and likely requires email confirmation (no session immediately returned),
+            // start the verification timer if there is no immediate session.
+            const hasSession = !!data.session;
+            if (!hasSession) {
+                await this.startVerificationTimer();
+            }
+
+            // State will be updated by onAuthStateChange listener if there is a session,
+            // or we just manually updated it with startVerificationTimer.
+            return { success: true, user: this.mapSupabaseUser(data.user) };
+
+        } catch (error) {
+            this.logger.error('Email sign up threw exception', error as Error, { email });
+            const innerMsg = error instanceof Error ? error.message : String(error);
+            return { success: false, error: { code: 'EXCEPTION', message: innerMsg } };
         }
     }
 
@@ -258,15 +373,94 @@ export class AuthManager implements IAuthManager {
         return () => this.eventBus.off('AUTH_STATE_CHANGED', callback);
     }
 
+    /**
+     * Clear the email verification state (e.g., when the UI timer expires)
+     */
+    async clearVerificationState(): Promise<void> {
+        this.logger.debug('Clearing verification state');
+        await browser.storage.local.remove(this.VERIFICATION_STORAGE_KEY);
+        chrome.alarms.clear(this.VERIFICATION_ALARM_NAME);
+
+        const newState = {
+            ...this.currentState,
+            verificationStatus: 'failed' as const,
+            verificationExpiresAt: null
+        };
+        this.updateAuthState(newState);
+    }
+
     // ==================== Private Helpers ====================
+
+    private async startVerificationTimer(): Promise<void> {
+        const expiresAt = Date.now() + this.VERIFICATION_TIMEOUT_MS;
+
+        await browser.storage.local.set({
+            [this.VERIFICATION_STORAGE_KEY]: { expiresAt }
+        });
+
+        chrome.alarms.create(this.VERIFICATION_ALARM_NAME, {
+            when: expiresAt
+        });
+
+        const newState = {
+            ...this.currentState,
+            verificationStatus: 'awaiting' as const,
+            verificationExpiresAt: expiresAt
+        };
+
+        this.updateAuthState(newState);
+        this.logger.debug('Started verification timer', { expiresAt });
+    }
+
+    private async restoreVerificationState(): Promise<void> {
+        try {
+            const data = await browser.storage.local.get(this.VERIFICATION_STORAGE_KEY);
+            const state = data[this.VERIFICATION_STORAGE_KEY] as { expiresAt?: number } | undefined;
+
+            if (state && state.expiresAt) {
+                const now = Date.now();
+                if (state.expiresAt > now) {
+                    // Still valid
+                    this.logger.debug('Restored verification state, still waiting', { expiresAt: state.expiresAt });
+                    const newState = {
+                        ...this.currentState,
+                        verificationStatus: 'awaiting' as const,
+                        verificationExpiresAt: state.expiresAt
+                    };
+                    this.updateAuthState(newState);
+
+                    // Ensure alarm is set
+                    chrome.alarms.create(this.VERIFICATION_ALARM_NAME, {
+                        when: state.expiresAt
+                    });
+                } else {
+                    // Expired while background was asleep
+                    this.logger.debug('Restored verification state, already expired');
+                    await this.clearVerificationState();
+                }
+            }
+        } catch (error) {
+            this.logger.error('Failed to restore verification state', error as Error);
+        }
+    }
 
     private handleSupabaseAuthStateChange(session: Session | null): void {
         const newState: AuthState = {
             isAuthenticated: !!session,
             user: session ? this.mapSupabaseUser(session.user) : null,
             provider: session?.user?.app_metadata?.provider as OAuthProviderType || null,
-            lastAuthTime: session ? new Date() : null
+            lastAuthTime: session ? new Date() : null,
+            verificationStatus: 'idle',
+            verificationExpiresAt: null
         };
+
+        // If we just got authenticated, clear any pending verification state
+        if (session) {
+            browser.storage.local.remove(this.VERIFICATION_STORAGE_KEY).catch(err => {
+                this.logger.error('Failed to remove verification storage', err as Error);
+            });
+            chrome.alarms.clear(this.VERIFICATION_ALARM_NAME);
+        }
 
         // Only emit if state changed or initially setting it
         this.updateAuthState(newState);
@@ -289,21 +483,6 @@ export class AuthManager implements IAuthManager {
             displayName: sbUser.user_metadata?.['full_name'] || sbUser.email || 'User',
             photoUrl: sbUser.user_metadata?.['avatar_url'],
         };
-    }
-
-    private async extractSessionFromUrl(url: string): Promise<{ access_token: string; refresh_token: string }> {
-        // URL format: https://<id>.chromiumapp.org/callback#access_token=...&refresh_token=...&...
-        const urlObj = new URL(url);
-        const params = new URLSearchParams(urlObj.hash.substring(1)); // Remove leading #
-
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-
-        if (!accessToken || !refreshToken) {
-            throw new Error('Tokens not found in redirect URL');
-        }
-
-        return { access_token: accessToken, refresh_token: refreshToken };
     }
 }
 

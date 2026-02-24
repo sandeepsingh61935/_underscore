@@ -25,6 +25,8 @@ export interface AuthState {
     readonly user: User | null;
     readonly provider: OAuthProviderType | null;
     readonly lastAuthTime: Date | null;
+    readonly verificationStatus?: 'idle' | 'awaiting' | 'failed';
+    readonly verificationExpiresAt?: number | null;
 }
 
 /**
@@ -94,6 +96,26 @@ export interface IAuthManager {
     signIn(provider: OAuthProviderType): Promise<AuthResult>;
 
     /**
+     * Sign in with Email and Password
+     *
+     * @param email - User email address
+     * @param password - User password
+     * @returns Authentication result
+     * @throws AuthenticationError on failure
+     */
+    signInWithEmail(email: string, password: string): Promise<AuthResult>;
+
+    /**
+     * Sign up with Email and Password
+     *
+     * @param email - User email address
+     * @param password - User password
+     * @returns Authentication result
+     * @throws AuthenticationError on failure
+     */
+    signUpWithEmail(email: string, password: string): Promise<AuthResult>;
+
+    /**
      * Sign out current user
      *
      * @returns Promise that resolves when sign out complete
@@ -127,4 +149,9 @@ export interface IAuthManager {
      * @returns Unsubscribe function
      */
     onAuthStateChanged(callback: AuthStateCallback): UnsubscribeFn;
+
+    /**
+     * Clear the email verification state (e.g., when the UI timer expires)
+     */
+    clearVerificationState(): Promise<void>;
 }

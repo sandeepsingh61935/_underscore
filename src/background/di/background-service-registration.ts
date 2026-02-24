@@ -65,11 +65,10 @@ export function registerBackgroundServices(container: Container): void {
      */
     container.registerSingleton('authManager', () => {
         const supabase = container.resolve<any>('_supabaseSDK');
-        const tokenStore = container.resolve<ITokenStore>('tokenStore');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
-        return new AuthManager(supabase, tokenStore, eventBus, logger);
+        return new AuthManager(supabase, eventBus, logger);
     });
 
     /**
