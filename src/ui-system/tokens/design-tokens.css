@@ -1,0 +1,218 @@
+/**
+ * _underscore Design Tokens
+ * =========================
+ * 
+ * Standalone CSS variable definitions for the design system.
+ * These tokens are the single source of truth for colors, typography,
+ * spacing, shapes, and motion.
+ * 
+ * Usage: Import this file first, or rely on global.css which includes
+ * these tokens in the @layer base.
+ * 
+ * Generated from Material Design 3 with seed color: #5b8db9 (Underscore Blue)
+ */
+
+:root {
+  /* ============================================
+     COLOR TOKENS (Light Mode)
+     ============================================ */
+
+  /* Primary - Main brand color */
+  --color-primary: #4a6fa2;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d5e3ff;
+  --color-on-primary-container: #001a3e;
+
+  /* Secondary - Supporting color */
+  --color-secondary: #565f71;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #dae2f9;
+  --color-on-secondary-container: #131c2b;
+
+  /* Tertiary - Accent color */
+  --color-tertiary: #705575;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #fbd7fc;
+  --color-on-tertiary-container: #28132e;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #410002;
+
+  /* Surface & Background */
+  --color-surface: #f9f9ff;
+  --color-surface-dim: #d9d9e2;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3fc;
+  --color-surface-container: #ededf6;
+  --color-surface-container-high: #e7e8f0;
+  --color-surface-container-highest: #e2e2ea;
+  --color-on-surface: #191c20;
+  --color-on-surface-variant: #43474e;
+
+  /* Outline */
+  --color-outline: #73777f;
+  --color-outline-variant: #c3c6cf;
+
+  /* Inverse */
+  --color-inverse-surface: #2e3135;
+  --color-inverse-on-surface: #f0f0f7;
+  --color-inverse-primary: #a8c8ff;
+
+  /* ============================================
+     TYPOGRAPHY TOKENS
+     ============================================ */
+
+  /* Font Family */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Font Sizes (Modular Scale 1.25x) */
+  --text-display-large: 57px;
+  --text-display-medium: 45px;
+  --text-display-small: 36px;
+  --text-headline-large: 32px;
+  --text-headline-medium: 28px;
+  --text-headline-small: 24px;
+  --text-title-large: 22px;
+  --text-title-medium: 16px;
+  --text-title-small: 14px;
+  --text-body-large: 16px;
+  --text-body-medium: 14px;
+  --text-body-small: 12px;
+  --text-label-large: 14px;
+  --text-label-medium: 12px;
+  --text-label-small: 11px;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ============================================
+     SPACING TOKENS (4dp base)
+     ============================================ */
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ============================================
+     SHAPE TOKENS (Border Radius)
+     ============================================ */
+
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* ============================================
+     ELEVATION TOKENS (Box Shadows)
+     ============================================ */
+
+  --elevation-0: none;
+  --elevation-1: 0px 1px 2px rgba(0, 0, 0, 0.1), 0px 1px 3px rgba(0, 0, 0, 0.08);
+  --elevation-2: 0px 2px 4px rgba(0, 0, 0, 0.1), 0px 4px 8px rgba(0, 0, 0, 0.08);
+  --elevation-3: 0px 4px 8px rgba(0, 0, 0, 0.1), 0px 8px 16px rgba(0, 0, 0, 0.08);
+  --elevation-4: 0px 8px 16px rgba(0, 0, 0, 0.1), 0px 16px 32px rgba(0, 0, 0, 0.08);
+  --elevation-5: 0px 16px 32px rgba(0, 0, 0, 0.12), 0px 32px 64px rgba(0, 0, 0, 0.1);
+
+  /* ============================================
+     MOTION TOKENS (Transitions & Animations)
+     ============================================ */
+
+  /* Durations */
+  --duration-instant: 0ms;
+  --duration-short: 200ms;
+  --duration-medium: 300ms;
+  --duration-long: 500ms;
+
+  /* Easing */
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ============================================
+     Z-INDEX TOKENS
+     ============================================ */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+}
+
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
+
+.dark {
+  --color-primary: #a8c8ff;
+  --color-on-primary: #003061;
+  --color-primary-container: #1b4678;
+  --color-on-primary-container: #d5e3ff;
+
+  --color-secondary: #bec6dc;
+  --color-on-secondary: #283041;
+  --color-secondary-container: #3e4759;
+  --color-on-secondary-container: #dae2f9;
+
+  --color-tertiary: #debef0;
+  --color-on-tertiary: #3f2844;
+  --color-tertiary-container: #573d5c;
+  --color-on-tertiary-container: #fbd7fc;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-surface: #111418;
+  --color-surface-dim: #111418;
+  --color-surface-bright: #37393e;
+  --color-surface-container-lowest: #0c0e13;
+  --color-surface-container-low: #191c20;
+  --color-surface-container: #1d2024;
+  --color-surface-container-high: #282a2f;
+  --color-surface-container-highest: #32353a;
+  --color-on-surface: #e2e2ea;
+  --color-on-surface-variant: #c3c6cf;
+
+  --color-outline: #8d9199;
+  --color-outline-variant: #43474e;
+
+  --color-inverse-surface: #e2e2ea;
+  --color-inverse-on-surface: #2e3135;
+  --color-inverse-primary: #4a6fa2;
+
+  /* Dark mode elevation - uses lighter shadows */
+  --elevation-1: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px rgba(0, 0, 0, 0.25);
+  --elevation-2: 0px 2px 4px rgba(0, 0, 0, 0.3), 0px 4px 8px rgba(0, 0, 0, 0.25);
+  --elevation-3: 0px 4px 8px rgba(0, 0, 0, 0.3), 0px 8px 16px rgba(0, 0, 0, 0.25);
+}

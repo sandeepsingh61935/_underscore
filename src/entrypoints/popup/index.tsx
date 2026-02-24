@@ -201,6 +201,10 @@ function PopupApp() {
         );
     }
 
+    // Determine layout props based on view
+    const showHeader = currentView !== View.AUTH;
+    const noPadding = currentView === View.AUTH;
+
     return (
         <AppShell>
             {currentView === View.WELCOME && (

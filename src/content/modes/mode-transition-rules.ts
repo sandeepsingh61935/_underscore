@@ -71,8 +71,9 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'neural',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Focus highlights will be saved to Neural for smart, connected notes',
+      reason: 'Switching to Neural mode enables AI-powered organization. Requires authentication.',
       guard: async () => {
+        // Future: Check authentication status
         return true;
       },
     },
@@ -112,7 +113,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'neural',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Capture highlights will be saved to Neural for smart, connected notes',
+      reason: 'Switching to Neural mode enables AI-powered organization.',
       guard: async () => {
         return true;
       },
@@ -183,6 +184,46 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: false,
       reason: 'Already in Neural mode (AI-powered connections)',
+    },
+    neural: {
+      from: 'vault',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Switching to Neural mode for AI-powered organization',
+    },
+  },
+  neural: {
+    walk: {
+      from: 'neural',
+      to: 'walk',
+      allowed: true,
+      requiresConfirmation: true,
+      reason: 'Switching to Walk mode will disable AI features. Data will be preserved.',
+      guard: async () => {
+        return true;
+      },
+    },
+    sprint: {
+      from: 'neural',
+      to: 'sprint',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Switching to Sprint mode for persistent highlighting',
+    },
+    vault: {
+      from: 'neural',
+      to: 'vault',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Switching to Vault mode for archived storage',
+    },
+    neural: {
+      from: 'neural',
+      to: 'neural',
+      allowed: true,
+      requiresConfirmation: false,
+      reason: 'Already in Neural mode (AI-powered organization)',
     },
   },
 };

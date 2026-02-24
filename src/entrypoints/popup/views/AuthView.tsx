@@ -21,7 +21,7 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleProviderClick = async (provider: OAuthProviderType) => {
+    const handleProviderSelect = async (provider: any) => {
         setLoginError(null);
         console.log('[AuthView] Starting login with provider:', provider);
         const result = await login(provider);

@@ -26,9 +26,12 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     const { isAuthenticated, user } = useApp();
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
+    // Use prop if available (popup), otherwise param (router)
+    const domain = propDomain || paramDomain || '';
+
     React.useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/mode');
+            navigate('/mode'); // This might need adjustment for popup context
         }
     }, [isAuthenticated, navigate]);
 
