@@ -6,42 +6,9 @@ import { SignInView } from '@/features/auth/SignInView';
 import { ModeSelectionView } from '@/features/modes/ModeSelectionView';
 import { CollectionsView } from '@/features/collections/views/CollectionsView';
 import { DomainDetailsView } from '@/features/collections/views/DomainDetailsView';
-
-// Simple NotFound component
-function NotFoundPage() {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-            <div className="text-center">
-                <h1 className="text-6xl font-bold mb-4">404</h1>
-                <p className="text-xl text-muted-foreground">Page not found</p>
-            </div>
-        </div>
-    );
-}
-
-// Simple Privacy page
-function PrivacyPage() {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-8">
-            <div className="max-w-2xl">
-                <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
-                <p className="text-muted-foreground">Your privacy is important to us.</p>
-            </div>
-        </div>
-    );
-}
-
-// Simple Settings page
-function SettingsPage() {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-8">
-            <div className="max-w-2xl">
-                <h1 className="text-4xl font-bold mb-4">Settings</h1>
-                <p className="text-muted-foreground">Configure your preferences.</p>
-            </div>
-        </div>
-    );
-}
+import { NotFoundPage } from '@/pages/NotFoundPage';
+import { PrivacyPage } from '@/pages/PrivacyPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 export function AppRoutes() {
     return (
@@ -62,3 +29,4 @@ export function AppRoutes() {
         </AppProvider>
     );
 }
+

@@ -1,17 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
+import { ThemeType as Theme } from '../../shared/types/theme';
+import type { User } from '../../background/auth/interfaces/i-auth-manager';
 
-type Mode = 'walk' | 'sprint' | 'vault' | 'neural';
-type Theme = 'light' | 'dark' | 'sepia';
 
-export interface User {
-    id: string;
-    email: string;
-    displayName: string;
-    photoUrl?: string;
-    provider: 'google' | 'apple' | 'twitter' | 'facebook';
-}
 
-interface AppContextType {
+export interface AppContextType {
     // Authentication
     isAuthenticated: boolean;
     user: User | null;
@@ -32,7 +26,7 @@ interface AppContextType {
     setIsLoading: (loading: boolean) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Authentication state
@@ -63,8 +57,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove('light', 'dark', 'sepia');
-        if (theme !== 'light') {
+        root.classList.remove('light', 'dark', 'system');
+        if (theme !== 'light' && theme !== 'system') {
             root.classList.add(theme);
         }
         localStorage.setItem('underscore-theme', theme);

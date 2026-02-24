@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Style B: Dark Glass — _underscore Mode Selection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfc;
+            --bg-glass: rgba(255, 255, 255, 0.65);
+            --bg-glass-border: rgba(0, 0, 0, 0.06);
+            --bg-glass-hover: rgba(255, 255, 255, 0.85);
+            --text-primary: #0f1419;
+            --text-secondary: #536471;
+            --text-tertiary: #8899a6;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --accent-text: #2563eb;
+            --border: #e5e7eb;
+            --shadow-glass: 0 2px 16px rgba(0, 0, 0, 0.04), 0 0 1px rgba(0, 0, 0, 0.08);
+            --shadow-glass-hover: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.12);
+            --radius-card: 14px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --blur: 20px;
+        }
+
+        .dark {
+            --bg: #0a0b10;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --bg-glass-border: rgba(255, 255, 255, 0.08);
+            --bg-glass-hover: rgba(255, 255, 255, 0.09);
+            --text-primary: #e4e7ec;
+            --text-secondary: #8b95a5;
+            --text-tertiary: #4b5563;
+            --accent: #60a5fa;
+            --accent-glow: rgba(96, 165, 250, 0.12);
+            --accent-text: #93c5fd;
+            --border: rgba(255, 255, 255, 0.06);
+            --shadow-glass: 0 2px 16px rgba(0, 0, 0, 0.3), 0 0 1px rgba(255, 255, 255, 0.05);
+            --shadow-glass-hover: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px;
+            transition: background 0.4s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ambient glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* === HEADER === */
+        header {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            background: var(--bg-glass);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--bg-glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .logo-badge span {
+            position: absolute;
+            transform: translateY(-2px);
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            background: var(--bg-glass);
+            backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--bg-glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .avatar:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* === MAIN === */
+        main {
+            width: 100%;
+            max-width: 480px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-bottom: 32px;
+        }
+
+        .mode-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .mode-card {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 24px;
+            border-radius: var(--radius-card);
+            background: var(--bg-glass);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--bg-glass-border);
+            box-shadow: var(--shadow-glass);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            text-align: left;
+        }
+
+        .mode-card:hover {
+            background: var(--bg-glass-hover);
+            box-shadow: var(--shadow-glass-hover);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .mode-card:active {
+            transform: scale(0.98) translateY(0);
+        }
+
+        .mode-card .mode-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mode-card .mode-name {
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .mode-card .mode-desc {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .mode-card .mode-arrow {
+            font-size: 18px;
+            color: var(--text-tertiary);
+            transition: all 0.2s ease;
+        }
+
+        .mode-card:hover .mode-arrow {
+            color: var(--accent);
+            transform: translateX(3px);
+        }
+
+        .mode-card.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .mode-card.locked .mode-arrow {
+            display: none;
+        }
+
+        .mode-card.locked::after {
+            content: '🔒';
+            font-size: 14px;
+            opacity: 0.5;
+        }
+
+        /* === FOOTER === */
+        footer {
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            padding: 16px 0 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .footer-link:hover {
+            color: var(--accent-text);
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--bg-glass-border);
+            background: var(--bg-glass);
+            backdrop-filter: blur(var(--blur));
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-glass);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-glass-hover);
+        }
+
+        /* === STYLE BADGE === */
+        .style-badge {
+            position: fixed;
+            top: 20px;
+            right: 72px;
+            background: var(--accent);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            letter-spacing: 0.03em;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="style-badge">STYLE B — Dark Glass</div>
+
+    <header>
+        <div class="logo">
+            <div class="logo-badge"><span>_</span></div>
+            <span class="logo-text">underscore</span>
+        </div>
+        <div class="avatar" title="Sign In">👤</div>
+    </header>
+
+    <main>
+        <div class="section-label">Mode</div>
+        <div class="mode-list">
+            <button class="mode-card">
+                <div class="mode-info">
+                    <span class="mode-name">Focus</span>
+                    <span class="mode-desc">Distraction-free browsing</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+            <button class="mode-card">
+                <div class="mode-info">
+                    <span class="mode-name">Capture</span>
+                    <span class="mode-desc">Save and organize content</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+            <button class="mode-card locked">
+                <div class="mode-info">
+                    <span class="mode-name">Memory</span>
+                    <span class="mode-desc">Recall past sessions</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+            <button class="mode-card locked">
+                <div class="mode-info">
+                    <span class="mode-name">Neural</span>
+                    <span class="mode-desc">AI-powered insights</span>
+                </div>
+                <span class="mode-arrow">→</span>
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        <a class="footer-link" href="#">
+            Sign in to unlock all modes →
+        </a>
+    </footer>
+
+    <button class="theme-toggle"
+        onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'">☀️</button>
+</body>
+
+</html>

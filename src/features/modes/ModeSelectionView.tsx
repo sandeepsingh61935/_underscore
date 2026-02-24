@@ -9,7 +9,14 @@ interface ModeOption {
     requiresAuth: boolean;
 }
 
-export function ModeSelectionView() {
+interface ModeSelectionViewProps {
+    /** Callback when mode is selected (for popup) */
+    onModeSelect?: (modeId: string) => void;
+    /** Callback for sign-in click (for popup) */
+    onSignInClick?: () => void;
+}
+
+export function ModeSelectionView({ onModeSelect, onSignInClick }: ModeSelectionViewProps = {}) {
     const navigate = useNavigate();
     const { isAuthenticated, setMode } = useApp();
 
@@ -38,13 +45,31 @@ export function ModeSelectionView() {
 
     const handleModeClick = (mode: 'walk' | 'sprint' | 'vault' | 'neural') => {
         if ((mode === 'vault' || mode === 'neural') && !isAuthenticated) {
-            navigate('/sign-in');
+            // Use callback if provided (popup), otherwise navigate (web)
+            if (onSignInClick) {
+                onSignInClick();
+            } else {
+                navigate('/sign-in');
+            }
             return;
         }
-        setMode(mode);
-        // Close popup/navigate as needed for extension
-        if (mode === 'vault') {
-            navigate('/collections');
+
+        // Use callback if provided (popup), otherwise use context + navigate (web)
+        if (onModeSelect) {
+            onModeSelect(mode);
+        } else {
+            setMode(mode);
+            if (mode === 'vault') {
+                navigate('/collections');
+            }
+        }
+    };
+
+    const handleSignInClick = () => {
+        if (onSignInClick) {
+            onSignInClick();
+        } else {
+            navigate('/sign-in');
         }
     };
 
@@ -102,7 +127,7 @@ export function ModeSelectionView() {
                     {!isAuthenticated && (
                         <div className="mt-16 text-center">
                             <button
-                                onClick={() => navigate('/sign-in')}
+                                onClick={handleSignInClick}
                                 className="group flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                                 <span>Sign in to unlock vault and archive</span>

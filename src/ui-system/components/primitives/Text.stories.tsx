@@ -2,17 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { Text } from './Text';
 
-/**
- * Text Component
- * 
- * Semantic text component using MD3 typography scale
- */
 const meta = {
     title: 'UI/Primitives/Text',
     component: Text,
-    parameters: {
-        layout: 'centered',
-    },
+    parameters: { layout: 'centered' },
     tags: ['autodocs'],
 } satisfies Meta<typeof Text>;
 
@@ -23,24 +16,32 @@ export const TypographyScale: Story = {
     render: () => (
         <div className="space-y-4 p-4">
             <div>
-                <Text variant="display-large">Display Large</Text>
-                <p className="text-label-small text-on-surface-variant">57px / 64px / 400</p>
-            </div>
-            <div>
-                <Text variant="headline-large">Headline Large</Text>
+                <Text variant="h1">Headline Large (32px)</Text>
                 <p className="text-label-small text-on-surface-variant">32px / 40px / 400</p>
             </div>
             <div>
-                <Text variant="title-large">Title Large</Text>
+                <Text variant="h2">Headline Medium (28px)</Text>
+                <p className="text-label-small text-on-surface-variant">28px / 36px / 400</p>
+            </div>
+            <div>
+                <Text variant="h3">Title Large (22px)</Text>
                 <p className="text-label-small text-on-surface-variant">22px / 28px / 400</p>
             </div>
             <div>
-                <Text variant="body-large">Body Large - Lorem ipsum dolor sit amet</Text>
+                <Text variant="body">Body Large — Lorem ipsum dolor sit amet</Text>
                 <p className="text-label-small text-on-surface-variant">16px / 24px / 400</p>
             </div>
             <div>
-                <Text variant="label-large">Label Large</Text>
-                <p className="text-label-small text-on-surface-variant">14px / 20px / 500</p>
+                <Text variant="small">Body Medium — Supporting text</Text>
+                <p className="text-label-small text-on-surface-variant">14px / 20px / 400</p>
+            </div>
+            <div>
+                <Text variant="label">Label Medium</Text>
+                <p className="text-label-small text-on-surface-variant">12px / 16px / 500</p>
+            </div>
+            <div>
+                <Text variant="link">Interactive Link</Text>
+                <p className="text-label-small text-on-surface-variant">Clickable</p>
             </div>
         </div>
     ),

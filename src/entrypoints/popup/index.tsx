@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { AppProvider } from '../../core/context/AppProvider';
+import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { AppShell } from '../../ui-system/layout/AppShell';
 import { AuthView } from './views/AuthView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
@@ -58,11 +58,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function PopupApp() {
-    const { user, isLoading } = useCurrentUser();
+    const { user, logout, isLoading } = useApp(); // Use from context now!
+    // Auth sync is now handled by PopupAppProvider via props
+    // No need for manual sync effect
+
     const [currentView, setCurrentView] = useState<View>(View.LOADING);
     const [hasSeenModeSelection, setHasSeenModeSelection] = useState(false);
     const [selectedMode, setSelectedMode] = useState<'focus' | 'capture' | 'memory' | 'neural'>('focus');
     const [selectedDomain, setSelectedDomain] = useState<string>('');
+
 
     useEffect(() => {
         if (isLoading) return;
@@ -109,7 +113,8 @@ function PopupApp() {
         setCurrentView(View.COLLECTIONS);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await logout();
         setCurrentView(View.MODE_SELECTION);
     };
 
@@ -145,11 +150,11 @@ function PopupApp() {
             {currentView === View.COLLECTIONS && (
                 <CollectionsView
                     mode={selectedMode}
-                    onModeChange={handleModeChange}
+                    onModeChange={handleModeChange as any}
                     onSignInClick={user ? undefined : handleSignInClick}
                     onCollectionClick={handleCollectionClick}
                     onLogout={handleLogout}
-                    userEmail={user?.email}
+                    user={user}
                     isAuthenticated={!!user}
                 />
             )}
@@ -176,13 +181,39 @@ if (container) {
         <React.StrictMode>
             <ErrorBoundary>
                 <MemoryRouter>
-                    <AppProvider>
-                        <PopupApp />
-                    </AppProvider>
+                    <PopupAppWithProviders />
                 </MemoryRouter>
             </ErrorBoundary>
         </React.StrictMode>
     );
 } else {
     console.error('Failed to find #app container');
+}
+
+function PopupAppWithProviders() {
+    const { user, isLoading, logout } = useCurrentUser();
+
+    if (isLoading) {
+        return (
+            <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
+                <Spinner size={32} />
+            </div>
+        );
+    }
+
+    return (
+        <PopupAppProvider
+            user={user ? {
+                id: user.id,
+                email: user.email,
+                displayName: user.displayName || user.name || 'User',
+                photoUrl: user.photoUrl || user.avatarUrl,
+                // provider field removed as it does not exist on User interface
+            } : null}
+            isAuthenticated={!!user}
+            onLogout={logout}
+        >
+            <PopupApp />
+        </PopupAppProvider>
+    );
 }

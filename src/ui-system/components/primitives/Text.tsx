@@ -2,13 +2,13 @@ import React, { ElementType, HTMLAttributes, forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 
 type TextVariant =
-    | 'h1'    // Page Title (3xl/4xl)
-    | 'h2'    // Section Title (xl/2xl)
-    | 'h3'    // Subsection (lg)
-    | 'body'  // Standard text (base)
-    | 'small' // Metadata (sm)
-    | 'tiny'  // Badges (xs)
-    | 'label' // Form labels (sm, medium weight)
+    | 'h1'    // Headline Large (32px)
+    | 'h2'    // Headline Medium (28px)
+    | 'h3'    // Title Large (22px)
+    | 'body'  // Body Large (16px)
+    | 'small' // Body Medium (14px)
+    | 'tiny'  // Label Small (11px)
+    | 'label' // Label Medium (12px)
     | 'link'; // Interactive text
 
 interface TextProps extends HTMLAttributes<HTMLElement> {
@@ -19,13 +19,11 @@ interface TextProps extends HTMLAttributes<HTMLElement> {
 
 const Text = forwardRef<HTMLElement, TextProps>(
     ({ className, variant = 'body', as, muted, children, ...props }, ref) => {
-        // Default tag mapping
         const Component = as || (
             variant === 'h1' ? 'h1' :
                 variant === 'h2' ? 'h2' :
                     variant === 'h3' ? 'h3' :
-                        variant === 'label' ? 'label' :
-                            'p'
+                        variant === 'label' ? 'label' : 'p'
         );
 
         return (
@@ -33,8 +31,6 @@ const Text = forwardRef<HTMLElement, TextProps>(
                 ref={ref}
                 className={cn(
                     'font-display text-on-surface transition-colors',
-
-                    // Variants - now using MD3 typography scale
                     variant === 'h1' && 'text-headline-large',
                     variant === 'h2' && 'text-headline-medium',
                     variant === 'h3' && 'text-title-large',
@@ -43,10 +39,7 @@ const Text = forwardRef<HTMLElement, TextProps>(
                     variant === 'tiny' && 'text-label-small',
                     variant === 'label' && 'text-label-medium',
                     variant === 'link' && 'text-label-medium text-primary hover:underline cursor-pointer',
-
-                    // Modifiers
                     muted && 'text-on-surface-variant',
-
                     className
                 )}
                 {...props}
