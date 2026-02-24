@@ -35,6 +35,9 @@ playwright/.cache/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
 
 # Logs
 logs/
@@ -61,3 +64,22 @@ Thumbs.db
 
 *storybook.log
 storybook-static
+
+
+#docs
+/docs
+
+#github
+.github
+
+#agent
+.agent
+GEMINI.md
+CLAUDE.md
+
+#development
+/development
+/generate-key
+
+
+

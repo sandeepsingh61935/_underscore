@@ -138,6 +138,11 @@ function PopupApp() {
         // Mark mode selection as seen
         await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
 
+        // Update global mode state
+        if (setMode) {
+            setMode(modeId as any);
+        }
+
         // Note: Mode gets set via contexts/hooks within the view or globally
         setCurrentView(View.COLLECTIONS);
     };

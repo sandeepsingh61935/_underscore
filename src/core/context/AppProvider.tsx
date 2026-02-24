@@ -29,12 +29,22 @@ export interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Authentication state
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<User | null>(null);
+    // Authentication state - initialize synchronously from localStorage
+    const getInitialUser = () => {
+        try {
+            const saved = localStorage.getItem('underscore-user');
+            return saved ? JSON.parse(saved) as User : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
-    // Mode state
-    const [currentMode, setCurrentMode] = useState<Mode>('walk');
+    const initialUser = getInitialUser();
+    const [isAuthenticated, setIsAuthenticated] = useState(!!initialUser);
+    const [user, setUser] = useState<User | null>(initialUser);
+
+    // Mode state - base initial value on auth
+    const [currentMode, setCurrentMode] = useState<Mode>(initialUser ? 'vault' : 'walk');
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - get from localStorage or system preference
@@ -89,20 +99,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setThemeState(newTheme);
     }, []);
 
-    // Restore auth state from localStorage on mount
-    useEffect(() => {
-        const saved = localStorage.getItem('underscore-user');
-        if (saved) {
-            try {
-                const savedUser = JSON.parse(saved) as User;
-                setUser(savedUser);
-                setIsAuthenticated(true);
-            } catch (e) {
-                console.error('Failed to restore user', e);
-                localStorage.removeItem('underscore-user');
-            }
-        }
-    }, []);
+    // Removed async useEffect auth restore since we do it synchronously on mount
 
     const value: AppContextType = {
         isAuthenticated,

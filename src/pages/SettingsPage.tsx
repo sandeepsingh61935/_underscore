@@ -15,14 +15,12 @@ const MODE_DISPLAY: Record<ModeType, string> = {
  */
 export interface SettingsPageProps {
     onBack?: () => void;
-    onChangeMode?: () => void;
 }
 
-export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
-    const { currentMode, theme, setTheme } = useApp();
-    const { user, isLoading: isAuthLoading, logout } = useCurrentUser();
+export function SettingsPage({ onBack }: SettingsPageProps = {}) {
+    const { currentMode, setMode, theme, setTheme } = useApp();
+    const { user, isLoading, logout } = useCurrentUser();
     const [autoHighlight, setAutoHighlight] = useState(true);
-    const [cloudSync, setCloudSync] = useState(true);
 
     const exportFormats = ['PDF', 'TXT', 'JSON', 'CSV', 'MD'];
 
@@ -72,18 +70,28 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
 
                 {/* ─── Account ─── */}
                 <Section title="Account">
-                    <SettingRow label="Email" value={isAuthLoading ? 'Loading...' : (user?.email || 'Not signed in')} />
-                    <SettingRow label="Name" value={isAuthLoading ? 'Loading...' : (user?.displayName || '—')} />
-                    <SettingRow
-                        label="Current mode"
-                        value={MODE_DISPLAY[(currentMode ?? 'walk') as ModeType]}
-                    />
+                    <div className="flex items-center gap-3 px-5 py-4">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[16px] font-semibold shrink-0" style={{ background: 'var(--accent)' }}>
+                            {isLoading ? '...' : (user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U')}
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {isLoading ? 'Loading...' : (user?.displayName || 'Demo User')}
+                            </div>
+                            <div className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+                                {isLoading ? 'Loading...' : (user?.email || 'demo@google.com')}
+                            </div>
+                        </div>
+                    </div>
                 </Section>
 
                 {/* ─── Appearance ─── */}
                 <Section title="Appearance">
                     <div className="flex items-center justify-between py-3">
-                        <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Theme</span>
+                        <div className="flex-1">
+                            <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>Theme</div>
+                            <div className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Choose your preferred color scheme</div>
+                        </div>
                         <div className="flex gap-1 p-1 rounded-[var(--radius-sm)]" style={{ border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
                             {(['system', 'light', 'dark'] as const).map(t => (
                                 <button
@@ -92,7 +100,7 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
                                     className="px-3 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium capitalize cursor-pointer transition-all duration-150 border-none"
                                     style={{
                                         background: theme === t ? 'var(--accent-soft)' : 'transparent',
-                                        color: theme === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                                        color: theme === t ? 'var(--accent-text)' : 'var(--text-secondary)',
                                     }}
                                 >
                                     {t}
@@ -100,35 +108,43 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
                             ))}
                         </div>
                     </div>
-                    <div className="flex items-center justify-between py-3">
-                        <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Change mode</span>
-                        <button
-                            onClick={onChangeMode}
-                            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer transition-all duration-150"
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid var(--border)',
-                                color: 'var(--text-primary)',
-                            }}
-                        >
-                            Choose mode
-                        </button>
-                    </div>
                 </Section>
 
                 {/* ─── Highlighting ─── */}
                 <Section title="Highlighting">
+                    <div className="flex items-center justify-between py-3">
+                        <div className="flex-1 pr-4">
+                            <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>Default mode</div>
+                            <div className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Mode activated when opening the extension</div>
+                        </div>
+                        <div className="flex gap-1 flex-wrap justify-end">
+                            {(['walk', 'sprint', 'vault', 'neural'] as const).map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setMode(mode)}
+                                    className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium capitalize cursor-pointer transition-all duration-150 border"
+                                    style={{
+                                        background: currentMode === mode ? 'var(--accent-soft)' : 'transparent',
+                                        borderColor: currentMode === mode ? 'var(--accent)' : 'var(--border)',
+                                        color: currentMode === mode ? 'var(--accent-text)' : 'var(--text-secondary)',
+                                    }}
+                                >
+                                    {MODE_DISPLAY[mode]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <ToggleRow
-                        label="Auto-highlight"
-                        description="Automatically highlight selected text"
+                        label="Auto-highlight code blocks"
+                        description="Detect and format code in highlights"
                         checked={autoHighlight}
                         onChange={setAutoHighlight}
                     />
                     <ToggleRow
-                        label="Cloud sync"
-                        description="Sync highlights across devices"
-                        checked={cloudSync}
-                        onChange={setCloudSync}
+                        label="Show highlight count badge"
+                        description="Display count on extension icon"
+                        checked={true}
+                        onChange={() => { }}
                     />
                 </Section>
 
@@ -183,8 +199,8 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
                                         logout();
                                     }
                                 }}
-                                className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer border-none transition-all duration-150"
-                                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                                className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer transition-all duration-150 border"
+                                style={{ background: 'var(--md-sys-color-error-container)', color: 'var(--md-sys-color-on-error-container)', borderColor: 'var(--md-sys-color-error)' }}
                             >
                                 Sign out
                             </button>
@@ -198,8 +214,8 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
                             </p>
                         </div>
                         <button
-                            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer border-none transition-all duration-150"
-                            style={{ background: 'rgba(224,82,82,0.08)', color: '#e05252' }}
+                            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer transition-all duration-150 border"
+                            style={{ background: 'var(--md-sys-color-error-container)', color: 'var(--md-sys-color-on-error-container)', borderColor: 'var(--md-sys-color-error)' }}
                         >
                             Clear
                         </button>
@@ -212,8 +228,8 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps = {}) {
                             </p>
                         </div>
                         <button
-                            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer border-none transition-all duration-150"
-                            style={{ background: 'rgba(224,82,82,0.08)', color: '#e05252' }}
+                            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium cursor-pointer transition-all duration-150 border"
+                            style={{ background: 'var(--md-sys-color-error-container)', color: 'var(--md-sys-color-on-error-container)', borderColor: 'var(--md-sys-color-error)' }}
                         >
                             Delete
                         </button>
@@ -262,15 +278,6 @@ function Section({ title, children, danger }: { title: string; children: React.R
             >
                 <div className="px-4">{children}</div>
             </div>
-        </div>
-    );
-}
-
-function SettingRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex items-center justify-between py-3">
-            <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-            <span className="text-[14px]" style={{ color: 'var(--text-primary)' }}>{value}</span>
         </div>
     );
 }

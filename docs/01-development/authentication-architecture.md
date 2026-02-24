@@ -7,7 +7,7 @@ In older Chrome Extensions, authentication was usually handled directly inside t
 *   **The Flow:** The user clicks "Sign In" in the popup -> The popup calls `supabase.auth.signInWithOAuth()` -> Supabase redirects the popup window to Google (`accounts.google.com`) -> User logs in -> Google redirects back to Supabase (`yourproject.supabase.co/auth/v1/callback`) -> Supabase completes the login and redirects back to the extension popup.
 *   **Why it broke:**
     1.  **Manifest V3:** Chrome replaced persistent Background Pages with Service Workers, which have no DOM and cannot perform standard browser URL redirects (`window.location.assign`).
-    2.  **Popup Volatility:** If a user clicks outside the Chrome Extension popup while waiting for Google to load, the popup instantly closes, destroying the script and breaking the authentication flow mid-way.
+    2.  **Popup Volatility:** If a user clicks outside thvue Chrome Extension popup while waiting for Google to load, the popup instantly closes, destroying the script and breaking the authentication flow mid-way.
 
 ### The New Architecture (Manifest V3 / Native Background Identity)
 The new architecture moves the "brain" of authentication out of the fragile Popup UI and into the invincible Background Service Worker (`auth-manager.ts`).
