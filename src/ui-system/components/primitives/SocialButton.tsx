@@ -32,7 +32,7 @@ const icons: Record<SocialProvider, React.ReactNode> = {
 };
 
 /**
- * Icon-only social auth button — matches Style C mockups' compact icon buttons
+ * Icon-only social auth button — MD3 compliant
  */
 export function SocialButton({ provider, onClick, disabled, className }: SocialButtonProps) {
     return (
@@ -41,24 +41,14 @@ export function SocialButton({ provider, onClick, disabled, className }: SocialB
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                'flex items-center justify-center w-12 h-12 rounded-[var(--radius)] transition-all duration-150',
-                'disabled:opacity-40 disabled:cursor-not-allowed',
+                'flex items-center justify-center w-12 h-12 rounded-md',
+                'bg-surface-container-lowest border border-outline-variant',
+                'shadow-elevation-1 transition-all duration-short ease-standard',
+                'hover:shadow-elevation-3 hover:-translate-y-0.5',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                'disabled:opacity-disabled disabled:pointer-events-none',
                 className
             )}
-            style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-            }}
-            onMouseEnter={(e) => {
-                if (!disabled) {
-                    e.currentTarget.style.boxShadow = 'var(--shadow-hover)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                }
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.transform = 'none';
-            }}
             aria-label={`Sign in with ${provider}`}
         >
             {icons[provider]}
