@@ -24,7 +24,7 @@ ISSUE=""
 MILESTONE=""
 TRACK=""
 SLUG=""
-BASE="dev/P0.1"
+BASE="dev"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

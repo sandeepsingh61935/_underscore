@@ -11,7 +11,7 @@ Extract from ARGUMENTS:
 - `milestone` — required. Format: `m1`, `m2`, etc.
 - `track` — required. One of: `backend`, `frontend`, `fullstack`, `uiux`, `provider`, `devops`, `docs`, `qa`, `infra`
 - `slug` — optional. Short kebab-case label. If not provided, the script will auto-derive from the issue title.
-- `base-ref` — optional. Defaults to `dev/P0.1`.
+- `base-ref` — optional. Defaults to `dev`.
 
 If any required argument is missing, stop and ask for it before proceeding.
 
