@@ -3,6 +3,7 @@ import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
+import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 
 
 interface PopupAppProviderProps {
@@ -28,8 +29,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     isAuthenticated: propIsAuthenticated,
     onLogout
 }) => {
-    // Mode state
-    const [currentMode, setCurrentMode] = useState<Mode>('walk');
+    // Mode state — persisted in chrome.storage.local, reactive via onChanged
+    const { currentMode, persistMode } = usePersistedMode(propIsAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - still use localStorage for theme preference
@@ -43,33 +44,6 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
         return 'light';
     });
-
-    // Initialize mode from active tab
-    useEffect(() => {
-        const fetchCurrentTabMode = async () => {
-            try {
-                // Only run in extension context
-                if (!chrome?.tabs) return;
-
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                if (!tab?.id) return;
-
-                const response = await chrome.tabs.sendMessage(tab.id, {
-                    type: 'GET_MODE',
-                    timestamp: Date.now()
-                });
-
-                if (response && response.mode) {
-                    console.log('[PopupAppProvider] Initialized mode from tab:', response.mode);
-                    setCurrentMode(response.mode as Mode);
-                }
-            } catch (err) {
-                // Ignore errors; content script might not be injected on some pages (e.g. chrome://)
-            }
-        };
-
-        fetchCurrentTabMode();
-    }, []);
 
     // Available modes depends on auth state
     const availableModes: Mode[] = propIsAuthenticated
@@ -101,15 +75,10 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     }, [onLogout]);
 
     const setMode = useCallback(async (mode: Mode) => {
-        // Vault and Neural require authentication
-        if ((mode === 'vault' || mode === 'neural') && !propIsAuthenticated) {
-            return;
-        }
+        // 1. Persist to chrome.storage.local (auth guard is inside persistMode)
+        await persistMode(mode);
 
-        // 1. Optimistically update local React state
-        setCurrentMode(mode);
-
-        // 2. Transmit state down to content script immediately
+        // 2. Also transmit to active tab's content script for immediate effect
         try {
             if (chrome?.tabs) {
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -123,9 +92,9 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
                 }
             }
         } catch (err) {
-            console.error('[PopupAppProvider] Failed to dispatch mode change to tab:', err);
+            // Ignore — content script may not be injected on chrome:// or empty tabs
         }
-    }, [propIsAuthenticated]);
+    }, [persistMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
