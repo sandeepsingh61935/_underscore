@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useApp } from '@/core/context/AppProvider';
 import { useCurrentUser } from '../../../features/auth/hooks/useCurrentUser';
 import { Logo } from '../../../ui-system/components/primitives/Logo';
+import { cn } from '@/ui-system/utils/cn';
 import { VerificationView } from './VerificationView';
 import type { OAuthProviderType } from '../../../background/auth/interfaces/i-auth-manager';
 
@@ -20,15 +22,18 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
     const [isRegistering, setIsRegistering] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    // Track which OAuth provider is currently in-flight for per-button loading state
+    const [activeProvider, setActiveProvider] = useState<OAuthProviderType | null>(null);
 
-    const handleProviderSelect = async (provider: any) => {
+    const handleProviderClick = async (provider: OAuthProviderType) => {
         setLoginError(null);
+        setActiveProvider(provider);
         console.log('[AuthView] Starting login with provider:', provider);
         const result = await login(provider);
+        setActiveProvider(null);
         if (result.success) {
             console.log('[AuthView] Login successful!');
             if (isRegistering) {
-                // If the user signed up natively (via OAuth flow they might not technically be in "registration" mode, but just in case)
                 setMode('vault');
             }
             onLoginSuccess();
@@ -148,35 +153,49 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
                     {/* Google */}
                     <button
                         onClick={() => handleProviderClick('google')}
-                        disabled={isLoading}
-                        className={`
-                            h-12 flex-1 rounded-[var(--radius)] border border-[var(--border)]
-                            bg-[var(--bg-card)] flex items-center justify-center cursor-pointer
-                            transition-all duration-200 shadow-[var(--shadow-rest)]
-                            ${isLoading ? 'opacity-50' : 'hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95'}
-                        `}
+                        disabled={isLoading || activeProvider !== null}
+                        aria-label="Sign in with Google"
                         title="Sign in with Google"
+                        className={cn(
+                            'h-12 flex-1 rounded-md border border-outline-variant',
+                            'bg-surface-container flex items-center justify-center gap-2',
+                            'transition-all duration-short ease-standard',
+                            'disabled:opacity-disabled disabled:pointer-events-none',
+                            activeProvider === null && [
+                                'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]',
+                                'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]',
+                            ]
+                        )}
                     >
-                        <svg viewBox="0 0 24 24" fill="none" className="w-[20px] h-[20px]">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.07 11.07 0 0 0 1 12c0 1.78.43 3.46 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                        </svg>
+                        {activeProvider === 'google' ? (
+                            <>
+                                <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
+                                <span className="text-label-medium text-on-surface-variant">Signing in...</span>
+                            </>
+                        ) : (
+                            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.07 11.07 0 0 0 1 12c0 1.78.43 3.46 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                        )}
                     </button>
 
                     {/* Apple */}
                     <button
                         onClick={() => handleProviderClick('apple')}
-                        disabled={true} /* Disabled for now as per previous auth code */
-                        className={`
-                            h-12 flex-1 rounded-[var(--radius)] border border-[var(--border)]
-                            bg-[var(--bg-card)] flex items-center justify-center cursor-not-allowed
-                            transition-all duration-200 shadow-[var(--shadow-rest)] opacity-40
-                        `}
+                        disabled={true /* Coming soon */ || activeProvider !== null}
+                        className={cn(
+                            'h-12 flex-1 rounded-md border border-outline-variant',
+                            'bg-surface-container flex items-center justify-center',
+                            'transition-all duration-short ease-standard',
+                            'opacity-disabled pointer-events-none'
+                        )}
                         title="Sign in with Apple (Coming Soon)"
+                        aria-label="Sign in with Apple (Coming Soon)"
                     >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-[20px] h-[20px]">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-on-surface">
                             <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                         </svg>
                     </button>
@@ -184,15 +203,17 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
                     {/* GitHub */}
                     <button
                         onClick={() => { }}
-                        disabled={true}
-                        className={`
-                            h-12 flex-1 rounded-[var(--radius)] border border-[var(--border)]
-                            bg-[var(--bg-card)] flex items-center justify-center cursor-not-allowed
-                            transition-all duration-200 shadow-[var(--shadow-rest)] opacity-40
-                        `}
+                        disabled={true /* Coming soon */ || activeProvider !== null}
+                        className={cn(
+                            'h-12 flex-1 rounded-md border border-outline-variant',
+                            'bg-surface-container flex items-center justify-center',
+                            'transition-all duration-short ease-standard',
+                            'opacity-disabled pointer-events-none'
+                        )}
                         title="Sign in with GitHub (Coming Soon)"
+                        aria-label="Sign in with GitHub (Coming Soon)"
                     >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-[20px] h-[20px]">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-on-surface">
                             <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
                         </svg>
                     </button>
