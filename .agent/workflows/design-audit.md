@@ -123,3 +123,46 @@ echo "=== Hardcoded colors ===" && grep -rc "#[0-9a-fA-F]\{6\}" --include="*.tsx
 echo "=== Missing hover ===" && grep -rL "hover:" --include="*.tsx" src/components/
 echo "=== Arbitrary spacing ===" && grep -rn "p-\[" --include="*.tsx" src/components/ | head -20
 ```
+
+## Project-Specific Audit: Style C Hybrid Violations
+
+Run this full health check for _underscore's known violation patterns:
+
+```bash
+echo "=== Style C Hybrid vars (MUST BE ZERO after migration) ===" && \
+grep -rn "var(--bg\|var(--text-\|var(--accent\|var(--border\|var(--radius\|var(--shadow-rest\|var(--shadow-hover" \
+  src/ --include="*.tsx" | grep -v "node_modules" | grep -v "global.css"
+
+echo "=== Hardcoded pixel font sizes ===" && \
+grep -rn 'text-\[[0-9]\+px\]' src/ --include="*.tsx"
+
+echo "=== JS DOM mutation for visual state ===" && \
+grep -rn "onMouseEnter\|onMouseLeave" src/ --include="*.tsx"
+
+echo "=== Raw rounded-[var(--radius)] ===" && \
+grep -rn "rounded-\[var(--" src/ --include="*.tsx"
+
+echo "=== ESLint design system violations ===" && \
+npx eslint src/ --rule '{}' 2>&1 | grep "no-restricted-syntax" | wc -l
+```
+
+## Files with Known Violations (as of audit 2026-03-08)
+
+| File | Occurrences | Priority |
+|---|---|---|
+| `src/pages/SettingsPage.tsx` | 48 | High |
+| `src/features/collections/views/DomainDetailsView.tsx` | 31 | High |
+| `src/features/auth/SignInView.tsx` | 27 | High |
+| `src/features/collections/views/CollectionsView.tsx` | 25 | High |
+| `src/features/modes/ModeSelectionView.tsx` | 20 | High |
+| `src/features/modes/ModeCard.tsx` | 11 | Medium |
+| `src/entrypoints/popup/views/AuthView.tsx` | 16 | Medium |
+| `src/pages/WelcomePage.tsx` | 13 | Medium |
+| `src/pages/PrivacyPage.tsx` | 12 | Medium |
+| `src/pages/NotFoundPage.tsx` | 4 | Low |
+| `src/ui-system/components/primitives/SocialButton.tsx` | 4 | Low |
+| `src/ui-system/components/primitives/Spinner.tsx` | 2 | Low |
+| `src/ui-system/components/primitives/TrustSignal.tsx` | 1 | Low |
+| `src/ui-system/components/primitives/Logo.tsx` | 1 | Low |
+
+After fixing each file, re-run the audit commands above. Target: zero matches.

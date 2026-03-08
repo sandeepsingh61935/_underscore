@@ -72,10 +72,7 @@ storybook-static
 #github
 .github
 
-#agent
-.agent
 GEMINI.md
-CLAUDE.md
 
 #development
 /development
