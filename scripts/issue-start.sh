@@ -78,7 +78,7 @@ if [[ -z "$SLUG" ]]; then
 fi
 
 BRANCH="fix/${MILESTONE}-${TRACK}-${SLUG}"
-WT_DIR="../wt-${ISSUE}-${SLUG}"
+WT_DIR="worktrees/wt-${ISSUE}-${SLUG}"
 PLAN_DIR="docs/implementation-plans"
 
 echo ""

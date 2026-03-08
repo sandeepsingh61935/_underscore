@@ -76,6 +76,9 @@ GEMINI.md
 
 #development
 /development
+
+# Git worktrees
+/worktrees/
 /generate-key
 
 
