@@ -16,7 +16,7 @@ const sizeMap: Record<LogoSize, { badge: string; underscore: string; text: strin
 };
 
 /**
- * Glassmorphic Logo — matches Style C Hybrid mockups
+ * Glassmorphic Logo — MD3 compliant
  * Uses CSS vars from global.css: --logo-bg, --logo-text, --logo-ambient-reflection
  */
 export function Logo({ className = '', showText = true, size = 'md' }: LogoProps) {
@@ -49,8 +49,7 @@ export function Logo({ className = '', showText = true, size = 'md' }: LogoProps
             {/* Text */}
             {showText && (
                 <span
-                    className={cn('font-light tracking-[-0.02em]', s.text)}
-                    style={{ color: 'var(--text-primary)' }}
+                    className={cn('font-light tracking-[-0.02em] text-on-surface', s.text)}
                 >
                     underscore
                 </span>
