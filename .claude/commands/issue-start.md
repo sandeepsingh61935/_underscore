@@ -30,6 +30,9 @@ bash scripts/issue-start.sh \
   [--base <base-ref>]
 ```
 
+The script creates the worktree using `git worktree add worktrees/wt-<issue>-<slug> -b <branch> <base-ref>`.
+All worktrees are created **inside the repo** at `worktrees/wt-<issue>-<slug>` and are gitignored.
+
 Capture and display the full script output.
 
 If the script exits with an error, report it clearly and stop.
