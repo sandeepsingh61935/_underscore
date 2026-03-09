@@ -9,8 +9,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 export function PrivacyPage() {
     return (
         <div
-            className="min-h-screen flex flex-col items-center"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+            className="min-h-screen flex flex-col items-center bg-surface text-on-surface"
         >
             {/* Header */}
             <header className="w-full max-w-[640px] flex justify-center items-center py-6 px-6">
@@ -22,31 +21,25 @@ export function PrivacyPage() {
             <article className="w-full max-w-[640px] px-6 pb-12">
                 <Link
                     to="/"
-                    className="inline-flex items-center gap-1.5 text-[13px] no-underline mb-5 transition-colors hover:text-[var(--accent)]"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="inline-flex items-center gap-1.5 text-[13px] no-underline mb-5 text-outline transition-colors duration-short ease-standard hover:text-primary"
                 >
                     ← Back
                 </Link>
 
                 <h1
-                    className="text-[28px] font-semibold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="text-headline-small font-semibold mb-2 text-on-surface"
                 >
                     Privacy Policy
                 </h1>
-                <p className="text-[13px] mb-8" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="text-body-small mb-8 text-outline">
                     Last updated: February 2026
                 </p>
 
                 {/* Callout */}
                 <div
-                    className="p-4 rounded-[var(--radius)] mb-8"
-                    style={{
-                        background: 'var(--accent-soft)',
-                        border: '1px solid var(--border)',
-                    }}
+                    className="p-4 rounded-md mb-8 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] border border-outline-variant"
                 >
-                    <p className="text-[14px] leading-relaxed" style={{ color: 'var(--accent-text)' }}>
+                    <p className="text-[14px] leading-relaxed text-primary">
                         <strong>TL;DR</strong> — Your data stays on your device. We don't track, sell, or share
                         your browsing activity or highlights with anyone. Period.
                     </p>
@@ -89,7 +82,7 @@ export function PrivacyPage() {
                 <PolicySection title="Contact">
                     <p>
                         Questions? Email us at{' '}
-                        <a href="mailto:privacy@underscore.dev" className="underline" style={{ color: 'var(--accent-text)' }}>
+                        <a href="mailto:privacy@underscore.dev" className="underline text-primary">
                             privacy@underscore.dev
                         </a>
                     </p>
@@ -103,12 +96,11 @@ function PolicySection({ title, children }: { title: string; children: React.Rea
     return (
         <section className="mb-6">
             <h2
-                className="text-[17px] font-semibold mb-3"
-                style={{ color: 'var(--text-primary)' }}
+                className="text-title-small font-semibold mb-3 text-on-surface"
             >
                 {title}
             </h2>
-            <div className="text-[14px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-body-medium leading-relaxed text-on-surface-variant">
                 {children}
             </div>
         </section>
