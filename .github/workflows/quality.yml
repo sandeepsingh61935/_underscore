@@ -2,9 +2,9 @@ name: Quality Checks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 jobs:
   quality:
@@ -29,6 +29,22 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Design system check (no new violations)
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            -- '*.tsx' '*.ts' \
+            | grep -v '\.test\.' \
+            | grep -v '\.spec\.' \
+            | grep -v '\.d\.ts' \
+            | tr '\n' ' ')
+          if [ -n "$CHANGED" ]; then
+            echo "Checking design system tokens in changed files: $CHANGED"
+            npx eslint --max-warnings 0 $CHANGED
+          else
+            echo "No TypeScript/TSX files changed — skipping design system check."
+          fi
 
       - name: Check code formatting
         run: npm run format:check
