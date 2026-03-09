@@ -9,8 +9,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 export function NotFoundPage() {
     return (
         <div
-            className="min-h-screen flex flex-col items-center justify-center"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+            className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface"
         >
             <div className="text-center">
                 {/* Dimmed logo */}
@@ -20,16 +19,14 @@ export function NotFoundPage() {
 
                 {/* 404 heading */}
                 <h1
-                    className="text-[72px] font-light tracking-[-0.04em] mb-3 leading-none"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="text-[72px] font-light tracking-[-0.04em] mb-3 leading-none text-on-surface"
                 >
                     404
                 </h1>
 
                 {/* Message */}
                 <p
-                    className="text-[15px] mb-8"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="text-[15px] mb-8 text-on-surface-variant"
                 >
                     This page doesn't exist.
                 </p>
@@ -37,8 +34,7 @@ export function NotFoundPage() {
                 {/* Back link */}
                 <Link
                     to="/"
-                    className="text-[14px] font-medium no-underline transition-all duration-150 hover:opacity-80"
-                    style={{ color: 'var(--accent-text)' }}
+                    className="text-[14px] font-medium no-underline text-primary transition-all duration-short ease-standard hover:opacity-80"
                 >
                     ← Back to home
                 </Link>
