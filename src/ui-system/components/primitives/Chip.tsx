@@ -3,9 +3,17 @@
  * @see https://m3.material.io/components/chips/overview
  */
 
-import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { X } from 'lucide-react';
+import React, { forwardRef } from 'react';
+import type { ButtonHTMLAttributes } from 'react';
+
 import { cn } from '../../utils/cn';
+import {
+    tonalPillActiveClass,
+    tonalPillBaseClass,
+    tonalPillInactiveClass,
+    tonalPillStandaloneClass,
+} from '../../utils/tonalPill';
 
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'filter' | 'input';
@@ -21,24 +29,21 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                 ref={ref}
                 className={cn(
                     'inline-flex items-center justify-center gap-2',
-                    'rounded-sm',                   // 8px
                     'text-label-large',
                     'h-[32px] px-4',
                     'transition-all duration-short ease-standard',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
 
                     variant === 'filter' && [
+                        tonalPillBaseClass,
+                        tonalPillStandaloneClass,
                         !selected && [
-                            'bg-transparent',
-                            'border border-outline',
-                            'text-on-surface-variant',
-                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface-variant)_8%,transparent)]',
+                            tonalPillInactiveClass,
+                            'hover:border-outline',
                         ],
                         selected && [
-                            'bg-secondary-container',
-                            'text-on-secondary-container',
-                            'border-none',
-                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-secondary-container)_8%,var(--md-sys-color-secondary-container))]',
+                            tonalPillActiveClass,
+                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary-container)_8%,var(--md-sys-color-primary-container))]',
                         ],
                     ],
 

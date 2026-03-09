@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
 import { Grid, List, Plus, Search } from 'lucide-react';
+import React, { useState } from 'react';
+
 import { CollectionCard } from '../components/composed/CollectionCard';
 import { cn } from '../utils/cn';
+import {
+    tonalPillActiveClass,
+    tonalPillBaseClass,
+    tonalPillInactiveClass,
+    tonalPillShellClass,
+} from '../utils/tonalPill';
 
 export interface Collection {
     id: string;
@@ -33,7 +40,7 @@ export function CollectionsView({
     mode,
     onModeChange,
     className,
-}: CollectionsViewProps) {
+}: CollectionsViewProps): React.JSX.Element {
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [sortBy, setSortBy] = useState<SortOption>('recent');
     const [searchQuery, setSearchQuery] = useState('');
@@ -108,14 +115,16 @@ export function CollectionsView({
                     </select>
 
                     {/* View Toggle */}
-                    <div className="flex items-center rounded-lg border border-border overflow-hidden" role="group" aria-label="View mode">
+                    <div className={cn(tonalPillShellClass, 'gap-0.5')} role="group" aria-label="View mode">
                         <button
+                            type="button"
                             onClick={() => setViewMode('list')}
                             className={cn(
-                                "p-2 transition-colors",
+                                tonalPillBaseClass,
+                                "flex h-8 w-8 items-center justify-center p-0",
                                 viewMode === 'list'
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                                    ? tonalPillActiveClass
+                                    : tonalPillInactiveClass
                             )}
                             aria-label="List view"
                             aria-pressed={viewMode === 'list'}
@@ -123,12 +132,14 @@ export function CollectionsView({
                             <List className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('grid')}
                             className={cn(
-                                "p-2 transition-colors",
+                                tonalPillBaseClass,
+                                "flex h-8 w-8 items-center justify-center p-0",
                                 viewMode === 'grid'
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                                    ? tonalPillActiveClass
+                                    : tonalPillInactiveClass
                             )}
                             aria-label="Grid view"
                             aria-pressed={viewMode === 'grid'}

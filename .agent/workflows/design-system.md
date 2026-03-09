@@ -99,6 +99,7 @@ Flow 3 - Account:       Avatar → Account Menu → Settings / Privacy / Sign Ou
 - Glass reflections: `::before` pseudo-element with top linear-gradient on logo and cards
 - Transitions: `0.2s ease-out`
 - Locked modes: `opacity: 0.6`, 🔒 icon, `pointer-events: none`
+- Segmented controls and filter pills: use dark-safe tonal capsules with muted surface shells and `primary-container` active state, never bright white/default button fills in dark mode
 
 ---
 
@@ -162,6 +163,7 @@ Flow 3 - Account:       Avatar → Account Menu → Settings / Privacy / Sign Ou
 - Card (static, interactive)
 - Input (text field, search)
 - Chip (filter, selected state)
+- Segmented control / tonal pill group
 - Text (semantic typography component)
 - Dialog / Modal
 - Separator / Divider

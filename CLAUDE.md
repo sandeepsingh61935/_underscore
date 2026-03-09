@@ -52,6 +52,7 @@
 | Web app hooks (NEW) | `src/web/hooks/` |
 | Cloudflare Workers API (NEW) | `src/web/api/` |
 | Global CSS + design tokens | `src/ui-system/theme/global.css` |
+| UI styling helpers | `src/ui-system/utils/` |
 
 ---
 
@@ -101,6 +102,7 @@ When working on ANY UI code (components, views, styles), you MUST:
 - Encryption: AES-256-GCM for sensitive local data
 - Never call `chrome.runtime.sendMessage` directly in views — use hooks
 - Message format: `{ type: 'MESSAGE_TYPE', payload: {}, timestamp: Date.now() }`
+- Hooks shared between extension and web contexts must guard `chrome.runtime` availability before IPC; unguarded access can blank SPA pages.
 
 **Reference**: `.agent/skills/full-stack-developer/sub-skills/backend-patterns.md`
 

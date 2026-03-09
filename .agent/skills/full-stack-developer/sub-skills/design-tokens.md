@@ -162,6 +162,8 @@ MD3 state layers use `color-mix()` — not opacity modifiers. This is already im
 | Primary Container | `bg-primary-container` / `text-primary-container` |
 | On Primary Container | `bg-on-primary-container` / `text-on-primary-container` |
 
+Use `primary-container` + `on-primary-container` for selected pills, segmented controls, and other tonal active states.
+
 #### Secondary Family
 | Token | Tailwind Class |
 |---|---|
@@ -169,6 +171,8 @@ MD3 state layers use `color-mix()` — not opacity modifiers. This is already im
 | On Secondary | `text-on-secondary` |
 | Secondary Container | `bg-secondary-container` |
 | On Secondary Container | `text-on-secondary-container` |
+
+Reserve `secondary-container` for supporting emphasis, not the default selected treatment for filter pills.
 
 #### Surface Family
 | Token | Tailwind Class | Use For |

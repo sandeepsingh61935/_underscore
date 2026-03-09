@@ -156,12 +156,33 @@ Note: `backgroundColor` inline style is the ONE allowed exception for glass — 
 </button>
 ```
 
-### 3e. Accent Soft Badge / Chip
+### 3e. Tonal Segmented Control / Filter Pills
 
 ```tsx
-// APPROVED: soft accent background
-<div className="bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary rounded-full px-3 py-1 text-label-medium">
-  {children}
+// APPROVED: dark-safe segmented shell + tonal active pill
+<div className="inline-flex w-fit flex-wrap gap-1 rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] p-1 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--md-sys-color-inverse-on-surface)_4%,transparent)]">
+  <button
+    type="button"
+    className={cn(
+      'appearance-none rounded-full border border-transparent bg-transparent px-3 py-1.5 text-label-medium transition-all duration-short ease-standard',
+      active
+        ? 'border-[color-mix(in_srgb,var(--md-sys-color-primary)_22%,transparent)] bg-primary-container text-on-primary-container shadow-elevation-1'
+        : 'text-on-surface-variant hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,var(--md-sys-color-surface-container-high))] hover:text-on-surface',
+      disabled && 'pointer-events-none cursor-not-allowed border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_40%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-highest)_55%,transparent)] text-outline opacity-disabled',
+    )}
+  >
+    System
+  </button>
+</div>
+
+// Standalone pill / export format / filter chip
+<button className="appearance-none rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] px-3 py-1.5 text-label-medium text-on-surface-variant transition-all duration-short ease-standard hover:border-outline hover:text-on-surface">
+  JSON
+</button>
+
+// Selected standalone pill
+<div className="rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-primary)_22%,transparent)] bg-primary-container px-3 py-1.5 text-label-medium text-on-primary-container shadow-elevation-1">
+  Active
 </div>
 ```
 

@@ -22,11 +22,11 @@ Before writing **any** component:
 |------|-------------|------------------|-------------|
 | Primary | `--md-sys-color-primary` | `bg-primary` / `text-primary` | CTA buttons, active states |
 | On Primary | `--md-sys-color-on-primary` | `text-on-primary` | Text on primary bg |
-| Primary Container | `--md-sys-color-primary-container` | `bg-primary-container` | Soft highlight bg |
-| On Primary Container | `--md-sys-color-on-primary-container` | `text-on-primary-container` | Text on container bg |
+| Primary Container | `--md-sys-color-primary-container` | `bg-primary-container` | Selected pills, tonal active states, soft highlight bg |
+| On Primary Container | `--md-sys-color-on-primary-container` | `text-on-primary-container` | Text on tonal container bg |
 | Secondary | `--md-sys-color-secondary` | `bg-secondary` / `text-secondary` | Supporting actions |
 | On Secondary | `--md-sys-color-on-secondary` | `text-on-secondary` | Text on secondary bg |
-| Secondary Container | `--md-sys-color-secondary-container` | `bg-secondary-container` | Chips, toggles |
+| Secondary Container | `--md-sys-color-secondary-container` | `bg-secondary-container` | Supporting containers, supporting emphasis |
 | On Sec Container | `--md-sys-color-on-secondary-container` | `text-on-secondary-container` | Text on sec container |
 | Tertiary | `--md-sys-color-tertiary` | `bg-tertiary` / `text-tertiary` | Accent, decorative |
 | Error | `--md-sys-color-error` | `bg-error` / `text-error` | Error states |
