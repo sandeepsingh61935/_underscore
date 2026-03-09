@@ -1,8 +1,10 @@
+import { Settings, Search, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
-import { Logo } from '@/ui-system/components/primitives/Logo';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { Logo } from '@/ui-system/components/primitives/Logo';
 
 /* Display name mapping (internal → UI) */
 const MODE_DISPLAY: Record<ModeType, string> = {
@@ -56,10 +58,10 @@ export function CollectionsView({
 
     /* Mock data matching collections.html mockup */
     const mockCollections: Collection[] = [
-        { id: '1', domain: 'medium.com', emoji: '📰', highlightCount: 23, lastActivity: '2 days ago' },
-        { id: '2', domain: 'developer.mozilla.org', emoji: '📄', highlightCount: 15, lastActivity: '5 days ago' },
-        { id: '3', domain: 'arxiv.org', emoji: '🔬', highlightCount: 8, lastActivity: '1 week ago' },
-        { id: '4', domain: 'github.com', emoji: '💻', highlightCount: 5, lastActivity: '2 weeks ago' },
+        { id: '1', domain: 'medium.com', emoji: 'news', highlightCount: 23, lastActivity: '2 days ago' },
+        { id: '2', domain: 'developer.mozilla.org', emoji: 'doc', highlightCount: 15, lastActivity: '5 days ago' },
+        { id: '3', domain: 'arxiv.org', emoji: 'sci', highlightCount: 8, lastActivity: '1 week ago' },
+        { id: '4', domain: 'github.com', emoji: 'code', highlightCount: 5, lastActivity: '2 weeks ago' },
     ];
 
     const sorted = [...mockCollections].sort((a, b) => {
@@ -86,13 +88,12 @@ export function CollectionsView({
 
     return (
         <div
-            className="h-full overflow-y-auto w-full flex flex-col items-center"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+            className="h-full overflow-y-auto w-full flex flex-col items-center bg-surface text-on-surface"
         >
             {/* Header */}
             <header
-                className="w-full max-w-[640px] flex items-center justify-between py-4 px-6 shrink-0 z-10 sticky top-0"
-                style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'var(--bg-glass, rgba(249, 249, 255, 0.8))' }}
+                className="w-full max-w-[640px] flex items-center justify-between py-4 px-6 shrink-0 z-10 sticky top-0 backdrop-blur-md"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
             >
                 <Link to="/mode" className="no-underline">
                     <Logo size="md" />
@@ -108,66 +109,49 @@ export function CollectionsView({
                             navigate('/settings');
                         }
                     }}
-                    className="w-9 h-9 flex items-center justify-center rounded-full text-[17px] no-underline transition-all duration-150 hover:-translate-y-0.5"
-                    style={{
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-tertiary)',
-                        boxShadow: 'var(--shadow-rest)',
-                    }}
+                    className="w-12 h-12 flex items-center justify-center rounded-full no-underline transition-all duration-short ease-standard hover:-translate-y-0.5 bg-surface-container-lowest border border-outline-variant shadow-elevation-1 text-outline"
                 >
-                    ⚙
+                    <Settings size={17} />
                 </a>
             </header>
 
             <div className="w-full max-w-[640px] px-6 pb-6 flex-1 flex flex-col min-h-min">
                 {/* Mode badge */}
                 <div
-                    className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full mb-5"
-                    style={{
-                        background: 'var(--accent-soft)',
-                        color: 'var(--accent-text)',
-                    }}
+                    className="inline-flex items-center gap-1.5 text-label-medium font-medium px-3 py-1.5 rounded-full mb-5 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary"
                 >
-                    <span style={{ fontSize: '8px' }}>●</span>
+                    <span className="text-[8px]">&#x25CF;</span>
                     {MODE_DISPLAY[mode]} mode
                 </div>
 
                 {/* Search */}
                 <div
-                    className="flex items-center gap-[10px] px-4 py-3 rounded-[var(--radius)] mb-6 transition-all duration-150"
-                    style={{
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                    }}
+                    className="flex items-center gap-[10px] px-4 py-3 rounded-md mb-6 transition-all duration-short ease-standard bg-surface-container-lowest border border-outline-variant"
                 >
-                    <span className="text-[15px] opacity-50">🔍</span>
+                    <Search size={15} className="text-outline opacity-50" />
                     <input
                         type="text"
                         placeholder="Search collections..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="flex-1 bg-transparent border-none outline-none text-[14px]"
-                        style={{ color: 'var(--text-primary)' }}
+                        className="flex-1 bg-transparent border-none outline-none text-body-medium text-on-surface"
                     />
                 </div>
 
                 {/* Sort row */}
                 <div className="flex items-center justify-between mb-4">
                     <p
-                        className="text-[11px] font-medium uppercase tracking-[0.15em]"
-                        style={{ color: 'var(--text-tertiary)' }}
+                        className="text-label-small font-medium uppercase tracking-[0.15em] text-outline"
                     >
                         Collections
                     </p>
                     <select
                         value={sortBy}
                         onChange={e => setSortBy(e.target.value as SortBy)}
-                        className="text-[12px] bg-transparent border-none outline-none cursor-pointer"
-                        style={{ color: 'var(--text-tertiary)' }}
+                        className="text-label-medium bg-transparent border-none outline-none cursor-pointer text-outline"
                     >
                         <option value="most">Most highlights</option>
-                        <option value="az">A → Z</option>
+                        <option value="az">A - Z</option>
                         <option value="newest">Newest first</option>
                         <option value="oldest">Oldest first</option>
                     </select>
@@ -179,43 +163,34 @@ export function CollectionsView({
                         <button
                             key={c.id}
                             onClick={() => handleCollectionClick(c)}
-                            className="flex items-center gap-3 p-3 rounded-[var(--radius)] text-left cursor-pointer transition-all duration-150 hover:-translate-y-0.5 w-full border-none font-[inherit]"
-                            style={{
-                                background: 'var(--bg-card)',
-                                border: '1px solid var(--border)',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
+                            className="flex items-center gap-3 p-3 rounded-md text-left cursor-pointer transition-all duration-short ease-standard hover:-translate-y-0.5 w-full border border-outline-variant font-[inherit] bg-surface-container-lowest shadow-elevation-1 hover:shadow-elevation-3"
                         >
                             <div
-                                className="w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center text-[16px] shrink-0"
-                                style={{ background: 'var(--accent-soft)' }}
+                                className="w-9 h-9 rounded-sm flex items-center justify-center text-[16px] shrink-0 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]"
                             >
                                 {c.emoji}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium truncate mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                                <p className="text-body-small font-medium truncate mb-0.5 text-on-surface">
                                     {c.domain}
                                 </p>
-                                <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                                    {c.highlightCount} highlights · {c.lastActivity}
+                                <p className="text-label-small text-outline">
+                                    {c.highlightCount} highlights - {c.lastActivity}
                                 </p>
                             </div>
-                            <span className="text-[13px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>→</span>
+                            <ChevronRight size={13} className="text-outline shrink-0" />
                         </button>
                     ))}
                 </div>
 
                 {/* Mode reminder */}
                 <p
-                    className="text-center text-[13px] mt-8"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="text-center text-body-small mt-8 text-outline"
                 >
                     Switch modes anytime in{' '}
                     <a
                         href="/settings"
-                        className="underline"
-                        style={{ color: 'var(--accent-text)' }}
+                        className="underline text-primary"
                         onClick={e => {
                             e.preventDefault();
                             if (_onSettingsClick) {
