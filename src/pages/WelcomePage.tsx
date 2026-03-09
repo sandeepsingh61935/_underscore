@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
+import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
 import { TrustSignal } from '@/ui-system/components/primitives/TrustSignal';
 
@@ -24,8 +26,7 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}) {
 
     return (
         <div
-            className="h-full overflow-y-auto w-full flex flex-col items-center justify-center"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+            className="h-full overflow-y-auto w-full flex flex-col items-center justify-center bg-surface text-on-surface"
         >
             <div className="flex flex-col items-center text-center max-w-[480px] px-6 py-12 gap-0">
                 {/* Logo badge */}
@@ -33,35 +34,31 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}) {
 
                 {/* App name */}
                 <h1
-                    className="text-[36px] font-light tracking-[-0.02em] mb-4"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="text-[36px] font-light tracking-[-0.02em] mb-4 text-on-surface"
                 >
                     underscore
                 </h1>
 
                 {/* Tagline */}
                 <p
-                    className="text-[16px] leading-relaxed mb-10"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="text-[16px] leading-relaxed mb-10 text-on-surface-variant"
                 >
                     Highlight what matters.<br />
                     Everything else fades away.
                 </p>
 
                 {/* CTA */}
-                <button
+                <Button
+                    variant="filled"
                     onClick={() => {
                         if (onStartClick) onStartClick();
                         else navigate('/mode');
                     }}
-                    className="flex items-center gap-2 px-8 py-[14px] rounded-[var(--radius)] text-[15px] font-medium tracking-[0.01em] text-white border-none cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 mb-6"
-                    style={{
-                        background: 'var(--accent)',
-                        boxShadow: '0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent)',
-                    }}
+                    className="mb-6"
+                    style={{ boxShadow: '0 2px 8px color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent)' }}
                 >
-                    Get started <span>→</span>
-                </button>
+                    Get started →
+                </Button>
 
                 {/* Trust signal */}
                 <TrustSignal />
@@ -69,27 +66,23 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}) {
 
             {/* Footer */}
             <div
-                className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4"
-                style={{ borderTop: '1px solid var(--border)' }}
+                className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4 border-t border-outline-variant"
             >
                 <Link
                     to="/privacy"
-                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
                 >
                     Privacy
                 </Link>
                 <a
                     href="#terms"
-                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
                 >
                     Terms
                 </a>
                 <a
                     href="#help"
-                    className="text-xs no-underline transition-colors hover:text-[var(--accent)]"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
                 >
                     Help
                 </a>

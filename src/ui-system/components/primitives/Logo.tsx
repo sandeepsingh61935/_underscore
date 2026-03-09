@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { cn } from '../../utils/cn';
 
 type LogoSize = 'sm' | 'md' | 'lg';
@@ -9,48 +10,57 @@ interface LogoProps {
     size?: LogoSize;
 }
 
-const sizeMap: Record<LogoSize, { badge: string; underscore: string; text: string; gap: string }> = {
-    sm: { badge: 'w-7 h-7', underscore: 'text-lg', text: 'text-xl', gap: 'gap-2' },
-    md: { badge: 'w-9 h-9', underscore: 'text-2xl', text: 'text-[26px]', gap: 'gap-[10px]' },
-    lg: { badge: 'w-12 h-12', underscore: 'text-3xl', text: 'text-[32px]', gap: 'gap-3' },
+const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string }> = {
+    sm: { badge: 'w-7 h-7',   text: 'text-xl',     gap: 'gap-2' },
+    md: { badge: 'w-9 h-9',   text: 'text-[26px]', gap: 'gap-[10px]' },
+    lg: { badge: 'w-12 h-12', text: 'text-[32px]', gap: 'gap-3' },
 };
 
 /**
- * Glassmorphic Logo — MD3 compliant
- * Uses CSS vars from global.css: --logo-bg, --logo-text, --logo-ambient-reflection
+ * Logo — MD3 compliant, squircle badge
+ *
+ * CSS vars (global.css):
+ *   --logo-bg                 badge fill (dark in light mode, light in dark mode)
+ *   --logo-text               mark fill (div background — reliable at all sizes)
+ *   --logo-ambient-reflection subtle inner highlight
+ *
+ * Mark: pill-shaped div in the lower third of the badge.
+ * Uses background instead of SVG fill to avoid grey anti-aliasing artifacts at sm/md sizes.
  */
-export function Logo({ className = '', showText = true, size = 'md' }: LogoProps) {
+export function Logo({ className = '', showText = true, size = 'md' }: LogoProps): React.ReactElement {
     const s = sizeMap[size];
     return (
         <div className={cn('flex items-center', s.gap, className)}>
-            {/* Badge */}
+            {/* Badge — squircle shape */}
             <div
-                className={cn(
-                    'relative flex items-center justify-center rounded-full overflow-hidden',
-                    s.badge
-                )}
+                className={cn('relative flex items-center justify-center rounded-[22%] overflow-hidden', s.badge)}
                 style={{
                     background: 'var(--logo-bg)',
                     boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1)',
                 }}
             >
-                {/* Ambient reflection */}
+                {/* Ambient reflection — subtle inner highlight at badge bottom */}
                 <div
-                    className="absolute bottom-0 left-[10px] right-[10px] h-[30%] rounded-full pointer-events-none"
+                    className="absolute bottom-0 left-[10%] right-[10%] h-[28%] rounded-full pointer-events-none z-[1]"
                     style={{ background: 'var(--logo-ambient-reflection)' }}
                 />
-                <span
-                    className={cn('font-extrabold leading-none select-none relative z-[1] -translate-y-[2px]', s.underscore)}
-                    style={{ color: 'var(--logo-text)', textShadow: 'var(--logo-text-shadow)' }}
-                >
-                    _
-                </span>
+
+                {/* Baseline mark */}
+                <div
+                    className="absolute z-[2] rounded-full"
+                    style={{
+                        bottom: '22%',
+                        left: '18%',
+                        right: '18%',
+                        height: '13%',
+                        background: 'var(--logo-text)',
+                    }}
+                />
             </div>
-            {/* Text */}
+
+            {/* Wordmark */}
             {showText && (
-                <span
-                    className={cn('font-light tracking-[-0.02em] text-on-surface', s.text)}
-                >
+                <span className={cn('font-light tracking-[-0.02em] text-on-surface', s.text)}>
                     underscore
                 </span>
             )}
