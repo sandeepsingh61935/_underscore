@@ -8,12 +8,6 @@ interface LogoProps {
     className?: string;
     showText?: boolean;
     size?: LogoSize;
-    /**
-     * Dims only the SVG mark (not the badge background).
-     * Use on NotFoundPage and other empty/error states.
-     * Keeps the badge shape visible for contrast in all themes.
-     */
-    dimmed?: boolean;
 }
 
 const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string }> = {
@@ -25,18 +19,15 @@ const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string }> = 
 /**
  * Logo — MD3 compliant, squircle badge
  *
- * Uses CSS vars from global.css:
+ * CSS vars (global.css):
  *   --logo-bg                 badge fill (dark in light mode, light in dark mode)
- *   --logo-text               mark fill (inherits via currentColor)
+ *   --logo-text               mark fill (div background — reliable at all sizes)
  *   --logo-ambient-reflection subtle inner highlight
  *
- * Mark: Baseline underscore — a horizontal rounded rect in the lower third
- * of the badge. Rendered as SVG, never a font glyph.
- *
- * Shape: squircle (border-radius: 22%) — consistent across all sizes and
- * platforms. Export static assets from this same viewBox.
+ * Mark: pill-shaped div in the lower third of the badge.
+ * Uses background instead of SVG fill to avoid grey anti-aliasing artifacts at sm/md sizes.
  */
-export function Logo({ className = '', showText = true, size = 'md', dimmed = false }: LogoProps): React.ReactElement {
+export function Logo({ className = '', showText = true, size = 'md' }: LogoProps): React.ReactElement {
     const s = sizeMap[size];
     return (
         <div className={cn('flex items-center', s.gap, className)}>
@@ -54,19 +45,17 @@ export function Logo({ className = '', showText = true, size = 'md', dimmed = fa
                     style={{ background: 'var(--logo-ambient-reflection)' }}
                 />
 
-                {/* Baseline mark — vector, not a font glyph */}
-                <svg
-                    viewBox="0 0 100 100"
-                    className={cn(
-                        'absolute inset-0 w-full h-full z-[2] transition-opacity duration-short ease-standard',
-                        dimmed ? 'opacity-40' : 'opacity-100'
-                    )}
-                    style={{ color: 'var(--logo-text)' }}
-                    aria-hidden="true"
-                    focusable="false"
-                >
-                    <rect x="18" y="66" width="64" height="11" rx="5.5" fill="currentColor" />
-                </svg>
+                {/* Baseline mark */}
+                <div
+                    className="absolute z-[2] rounded-full"
+                    style={{
+                        bottom: '22%',
+                        left: '18%',
+                        right: '18%',
+                        height: '13%',
+                        background: 'var(--logo-text)',
+                    }}
+                />
             </div>
 
             {/* Wordmark */}

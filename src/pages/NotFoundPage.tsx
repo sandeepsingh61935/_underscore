@@ -13,9 +13,9 @@ export function NotFoundPage(): React.ReactElement {
             className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface"
         >
             <div className="text-center">
-                {/* Dimmed logo — dimmed prop reduces mark opacity only, badge bg stays solid */}
+                {/* Logo */}
                 <div className="flex justify-center mb-8">
-                    <Logo size="sm" showText={false} dimmed />
+                    <Logo size="sm" showText={false} />
                 </div>
 
                 {/* 404 heading */}
