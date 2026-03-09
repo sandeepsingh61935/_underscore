@@ -150,7 +150,7 @@ js.configs.recommended, // TypeScript files
     // appear in component code. Use MD3 Tailwind classes instead.
     // Reference: .agent/workflows/ui-code-contracts.md §2
     'no-restricted-syntax': [
-      'error',
+      'warn', // Migration mode (M1–M4): set back to 'error' once all violations are resolved (0 count).
       {
         selector: 'Literal[value=/var\\(--(?:bg|bg-card|bg-elevated|bg-glass|text-primary|text-secondary|text-tertiary|accent(?!-text|-soft)?|accent-soft|accent-text|border(?!-)|border-hover|radius(?!-)|radius-sm|radius-lg|radius-full|shadow-rest|shadow-hover)/]',
         message:

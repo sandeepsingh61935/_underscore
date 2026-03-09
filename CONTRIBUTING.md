@@ -96,6 +96,9 @@ npm run test:coverage
 npm run test:e2e
 ```
 
+E2E tests are local-only and are not run in GitHub Actions. Run
+`npm run test:e2e` before pushing changes that affect end-to-end flows.
+
 **Requirements**:
 
 - All new code must have tests
@@ -106,14 +109,42 @@ npm run test:e2e
 
 ## Code Quality Standards
 
+### Design System Check
+
+Every PR is automatically checked for design system token violations via GitHub
+Actions. The check runs ESLint with `--max-warnings 0` on all TypeScript/TSX
+files changed in the PR — **no new `no-restricted-syntax` violations are
+allowed**.
+
+During migration (M1–M4), violations in unchanged files produce warnings only.
+Once all violations are resolved (M4 complete), the rule will be promoted back
+to `error` project-wide.
+
+To check locally before pushing:
+
+```bash
+# Check the whole project (warnings during migration)
+npm run lint
+
+# Check only the files you changed (mirrors CI)
+npx eslint --max-warnings 0 <your changed files>
+```
+
+For the full replacement table (banned Style C vars and their MD3 equivalents),
+see `.agent/workflows/ui-code-contracts.md §2`.
+
 ### Pre-Commit Checklist
 
 - [ ] Code follows TypeScript strict mode
 - [ ] No ESLint errors (`npm run lint`)
+- [ ] No design system violations in changed files
+      (`npx eslint --max-warnings 0 <changed files>`)
 - [ ] Code is formatted (`npm run format`)
 - [ ] Tests pass (`npm test`)
 - [ ] Coverage maintained (≥80%)
 - [ ] Type check passes (`npm run type-check`)
+- [ ] E2E tests run locally when changing end-to-end behavior
+      (`npm run test:e2e`)
 
 ### Run All Quality Checks
 
