@@ -1,11 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/core/context/AppProvider';
-import { Logo } from '@/ui-system/components/primitives/Logo';
-import { Spinner } from '@/ui-system/components/primitives/Spinner';
+
 import { ModeCard } from './ModeCard';
 import { useModeTransition } from './useModeTransition';
+
+import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { Button } from '@/ui-system/components/primitives/Button';
+import { Logo } from '@/ui-system/components/primitives/Logo';
+import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 /** Internal mode → display name + UX copy */
 const MODE_OPTIONS: Array<{
@@ -87,25 +90,23 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
     };
 
     return (
-        <div
-            className="h-full w-full flex flex-col items-center justify-between py-2 overflow-y-auto"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
-        >
+        <div className="h-full w-full flex flex-col items-center justify-between py-2 overflow-y-auto bg-surface text-on-surface">
             {/* Header */}
-            <header className="w-full max-w-[480px] flex justify-between items-center px-6 shrink-0 z-10 sticky top-0 py-4"
-                style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'var(--bg-glass, rgba(249, 249, 255, 0.8))' }}>
+            <header
+                className="w-full max-w-[480px] flex justify-between items-center px-6 shrink-0 z-10 sticky top-0 py-4 backdrop-blur-md"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
+            >
                 <div className="flex-1 flex justify-start">
                     {onBack && (
                         <a
                             href="#"
-                            className="inline-flex items-center gap-1.5 text-[13px] no-underline transition-colors hover:text-[var(--accent)]"
-                            style={{ color: 'var(--text-tertiary)' }}
+                            className="inline-flex items-center gap-1.5 text-body-small no-underline text-outline transition-all duration-short ease-standard hover:text-primary"
                             onClick={e => {
                                 e.preventDefault();
                                 onBack();
                             }}
                         >
-                            ← Back
+                            Back
                         </a>
                     )}
                 </div>
@@ -120,10 +121,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
             <main className="w-full max-w-[480px] flex-1 flex flex-col items-center justify-center py-6 px-6">
                 {/* Section label */}
                 <div className="w-full text-left mb-3">
-                    <p
-                        className="text-[11px] font-medium uppercase tracking-[0.18em]"
-                        style={{ color: 'var(--text-tertiary)' }}
-                    >
+                    <p className="text-label-small font-medium uppercase tracking-[0.18em] text-outline">
                         Mode
                     </p>
                 </div>
@@ -149,17 +147,10 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
 
                 {/* Auth nudge */}
                 {!isAuthenticated && (
-                    <div
-                        className="text-center text-[13px] py-4 rounded-[var(--radius)] mb-4"
-                        style={{
-                            background: 'var(--accent-soft)',
-                            color: 'var(--accent-text)',
-                        }}
-                    >
+                    <div className="text-center text-body-small py-4 rounded-md mb-4 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary">
                         <button
                             onClick={handleAuthClick}
-                            className="font-medium underline bg-transparent border-none p-0 cursor-pointer"
-                            style={{ color: 'var(--accent-text)', fontSize: 'inherit' }}
+                            className="font-medium underline bg-transparent border-none p-0 cursor-pointer text-primary"
                         >
                             Create an account
                         </button>
@@ -171,55 +162,27 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
             {/* Confirmation modal overlay */}
             {confirmMessage && (
                 <div
-                    className="fixed inset-0 z-[300] flex items-center justify-center"
-                    style={{
-                        background: 'rgba(0,0,0,0.35)',
-                        backdropFilter: 'blur(4px)',
-                        WebkitBackdropFilter: 'blur(4px)',
-                    }}
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-scrim/35 backdrop-blur-sm"
                     onClick={cancelTransition}
                 >
                     <div
-                        className="w-[90%] max-w-[360px] rounded-[var(--radius)] overflow-hidden p-7 text-center relative"
-                        style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border)',
-                            boxShadow: 'var(--shadow-hover)',
-                            animation: 'cardIn 0.18s ease-out',
-                        }}
+                        className="w-[90%] max-w-[360px] rounded-xl overflow-hidden p-7 text-center relative bg-surface-container-highest border border-outline-variant shadow-elevation-3"
+                        style={{ animation: 'cardIn 0.18s ease-out' }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <p
-                            className="text-[16px] font-semibold mb-2"
-                            style={{ color: 'var(--text-primary)' }}
-                        >
+                        <p className="text-title-medium font-semibold mb-2">
                             Switch mode?
                         </p>
-                        <p
-                            className="text-[13px] mb-6 leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                        >
+                        <p className="text-body-small text-on-surface-variant mb-6 leading-relaxed">
                             {confirmMessage}
                         </p>
                         <div className="flex gap-2 justify-center">
-                            <button
-                                onClick={cancelTransition}
-                                className="px-5 py-2.5 rounded-[var(--radius-sm)] text-[13px] font-medium cursor-pointer transition-all duration-150"
-                                style={{
-                                    background: 'transparent',
-                                    border: '1px solid var(--border)',
-                                    color: 'var(--text-secondary)',
-                                }}
-                            >
+                            <Button variant="outlined" onClick={cancelTransition}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={confirmTransition}
-                                className="px-5 py-2.5 rounded-[var(--radius-sm)] text-[13px] font-medium text-white border-none cursor-pointer transition-all duration-150 hover:-translate-y-0.5"
-                                style={{ background: 'var(--accent)' }}
-                            >
+                            </Button>
+                            <Button variant="filled" onClick={confirmTransition}>
                                 Switch
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -227,16 +190,9 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
 
             {/* Spinner overlay during transition */}
             {isPending && (
-                <div
-                    className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4"
-                    style={{
-                        background: 'rgba(0,0,0,0.5)',
-                        backdropFilter: 'blur(6px)',
-                        WebkitBackdropFilter: 'blur(6px)',
-                    }}
-                >
+                <div className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4 bg-scrim/50 backdrop-blur-md">
                     <Spinner size="lg" />
-                    <p className="text-[14px] text-white font-medium">
+                    <p className="text-body-medium text-white font-medium">
                         Switching mode…
                     </p>
                 </div>
