@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { Logo } from '../../../ui-system/components/primitives/Logo';
 
 interface VerificationViewProps {
@@ -8,14 +9,19 @@ interface VerificationViewProps {
     onCancel: () => void;
 }
 
-export function VerificationView({ email, expiresAt, onCheckVerification, onCancel }: VerificationViewProps) {
+export function VerificationView({
+    email,
+    expiresAt,
+    onCheckVerification,
+    onCancel,
+}: VerificationViewProps): React.ReactElement {
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isExpired, setIsExpired] = useState(false);
 
     useEffect(() => {
         if (!expiresAt) return;
 
-        const updateTimer = () => {
+        const updateTimer = (): void => {
             const now = Date.now();
             const remaining = Math.max(0, expiresAt - now);
             setTimeLeft(remaining);
@@ -31,7 +37,7 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
         return () => clearInterval(intervalId);
     }, [expiresAt]);
 
-    const formatTime = (ms: number) => {
+    const formatTime = (ms: number): string => {
         const seconds = Math.ceil(ms / 1000);
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;

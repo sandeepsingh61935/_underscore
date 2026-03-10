@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Settings, ShieldCheck, Palette, LogOut, Check } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface AccountMenuProps {
     isAuthenticated: boolean;
@@ -21,15 +21,15 @@ export function AccountMenu({
     onThemeChange,
     onSignOut,
     onClose,
-}: AccountMenuProps) {
+}: AccountMenuProps): React.ReactElement {
     const [showThemeSubmenu, setShowThemeSubmenu] = useState(false);
 
-    const handleMenuClick = (callback?: () => void) => {
+    const handleMenuClick = (callback?: () => void): void => {
         callback?.();
         onClose();
     };
 
-    const handleThemeSelect = (theme: 'light' | 'dark' | 'system') => {
+    const handleThemeSelect = (theme: 'light' | 'dark' | 'system'): void => {
         onThemeChange?.(theme);
         setShowThemeSubmenu(false);
         onClose();

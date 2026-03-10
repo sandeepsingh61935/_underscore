@@ -11,7 +11,7 @@ import { SocialButton } from '@/ui-system/components/primitives/SocialButton';
  * SignInView — Registration-first auth page
  * Matches sign-in.html mockup: email/password form + social icons + sign-in toggle
  */
-export function SignInView() {
+export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
     const { login, setIsLoading, isLoading } = useApp();
 
@@ -19,7 +19,7 @@ export function SignInView() {
     const [password, setPassword] = useState('');
     const [isSignIn, setIsSignIn] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setIsLoading(true);
         try {
@@ -39,7 +39,7 @@ export function SignInView() {
         }
     };
 
-    const handleSocialAuth = async (provider: 'google' | 'apple') => {
+    const handleSocialAuth = async (provider: 'google' | 'apple'): Promise<void> => {
         setIsLoading(true);
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));

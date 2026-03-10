@@ -3,8 +3,9 @@
  * @see https://m3.material.io/components/dialogs/overview
  */
 
-import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface DialogProps {
@@ -21,7 +22,7 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
     const dialogRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape' && open) onClose(); };
+        const handleEscape = (e: KeyboardEvent): void => { if (e.key === 'Escape' && open) onClose(); };
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
     }, [open, onClose]);
@@ -36,7 +37,7 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
             const focusable = dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
             const first = focusable[0] as HTMLElement;
             const last = focusable[focusable.length - 1] as HTMLElement;
-            const handleTab = (e: KeyboardEvent) => {
+            const handleTab = (e: KeyboardEvent): void => {
                 if (e.key !== 'Tab') return;
                 if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
                 else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }

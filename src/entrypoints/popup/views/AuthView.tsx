@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 
-import { useApp } from '@/core/context/AppProvider';
-import { Button } from '@/ui-system/components/primitives/Button';
-import { Input } from '@/ui-system/components/primitives/Input';
-import { SocialAuthButton } from '@/ui-system/components/primitives/SocialAuthButton';
-import { cn } from '@/ui-system/utils/cn';
-
 import type { OAuthProviderType } from '../../../background/auth/interfaces/i-auth-manager';
 import { useCurrentUser } from '../../../features/auth/hooks/useCurrentUser';
 import { Logo } from '../../../ui-system/components/primitives/Logo';
 
 import { VerificationView } from './VerificationView';
 
+import { useApp } from '@/core/context/AppProvider';
+import { Button } from '@/ui-system/components/primitives/Button';
+import { Input } from '@/ui-system/components/primitives/Input';
+import { SocialAuthButton } from '@/ui-system/components/primitives/SocialAuthButton';
+import { cn } from '@/ui-system/utils/cn';
+
 interface AuthViewProps {
     onLoginSuccess: () => void;
     onBackToModeSelection?: () => void;
 }
 
-export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProps) {
+export function AuthView({
+    onLoginSuccess,
+    onBackToModeSelection,
+}: AuthViewProps): React.ReactElement {
     const { setMode } = useApp();
     const {
         login, loginWithEmail, registerWithEmail, isLoading, error,
@@ -30,7 +33,7 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
     const [password, setPassword] = useState('');
     const [activeProvider, setActiveProvider] = useState<OAuthProviderType | null>(null);
 
-    const handleProviderClick = async (provider: OAuthProviderType) => {
+    const handleProviderClick = async (provider: OAuthProviderType): Promise<void> => {
         setLoginError(null);
         setActiveProvider(provider);
         const result = await login(provider);
@@ -43,7 +46,7 @@ export function AuthView({ onLoginSuccess, onBackToModeSelection }: AuthViewProp
         }
     };
 
-    const handleEmailSubmit = async (e: React.FormEvent) => {
+    const handleEmailSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setLoginError(null);
         const action = isRegistering ? registerWithEmail : loginWithEmail;
