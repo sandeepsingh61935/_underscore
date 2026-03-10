@@ -191,7 +191,7 @@ export function CollectionsView({
                 <button
                     onClick={onAddNew}
                     aria-label="Add new collection"
-                    className="fixed bottom-6 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
+                    className="fixed bottom-6 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-short ease-standard focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
                 >
                     <Plus className="w-5 h-5" aria-hidden="true" />
                 </button>

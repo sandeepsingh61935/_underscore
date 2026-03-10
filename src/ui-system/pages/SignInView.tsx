@@ -1,6 +1,8 @@
-import React from 'react';
-import { ProviderButton, AuthProvider } from '../components/composed/ProviderButton';
 import { ChevronLeft, AlertCircle } from 'lucide-react';
+import React from 'react';
+
+import type { AuthProvider } from '../components/composed/ProviderButton';
+import { ProviderButton } from '../components/composed/ProviderButton';
 import { cn } from '../utils/cn';
 
 export interface SignInViewProps {
@@ -17,7 +19,7 @@ export function SignInView({
     isLoading = false,
     error,
     className
-}: SignInViewProps) {
+}: SignInViewProps): React.JSX.Element {
     return (
         <div className={cn("flex flex-col h-full bg-surface text-on-surface", className)}>
             {/* Header */}
@@ -26,7 +28,7 @@ export function SignInView({
                     <button
                         onClick={onBack}
                         disabled={isLoading}
-                        className="p-1 -ml-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-all"
+                        className="p-1 -ml-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-all duration-short ease-standard"
                         aria-label="Back"
                     >
                         <ChevronLeft className="w-5 h-5" />

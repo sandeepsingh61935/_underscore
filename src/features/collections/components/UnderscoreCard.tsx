@@ -1,5 +1,5 @@
-import React from 'react';
 import { Copy, Trash2, Clock } from 'lucide-react';
+import React from 'react';
 
 interface UnderscoreCardProps {
     id: string;
@@ -19,9 +19,9 @@ export function UnderscoreCard({
     isCode = false,
     onCopy,
     onDelete,
-}: UnderscoreCardProps) {
+}: UnderscoreCardProps): React.JSX.Element {
     return (
-        <article className="group relative flex flex-col gap-3 p-4 -mx-4 rounded-md transition-all hover:bg-surface-container border border-transparent hover:border-outline">
+        <article className="group relative flex flex-col gap-3 p-4 -mx-4 rounded-md transition-all duration-short ease-standard hover:bg-surface-container border border-transparent hover:border-outline">
             <div className="flex justify-between items-start gap-4">
                 {isCode ? (
                     <div className="w-full">

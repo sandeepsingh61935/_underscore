@@ -1,5 +1,6 @@
-import React from 'react';
 import { ArrowRight, Globe } from 'lucide-react';
+import React from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface CollectionCardProps {
@@ -24,7 +25,7 @@ export function CollectionCard({
     count,
     onClick,
     className,
-}: CollectionCardProps) {
+}: CollectionCardProps): React.JSX.Element {
     return (
         <button
             onClick={onClick}
@@ -32,7 +33,7 @@ export function CollectionCard({
             className={cn(
                 "group relative flex items-center gap-4 p-4 w-full text-left",
                 "bg-card hover:bg-secondary/50 border border-border rounded-xl",
-                "transition-all duration-200 hover:shadow-md hover:border-primary/30",
+                "transition-all duration-short ease-standard hover:shadow-md hover:border-primary/30",
                 "focus:outline-none focus:ring-2 focus:ring-primary/20",
                 className
             )}
@@ -73,7 +74,7 @@ export function CollectionCard({
 
             {/* Arrow - animates on hover */}
             <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-secondary/50 group-hover:bg-primary/10 transition-colors" aria-hidden="true">
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-short ease-standard" />
             </div>
         </button>
     );

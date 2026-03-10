@@ -1,7 +1,8 @@
-import React from 'react';
 import { Clock, Hash } from 'lucide-react';
-import { cn } from '../../../ui-system/utils/cn';
+import React from 'react';
+
 import { Text } from '../../../ui-system/components/primitives/Text';
+import { cn } from '../../../ui-system/utils/cn';
 
 export interface CollectionCardProps {
     id: string;
@@ -18,12 +19,12 @@ export function CollectionCard({
     lastActive,
     onClick,
     isActive
-}: CollectionCardProps) {
+}: CollectionCardProps): React.JSX.Element {
     return (
         <div
             onClick={onClick}
             className={cn(
-                "group cursor-pointer rounded-md border p-4 transition-all duration-short hover:shadow-elevation-2 bg-surface-container",
+                "group cursor-pointer rounded-md border p-4 transition-all duration-short ease-standard hover:shadow-elevation-2 bg-surface-container",
                 isActive
                     ? "border-primary ring-1 ring-primary"
                     : "border-outline hover:border-primary/50"
