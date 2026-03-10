@@ -86,12 +86,14 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
                 {/* Actions */}
                 <div className="w-full flex flex-col gap-3">
                     <button
+                        type="button"
                         onClick={onCheckVerification}
                         className={`
                             min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
                             bg-primary text-on-primary border-none cursor-pointer
                             hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]
                             active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                             disabled:opacity-disabled disabled:pointer-events-none
                         `}
                     >
@@ -99,12 +101,14 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
                     </button>
 
                     <button
+                        type="button"
                         onClick={onCancel}
                         className={`
                             min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
                             bg-transparent text-primary border border-outline cursor-pointer
                             hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]
                             active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                         `}
                     >
                         {isExpired ? 'Try again' : 'Cancel'}

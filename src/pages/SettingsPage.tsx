@@ -60,7 +60,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
     <button
       type="button"
       onClick={onBack}
-      className="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-body-small text-outline transition-colors duration-short ease-standard hover:text-on-surface"
+      className="inline-flex min-h-[48px] cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2 -mx-2 text-body-small text-outline transition-colors duration-short ease-standard hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       aria-label="Go back to collections"
     >
       <ChevronLeft size={13} />
@@ -69,7 +69,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
   ) : (
     <Link
       to="/collections"
-      className="inline-flex items-center gap-1.5 text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface"
+      className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <ChevronLeft size={13} />
       Collections
@@ -80,13 +80,16 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
     <button
       type="button"
       onClick={onBack}
-      className="cursor-pointer border-0 bg-transparent p-0"
+      className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full cursor-pointer border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       aria-label="Return to collections"
     >
       <Logo size="md" />
     </button>
   ) : (
-    <Link to="/collections" className="no-underline">
+    <Link
+      to="/collections"
+      className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+    >
       <Logo size="md" />
     </Link>
   );
@@ -254,7 +257,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
               <Button
                 type="button"
                 variant="outlined"
-                className="min-h-[40px] border-outline-variant px-4 text-on-surface hover:border-outline"
+                className="border-outline-variant px-4 text-on-surface hover:border-outline"
               >
                 Export {selectedExportFormat}
               </Button>
@@ -289,7 +292,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
             <footer className="flex items-center justify-between gap-3 py-4">
               <Link
                 to="/privacy"
-                className="text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface"
+                className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Privacy Policy
               </Link>
@@ -298,7 +301,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
 
               <a
                 href="#terms"
-                className="text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface"
+                className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 text-body-small text-outline no-underline transition-colors duration-short ease-standard hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Terms
               </a>
@@ -361,7 +364,7 @@ function ToggleRow({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          'inline-flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-all duration-short ease-standard',
+          'inline-flex h-12 w-[52px] shrink-0 items-center rounded-full border px-1.5 transition-all duration-short ease-standard',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           checked ? 'border-primary bg-primary' : 'border-outline-variant bg-outline'
         )}
@@ -401,7 +404,7 @@ function DangerRow({
         type="button"
         variant="outlined"
         onClick={onAction}
-        className="min-h-[40px] border-error px-4 text-error hover:bg-[color-mix(in_srgb,var(--md-sys-color-error)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--md-sys-color-error)_12%,transparent)]"
+        className="border-error px-4 text-error hover:bg-[color-mix(in_srgb,var(--md-sys-color-error)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--md-sys-color-error)_12%,transparent)]"
       >
         {actionLabel}
       </Button>

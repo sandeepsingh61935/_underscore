@@ -64,7 +64,7 @@ export function SignInView() {
                 {/* Back to mode selection */}
                 <Link
                     to="/mode"
-                    className="inline-flex items-center gap-1 text-body-small no-underline mb-8 text-outline transition-all duration-short ease-standard hover:text-primary"
+                    className="inline-flex min-h-[48px] items-center gap-1 rounded-md px-2 -mx-2 text-body-small no-underline mb-8 text-outline transition-all duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                     Back
                 </Link>
@@ -146,38 +146,34 @@ export function SignInView() {
                 </div>
 
                 {/* Toggle sign-in / register */}
-                <p className="text-center text-body-small text-on-surface-variant">
-                    {isSignIn ? (
-                        <>
-                            Don't have an account?{' '}
-                            <Button
-                                variant="text"
-                                onClick={() => setIsSignIn(false)}
-                                className="p-0 min-h-0 h-auto inline font-medium underline"
-                            >
-                                Create one
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            Already have an account?{' '}
-                            <Button
-                                variant="text"
-                                onClick={() => setIsSignIn(true)}
-                                className="p-0 min-h-0 h-auto inline font-medium underline"
-                            >
-                                Sign in
-                            </Button>
-                        </>
-                    )}
-                </p>
+                <div className="flex flex-wrap items-center justify-center gap-1 text-center text-body-small text-on-surface-variant">
+                    <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
+                    <Button
+                        variant="text"
+                        type="button"
+                        onClick={() => setIsSignIn(!isSignIn)}
+                        className="px-2 font-medium underline"
+                    >
+                        {isSignIn ? 'Create one' : 'Sign in'}
+                    </Button>
+                </div>
 
                 {/* Footer */}
                 <p className="text-center text-label-small mt-8 leading-relaxed text-outline">
                     By continuing, you agree to our{' '}
-                    <a href="#terms" className="underline text-outline">Terms of Service</a>
+                    <a
+                        href="#terms"
+                        className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                        Terms of Service
+                    </a>
                     {' '}and{' '}
-                    <Link to="/privacy" className="underline text-outline">Privacy Policy</Link>
+                    <Link
+                        to="/privacy"
+                        className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                        Privacy Policy
+                    </Link>
                 </p>
             </div>
         </div>

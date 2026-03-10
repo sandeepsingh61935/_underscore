@@ -13,7 +13,10 @@ export function PrivacyPage() {
         >
             {/* Header */}
             <header className="w-full max-w-[640px] flex justify-center items-center py-6 px-6">
-                <Link to="/" className="no-underline">
+                <Link
+                    to="/"
+                    className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
                     <Logo size="md" />
                 </Link>
             </header>
@@ -21,7 +24,7 @@ export function PrivacyPage() {
             <article className="w-full max-w-[640px] px-6 pb-12">
                 <Link
                     to="/"
-                    className="inline-flex items-center gap-1.5 text-[13px] no-underline mb-5 text-outline transition-colors duration-short ease-standard hover:text-primary"
+                    className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-[13px] no-underline mb-5 text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                     ← Back
                 </Link>
@@ -82,7 +85,10 @@ export function PrivacyPage() {
                 <PolicySection title="Contact">
                     <p>
                         Questions? Email us at{' '}
-                        <a href="mailto:privacy@underscore.dev" className="underline text-primary">
+                        <a
+                            href="mailto:privacy@underscore.dev"
+                            className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        >
                             privacy@underscore.dev
                         </a>
                     </p>

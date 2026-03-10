@@ -81,7 +81,7 @@ export function HighlightCard({
             className={cn(
                 "group relative p-4 bg-card border border-border rounded-lg",
                 "border-l-4 transition-all duration-short ease-standard",
-                "hover:shadow-md hover:bg-secondary/30",
+                "hover:shadow-md hover:bg-secondary/30 group-focus-within:shadow-md group-focus-within:bg-secondary/30",
                 colorClass,
                 className
             )}
@@ -99,7 +99,11 @@ export function HighlightCard({
                         <span>•</span>
                         <button
                             onClick={() => onNavigate?.(highlight.urlPath!)}
-                            className="hover:text-primary hover:underline truncate max-w-[200px] text-left"
+                            className={cn(
+                                "inline-flex min-h-[48px] max-w-[200px] items-center rounded-md px-2 -mx-2 text-left transition-colors duration-short ease-standard",
+                                "truncate hover:text-primary hover:underline",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            )}
                         >
                             {highlight.urlPath}
                         </button>
@@ -110,12 +114,12 @@ export function HighlightCard({
             {/* Action Buttons - Revealed on hover */}
             <div className={cn(
                 "absolute top-3 right-3 flex items-center gap-1",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-short ease-standard"
+                "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity duration-short ease-standard"
             )}>
                 {highlight.urlPath && onNavigate && (
                     <button
                         onClick={() => onNavigate(highlight.urlPath!)}
-                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-short ease-standard hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         aria-label="Open source page"
                     >
                         <ExternalLink className="w-4 h-4" aria-hidden="true" />
@@ -126,7 +130,8 @@ export function HighlightCard({
                     <button
                         onClick={handleCopy}
                         className={cn(
-                            "p-1.5 rounded-md hover:bg-secondary transition-colors",
+                            "inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md transition-colors duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                            "hover:bg-secondary",
                             copied
                                 ? "text-green-600 dark:text-green-400"
                                 : "text-muted-foreground hover:text-foreground"
@@ -140,7 +145,7 @@ export function HighlightCard({
                 {onDelete && (
                     <button
                         onClick={handleDelete}
-                        className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-short ease-standard hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         aria-label="Delete highlight"
                     >
                         <Trash2 className="w-4 h-4" aria-hidden="true" />

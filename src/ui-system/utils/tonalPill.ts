@@ -2,7 +2,7 @@ export const tonalPillShellClass =
   'inline-flex w-fit flex-wrap gap-1 rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] p-1 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--md-sys-color-inverse-on-surface)_4%,transparent)]';
 
 export const tonalPillBaseClass =
-  'appearance-none rounded-full border border-transparent bg-transparent transition-all duration-short ease-standard';
+  'inline-flex min-h-[48px] items-center justify-center appearance-none rounded-full border border-transparent bg-transparent transition-all duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
 
 export const tonalPillStandaloneClass =
   'border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))]';

@@ -25,6 +25,7 @@ export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeS
                         disabled={disabled}
                         className={cn(
                             "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-short ease-standard border rounded-md",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                             // Active State
                             isActive
                                 ? "border-primary bg-primary/5"

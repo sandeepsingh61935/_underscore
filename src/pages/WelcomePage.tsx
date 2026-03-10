@@ -70,19 +70,19 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}) {
             >
                 <Link
                     to="/privacy"
-                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+                    className="inline-flex min-h-[48px] items-center rounded-md px-2 text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                     Privacy
                 </Link>
                 <a
                     href="#terms"
-                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+                    className="inline-flex min-h-[48px] items-center rounded-md px-2 text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                     Terms
                 </a>
                 <a
                     href="#help"
-                    className="text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+                    className="inline-flex min-h-[48px] items-center rounded-md px-2 text-xs no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                     Help
                 </a>

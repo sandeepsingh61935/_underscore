@@ -155,16 +155,18 @@ export function EmptyState({
                 <div className="flex items-center gap-3 mt-6">
                     {action && (
                         <button
+                            type="button"
                             onClick={action.onClick}
-                            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors duration-short ease-standard hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         >
                             {action.label}
                         </button>
                     )}
                     {secondaryAction && (
                         <button
+                            type="button"
                             onClick={secondaryAction.onClick}
-                            className="px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-lg hover:bg-secondary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/50"
+                            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-short ease-standard hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         >
                             {secondaryAction.label}
                         </button>
