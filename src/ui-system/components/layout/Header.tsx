@@ -1,7 +1,8 @@
+import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
-import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,7 +32,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
     showUserMenu = true,
-    onSignInClick,
+    onSignInClick: _onSignInClick,
     onLogout,
     user: propUser,
     isAuthenticated: propIsAuthenticated,
@@ -51,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
         { id: 'sepia', label: 'Sepia', icon: <Monitor className="w-4 h-4" /> },
     ];
 
-    const handleLogout = () => {
+    const handleLogout = (): void => {
         if (onLogout) {
             // Use custom logout handler (for popup)
             onLogout();
@@ -67,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group">
-                    <CheckSquare className="w-6 h-6 text-primary group-hover:rotate-12 transition-transform duration-300" />
+                    <CheckSquare className="w-6 h-6 text-primary group-hover:rotate-12 transition-transform duration-short ease-standard" />
                     <h2 className="text-lg font-medium tracking-tight text-foreground group-hover:text-primary transition-colors">
                         _underscore
                     </h2>

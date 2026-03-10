@@ -1,8 +1,9 @@
+import { Globe, Copy, Paperclip, Trash2, ChevronLeft, Check } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
 import { Logo } from '@/ui-system/components/primitives/Logo';
-import { Globe, Copy, Paperclip, Trash2, ChevronLeft, Check } from 'lucide-react';
 
 interface Highlight {
     id: string;
@@ -20,7 +21,7 @@ export interface DomainDetailsViewProps {
  * Domain Details View — adapts dynamically to popup and web
  * Back nav + domain header + action bar + highlight cards
  */
-export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsViewProps = {}) {
+export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsViewProps = {}): React.JSX.Element {
     const params = useParams<{ domain: string }>();
     const domain = propDomain || params.domain;
     const navigate = useNavigate();
@@ -62,13 +63,13 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
         },
     ];
 
-    const handleCopy = (text: string, id: string) => {
+    const handleCopy = (text: string, id: string): void => {
         navigator.clipboard.writeText(text);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const handleCopyAll = () => {
+    const handleCopyAll = (): void => {
         const all = mockHighlights.map(h => h.text).join('\n\n');
         navigator.clipboard.writeText(all);
     };
@@ -149,7 +150,7 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                         {exportFormats.map(fmt => (
                             <button
                                 key={fmt}
-                                className="text-label-small px-2 py-1 rounded-xs cursor-pointer border-none transition-all hover:opacity-70 bg-transparent text-outline"
+                                className="text-label-small px-2 py-1 rounded-xs cursor-pointer border-none transition-all duration-short ease-standard hover:opacity-70 bg-transparent text-outline"
                             >
                                 {fmt}
                             </button>

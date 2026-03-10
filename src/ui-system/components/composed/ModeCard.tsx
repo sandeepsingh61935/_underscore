@@ -1,5 +1,6 @@
-import React from 'react';
 import { Lock, Check } from 'lucide-react';
+import React from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface ModeCardProps {
@@ -15,7 +16,7 @@ export interface ModeCardProps {
 }
 
 export function ModeCard({
-    id,
+    id: _id,
     label,
     description,
     icon,
@@ -23,13 +24,13 @@ export function ModeCard({
     isLocked = false,
     onClick,
     className
-}: ModeCardProps) {
+}: ModeCardProps): React.JSX.Element {
     return (
         <button
             onClick={onClick}
             disabled={isLocked}
             className={cn(
-                "group relative flex flex-col items-start p-5 w-full text-left transition-all duration-200 border rounded-xl overflow-hidden",
+                "group relative flex flex-col items-start p-5 w-full text-left transition-all duration-short ease-standard border rounded-xl overflow-hidden",
                 // Active/Selected State
                 isActive
                     ? "border-primary bg-primary shadow-md"

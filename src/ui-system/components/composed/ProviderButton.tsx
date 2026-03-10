@@ -1,6 +1,7 @@
-import React from 'react';
-import { cn } from '../../utils/cn';
 import { Mail, Facebook, Twitter, Github, Loader2 } from 'lucide-react';
+import React from 'react';
+
+import { cn } from '../../utils/cn';
 
 export type AuthProvider = 'google' | 'apple' | 'x' | 'facebook' | 'github';
 
@@ -50,7 +51,7 @@ export function ProviderButton({
     disabled,
     children,
     ...props
-}: ProviderButtonProps) {
+}: ProviderButtonProps): React.JSX.Element {
     const config = PROVIDER_CONFIG[provider];
     const Icon = config.icon;
 
@@ -61,7 +62,7 @@ export function ProviderButton({
             className={cn(
                 "relative flex items-center justify-center w-full px-4 py-3 gap-3",
                 "bg-surface text-on-surface border border-outline rounded-lg",
-                "text-sm font-medium transition-all duration-200",
+                "text-sm font-medium transition-all duration-short ease-standard",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 !isLoading && !disabled && "hover:shadow-sm hover:border-primary/50",
                 config.className,

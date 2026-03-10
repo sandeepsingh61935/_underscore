@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { Copy, Trash2, Check, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface Highlight {
@@ -54,10 +55,10 @@ export function HighlightCard({
     onDelete,
     onNavigate,
     className,
-}: HighlightCardProps) {
+}: HighlightCardProps): React.JSX.Element {
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = (e: React.MouseEvent) => {
+    const handleCopy = (e: React.MouseEvent): void => {
         e.stopPropagation();
         if (onCopy) {
             onCopy(highlight.text);
@@ -66,7 +67,7 @@ export function HighlightCard({
         }
     };
 
-    const handleDelete = (e: React.MouseEvent) => {
+    const handleDelete = (e: React.MouseEvent): void => {
         e.stopPropagation();
         if (onDelete) {
             onDelete(highlight.id);
@@ -79,7 +80,7 @@ export function HighlightCard({
         <div
             className={cn(
                 "group relative p-4 bg-card border border-border rounded-lg",
-                "border-l-4 transition-all duration-200",
+                "border-l-4 transition-all duration-short ease-standard",
                 "hover:shadow-md hover:bg-secondary/30",
                 colorClass,
                 className
@@ -109,7 +110,7 @@ export function HighlightCard({
             {/* Action Buttons - Revealed on hover */}
             <div className={cn(
                 "absolute top-3 right-3 flex items-center gap-1",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                "opacity-0 group-hover:opacity-100 transition-opacity duration-short ease-standard"
             )}>
                 {highlight.urlPath && onNavigate && (
                     <button

@@ -61,7 +61,7 @@ export interface ModeSelectionViewProps {
  * Mode Selection View — adapts dynamically to popup (400x600) and web (full screen)
  * Centered logo, 4 mode cards, auth nudge, confirmation modal + spinner overlay
  */
-export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeSelectionViewProps = {}) {
+export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeSelectionViewProps = {}): React.JSX.Element {
     const navigate = useNavigate();
     const { currentMode, isAuthenticated } = useApp();
     const {
@@ -72,7 +72,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
         cancelTransition,
     } = useModeTransition();
 
-    const handleCardClick = (modeId: ModeType) => {
+    const handleCardClick = (modeId: ModeType): void => {
         if (onModeSelect) {
             onModeSelect(modeId);
         } else {
@@ -80,7 +80,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
         }
     };
 
-    const handleAuthClick = (e: React.MouseEvent) => {
+    const handleAuthClick = (e: React.MouseEvent): void => {
         e.preventDefault();
         if (onSignInClick) {
             onSignInClick();
@@ -166,8 +166,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                     onClick={cancelTransition}
                 >
                     <div
-                        className="w-[90%] max-w-[360px] rounded-xl overflow-hidden p-7 text-center relative bg-surface-container-highest border border-outline-variant shadow-elevation-3"
-                        style={{ animation: 'cardIn 0.18s ease-out' }}
+                        className="w-[90%] max-w-[360px] rounded-xl overflow-hidden p-7 text-center relative bg-surface-container-highest border border-outline-variant shadow-elevation-3 animate-in zoom-in-95 fade-in duration-medium ease-decelerate"
                         onClick={e => e.stopPropagation()}
                     >
                         <p className="text-title-medium font-semibold mb-2">
