@@ -100,7 +100,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                     {onBack && (
                         <a
                             href="#"
-                            className="inline-flex items-center gap-1.5 text-body-small no-underline text-outline transition-all duration-short ease-standard hover:text-primary"
+                            className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small no-underline text-outline transition-all duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             onClick={e => {
                                 e.preventDefault();
                                 onBack();
@@ -149,8 +149,9 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                 {!isAuthenticated && (
                     <div className="text-center text-body-small py-4 rounded-md mb-4 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary">
                         <button
+                            type="button"
                             onClick={handleAuthClick}
-                            className="font-medium underline bg-transparent border-none p-0 cursor-pointer text-primary"
+                            className="inline-flex min-h-[48px] items-center rounded-md border-0 bg-transparent px-2 font-medium text-primary underline transition-colors duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         >
                             Create an account
                         </button>

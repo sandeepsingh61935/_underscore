@@ -88,7 +88,7 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
                                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)]',
                                         'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,transparent)]',
                                         'transition-colors duration-short',
-                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                                         title ? 'ml-auto' : ''
                                     )}
                                     aria-label="Close dialog"

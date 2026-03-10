@@ -85,12 +85,15 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                 className="w-full max-w-[640px] flex items-center justify-between py-4 px-6 shrink-0 z-10 sticky top-0 backdrop-blur-md"
                 style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
             >
-                <Link to="/mode" className="no-underline">
+                <Link
+                    to="/mode"
+                    className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
                     <Logo size="md" />
                 </Link>
                 <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-body-medium font-semibold cursor-pointer transition-all duration-short ease-standard hover:scale-105 bg-primary text-on-primary border border-outline-variant"
-                    title={user?.displayName || 'User'}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-body-medium font-semibold bg-primary text-on-primary border border-outline-variant"
+                    aria-hidden="true"
                 >
                     {(user?.displayName || 'U')[0]}
                 </div>
@@ -100,15 +103,16 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                 {/* Back nav */}
                 {onBack ? (
                     <button
+                        type="button"
                         onClick={onBack}
-                        className="inline-flex items-center gap-1.5 text-body-small mb-5 transition-colors text-outline hover:text-primary bg-transparent border-none p-0 cursor-pointer text-left font-[inherit]"
+                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small mb-5 transition-colors text-outline hover:text-primary bg-transparent border-none cursor-pointer text-left font-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         <ChevronLeft size={13} /> Collections
                     </button>
                 ) : (
                     <Link
                         to="/collections"
-                        className="inline-flex items-center gap-1.5 text-body-small no-underline mb-5 transition-colors text-outline hover:text-primary"
+                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small no-underline mb-5 transition-colors text-outline hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         <ChevronLeft size={13} /> Collections
                     </Link>
@@ -138,26 +142,29 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                     className="flex flex-wrap items-center gap-2 mb-6 p-3 rounded-md bg-surface-container-low border border-outline-variant"
                 >
                     <button
+                        type="button"
                         onClick={handleCopyAll}
-                        className="flex items-center gap-1.5 text-label-medium font-medium px-3 py-1.5 rounded-sm cursor-pointer transition-all duration-short ease-standard border-none bg-transparent text-on-surface-variant"
+                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium font-medium transition-all duration-short ease-standard border-none bg-transparent text-on-surface-variant hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         <Copy size={12} /> Copy all
                     </button>
                     <div
-                        className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[color-mix(in_srgb,var(--md-sys-color-error)_8%,transparent)]"
+                        className="flex flex-wrap items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--md-sys-color-error)_8%,transparent)] px-2 py-1"
                     >
                         <Paperclip size={12} className="text-outline" />
                         {exportFormats.map(fmt => (
                             <button
                                 key={fmt}
-                                className="text-label-small px-2 py-1 rounded-xs cursor-pointer border-none transition-all duration-short ease-standard hover:opacity-70 bg-transparent text-outline"
+                                type="button"
+                                className="inline-flex min-h-[48px] items-center rounded-full px-3 py-1.5 text-label-small cursor-pointer border-none transition-all duration-short ease-standard hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)] bg-transparent text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             >
                                 {fmt}
                             </button>
                         ))}
                     </div>
                     <button
-                        className="ml-auto flex items-center gap-1.5 text-label-medium font-medium px-3 py-1.5 rounded-sm cursor-pointer transition-all duration-short ease-standard border-none bg-transparent text-outline"
+                        type="button"
+                        className="ml-auto inline-flex min-h-[48px] items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium font-medium cursor-pointer transition-all duration-short ease-standard border-none bg-transparent text-outline hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         <Trash2 size={12} /> Clear all
                     </button>
@@ -168,7 +175,7 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                     {mockHighlights.map(h => (
                         <div
                             key={h.id}
-                            className="group p-5 rounded-md transition-all duration-short ease-standard bg-surface-container-lowest border border-outline-variant hover:shadow-elevation-3"
+                            className="group rounded-md border border-outline-variant bg-surface-container-lowest p-5 transition-all duration-short ease-standard hover:shadow-elevation-3 focus-within:shadow-elevation-3"
                         >
                             {/* Quote */}
                             <div className="flex gap-3 mb-3">
@@ -186,8 +193,10 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <button
+                                        type="button"
                                         onClick={() => handleCopy(h.text, h.id)}
-                                        className="text-label-small px-2 py-1 rounded-xs cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-all duration-short ease-standard bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary"
+                                        className="inline-flex min-h-[48px] items-center justify-center rounded-full px-3 py-1.5 text-label-small cursor-pointer border-none opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-all duration-short ease-standard bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                        aria-label={copiedId === h.id ? 'Copied highlight' : 'Copy highlight'}
                                     >
                                         {copiedId === h.id ? <Check size={11} /> : 'Copy'}
                                     </button>

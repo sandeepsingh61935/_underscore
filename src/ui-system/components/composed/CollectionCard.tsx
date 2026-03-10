@@ -34,7 +34,7 @@ export function CollectionCard({
                 "group relative flex items-center gap-4 p-4 w-full text-left",
                 "bg-card hover:bg-secondary/50 border border-border rounded-xl",
                 "transition-all duration-short ease-standard hover:shadow-md hover:border-primary/30",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 className
             )}
         >

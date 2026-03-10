@@ -63,8 +63,9 @@ export function AccountMenu({
                         <nav className="py-2">
                             {/* Settings - 56dp height, 24dp icon, Label Large */}
                             <button
+                                type="button"
                                 onClick={() => handleMenuClick(onSettingsClick)}
-                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors outline-none"
+                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             >
                                 <Settings size={24} className="text-on-surface-variant-light dark:text-on-surface-variant-dark flex-shrink-0" />
                                 <span>Settings</span>
@@ -72,8 +73,9 @@ export function AccountMenu({
 
                             {/* Privacy */}
                             <button
+                                type="button"
                                 onClick={() => handleMenuClick(onPrivacyClick)}
-                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors outline-none"
+                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             >
                                 <ShieldCheck size={24} className="text-on-surface-variant-light dark:text-on-surface-variant-dark flex-shrink-0" />
                                 <span>Privacy</span>
@@ -82,8 +84,9 @@ export function AccountMenu({
                             {/* Theme - Expandable */}
                             {!showThemeSubmenu ? (
                                 <button
+                                    type="button"
                                     onClick={() => setShowThemeSubmenu(true)}
-                                    className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors outline-none"
+                                    className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                 >
                                     <Palette size={24} className="text-on-surface-variant-light dark:text-on-surface-variant-dark flex-shrink-0" />
                                     <span>Theme</span>
@@ -93,22 +96,25 @@ export function AccountMenu({
                                     <div className="flex flex-col gap-0.5">
                                         {/* Theme options - 48dp height per MD3 */}
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('light')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>Light</span>
                                             {currentTheme === 'light' && <Check size={18} className="text-primary" />}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('dark')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>Dark</span>
                                             {currentTheme === 'dark' && <Check size={18} className="text-primary" />}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('system')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>System</span>
                                             {currentTheme === 'system' && <Check size={18} className="text-primary" />}
@@ -124,8 +130,9 @@ export function AccountMenu({
                         {/* Sign Out - MD3: 56dp height */}
                         <div className="py-2">
                             <button
+                                type="button"
                                 onClick={() => handleMenuClick(onSignOut)}
-                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-red-500 hover:bg-red-500/8 dark:hover:bg-red-500/8 transition-colors outline-none"
+                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-red-500 hover:bg-red-500/8 dark:hover:bg-red-500/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             >
                                 <LogOut size={24} className="flex-shrink-0" />
                                 <span>Sign out</span>
@@ -137,8 +144,9 @@ export function AccountMenu({
                         {/* Unauthenticated Menu Items */}
                         <nav className="py-2">
                             <button
+                                type="button"
                                 onClick={() => handleMenuClick(onPrivacyClick)}
-                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors outline-none"
+                                className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             >
                                 <ShieldCheck size={24} className="text-on-surface-variant-light dark:text-on-surface-variant-dark flex-shrink-0" />
                                 <span>Privacy</span>
@@ -147,8 +155,9 @@ export function AccountMenu({
                             {/* Theme */}
                             {!showThemeSubmenu ? (
                                 <button
+                                    type="button"
                                     onClick={() => setShowThemeSubmenu(true)}
-                                    className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors outline-none"
+                                    className="relative w-full h-14 flex items-center gap-4 px-4 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                 >
                                     <Palette size={24} className="text-on-surface-variant-light dark:text-on-surface-variant-dark flex-shrink-0" />
                                     <span>Theme</span>
@@ -157,22 +166,25 @@ export function AccountMenu({
                                 <div className="px-4 py-2">
                                     <div className="flex flex-col gap-0.5">
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('light')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>Light</span>
                                             {currentTheme === 'light' && <Check size={18} className="text-primary" />}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('dark')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>Dark</span>
                                             {currentTheme === 'dark' && <Check size={18} className="text-primary" />}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleThemeSelect('system')}
-                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors"
+                                            className="relative h-12 flex items-center justify-between px-3 text-label-large text-on-surface-light dark:text-on-surface-dark hover:bg-on-surface-light/8 dark:hover:bg-on-surface-dark/8 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             <span>System</span>
                                             {currentTheme === 'system' && <Check size={18} className="text-primary" />}

@@ -23,54 +23,84 @@ export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Chip = forwardRef<HTMLButtonElement, ChipProps>(
-    ({ className, variant = 'filter', selected, onRemove, icon, children, ...props }, ref) => {
+    ({ className, variant = 'filter', selected, onRemove, icon, children, type, onClick, disabled, ...props }, ref) => {
+        const sharedChipClasses = cn(
+            'inline-flex min-h-[48px] items-center justify-center gap-2',
+            'text-label-large',
+            'transition-all duration-short ease-standard',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+            'disabled:opacity-disabled disabled:pointer-events-none'
+        );
+
+        const variantClasses = cn(
+            variant === 'filter' && [
+                tonalPillBaseClass,
+                tonalPillStandaloneClass,
+                !selected && [
+                    tonalPillInactiveClass,
+                    'hover:border-outline',
+                ],
+                selected && [
+                    tonalPillActiveClass,
+                    'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary-container)_8%,var(--md-sys-color-primary-container))]',
+                ],
+            ],
+
+            variant === 'input' && [
+                'rounded-full border border-outline-variant bg-surface-container-high text-on-surface',
+                'hover:bg-surface-container-highest',
+            ]
+        );
+
+        if (variant === 'input' && onRemove) {
+            return (
+                <div className={cn(sharedChipClasses, variantClasses, 'w-fit pl-4 pr-1', className)}>
+                    {icon && <span className="flex h-[18px] w-[18px] items-center justify-center">{icon}</span>}
+                    <button
+                        ref={ref}
+                        type={type ?? 'button'}
+                        onClick={onClick}
+                        disabled={disabled}
+                        className="min-h-[48px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        {...props}
+                    >
+                        {children}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                        disabled={disabled}
+                        className={cn(
+                            'inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full',
+                            'text-on-surface-variant transition-colors duration-short ease-standard',
+                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                            'disabled:opacity-disabled disabled:pointer-events-none'
+                        )}
+                        aria-label="Remove"
+                    >
+                        <X className="h-[16px] w-[16px]" />
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <button
                 ref={ref}
+                type={type ?? 'button'}
+                onClick={onClick}
+                disabled={disabled}
                 className={cn(
-                    'inline-flex items-center justify-center gap-2',
-                    'text-label-large',
-                    'h-[32px] px-4',
-                    'transition-all duration-short ease-standard',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-
-                    variant === 'filter' && [
-                        tonalPillBaseClass,
-                        tonalPillStandaloneClass,
-                        !selected && [
-                            tonalPillInactiveClass,
-                            'hover:border-outline',
-                        ],
-                        selected && [
-                            tonalPillActiveClass,
-                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary-container)_8%,var(--md-sys-color-primary-container))]',
-                        ],
-                    ],
-
-                    variant === 'input' && [
-                        'bg-surface-container-high',
-                        'text-on-surface',
-                        'border border-outline-variant',
-                        'hover:bg-surface-container-highest',
-                    ],
-
-                    'disabled:opacity-disabled disabled:pointer-events-none',
+                    sharedChipClasses,
+                    variantClasses,
+                    'px-4',
                     className
                 )}
                 {...props}
             >
-                {icon && <span className="w-[18px] h-[18px] flex items-center justify-center">{icon}</span>}
+                {icon && <span className="flex h-[18px] w-[18px] items-center justify-center">{icon}</span>}
                 {children}
-                {variant === 'input' && onRemove && (
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="w-[18px] h-[18px] flex items-center justify-center hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)] rounded-full transition-colors"
-                        aria-label="Remove"
-                    >
-                        <X className="w-[16px] h-[16px]" />
-                    </button>
-                )}
             </button>
         );
     }

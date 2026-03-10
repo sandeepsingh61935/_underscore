@@ -60,9 +60,10 @@ export function ProviderButton({
             type="button"
             disabled={disabled || isLoading}
             className={cn(
-                "relative flex items-center justify-center w-full px-4 py-3 gap-3",
+                "relative flex min-h-[48px] w-full items-center justify-center gap-3 px-4 py-3",
                 "bg-surface text-on-surface border border-outline rounded-lg",
                 "text-sm font-medium transition-all duration-short ease-standard",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 !isLoading && !disabled && "hover:shadow-sm hover:border-primary/50",
                 config.className,

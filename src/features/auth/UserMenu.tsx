@@ -26,8 +26,10 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
     return (
         <div className="relative" ref={menuRef}>
             <button
+                type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-surface-container transition-colors"
+                aria-label={`Open user menu for ${user.name}`}
+                className="flex min-h-[48px] items-center gap-2 rounded-full px-2 py-1.5 transition-colors duration-short ease-standard hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                     {user.avatarUrl ? (
@@ -46,14 +48,18 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
                         <Text variant="tiny" muted className="truncate">{user.email}</Text>
                     </div>
 
-                    <button className="flex items-center gap-2 w-full px-3 py-2 rounded-sm text-label-medium text-on-surface hover:bg-surface-container text-left">
+                    <button
+                        type="button"
+                        className="flex min-h-[48px] w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-label-medium text-on-surface transition-colors duration-short ease-standard hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
                         <Settings size={16} />
                         Settings
                     </button>
 
                     <button
+                        type="button"
                         onClick={onLogout}
-                        className="flex items-center gap-2 w-full px-3 py-2 rounded-sm text-label-medium text-error hover:bg-error-container text-left"
+                        className="flex min-h-[48px] w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-label-medium text-error transition-colors duration-short ease-standard hover:bg-error-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         <LogOut size={16} />
                         Sign Out
