@@ -55,23 +55,25 @@ Flow 3 - Account:       Avatar → Account Menu → Settings / Privacy / Sign Ou
 
 ### Color Palette
 
-**Seed color**: `#5b8db9` (Underscore Blue) — used to generate the full MD3 palette.
+Use the MD3 roles defined in `src/ui-system/theme/global.css`. In specs, reviews, and implementation notes, reference token names and Tailwind utilities, not raw light/dark literals. The tone should stay calm, intelligent, and minimal regardless of theme.
 
-| Role | Light | Dark | Usage |
-|------|-------|------|-------|
-| Background | `#fafbfc` | `#0e1015` | Page canvas |
-| Surface (card) | `#ffffff` | `rgba(255,255,255,0.04)` | Cards, containers |
-| Text primary | `#0f1419` | `#e4e7ec` | Headings, body |
-| Text secondary | `#536471` | `#8b95a5` | Descriptions, labels |
-| Text tertiary | `#8b98a5` | `#4b5563` | Placeholders, hints |
-| Accent | `#5b8db9` | `#6da3cc` | CTAs, active states |
-| Accent text | `#4a7da8` | `#93bbda` | Hover text on interactive |
-| Border | `#eef1f3` | `rgba(255,255,255,0.06)` | Card/container borders |
-| Border hover | `#dfe3e8` | `rgba(255,255,255,0.10)` | Hover state borders |
+| Role | MD3 token | Tailwind utility | Usage |
+|------|-----------|------------------|-------|
+| Background | `--md-sys-color-surface` | `bg-surface` | Page canvas and full-screen roots |
+| Surface (card) | `--md-sys-color-surface-container-lowest` | `bg-surface-container-lowest` | Cards, containers, list rows |
+| Elevated surface | `--md-sys-color-surface-container-low` | `bg-surface-container-low` | Slightly raised shells and sticky regions |
+| Text primary | `--md-sys-color-on-surface` | `text-on-surface` | Headings and body copy |
+| Text secondary | `--md-sys-color-on-surface-variant` | `text-on-surface-variant` | Descriptions, labels, helper text |
+| Text tertiary | `--md-sys-color-outline` | `text-outline` | Metadata, timestamps, quiet UI |
+| Accent fill | `--md-sys-color-primary` | `bg-primary` | CTAs and active states |
+| Accent text | `--md-sys-color-primary` | `text-primary` | Text-only emphasis and inline actions |
+| Accent container | `--md-sys-color-primary-container` + `--md-sys-color-on-primary-container` | `bg-primary-container text-on-primary-container` | Tonal pills, selected filters, highlighted summaries |
+| Border | `--md-sys-color-outline-variant` | `border-outline-variant` | Default card, field, and divider borders |
+| Border hover | `--md-sys-color-outline` | `border-outline` | Hover/focus emphasis and stronger separation |
 
 **Logo (theme-adaptive)**:
-- Light mode: Dark charcoal circle (`#1a1d23`), white `_`
-- Dark mode: Pearl white circle (`#f8f9fa`), black `_` (`#111827`)
+- Use `--logo-bg`, `--logo-text`, `--logo-text-shadow`, and `--logo-ambient-reflection` for the underscore mark.
+- Treat the logo variables as a deliberate exception to the MD3 palette. Preserve their theme-adaptive contrast and do not remap the mark to generic `primary` or `on-primary` roles.
 
 ### Typography
 - **Font**: Inter (already loaded)
