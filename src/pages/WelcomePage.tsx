@@ -66,19 +66,19 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
       <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4 border-t border-outline-variant">
         <Link
           to="/privacy"
-          className="text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           Privacy
         </Link>
         <a
           href="#terms"
-          className="text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           Terms
         </a>
         <a
           href="#help"
-          className="text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary"
+          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           Help
         </a>

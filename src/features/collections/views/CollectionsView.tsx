@@ -125,24 +125,26 @@ export function CollectionsView({
             'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)',
         }}
       >
-        <Link to="/mode" className="no-underline">
+        <Link
+          to="/mode"
+          className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
           <Logo size="md" />
         </Link>
-        <a
-          href="/settings"
-          title="Settings"
-          onClick={(e) => {
-            e.preventDefault();
+        <button
+          type="button"
+          aria-label="Open settings"
+          onClick={() => {
             if (_onSettingsClick) {
               _onSettingsClick();
             } else {
               navigate('/settings');
             }
           }}
-          className="w-12 h-12 flex items-center justify-center rounded-full no-underline transition-all duration-short ease-standard hover:-translate-y-0.5 bg-surface-container-lowest border border-outline-variant shadow-elevation-1 text-outline"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-outline shadow-elevation-1 transition-all duration-short ease-standard hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Settings size={17} />
-        </a>
+        </button>
       </header>
 
       <div className="w-full max-w-[640px] px-6 pb-6 flex-1 flex flex-col min-h-min">
@@ -153,14 +155,15 @@ export function CollectionsView({
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-[10px] px-4 py-3 rounded-md mb-6 transition-all duration-short ease-standard bg-surface-container-lowest border border-outline-variant">
+        <div className="flex items-center gap-[10px] px-4 py-3 rounded-md mb-6 transition-all duration-short ease-standard bg-surface-container-lowest border border-outline-variant focus-within:border-outline focus-within:shadow-elevation-1">
           <Search size={15} className="text-outline opacity-50" />
           <input
             type="text"
+            aria-label="Search collections"
             placeholder="Search collections..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-body-medium text-on-surface"
+            className="flex-1 rounded-sm bg-transparent border-none text-body-medium text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           />
         </div>
 
@@ -171,8 +174,9 @@ export function CollectionsView({
           </p>
           <select
             value={sortBy}
+            aria-label="Sort collections"
             onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="text-label-medium bg-transparent border-none outline-none cursor-pointer text-outline"
+            className="rounded-sm bg-transparent text-label-medium text-outline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <option value="most">Most highlights</option>
             <option value="az">A - Z</option>
@@ -185,9 +189,10 @@ export function CollectionsView({
         <div className="flex flex-col gap-2">
           {filtered.map((c) => (
             <button
+              type="button"
               key={c.id}
               onClick={() => handleCollectionClick(c)}
-              className="flex items-center gap-3 p-3 rounded-md text-left cursor-pointer transition-all duration-short ease-standard hover:-translate-y-0.5 w-full border border-outline-variant font-[inherit] bg-surface-container-lowest shadow-elevation-1 hover:shadow-elevation-3"
+              className="flex w-full items-center gap-3 rounded-md border border-outline-variant bg-surface-container-lowest p-3 text-left font-[inherit] shadow-elevation-1 transition-all duration-short ease-standard hover:-translate-y-0.5 hover:shadow-elevation-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <div className="w-9 h-9 rounded-sm flex items-center justify-center text-title-medium leading-none shrink-0 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]">
                 {c.emoji}
@@ -210,7 +215,7 @@ export function CollectionsView({
           Switch modes anytime in{' '}
           <a
             href="/settings"
-            className="underline text-primary"
+            className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             onClick={(e) => {
               e.preventDefault();
               if (_onSettingsClick) {

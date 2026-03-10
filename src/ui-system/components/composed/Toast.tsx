@@ -206,8 +206,9 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
         )}
         {toast.action && (
           <button
+            type="button"
             onClick={toast.action.onClick}
-            className="mt-2 text-label-large text-primary hover:underline"
+            className="mt-2 inline-flex min-h-[48px] items-center rounded-md px-3 -ml-3 text-label-large text-primary transition-colors duration-short ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {toast.action.label}
           </button>
@@ -215,8 +216,9 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
       </div>
 
       <button
+        type="button"
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        className="inline-flex min-h-[48px] min-w-[48px] shrink-0 items-center justify-center rounded-md transition-colors duration-short ease-standard hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:hover:bg-white/10"
         aria-label="Dismiss"
       >
         <X className="w-4 h-4 text-muted-foreground" />

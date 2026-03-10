@@ -57,7 +57,9 @@ export function UserMenu({
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-3 cursor-pointer outline-none focus:ring-2 ring-primary/20 rounded-full p-0.5 hover:opacity-80 transition-opacity ${className || ''}`}
+          type="button"
+          aria-label={`Open account menu for ${user.displayName}`}
+          className={`flex min-h-[48px] min-w-[48px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${className || ''}`}
         >
           {/* Display name (hidden on small screens) */}
           <div className="text-right hidden md:block">

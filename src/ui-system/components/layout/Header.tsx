@@ -86,8 +86,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Navigation Link */}
           {isAuthenticated && (
             <button
+              type="button"
               onClick={() => navigate('/collections')}
-              className="hidden sm:flex text-label-large text-muted-foreground hover:text-primary transition-colors"
+              className="hidden sm:inline-flex min-h-[48px] items-center rounded-md px-3 text-label-large text-muted-foreground transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               Dashboard
             </button>
@@ -100,7 +101,11 @@ export const Header: React.FC<HeaderProps> = ({
             ? showUserMenu && (
                 <DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-3 cursor-pointer outline-none focus:ring-2 ring-primary/20 rounded-full p-0.5 hover:opacity-80 transition-opacity">
+                    <button
+                      type="button"
+                      aria-label={`Open account menu for ${user.displayName}`}
+                      className="flex min-h-[48px] min-w-[48px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
                       <div className="text-right hidden md:block">
                         <span className="block text-label-small text-foreground">
                           {user.displayName}

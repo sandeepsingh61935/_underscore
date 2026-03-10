@@ -29,7 +29,7 @@ export function NotFoundPage(): React.ReactElement {
         {/* Back link */}
         <Link
           to="/"
-          className="text-label-large no-underline text-primary transition-all duration-short ease-standard hover:opacity-80"
+          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-large no-underline text-primary transition-all duration-short ease-standard hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           ← Back to home
         </Link>

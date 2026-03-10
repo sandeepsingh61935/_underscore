@@ -38,16 +38,18 @@ export function UnderscoreCard({
                 {/* Action buttons (visible on mobile, hover on desktop) */}
                 <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                     <button
+                        type="button"
                         onClick={() => onCopy(id)}
-                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-sm transition-colors"
-                        title="Copy to clipboard"
+                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-sm text-on-surface-variant transition-colors duration-short ease-standard hover:bg-surface-container hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        aria-label="Copy to clipboard"
                     >
                         <Copy size={18} />
                     </button>
                     <button
+                        type="button"
                         onClick={() => onDelete(id)}
-                        className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container rounded-sm transition-colors"
-                        title="Delete"
+                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-sm text-on-surface-variant transition-colors duration-short ease-standard hover:bg-error-container hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        aria-label="Delete highlight"
                     >
                         <Trash2 size={18} />
                     </button>

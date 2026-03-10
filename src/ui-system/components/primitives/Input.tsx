@@ -3,7 +3,9 @@
  * @see https://m3.material.io/components/text-fields/overview
  */
 
-import React, { InputHTMLAttributes, forwardRef } from 'react';
+import React, { forwardRef } from 'react';
+import type { InputHTMLAttributes } from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -28,7 +30,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                             'text-on-surface',
                             'px-4 py-3',
                             'border border-outline',
-                            'focus:outline-none focus:ring-0 focus:border-2 focus:border-primary',
+                            'focus:outline-none focus:border-primary',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:border-primary',
                             'transition-all duration-short ease-standard',
                             'min-h-[56px]',                                  // MD3 text field height
                             'placeholder:text-on-surface-variant',

@@ -58,8 +58,9 @@ class ErrorBoundary extends Component<
             {this.state.error?.message || 'Unknown error'}
           </p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
-            className="min-h-[48px] px-4 py-2 bg-primary text-on-primary rounded-full text-label-large"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-primary px-4 py-2 text-label-large text-on-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Reload Extension
           </button>
