@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 import { Button } from '@/ui-system/components/primitives/Button';
-import { Logo } from '@/ui-system/components/primitives/Logo';
 import { Separator } from '@/ui-system/components/primitives/Separator';
 import { cn } from '@/ui-system/utils/cn';
 import {
@@ -76,36 +76,10 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}): React.JSX.Elem
     </Link>
   );
 
-  const logoControl = onBack ? (
-    <button
-      type="button"
-      onClick={onBack}
-      className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full cursor-pointer border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      aria-label="Return to collections"
-    >
-      <Logo size="md" />
-    </button>
-  ) : (
-    <Link
-      to="/collections"
-      className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-    >
-      <Logo size="md" />
-    </Link>
-  );
-
   return (
     <div className="h-full w-full overflow-y-auto bg-surface text-on-surface">
       <div className="flex min-h-full flex-col items-center">
-        <header
-          className="sticky top-0 z-10 flex w-full max-w-[640px] justify-center px-6 py-6 backdrop-blur-md"
-          style={{
-            backgroundColor:
-              'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)',
-          }}
-        >
-          {logoControl}
-        </header>
+        <AppHeader variant="standalone" />
 
         <main className="w-full max-w-[640px] flex-1 px-6 pb-12">
           <div className="mb-8 flex flex-col gap-3">

@@ -6,8 +6,8 @@ import { useModeTransition } from './useModeTransition';
 
 import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 import { Button } from '@/ui-system/components/primitives/Button';
-import { Logo } from '@/ui-system/components/primitives/Logo';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 /** Internal mode → display name + UX copy */
@@ -91,31 +91,11 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
 
     return (
         <div className="h-full w-full flex flex-col items-center justify-between py-2 overflow-y-auto bg-surface text-on-surface">
-            {/* Header */}
-            <header
-                className="w-full max-w-[480px] flex justify-between items-center px-6 shrink-0 z-10 sticky top-0 py-4 backdrop-blur-md"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
-            >
-                <div className="flex-1 flex justify-start">
-                    {onBack && (
-                        <a
-                            href="#"
-                            className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small no-underline text-outline transition-all duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                            onClick={e => {
-                                e.preventDefault();
-                                onBack();
-                            }}
-                        >
-                            Back
-                        </a>
-                    )}
-                </div>
-                <div className="flex-none flex justify-center">
-                    <Logo size="md" />
-                </div>
-                {/* Empty flex-1 div to perfectly center the logo against the back button */}
-                <div className="flex-1" />
-            </header>
+            <AppHeader
+                variant={onBack ? 'sub' : 'standalone'}
+                onBack={onBack}
+                backLabel="Back"
+            />
 
             {/* Content box — stretch to take remaining height but compress on small screens */}
             <main className="w-full max-w-[480px] flex-1 flex flex-col items-center justify-center py-6 px-6">

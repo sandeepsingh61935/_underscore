@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use AppHeader from './AppHeader' instead.
+ * This component uses banned Style C tokens (bg-card, border-border/60)
+ * and is not used by any active view. It will be deleted once confirmed safe.
+ */
 import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';

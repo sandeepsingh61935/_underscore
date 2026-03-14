@@ -1,10 +1,10 @@
 import { Settings, Search, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { Logo } from '@/ui-system/components/primitives/Logo';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /* Display name mapping (internal → UI) */
 const MODE_DISPLAY: Record<ModeType, string> = {
@@ -117,35 +117,25 @@ export function CollectionsView({
 
   return (
     <div className="h-full overflow-y-auto w-full flex flex-col items-center bg-surface text-on-surface">
-      {/* Header */}
-      <header
-        className="w-full max-w-[640px] flex items-center justify-between py-4 px-6 shrink-0 z-10 sticky top-0 backdrop-blur-md"
-        style={{
-          backgroundColor:
-            'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)',
-        }}
-      >
-        <Link
-          to="/mode"
-          className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <Logo size="md" />
-        </Link>
-        <button
-          type="button"
-          aria-label="Open settings"
-          onClick={() => {
-            if (_onSettingsClick) {
-              _onSettingsClick();
-            } else {
-              navigate('/settings');
-            }
-          }}
-          className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-outline shadow-elevation-1 transition-all duration-short ease-standard hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <Settings size={17} />
-        </button>
-      </header>
+      <AppHeader
+        variant="primary"
+        action={
+          <button
+            type="button"
+            aria-label="Open settings"
+            onClick={() => {
+              if (_onSettingsClick) {
+                _onSettingsClick();
+              } else {
+                navigate('/settings');
+              }
+            }}
+            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-outline shadow-elevation-1 transition-all duration-short ease-standard hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <Settings size={17} />
+          </button>
+        }
+      />
 
       <div className="w-full max-w-[640px] px-6 pb-6 flex-1 flex flex-col min-h-min">
         {/* Mode badge */}

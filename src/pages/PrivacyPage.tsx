@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { Logo } from '@/ui-system/components/primitives/Logo';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /**
  * Privacy Policy Page — matches privacy.html mockup
@@ -10,15 +10,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 export function PrivacyPage(): React.ReactElement {
   return (
     <div className="min-h-screen flex flex-col items-center bg-surface text-on-surface">
-      {/* Header */}
-      <header className="w-full max-w-[640px] flex justify-center items-center py-6 px-6">
-        <Link
-          to="/"
-          className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <Logo size="md" />
-        </Link>
-      </header>
+      <AppHeader variant="standalone" />
 
       <article className="w-full max-w-[640px] px-6 pb-12">
         <Link

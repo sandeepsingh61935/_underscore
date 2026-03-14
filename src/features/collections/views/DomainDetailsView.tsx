@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
-import { Logo } from '@/ui-system/components/primitives/Logo';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 interface Highlight {
     id: string;
@@ -80,24 +80,17 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
         <div
             className="h-full overflow-y-auto w-full flex flex-col items-center bg-surface text-on-surface"
         >
-            {/* Header */}
-            <header
-                className="w-full max-w-[640px] flex items-center justify-between py-4 px-6 shrink-0 z-10 sticky top-0 backdrop-blur-md"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
-            >
-                <Link
-                    to="/mode"
-                    className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                    <Logo size="md" />
-                </Link>
-                <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-body-medium font-semibold bg-primary text-on-primary border border-outline-variant"
-                    aria-hidden="true"
-                >
-                    {(user?.displayName || 'U')[0]}
-                </div>
-            </header>
+            <AppHeader
+                variant="primary"
+                action={
+                    <div
+                        className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary text-title-small font-semibold border border-outline-variant"
+                        aria-hidden="true"
+                    >
+                        {(user?.displayName || 'U')[0]}
+                    </div>
+                }
+            />
 
             <div className="w-full max-w-[640px] px-6 pb-6 flex-1 flex flex-col min-h-min">
                 {/* Back nav */}

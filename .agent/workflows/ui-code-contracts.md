@@ -107,19 +107,74 @@ The following CSS variables are **BANNED** in all `.tsx` files. They exist in `g
 </div>
 ```
 
-### 3b. Sticky Glass Header
+### 3b. Sticky Glass Header — use `<AppHeader>`, never inline `<header>`
+
+**Import:** `@/ui-system/components/layout/AppHeader`
+
+NEVER write an inline `<header>` in a view or page. Always use `<AppHeader>`.
+
+#### Three variants
+
+| Variant | When to use | Layout |
+|---|---|---|
+| `primary` | Top-level screens: Collections, DomainDetails, Dashboard | Logo left · action right |
+| `sub` | Secondary screens with explicit back: ModeSelection (with back) | Back · Logo center · spacer |
+| `standalone` | Auth, legal, settings — no nav controls in header | Logo centered |
+
+#### Usage
 
 ```tsx
-// APPROVED: sticky glass header pattern
-<header
-  className="sticky top-0 z-10 w-full flex items-center justify-between px-6 py-4 backdrop-blur-md"
-  style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
->
-  ...
-</header>
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
+
+// primary — top-level screen (logo left, action right)
+<AppHeader variant="primary" action={<SettingsButton />} />
+
+// primary compact — popup context (tighter padding, sm logo)
+<AppHeader variant="primary" compact action={<UserMenu />} />
+
+// sub — secondary screen with back
+<AppHeader variant="sub" onBack={handleBack} backLabel="Collections" />
+
+// sub compact — popup secondary screen
+<AppHeader variant="sub" compact onBack={onBack} backLabel="Back" />
+
+// standalone — settings, privacy, auth flows
+<AppHeader variant="standalone" />
+
+// standalone compact — popup auth
+<AppHeader variant="standalone" compact />
 ```
 
-Note: `backgroundColor` inline style is the ONE allowed exception for glass — because `color-mix()` with transparency cannot be expressed as a Tailwind utility directly.
+#### Rules
+
+- **Logo is NEVER interactive.** Never wrap it in `<Link>` or `<button>`. Logo is a brand mark.
+- **Back navigation** belongs to the `sub` variant's back slot, or a breadcrumb `<button>`/`<Link>` in the **content body** — never the logo.
+- **Back slot** must always be `<button type="button">` — never `<a href="#">`.
+- **Touch targets**: all interactive slots require `min-h-[48px] min-w-[48px]`.
+- **Popup views**: pass `compact` prop → `px-4 py-3`, `min-h-[56px]`, logo `size="sm"`.
+- **Web views**: default → `px-6 py-4`, `min-h-[64px]`, logo `size="md"`.
+- **`max-w-*` never on `<header>`** — `max-w` belongs on the `<main>` content container.
+
+#### Glass background — only one approved pattern
+
+```tsx
+// AppHeader handles this internally. When building one-off overrides:
+style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
+className="backdrop-blur-md"
+```
+
+**BANNED glass alternatives** — these produce different visual results:
+```
+bg-surface/80              ← Tailwind opacity modifier, not color-mix
+bg-surface-container/80    ← same
+bg-surface/95              ← same
+```
+
+Note: `backgroundColor` inline style is the ONE allowed exception for glass — `color-mix()` with transparency cannot be expressed as a Tailwind utility directly.
+
+#### Header.tsx (layout component) — DEPRECATED
+
+`src/ui-system/components/layout/Header.tsx` uses banned `bg-card` and `border-border/60` tokens and is not used by any active view. Do not use it. Use `AppHeader` instead.
 
 ### 3c. Card with Hover Elevation
 
@@ -337,12 +392,10 @@ export function MyView({ onAction }: MyViewProps) {
     // 1. Root: full dimensions, bg-surface, text-on-surface
     <div className="w-full h-full flex flex-col bg-surface text-on-surface overflow-hidden">
 
-      {/* 2. Optional sticky header */}
-      <header
-        className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-outline-variant"
-      >
-        <Logo size="md" />
-      </header>
+      {/* 2. Optional sticky header — always use AppHeader, never inline <header> */}
+      <AppHeader variant="primary" action={<SettingsButton />} />
+      {/* For secondary screens: <AppHeader variant="sub" onBack={onBack} backLabel="Collections" /> */}
+      {/* For auth/legal/settings: <AppHeader variant="standalone" /> */}
 
       {/* 3. Scrollable content area */}
       <main className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
