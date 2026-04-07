@@ -1,5 +1,4 @@
 import { Loader2, Phone } from 'lucide-react';
-
 import React from 'react';
 
 import { cn } from '../../utils/cn';
@@ -62,11 +61,11 @@ export function SocialAuthButton({
             className={cn(
                 'w-full flex items-center justify-center gap-3',
                 'min-h-[48px] px-6 rounded-full',
-                'bg-surface-container border border-outline-variant',
+                'bg-surface-container-lowest border border-outline-variant',
                 'text-on-surface text-label-large',
-                'transition-all duration-short ease-standard',
-                'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]',
-                'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]',
+                'transition-all duration-[220ms]',
+                'hover:bg-surface-container-low hover:border-outline hover:-translate-y-[1px]',
+                'active:bg-surface-container active:translate-y-0',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 'disabled:opacity-disabled disabled:pointer-events-none',
                 className

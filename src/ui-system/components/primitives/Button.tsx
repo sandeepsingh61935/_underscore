@@ -8,8 +8,9 @@
  * @see https://m3.material.io/components/buttons/overview
  */
 
-import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import React, { type ButtonHTMLAttributes, forwardRef } from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,11 +20,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant = 'filled', isLoading, icon, children, disabled, ...props }, ref) => {
+    ({ className, variant = 'filled', isLoading, icon, children, disabled, style, ...props }, ref) => {
         return (
             <button
                 ref={ref}
                 disabled={disabled || isLoading}
+                style={{ transitionTimingFunction: 'var(--ink-ease-spring)', ...style }}
                 className={cn(
                     // Base
                     'inline-flex items-center justify-center gap-2',
@@ -38,7 +40,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     'min-h-[48px] px-6',
 
                     // MD3 Motion
-                    'transition-all duration-short ease-standard',
+                    'transition-all duration-[220ms]',
 
                     // Focus ring
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
@@ -51,17 +53,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                         'bg-primary',
                         'text-on-primary',
                         'shadow-elevation-1',
-                        // MD3 state layer: 8% hover, 12% press
-                        'hover:shadow-elevation-2',
+                        'hover:shadow-elevation-mode',
+                        'hover:-translate-y-[1px]',
                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]',
                         'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]',
+                        'active:translate-y-0 active:shadow-elevation-1',
                     ],
 
                     // Variant: Outlined
                     variant === 'outlined' && [
                         'bg-transparent',
                         'text-primary',
-                        'border border-outline',
+                        'border border-outline-variant',
+                        'hover:border-outline',
                         'hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]',
                         'active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]',
                     ],

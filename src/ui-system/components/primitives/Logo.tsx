@@ -13,7 +13,7 @@ interface LogoProps {
 const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string }> = {
   sm: { badge: 'w-7 h-7', text: 'text-title-large', gap: 'gap-2' },
   md: { badge: 'w-9 h-9', text: 'text-headline-medium', gap: 'gap-[10px]' },
-  lg: { badge: 'w-12 h-12', text: 'text-headline-large', gap: 'gap-3' },
+  lg: { badge: 'w-16 h-16', text: 'text-headline-large', gap: 'gap-3' },
 };
 
 /**
@@ -43,9 +43,18 @@ export function Logo({
         )}
         style={{
           background: 'var(--logo-bg)',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1)',
+          boxShadow: [
+            'inset 0 0 0 1px rgba(255,255,255,0.06)',
+            '0 2px 8px rgba(0,0,0,0.5)',
+          ].join(', '),
         }}
       >
+        {/* Top-edge shine */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[45%] rounded-t-[22%] pointer-events-none z-[1]"
+          style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07), transparent)' }}
+        />
+
         {/* Ambient reflection — subtle inner highlight at badge bottom */}
         <div
           className="absolute bottom-0 left-[10%] right-[10%] h-[28%] rounded-full pointer-events-none z-[1]"
@@ -67,7 +76,7 @@ export function Logo({
 
       {/* Wordmark */}
       {showText && (
-        <span className={cn('tracking-[-0.02em] text-on-surface', s.text)}>
+        <span className={cn('font-display tracking-[-0.02em] text-on-surface', s.text)}>
           underscore
         </span>
       )}

@@ -53,12 +53,12 @@ export function AppHeader({
   className,
 }: AppHeaderProps): React.ReactElement {
   const base = cn(
-    'sticky top-0 z-10 w-full backdrop-blur-md',
+    'sticky top-0 z-10 w-full backdrop-blur-md border-b border-outline-variant',
     compact ? 'min-h-[56px] px-4 py-3' : 'min-h-[64px] px-6 py-4',
   );
 
   const glassStyle: React.CSSProperties = {
-    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 88%, transparent)',
   };
 
   if (variant === 'primary') {
@@ -92,7 +92,7 @@ export function AppHeader({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex min-h-[48px] min-w-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 border-0 bg-transparent cursor-pointer text-body-small text-outline transition-colors duration-short ease-standard hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="inline-flex min-h-[48px] min-w-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 border-0 bg-transparent cursor-pointer text-body-small text-outline transition-colors duration-[180ms] ease-out hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           aria-label={`Go back${backLabel ? ` to ${backLabel}` : ''}`}
         >
           <ChevronLeft size={13} />
