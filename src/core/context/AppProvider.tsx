@@ -67,9 +67,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove('light', 'dark', 'system');
-        if (theme !== 'light' && theme !== 'system') {
-            root.classList.add(theme);
+        root.classList.remove('light', 'dark');
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else if (theme === 'light') {
+            root.classList.add('light');
+        } else if (theme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            root.classList.add(prefersDark ? 'dark' : 'light');
         }
         localStorage.setItem('underscore-theme', theme);
     }, [theme]);

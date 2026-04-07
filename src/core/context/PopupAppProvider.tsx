@@ -1,6 +1,13 @@
 import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
+
+const MODE_COLORS: Record<Mode, string> = {
+    walk:   'var(--ink-focus)',
+    sprint: 'var(--ink-capture)',
+    vault:  'var(--ink-memory)',
+    neural: 'var(--ink-neural)',
+};
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
@@ -53,9 +60,14 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove('light', 'dark', 'system');
-        if (theme !== 'light' && theme !== 'system') {
-            root.classList.add(theme);
+        root.classList.remove('light', 'dark');
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else if (theme === 'light') {
+            root.classList.add('light');
+        } else if (theme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            root.classList.add(prefersDark ? 'dark' : 'light');
         }
         localStorage.setItem('underscore-theme', theme);
     }, [theme]);
@@ -74,7 +86,17 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
     }, [onLogout]);
 
+    // Apply mode color on initial mount
+    useEffect(() => {
+        if (currentMode) {
+            document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[currentMode]);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const setMode = useCallback(async (mode: Mode) => {
+        // Apply mode color to root — drives all mode-tinted elements
+        document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[mode]);
+
         // 1. Persist to chrome.storage.local (auth guard is inside persistMode)
         await persistMode(mode);
 
