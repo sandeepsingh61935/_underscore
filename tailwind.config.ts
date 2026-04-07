@@ -70,6 +70,28 @@ export default {
                 'scrim': 'var(--md-sys-color-scrim)',
                 'shadow': 'var(--md-sys-color-shadow)',
 
+                // Ink & Glass surface layers
+                'ink-1':         'var(--ink-1)',
+                'ink-2':         'var(--ink-2)',
+                'ink-3':         'var(--ink-3)',
+                'ink-4':         'var(--ink-4)',
+
+                // Ink borders
+                'ink-border':    'var(--ink-border)',
+                'ink-border-hi': 'var(--ink-border-hi)',
+
+                // Ink text
+                'ink-text':      'var(--ink-text)',
+                'ink-text-m':    'var(--ink-text-m)',
+                'ink-text-f':    'var(--ink-text-f)',
+
+                // Mode inks
+                'ink-focus':     'var(--ink-focus)',
+                'ink-capture':   'var(--ink-capture)',
+                'ink-memory':    'var(--ink-memory)',
+                'ink-neural':    'var(--ink-neural)',
+                'ink-mode':      'var(--ink-mode)',
+
             },
 
             // ===== Material Design 3 Typography Scale =====
@@ -147,8 +169,9 @@ export default {
 
             // ===== Font Family =====
             fontFamily: {
-                'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
-                'display': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+                'sans':    ['var(--font-body)', '-apple-system', 'sans-serif'],
+                'display': ['var(--font-display)', 'serif'],
+                'mono':    ['var(--font-mono)', 'monospace'],
             },
 
             // ===== Material Design 3 Shape (Border Radius) =====
@@ -168,6 +191,8 @@ export default {
                 'emphasized': 'var(--md-sys-motion-easing-emphasized)',
                 'decelerate': 'var(--md-sys-motion-easing-decelerate)',
                 'accelerate': 'var(--md-sys-motion-easing-accelerate)',
+                'spring': 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+                'ease-out-smooth': 'cubic-bezier(0.22, 1.00, 0.36, 1)',
             },
 
             transitionDuration: {
@@ -202,11 +227,13 @@ export default {
 
             // ===== Material Design 3 Elevation (Shadows) =====
             boxShadow: {
-                'elevation-1': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
-                'elevation-2': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)',
-                'elevation-3': '0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3)',
+                'elevation-0': 'none',
+                'elevation-1': '0 1px 4px rgba(0,0,0,0.40)',
+                'elevation-2': '0 4px 16px rgba(0,0,0,0.45)',
+                'elevation-3': '0 8px 32px rgba(0,0,0,0.50)',
                 'elevation-4': '0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3)',
                 'elevation-5': '0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px rgba(0, 0, 0, 0.3)',
+                'elevation-mode': '0 4px 24px color-mix(in srgb, var(--ink-mode) 35%, transparent)',
             },
 
             // ===== MD3 Opacity Tokens =====
