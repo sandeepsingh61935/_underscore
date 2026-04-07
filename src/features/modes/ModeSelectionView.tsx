@@ -9,6 +9,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
+import { cn } from '@/ui-system/utils/cn';
 
 /** Internal mode → display name + UX copy */
 const MODE_OPTIONS: Array<{
@@ -90,15 +91,15 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
     };
 
     return (
-        <div className="h-full w-full flex flex-col items-center justify-between py-2 overflow-y-auto bg-surface text-on-surface">
+        <div className="h-full w-full flex flex-col overflow-y-auto bg-surface text-on-surface">
             <AppHeader
                 variant={onBack ? 'sub' : 'standalone'}
                 onBack={onBack}
                 backLabel="Back"
             />
 
-            {/* Content box — stretch to take remaining height but compress on small screens */}
-            <main className="w-full max-w-[480px] flex-1 flex flex-col items-center justify-center py-6 px-6">
+            {/* Content box — flex-1 fills remaining space, nudge pins to bottom */}
+            <main className="w-full max-w-[480px] mx-auto flex-1 flex flex-col px-6 pt-5 pb-4 min-h-0">
                 {/* Section label */}
                 <div className="w-full text-left mb-3">
                     <p className="text-label-small font-medium uppercase tracking-[0.18em] text-outline">
@@ -106,14 +107,12 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                     </p>
                 </div>
 
-                {/* Mode cards */}
-                <div className="w-full flex flex-col gap-1.5 mb-6">
+                {/* Mode cards — 2×2 grid */}
+                <div className="w-full grid grid-cols-2 gap-2">
                     {MODE_OPTIONS.map(opt => (
                         <React.Fragment key={opt.id}>
-                            {opt.id === 'vault' && (
-                                <div className="h-2 w-full" aria-hidden="true" />
-                            )}
                             <ModeCard
+                                id={opt.id}
                                 name={opt.name}
                                 description={opt.description}
                                 hint={opt.hint}
@@ -125,17 +124,35 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                     ))}
                 </div>
 
-                {/* Auth nudge */}
+                {/* Spacer pushes auth nudge to the bottom */}
+                <div className="flex-1 min-h-4" />
+
+                {/* Auth nudge — always fully visible */}
                 {!isAuthenticated && (
-                    <div className="text-center text-body-small py-4 rounded-md mb-4 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary">
+                    <div className={cn(
+                        'mx-1 p-3 rounded-[10px]',
+                        'bg-[color-mix(in_srgb,var(--ink-neural)_7%,transparent)]',
+                        'border border-[color-mix(in_srgb,var(--ink-neural)_18%,transparent)]',
+                        'flex items-center justify-between gap-3',
+                    )}>
+                        <p className="text-[12px] text-on-surface-variant leading-[1.45]">
+                            Sign in to unlock Memory and Neural modes.
+                        </p>
                         <button
                             type="button"
                             onClick={handleAuthClick}
-                            className="inline-flex min-h-[48px] items-center rounded-md border-0 bg-transparent px-2 font-medium text-primary underline transition-colors duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            className={cn(
+                                'flex-shrink-0 px-4 py-2 rounded-full',
+                                'bg-[var(--ink-neural)] text-[var(--ink-1)]',
+                                'text-[11px] font-bold',
+                                'transition-transform duration-[200ms]',
+                                'hover:scale-[1.05]',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                            )}
+                            style={{ transitionTimingFunction: 'var(--ink-ease-spring)' }}
                         >
-                            Create an account
+                            Sign in →
                         </button>
-                        {' '}to unlock your full knowledge workspace.
                     </div>
                 )}
             </main>
