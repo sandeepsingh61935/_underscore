@@ -1,10 +1,9 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
-import { TrustSignal } from '@/ui-system/components/primitives/TrustSignal';
 
 export interface WelcomePageProps {
   onStartClick?: () => void;
@@ -25,18 +24,23 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
   }, [isAuthenticated, navigate, onStartClick]);
 
   return (
-    <div className="h-full overflow-y-auto w-full flex flex-col items-center justify-center bg-surface text-on-surface">
-      <div className="flex flex-col items-center text-center max-w-[480px] px-6 py-12 gap-0">
+    <div
+      className="h-full overflow-y-auto w-full flex flex-col items-center justify-center bg-surface text-on-surface relative"
+      style={{
+        backgroundImage: 'radial-gradient(ellipse at 50% -5%, color-mix(in srgb, var(--ink-capture) 12%, transparent) 0%, transparent 55%)',
+      }}
+    >
+      <div className="flex flex-col items-center text-center max-w-[360px] px-6 py-12">
         {/* Logo badge */}
-        <Logo size="lg" showText={false} className="mb-6" />
+        <Logo size="lg" showText={false} className="mb-7" />
 
-        {/* App name */}
-        <h1 className="text-display-small tracking-[-0.02em] mb-4 text-on-surface">
+        {/* App name — Instrument Serif */}
+        <h1 className="font-display text-[44px] font-normal tracking-[-0.035em] leading-none mb-4 text-on-surface">
           underscore
         </h1>
 
         {/* Tagline */}
-        <p className="text-body-large leading-relaxed mb-10 text-on-surface-variant">
+        <p className="text-[14px] leading-relaxed mb-10 text-on-surface-variant max-w-[200px]">
           Highlight what matters.
           <br />
           Everything else fades away.
@@ -49,36 +53,41 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
             if (onStartClick) onStartClick();
             else navigate('/mode');
           }}
-          className="mb-6"
+          className="mb-7 px-8"
           style={{
-            boxShadow:
-              '0 2px 8px color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent)',
+            boxShadow: '0 4px 24px color-mix(in srgb, var(--ink-capture) 40%, transparent)',
           }}
         >
           Get started →
         </Button>
 
-        {/* Trust signal */}
-        <TrustSignal />
+        {/* Trust row */}
+        <div className="flex items-center gap-2 text-[11px] text-outline">
+          <span>Free forever</span>
+          <span className="w-[3px] h-[3px] rounded-full bg-outline" />
+          <span>No ads</span>
+          <span className="w-[3px] h-[3px] rounded-full bg-outline" />
+          <span>Private by default</span>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4 border-t border-outline-variant">
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-6 py-4 border-t border-outline-variant">
         <Link
           to="/privacy"
-          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="inline-flex min-h-[48px] items-center px-2 text-[11px] text-outline no-underline hover:text-on-surface-variant transition-colors duration-[180ms]"
         >
           Privacy
         </Link>
         <a
           href="#terms"
-          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="inline-flex min-h-[48px] items-center px-2 text-[11px] text-outline no-underline hover:text-on-surface-variant transition-colors duration-[180ms]"
         >
           Terms
         </a>
         <a
           href="#help"
-          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-medium no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="inline-flex min-h-[48px] items-center px-2 text-[11px] text-outline no-underline hover:text-on-surface-variant transition-colors duration-[180ms]"
         >
           Help
         </a>
