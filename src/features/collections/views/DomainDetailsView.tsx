@@ -1,9 +1,22 @@
-import { Globe, Copy, Paperclip, Trash2, ChevronLeft, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Check, ChevronLeft, Copy, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { useApp } from '@/core/context/AppProvider';
-import { AppHeader } from '@/ui-system/components/layout/AppHeader';
+import { springs } from '@/ui-system/motion/springs';
+import { cn } from '@/ui-system/utils/cn';
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 20, mass: 1.0 } },
+};
 
 interface Highlight {
     id: string;
@@ -19,23 +32,23 @@ export interface DomainDetailsViewProps {
 
 /**
  * Domain Details View — adapts dynamically to popup and web
- * Back nav + domain header + action bar + highlight cards
+ * Compact back-nav header + domain header + action chips + highlight marginalia cards
  */
-export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsViewProps = {}): React.JSX.Element {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- JSX return type inferred
+export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsViewProps = {}) {
     const params = useParams<{ domain: string }>();
-    const domain = propDomain || params.domain;
+    const domain = propDomain ?? params.domain;
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useApp();
+    const { isAuthenticated } = useApp();
     const [copiedId, setCopiedId] = useState<string | null>(null);
-
 
     React.useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/mode'); // This might need adjustment for popup context
+            navigate('/mode');
         }
     }, [isAuthenticated, navigate]);
 
-    /* Mock highlights matching domain-details.html */
+    /* Mock highlights */
     const mockHighlights: Highlight[] = [
         {
             id: '1',
@@ -64,9 +77,16 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     ];
 
     const handleCopy = (text: string, id: string): void => {
-        navigator.clipboard.writeText(text);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
+        void (async () => {
+            try {
+                await navigator.clipboard.writeText(text);
+                setCopiedId(id);
+                toast('Copied to clipboard');
+                setTimeout(() => setCopiedId(null), 1600);
+            } catch {
+                toast.error('Copy failed \u2014 clipboard permission denied');
+            }
+        })();
     };
 
     const handleCopyAll = (): void => {
@@ -77,130 +97,190 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     const exportFormats = ['PDF', 'TXT', 'JSON', 'CSV', 'MD'];
 
     return (
-        <div
-            className="h-full overflow-y-auto w-full flex flex-col items-center bg-surface text-on-surface"
-        >
-            <AppHeader
-                variant="primary"
-                action={
-                    <div
-                        className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary text-title-small font-semibold border border-outline-variant"
-                        aria-hidden="true"
-                    >
-                        {(user?.displayName || 'U')[0]}
-                    </div>
-                }
-            />
+        <div className="h-full overflow-hidden w-full flex flex-col bg-surface text-on-surface">
 
-            <div className="w-full max-w-[640px] px-6 pb-6 flex-1 flex flex-col min-h-min">
-                {/* Back nav */}
+            {/* Compact back-nav header */}
+            <header
+                className="flex items-center px-4 py-3 border-b border-outline-variant flex-shrink-0"
+                style={{
+                    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 88%, transparent)',
+                    backdropFilter: 'blur(12px)',
+                }}
+            >
                 {onBack ? (
                     <button
                         type="button"
                         onClick={onBack}
-                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small mb-5 transition-colors text-outline hover:text-primary bg-transparent border-none cursor-pointer text-left font-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-1.5 min-h-[44px] px-2 -mx-2 text-[12px] text-outline hover:text-primary transition-colors duration-[180ms] bg-transparent border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
                     >
-                        <ChevronLeft size={13} /> Collections
+                        <ChevronLeft size={14} />
+                        Collections
                     </button>
                 ) : (
                     <Link
                         to="/collections"
-                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 text-body-small no-underline mb-5 transition-colors text-outline hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-1.5 min-h-[44px] px-2 -mx-2 text-[12px] text-outline hover:text-primary transition-colors duration-[180ms] no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
                     >
-                        <ChevronLeft size={13} /> Collections
+                        <ChevronLeft size={14} />
+                        Collections
                     </Link>
                 )}
+            </header>
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
 
                 {/* Domain header */}
-                <div className="flex items-center gap-4 mb-6">
-                    <div
-                        className="w-12 h-12 rounded-md flex items-center justify-center shrink-0 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]"
-                    >
-                        <Globe size={24} className="text-primary" />
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 bg-surface-container text-[16px] font-semibold text-on-surface-variant">
+                        {((domain ?? 'M')[0] ?? 'M').toUpperCase()}
                     </div>
                     <div>
-                        <h1
-                            className="text-headline-small font-semibold text-on-surface"
-                        >
-                            {domain || 'medium.com'}
+                        <h1 className="text-[17px] font-semibold tracking-[-0.01em] text-on-surface mb-[1px]">
+                            {domain ?? 'medium.com'}
                         </h1>
-                        <p className="text-body-small text-outline">
+                        <p className="text-[11px] text-outline">
                             {mockHighlights.length} highlights · Dec 2025 – Feb 2026
                         </p>
                     </div>
                 </div>
 
-                {/* Action bar */}
-                <div
-                    className="flex flex-wrap items-center gap-2 mb-6 p-3 rounded-md bg-surface-container-low border border-outline-variant"
-                >
-                    <button
+                {/* Action chips */}
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto [scrollbar-width:none] pb-1">
+                    {/* Copy all chip */}
+                    <motion.button
                         type="button"
                         onClick={handleCopyAll}
-                        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium font-medium transition-all duration-short ease-standard border-none bg-transparent text-on-surface-variant hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={springs.snappy}
+                        className={cn(
+                            'inline-flex items-center gap-[6px] shrink-0',
+                            'px-3 py-[6px] rounded-full',
+                            'border border-outline-variant bg-surface-container-lowest',
+                            'text-[11px] font-medium text-on-surface-variant',
+                            'transition-colors duration-[180ms]',
+                            'hover:border-outline hover:text-on-surface',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        )}
                     >
-                        <Copy size={12} /> Copy all
-                    </button>
-                    <div
-                        className="flex flex-wrap items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--md-sys-color-error)_8%,transparent)] px-2 py-1"
-                    >
-                        <Paperclip size={12} className="text-outline" />
-                        {exportFormats.map(fmt => (
-                            <button
-                                key={fmt}
-                                type="button"
-                                className="inline-flex min-h-[48px] items-center rounded-full px-3 py-1.5 text-label-small cursor-pointer border-none transition-all duration-short ease-standard hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)] bg-transparent text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                            >
-                                {fmt}
-                            </button>
-                        ))}
-                    </div>
-                    <button
+                        <Copy size={11} />
+                        Copy all
+                    </motion.button>
+
+                    {/* Export chips */}
+                    {exportFormats.map(fmt => (
+                        <motion.button
+                            key={fmt}
+                            type="button"
+                            whileHover={{ y: -1 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={springs.snappy}
+                            className={cn(
+                                'inline-flex items-center shrink-0',
+                                'px-3 py-[6px] rounded-full',
+                                'border border-outline-variant bg-surface-container-lowest',
+                                'text-[11px] font-medium text-outline',
+                                'transition-colors duration-[180ms]',
+                                'hover:border-[color-mix(in_srgb,var(--ink-mode)_35%,transparent)]',
+                                'hover:text-primary hover:bg-[color-mix(in_srgb,var(--ink-mode)_6%,transparent)]',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                            )}
+                        >
+                            {fmt}
+                        </motion.button>
+                    ))}
+
+                    {/* Spacer + Clear chip */}
+                    <div className="flex-1" />
+                    <motion.button
                         type="button"
-                        className="ml-auto inline-flex min-h-[48px] items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium font-medium cursor-pointer transition-all duration-short ease-standard border-none bg-transparent text-outline hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={springs.snappy}
+                        className={cn(
+                            'inline-flex items-center gap-[6px] shrink-0',
+                            'px-3 py-[6px] rounded-full',
+                            'border border-[color-mix(in_srgb,var(--md-sys-color-error)_25%,transparent)]',
+                            'bg-[color-mix(in_srgb,var(--md-sys-color-error)_6%,transparent)]',
+                            'text-[11px] font-medium text-error',
+                            'transition-colors duration-[180ms]',
+                            'hover:border-[color-mix(in_srgb,var(--md-sys-color-error)_45%,transparent)]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        )}
                     >
-                        <Trash2 size={12} /> Clear all
-                    </button>
+                        <Trash2 size={11} />
+                        Clear
+                    </motion.button>
                 </div>
 
-                {/* Highlight cards */}
-                <div className="flex flex-col gap-3">
+                {/* Highlight cards — marginalia style */}
+                <motion.div
+                    className="flex flex-col gap-3"
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                >
                     {mockHighlights.map(h => (
-                        <div
-                            key={h.id}
-                            className="group rounded-md border border-outline-variant bg-surface-container-lowest p-5 transition-all duration-short ease-standard hover:shadow-elevation-3 focus-within:shadow-elevation-3"
+                        <motion.div key={h.id} variants={itemVariants}>
+                        <motion.div
+                            whileHover={{ y: -2, scale: 1.008 }}
+                            whileTap={{ scale: 0.99 }}
+                            transition={springs.snappy}
+                            className={cn(
+                                'group relative rounded-[12px]',
+                                'border border-outline-variant bg-surface-container-lowest',
+                                'p-4 overflow-hidden',
+                                'transition-colors transition-shadow duration-[280ms] ease-out',
+                                'hover:shadow-elevation-2',
+                                'hover:border-[color-mix(in_srgb,var(--ink-mode)_25%,transparent)]',
+                            )}
                         >
-                            {/* Quote */}
+                            {/* Quote area */}
                             <div className="flex gap-3 mb-3">
+                                {/* Mode-colored left accent bar */}
                                 <div
-                                    className="w-[3px] rounded-full shrink-0 bg-primary"
+                                    className="w-[2.5px] rounded-full shrink-0 self-stretch"
+                                    style={{ background: 'var(--ink-mode)' }}
                                 />
-                                <p className="text-body-medium leading-relaxed italic text-on-surface">
+                                <p className="text-[13px] leading-[1.55] italic text-on-surface line-clamp-3">
                                     {h.text}
                                 </p>
                             </div>
-                            {/* Meta */}
-                            <div className="flex items-center justify-between">
-                                <p className="text-label-medium text-outline">
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] text-outline font-mono truncate">
                                     {h.path}
                                 </p>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Copy button — hidden at rest, revealed on hover */}
                                     <button
                                         type="button"
                                         onClick={() => handleCopy(h.text, h.id)}
-                                        className="inline-flex min-h-[48px] items-center justify-center rounded-full px-3 py-1.5 text-label-small cursor-pointer border-none opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-all duration-short ease-standard bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                                        aria-label={copiedId === h.id ? 'Copied highlight' : 'Copy highlight'}
+                                        aria-label={copiedId === h.id ? 'Copied' : 'Copy highlight'}
+                                        className={cn(
+                                            'inline-flex items-center gap-[4px] px-[10px] py-[4px] rounded-full',
+                                            'text-[10px] font-medium cursor-pointer',
+                                            'border transition-all duration-[200ms]',
+                                            'opacity-0 group-hover:opacity-100',
+                                            copiedId === h.id
+                                                ? 'border-[color-mix(in_srgb,var(--ink-memory)_35%,transparent)] bg-[color-mix(in_srgb,var(--ink-memory)_10%,transparent)] text-[var(--ink-memory)]'
+                                                : 'border-outline-variant bg-surface-container text-outline hover:border-outline hover:text-on-surface-variant',
+                                        )}
                                     >
-                                        {copiedId === h.id ? <Check size={11} /> : 'Copy'}
+                                        {copiedId === h.id
+                                            ? <><Check size={9} /> Copied</>
+                                            : <><Copy size={9} /> Copy</>
+                                        }
                                     </button>
-                                    <span className="text-label-medium text-outline">
-                                        {h.createdAt}
-                                    </span>
+                                    <span className="text-[10px] text-outline">{h.createdAt}</span>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             </div>
         </div>
     );
