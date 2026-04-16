@@ -11,14 +11,20 @@ interface ModeTransitionState {
     confirmMessage: string | null;
 }
 
+export interface UseModeTransitionOptions {
+    /** Called after a mode transition completes — use this to navigate in the parent */
+    navigateAfterTransition?: () => void;
+}
+
 /**
  * Custom hook wrapping mode transition logic:
  * - Checks transition rules
  * - Shows confirmation when required
  * - Runs guard functions
  * - Executes transition with spinner overlay
+ * - Calls navigateAfterTransition on completion (parent controls routing)
  */
-export function useModeTransition() {
+export function useModeTransition({ navigateAfterTransition }: UseModeTransitionOptions = {}) {
     const navigate = useNavigate();
     const { currentMode, setMode, isAuthenticated } = useApp();
     const { logout } = useCurrentUser();
@@ -31,12 +37,12 @@ export function useModeTransition() {
     const requestTransition = useCallback(
         (targetMode: ModeType) => {
             if (targetMode === currentMode) {
-                // Same mode — just go to collections
-                navigate('/collections');
+                // Same mode — just go to collections via parent callback
+                navigateAfterTransition?.();
                 return;
             }
 
-            // Auth-gated modes
+            // Auth-gated modes — redirect to sign-in
             if ((targetMode === 'vault' || targetMode === 'neural') && !isAuthenticated) {
                 navigate('/sign-in');
                 return;
@@ -56,7 +62,7 @@ export function useModeTransition() {
                 executeTransitionDirect(targetMode);
             }
         },
-        [currentMode, isAuthenticated, navigate]
+        [currentMode, isAuthenticated, navigate, navigateAfterTransition]
     );
 
     const executeTransitionDirect = useCallback(
@@ -85,17 +91,16 @@ export function useModeTransition() {
 
                 if (isDowngrade) {
                     console.log('[useModeTransition] Downgrading local mode. Triggering sync and auto sign-out...');
-                    // TODO: Replace with real collection syncing logic
                     await logout();
                 }
 
                 setMode(targetMode);
-                navigate('/collections');
+                navigateAfterTransition?.();
             } finally {
                 setState({ isPending: false, targetMode: null, confirmMessage: null });
             }
         },
-        [currentMode, setMode, navigate]
+        [currentMode, setMode, navigateAfterTransition]
     );
 
     const confirmTransition = useCallback(() => {
