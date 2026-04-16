@@ -271,6 +271,7 @@ function PopupApp(): React.ReactElement {
               onModeSelect={handleModeSelect}
               onSignInClick={handleSignInClick}
               onBack={previousView ? handleModeSelectionBack : undefined}
+              onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
             />
           </motion.div>
         )}
