@@ -56,13 +56,15 @@ export interface ModeSelectionViewProps {
     onSignInClick?: () => void;
     /** Optional callback to navigate back to previous screen */
     onBack?: () => void;
+    /** Optional callback invoked after mode transition completes — use to navigate to collections */
+    onNavigateToCollections?: () => void;
 }
 
 /**
  * Mode Selection View — adapts dynamically to popup (400x600) and web (full screen)
  * Centered logo, 4 mode cards, auth nudge, confirmation modal + spinner overlay
  */
-export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeSelectionViewProps = {}): React.JSX.Element {
+export function ModeSelectionView({ onModeSelect, onSignInClick, onBack, onNavigateToCollections }: ModeSelectionViewProps = {}): React.JSX.Element {
     const navigate = useNavigate();
     const { currentMode, isAuthenticated } = useApp();
     const {
@@ -71,7 +73,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
         requestTransition,
         confirmTransition,
         cancelTransition,
-    } = useModeTransition();
+    } = useModeTransition({ navigateAfterTransition: onNavigateToCollections });
 
     const handleCardClick = (modeId: ModeType): void => {
         if (onModeSelect) {
