@@ -35,6 +35,8 @@ interface Collection {
 
 type SortBy = 'most' | 'az' | 'newest';
 
+const AUTH_REQUIRED_MODES: ModeType[] = ['vault', 'neural'];
+
 interface CollectionsViewProps {
   onLogout?: () => void;
   onCollectionClick?: (domain: string) => void;
@@ -63,10 +65,10 @@ export function CollectionsView({
   const [search, setSearch] = useState('');
 
   React.useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
       navigate('/mode');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, mode, navigate]);
 
   /* Mock data */
   const mockCollections: Collection[] = [
