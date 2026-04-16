@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Issue #14 — Visual Review</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --chrome-bg: #0d1117;
+  --chrome-surface: #161b22;
+  --chrome-border: #30363d;
+  --chrome-text: #c9d1d9;
+  --chrome-muted: #8b949e;
+  --chrome-active: #58a6ff;
+  --chrome-active-bg: rgba(88,166,255,0.12);
+}
+
+body {
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  display: grid;
+  grid-template-rows: 48px 1fr 160px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--chrome-border);
+  background: var(--chrome-surface);
+  flex-shrink: 0;
+}
+.toolbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chrome-text);
+  margin-right: 20px;
+  white-space: nowrap;
+}
+.tab-group {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+.tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--chrome-muted);
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--chrome-text); background: rgba(255,255,255,0.05); }
+.tab.active { color: var(--chrome-active); background: var(--chrome-active-bg); border-color: rgba(88,166,255,0.3); }
+.tab .violations { font-size: 10px; opacity: 0.6; margin-left: 4px; }
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.toggle-group {
+  display: flex;
+  border: 1px solid var(--chrome-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.toggle-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--chrome-muted);
+  border: none;
+  font-family: inherit;
+  transition: all 0.1s;
+}
+.toggle-btn:hover { color: var(--chrome-text); }
+.toggle-btn.active { background: rgba(255,255,255,0.08); color: var(--chrome-text); }
+.separator { width: 1px; background: var(--chrome-border); height: 20px; }
+
+/* ── PREVIEW AREA ── */
+.preview-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: repeating-conic-gradient(#1a1f27 0% 25%, #151a21 0% 50%) 0 0 / 20px 20px;
+  position: relative;
+}
+.device-frame {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  transition: all 0.3s cubic-bezier(0.2,0,0,1);
+  position: relative;
+}
+.device-frame.desktop { width: 100%; height: 100%; border-radius: 0; border: none; box-shadow: none; }
+.device-frame.tablet  { width: 768px; height: 90%; max-height: 700px; }
+.device-frame.mobile  { width: 390px; height: 90%; max-height: 760px; }
+
+#pagePreview {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── NOTES PANEL ── */
+.notes-panel {
+  border-top: 1px solid var(--chrome-border);
+  background: var(--chrome-surface);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  overflow: hidden;
+}
+.note-col {
+  padding: 10px 14px;
+  border-right: 1px solid var(--chrome-border);
+  overflow-y: auto;
+}
+.note-col:last-child { border-right: none; }
+.note-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--chrome-muted);
+  margin-bottom: 6px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--chrome-text);
+  margin-bottom: 4px;
+}
+.check-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.dot.pass  { background: #3fb950; }
+.dot.warn  { background: #d29922; }
+.dot.info  { background: #58a6ff; }
+
+.violation-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-family: monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(240,80,50,0.15);
+  color: #f85149;
+  margin-right: 3px;
+}
+.token-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-family: monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(56,139,253,0.15);
+  color: #79c0ff;
+  margin-right: 3px;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">Issue #14 — Visual Review</span>
+  <div class="tab-group">
+    <div class="tab active" onclick="setPage('notfound')">NotFoundPage <span class="violations">5 fixed</span></div>
+    <div class="tab" onclick="setPage('privacy')">PrivacyPage <span class="violations">13 fixed</span></div>
+    <div class="tab" onclick="setPage('welcome')">WelcomePage <span class="violations">14 fixed</span></div>
+  </div>
+  <div class="toolbar-right">
+    <div class="toggle-group" id="modeToggle">
+      <button class="toggle-btn active" onclick="setMode('light')">Light</button>
+      <button class="toggle-btn" onclick="setMode('dark')">Dark</button>
+    </div>
+    <div class="separator"></div>
+    <div class="toggle-group" id="viewportToggle">
+      <button class="toggle-btn active" onclick="setViewport('desktop')">Desktop</button>
+      <button class="toggle-btn" onclick="setViewport('tablet')">Tablet</button>
+      <button class="toggle-btn" onclick="setViewport('mobile')">Mobile</button>
+    </div>
+  </div>
+</div>
+
+<div class="preview-area" id="previewArea">
+  <div class="device-frame desktop" id="deviceFrame">
+    <iframe id="pagePreview" title="Page preview"></iframe>
+  </div>
+</div>
+
+<div class="notes-panel" id="notesPanel"></div>
+
+<script>
+const state = { page: 'notfound', mode: 'light', viewport: 'desktop' };
+
+const tokens = {
+  light: {
+    surface:      '#f9f9ff',
+    onSurface:    '#191c20',
+    onSurfaceVar: '#43474e',
+    primary:      '#4a6fa2',
+    onPrimary:    '#ffffff',
+    outline:      '#73777f',
+    outlineVar:   '#c3c6cf',
+    primaryRaw:   '#4a6fa2',
+    logoBg:       '#1a1a1a',
+    logoText:     '#ffffff',
+  },
+  dark: {
+    surface:      '#111418',
+    onSurface:    '#e2e2ea',
+    onSurfaceVar: '#c3c6cf',
+    primary:      '#a8c8ff',
+    onPrimary:    '#003061',
+    outline:      '#8d9199',
+    outlineVar:   '#43474e',
+    primaryRaw:   '#a8c8ff',
+    logoBg:       '#e8e8ec',
+    logoText:     '#1a1a1a',
+  }
+};
+
+function baseStyles(t) {
+  return `<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: ${t.surface}; color: ${t.onSurface}; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; }
+    .text-headline-small { font-size: 24px; line-height: 32px; font-weight: 400; }
+    .text-title-small    { font-size: 14px; line-height: 20px; font-weight: 500; }
+    .text-body-medium    { font-size: 14px; line-height: 20px; font-weight: 400; }
+    .text-body-small     { font-size: 12px; line-height: 16px; font-weight: 400; }
+    .btn-filled {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0 24px; min-height: 48px; border-radius: 9999px; border: none;
+      cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500;
+      background: ${t.primary}; color: ${t.onPrimary};
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+      transition: all 200ms cubic-bezier(0.2,0,0,1);
+    }
+    .btn-filled:hover { filter: brightness(1.08); box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15); }
+    .logo-badge { position:relative; width: 40px; height: 40px; border-radius: 22%; background: ${t.logoBg}; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1); }
+    .logo-badge-sm { width: 28px; height: 28px; border-radius: 22%; }
+    .logo-badge-lg { width: 56px; height: 56px; border-radius: 22%; }
+    .logo-mark { position:absolute; bottom:22%; left:18%; right:18%; height:13%; border-radius:9999px; background:${t.logoText}; z-index:2; }
+    .callout-surface { background: color-mix(in srgb, ${t.primaryRaw} 8%, transparent); border: 1px solid ${t.outlineVar}; border-radius: 12px; }
+  </style>`;
+}
+
+function notFoundPage(t) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">${baseStyles(t)}</head>
+  <body>
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <div style="display:flex;justify-content:center;margin-bottom:32px">
+          <div class="logo-badge logo-badge-sm" style="position:relative">
+            <div class="logo-mark"></div>
+          </div>
+        </div>
+        <h1 style="font-size:72px;font-weight:300;letter-spacing:-0.04em;margin-bottom:12px;line-height:1;color:${t.onSurface}">404</h1>
+        <p style="font-size:15px;margin-bottom:32px;color:${t.onSurfaceVar}">This page doesn't exist.</p>
+        <a href="#" style="font-size:14px;font-weight:500;color:${t.primary};transition:all 200ms cubic-bezier(0.2,0,0,1)">← Back to home</a>
+      </div>
+    </div>
+  </body></html>`;
+}
+
+function privacyPage(t) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">${baseStyles(t)}</head>
+  <body>
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center">
+      <header style="width:100%;max-width:640px;display:flex;justify-content:center;align-items:center;padding:24px">
+        <a href="#" style="display:flex;align-items:center;gap:8px">
+          <div class="logo-badge logo-badge-sm" style="position:relative">
+            <div class="logo-mark"></div>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:${t.onSurface}">underscore</span>
+        </a>
+      </header>
+      <article style="width:100%;max-width:640px;padding:0 24px 48px">
+        <a href="#" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;margin-bottom:20px;color:${t.outline}">← Back</a>
+        <h1 class="text-headline-small" style="font-weight:600;margin-bottom:8px;color:${t.onSurface}">Privacy Policy</h1>
+        <p class="text-body-small" style="margin-bottom:32px;color:${t.outline}">Last updated: February 2026</p>
+        <div class="callout-surface" style="padding:16px;margin-bottom:32px">
+          <p style="font-size:14px;line-height:1.6;color:${t.primary}"><strong>TL;DR</strong> — Your data stays on your device. We don't track, sell, or share your browsing activity or highlights with anyone. Period.</p>
+        </div>
+        ${[
+          { title: 'What we collect', body: 'We collect the minimum data necessary: account information, highlight data you explicitly save, and basic usage analytics — no personal data.' },
+          { title: "What we don't collect", body: 'Browsing history outside your highlights, personal information beyond signup, or data from Focus mode (browser session only).' },
+          { title: 'Data storage', body: 'All data is stored locally in your browser. When you enable cloud sync, data is encrypted end-to-end before leaving your device.' },
+          { title: 'Your rights', body: 'Export all data at any time (Settings → Data), delete your account, or use Focus mode without an account.' },
+          { title: 'Contact', body: 'Questions? Email <a href="mailto:privacy@underscore.dev" style="text-decoration:underline;color:' + t.primary + '">privacy@underscore.dev</a>' },
+        ].map(s => `
+          <section style="margin-bottom:24px">
+            <h2 class="text-title-small" style="margin-bottom:12px;color:${t.onSurface}">${s.title}</h2>
+            <div class="text-body-medium" style="line-height:1.6;color:${t.onSurfaceVar}">${s.body}</div>
+          </section>`).join('')}
+      </article>
+    </div>
+  </body></html>`;
+}
+
+function welcomePage(t) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">${baseStyles(t)}</head>
+  <body style="height:100vh;overflow:hidden">
+    <div style="height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;max-width:480px;padding:48px 24px">
+        <div class="logo-badge logo-badge-lg" style="position:relative;margin-bottom:24px">
+          <div class="logo-mark"></div>
+        </div>
+        <h1 style="font-size:36px;font-weight:300;letter-spacing:-0.02em;margin-bottom:16px;color:${t.onSurface}">underscore</h1>
+        <p style="font-size:16px;line-height:1.6;margin-bottom:40px;color:${t.onSurfaceVar}">Highlight what matters.<br>Everything else fades away.</p>
+        <button class="btn-filled" style="margin-bottom:24px;box-shadow:0 2px 8px color-mix(in srgb,${t.primaryRaw} 30%,transparent)">Get started →</button>
+        <p style="font-size:12px;color:${t.outline}">No account required to start</p>
+      </div>
+    </div>
+    <div style="position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px;border-top:1px solid ${t.outlineVar};background:${t.surface}">
+      <a href="#" style="font-size:12px;color:${t.outline}">Privacy</a>
+      <a href="#" style="font-size:12px;color:${t.outline}">Terms</a>
+      <a href="#" style="font-size:12px;color:${t.outline}">Help</a>
+    </div>
+  </body></html>`;
+}
+
+const notes = {
+  notfound: {
+    cleared: [
+      { text: 'Root div: <span class="violation-badge">var(--bg)</span><span class="violation-badge">var(--text-primary)</span> → <span class="token-badge">bg-surface text-on-surface</span>' },
+      { text: 'h1 404: redundant inline color removed (inherits root)' },
+      { text: 'Message p: <span class="violation-badge">var(--text-secondary)</span> → <span class="token-badge">text-on-surface-variant</span>' },
+      { text: 'Back link: <span class="violation-badge">var(--accent-text)</span> → <span class="token-badge">text-primary</span>' },
+      { text: 'Back link: <span class="violation-badge">duration-150</span> → <span class="token-badge">duration-short ease-standard</span>' },
+    ],
+    checklist: [
+      { dot: 'pass', text: 'Zero no-restricted-syntax violations' },
+      { dot: 'pass', text: 'No var(-- aliases in file' },
+      { dot: 'pass', text: 'No onMouseEnter/Leave' },
+      { dot: 'info', text: 'Verify: 404 text readable in both modes' },
+      { dot: 'info', text: 'Verify: back link visible on surface' },
+    ],
+    things: [
+      { dot: 'info', text: '72px h1 is a raw pixel size — intentional display choice, not in MD3 scale' },
+      { dot: 'info', text: 'Back link uses hover:opacity-80 — acceptable for a plain anchor link' },
+      { dot: 'pass', text: 'Simplest of the 3 pages — lowest risk' },
+    ]
+  },
+  privacy: {
+    cleared: [
+      { text: 'Root: style bg/color → <span class="token-badge">bg-surface text-on-surface</span>' },
+      { text: 'Back link: <span class="violation-badge">var(--text-tertiary)</span> + <span class="violation-badge">hover:text-[var(--accent)]</span> → <span class="token-badge">text-outline hover:text-primary</span>' },
+      { text: 'h1: <span class="violation-badge">text-[28px]</span> → <span class="token-badge">text-headline-small</span>' },
+      { text: 'Callout: 5 violations (radius, bg, border) → <span class="token-badge">rounded-md color-mix border-outline-variant</span>' },
+      { text: 'PolicySection h2/body: raw px sizes → <span class="token-badge">text-title-small</span> / <span class="token-badge">text-body-medium</span>' },
+    ],
+    checklist: [
+      { dot: 'pass', text: 'Zero no-restricted-syntax violations' },
+      { dot: 'pass', text: 'Typography uses MD3 type scale' },
+      { dot: 'pass', text: 'Callout tint uses color-mix with md-sys token' },
+      { dot: 'info', text: 'Verify: callout tint visible in dark mode' },
+      { dot: 'info', text: 'Verify: email link text-primary readable' },
+    ],
+    things: [
+      { dot: 'pass', text: 'Back nav matches contracts §3k (inline-flex, gap-1.5, text-outline)' },
+      { dot: 'warn', text: 'Back nav kept as <Link> not <button> — acceptable for a router link' },
+      { dot: 'info', text: 'accent-soft callout → color-mix(in_srgb, primary 8%, transparent)' },
+    ]
+  },
+  welcome: {
+    cleared: [
+      { text: 'Root: <span class="violation-badge">var(--bg)</span><span class="violation-badge">var(--text-primary)</span> → <span class="token-badge">bg-surface text-on-surface</span>' },
+      { text: 'h1 + tagline: inline styles → <span class="token-badge">text-on-surface</span> / <span class="token-badge">text-on-surface-variant</span>' },
+      { text: 'CTA: raw &lt;button&gt; (8 violations) → <span class="token-badge">&lt;Button variant="filled"&gt;</span>' },
+      { text: 'Footer border: <span class="violation-badge">borderTop var(--border)</span> → <span class="token-badge">border-t border-outline-variant</span>' },
+      { text: 'Footer links ×3: <span class="violation-badge">var(--text-tertiary)</span> + <span class="violation-badge">hover:text-[var(--accent)]</span> → <span class="token-badge">text-outline hover:text-primary</span>' },
+    ],
+    checklist: [
+      { dot: 'pass', text: 'Zero no-restricted-syntax violations' },
+      { dot: 'pass', text: 'CTA uses Button variant="filled" primitive' },
+      { dot: 'pass', text: 'boxShadow uses var(--md-sys-color-primary) — allowed exception' },
+      { dot: 'info', text: 'Verify: pill button shape matches design intent' },
+      { dot: 'info', text: 'Verify: footer border visible in dark mode' },
+    ],
+    things: [
+      { dot: 'pass', text: 'Button handles bg-primary, text-on-primary, rounded-full, MD3 motion' },
+      { dot: 'info', text: 'text-white removed — text-on-primary handles it (#fff light, #003061 dark)' },
+      { dot: 'warn', text: 'Dark mode: on-primary (#003061) on primary (#a8c8ff) — verify contrast' },
+    ]
+  }
+};
+
+function renderPreview() {
+  const t = tokens[state.mode];
+  const generators = { notfound: notFoundPage, privacy: privacyPage, welcome: welcomePage };
+  const html = generators[state.page](t);
+  const iframe = document.getElementById('pagePreview');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+}
+
+function renderNotes() {
+  const n = notes[state.page];
+  document.getElementById('notesPanel').innerHTML = `
+    <div class="note-col">
+      <div class="note-label">Violations cleared</div>
+      ${n.cleared.map(c => `<div class="check-item"><div class="dot pass"></div><div>${c.text}</div></div>`).join('')}
+    </div>
+    <div class="note-col">
+      <div class="note-label">Manual checklist</div>
+      ${n.checklist.map(c => `<div class="check-item"><div class="dot ${c.dot}"></div><div>${c.text}</div></div>`).join('')}
+    </div>
+    <div class="note-col">
+      <div class="note-label">Things to verify</div>
+      ${n.things.map(c => `<div class="check-item"><div class="dot ${c.dot}"></div><div>${c.text}</div></div>`).join('')}
+    </div>`;
+}
+
+function setPage(page) {
+  state.page = page;
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', ['notfound','privacy','welcome'][i] === page));
+  renderPreview();
+  renderNotes();
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll('#modeToggle .toggle-btn').forEach(el =>
+    el.classList.toggle('active', el.textContent.toLowerCase() === mode));
+  renderPreview();
+}
+
+function setViewport(vp) {
+  state.viewport = vp;
+  document.querySelectorAll('#viewportToggle .toggle-btn').forEach(el =>
+    el.classList.toggle('active', el.textContent.toLowerCase() === vp));
+  document.getElementById('deviceFrame').className = `device-frame ${vp}`;
+  renderPreview();
+}
+
+renderPreview();
+renderNotes();
+</script>
+</body>
+</html>

@@ -143,6 +143,30 @@ js.configs.recommended, // TypeScript files
 
     // Security rules
     'security/detect-object-injection': 'off', // Too many false positives
+
+    // ── Design System Enforcement ─────────────────────────────────────────────
+    // Bans Style C Hybrid CSS variable aliases from TSX files.
+    // These vars exist in global.css as a temporary alias layer but must NOT
+    // appear in component code. Use MD3 Tailwind classes instead.
+    // Reference: .agent/workflows/ui-code-contracts.md §2
+    'no-restricted-syntax': [
+      'warn', // Migration mode (M1–M4): set back to 'error' once all violations are resolved (0 count).
+      {
+        selector: 'Literal[value=/var\\(--(?:bg|bg-card|bg-elevated|bg-glass|text-primary|text-secondary|text-tertiary|accent(?!-text|-soft)?|accent-soft|accent-text|border(?!-)|border-hover|radius(?!-)|radius-sm|radius-lg|radius-full|shadow-rest|shadow-hover)/]',
+        message:
+          'Style C Hybrid CSS var banned in component code. Use MD3 Tailwind classes instead. See .agent/workflows/ui-code-contracts.md §2 for the full replacement table.',
+      },
+      {
+        selector: 'JSXAttribute[name.name="onMouseEnter"] > JSXExpressionContainer > ArrowFunctionExpression > BlockStatement > ExpressionStatement > AssignmentExpression[left.object.property.name="style"]',
+        message:
+          'JS DOM style mutation in onMouseEnter is banned. Use Tailwind hover: utilities instead (e.g. hover:shadow-elevation-3). See .agent/workflows/ui-code-contracts.md §6.',
+      },
+      {
+        selector: 'JSXAttribute[name.name="onMouseLeave"] > JSXExpressionContainer > ArrowFunctionExpression > BlockStatement > ExpressionStatement > AssignmentExpression[left.object.property.name="style"]',
+        message:
+          'JS DOM style mutation in onMouseLeave is banned. Use Tailwind hover: utilities instead. See .agent/workflows/ui-code-contracts.md §6.',
+      },
+    ],
   },
 }, // Test files - relaxed rules
 {

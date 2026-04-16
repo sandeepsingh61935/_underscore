@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import type { OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
 
 export interface User {
@@ -16,13 +17,40 @@ export interface AuthStateData {
     verificationExpiresAt?: number | null;
 }
 
+interface AuthActionResult {
+    success: boolean;
+    error?: string;
+}
+
+interface AuthStateChangedMessage extends AuthStateData {
+    type?: string;
+    payload?: AuthStateData;
+}
+
+interface UseCurrentUserResult {
+    user: User | null;
+    verificationStatus: 'idle' | 'awaiting' | 'failed';
+    verificationExpiresAt: number | null;
+    isLoading: boolean;
+    error: string | null;
+    login: (provider?: OAuthProviderType) => Promise<AuthActionResult>;
+    loginWithEmail: (email: string, password: string) => Promise<AuthActionResult>;
+    registerWithEmail: (email: string, password: string) => Promise<AuthActionResult>;
+    logout: () => Promise<void>;
+}
+
+const EXTENSION_RUNTIME_UNAVAILABLE = 'Chrome extension runtime is unavailable in this context.';
+
+function hasChromeRuntime(): boolean {
+    return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+}
 
 
 /**
  * Hook to access current user auth state from background AuthManager
  * Uses Chrome messaging to communicate with background service worker
  */
-export function useCurrentUser() {
+export function useCurrentUser(): UseCurrentUserResult {
     const [user, setUser] = useState<User | null>(null);
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'awaiting' | 'failed'>('idle');
     const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
@@ -33,7 +61,18 @@ export function useCurrentUser() {
     useEffect(() => {
         let mounted = true;
 
-        const fetchAuthState = async () => {
+        if (!hasChromeRuntime()) {
+            setUser(null);
+            setVerificationStatus('idle');
+            setVerificationExpiresAt(null);
+            setIsLoading(false);
+
+            return () => {
+                mounted = false;
+            };
+        }
+
+        const fetchAuthState = async (): Promise<void> => {
             try {
                 const response = await chrome.runtime.sendMessage({
                     type: 'GET_AUTH_STATE',
@@ -65,7 +104,7 @@ export function useCurrentUser() {
 
         fetchAuthState();
 
-        const handleMessage = (message: any) => {
+        const handleMessage = (message: AuthStateChangedMessage): void => {
             if (message?.type === 'AUTH_STATE_CHANGED') {
                 console.log('[useCurrentUser] Auth state changed:', message);
                 const payload = message.payload || message;
@@ -87,6 +126,12 @@ export function useCurrentUser() {
     const login = useCallback(async (provider: OAuthProviderType = 'google') => {
         setIsLoading(true);
         setError(null);
+
+        if (!hasChromeRuntime()) {
+            setIsLoading(false);
+            setError(EXTENSION_RUNTIME_UNAVAILABLE);
+            return { success: false, error: EXTENSION_RUNTIME_UNAVAILABLE };
+        }
 
         try {
             console.log('[useCurrentUser] Sending LOGIN request to background...');
@@ -133,6 +178,12 @@ export function useCurrentUser() {
         setIsLoading(true);
         setError(null);
 
+        if (!hasChromeRuntime()) {
+            setIsLoading(false);
+            setError(EXTENSION_RUNTIME_UNAVAILABLE);
+            return { success: false, error: EXTENSION_RUNTIME_UNAVAILABLE };
+        }
+
         try {
             console.log('[useCurrentUser] Sending LOGIN_EMAIL request to background...');
             const response = await chrome.runtime.sendMessage({
@@ -176,6 +227,12 @@ export function useCurrentUser() {
         setIsLoading(true);
         setError(null);
 
+        if (!hasChromeRuntime()) {
+            setIsLoading(false);
+            setError(EXTENSION_RUNTIME_UNAVAILABLE);
+            return { success: false, error: EXTENSION_RUNTIME_UNAVAILABLE };
+        }
+
         try {
             console.log('[useCurrentUser] Sending REGISTER_EMAIL request to background...');
             const response = await chrome.runtime.sendMessage({
@@ -218,6 +275,14 @@ export function useCurrentUser() {
     const logout = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+
+        if (!hasChromeRuntime()) {
+            setUser(null);
+            setVerificationStatus('idle');
+            setVerificationExpiresAt(null);
+            setIsLoading(false);
+            return;
+        }
 
         try {
             await chrome.runtime.sendMessage({

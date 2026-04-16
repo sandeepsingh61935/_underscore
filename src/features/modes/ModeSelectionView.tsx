@@ -1,11 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/core/context/AppProvider';
-import { Logo } from '@/ui-system/components/primitives/Logo';
-import { Spinner } from '@/ui-system/components/primitives/Spinner';
+
 import { ModeCard } from './ModeCard';
 import { useModeTransition } from './useModeTransition';
+
+import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { AppHeader } from '@/ui-system/components/layout/AppHeader';
+import { Button } from '@/ui-system/components/primitives/Button';
+import { Spinner } from '@/ui-system/components/primitives/Spinner';
+import { cn } from '@/ui-system/utils/cn';
 
 /** Internal mode → display name + UX copy */
 const MODE_OPTIONS: Array<{
@@ -52,13 +56,15 @@ export interface ModeSelectionViewProps {
     onSignInClick?: () => void;
     /** Optional callback to navigate back to previous screen */
     onBack?: () => void;
+    /** Optional callback invoked after mode transition completes — use to navigate to collections */
+    onNavigateToCollections?: () => void;
 }
 
 /**
  * Mode Selection View — adapts dynamically to popup (400x600) and web (full screen)
  * Centered logo, 4 mode cards, auth nudge, confirmation modal + spinner overlay
  */
-export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeSelectionViewProps = {}) {
+export function ModeSelectionView({ onModeSelect, onSignInClick, onBack, onNavigateToCollections }: ModeSelectionViewProps = {}): React.JSX.Element {
     const navigate = useNavigate();
     const { currentMode, isAuthenticated } = useApp();
     const {
@@ -67,9 +73,9 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
         requestTransition,
         confirmTransition,
         cancelTransition,
-    } = useModeTransition();
+    } = useModeTransition({ navigateAfterTransition: onNavigateToCollections });
 
-    const handleCardClick = (modeId: ModeType) => {
+    const handleCardClick = (modeId: ModeType): void => {
         if (onModeSelect) {
             onModeSelect(modeId);
         } else {
@@ -77,7 +83,7 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
         }
     };
 
-    const handleAuthClick = (e: React.MouseEvent) => {
+    const handleAuthClick = (e: React.MouseEvent): void => {
         e.preventDefault();
         if (onSignInClick) {
             onSignInClick();
@@ -87,55 +93,28 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
     };
 
     return (
-        <div
-            className="h-full w-full flex flex-col items-center justify-between py-2 overflow-y-auto"
-            style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
-        >
-            {/* Header */}
-            <header className="w-full max-w-[480px] flex justify-between items-center px-6 shrink-0 z-10 sticky top-0 py-4"
-                style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'var(--bg-glass, rgba(249, 249, 255, 0.8))' }}>
-                <div className="flex-1 flex justify-start">
-                    {onBack && (
-                        <a
-                            href="#"
-                            className="inline-flex items-center gap-1.5 text-[13px] no-underline transition-colors hover:text-[var(--accent)]"
-                            style={{ color: 'var(--text-tertiary)' }}
-                            onClick={e => {
-                                e.preventDefault();
-                                onBack();
-                            }}
-                        >
-                            ← Back
-                        </a>
-                    )}
-                </div>
-                <div className="flex-none flex justify-center">
-                    <Logo size="md" />
-                </div>
-                {/* Empty flex-1 div to perfectly center the logo against the back button */}
-                <div className="flex-1" />
-            </header>
+        <div className="h-full w-full flex flex-col overflow-y-auto bg-surface text-on-surface">
+            <AppHeader
+                variant={onBack ? 'sub' : 'standalone'}
+                onBack={onBack}
+                backLabel="Back"
+            />
 
-            {/* Content box — stretch to take remaining height but compress on small screens */}
-            <main className="w-full max-w-[480px] flex-1 flex flex-col items-center justify-center py-6 px-6">
+            {/* Content box — flex-1 fills remaining space, nudge pins to bottom */}
+            <main className="w-full max-w-[480px] mx-auto flex-1 flex flex-col px-6 pt-5 pb-4 min-h-0">
                 {/* Section label */}
                 <div className="w-full text-left mb-3">
-                    <p
-                        className="text-[11px] font-medium uppercase tracking-[0.18em]"
-                        style={{ color: 'var(--text-tertiary)' }}
-                    >
+                    <p className="text-label-small font-medium uppercase tracking-[0.18em] text-outline">
                         Mode
                     </p>
                 </div>
 
-                {/* Mode cards */}
-                <div className="w-full flex flex-col gap-1.5 mb-6">
+                {/* Mode cards — 2×2 grid */}
+                <div className="w-full grid grid-cols-2 gap-2">
                     {MODE_OPTIONS.map(opt => (
                         <React.Fragment key={opt.id}>
-                            {opt.id === 'vault' && (
-                                <div className="h-2 w-full" aria-hidden="true" />
-                            )}
                             <ModeCard
+                                id={opt.id}
                                 name={opt.name}
                                 description={opt.description}
                                 hint={opt.hint}
@@ -147,23 +126,35 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
                     ))}
                 </div>
 
-                {/* Auth nudge */}
+                {/* Spacer pushes auth nudge to the bottom */}
+                <div className="flex-1 min-h-4" />
+
+                {/* Auth nudge — always fully visible */}
                 {!isAuthenticated && (
-                    <div
-                        className="text-center text-[13px] py-4 rounded-[var(--radius)] mb-4"
-                        style={{
-                            background: 'var(--accent-soft)',
-                            color: 'var(--accent-text)',
-                        }}
-                    >
+                    <div className={cn(
+                        'mx-1 p-3 rounded-[10px]',
+                        'bg-[color-mix(in_srgb,var(--ink-neural)_7%,transparent)]',
+                        'border border-[color-mix(in_srgb,var(--ink-neural)_18%,transparent)]',
+                        'flex items-center justify-between gap-3',
+                    )}>
+                        <p className="text-[12px] text-on-surface-variant leading-[1.45]">
+                            Sign in to unlock Memory and Neural modes.
+                        </p>
                         <button
+                            type="button"
                             onClick={handleAuthClick}
-                            className="font-medium underline bg-transparent border-none p-0 cursor-pointer"
-                            style={{ color: 'var(--accent-text)', fontSize: 'inherit' }}
+                            className={cn(
+                                'flex-shrink-0 px-4 py-2 rounded-full',
+                                'bg-[var(--ink-neural)] text-[var(--ink-1)]',
+                                'text-[11px] font-bold',
+                                'transition-transform duration-[200ms]',
+                                'hover:scale-[1.05]',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                            )}
+                            style={{ transitionTimingFunction: 'var(--ink-ease-spring)' }}
                         >
-                            Create an account
+                            Sign in →
                         </button>
-                        {' '}to unlock your full knowledge workspace.
                     </div>
                 )}
             </main>
@@ -171,55 +162,26 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
             {/* Confirmation modal overlay */}
             {confirmMessage && (
                 <div
-                    className="fixed inset-0 z-[300] flex items-center justify-center"
-                    style={{
-                        background: 'rgba(0,0,0,0.35)',
-                        backdropFilter: 'blur(4px)',
-                        WebkitBackdropFilter: 'blur(4px)',
-                    }}
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-scrim/35 backdrop-blur-sm"
                     onClick={cancelTransition}
                 >
                     <div
-                        className="w-[90%] max-w-[360px] rounded-[var(--radius)] overflow-hidden p-7 text-center relative"
-                        style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border)',
-                            boxShadow: 'var(--shadow-hover)',
-                            animation: 'cardIn 0.18s ease-out',
-                        }}
+                        className="w-[90%] max-w-[360px] rounded-xl overflow-hidden p-7 text-center relative bg-surface-container-highest border border-outline-variant shadow-elevation-3 animate-in zoom-in-95 fade-in duration-medium ease-decelerate"
                         onClick={e => e.stopPropagation()}
                     >
-                        <p
-                            className="text-[16px] font-semibold mb-2"
-                            style={{ color: 'var(--text-primary)' }}
-                        >
+                        <p className="text-title-medium font-semibold mb-2">
                             Switch mode?
                         </p>
-                        <p
-                            className="text-[13px] mb-6 leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                        >
+                        <p className="text-body-small text-on-surface-variant mb-6 leading-relaxed">
                             {confirmMessage}
                         </p>
                         <div className="flex gap-2 justify-center">
-                            <button
-                                onClick={cancelTransition}
-                                className="px-5 py-2.5 rounded-[var(--radius-sm)] text-[13px] font-medium cursor-pointer transition-all duration-150"
-                                style={{
-                                    background: 'transparent',
-                                    border: '1px solid var(--border)',
-                                    color: 'var(--text-secondary)',
-                                }}
-                            >
+                            <Button variant="outlined" onClick={cancelTransition}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={confirmTransition}
-                                className="px-5 py-2.5 rounded-[var(--radius-sm)] text-[13px] font-medium text-white border-none cursor-pointer transition-all duration-150 hover:-translate-y-0.5"
-                                style={{ background: 'var(--accent)' }}
-                            >
+                            </Button>
+                            <Button variant="filled" onClick={confirmTransition}>
                                 Switch
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -227,16 +189,9 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack }: ModeS
 
             {/* Spinner overlay during transition */}
             {isPending && (
-                <div
-                    className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4"
-                    style={{
-                        background: 'rgba(0,0,0,0.5)',
-                        backdropFilter: 'blur(6px)',
-                        WebkitBackdropFilter: 'blur(6px)',
-                    }}
-                >
+                <div className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4 bg-scrim/50 backdrop-blur-md">
                     <Spinner size="lg" />
-                    <p className="text-[14px] text-white font-medium">
+                    <p className="text-body-medium text-white font-medium">
                         Switching mode…
                     </p>
                 </div>

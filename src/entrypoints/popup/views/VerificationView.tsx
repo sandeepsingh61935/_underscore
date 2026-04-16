@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { Logo } from '../../../ui-system/components/primitives/Logo';
 
 interface VerificationViewProps {
@@ -8,14 +9,19 @@ interface VerificationViewProps {
     onCancel: () => void;
 }
 
-export function VerificationView({ email, expiresAt, onCheckVerification, onCancel }: VerificationViewProps) {
+export function VerificationView({
+    email,
+    expiresAt,
+    onCheckVerification,
+    onCancel,
+}: VerificationViewProps): React.ReactElement {
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isExpired, setIsExpired] = useState(false);
 
     useEffect(() => {
         if (!expiresAt) return;
 
-        const updateTimer = () => {
+        const updateTimer = (): void => {
             const now = Date.now();
             const remaining = Math.max(0, expiresAt - now);
             setTimeLeft(remaining);
@@ -31,7 +37,7 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
         return () => clearInterval(intervalId);
     }, [expiresAt]);
 
-    const formatTime = (ms: number) => {
+    const formatTime = (ms: number): string => {
         const seconds = Math.ceil(ms / 1000);
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -86,12 +92,14 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
                 {/* Actions */}
                 <div className="w-full flex flex-col gap-3">
                     <button
+                        type="button"
                         onClick={onCheckVerification}
                         className={`
                             min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
                             bg-primary text-on-primary border-none cursor-pointer
                             hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]
                             active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                             disabled:opacity-disabled disabled:pointer-events-none
                         `}
                     >
@@ -99,12 +107,14 @@ export function VerificationView({ email, expiresAt, onCheckVerification, onCanc
                     </button>
 
                     <button
+                        type="button"
                         onClick={onCancel}
                         className={`
                             min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
                             bg-transparent text-primary border border-outline cursor-pointer
                             hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]
                             active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                         `}
                     >
                         {isExpired ? 'Try again' : 'Cancel'}

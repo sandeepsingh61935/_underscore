@@ -1,7 +1,9 @@
 import React from 'react';
-import { cn } from '../../ui-system/utils/cn';
+
 import { Text } from '../../ui-system/components/primitives/Text';
-import { ModeDefinition } from './registry';
+import { cn } from '../../ui-system/utils/cn';
+
+import type { ModeDefinition } from './registry';
 
 interface ModeSelectorProps {
     modes: ModeDefinition[];
@@ -10,7 +12,7 @@ interface ModeSelectorProps {
     disabled?: boolean;
 }
 
-export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeSelectorProps) {
+export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeSelectorProps): React.JSX.Element {
     return (
         <div className="flex flex-col gap-4 w-full">
             {modes.map((mode) => {
@@ -22,7 +24,8 @@ export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeS
                         onClick={() => onSelect(mode.id)}
                         disabled={disabled}
                         className={cn(
-                            "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-short border rounded-md",
+                            "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-short ease-standard border rounded-md",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                             // Active State
                             isActive
                                 ? "border-primary bg-primary/5"

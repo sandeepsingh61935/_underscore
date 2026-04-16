@@ -4,7 +4,8 @@
  * @see https://m3.material.io/components/cards/overview
  */
 
-import React, { HTMLAttributes, forwardRef } from 'react';
+import React, { type HTMLAttributes, forwardRef } from 'react';
+
 import { cn } from '../../utils/cn';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -13,35 +14,39 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-    ({ className, interactive, elevated, children, onClick, ...props }, ref) => {
+    ({ className, interactive, elevated, children, onClick, style, ...props }, ref) => {
         const baseClasses = cn(
-            'rounded-md',                    // 12px
+            'rounded-[10px]',
             'bg-surface-container',
             'text-on-surface',
             'p-4',
-            'transition-all duration-short ease-standard',
+            'transition-[transform,border-color,box-shadow] duration-[280ms]',
             elevated ? 'shadow-elevation-2' : 'shadow-elevation-1',
             className
         );
 
+        const springStyle = { transitionTimingFunction: 'var(--ink-ease-spring)', ...style };
+
         return interactive ? (
             <button
-                ref={ref as any}
-                onClick={onClick}
+                ref={ref as React.Ref<HTMLButtonElement>}
+                onClick={onClick as unknown as React.MouseEventHandler<HTMLButtonElement>}
+                style={springStyle}
                 className={cn(
                     baseClasses,
-                    'hover:shadow-elevation-3',
+                    'hover:shadow-elevation-2',
+                    'hover:-translate-y-[1px]',
                     'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]',
                     'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                     'border-0 text-left w-full',
                 )}
-                {...(props as any)}
+                {...(props as React.HTMLAttributes<HTMLElement>)}
             >
                 {children}
             </button>
         ) : (
-            <div ref={ref} className={baseClasses} {...props}>
+            <div ref={ref} style={springStyle} className={baseClasses} {...props}>
                 {children}
             </div>
         );

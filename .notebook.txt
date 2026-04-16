@@ -1,0 +1,107 @@
+Where Docs and Code DIVERGE
+
+  1. Two Separate Codebases Living in One Repo
+
+  This is the biggest finding. There are effectively two parallel implementations:
+
+  ┌────────────────┬──────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────┐
+  │     Layer      │                 Location                 │                                       Status                                        │
+  ├────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Background     │ src/background/                          │ ~85% complete — auth, event store, sync queue, batcher, API client, conflict        │
+  │ services       │                                          │ detector, websocket, migration, encryption — all real working code                  │
+  ├────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Content        │ src/content/                             │ ~90% complete — modes, selection, commands, strategies, rendering, services — all   │
+  │ scripts        │                                          │ real working code                                                                   │
+  ├────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Popup UI       │ src/entrypoints/popup/ + src/features/ + │ UI is beautifully built but disconnected from the backend                           │
+  │                │  src/ui-system/                          │                                                                                     │
+  └────────────────┴──────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
+
+  The UI layer and the backend layer were developed somewhat independently. The bridge is incomplete.
+
+  2. Collections: Fully Mocked
+
+  Docs describe collections with folders, tags, search, export. The UI exists and looks great. But:
+  - useCollections() hook is an empty stub returning mock data
+  - No wiring to src/background/repositories/ (which has real IndexedDB + Supabase repos)
+  - Export buttons are visual only — no backend logic
+
+  3. Event Sourcing: More Complete Than Docs Suggest
+
+  Docs describe event sourcing as "planned for Phase 6." Reality:
+  - event-store.ts — append-only log with SHA-256 checksums, fully working
+  - event-publisher.ts — observer pattern, working
+  - event-replayer.ts — state reconstruction from events, working
+  - sync-queue.ts — priority queue with dead letter, working
+  - sync-batcher.ts — dedup + gzip compression, working
+  - conflict-detector.ts — vector clock comparison, working
+
+  The sync infrastructure is far more advanced than docs indicate. But it's not wired to the UI.
+
+  4. Vault Mode: Split Personality
+
+  - Content script vault-mode.ts (485 lines) — real implementation with IPersistentMode, multi-selector generation, remote sync message handling
+  - Background supabase-highlight-repository.ts — real Supabase CRUD
+  - Background dual-write-repository.ts — real write-to-both-local-and-remote
+  - But the popup UI has no idea any of this exists. It shows mock collection cards.
+
+  5. Gen Mode: Interface Only
+
+  Docs describe it as "planned." The interfaces exist (IAIMode with generateMindmap, generateSummary, generateQuestions). But there is zero
+  implementation — no gen-mode.ts file.
+
+  6. Content Entry Point: Unclear State
+
+  The UI audit flagged src/entrypoints/content.ts as "empty/stub." But src/content/ has a full working implementation of modes, selection detection,
+  highlight rendering, commands, etc. These may be wired through WXT's content script configuration rather than a single entry file. This needs
+  verification but the actual content logic is solid.
+
+  7. Design Token Conflict Still Unresolved
+
+  - global.css has MD3 tokens based on seed #5b8db9 (Style C Hybrid)
+  - Original docs reference #4a6fa2 as the MD3 seed
+  - STYLE_C_HANDOFF.md documents the newer system
+  - Legacy dead code still present (old --background, --foreground vars, .sepia block)
+  - In practice, the code uses the Style C tokens — the docs are outdated on this point
+
+  8. Conflict Resolution: LWW Only
+
+  Docs describe vector clock conflict resolution. The conflict-detector.ts does detect concurrent edits using vector clocks. But the conflict-resolver.ts
+   only implements Last-Writer-Wins. No user-facing conflict resolution UI exists.
+
+  9. Web App: Config Exists, Nothing Built
+
+  - vite.config.web.ts exists (port 3000, React plugin)
+  - No web entrypoint HTML, no web routes, no web-specific components
+  - react-router-dom@7 is in package.json but unused in popup (state-based routing instead)
+
+  ---
+  Summary Scorecard
+
+  ┌──────────────────────┬─────────────────┬────────────────────┬─────────────────────────────┐
+  │      Component       │   Docs Claim    │    Actual State    │             Gap             │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Walk Mode            │ Complete        │ Complete           │ None                        │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Sprint Mode          │ Complete        │ Complete           │ None                        │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Vault Mode (content) │ In progress     │ 90% working        │ Sync wiring                 │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Vault Mode (UI)      │ In progress     │ Mock data only     │ Major gap                   │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Gen Mode             │ Planned         │ Interfaces only    │ Expected                    │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Auth                 │ In progress     │ Fully working      │ Docs understate             │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Event Sourcing       │ Phase 6 planned │ Already built      │ Docs very outdated          │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Sync Infrastructure  │ Phase 6 planned │ 70% built          │ Docs very outdated          │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ API Client           │ Planned         │ Built + resilient  │ Docs very outdated          │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Collections UI       │ In progress     │ Beautiful but fake │ Data layer gap              │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ Web App              │ Mentioned       │ Config file only   │ Everything needed           │
+  ├──────────────────────┼─────────────────┼────────────────────┼─────────────────────────────┤
+  │ MD3 Design System    │ Complete        │ Complete           │ Token seed mismatch in docs │
+  └──────────────────────┴─────────────────┴────────────────────┴─────────────────────────────┘

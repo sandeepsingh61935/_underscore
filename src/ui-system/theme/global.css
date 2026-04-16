@@ -15,23 +15,55 @@
        =================================== */
 
     :root {
-        /* ===== MD3 Color Tokens (Light Mode) ===== */
+        /* ============================================================
+           INK & GLASS FOUNDATION TOKENS
+           These are the source values. MD3 tokens reference these.
+           ============================================================ */
+
+        /* Surfaces (dark default) */
+        --ink-1:         #0c0e13;
+        --ink-2:         #12151c;
+        --ink-3:         #171b24;
+        --ink-4:         #1d212c;
+        --ink-border:    #22283a;
+        --ink-border-hi: #2e3650;
+
+        /* Text */
+        --ink-text:      #d8dce8;
+        --ink-text-m:    #6e7a9a;
+        --ink-text-f:    #3d4560;
+
+        /* Mode ink colors */
+        --ink-focus:     #6b7fa3;
+        --ink-capture:   #f0a030;
+        --ink-memory:    #2ba89a;
+        --ink-neural:    #9b72e8;
+
+        /* Current active mode color — updated at runtime by JS */
+        --ink-mode:      var(--ink-capture);
+
+        /* Motion easings */
+        --ink-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+        --ink-ease-out:    cubic-bezier(0.22, 1.00, 0.36, 1);
+        --ink-ease-in:     cubic-bezier(0.40, 0.00, 1.00, 1);
+
+        /* ===== MD3 Color Tokens (Dark Default) ===== */
 
         /* Primary Family */
-        --md-sys-color-primary: #4a6fa2;
-        --md-sys-color-on-primary: #ffffff;
-        --md-sys-color-primary-container: #d5e3ff;
-        --md-sys-color-on-primary-container: #001a3e;
+        --md-sys-color-primary: var(--ink-mode);
+        --md-sys-color-on-primary: var(--ink-1);
+        --md-sys-color-primary-container: color-mix(in srgb, var(--ink-mode) 15%, var(--ink-2));
+        --md-sys-color-on-primary-container: var(--ink-mode);
         --md-sys-color-primary-fixed: #d5e3ff;
         --md-sys-color-on-primary-fixed: #001a3e;
         --md-sys-color-primary-fixed-dim: #a8c8ff;
         --md-sys-color-on-primary-fixed-variant: #325788;
 
         /* Secondary Family */
-        --md-sys-color-secondary: #565f71;
-        --md-sys-color-on-secondary: #ffffff;
-        --md-sys-color-secondary-container: #dae2f9;
-        --md-sys-color-on-secondary-container: #131c2b;
+        --md-sys-color-secondary: var(--ink-text-m);
+        --md-sys-color-on-secondary: var(--ink-1);
+        --md-sys-color-secondary-container: var(--ink-3);
+        --md-sys-color-on-secondary-container: var(--ink-text);
         --md-sys-color-secondary-fixed: #dae2f9;
         --md-sys-color-on-secondary-fixed: #131c2b;
         --md-sys-color-secondary-fixed-dim: #bec6dc;
@@ -54,16 +86,18 @@
         --md-sys-color-on-error-container: #410002;
 
         /* Surface & Background */
-        --md-sys-color-surface-dim: #d9d9e2;
-        --md-sys-color-surface: #f9f9ff;
-        --md-sys-color-surface-bright: #f9f9ff;
-        --md-sys-color-surface-container-lowest: #ffffff;
-        --md-sys-color-surface-container-low: #f3f3fc;
-        --md-sys-color-surface-container: #ededf6;
-        --md-sys-color-surface-container-high: #e7e8f0;
-        --md-sys-color-surface-container-highest: #e2e2ea;
-        --md-sys-color-on-surface: #191c20;
-        --md-sys-color-on-surface-variant: #43474e;
+        --md-sys-color-background:                var(--ink-1);
+        --md-sys-color-surface-dim:               var(--ink-2);
+        --md-sys-color-surface:                   var(--ink-1);
+        --md-sys-color-surface-bright:            var(--ink-3);
+        --md-sys-color-surface-container-lowest:  var(--ink-2);
+        --md-sys-color-surface-container-low:     var(--ink-3);
+        --md-sys-color-surface-container:         var(--ink-3);
+        --md-sys-color-surface-container-high:    var(--ink-4);
+        --md-sys-color-surface-container-highest: var(--ink-4);
+        --md-sys-color-on-background:             var(--ink-text);
+        --md-sys-color-on-surface:                var(--ink-text);
+        --md-sys-color-on-surface-variant:        var(--ink-text-m);
 
         /* Inverse */
         --md-sys-color-inverse-surface: #2e3135;
@@ -71,11 +105,11 @@
         --md-sys-color-inverse-primary: #a8c8ff;
 
         /* Outline */
-        --md-sys-color-outline: #73777f;
-        --md-sys-color-outline-variant: #c3c6cf;
+        --md-sys-color-outline:         var(--ink-text-f);
+        --md-sys-color-outline-variant: var(--ink-border);
 
         /* Special */
-        --md-sys-color-scrim: #000000;
+        --md-sys-color-scrim: rgba(0, 0, 0, 0.7);
         --md-sys-color-shadow: #000000;
 
         /* ===== MD3 Typography Tokens ===== */
@@ -169,34 +203,38 @@
         --elevation-2: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
         --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
 
-        /* ===================================================
-           Style C Hybrid Semantic Aliases → MD3 tokens
-           Use these in React components for mockup fidelity
-           =================================================== */
-        --bg: var(--md-sys-color-surface);
-        --bg-card: var(--md-sys-color-surface-container-lowest);
-        --bg-elevated: var(--md-sys-color-surface-container-low);
-        --text-primary: var(--md-sys-color-on-surface);
-        --text-secondary: var(--md-sys-color-on-surface-variant);
-        --text-tertiary: var(--md-sys-color-outline);
-        --accent: var(--md-sys-color-primary);
-        --accent-soft: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
-        --accent-text: var(--md-sys-color-primary);
-        --border: var(--md-sys-color-outline-variant);
-        --border-hover: var(--md-sys-color-outline);
-        --radius: var(--md-sys-shape-corner-medium);
-        --radius-sm: var(--md-sys-shape-corner-small);
-        --radius-lg: var(--md-sys-shape-corner-large);
-        --radius-full: var(--md-sys-shape-corner-full);
-        --shadow-rest: var(--elevation-1);
-        --shadow-hover: var(--elevation-3);
+        /* Logo badge (dark default) */
+        --logo-bg:                 #191c25;
+        --logo-text:               #e4e8f0;
+        --logo-text-shadow:        none;
+        --logo-ambient-reflection: rgba(255,255,255,0.06);
 
-        /* Logo badge (light mode) */
-        --logo-bg: #1a1a1a;
-        --logo-text: #ffffff;
-        --logo-text-shadow: none;
-        --logo-ambient-reflection: rgba(255, 255, 255, 0.15);
+        /* Typography family vars */
+        --font-display: 'Instrument Serif', serif;
+        --font-body:    'DM Sans', -apple-system, sans-serif;
+        --font-mono:    'DM Mono', monospace;
 
+    }
+
+    /* Light Mode Overrides (Ink & Glass warm paper) */
+    [data-theme="light"], .light {
+        --ink-1:         #faf9f6;
+        --ink-2:         #f2efea;
+        --ink-3:         #e8e4dc;
+        --ink-4:         #ddd8cc;
+        --ink-border:    #d5d0c4;
+        --ink-border-hi: #bbb5a6;
+        --ink-text:      #1a1710;
+        --ink-text-m:    #6b6558;
+        --ink-text-f:    #a09a8d;
+        --ink-focus:     #4e6288;
+        --ink-capture:   #c17a18;
+        --ink-memory:    #1e7d72;
+        --ink-neural:    #6b4dbe;
+
+        --logo-bg:                 #1a1710;
+        --logo-text:               #faf9f6;
+        --logo-ambient-reflection: rgba(255,255,255,0.08);
     }
 
     /* Dark Mode Overrides */
@@ -253,15 +291,19 @@
         --logo-ambient-reflection: rgba(255, 255, 255, 0.06);
     }
 
+    /* Mode color data-attribute bindings (keyed by ModeType id) */
+    [data-mode="walk"]   { --c: var(--ink-focus);   }
+    [data-mode="sprint"] { --c: var(--ink-capture);  }
+    [data-mode="vault"]  { --c: var(--ink-memory);   }
+    [data-mode="neural"] { --c: var(--ink-neural);   }
 
-
-    /* Set Inter as default font */
+    /* Set body font as default */
     *,
     *::before,
     *::after {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: var(--font-body);
         /* Explicitly reset borders */
         border-width: 0;
         border-style: solid;
@@ -269,11 +311,11 @@
     }
 
     html {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: var(--font-body);
     }
 
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-family: var(--font-body);
         min-height: 100vh;
         background: var(--md-sys-color-surface);
         color: var(--md-sys-color-on-surface);
@@ -315,18 +357,18 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        background-color: var(--md-sys-color-outline-variant);
+        background-color: color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent);
         border-radius: var(--md-sys-shape-corner-full);
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background-color: var(--md-sys-color-outline);
+        background-color: color-mix(in srgb, var(--md-sys-color-outline) 55%, transparent);
     }
 
     /* Firefox fallback */
     * {
         scrollbar-width: thin;
-        scrollbar-color: var(--md-sys-color-outline-variant) transparent;
+        scrollbar-color: color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent) transparent;
     }
 
     pre,
@@ -334,6 +376,23 @@
         overflow-x: auto;
         white-space: pre;
     }
+}
+
+/* Smooth mode color transitions — applies to elements consuming --ink-mode */
+.mode-pill,
+.mode-badge,
+[class*="ink-mode"],
+[style*="--ink-mode"] {
+    transition: background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Sonner toast — prevent default background override */
+[data-sonner-toaster] {
+    --normal-bg: var(--md-sys-color-surface-container);
+    --normal-border: var(--md-sys-color-outline-variant);
+    --normal-text: var(--md-sys-color-on-surface);
 }
 
 /* Utility classes */

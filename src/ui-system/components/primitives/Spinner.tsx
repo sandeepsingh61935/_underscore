@@ -9,16 +9,17 @@ interface SpinnerProps {
 const sizeMap = { sm: 'w-4 h-4', md: 'w-6 h-6', lg: 'w-8 h-8' };
 
 /**
- * Border-based spinner, accent top color — matches Style C mockups
+ * Border-based spinner — MD3 border spinner with primary accent
  */
 export function Spinner({ className, size = 'md' }: SpinnerProps) {
     return (
         <div
-            className={cn('rounded-full animate-spin', sizeMap[size], className)}
-            style={{
-                border: '2px solid var(--border)',
-                borderTopColor: 'var(--accent)',
-            }}
+            className={cn(
+                'rounded-full animate-spin',
+                'border-2 border-outline-variant border-t-primary',
+                sizeMap[size],
+                className
+            )}
         />
     );
 }

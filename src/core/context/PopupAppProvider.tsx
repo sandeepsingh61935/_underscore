@@ -1,8 +1,16 @@
 import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
+
+const MODE_COLORS: Record<Mode, string> = {
+    walk:   'var(--ink-focus)',
+    sprint: 'var(--ink-capture)',
+    vault:  'var(--ink-memory)',
+    neural: 'var(--ink-neural)',
+};
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
+import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 
 
 interface PopupAppProviderProps {
@@ -28,8 +36,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     isAuthenticated: propIsAuthenticated,
     onLogout
 }) => {
-    // Mode state
-    const [currentMode, setCurrentMode] = useState<Mode>('walk');
+    // Mode state — persisted in chrome.storage.local, reactive via onChanged
+    const { currentMode, persistMode } = usePersistedMode(propIsAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - still use localStorage for theme preference
@@ -44,33 +52,6 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         return 'light';
     });
 
-    // Initialize mode from active tab
-    useEffect(() => {
-        const fetchCurrentTabMode = async () => {
-            try {
-                // Only run in extension context
-                if (!chrome?.tabs) return;
-
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                if (!tab?.id) return;
-
-                const response = await chrome.tabs.sendMessage(tab.id, {
-                    type: 'GET_MODE',
-                    timestamp: Date.now()
-                });
-
-                if (response && response.mode) {
-                    console.log('[PopupAppProvider] Initialized mode from tab:', response.mode);
-                    setCurrentMode(response.mode as Mode);
-                }
-            } catch (err) {
-                // Ignore errors; content script might not be injected on some pages (e.g. chrome://)
-            }
-        };
-
-        fetchCurrentTabMode();
-    }, []);
-
     // Available modes depends on auth state
     const availableModes: Mode[] = propIsAuthenticated
         ? ['walk', 'sprint', 'vault', 'neural']
@@ -79,9 +60,14 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove('light', 'dark', 'system');
-        if (theme !== 'light' && theme !== 'system') {
-            root.classList.add(theme);
+        root.classList.remove('light', 'dark');
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else if (theme === 'light') {
+            root.classList.add('light');
+        } else if (theme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            root.classList.add(prefersDark ? 'dark' : 'light');
         }
         localStorage.setItem('underscore-theme', theme);
     }, [theme]);
@@ -100,16 +86,21 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
     }, [onLogout]);
 
-    const setMode = useCallback(async (mode: Mode) => {
-        // Vault and Neural require authentication
-        if ((mode === 'vault' || mode === 'neural') && !propIsAuthenticated) {
-            return;
+    // Apply mode color on initial mount
+    useEffect(() => {
+        if (currentMode) {
+            document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[currentMode]);
         }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-        // 1. Optimistically update local React state
-        setCurrentMode(mode);
+    const setMode = useCallback(async (mode: Mode) => {
+        // Apply mode color to root — drives all mode-tinted elements
+        document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[mode]);
 
-        // 2. Transmit state down to content script immediately
+        // 1. Persist to chrome.storage.local (auth guard is inside persistMode)
+        await persistMode(mode);
+
+        // 2. Also transmit to active tab's content script for immediate effect
         try {
             if (chrome?.tabs) {
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -123,9 +114,9 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
                 }
             }
         } catch (err) {
-            console.error('[PopupAppProvider] Failed to dispatch mode change to tab:', err);
+            // Ignore — content script may not be injected on chrome:// or empty tabs
         }
-    }, [propIsAuthenticated]);
+    }, [persistMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);

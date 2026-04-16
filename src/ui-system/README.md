@@ -34,7 +34,8 @@ src/ui-system/
 │   └── design-tokens.css  # Design token definitions
 └── utils/
     ├── animations.ts      # Animation utilities
-    └── cn.ts              # Class name utility
+    ├── cn.ts              # Class name utility
+    └── tonalPill.ts       # Shared tonal pill / segmented control classes
 ```
 
 ## Component Reference
@@ -75,6 +76,8 @@ src/ui-system/
 ## Design Tokens
 
 Design tokens are defined in `src/ui-system/theme/global.css` and `src/ui-system/tokens/design-tokens.css`.
+
+Segmented controls and chip-like toggles should use the shared tonal pill classes from `src/ui-system/utils/tonalPill.ts`, with `primary-container` as the selected state instead of bright filled primary backgrounds.
 
 ### Color System
 

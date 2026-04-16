@@ -72,13 +72,13 @@ storybook-static
 #github
 .github
 
-#agent
-.agent
 GEMINI.md
-CLAUDE.md
 
 #development
 /development
+
+# Git worktrees
+/worktrees/
 /generate-key
 
 

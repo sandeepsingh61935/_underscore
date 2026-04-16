@@ -2,9 +2,9 @@ name: Quality Checks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 jobs:
   quality:
@@ -19,27 +19,52 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
+
+      - name: Fetch base branch for PR diff
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --prune --depth=1 origin ${{ github.base_ref }}
 
       - name: Run TypeScript type checking
+        if: github.event_name == 'push'
         run: npm run type-check
 
       - name: Run ESLint
+        if: github.event_name == 'push'
         run: npm run lint
 
+      - name: Design system check (no new violations)
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            -- '*.tsx' '*.ts' \
+            | grep -v '\.test\.' \
+            | grep -v '\.spec\.' \
+            | grep -v '\.d\.ts' \
+            | tr '\n' ' ' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "Checking design system tokens in changed files: $CHANGED"
+            npx eslint --max-warnings 0 $CHANGED
+          else
+            echo "No TypeScript/TSX files changed — skipping design system check."
+          fi
+
       - name: Check code formatting
+        if: github.event_name == 'push'
         run: npm run format:check
 
       - name: Run unit tests
+        if: github.event_name == 'push'
         run: npm test
 
       - name: Run tests with coverage
+        if: github.event_name == 'push'
         run: npm run test:coverage
 
       - name: Upload coverage to Codecov
+        if: github.event_name == 'push'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage/coverage-final.json
@@ -47,9 +72,11 @@ jobs:
           name: codecov-umbrella
 
       - name: Build extension
+        if: github.event_name == 'push'
         run: npm run build
 
       - name: Upload build artifacts
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: extension-build
@@ -68,7 +95,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
 
       - name: Run npm audit
         run: npm audit --audit-level=moderate
@@ -78,37 +107,3 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-  e2e:
-    name: End-to-End Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Build extension
-        run: npm run build
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30

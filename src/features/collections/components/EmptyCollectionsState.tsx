@@ -1,13 +1,12 @@
 import React from 'react';
 
+import { Logo } from '@/ui-system/components/primitives/Logo';
+
 export function EmptyCollectionsState() {
     return (
         <div className="flex-1 flex flex-col items-center justify-center px-8 -mt-12">
-            {/* Logo Circle */}
             <div className="flex justify-center mb-8">
-                <div className="w-24 h-24 rounded-full bg-surface-container shadow-elevation-1 flex items-center justify-center text-on-surface-variant border border-outline">
-                    <span className="text-4xl font-extrabold select-none opacity-70">_</span>
-                </div>
+                <Logo size="lg" showText={false} />
             </div>
 
             {/* Heading */}
