@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppProvider } from '@/core/context/AppProvider';
+import { AppProvider, useApp } from '@/core/context/AppProvider';
 import { WelcomePage } from '@/pages/WelcomePage';
 import { SignInView } from '@/features/auth/SignInView';
 import { ModeSelectionView } from '@/features/modes/ModeSelectionView';
@@ -9,6 +9,22 @@ import { DomainDetailsView } from '@/features/collections/views/DomainDetailsVie
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { useNavigate } from 'react-router-dom';
+
+/** Web-app wrapper — provides onNavigateToCollections using react-router */
+function ModeSelectionRoute(): React.JSX.Element {
+    const navigate = useNavigate();
+
+    const handleNavigateToCollections = () => {
+        navigate('/collections');
+    };
+
+    return (
+        <ModeSelectionView
+            onNavigateToCollections={handleNavigateToCollections}
+        />
+    );
+}
 
 export function AppRoutes() {
     return (
@@ -17,7 +33,7 @@ export function AppRoutes() {
                 <Routes>
                     <Route path="/" element={<WelcomePage />} />
                     <Route path="/sign-in" element={<SignInView />} />
-                    <Route path="/mode" element={<ModeSelectionView />} />
+                    <Route path="/mode" element={<ModeSelectionRoute />} />
                     <Route path="/collections" element={<CollectionsView />} />
                     <Route path="/domain/:domain" element={<DomainDetailsView />} />
                     <Route path="/settings" element={<SettingsPage />} />
@@ -29,4 +45,3 @@ export function AppRoutes() {
         </AppProvider>
     );
 }
-
