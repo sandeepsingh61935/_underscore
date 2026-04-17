@@ -161,11 +161,14 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
     // 2. Add to repository (persistence)
     // CRITICAL: Add to repository cache and storage
-    // CRITICAL: Add to repository cache and storage
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add({ ...data, version: 2 } as any);
 
-    this.logger.info('Added to repository', { id });
+    this.logger.info('[SPRINT] Added to repository', {
+      id,
+      repoType: this.repository.constructor.name,
+      repoCount: await this.repository.count(),
+    });
 
     // 3. Emit event for event sourcing
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
@@ -343,7 +346,10 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * Sprint Mode: Persists to event store with TTL
    */
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
-    this.logger.debug('Sprint Mode: Persisting highlight to event store');
+    this.logger.debug('[SPRINT] onHighlightCreated called', {
+      highlightId: event.highlight.id,
+      hasStorage: !!this.storage,
+    });
 
     // Convert event data to storage format (HighlightDataV2)
     const { toStorageFormat } = await import('@/content/highlight-type-bridge');
