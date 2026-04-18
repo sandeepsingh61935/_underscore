@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
+import { useCollections } from '@/features/collections/hooks/useCollections';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { springs } from '@/ui-system/motion/springs';
 import { cn } from '@/ui-system/utils/cn';
@@ -30,7 +31,19 @@ interface Collection {
   id: string;
   domain: string;
   highlightCount: number;
-  lastActivity: string;
+  lastActive: Date;
+}
+
+function relativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) return minutes <= 1 ? 'just now' : `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}w ago`;
 }
 
 type SortBy = 'most' | 'az' | 'newest';
@@ -63,6 +76,7 @@ export function CollectionsView({
 
   const [sortBy, setSortBy] = useState<SortBy>('most');
   const [search, setSearch] = useState('');
+  const { collections: rawCollections, isLoading, isWebContext } = useCollections();
 
   React.useEffect(() => {
     if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
@@ -70,25 +84,17 @@ export function CollectionsView({
     }
   }, [isAuthenticated, mode, navigate]);
 
-  /* Mock data */
-  const mockCollections: Collection[] = [
-    { id: '1', domain: 'medium.com',             highlightCount: 23, lastActivity: '2 days ago'   },
-    { id: '2', domain: 'developer.mozilla.org',  highlightCount: 15, lastActivity: '5 days ago'   },
-    { id: '3', domain: 'arxiv.org',              highlightCount: 8,  lastActivity: '1 week ago'   },
-    { id: '4', domain: 'github.com',             highlightCount: 5,  lastActivity: '2 weeks ago'  },
-  ];
-
-  const sorted = [...mockCollections].sort((a, b) => {
+  const sorted = [...rawCollections].sort((a, b) => {
     switch (sortBy) {
       case 'az':     return a.domain.localeCompare(b.domain);
       case 'most':   return b.highlightCount - a.highlightCount;
-      case 'newest': return 0; // mock order
+      case 'newest': return b.lastActive.getTime() - a.lastActive.getTime();
       default:       return 0;
     }
   });
 
   const filtered = search
-    ? sorted.filter((c) => c.domain.includes(search.toLowerCase()))
+    ? sorted.filter((c) => c.domain.toLowerCase().includes(search.toLowerCase()))
     : sorted;
 
   const handleCollectionClick = (c: Collection): void => {
@@ -177,62 +183,89 @@ export function CollectionsView({
           </div>
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-[64px] rounded-[12px] bg-surface-container-lowest border border-outline-variant animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <p className="text-[13px] text-on-surface-variant mb-1">No collections yet</p>
+            {isWebContext ? (
+              <p className="text-[11px] text-outline max-w-[220px]">
+                Walk and Sprint highlights stay on your device. Sign in and switch to Vault mode to see them here.
+              </p>
+            ) : (
+              <p className="text-[11px] text-outline">
+                Start highlighting text on any page to see your collections here.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Collection cards */}
-        <motion.div
-          className="flex flex-col gap-2"
-          variants={listVariants}
-          initial="hidden"
-          animate="show"
-        >
-          {filtered.map((c) => (
-            <motion.div key={c.id} variants={itemVariants}>
-              <motion.button
-                type="button"
-                onClick={() => handleCollectionClick(c)}
-                whileHover={{ y: -2, scale: 1.012 }}
-                whileTap={{ scale: 0.98 }}
-                transition={springs.snappy}
-                className={cn(
-                  'group flex w-full items-center gap-3 rounded-[12px]',
-                  'border border-outline-variant bg-surface-container-lowest',
-                  'p-3 text-left',
-                  'transition-colors transition-shadow duration-[280ms] ease-out',
-                  'hover:shadow-elevation-2',
-                  'hover:border-[color-mix(in_srgb,var(--ink-mode)_30%,transparent)]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                )}
-              >
-                {/* Domain initial favicon slot */}
-                <div className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 bg-surface-container text-[13px] font-semibold text-on-surface-variant">
-                  {(c.domain[0] ?? '?').toUpperCase()}
-                </div>
+        {!isLoading && filtered.length > 0 && (
+          <motion.div
+            className="flex flex-col gap-2"
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+          >
+            {filtered.map((c) => (
+              <motion.div key={c.id} variants={itemVariants}>
+                <motion.button
+                  type="button"
+                  onClick={() => handleCollectionClick(c)}
+                  whileHover={{ y: -2, scale: 1.012 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={springs.snappy}
+                  className={cn(
+                    'group flex w-full items-center gap-3 rounded-[12px]',
+                    'border border-outline-variant bg-surface-container-lowest',
+                    'p-3 text-left',
+                    'transition-colors transition-shadow duration-[280ms] ease-out',
+                    'hover:shadow-elevation-2',
+                    'hover:border-[color-mix(in_srgb,var(--ink-mode)_30%,transparent)]',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  )}
+                >
+                  {/* Domain initial favicon slot */}
+                  <div className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 bg-surface-container text-[13px] font-semibold text-on-surface-variant">
+                    {(c.domain[0] ?? '?').toUpperCase()}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate text-on-surface mb-[2px]">
-                    {c.domain}
-                  </p>
-                  <p className="text-[11px] text-outline">
-                    {c.lastActivity}
-                  </p>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium truncate text-on-surface mb-[2px]">
+                      {c.domain}
+                    </p>
+                    <p className="text-[11px] text-outline">
+                      {relativeTime(c.lastActive)}
+                    </p>
+                  </div>
 
-                {/* Mode-colored count badge */}
-                <div className={cn(
-                  'flex items-center gap-[3px] px-[8px] py-[3px] rounded-full shrink-0',
-                  'bg-[color-mix(in_srgb,var(--ink-mode)_12%,transparent)]',
-                  'text-[10px] font-semibold text-primary',
-                )}>
-                  {c.highlightCount}
-                </div>
+                  {/* Mode-colored count badge */}
+                  <div className={cn(
+                    'flex items-center gap-[3px] px-[8px] py-[3px] rounded-full shrink-0',
+                    'bg-[color-mix(in_srgb,var(--ink-mode)_12%,transparent)]',
+                    'text-[10px] font-semibold text-primary',
+                  )}>
+                    {c.highlightCount}
+                  </div>
 
-                <ChevronRight
-                  size={13}
-                  className="text-outline shrink-0 transition-transform duration-[180ms] group-hover:translate-x-[2px] group-hover:text-primary"
-                />
-              </motion.button>
-            </motion.div>
-          ))}
-        </motion.div>
+                  <ChevronRight
+                    size={13}
+                    className="text-outline shrink-0 transition-transform duration-[180ms] group-hover:translate-x-[2px] group-hover:text-primary"
+                  />
+                </motion.button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   );
