@@ -81,11 +81,17 @@ export function registerServices(container: Container): void {
   // ============================================
 
   /**
-   * Storage Service - Singleton
-   * Manages event sourcing and domain-scoped highlight persistence
+   * Sprint storage — permanent (null TTL)
    */
   container.registerSingleton<IStorage>('storage', () => {
-    return new StorageService();
+    return new StorageService({ mode: 'sprint', ttlDuration: null });
+  });
+
+  /**
+   * Walk storage — 24h TTL
+   */
+  container.registerSingleton<IStorage>('walkStorage', () => {
+    return new StorageService({ mode: 'walk', ttlDuration: 24 * 60 * 60 * 1000 });
   });
 
   /**
@@ -208,14 +214,15 @@ export function registerServices(container: Container): void {
   if (typeof document !== 'undefined') {
     /**
      * Walk Mode - Transient
-     * Ephemeral highlighting (no persistence)
+     * 24h TTL local persistence
      */
     container.registerTransient<IHighlightMode>('walkMode', () => {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+      const walkStorage = container.resolve<IStorage>('walkStorage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new WalkMode(repositoryFacade as any, eventBus, logger);
+      return new WalkMode(repositoryFacade as any, walkStorage, eventBus, logger);
     });
 
     /**
@@ -318,13 +325,14 @@ export function getDependencyGraph(): Map<string, string[]> {
     ['logger', []],
     ['eventBus', []],
     ['storage', []],
+    ['walkStorage', []],
     ['repository', []],
     ['messaging', []],
     ['tabQuery', []],
     ['messagingCircuitBreaker', ['logger']],
     ['messageBus', ['logger', 'messagingCircuitBreaker']],
     ['modeManager', ['eventBus', 'logger']],
-    ['walkMode', ['repository', 'eventBus']],
+    ['walkMode', ['repository', 'walkStorage', 'eventBus']],
     ['sprintMode', ['repository', 'storage', 'eventBus']],
     ['vaultMode', ['repository', 'eventBus']],
     ['commandFactory', ['container']],

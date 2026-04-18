@@ -1,17 +1,18 @@
 /**
  * Walk Mode
  *
- * Philosophy: "True Incognito" - Zero persistence, zero trace.
+ * Philosophy: "Light footprint" - Persist for 24 hours, then auto-clear.
  *
  * Features:
- * - Ephemeral storage (memory only)
- * - Clears on reload/close
- * - No side effects (no storage, no network)
+ * - 24-hour TTL (auto-delete after 24 hours)
+ * - Local storage with per-domain encryption
+ * - Restores highlights on page reload within TTL window
+ * - Collections view enabled
+ * - No account required
  *
  * Architectural Compliance:
  * - Implements IBasicMode only (Interface Segregation Principle)
- * - Encapsulates mode-specific logic (Single Responsibility Principle)
- * - No restore() method needed (not IPersistentMode)
+ * - Encapsulates persistence logic (Single Responsibility Principle)
  *
  * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
  */
@@ -22,8 +23,10 @@ import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
 import { serializeRange } from '@/content/utils/range-converter';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
+import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
@@ -35,17 +38,19 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
 
   constructor(
     repository: IHighlightRepository,
+    storage: IStorage,
     eventBus: EventBus,
-    logger: ILogger // [OK] Injected
+    logger: ILogger
   ) {
     super(eventBus, logger, repository);
+    this.storage = storage;
   }
 
   readonly capabilities: ModeCapabilities = {
-    persistence: 'none',
-    undo: false,
+    persistence: 'local',
+    undo: true,
     sync: false,
-    collections: false,
+    collections: true,
     tags: false,
     export: false,
     ai: false,
@@ -53,31 +58,6 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     multiSelector: false,
   };
 
-  /**
-   * Creates a new highlight in Walk Mode (ephemeral, memory-only)
-   *
-   * @param selection - The browser Selection object containing the text to highlight
-   * @param colorRole - The color role to apply (e.g., 'yellow', 'blue', 'green')
-   * @returns Promise resolving to the unique highlight ID
-   *
-   * @throws {Error} If selection has no ranges
-   * @throws {Error} If selected text is empty
-   * @throws {Error} If range serialization fails
-   *
-   * @remarks
-   * - Deduplicates via content hash (returns existing ID if duplicate)
-   * - Stores ONLY in memory (no persistence)
-   * - Registers with CSS Custom Highlight API
-   * - Adds to in-memory repository
-   * - Data is lost on page reload/close
-   *
-   * @example
-   * ```typescript
-   * const selection = window.getSelection();
-   * const id = await walkMode.createHighlight(selection, 'yellow');
-   * console.log('Created ephemeral highlight:', id);
-   * ```
-   */
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
@@ -90,10 +70,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
       throw new Error('Empty text selection');
     }
 
-    // Deduplication check (In-memory only)
     const contentHash = await generateContentHash(text);
-    // Logic note: BaseHighlightMode's repo is the InMemory one.
-    // In Walk Mode, we trust the repo is empty on start and not persisted.
     const existing = await this.repository.findByContentHash(contentHash);
 
     if (existing && existing.id) {
@@ -114,6 +91,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
       id,
       text,
       contentHash,
+      url: window.location.href,
       colorRole,
       type: 'underscore',
       ranges: [serializedRange],
@@ -121,56 +99,32 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
       createdAt: new Date(),
     };
 
-    // FIXED: renderAndRegister() handles CSS.highlights registration
-    // Removed duplicate: CSS.highlights.set(id, highlight)
-    // Removed duplicate: this.highlights.set(id, highlight)
-    // Removed duplicate: this.data.set(id, data)
-
-    // 1. Render and register with CSS Custom Highlight API
     await this.renderAndRegister(data);
 
-    // 2. Add to Repository (Memory Only)
-    // In Walk Mode, 'repository' is purely ephemeral.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add(data as any);
+
+    this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
+      type: EventName.HIGHLIGHT_CREATED,
+      highlight: {
+        id: data.id,
+        text: data.text,
+        colorRole: data.colorRole,
+        ranges: data.ranges,
+      },
+    });
 
     this.logger.info('Created highlight in Walk Mode', { id });
 
     return id;
   }
 
-  /**
-   * Creates a highlight from existing HighlightData (internal use)
-   *
-   * @param data - Complete HighlightData object
-   * @returns Promise that resolves when highlight is rendered
-   *
-   * @remarks
-   * Used internally for undo/redo operations
-   * Does NOT persist data (Walk Mode is ephemeral)
-   */
   async createFromData(data: HighlightData): Promise<void> {
     await this.renderAndRegister(data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.repository.add(data as any);
   }
 
-  /**
-   * Updates an existing highlight's properties
-   *
-   * @param id - The highlight ID to update
-   * @param updates - Partial HighlightData with fields to update
-   * @returns Promise that resolves when update is complete
-   *
-   * @remarks
-   * - Updates in-memory data only (no persistence)
-   * - If colorRole changes, re-injects CSS
-   * - Updates repository (memory-only)
-   * - Silently returns if highlight doesn't exist
-   *
-   * @example
-   * ```typescript
-   * await walkMode.updateHighlight('abc123', { colorRole: 'blue' });
-   * ```
-   */
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
     const existing = this.data.get(id);
     if (!existing) return;
@@ -178,7 +132,6 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     const updated = { ...existing, ...updates };
     this.data.set(id, updated);
 
-    // Update repo (Memory Only)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.update(id, updates as any);
 
@@ -187,105 +140,82 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     }
   }
 
-  /**
-   * Removes a highlight from Walk Mode (ephemeral deletion)
-   *
-   * @param id - The highlight ID to remove
-   * @returns Promise that resolves when removal is complete
-   *
-   * @remarks
-   * Cleanup steps:
-   * 1. Remove from CSS Custom Highlight API
-   * 2. Remove prefixed highlight name variant
-   * 3. Clear from internal maps (highlights, data)
-   * 4. Remove from in-memory repository
-   *
-   * No persistence cleanup needed (Walk Mode doesn't persist)
-   *
-   * @example
-   * ```typescript
-   * await walkMode.removeHighlight('abc123');
-   * ```
-   */
   override async removeHighlight(id: string): Promise<void> {
-    // FIXED: Only prefixed key needed after removing double-registration
     const highlightName = getHighlightName('underscore', id);
     if (CSS.highlights.has(highlightName)) CSS.highlights.delete(highlightName);
 
-    // Internal map cleanup
     this.highlights.delete(id);
     this.data.delete(id);
 
-    // Repo cleanup
     await this.repository.remove(id);
 
     this.logger.info('Removed highlight (Walk Mode)', { id });
   }
 
-  /**
-   * Clears ALL highlights from Walk Mode
-   *
-   * @returns Promise that resolves when all highlights are cleared
-   *
-   * @remarks
-   * Complete cleanup:
-   * - Clears CSS.highlights (all DOM highlights)
-   * - Clears internal highlight maps
-   * - Clears internal data maps
-   * - Clears in-memory repository
-   *
-   * This is a destructive operation with no undo (ephemeral mode)
-   *
-   * @example
-   * ```typescript
-   * await walkMode.clearAll();
-   * console.log('All ephemeral highlights cleared');
-   * ```
-   */
   async clearAll(): Promise<void> {
+    const count = this.data.size;
+
     CSS.highlights.clear();
     this.highlights.clear();
     this.data.clear();
     await this.repository.clear();
-    this.logger.info('Cleared all highlights (Walk Mode)');
+
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlights.cleared',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        count,
+      });
+    }
+
+    this.logger.info('Cleared all highlights (Walk Mode)', { count });
   }
 
-  /**
-   * Event Handler: Highlight Created
-   * Walk Mode: NO-OP (no persistence)
-   */
-  override async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
-    this.logger.debug('Walk Mode: Highlight created (ephemeral, no persistence)');
-    // NO-OP - Walk Mode doesn't persist
+  override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
+    this.logger.debug('[WALK] onHighlightCreated called', {
+      highlightId: event.highlight.id,
+      hasStorage: !!this.storage,
+    });
+
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const storageData = await toStorageFormat({
+      ...event.highlight,
+      type: event.highlight.type || 'underscore',
+      createdAt: event.highlight.createdAt || new Date(),
+    });
+
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlight.created',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        data: storageData,
+      });
+    }
   }
 
-  /**
-   * Event Handler: Highlight Removed
-   * Walk Mode: NO-OP (no persistence)
-   */
-  override async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
-    this.logger.debug('Walk Mode: Highlight removed (ephemeral)');
-    // NO-OP - Walk Mode doesn't persist
+  override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
+    if (this.storage) {
+      await this.storage.saveEvent({
+        type: 'highlight.removed',
+        timestamp: Date.now(),
+        eventId: crypto.randomUUID(),
+        highlightId: event.highlightId,
+      });
+    }
   }
 
-  /**
-   * Restoration Control
-   * Walk Mode: Never restores (ephemeral by design)
-   */
   override shouldRestore(): boolean {
-    return false;
+    return true;
   }
 
-  /**
-   * Deletion Configuration
-   * Walk Mode: Simple, no confirmation (ephemeral)
-   */
   override getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
-      requireConfirmation: false, // Ephemeral, no need to confirm
+      requireConfirmation: false,
       allowUndo: true,
-      iconType: 'remove', // Less aggressive icon for ephemeral mode
+      iconType: 'remove',
     };
   }
 }

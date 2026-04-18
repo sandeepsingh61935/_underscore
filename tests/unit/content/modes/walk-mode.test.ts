@@ -5,9 +5,10 @@
  * Walk Mode Philosophy: "True Incognito" - privacy-first, memory-only
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WalkMode } from '@/content/modes/walk-mode';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
@@ -15,6 +16,7 @@ import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 describe('WalkMode - Ephemeral Highlighting', () => {
   let walkMode: WalkMode;
   let repository: InMemoryHighlightRepository;
+  let mockStorage: IStorage;
   let eventBus: EventBus;
   let logger: ConsoleLogger;
 
@@ -36,8 +38,13 @@ describe('WalkMode - Ephemeral Highlighting', () => {
     repository = new InMemoryHighlightRepository();
     eventBus = new EventBus(new ConsoleLogger('test', LogLevel.NONE));
     logger = new ConsoleLogger('walk-mode-test', LogLevel.NONE);
+    mockStorage = {
+      saveEvent: vi.fn().mockResolvedValue(undefined),
+      loadEvents: vi.fn().mockResolvedValue([]),
+      clear: vi.fn().mockResolvedValue(undefined),
+    };
 
-    walkMode = new WalkMode(repository, eventBus, logger);
+    walkMode = new WalkMode(repository, mockStorage, eventBus, logger);
   });
 
   describe('Highlight Creation', () => {
