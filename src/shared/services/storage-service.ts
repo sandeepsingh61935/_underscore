@@ -19,18 +19,14 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
 /**
- * Storage service for domain-scoped highlight persistence
- * 
- * SCOPE: SPRINT MODE ONLY
- * This service implements Event Sourcing for the ephemeral "Sprint Mode".
- * 
- * DO NOT USE FOR VAULT MODE.
- * Vault Mode uses the Repository Pattern (DualWriteRepository) for persistence.
+ * Storage service for domain-scoped highlight persistence.
+ * Used by Walk mode (24h TTL) and Sprint mode (permanent / null TTL).
+ * Vault mode will add Supabase sync on top of this local store.
  *
  * Features:
  * - Event sourcing (append-only event log)
  * - Per-domain encryption
- * - TTL-based expiration
+ * - Optional TTL-based expiration (null = permanent)
  * - Domain isolation
  *
  * @example
@@ -139,33 +135,33 @@ export class StorageService implements IStorage {
         domain: this.currentDomain,
         lastModified: new Date(domainStorage.lastAccessed).toISOString(),
         ttl: domainStorage.ttl,
-        ttlDate: new Date(domainStorage.ttl).toISOString(),
       });
 
-      // Check TTL with detailed calculation
+      // Check TTL — null means permanent, skip expiry check
       const now = Date.now();
-      const timeUntilExpiry = domainStorage.ttl - now;
-      const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
+      let hoursUntilExpiry = Infinity;
 
-      this.logger.info('🔍 [LOAD] TTL check', {
-        now,
-        nowDate: new Date(now).toISOString(),
-        ttl: domainStorage.ttl,
-        ttlDate: new Date(domainStorage.ttl).toISOString(),
-        timeUntilExpiryMs: timeUntilExpiry,
-        hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
-        isExpired: now > domainStorage.ttl,
-        comparison: `${now} > ${domainStorage.ttl} = ${now > domainStorage.ttl}`,
-      });
+      if (domainStorage.ttl !== null) {
+        const timeUntilExpiry = domainStorage.ttl - now;
+        hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
 
-      if (now > domainStorage.ttl) {
-        this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
-          domain: this.currentDomain,
-          expiredAt: new Date(domainStorage.ttl).toISOString(),
-          expiredAgo: `${((now - domainStorage.ttl) / (1000 * 60)).toFixed(1)} minutes`,
+        this.logger.info('🔍 [LOAD] TTL check', {
+          now,
+          ttl: domainStorage.ttl,
+          hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+          isExpired: now > domainStorage.ttl,
         });
-        await browser.storage.local.remove(hashedDomain);
-        return [];
+
+        if (now > domainStorage.ttl) {
+          this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
+            domain: this.currentDomain,
+            expiredAt: new Date(domainStorage.ttl).toISOString(),
+          });
+          await browser.storage.local.remove(hashedDomain);
+          return [];
+        }
+      } else {
+        this.logger.info('🔍 [LOAD] TTL check skipped (permanent storage)');
       }
 
       // Decrypt
@@ -185,7 +181,7 @@ export class StorageService implements IStorage {
       this.logger.info('[OK] [LOAD] Events loaded successfully', {
         domain: this.currentDomain,
         count: validEvents.length,
-        hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+        hoursUntilExpiry: isFinite(hoursUntilExpiry) ? hoursUntilExpiry.toFixed(2) : 'permanent',
       });
 
       // ✅ Sort by timestamp (oldest first) for event sourcing correctness
@@ -215,17 +211,15 @@ export class StorageService implements IStorage {
     // Encrypt
     const encrypted = await encryptData(JSON.stringify(eventLog), this.currentDomain);
 
-    // Calculate TTL
+    // Calculate TTL — null means permanent
     const now = Date.now();
-    const ttl = now + this.config.ttlDuration;
+    const ttl = this.config.ttlDuration !== null ? now + this.config.ttlDuration : null;
 
     this.logger.info('🔍 [SAVE] TTL calculation', {
       now,
-      nowDate: new Date(now).toISOString(),
       ttlDuration: this.config.ttlDuration,
-      ttlDurationHours: (this.config.ttlDuration / (1000 * 60 * 60)).toFixed(2),
       ttl,
-      ttlDate: new Date(ttl).toISOString(),
+      permanent: ttl === null,
     });
 
     // Create storage object
@@ -243,7 +237,7 @@ export class StorageService implements IStorage {
     const verification = await browser.storage.local.get(hashedDomain);
     this.logger.info('[OK] [SAVE] Save completed and verified', {
       keyExists: !!verification[hashedDomain],
-      savedTtl: new Date(ttl).toISOString(),
+      savedTtl: ttl !== null ? new Date(ttl).toISOString() : 'permanent',
       eventCount: events.length,
     });
   }
@@ -273,7 +267,7 @@ export class StorageService implements IStorage {
 
     return {
       eventCount: events.length,
-      ttl: new Date(domainStorage.ttl),
+      ttl: domainStorage.ttl !== null ? new Date(domainStorage.ttl) : null,
     };
   }
 }

@@ -66,8 +66,8 @@ export type AnyHighlightEvent =
 export interface DomainStorage {
   /** Encrypted event log */
   data: string;
-  /** Time-to-live timestamp */
-  ttl: number;
+  /** Time-to-live timestamp; null means no expiry (permanent) */
+  ttl: number | null;
   /** Last access timestamp */
   lastAccessed: number;
   /** Schema version for migrations */
@@ -84,24 +84,25 @@ export interface EventLog {
 /**
  * Storage mode
  */
-export type StorageMode = 'sprint' | 'vault';
+export type StorageMode = 'walk' | 'sprint' | 'vault';
 
 /**
  * Storage configuration
  */
 export interface StorageConfig {
   mode: StorageMode;
-  ttlDuration: number; // milliseconds
+  /** TTL in milliseconds; null = permanent (no expiry) */
+  ttlDuration: number | null;
   maxEventsPerDomain: number;
   maxDomains: number;
 }
 
 /**
- * Default storage configuration
+ * Default storage configuration (Sprint: permanent, no TTL)
  */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
   mode: 'sprint',
-  ttlDuration: 4 * 60 * 60 * 1000, // 4 hours
+  ttlDuration: null,
   maxEventsPerDomain: 100,
   maxDomains: 100,
 };
