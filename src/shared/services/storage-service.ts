@@ -13,7 +13,13 @@ import type {
   EventLog,
   StorageConfig,
 } from '@/shared/types/storage';
-import { DEFAULT_STORAGE_CONFIG, isValidHighlightEvent } from '@/shared/types/storage';
+import {
+  DEFAULT_STORAGE_CONFIG,
+  isValidHighlightEvent,
+  computeHighlightCount,
+  COLLECTIONS_INDEX_KEY,
+} from '@/shared/types/storage';
+import type { CollectionsIndex } from '@/shared/types/storage';
 import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
@@ -184,12 +190,55 @@ export class StorageService implements IStorage {
         hoursUntilExpiry: isFinite(hoursUntilExpiry) ? hoursUntilExpiry.toFixed(2) : 'permanent',
       });
 
-      // ✅ Sort by timestamp (oldest first) for event sourcing correctness
-      // Events must be replayed in chronological order to reconstruct state
-      return validEvents.sort((a, b) => a.timestamp - b.timestamp);
+      const sorted = validEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Lazy backfill: if this domain has no index entry yet, create one now.
+      // Covers highlights saved before __collections_index existed.
+      await this.backfillIndexIfMissing(hashedDomain, sorted, domainStorage.ttl);
+
+      return sorted;
     } catch (error) {
       this.logger.error('Failed to load events', error as Error);
       return []; // Fail gracefully
+    }
+  }
+
+  /**
+   * Backfill __collections_index for domains that pre-date the index.
+   * Called lazily on first load of each domain after the migration.
+   */
+  private async backfillIndexIfMissing(
+    hashedDomain: string,
+    events: AnyHighlightEvent[],
+    ttl: number | null
+  ): Promise<void> {
+    try {
+      const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
+      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+
+      if (hashedDomain in index) return; // Already indexed
+
+      const count = computeHighlightCount(events);
+      if (count === 0) return; // Nothing to index
+
+      const lastActive =
+        events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : Date.now();
+
+      index[hashedDomain] = {
+        domain: this.currentDomain,
+        mode: this.config.mode,
+        count,
+        lastActive,
+        ttl,
+      };
+
+      await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
+      this.logger.info('[MIGRATE] Backfilled collections index', {
+        domain: this.currentDomain,
+        count,
+      });
+    } catch (err) {
+      this.logger.warn('Failed to backfill collections index', { error: (err as Error).message });
     }
   }
 
@@ -233,13 +282,41 @@ export class StorageService implements IStorage {
     // Save
     await browser.storage.local.set({ [hashedDomain]: domainStorage });
 
-    // Verify save
-    const verification = await browser.storage.local.get(hashedDomain);
-    this.logger.info('[OK] [SAVE] Save completed and verified', {
-      keyExists: !!verification[hashedDomain],
+    // Update plain-domain collections index
+    await this.updateCollectionsIndex(hashedDomain, events, ttl, now);
+
+    this.logger.info('[OK] [SAVE] Save completed', {
       savedTtl: ttl !== null ? new Date(ttl).toISOString() : 'permanent',
       eventCount: events.length,
     });
+  }
+
+  /** Update __collections_index entry for the current domain */
+  private async updateCollectionsIndex(
+    hashedDomain: string,
+    events: AnyHighlightEvent[],
+    ttl: number | null,
+    now: number
+  ): Promise<void> {
+    try {
+      const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
+      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+
+      const count = computeHighlightCount(events);
+      const lastActive = events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : now;
+
+      index[hashedDomain] = {
+        domain: this.currentDomain,
+        mode: this.config.mode,
+        count,
+        lastActive,
+        ttl,
+      };
+
+      await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
+    } catch (err) {
+      this.logger.warn('Failed to update collections index', { error: (err as Error).message });
+    }
   }
 
   /**
@@ -248,6 +325,19 @@ export class StorageService implements IStorage {
   async clear(): Promise<void> {
     const hashedDomain = await hashDomain(this.currentDomain);
     await browser.storage.local.remove(hashedDomain);
+
+    // Remove from collections index
+    try {
+      const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
+      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+      if (hashedDomain in index) {
+        delete index[hashedDomain];
+        await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
+      }
+    } catch (err) {
+      this.logger.warn('Failed to remove from collections index', { error: (err as Error).message });
+    }
+
     this.logger.info('Storage cleared', { domain: this.currentDomain });
   }
 

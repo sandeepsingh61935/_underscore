@@ -14,6 +14,7 @@ import type { AuthState } from '@/background/auth/interfaces/i-auth-manager';
 
 import { Container } from '@/background/di/container';
 import { initializeBackground } from '@/background/bootstrap'; // Static import
+import { readLocalCollections } from '@/background/services/local-collections-reader';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -146,43 +147,11 @@ export default defineBackground({
       // --- Collections API handlers ---
 
       // Get Collections (Grouped by Domain) Handler
+      // Reads unified __collections_index: covers Walk (24h TTL), Sprint (permanent), Vault cache
       messageBus.subscribe('GET_COLLECTIONS', async () => {
         logger.info('Handling GET_COLLECTIONS request');
         try {
-          const highlights = await repositoryFacade.findAll();
-
-          // Group by domain
-          const domainMap = new Map<string, { count: number, lastActive: number }>();
-
-          for (const hl of highlights) {
-            try {
-              const url = new URL(hl.url);
-              // Strip www. prefix for cleaner display
-              const domain = url.hostname.replace(/^www\./, '');
-
-              const existing = domainMap.get(domain);
-              const hlTime = new Date(hl.updatedAt || hl.createdAt).getTime();
-
-              if (existing) {
-                existing.count += 1;
-                existing.lastActive = Math.max(existing.lastActive, hlTime);
-              } else {
-                domainMap.set(domain, { count: 1, lastActive: hlTime });
-              }
-            } catch (e) {
-              // Skip invalid URLs
-              logger.warn('Skipped highlight with invalid URL during collection grouping', hl.url);
-            }
-          }
-
-          // Map to array and sort by most recently active
-          const collections = Array.from(domainMap.entries()).map(([domain, data], index) => ({
-            id: String(index + 1), // Generate arbitrary ID for UI iteration
-            domain,
-            highlightCount: data.count,
-            lastActive: new Date(data.lastActive)
-          })).sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
-
+          const collections = await readLocalCollections();
           return { success: true, data: { collections } };
         } catch (error) {
           logger.error('GET_COLLECTIONS failed', error as Error);

@@ -108,6 +108,50 @@ export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
 };
 
 /**
+ * Entry in the plain-domain collections index.
+ * Stored under __collections_index in chrome.storage.local.
+ * Enables background SW to aggregate across modes without reversing hashes.
+ */
+export interface CollectionsIndexEntry {
+  domain: string;
+  mode: StorageMode;
+  count: number;
+  lastActive: number;
+  /** Absolute expiry in ms since epoch; null = permanent */
+  ttl: number | null;
+  /** Vault-only sync metadata */
+  synced?: boolean;
+  syncedAt?: number;
+  lastFetchedAt?: number;
+}
+
+/** Shape of the __collections_index value in chrome.storage.local */
+export type CollectionsIndex = Record<string, CollectionsIndexEntry>;
+
+/** Storage key for the plain-domain index */
+export const COLLECTIONS_INDEX_KEY = '__collections_index';
+
+/**
+ * Compute live highlight count from an event log.
+ * Replays created / removed / cleared events to get the current set.
+ */
+export function computeHighlightCount(events: AnyHighlightEvent[]): number {
+  const live = new Set<string>();
+
+  for (const event of events) {
+    if (event.type === 'highlight.created') {
+      live.add(event.data.id);
+    } else if (event.type === 'highlight.removed') {
+      live.delete(event.highlightId);
+    } else if (event.type === 'highlights.cleared') {
+      live.clear();
+    }
+  }
+
+  return live.size;
+}
+
+/**
  * Validate highlight event
  */
 export function isValidHighlightEvent(event: unknown): event is AnyHighlightEvent {
