@@ -48,6 +48,8 @@ export default defineBackground({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repositoryFacade = container.resolve<any>('repositoryFacade');
       logger.info('[INIT] RepositoryFacade resolved');
+      await repositoryFacade.initialize();
+      logger.info('[INIT] RepositoryFacade initialized');
 
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {
