@@ -14,6 +14,7 @@ export interface AppContextType {
 
     // Mode Management
     currentMode: Mode;
+    modeReady: boolean;
     setMode: (mode: Mode) => void;
     availableModes: Mode[];
 
@@ -112,6 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         logout,
         currentMode,
+        modeReady: true,
         setMode,
         availableModes,
         theme,

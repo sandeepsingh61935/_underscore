@@ -5,8 +5,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useApp } from '@/core/context/AppProvider';
+import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { springs } from '@/ui-system/motion/springs';
 import { cn } from '@/ui-system/utils/cn';
+
+const AUTH_REQUIRED_MODES: ModeType[] = ['vault', 'neural'];
 
 const listVariants = {
   hidden: {},
@@ -39,42 +43,43 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     const params = useParams<{ domain: string }>();
     const domain = propDomain ?? params.domain;
     const navigate = useNavigate();
-    const { isAuthenticated } = useApp();
+    const { isAuthenticated, currentMode } = useApp();
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const mode = (currentMode ?? 'walk') as ModeType;
 
+    /* Auth redirect: only redirect for modes that require authentication */
     React.useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
             navigate('/mode');
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, mode, navigate]);
 
-    /* Mock highlights */
-    const mockHighlights: Highlight[] = [
-        {
-            id: '1',
-            text: '"The key insight is that attention mechanisms allow the model to focus on relevant parts of the input sequence, regardless of their position."',
-            path: '/understanding-transformers-from-scratch',
-            createdAt: '2h ago',
-        },
-        {
-            id: '2',
-            text: '"Event sourcing stores every change as an immutable event, creating a complete audit trail and enabling temporal queries."',
-            path: '/event-sourcing-made-simple',
-            createdAt: '1 day ago',
-        },
-        {
-            id: '3',
-            text: '"Progressive disclosure reduces cognitive load by showing only the most relevant options at each step, revealing complexity on demand."',
-            path: '/ux-patterns-for-knowledge-workers',
-            createdAt: '3 days ago',
-        },
-        {
-            id: '4',
-            text: '"Shadow DOM provides true style encapsulation — CSS rules inside a shadow tree don\'t leak out, and styles from the outer page don\'t bleed in."',
-            path: '/web-components-beyond-basics',
-            createdAt: '1 week ago',
-        },
-    ];
+    /* Real data from useHighlightsByDomain hook */
+    const { highlights: realHighlights, isLoading, error } = useHighlightsByDomain(domain);
+
+    /* Format createdAt to relative time */
+    function formatCreatedAt(date: Date): string {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffHours < 1) return 'Just now';
+        if (diffHours === 1) return '1h ago';
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return '1 day ago';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 14) return '1 week ago';
+        return `${Math.floor(diffDays / 7)} weeks ago`;
+    }
+
+    /* Map real highlights to display format */
+    const highlights: Highlight[] = realHighlights.map((hl) => ({
+        id: hl.id,
+        text: `"${hl.text}"`,
+        path: hl.path,
+        createdAt: formatCreatedAt(hl.createdAt),
+    }));
 
     const handleCopy = (text: string, id: string): void => {
         void (async () => {
@@ -90,7 +95,7 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     };
 
     const handleCopyAll = (): void => {
-        const all = mockHighlights.map(h => h.text).join('\n\n');
+        const all = highlights.map(h => h.text).join('\n\n');
         navigator.clipboard.writeText(all);
     };
 
@@ -137,15 +142,40 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                     </div>
                     <div>
                         <h1 className="text-[17px] font-semibold tracking-[-0.01em] text-on-surface mb-[1px]">
-                            {domain ?? 'medium.com'}
+                            {domain ?? 'loading...'}
                         </h1>
                         <p className="text-[11px] text-outline">
-                            {mockHighlights.length} highlights · Dec 2025 – Feb 2026
+                            {highlights.length} {highlights.length === 1 ? 'highlight' : 'highlights'}
                         </p>
                     </div>
                 </div>
 
-                {/* Action chips */}
+                {/* Loading state */}
+                {isLoading && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <div className="w-8 h-8 border-2 border-outline-variant border-t-primary rounded-full animate-spin" />
+                        <p className="text-[12px] text-outline">Loading highlights...</p>
+                    </div>
+                )}
+
+                {/* Error state */}
+                {error && !isLoading && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
+                        <p className="text-[13px] text-error">Failed to load highlights</p>
+                        <p className="text-[11px] text-outline">{error.message}</p>
+                    </div>
+                )}
+
+                {/* Empty state */}
+                {!isLoading && !error && highlights.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
+                        <p className="text-[13px] text-on-surface-variant">No highlights on {domain}</p>
+                        <p className="text-[11px] text-outline">Highlight text on this domain to save it here.</p>
+                    </div>
+                )}
+
+                {/* Action chips - only show when highlights exist */}
+                {!isLoading && !error && highlights.length > 0 && (
                 <div className="flex items-center gap-2 mb-4 overflow-x-auto [scrollbar-width:none] pb-1">
                     {/* Copy all chip */}
                     <motion.button
@@ -213,15 +243,17 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                         Clear
                     </motion.button>
                 </div>
+                )}
 
                 {/* Highlight cards — marginalia style */}
+                {!isLoading && !error && highlights.length > 0 && (
                 <motion.div
                     className="flex flex-col gap-3"
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
                 >
-                    {mockHighlights.map(h => (
+                    {highlights.map(h => (
                         <motion.div key={h.id} variants={itemVariants}>
                         <motion.div
                             whileHover={{ y: -2, scale: 1.008 }}
@@ -281,6 +313,7 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
                         </motion.div>
                     ))}
                 </motion.div>
+                )}
             </div>
         </div>
     );

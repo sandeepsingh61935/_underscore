@@ -159,46 +159,6 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'walk',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Neural highlights will be copied into this Focus session',
-      guard: async () => {
-        return true;
-      },
-    },
-    sprint: {
-      from: 'neural',
-      to: 'sprint',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Your Neural highlights will be copied into Capture mode',
-    },
-    vault: {
-      from: 'neural',
-      to: 'vault',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Your Neural highlights will become a personal knowledge base in Memory',
-    },
-    neural: {
-      from: 'neural',
-      to: 'neural',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Already in Neural mode (AI-powered connections)',
-    },
-    neural: {
-      from: 'vault',
-      to: 'neural',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Switching to Neural mode for AI-powered organization',
-    },
-  },
-  neural: {
-    walk: {
-      from: 'neural',
-      to: 'walk',
-      allowed: true,
-      requiresConfirmation: true,
       reason: 'Switching to Walk mode will disable AI features. Data will be preserved.',
       guard: async () => {
         return true;

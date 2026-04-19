@@ -200,6 +200,12 @@ export class MigrationEngine {
       return 1;
     }
 
+    // v2 states written by usePersistedMode have underscore-current-mode key
+    // (popup writes this key without metadata — still v2 format)
+    if ('underscore-current-mode' in state) {
+      return 2;
+    }
+
     // Unknown state format, assume v1
     return 1;
   }
