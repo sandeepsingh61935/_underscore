@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import { WalkMode } from '@/content/modes/walk-mode';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
@@ -26,6 +27,7 @@ global.CSS = { highlights: new Map() } as any;
 describe('Walk Mode - Integration Tests', () => {
   let walkMode: WalkMode;
   let mockRepository: IHighlightRepository;
+  let mockStorage: IStorage;
   let mockEventBus: EventBus;
   let mockLogger: ILogger;
 
@@ -60,8 +62,15 @@ describe('Walk Mode - Integration Tests', () => {
       getLevel: vi.fn(),
     } as any;
 
+    // Mock storage
+    mockStorage = {
+      saveEvent: vi.fn().mockResolvedValue(undefined),
+      loadEvents: vi.fn().mockResolvedValue([]),
+      clear: vi.fn().mockResolvedValue(undefined),
+    } as any;
+
     // Create WalkMode instance
-    walkMode = new WalkMode(mockRepository, mockEventBus, mockLogger);
+    walkMode = new WalkMode(mockRepository, mockStorage, mockEventBus, mockLogger);
   });
 
   afterEach(() => {
@@ -189,7 +198,7 @@ describe('Walk Mode - Integration Tests', () => {
       await walkMode.clearAll();
 
       // Create new WalkMode instance (simulate page reload)
-      new WalkMode(mockRepository, mockEventBus, mockLogger);
+      new WalkMode(mockRepository, mockStorage, mockEventBus, mockLogger);
 
       // Verify no highlights restored (Walk Mode is ephemeral)
       const highlights = await mockRepository.findAll();

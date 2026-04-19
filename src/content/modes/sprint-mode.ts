@@ -1,19 +1,18 @@
 /**
  * Sprint Mode
  *
- * Philosophy: "Use and forget" - Zero commitment, minimal trace
+ * Philosophy: "Focused work, permanent record" - Persist until you decide to delete.
  *
  * Features:
- * - 4-hour TTL (auto-delete after 4 hours)
- * - Local storage with per-domain encryption
+ * - Permanent local storage (no TTL — manual delete only)
+ * - Per-domain encryption via chrome.storage.local
  * - In-memory undo/redo
- * - Adaptive theming (Material Design colors)
+ * - Collections view enabled
  * - No account required
  *
  * Architectural Compliance:
  * - Implements IBasicMode only (Interface Segregation Principle)
  * - Encapsulates persistence logic (Single Responsibility Principle)
- * - No restore() method needed (uses event sourcing instead)
  *
  * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
  */
@@ -33,8 +32,6 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class SprintMode extends BaseHighlightMode implements IBasicMode {
-  private static readonly TTL_HOURS = 4;
-
   constructor(
     repository: IHighlightRepository,
     storage: IStorage,
@@ -53,59 +50,13 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     persistence: 'local',
     undo: true,
     sync: false,
-    collections: false,
+    collections: true,
     tags: false,
     export: false,
     ai: false,
     search: false,
     multiSelector: false,
   };
-
-  /**
-   * Override onActivate to clean expired highlights after restoration
-   */
-  override async onActivate(): Promise<void> {
-    await super.onActivate();
-
-    // Clean any highlights that expired while mode was inactive
-    const cleaned = await this.cleanExpiredHighlights();
-    if (cleaned > 0) {
-      this.logger.info(`Sprint Mode activated: cleaned ${cleaned} expired highlights`);
-    }
-  }
-
-  /**
-   * Creates a new highlight in Sprint Mode (4-hour TTL, encrypted persistence)
-   *
-   * @param selection - The browser Selection object containing the text to highlight
-   * @param colorRole - The color role to apply (e.g., 'yellow', 'blue', 'green')
-   * @returns Promise resolving to the unique highlight ID
-   *
-   * @throws {Error} If selection has no ranges
-   * @throws {Error} If selected text is empty
-   * @throws {Error} If range serialization fails
-   *
-   * @remarks
-   * Sprint Mode features:
-   * - Deduplicates via content hash (returns existing ID if duplicate)
-   * - Sets 4-hour TTL (auto-deletion after 4 hours)
-   * - Persists to chrome.storage.local with domain-based encryption
-   * - Uses event sourcing for restoration
-   * - Emits HIGHLIGHT_CREATED event for persistence
-   *
-   * Persistence flow:
-   * 1. Register with CSS Custom Highlight API
-   * 2. Add to internal maps (highlights, data)
-   * 3. Add to repository (triggers storage)
-   * 4. Emit event for event sourcing
-   *
-   * @example
-   * ```typescript
-   * const selection = window.getSelection();
-   * const id = await sprintMode.createHighlight(selection, 'yellow');
-   * console.log('Created highlight with 4-hour TTL:', id);
-   * ```
-   */
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
@@ -142,13 +93,13 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     const data: HighlightData = {
       id,
       text,
-      contentHash, // [OK] Store hash for future dedup
-      colorRole, // [OK] Semantic token
+      contentHash,
+      url: window.location.href,
+      colorRole,
       type: 'underscore',
       ranges: [serializedRange],
       liveRanges: [range],
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + SprintMode.TTL_HOURS * 60 * 60 * 1000), // 4 hours from now
     };
 
     // FIXED: renderAndRegister() handles CSS.highlights registration
@@ -343,7 +294,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Event Handler: Highlight Created
-   * Sprint Mode: Persists to event store with TTL
+   * Sprint Mode: Persists to event store (permanent)
    */
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
     this.logger.debug('[SPRINT] onHighlightCreated called', {
@@ -387,56 +338,6 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
         highlightId: event.highlightId,
       });
     }
-  }
-
-  /**
-   * Clean Expired Highlights (TTL Enforcement)
-   * Removes highlights older than 4 hours
-   * Called on restore and can be called periodically
-   *
-   * @returns Number of highlights cleaned
-   */
-  async cleanExpiredHighlights(): Promise<number> {
-    const now = Date.now();
-    const expiredIds: string[] = [];
-
-    // Find all expired highlights
-    for (const [id, data] of this.data.entries()) {
-      if (data.expiresAt && data.expiresAt.getTime() < now) {
-        expiredIds.push(id);
-        this.logger.debug('Highlight expired (TTL)', {
-          id,
-          createdAt: data.createdAt,
-          expiresAt: data.expiresAt,
-          age:
-            Math.round((now - (data.createdAt?.getTime() || now)) / 1000 / 60 / 60) + 'h',
-        });
-      }
-    }
-
-    // Remove expired highlights
-    for (const id of expiredIds) {
-      await this.removeHighlight(id);
-    }
-
-    if (expiredIds.length > 0) {
-      this.logger.info('Cleaned expired highlights', { count: expiredIds.length });
-
-      // Persist cleanup event
-      if (this.storage) {
-        await this.storage.saveEvent({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          type: 'highlights.ttl_cleanup' as any,
-          timestamp: now,
-          eventId: crypto.randomUUID(),
-          count: expiredIds.length,
-          ids: expiredIds,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any); // Custom event type for TTL cleanup
-      }
-    }
-
-    return expiredIds.length;
   }
 
   /**

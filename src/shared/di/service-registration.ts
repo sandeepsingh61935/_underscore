@@ -81,11 +81,17 @@ export function registerServices(container: Container): void {
   // ============================================
 
   /**
-   * Storage Service - Singleton
-   * Manages event sourcing and domain-scoped highlight persistence
+   * Sprint storage — permanent (null TTL)
    */
   container.registerSingleton<IStorage>('storage', () => {
-    return new StorageService();
+    return new StorageService({ mode: 'sprint', ttlDuration: null });
+  });
+
+  /**
+   * Walk storage — 24h TTL
+   */
+  container.registerSingleton<IStorage>('walkStorage', () => {
+    return new StorageService({ mode: 'walk', ttlDuration: 24 * 60 * 60 * 1000 });
   });
 
   /**
@@ -208,14 +214,15 @@ export function registerServices(container: Container): void {
   if (typeof document !== 'undefined') {
     /**
      * Walk Mode - Transient
-     * Ephemeral highlighting (no persistence)
+     * 24h TTL local persistence
      */
     container.registerTransient<IHighlightMode>('walkMode', () => {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+      const walkStorage = container.resolve<IStorage>('walkStorage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new WalkMode(repositoryFacade as any, eventBus, logger);
+      return new WalkMode(repositoryFacade as any, walkStorage, eventBus, logger);
     });
 
     /**
@@ -269,6 +276,7 @@ export function registerServices(container: Container): void {
       },
     };
 
+    // eslint-disable-next-line no-undef
     const { TokenStore } = require('@/background/auth/token-store');
     return new TokenStore(persistentStorage, logger);
   });
@@ -278,11 +286,13 @@ export function registerServices(container: Container): void {
    * OAuth authentication with automatic token refresh
    */
   container.registerSingleton('authManager', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = container.resolve<any>('_supabaseSDK');
     const tokenStore = container.resolve('tokenStore');
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
+    // eslint-disable-next-line no-undef
     const { AuthManager } = require('@/background/auth/auth-manager');
     return new AuthManager(supabase, tokenStore, eventBus, logger);
   });
@@ -295,6 +305,7 @@ export function registerServices(container: Container): void {
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
+    // eslint-disable-next-line no-undef
     const { AuthStateObserver } = require('@/background/auth/auth-state-observer');
     return new AuthStateObserver(eventBus, logger);
   });
@@ -318,13 +329,14 @@ export function getDependencyGraph(): Map<string, string[]> {
     ['logger', []],
     ['eventBus', []],
     ['storage', []],
+    ['walkStorage', []],
     ['repository', []],
     ['messaging', []],
     ['tabQuery', []],
     ['messagingCircuitBreaker', ['logger']],
     ['messageBus', ['logger', 'messagingCircuitBreaker']],
     ['modeManager', ['eventBus', 'logger']],
-    ['walkMode', ['repository', 'eventBus']],
+    ['walkMode', ['repository', 'walkStorage', 'eventBus']],
     ['sprintMode', ['repository', 'storage', 'eventBus']],
     ['vaultMode', ['repository', 'eventBus']],
     ['commandFactory', ['container']],

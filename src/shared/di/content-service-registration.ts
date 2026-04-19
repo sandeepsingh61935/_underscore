@@ -54,21 +54,20 @@ export function registerContentServices(container: Container): void {
 
     /**
      * Walk Mode - Transient
-     * Ephemeral highlighting (no persistence)
-     * Created fresh when activated
+     * 24h TTL local persistence
      */
     container.registerTransient<IHighlightMode>('walkMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const walkStorage = container.resolve<IStorage>('walkStorage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new WalkMode(repositoryFacade as any, eventBus, logger);
+        return new WalkMode(repositoryFacade as any, walkStorage, eventBus, logger);
     });
 
     /**
      * Sprint Mode - Transient
-     * Session-based highlighting (TTL persistence)
-     * Created fresh when activated
+     * Permanent local persistence (manual delete only)
      */
     container.registerTransient<IHighlightMode>('sprintMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
