@@ -6,15 +6,12 @@
 import '@/background/utils/polyfill'; // Polyfill environment first
 import { browser } from 'wxt/browser';
 
-import { LoggerFactory } from '@/shared/utils/logger';
-
-import { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
-import type { AuthState } from '@/background/auth/interfaces/i-auth-manager';
-
-import { Container } from '@/background/di/container';
+import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
 import { initializeBackground } from '@/background/bootstrap'; // Static import
+import type { Container } from '@/background/di/container';
 import { readLocalCollections } from '@/background/services/local-collections-reader';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -48,6 +45,7 @@ export default defineBackground({
       logger.info('[INIT] AuthManager resolved');
 
       logger.info('[INIT] Resolving repositoryFacade from container...');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repositoryFacade = container.resolve<any>('repositoryFacade');
       logger.info('[INIT] RepositoryFacade resolved');
 
@@ -168,6 +166,7 @@ export default defineBackground({
 
         try {
           const allHighlights = await repositoryFacade.findAll();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const filteredHighlights = allHighlights.filter((hl: any) => {
             try {
               const url = new URL(hl.url);

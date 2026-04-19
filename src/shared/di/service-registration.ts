@@ -276,6 +276,7 @@ export function registerServices(container: Container): void {
       },
     };
 
+    // eslint-disable-next-line no-undef
     const { TokenStore } = require('@/background/auth/token-store');
     return new TokenStore(persistentStorage, logger);
   });
@@ -285,11 +286,13 @@ export function registerServices(container: Container): void {
    * OAuth authentication with automatic token refresh
    */
   container.registerSingleton('authManager', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = container.resolve<any>('_supabaseSDK');
     const tokenStore = container.resolve('tokenStore');
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
+    // eslint-disable-next-line no-undef
     const { AuthManager } = require('@/background/auth/auth-manager');
     return new AuthManager(supabase, tokenStore, eventBus, logger);
   });
@@ -302,6 +305,7 @@ export function registerServices(container: Container): void {
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
+    // eslint-disable-next-line no-undef
     const { AuthStateObserver } = require('@/background/auth/auth-state-observer');
     return new AuthStateObserver(eventBus, logger);
   });

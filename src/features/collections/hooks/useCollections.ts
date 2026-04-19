@@ -14,6 +14,42 @@ interface CollectionsResult {
   isWebContext: boolean;
 }
 
+interface RawHighlight {
+  url: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+function groupByDomain(rows: RawHighlight[]): DomainCollection[] {
+  const domainMap = new Map<string, { count: number; lastActive: number }>();
+  for (const hl of rows) {
+    let domain: string;
+    let t: number;
+    try {
+      const parsed = new URL(hl.url);
+      domain = parsed.hostname.replace(/^www\./, '');
+      t = new Date(hl.updated_at || hl.created_at).getTime();
+    } catch {
+      continue; // skip invalid URLs
+    }
+    const existing = domainMap.get(domain);
+    if (existing) {
+      existing.count += 1;
+      existing.lastActive = Math.max(existing.lastActive, t);
+    } else {
+      domainMap.set(domain, { count: 1, lastActive: t });
+    }
+  }
+  return Array.from(domainMap.entries())
+    .map(([domain, d], i) => ({
+      id: String(i + 1),
+      domain,
+      highlightCount: d.count,
+      lastActive: new Date(d.lastActive),
+    }))
+    .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+}
+
 function isExtensionContext(): boolean {
   return (
     typeof chrome !== 'undefined' &&
@@ -33,7 +69,7 @@ export function useCollections(): CollectionsResult {
   useEffect(() => {
     let cancelled = false;
 
-    const fetch = async () => {
+    const fetch = async (): Promise<void> => {
       try {
         if (isExtensionContext()) {
           const response = await chrome.runtime.sendMessage({
@@ -89,32 +125,7 @@ export function useCollections(): CollectionsResult {
           if (cancelled) return;
           if (queryError) throw queryError;
 
-          const domainMap = new Map<string, { count: number; lastActive: number }>();
-          for (const hl of data ?? []) {
-            try {
-              const parsed = new URL(hl.url);
-              const domain = parsed.hostname.replace(/^www\./, '');
-              const t = new Date(hl.updated_at || hl.created_at).getTime();
-              const existing = domainMap.get(domain);
-              if (existing) {
-                existing.count += 1;
-                existing.lastActive = Math.max(existing.lastActive, t);
-              } else {
-                domainMap.set(domain, { count: 1, lastActive: t });
-              }
-            } catch {
-              // skip invalid URLs
-            }
-          }
-
-          const collections: DomainCollection[] = Array.from(domainMap.entries())
-            .map(([domain, d], i) => ({
-              id: String(i + 1),
-              domain,
-              highlightCount: d.count,
-              lastActive: new Date(d.lastActive),
-            }))
-            .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+          const collections = groupByDomain(data ?? []);
 
           setResult({ collections, isLoading: false, error: null, isWebContext: true });
         }

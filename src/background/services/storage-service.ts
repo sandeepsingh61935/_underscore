@@ -6,23 +6,23 @@
 import { browser } from 'wxt/browser';
 
 import { ValidationError } from '@/background/errors/app-error';
+import { hashDomain, encryptData, decryptData } from '@/background/utils/crypto-utils';
+import { LoggerFactory } from '@/background/utils/logger';
+import type { ILogger } from '@/background/utils/logger';
 import type { IStorage } from '@/shared/interfaces/i-storage';
-import type {
-  AnyHighlightEvent,
-  DomainStorage,
-  EventLog,
-  StorageConfig,
-} from '@/shared/types/storage';
 import {
   DEFAULT_STORAGE_CONFIG,
   isValidHighlightEvent,
   computeHighlightCount,
   COLLECTIONS_INDEX_KEY,
 } from '@/shared/types/storage';
-import type { CollectionsIndex } from '@/shared/types/storage';
-import { hashDomain, encryptData, decryptData } from '@/background/utils/crypto-utils';
-import { LoggerFactory } from '@/background/utils/logger';
-import type { ILogger } from '@/background/utils/logger';
+import type {
+  AnyHighlightEvent,
+  CollectionsIndex,
+  DomainStorage,
+  EventLog,
+  StorageConfig,
+} from '@/shared/types/storage';
 
 /**
  * Storage service for domain-scoped highlight persistence
@@ -55,10 +55,10 @@ export class StorageService implements IStorage {
     // Handle both Window (Browser) and Service Worker (Background) contexts
     if (typeof window !== 'undefined' && window.location) {
       this.currentDomain = window.location.hostname;
-    } else if (typeof self !== 'undefined' && self.location) {
-      this.currentDomain = self.location.hostname || 'background-service';
     } else {
-      this.currentDomain = 'unknown-context';
+      // globalThis.location is available in ServiceWorker scope
+      const swLocation = (globalThis as unknown as { location?: Location }).location;
+      this.currentDomain = swLocation?.hostname || 'background-service';
     }
 
     this.config = { ...DEFAULT_STORAGE_CONFIG, ...config };
