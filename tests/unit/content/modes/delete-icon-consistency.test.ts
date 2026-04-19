@@ -113,7 +113,7 @@ describe('Delete Icon Consistency', () => {
             expect(config.requireConfirmation).toBe(true);
             expect(config.allowUndo).toBe(true);
             expect(config.iconType).toBe('remove');
-            expect(config.confirmationMessage).toContain('Undo available');
+            expect(config.confirmationMessage).toContain('Delete this highlight?');
         });
     });
 });
