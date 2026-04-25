@@ -10,7 +10,9 @@ import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/au
 import { initializeBackground } from '@/background/bootstrap'; // Static import
 import type { Container } from '@/background/di/container';
 import { readLocalCollections } from '@/background/services/local-collections-reader';
+import { hashDomain, decryptData } from '@/background/utils/crypto-utils';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
 import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
@@ -167,19 +169,38 @@ export default defineBackground({
         }
 
         try {
-          const allHighlights = await repositoryFacade.findAll();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const filteredHighlights = allHighlights.filter((hl: any) => {
-            try {
-              const url = new URL(hl.url);
-              const hlDomain = url.hostname.replace(/^www\./, '');
-              return hlDomain === payload.domain;
-            } catch {
-              return false;
-            }
-          });
+          const hashedKey = await hashDomain(payload.domain);
+          const result = await browser.storage.local.get(hashedKey);
+          const domainStorage = result[hashedKey] as DomainStorage | undefined;
 
-          return { success: true, data: { highlights: filteredHighlights } };
+          if (!domainStorage?.data) {
+            return { success: true, data: { highlights: [] } };
+          }
+
+          const decrypted = await decryptData(domainStorage.data, payload.domain);
+          const eventLog: EventLog = JSON.parse(decrypted);
+
+          // Project events: track created highlights, remove deleted ones
+          const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
+          for (const event of eventLog.events) {
+            if (event.type === 'highlight.created') {
+              highlightMap.set(event.data.id, event.data);
+            } else if (event.type === 'highlight.removed') {
+              highlightMap.delete(event.highlightId);
+            } else if (event.type === 'highlights.cleared') {
+              highlightMap.clear();
+            }
+          }
+
+          const highlights = Array.from(highlightMap.values()).map(hl => ({
+            id: hl.id,
+            text: hl.text,
+            url: hl.url ?? '',
+            path: hl.url ? new URL(hl.url).pathname : '/',
+            createdAt: hl.createdAt,
+          })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          return { success: true, data: { highlights } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
           throw error;
@@ -262,8 +283,9 @@ async function cleanupExpiredDomains(): Promise<void> {
     for (const [key, value] of Object.entries(all)) {
       // Check if it's our storage format and has TTL
       if (value && typeof value === 'object' && 'ttl' in value) {
-        const storage = value as { ttl: number };
-        if (now > storage.ttl) {
+        const storage = value as { ttl: number | null };
+        // null means permanent (Sprint/Vault) — never expire these
+        if (storage.ttl !== null && now > storage.ttl) {
           expired.push(key);
         }
       }

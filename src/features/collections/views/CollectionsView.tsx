@@ -108,12 +108,13 @@ export function CollectionsView({
   return (
     <div className="h-full overflow-hidden w-full flex flex-col bg-surface text-on-surface">
 
-      {/* Header — glass + mode badge + settings */}
+      {/* Header — glass + mode tint + mode badge + settings */}
       <header
         className="flex items-center justify-between px-4 py-3 border-b border-outline-variant flex-shrink-0"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 88%, transparent)',
           backdropFilter: 'blur(12px)',
+          backgroundImage: 'linear-gradient(to bottom, color-mix(in srgb, var(--ink-mode) 5%, transparent), transparent)',
         }}
       >
         <h1 className="font-display text-[20px] font-normal tracking-[-0.02em] text-on-surface">
@@ -127,7 +128,7 @@ export function CollectionsView({
             'border border-[color-mix(in_srgb,var(--ink-mode)_25%,transparent)]',
             'text-[11px] font-medium text-primary',
           )}>
-            <span className="w-[5px] h-[5px] rounded-full bg-primary" />
+            <span className="w-[5px] h-[5px] rounded-full bg-primary animate-pulse" />
             {MODE_DISPLAY[mode]}
           </div>
           {/* Settings button */}
