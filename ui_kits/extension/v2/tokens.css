@@ -1,3 +1,26 @@
+/* _underscore v2 — design system rules
+ *
+ * 1. SINGLE ACCENT. All theme color flows from --accent.
+ * 2. TINTS. Use --accent-tint-{08,18,35,65} for opacity layers.
+ * 3. UTILITY OPACITIES. Hover/press states use --utility-overlay-{06,08,12,15,25}.
+ * 4. UTILITY SURFACE. Elevated surfaces (tweaks thumbs, primary buttons)
+ *    use --utility-surface-elevated. The 34c759 iOS toggle "on" is
+ *    a system meta-tool, not a theme color — see --utility-ok.
+ * 5. EXCEPTIONS. The following hex values are NOT part of the theme
+ *    and may NOT be tokenized:
+ *      - #fef4a8 — DCPostIt sticky-note yellow
+ *      - #fdfcf8, #222, #333 — FauxPage article surface (different surface)
+ *      - #34c759 — iOS toggle "on" (now exposed as --utility-ok)
+ * 6. TYPE. App-wide type preset is selected by Tweaks; do not hardcode
+ *    font-family outside type-presets.js.
+ * 7. DENSITY. Row height 44px minimum. Compact density is a Tweak, not
+ *    a per-screen override.
+ * 8. MODES. Modes are distinguished by glyph + label, not color.
+ *    The single accent appears as active state and brand color only.
+ * 9. ROW MOTION. Wireframes may not declare motion. Production code
+ *    listens to prefers-reduced-motion.
+ */
+
 /* _underscore v2 — wireframe tokens
    Direction: editorial (NYT/Guardian/Anthropic), mid-fi grayscale,
    warm terracotta accent. Serif display, sans UI, mono meta. */
@@ -17,6 +40,25 @@
   --accent:     oklch(62% 0.12 45);   /* #c96442-ish */
   --accent-2:   oklch(72% 0.09 45);
   --accent-ink: #2a1208;
+
+  /* Accent tint scale — opacity layers for the single accent. */
+  --accent-tint-08: color-mix(in oklch, var(--accent) 8%, transparent);
+  --accent-tint-18: color-mix(in oklch, var(--accent) 18%, transparent);
+  --accent-tint-35: color-mix(in oklch, var(--accent) 35%, transparent);
+  --accent-tint-65: color-mix(in oklch, var(--accent) 65%, transparent);
+
+  /* Utility overlays — alpha layers for hover/press states. */
+  --utility-overlay-06: rgba(0, 0, 0, 0.06);
+  --utility-overlay-08: rgba(0, 0, 0, 0.08);
+  --utility-overlay-12: rgba(0, 0, 0, 0.12);
+  --utility-overlay-15: rgba(0, 0, 0, 0.15);
+  --utility-overlay-25: rgba(0, 0, 0, 0.25);
+
+  /* Utility surface — elevated surfaces (tweaks thumbs, primary buttons). */
+  --utility-surface-elevated: #fff;
+
+  /* System meta-tool exception — iOS toggle "on" state. */
+  --utility-ok: #34c759;
 
   /* Mode palette — single accent across all modes.
      Modes are distinguished by glyph + label, NOT color. */
