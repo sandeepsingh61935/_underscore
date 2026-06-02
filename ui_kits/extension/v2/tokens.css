@@ -1,0 +1,231 @@
+/* _underscore v2 — wireframe tokens
+   Direction: editorial (NYT/Guardian/Anthropic), mid-fi grayscale,
+   warm terracotta accent. Serif display, sans UI, mono meta. */
+
+:root {
+  /* Paper + ink */
+  --paper:      #f7f5f0;         /* warm off-white */
+  --paper-2:    #efece4;         /* deeper paper */
+  --rule:       #1a1a1a;         /* heavy rule */
+  --rule-soft:  #cfc9bd;         /* hairline */
+  --ink:        #111110;
+  --ink-2:      #3a3835;
+  --ink-3:      #6b6760;
+  --ink-4:      #a39e94;
+
+  /* Accent — Anthropic-ish terracotta, in oklch so the family is tunable */
+  --accent:     oklch(62% 0.12 45);   /* #c96442-ish */
+  --accent-2:   oklch(72% 0.09 45);
+  --accent-ink: #2a1208;
+
+  /* Mode palette — single accent across all modes.
+     Modes are distinguished by glyph + label, NOT color. */
+  --mode-ephemeral: var(--accent);
+  --mode-local:     var(--accent);
+  --mode-cloud:     var(--accent);
+  --mode-ai:        var(--accent);
+
+  /* Type */
+  --serif: "GT Alpina", "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --sans:  "Söhne", "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono:  "JetBrains Mono", "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+
+  /* Scale */
+  --step--2: 10px;
+  --step--1: 11px;
+  --step-0:  13px;
+  --step-1:  15px;
+  --step-2:  18px;
+  --step-3:  22px;
+  --step-4:  28px;
+  --step-5:  36px;
+  --step-6:  48px;
+
+  /* Geometry */
+  --pop-w: 400px;
+  --pop-h: 600px;
+  --radius: 2px;
+}
+
+/* Dark flip, used inside artboards that opt in via .dark */
+.dark {
+  --paper:     #111110;
+  --paper-2:   #1a1918;
+  --rule:      #f2eee6;
+  --rule-soft: #2a2826;
+  --ink:       #f2eee6;
+  --ink-2:     #cfc9bd;
+  --ink-3:     #8a857c;
+  --ink-4:     #5a564f;
+  --mode-local: #f2eee6;
+}
+
+/* Base resets inside artboards */
+.ue * { box-sizing: border-box; }
+.ue {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* Popup chrome */
+.popup {
+  width: var(--pop-w);
+  height: var(--pop-h);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+
+/* Type helpers */
+.u-serif { font-family: var(--serif); letter-spacing: -0.015em; }
+.u-mono  { font-family: var(--mono); letter-spacing: 0; }
+.u-sans  { font-family: var(--sans); }
+.u-caps  { text-transform: uppercase; letter-spacing: 0.12em; font-size: var(--step--2); }
+.u-rule  { border-top: 1px solid var(--rule); }
+.u-hair  { border-top: 1px solid var(--rule-soft); }
+
+.u-kicker {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+/* Section heading on the canvas (outside artboards) */
+.sec-kicker {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6b6760;
+}
+
+/* Wireframe placeholder pattern */
+.ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(0,0,0,0.06) 6px, rgba(0,0,0,0.06) 7px);
+  border: 1px solid var(--rule-soft);
+}
+.dark .ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(255,255,255,0.06) 6px, rgba(255,255,255,0.06) 7px);
+}
+
+/* Quote mark */
+.qmark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-4);
+}
+
+/* Buttons (wireframe) */
+.btn {
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.btn.primary {
+  background: var(--rule);
+  color: var(--paper);
+}
+.btn.accent {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn.ghost {
+  border-color: var(--rule-soft);
+  color: var(--ink-2);
+}
+.btn.sm { min-height: 32px; padding: 6px 10px; font-size: var(--step--1); }
+
+/* Tab bar in popup */
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+.tabbar button {
+  all: unset;
+  padding: 12px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  min-height: 44px;
+}
+.tabbar button.active { color: var(--ink); position: relative; }
+.tabbar button.active::before {
+  content: "";
+  position: absolute; top: 0; left: 20%; right: 20%;
+  border-top: 2px solid var(--accent);
+}
+
+/* Counter ticks */
+.tick { display: inline-block; width: 4px; height: 4px; background: var(--ink-3); border-radius: 50%; vertical-align: middle; }
+
+/* Scroll containers inside popups shouldn't scroll in wireframes */
+.no-scroll { overflow: hidden; }
+
+/* Nice scroll for lists when we do show them */
+.list-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.list-scroll::-webkit-scrollbar { width: 6px; }
+.list-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }
+
+/* Focus overlay: make artboards look like newspaper clippings */
+.clip {
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* Callout on canvas */
+.callout {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #6b6760;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* Masthead — used on canvas header */
+.masthead {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
