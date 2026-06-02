@@ -60,6 +60,28 @@
   /* System meta-tool exception — iOS toggle "on" state. */
   --utility-ok: #34c759;
 
+  /* Tweaks panel custom tokens */
+  --tweak-paper:              rgba(250, 249, 247, 0.78);
+  --tweak-border:             rgba(255, 255, 255, 0.60);
+  --tweak-ink:                #29261b;
+  --tweak-ink-72:             rgba(41, 38, 27, 0.72);
+  --tweak-ink-60:             rgba(41, 38, 27, 0.60);
+  --tweak-ink-55:             rgba(41, 38, 27, 0.55);
+  --tweak-ink-50:             rgba(41, 38, 27, 0.50);
+  --tweak-ink-45:             rgba(41, 38, 27, 0.45);
+
+  /* Missing utility opacity overlays */
+  --utility-overlay-10:       rgba(0, 0, 0, 0.10);
+  --utility-overlay-18:       rgba(0, 0, 0, 0.18);
+  --utility-overlay-20:       rgba(0, 0, 0, 0.20);
+  --utility-overlay-78:       rgba(0, 0, 0, 0.78);
+  --utility-overlay-88:       rgba(0, 0, 0, 0.88);
+
+  --paper-overlay-50:         rgba(255, 255, 255, 0.50);
+  --paper-overlay-60:         rgba(255, 255, 255, 0.60);
+  --paper-overlay-85:         rgba(255, 255, 255, 0.85);
+  --paper-overlay-90:         rgba(255, 255, 255, 0.90);
+
   /* Mode palette — single accent across all modes.
      Modes are distinguished by glyph + label, NOT color. */
   --mode-ephemeral: var(--accent);

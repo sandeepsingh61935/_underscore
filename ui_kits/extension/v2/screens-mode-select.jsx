@@ -141,7 +141,7 @@ function ModeSelect_C({ dark }) {
               borderColor: active ? mm.accent : "var(--rule-soft)",
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: 8,
-              color: active ? "#fff" : "var(--ink-2)",
+              color: active ? "var(--utility-surface-elevated)" : "var(--ink-2)",
             }}>
               <span style={{ fontSize: 16, lineHeight: 1 }}>{mm.motif}</span>
               <span className="u-mono" style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" }}>{mm.name}</span>
@@ -217,7 +217,7 @@ function ModeSelect_D({ dark }) {
                 width: 24, height: 24, borderRadius: 99,
                 background: active ? mm.accent : "var(--paper)",
                 border: `2px solid ${active ? mm.accent : "var(--rule)"}`,
-                color: active ? "#fff" : "var(--ink-2)",
+                color: active ? "var(--utility-surface-elevated)" : "var(--ink-2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 11,
               }}>{mm.motif}</button>

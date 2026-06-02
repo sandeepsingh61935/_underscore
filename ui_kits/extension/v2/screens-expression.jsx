@@ -29,7 +29,7 @@ function ExprSwatch() {
       <div className="u-kicker" style={{ marginBottom: 10, paddingLeft: 4 }}>B · Color blocks</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {MODES.map((m) => (
-          <div key={m.id} style={{ background: m.accent, color: "#fff", padding: 12, minHeight: 90, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div key={m.id} style={{ background: m.accent, color: "var(--utility-surface-elevated)", padding: 12, minHeight: 90, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
             <span className="u-mono" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.85 }}>{m.family}</span>
             <div>
               <div className="u-serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{m.name}</div>
