@@ -222,10 +222,29 @@ function Nav_D({ dark }) {
    Dashboard / Home — active mode + jump to current domain
    ───────────────────────────────────────────────────────────── */
 function Home_Ephemeral({ dark }) {
+  const ttlMs = 3.5 * 3600_000 + 22 * 60_000;
+  const ttlH = Math.floor(ttlMs / 3600_000);
+  const ttlM = Math.floor((ttlMs % 3600_000) / 60_000);
+  const ttlLabel = `${ttlH}h ${ttlM}m`;
   return (
     <PopupFrame dark={dark} title="_underscore" mode="ephemeral">
       <ModeHeader modeId="ephemeral" onSwitch={() => {}} />
-      <div style={{ padding: "14px 16px 6px" }}>
+      {/* LEAD: TTL block (was 4th) */}
+      <div style={{ padding: "14px 16px 4px" }}>
+        <div className="u-kicker">Ephemeral · expires in</div>
+        <div className="u-mono" style={{
+          fontSize: 15, lineHeight: 1.2, color: "var(--ink-2)",
+          fontWeight: 500, marginTop: 4, letterSpacing: "-0.005em",
+          fontVariantNumeric: "tabular-nums",
+        }}>
+          {ttlLabel}
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <TTLMeter ms={ttlMs} />
+        </div>
+      </div>
+      {/* FOLLOW: existing "Current page" block */}
+      <div style={{ padding: "10px 16px 6px" }}>
         <div className="u-kicker">Current page</div>
         <div className="u-serif" style={{ fontSize: 19, lineHeight: 1.15, letterSpacing: "-0.01em", marginTop: 4 }}>
           anthropic.com / Academy
@@ -234,7 +253,6 @@ function Home_Ephemeral({ dark }) {
           3 highlights on this page
         </div>
       </div>
-      <TTLMeter ms={3.5 * 3600_000 + 22 * 60_000} />
       <div className="u-caps" style={{ padding: "10px 16px 4px", color: "var(--ink-3)" }}>Recent</div>
       <div className="list-scroll" style={{ flex: 1 }}>
         <HighlightCard quote="A good prompt is one you could hand to a thoughtful colleague." domain="anthropic.com" section="Academy" ttlMs={18 * 3600_000} />
@@ -325,7 +343,7 @@ function FauxPage({ children, w = 520, h = 340 }) {
           Essay · 8 min read
         </div>
         <p className="u-serif" style={{ fontSize: 13, lineHeight: 1.6, marginTop: 14, color: "#333" }}>
-          The best prompts are small acts of care. <span style={{ background: "rgba(201,100,66,0.18)", borderBottom: "1.5px solid var(--accent)", padding: "0 2px" }}>A good prompt is one you could hand to a thoughtful colleague</span> — plain, specific, and honest about what it knows. The rest is editing.
+          The best prompts are small acts of care. <span style={{ background: "var(--accent-tint-18)", borderBottom: "1.5px solid var(--accent)", padding: "0 2px" }}>A good prompt is one you could hand to a thoughtful colleague</span> — plain, specific, and honest about what it knows. The rest is editing.
         </p>
       </div>
       {children}
