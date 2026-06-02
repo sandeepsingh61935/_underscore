@@ -15,13 +15,13 @@
 //   </DesignCanvas>
 
 const DC = {
-  bg: '#f0eee9',
+  bg: 'var(--dc-bg)',
   grid: 'rgba(0,0,0,0.06)',
-  label: 'rgba(60,50,40,0.7)',
-  title: 'rgba(40,30,20,0.85)',
-  subtitle: 'rgba(60,50,40,0.6)',
+  label: 'var(--dc-label)',
+  title: 'var(--dc-title)',
+  subtitle: 'var(--dc-subtitle)',
   postitBg: '#fef4a8',
-  postitText: '#5a4a2a',
+  postitText: 'var(--dc-postit-text)',
   font: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
 };
 
@@ -41,14 +41,14 @@ if (typeof document !== 'undefined' && !document.getElementById('dc-styles')) {
     '.dc-card *::-webkit-scrollbar{display:none}',
     '.dc-labelrow{display:flex;align-items:center;gap:4px;height:24px}',
     '.dc-grip{cursor:grab;display:flex;align-items:center;padding:5px 4px;border-radius:4px;transition:background .12s}',
-    '.dc-grip:hover{background:rgba(0,0,0,.08)}',
+    '.dc-grip:hover{background:var(--utility-overlay-08)}',
     '.dc-grip:active{cursor:grabbing}',
     '.dc-labeltext{cursor:pointer;border-radius:4px;padding:3px 6px;display:flex;align-items:center;transition:background .12s}',
-    '.dc-labeltext:hover{background:rgba(0,0,0,.05)}',
+    '.dc-labeltext:hover{background:var(--utility-overlay-05)}',
     '.dc-expand{position:absolute;bottom:100%;right:0;margin-bottom:5px;z-index:2;opacity:0;transition:opacity .12s,background .12s;',
     '  width:22px;height:22px;border-radius:5px;border:none;cursor:pointer;padding:0;',
-    '  background:transparent;color:rgba(60,50,40,.7);display:flex;align-items:center;justify-content:center}',
-    '.dc-expand:hover{background:rgba(0,0,0,.06);color:#2a251f}',
+    '  background:transparent;color:var(--dc-label);display:flex;align-items:center;justify-content:center}',
+    '.dc-expand:hover{background:var(--utility-overlay-06);color:var(--dc-ink)}',
     '[data-dc-slot]:hover .dc-expand{opacity:1}',
   ].join('\n');
   document.head.appendChild(s);
@@ -453,8 +453,8 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M7 1h4v4M5 11H1V7M11 1L7.5 4.5M1 11l3.5-3.5"/></svg>
       </button>
       <div className="dc-card"
-        style={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06)', overflow: 'hidden', width, height, background: '#fff', ...style }}>
-        {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 13, fontFamily: DC.font }}>{id}</div>}
+        style={{ borderRadius: 2, boxShadow: '0 1px 3px var(--utility-overlay-08),0 4px 16px var(--utility-overlay-06)', overflow: 'hidden', width, height, background: 'var(--utility-surface-elevated)', ...style }}>
+        {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)', fontSize: 13, fontFamily: DC.font }}>{id}</div>}
       </div>
     </div>
   );
@@ -514,11 +514,11 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
   const Arrow = ({ dir, onClick }) => (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
       style={{ position: 'absolute', top: '50%', [dir]: 28, transform: 'translateY(-50%)',
-        border: 'none', background: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.9)',
+        border: 'none', background: 'var(--paper-overlay-08)', color: 'var(--paper-overlay-90)',
         width: 44, height: 44, borderRadius: 22, fontSize: 18, cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.08)')}>
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-overlay-18)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--paper-overlay-08)')}>
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <path d={dir === 'left' ? 'M11 3L5 9l6 6' : 'M7 3l6 6-6 6'} /></svg>
     </button>
@@ -529,15 +529,15 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
   return ReactDOM.createPortal(
     <div onClick={() => ctx.setFocus(null)}
       onWheel={(e) => e.preventDefault()}
-      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24,20,16,.6)', backdropFilter: 'blur(14px)',
-        fontFamily: DC.font, color: '#fff' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--dc-backdrop)', backdropFilter: 'blur(14px)',
+        fontFamily: DC.font, color: 'var(--utility-surface-elevated)' }}>
 
       {/* top bar: section dropdown (left) · close (right) */}
       <div onClick={(e) => e.stopPropagation()}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72, display: 'flex', alignItems: 'flex-start', padding: '16px 20px 0', gap: 16 }}>
         <div style={{ position: 'relative' }}>
           <button onClick={() => setDd((o) => !o)}
-            style={{ border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', padding: '6px 8px',
+            style={{ border: 'none', background: 'transparent', color: 'var(--utility-surface-elevated)', cursor: 'pointer', padding: '6px 8px',
               borderRadius: 6, textAlign: 'left', fontFamily: 'inherit' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>{meta.title}</span>
@@ -546,12 +546,12 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
             {meta.subtitle && <span style={{ display: 'block', fontSize: 13, opacity: .6, fontWeight: 400, marginTop: 2 }}>{meta.subtitle}</span>}
           </button>
           {ddOpen && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#2a251f', borderRadius: 8,
-              boxShadow: '0 8px 32px rgba(0,0,0,.4)', padding: 4, minWidth: 200, zIndex: 10 }}>
-              {sectionOrder.map((sid) => (
-                <button key={sid} onClick={() => { setDd(false); const f = sectionMeta[sid].slotIds[0]; if (f) ctx.setFocus(`${sid}/${f}`); }}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
-                    background: sid === sectionId ? 'rgba(255,255,255,.1)' : 'transparent', color: '#fff',
+              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: 'var(--dc-ink)', borderRadius: 8,
+                boxShadow: '0 8px 32px var(--utility-overlay-40)', padding: 4, minWidth: 200, zIndex: 10 }}>
+                {sectionOrder.map((sid) => (
+                  <button key={sid} onClick={() => { setDd(false); const f = sectionMeta[sid].slotIds[0]; if (f) ctx.setFocus(`${sid}/${f}`); }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                      background: sid === sectionId ? 'var(--paper-overlay-10)' : 'transparent', color: 'var(--utility-surface-elevated)',
                     padding: '8px 12px', borderRadius: 5, fontSize: 14, fontWeight: sid === sectionId ? 600 : 400, fontFamily: 'inherit' }}>
                   {sectionMeta[sid].title}
                 </button>
@@ -561,9 +561,9 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
         </div>
         <div style={{ flex: 1 }} />
         <button onClick={() => ctx.setFocus(null)}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.12)')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-overlay-12)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,.7)', width: 32, height: 32,
+          style={{ border: 'none', background: 'transparent', color: 'var(--paper-overlay-70)', width: 32, height: 32,
             borderRadius: 16, fontSize: 20, cursor: 'pointer', lineHeight: 1, transition: 'background .12s' }}>×</button>
       </div>
 
@@ -573,9 +573,9 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
       <div
         style={{ position: 'absolute', top: 64, bottom: 56, left: 100, right: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <div onClick={(e) => e.stopPropagation()} style={{ width: width * scale, height: height * scale, position: 'relative' }}>
-          <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left', background: '#fff', borderRadius: 2, overflow: 'hidden',
-            boxShadow: '0 20px 80px rgba(0,0,0,.4)' }}>
-            {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb' }}>{aid}</div>}
+          <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left', background: 'var(--utility-surface-elevated)', borderRadius: 2, overflow: 'hidden',
+            boxShadow: '0 20px 80px var(--utility-overlay-40)' }}>
+            {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)' }}>{aid}</div>}
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 500, opacity: .85, textAlign: 'center' }}>
@@ -593,7 +593,7 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
         {peers.map((p, i) => (
           <button key={p} onClick={() => ctx.setFocus(`${sectionId}/${p}`)}
             style={{ border: 'none', padding: 0, cursor: 'pointer', width: 6, height: 6, borderRadius: 3,
-              background: i === idx ? '#fff' : 'rgba(255,255,255,.3)' }} />
+              background: i === idx ? 'var(--utility-surface-elevated)' : 'var(--paper-overlay-30)' }} />
         ))}
       </div>
     </div>,

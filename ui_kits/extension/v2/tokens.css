@@ -82,6 +82,26 @@
   --paper-overlay-85:         rgba(255, 255, 255, 0.85);
   --paper-overlay-90:         rgba(255, 255, 255, 0.90);
 
+  /* Design Canvas custom tokens */
+  --dc-bg:                    #f0eee9;
+  --dc-label:                 rgba(60, 50, 40, 0.70);
+  --dc-title:                 rgba(40, 30, 20, 0.85);
+  --dc-subtitle:              rgba(60, 50, 40, 0.60);
+  --dc-postit-text:           #5a4a2a;
+  --dc-ink:                   #2a251f;
+  --dc-backdrop:              rgba(24, 20, 16, 0.60);
+
+  /* Extra overlays */
+  --utility-overlay-05:       rgba(0, 0, 0, 0.05);
+  --utility-overlay-40:       rgba(0, 0, 0, 0.40);
+
+  --paper-overlay-08:         rgba(255, 255, 255, 0.08);
+  --paper-overlay-10:         rgba(255, 255, 255, 0.10);
+  --paper-overlay-12:         rgba(255, 255, 255, 0.12);
+  --paper-overlay-18:         rgba(255, 255, 255, 0.18);
+  --paper-overlay-30:         rgba(255, 255, 255, 0.30);
+  --paper-overlay-70:         rgba(255, 255, 255, 0.70);
+
   /* Mode palette — single accent across all modes.
      Modes are distinguished by glyph + label, NOT color. */
   --mode-ephemeral: var(--accent);
