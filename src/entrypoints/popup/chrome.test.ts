@@ -21,3 +21,28 @@ describe('buildChrome', () => {
     expect(map.LOADING.showTabBar).toBe(false);
   });
 });
+
+describe('chrome-having screens', () => {
+  it('WELCOME has title strip but no ModeHeader or TabBar', () => {
+    const map = buildChrome(makeHandlers());
+    expect(map.WELCOME.title).toBe('_underscore');
+    expect(map.WELCOME.showTitleStrip).toBe(true);
+    expect(map.WELCOME.showModeHeader).toBe(false);
+    expect(map.WELCOME.showTabBar).toBe(false);
+  });
+
+  it('MODE_SELECTION has title strip but no ModeHeader or TabBar', () => {
+    const map = buildChrome(makeHandlers());
+    expect(map.MODE_SELECTION.title).toBe('_underscore');
+    expect(map.MODE_SELECTION.showModeHeader).toBe(false);
+    expect(map.MODE_SELECTION.showTabBar).toBe(false);
+  });
+
+  it('AUTH has "_underscore · sign in" title and no chrome', () => {
+    const map = buildChrome(makeHandlers());
+    expect(map.AUTH.title).toBe('_underscore · sign in');
+    expect(map.AUTH.showTitleStrip).toBe(true);
+    expect(map.AUTH.showModeHeader).toBe(false);
+    expect(map.AUTH.showTabBar).toBe(false);
+  });
+});
