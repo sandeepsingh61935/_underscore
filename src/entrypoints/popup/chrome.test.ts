@@ -66,4 +66,27 @@ describe('chrome-having screens with tab bar', () => {
     const map = buildChrome(handlers);
     expect(map.DASHBOARD.modeId).toBe('cloud');
   });
+
+  it('COLLECTIONS has "_underscore · library" title, activeTab collections', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.COLLECTIONS.title).toBe('_underscore · library');
+    expect(map.COLLECTIONS.showModeHeader).toBe(true);
+    expect(map.COLLECTIONS.showTabBar).toBe(true);
+    expect(map.COLLECTIONS.activeTab).toBe('collections');
+  });
+
+  it('COLLECTIONS has no back button (root of library stack)', () => {
+    const map = buildChrome(makeHandlers());
+    expect(map.COLLECTIONS.onBack).toBeUndefined();
+    expect(map.COLLECTIONS.backLabel).toBeUndefined();
+  });
+
+  it('DOMAIN_DETAILS has back button with label "Library"', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.DOMAIN_DETAILS.onBack).toBe(handlers.onBackToCollections);
+    expect(map.DOMAIN_DETAILS.backLabel).toBe('Library');
+    expect(map.DOMAIN_DETAILS.activeTab).toBe('collections');
+  });
 });
