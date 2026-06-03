@@ -14,8 +14,14 @@ import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
+import { ModeHeader } from '../../ui-system/components/layout/ModeHeader';
+import { PopupShell } from '../../ui-system/components/layout/PopupShell';
+import { TabBar } from '../../ui-system/components/layout/TabBar';
+import { Button } from '../../ui-system/components/primitives/Button';
+import { HighlightCard } from '../../ui-system/components/primitives/HighlightCard';
+import { Row } from '../../ui-system/components/primitives/Row';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
-import { AppShell } from '../../ui-system/layout/AppShell';
+import { TTLMeter } from '../../ui-system/components/primitives/TTLMeter';
 
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
@@ -229,9 +235,18 @@ function PopupApp(): React.ReactElement {
 
   if (currentView === View.LOADING || !isStorageReady) {
     return (
-      <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
-        <Spinner size="lg" />
-      </div>
+      <PopupShell title="SMOKE TEST" chromeStyle="simple">
+        <ModeHeader modeId="local" />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <HighlightCard quote="A good prompt is one you could hand to a thoughtful colleague." domain="anthropic.com" section="Academy" ttlMs={18 * 3600_000} />
+          <Row title="Example Collection" sub="24 highlights" right={<Button size="sm" variant="ghost">View</Button>} />
+          <div style={{ margin: '16px 0' }}><TTLMeter ms={2 * 3600_000 + 45 * 60_000} /></div>
+          <div className="w-[400px] flex items-center justify-center p-4">
+            <Spinner size="lg" />
+          </div>
+        </div>
+        <TabBar active="home" />
+      </PopupShell>
     );
   }
 
@@ -246,7 +261,7 @@ function PopupApp(): React.ReactElement {
   };
 
   return (
-    <AppShell>
+    <PopupShell>
       <AnimatePresence mode="wait">
         {currentView === View.WELCOME && (
           <motion.div
@@ -362,7 +377,7 @@ function PopupApp(): React.ReactElement {
           </motion.div>
         )}
       </AnimatePresence>
-    </AppShell>
+    </PopupShell>
   );
 }
 
