@@ -294,32 +294,32 @@ const MODES = [
 
 ## 5. Phases & Parallelism
 
-### Phase 0: Foundation (BLOCKING)
+### Phase 0: Foundation (BLOCKING) ✅ DONE
 
 **No parallelism with later phases. Must complete before Phase 1.**
 
 Phase 0 itself can be split into two parallel sub-streams:
 
-#### P0-A: Token & CSS Foundation (parallelizable with P0-B)
-1. Remove Tailwind: delete `tailwind.config.ts`, `postcss.config.js`, remove packages
-2. Purge `src/ui-system/theme/global.css` — remove all MD3 tokens, Spark Realm HSL, dead code
-3. Migrate `ui_kits/extension/v2/tokens.css` into `src/ui-system/theme/global.css`
-4. Add Google Fonts link to `src/entrypoints/popup/index.html`
-5. Verify build passes (`npm run build`)
+#### P0-A: Token & CSS Foundation (parallelizable with P0-B) ✅ DONE
+- [x] Remove Tailwind: delete `tailwind.config.ts`, `postcss.config.js`, remove packages
+- [x] Purge `src/ui-system/theme/global.css` — remove all MD3 tokens, Spark Realm HSL, dead code
+- [x] Migrate `ui_kits/extension/v2/tokens.css` into `src/ui-system/theme/global.css`
+- [x] Add Google Fonts link to `src/entrypoints/popup/index.html`
+- [x] Verify build passes (`npm run build`)
 
-#### P0-B: Mode Rename & Agent Rules (parallelizable with P0-A)
-1. Rename mode IDs in all files listed in Section 4.2
-2. Rewrite `GEMINI.md` with v2 design rules
-3. Rewrite `CLAUDE.md` with v2 design rules
-4. Update `.agent/workflows/` — replace MD3 references with v2
-5. Archive `docs/redesign/` into `docs/archive/redesign-ink-and-glass/`
-6. Archive `docs/07-design/v2/style-options/` and `STYLE_C_HANDOFF.md`
+#### P0-B: Mode Rename & Agent Rules (parallelizable with P0-A) ✅ DONE
+- [x] Rename mode IDs in all files listed in Section 4.2
+- [x] Rewrite `GEMINI.md` with v2 design rules
+- [x] Rewrite `CLAUDE.md` with v2 design rules
+- [x] Update `.agent/workflows/` — replace MD3 references with v2
+- [x] Archive `docs/redesign/` into `docs/archive/redesign-ink-and-glass/`
+- [x] Archive `docs/07-design/v2/style-options/` and `STYLE_C_HANDOFF.md`
 
-#### P0-C: Integration Verification (after P0-A and P0-B merge)
-1. Fix all TypeScript errors from Tailwind removal + mode rename
-2. Verify `npm run build` passes
-3. Verify extension loads in Chrome
-4. Commit checkpoint: "feat: v2 foundation — tokens, mode rename, Tailwind removal"
+#### P0-C: Integration Verification (after P0-A and P0-B merge) ✅ DONE
+- [x] Fix all TypeScript errors from Tailwind removal + mode rename
+- [x] Verify `npm run build` passes
+- [x] Verify extension loads in Chrome
+- [x] Commit checkpoint: "feat: v2 foundation — tokens, mode rename, Tailwind removal"
 
 ### Phase 1: Primitives (BLOCKING)
 
