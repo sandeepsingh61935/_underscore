@@ -13,20 +13,20 @@
  * Use these instead of string literals
  */
 export const MODE_NAMES = {
-    WALK: 'walk',
-    SPRINT: 'sprint',
-    VAULT: 'vault',
-    GEN: 'gen',
+    EPHEMERAL: 'ephemeral',
+    LOCAL: 'local',
+    CLOUD: 'cloud',
+    AI: 'ai',
 } as const;
 
 /**
  * Display names for modes (Business/User facing)
  */
 export const MODE_DISPLAY_NAMES = {
-    [MODE_NAMES.WALK]: 'Focus',
-    [MODE_NAMES.SPRINT]: 'Capture',
-    [MODE_NAMES.VAULT]: 'Memory',
-    [MODE_NAMES.GEN]: 'Neural',
+    [MODE_NAMES.EPHEMERAL]: 'Ephemeral',
+    [MODE_NAMES.LOCAL]: 'Local',
+    [MODE_NAMES.CLOUD]: 'Cloud',
+    [MODE_NAMES.AI]: 'AI',
 } as const;
 
 /**
