@@ -5,39 +5,30 @@
 When working on ANY UI code (components, views, styles), you MUST:
 
 1. **Read the pre-flight checklist first**: `.agent/workflows/ui-preflight.md`
-2. **Follow MD3 workflow**: `.agent/workflows/md3-ui.md`
-3. **Reference design tokens**: `.agent/workflows/md3-tokens-reference.md`
+2. **Follow V2 workflow**: reference wireframe JSX in `ui_kits/extension/v2/`
 
 ### Automatic Triggers
 
 | If working on... | Then follow... |
 |------------------|----------------|
-| New component | `/md3-ui` workflow |
-| Fixing UI | `/design-audit` workflow |
+| New component | wireframe JSX as implementation spec |
 | Any UI changes | `/ui-preflight` checklist |
 
 ### Non-Negotiables
 
-- ❌ **Never** use hardcoded colors (no `#3B82F6`, no `bg-blue-500`)
-- ❌ **Never** skip hover/focus/active states
-- ❌ **Never** use Tailwind default shadows (no `shadow-md`) — use `shadow-elevation-*`
-- ❌ **Never** omit MD3 motion — always specify `ease-standard duration-short`
-- ❌ **Never** complete UI work without Storybook verification
-- ✅ **Always** use MD3 semantic tokens (`bg-primary`, NOT `bg-[#4a6fa2]`)
-- ✅ **Always** use `color-mix()` state layers for hover (8%) and press (12%)
-- ✅ **Always** test in both light and dark mode
-- ✅ **Always** ensure keyboard accessibility
-- ✅ **Always** use ≥ 48px touch targets
+- ❌ **Never** use hardcoded hex colors in `.tsx` files — use `var(--paper)`, `var(--ink)`, `var(--accent)`.
+- ❌ **Never** use Tailwind utility classes — Tailwind is removed.
+- ❌ **Never** use MD3 tokens (`--md-sys-color-*`, `bg-primary`).
+- ❌ **Never** use Inter/Roboto for display fonts — use `var(--serif)`.
+- ✅ **Always** use semantic typography classes: `.u-serif`, `.u-mono`, `.u-kicker`, `.u-caps`.
+- ✅ **Always** use `var(--rule)` or `var(--rule-soft)` for borders.
+- ✅ **Always** reference wireframe JSX in `ui_kits/extension/v2/` as the implementation spec.
 
-### Design System: Material Design 3
+### Design System: V2 "Editorial"
 
-This project uses **Material Design 3** as the single design system.
-- Colors: MD3 semantic roles (`--md-sys-color-primary`, `--md-sys-color-surface`, etc.)
-- Typography: MD3 type scale (display, headline, title, body, label)
-- Motion: MD3 easings (standard, emphasized, decelerate, accelerate)
-- Shapes: MD3 corner tokens (4px → 28px → 9999px)
-- Elevation: MD3 5-level shadow system
-- State layers: 8% hover, 12% focus/press, 38% disabled
+This project uses **V2 Editorial** as the single design system.
+- It is a pure CSS custom properties approach with zero Tailwind dependencies.
+- You must exactly match the wireframes in `ui_kits/extension/v2/`.
 
 ### When Starting UI Work
 
@@ -60,8 +51,5 @@ Follow the strategy in `docs/01-development/git-commit-strategy.md`:
 
 Use these slash commands to trigger workflows:
 
-- `/md3-ui` - Full MD3 component creation workflow
 - `/ui-preflight` - Pre-flight checklist (auto-triggered for any UI work)
-- `/md3-tokens-reference` - Token reference (single source of truth)
-- `/design-audit` - Audit existing components for issues
 - `/ui-prompting-guide` - Reference for writing good prompts
