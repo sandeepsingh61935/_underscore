@@ -89,4 +89,22 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.DOMAIN_DETAILS.backLabel).toBe('Library');
     expect(map.DOMAIN_DETAILS.activeTab).toBe('collections');
   });
+
+  it('SUB_DOMAIN backLabel is resolved from handlers.subDomainBackLabel()', () => {
+    const handlers = makeHandlers();
+    handlers.subDomainBackLabel = vi.fn(() => 'nytimes.com');
+    const map = buildChrome(handlers);
+    expect(map.SUB_DOMAIN.onBack).toBe(handlers.onBackToDomain);
+    expect(map.SUB_DOMAIN.backLabel).toBe('nytimes.com');
+    expect(handlers.subDomainBackLabel).toHaveBeenCalled();
+  });
+
+  it('SUB_DOMAIN re-evaluates backLabel on each buildChrome call', () => {
+    const handlers = makeHandlers();
+    handlers.subDomainBackLabel = vi.fn(() => 'anthropic.com');
+    buildChrome(handlers);
+    handlers.subDomainBackLabel = vi.fn(() => 'theguardian.com');
+    const map = buildChrome(handlers);
+    expect(map.SUB_DOMAIN.backLabel).toBe('theguardian.com');
+  });
 });
