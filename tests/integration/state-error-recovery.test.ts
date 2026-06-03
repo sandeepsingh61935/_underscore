@@ -48,7 +48,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
     modeManager = new ModeManager(eventBus, logger);
 
     // Register mock modes
-    ['walk', 'sprint', 'vault'].forEach((mode) => {
+    ['ephemeral', 'local', 'cloud'].forEach((mode) => {
       modeManager.registerMode({
         name: mode as any,
         capabilities: {} as any,
@@ -75,23 +75,23 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
       await modeStateManager.init();
 
       // Act - Trigger 3 failures
-      await modeStateManager.setMode('sprint'); // Failure 1
-      expect(modeStateManager.getMode()).toBe('sprint'); // In-memory update should still work!
+      await modeStateManager.setMode('local'); // Failure 1
+      expect(modeStateManager.getMode()).toBe('local'); // In-memory update should still work!
 
-      await modeStateManager.setMode('vault'); // Failure 2 (Changed from bike)
-      expect(modeStateManager.getMode()).toBe('vault');
+      await modeStateManager.setMode('cloud'); // Failure 2 (Changed from bike)
+      expect(modeStateManager.getMode()).toBe('cloud');
 
-      await modeStateManager.setMode('walk'); // Failure 3
-      expect(modeStateManager.getMode()).toBe('walk');
+      await modeStateManager.setMode('ephemeral'); // Failure 3
+      expect(modeStateManager.getMode()).toBe('ephemeral');
 
       // Assert - Circuit should be OPEN now
       // Next call should NOT attempt storage write
       storageMock.set.mockClear();
 
-      await modeStateManager.setMode('sprint');
+      await modeStateManager.setMode('local');
 
       // Should still update memory
-      expect(modeStateManager.getMode()).toBe('sprint');
+      expect(modeStateManager.getMode()).toBe('local');
 
       // Should NOT call storage
       expect(storageMock.set).not.toHaveBeenCalled();
@@ -111,8 +111,8 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
       await modeStateManager.init();
 
       // Assert
-      // Should fall back to default 'walk' mode
-      expect(modeStateManager.getMode()).toBe('walk');
+      // Should fall back to default 'ephemeral' mode
+      expect(modeStateManager.getMode()).toBe('ephemeral');
 
       // Should log error
       expect(logger.error).toHaveBeenCalledWith(
@@ -134,7 +134,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
       await modeStateManager.init();
 
       // Assert
-      expect(modeStateManager.getMode()).toBe('walk'); // Fallback
+      expect(modeStateManager.getMode()).toBe('ephemeral'); // Fallback
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Invalid mode in storage'),
         expect.any(Object)
@@ -144,7 +144,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
     it('should repair metadata if invalid but keep valid mode', async () => {
       // Arrange
       storageMock.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: 2, // Valid version to bypass migration
           lastModified: 'not_a_number', // Invalid type to trigger Zod error
@@ -155,7 +155,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
       await modeStateManager.init();
 
       // Assert
-      expect(modeStateManager.getMode()).toBe('sprint'); // Mode preserved
+      expect(modeStateManager.getMode()).toBe('local'); // Mode preserved
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Invalid metadata in storage'),
         expect.any(Object)
@@ -167,7 +167,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
     it('should fallback to default if migration fails', async () => {
       // Arrange
       // v1 state triggers migration
-      storageMock.get.mockResolvedValue({ defaultMode: 'sprint' });
+      storageMock.get.mockResolvedValue({ defaultMode: 'local' });
 
       // Mock migration engine to fail
       // We need to access private property or mock the dependency.
@@ -184,7 +184,7 @@ describe('ModeStateManager Error Recovery & Resilience', () => {
       await modeStateManager.init();
 
       // Assert
-      expect(modeStateManager.getMode()).toBe('walk'); // Fallback
+      expect(modeStateManager.getMode()).toBe('ephemeral'); // Fallback
       expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining('Migration failed'),
         expect.any(Object)

@@ -22,7 +22,7 @@ import {
 describe('ModeTypeSchema', () => {
   it('should validate walk mode', () => {
     // Arrange
-    const mode = 'walk';
+    const mode = 'ephemeral';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -30,13 +30,13 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('walk');
+      expect(result.data).toBe('ephemeral');
     }
   });
 
   it('should validate sprint mode', () => {
     // Arrange
-    const mode = 'sprint';
+    const mode = 'local';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -44,13 +44,13 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('sprint');
+      expect(result.data).toBe('local');
     }
   });
 
   it('should validate vault mode', () => {
     // Arrange
-    const mode = 'vault';
+    const mode = 'cloud';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -58,7 +58,7 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('vault');
+      expect(result.data).toBe('cloud');
     }
   });
 
@@ -92,8 +92,8 @@ describe('StateChangeEventSchema', () => {
   it('should validate complete state change event', () => {
     // Arrange
     const event: StateChangeEvent = {
-      from: 'walk',
-      to: 'sprint',
+      from: 'ephemeral',
+      to: 'local',
       timestamp: Date.now(),
       reason: 'User clicked sprint mode button',
     };
@@ -104,8 +104,8 @@ describe('StateChangeEventSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.from).toBe('walk');
-      expect(result.data.to).toBe('sprint');
+      expect(result.data.from).toBe('ephemeral');
+      expect(result.data.to).toBe('local');
       expect(result.data.timestamp).toBeGreaterThan(0);
     }
   });
@@ -113,8 +113,8 @@ describe('StateChangeEventSchema', () => {
   it('should validate event without optional reason', () => {
     // Arrange
     const event = {
-      from: 'sprint',
-      to: 'vault',
+      from: 'local',
+      to: 'cloud',
       timestamp: Date.now(),
     };
 
@@ -128,9 +128,9 @@ describe('StateChangeEventSchema', () => {
   it('should reject event with missing required fields', () => {
     // Arrange
     const invalidEvents = [
-      { from: 'walk', timestamp: Date.now() }, // Missing 'to'
-      { to: 'sprint', timestamp: Date.now() }, // Missing 'from'
-      { from: 'walk', to: 'sprint' }, // Missing 'timestamp'
+      { from: 'ephemeral', timestamp: Date.now() }, // Missing 'to'
+      { to: 'local', timestamp: Date.now() }, // Missing 'from'
+      { from: 'ephemeral', to: 'local' }, // Missing 'timestamp'
     ];
 
     // Act & Assert
@@ -144,7 +144,7 @@ describe('StateChangeEventSchema', () => {
     // Arrange
     const event = {
       from: 'invalid',
-      to: 'sprint',
+      to: 'local',
       timestamp: Date.now(),
     };
 
@@ -158,8 +158,8 @@ describe('StateChangeEventSchema', () => {
   it('should reject negative or zero timestamps', () => {
     // Arrange
     const events = [
-      { from: 'walk', to: 'sprint', timestamp: -1 },
-      { from: 'walk', to: 'sprint', timestamp: 0 },
+      { from: 'ephemeral', to: 'local', timestamp: -1 },
+      { from: 'ephemeral', to: 'local', timestamp: 0 },
     ];
 
     // Act & Assert
@@ -225,7 +225,7 @@ describe('ModeStateSchema', () => {
   it('should validate complete mode state', () => {
     // Arrange
     const state: ModeState = {
-      currentMode: 'vault',
+      currentMode: 'cloud',
       version: 2,
       metadata: {
         version: 2,
@@ -239,7 +239,7 @@ describe('ModeStateSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.currentMode).toBe('vault');
+      expect(result.data.currentMode).toBe('cloud');
       expect(result.data.version).toBe(2);
     }
   });
@@ -247,7 +247,7 @@ describe('ModeStateSchema', () => {
   it('should apply default version if not provided', () => {
     // Arrange
     const state = {
-      currentMode: 'walk',
+      currentMode: 'ephemeral',
     };
 
     // Act
@@ -279,8 +279,8 @@ describe('ModeTransitionSchema', () => {
   it('should validate allowed transition', () => {
     // Arrange
     const transition = {
-      from: 'walk',
-      to: 'sprint',
+      from: 'ephemeral',
+      to: 'local',
       allowed: true,
     };
 
@@ -297,8 +297,8 @@ describe('ModeTransitionSchema', () => {
   it('should validate blocked transition with reason', () => {
     // Arrange
     const transition = {
-      from: 'vault',
-      to: 'walk',
+      from: 'cloud',
+      to: 'ephemeral',
       allowed: false,
       requiresConfirmation: true,
       reason: 'Switching from Vault to Walk will lose unsaved highlights',
@@ -318,8 +318,8 @@ describe('ModeTransitionSchema', () => {
   it('should validate transition without optional fields', () => {
     // Arrange
     const transition = {
-      from: 'sprint',
-      to: 'vault',
+      from: 'local',
+      to: 'cloud',
       allowed: true,
     };
 
@@ -334,20 +334,20 @@ describe('ModeTransitionSchema', () => {
 describe('Type Inference', () => {
   it('should infer correct TypeScript types', () => {
     // Arrange & Act
-    const mode: ModeType = 'walk';
+    const mode: ModeType = 'ephemeral';
     const event: StateChangeEvent = {
-      from: 'walk',
-      to: 'sprint',
+      from: 'ephemeral',
+      to: 'local',
       timestamp: Date.now(),
     };
     const state: ModeState = {
-      currentMode: 'vault',
+      currentMode: 'cloud',
       version: 2,
     };
 
     // Assert - TypeScript compilation is the test
-    expect(mode).toBe('walk');
-    expect(event.from).toBe('walk');
-    expect(state.currentMode).toBe('vault');
+    expect(mode).toBe('ephemeral');
+    expect(event.from).toBe('ephemeral');
+    expect(state.currentMode).toBe('cloud');
   });
 });

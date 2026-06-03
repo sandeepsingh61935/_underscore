@@ -41,7 +41,7 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
 
     // Default successful storage setup
     mockChromeStorage.sync.get.mockResolvedValue({
-      defaultMode: 'walk',
+      defaultMode: 'ephemeral',
       metadata: { version: 2 },
     });
     mockChromeStorage.sync.set.mockResolvedValue(undefined);
@@ -52,7 +52,7 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
   });
 
   describe('init() Error Boundaries', () => {
-    it('should fallback to "walk" mode if storage read completely fails', async () => {
+    it('should fallback to "ephemeral" mode if storage read completely fails', async () => {
       const error = new Error('Storage disconnected');
       mockChromeStorage.sync.get.mockRejectedValue(error);
 
@@ -65,8 +65,8 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
       );
 
       // Should fallback to default mode
-      expect(stateManager.getMode()).toBe('walk');
-      expect(mockModeManager.activateMode).toHaveBeenCalledWith('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
+      expect(mockModeManager.activateMode).toHaveBeenCalledWith('ephemeral');
     });
 
     it('should handle corrupted state data by falling back to default', async () => {
@@ -83,7 +83,7 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
 
       // Should fallback (validation failure in applyMode or process causes fallback)
       // Note: Current implementation might just validate and fail, we want to ensure it falls back safe.
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
   });
 
@@ -97,13 +97,13 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
       mockChromeStorage.sync.set.mockRejectedValue(persistenceError);
 
       // Attempt to change mode
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
-      // Should be in 'sprint' in memory
-      expect(stateManager.getMode()).toBe('sprint');
+      // Should be in 'local' in memory
+      expect(stateManager.getMode()).toBe('local');
 
       // Should have tried to activate it
-      expect(mockModeManager.activateMode).toHaveBeenCalledWith('sprint');
+      expect(mockModeManager.activateMode).toHaveBeenCalledWith('local');
 
       // Should have logged error specifically as StatePersistenceError or similar wrapped error
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -118,7 +118,7 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
       );
 
       // Should remain in previous mode
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should handle errors during mode activation', async () => {
@@ -132,7 +132,7 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
       // Design choice: Does setMode throw if activation fails?
       // Ideally yes, to let the caller know.
 
-      await expect(stateManager.setMode('vault')).rejects.toThrow('Activation failed');
+      await expect(stateManager.setMode('cloud')).rejects.toThrow('Activation failed');
 
       // Logged?
       expect(mockLogger.error).toHaveBeenCalled();
@@ -145,18 +145,18 @@ describe('ModeStateManager Error Handling & Graceful Degradation', () => {
 
       // First attempt fails
       mockChromeStorage.sync.set.mockRejectedValueOnce(new Error('Network glitch'));
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
       expect(mockLogger.error).toHaveBeenCalled();
 
       // Second attempt succeeds
       mockChromeStorage.sync.set.mockResolvedValue(undefined);
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
       // Check storage was called for vault
       expect(mockChromeStorage.sync.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          defaultMode: 'vault',
+          defaultMode: 'cloud',
         })
       );
     });

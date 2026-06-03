@@ -25,7 +25,7 @@ describe('IModeManager Interface (4 tests)', () => {
   it('1. can registerMode() and activateMode()', async () => {
     // Arrange: Create a minimal test mode
     const testMode: IHighlightMode = {
-      name: 'walk', // ✅ Valid mode name
+      name: 'ephemeral', // ✅ Valid mode name
       capabilities: {
         persistence: 'none',
         undo: false,
@@ -54,7 +54,7 @@ describe('IModeManager Interface (4 tests)', () => {
 
     // Act
     modeManager.registerMode(testMode);
-    await modeManager.activateMode('walk');
+    await modeManager.activateMode('ephemeral');
 
     // Assert
     expect(testMode.onActivate).toHaveBeenCalledOnce();
@@ -64,7 +64,7 @@ describe('IModeManager Interface (4 tests)', () => {
   it('2. getCurrentMode() returns correct mode', async () => {
     // Arrange
     const mode1: IHighlightMode = {
-      name: 'sprint', // ✅ Valid mode name
+      name: 'local', // ✅ Valid mode name
       capabilities: {
         persistence: 'local',
         undo: true,
@@ -92,13 +92,13 @@ describe('IModeManager Interface (4 tests)', () => {
     };
 
     modeManager.registerMode(mode1);
-    await modeManager.activateMode('sprint');
+    await modeManager.activateMode('local');
 
     // Act
     const currentMode = modeManager.getCurrentMode();
 
     // Assert
-    expect(currentMode.name).toBe('sprint');
+    expect(currentMode.name).toBe('local');
     expect(currentMode).toBe(mode1); // Same instance
   });
 
@@ -106,7 +106,7 @@ describe('IModeManager Interface (4 tests)', () => {
     // Arrange
     const mockCreateHighlight = vi.fn().mockResolvedValue('test-id-123');
     const testMode: IHighlightMode = {
-      name: 'walk', // ✅ Valid mode name
+      name: 'ephemeral', // ✅ Valid mode name
       capabilities: {
         persistence: 'none',
         undo: false,
@@ -134,7 +134,7 @@ describe('IModeManager Interface (4 tests)', () => {
     };
 
     modeManager.registerMode(testMode);
-    await modeManager.activateMode('walk');
+    await modeManager.activateMode('ephemeral');
 
     const mockSelection = {} as Selection;
 

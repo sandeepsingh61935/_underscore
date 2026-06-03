@@ -108,9 +108,9 @@ describe('Command Flow Integration', () => {
   describe('Walk Mode (Ephemeral)', () => {
     it('should create, undo, and redo highlights without persistence', async () => {
       // 1. Activate Walk Mode
-      await modeManager.activateMode('walk');
+      await modeManager.activateMode('ephemeral');
       const walkMode = modeManager.getCurrentMode();
-      expect(walkMode.name).toBe('walk');
+      expect(walkMode.name).toBe('ephemeral');
 
       // 2. Execute Create Command
       const selection = createSelection();
@@ -142,7 +142,7 @@ describe('Command Flow Integration', () => {
   describe('Sprint Mode (Local Persistence)', () => {
     it('should create and store highlights locally', async () => {
       // 1. Activate Sprint Mode
-      await modeManager.activateMode('sprint');
+      await modeManager.activateMode('local');
       const sprintMode = modeManager.getCurrentMode();
 
       // 2. Execute Create
@@ -175,7 +175,7 @@ describe('Command Flow Integration', () => {
   describe('Command Stack Behavior', () => {
     it('should limit stack size and drop oldest commands', async () => {
       const smallStack = new CommandStack(2);
-      await modeManager.activateMode('walk');
+      await modeManager.activateMode('ephemeral');
 
       // Excecute 3 commands
       for (let i = 0; i < 3; i++) {
@@ -204,7 +204,7 @@ describe('Command Flow Integration', () => {
     });
 
     it('should clear redo stack on new execution', async () => {
-      await modeManager.activateMode('walk');
+      await modeManager.activateMode('ephemeral');
       const cmd1 = new CreateHighlightCommand(
         createSelection(),
         'red',
@@ -230,7 +230,7 @@ describe('Command Flow Integration', () => {
   });
 
   it('should handle mode errors gracefully without crashing stack', async () => {
-    await modeManager.activateMode('walk');
+    await modeManager.activateMode('ephemeral');
 
     // Spy on mode to throw error
     const walkMode = modeManager.getCurrentMode();

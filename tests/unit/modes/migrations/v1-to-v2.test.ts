@@ -15,11 +15,11 @@ import { migrateV1ToV2 } from '@/content/modes/migrations/v1-to-v2';
 describe('v1 → v2 Migration', () => {
   describe('Valid v1 states', () => {
     it('should migrate walk mode correctly', async () => {
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
 
       const result = await migrateV1ToV2(v1State);
 
-      expect(result.currentMode).toBe('walk');
+      expect(result.currentMode).toBe('ephemeral');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
       expect(result.metadata.version).toBe(2);
@@ -27,21 +27,21 @@ describe('v1 → v2 Migration', () => {
     });
 
     it('should migrate sprint mode correctly', async () => {
-      const v1State = { defaultMode: 'sprint' };
+      const v1State = { defaultMode: 'local' };
 
       const result = await migrateV1ToV2(v1State);
 
-      expect(result.currentMode).toBe('sprint');
+      expect(result.currentMode).toBe('local');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
     });
 
     it('should migrate vault mode correctly', async () => {
-      const v1State = { defaultMode: 'vault' };
+      const v1State = { defaultMode: 'cloud' };
 
       const result = await migrateV1ToV2(v1State);
 
-      expect(result.currentMode).toBe('vault');
+      expect(result.currentMode).toBe('cloud');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
     });
@@ -54,7 +54,7 @@ describe('v1 → v2 Migration', () => {
       const result = await migrateV1ToV2(v1State);
 
       // Should fallback to safe default
-      expect(result.currentMode).toBe('walk');
+      expect(result.currentMode).toBe('ephemeral');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
     });
@@ -65,7 +65,7 @@ describe('v1 → v2 Migration', () => {
       const result = await migrateV1ToV2(v1State);
 
       // Should fallback to default state
-      expect(result.currentMode).toBe('walk');
+      expect(result.currentMode).toBe('ephemeral');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
     });
@@ -74,29 +74,29 @@ describe('v1 → v2 Migration', () => {
       const result1 = await migrateV1ToV2(null as any);
       const result2 = await migrateV1ToV2(undefined as any);
 
-      expect(result1.currentMode).toBe('walk');
+      expect(result1.currentMode).toBe('ephemeral');
       expect(result1.version).toBe(2);
 
-      expect(result2.currentMode).toBe('walk');
+      expect(result2.currentMode).toBe('ephemeral');
       expect(result2.version).toBe(2);
     });
   });
 
   describe('Preference preservation', () => {
     it('should preserve user mode choice through migration', async () => {
-      // User had chosen 'vault' in v1
-      const v1State = { defaultMode: 'vault' };
+      // User had chosen 'cloud' in v1
+      const v1State = { defaultMode: 'cloud' };
 
       const result = await migrateV1ToV2(v1State);
 
       // Their choice should be preserved
-      expect(result.currentMode).toBe('vault');
+      expect(result.currentMode).toBe('cloud');
     });
 
     it('should generate fresh timestamp on migration', async () => {
       const before = Date.now();
 
-      const v1State = { defaultMode: 'sprint' };
+      const v1State = { defaultMode: 'local' };
       const result = await migrateV1ToV2(v1State);
 
       const after = Date.now();
@@ -109,7 +109,7 @@ describe('v1 → v2 Migration', () => {
   describe('Edge cases', () => {
     it('should handle extra v1 fields gracefully', async () => {
       const v1State = {
-        defaultMode: 'walk',
+        defaultMode: 'ephemeral',
         someOldField: 'value',
         anotherField: 123,
       };
@@ -117,7 +117,7 @@ describe('v1 → v2 Migration', () => {
       const result = await migrateV1ToV2(v1State);
 
       // Should extract only what's needed
-      expect(result.currentMode).toBe('walk');
+      expect(result.currentMode).toBe('ephemeral');
       expect(result.version).toBe(2);
       // Extra fields not migrated (v2 has stricter schema)
     });
@@ -128,7 +128,7 @@ describe('v1 → v2 Migration', () => {
       const result = await migrateV1ToV2(v1State);
 
       // Should normalize or fallback
-      expect(result.currentMode).toBe('walk'); // Fallback to safe default
+      expect(result.currentMode).toBe('ephemeral'); // Fallback to safe default
     });
   });
 });

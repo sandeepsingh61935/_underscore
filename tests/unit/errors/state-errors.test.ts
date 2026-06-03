@@ -25,7 +25,7 @@ describe('State Error Hierarchy', () => {
     it('should extend AppError', () => {
       const errors = [
         new StateValidationError('test'),
-        new StateTransitionError('test', 'walk', 'gen'),
+        new StateTransitionError('test', 'ephemeral', 'gen'),
         new StatePersistenceError('test'),
         new StateMigrationError('test', 1, 2),
       ];
@@ -50,7 +50,7 @@ describe('State Error Hierarchy', () => {
     it('should have unique error codes for each type', () => {
       const codes = [
         new StateValidationError('test').code,
-        new StateTransitionError('test', 'walk', 'sprint').code,
+        new StateTransitionError('test', 'ephemeral', 'local').code,
         new StatePersistenceError('test').code,
         new StateMigrationError('test', 1, 2).code,
       ];
@@ -63,7 +63,7 @@ describe('State Error Hierarchy', () => {
     it('should follow STATE_XXX naming convention', () => {
       const errors = [
         new StateValidationError('test'),
-        new StateTransitionError('test', 'walk', 'sprint'),
+        new StateTransitionError('test', 'ephemeral', 'local'),
         new StatePersistenceError('test'),
         new StateMigrationError('test', 1, 2),
       ];
@@ -79,7 +79,7 @@ describe('State Error Hierarchy', () => {
       const error = new StateValidationError('Invalid mode', {
         field: 'defaultMode',
         value: 'invalid',
-        validValues: ['walk', 'sprint', 'vault'],
+        validValues: ['ephemeral', 'local', 'cloud'],
       });
 
       expect(error.context).toMatchObject({
@@ -89,10 +89,10 @@ describe('State Error Hierarchy', () => {
     });
 
     it('should include from/to modes in transition errors', () => {
-      const error = new StateTransitionError('Transition not allowed', 'walk', 'gen');
+      const error = new StateTransitionError('Transition not allowed', 'ephemeral', 'gen');
 
       expect(error.context).toMatchObject({
-        from: 'walk',
+        from: 'ephemeral',
         to: 'gen',
       });
     });
@@ -195,7 +195,7 @@ describe('State Error Hierarchy', () => {
     it('should have descriptive, user-friendly messages', () => {
       const errors = [
         new StateValidationError('Mode "invalid" is not recognized'),
-        new StateTransitionError('Cannot transition from walk to gen', 'walk', 'gen'),
+        new StateTransitionError('Cannot transition from walk to gen', 'ephemeral', 'gen'),
         new StatePersistenceError('Failed to save state: quota exceeded'),
         new StateMigrationError('Cannot migrate from v1 to v3: missing v2', 1, 3),
       ];
@@ -237,14 +237,14 @@ describe('State Error Hierarchy', () => {
   describe('Error-specific functionality', () => {
     describe('StateTransitionError', () => {
       it('should store from and to modes', () => {
-        const error = new StateTransitionError('blocked', 'sprint', 'vault');
+        const error = new StateTransitionError('blocked', 'local', 'cloud');
 
-        expect(error.from).toBe('sprint');
-        expect(error.to).toBe('vault');
+        expect(error.from).toBe('local');
+        expect(error.to).toBe('cloud');
       });
 
       it('should handle same from/to mode (no-op transition)', () => {
-        const error = new StateTransitionError('redundant', 'walk', 'walk');
+        const error = new StateTransitionError('redundant', 'ephemeral', 'ephemeral');
 
         expect(error.from).toBe(error.to);
       });

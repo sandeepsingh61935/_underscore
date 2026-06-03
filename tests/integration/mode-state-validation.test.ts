@@ -79,11 +79,11 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   it('should pass full validation flow: set -> persist -> reload', async () => {
-    // 1. Set mode to 'sprint'
-    await stateManager.setMode('sprint');
+    // 1. Set mode to 'local'
+    await stateManager.setMode('local');
 
     // Verify current state
-    expect(stateManager.getMode()).toBe('sprint');
+    expect(stateManager.getMode()).toBe('local');
 
     // 2. Simulate app restart (new instance)
     const newStateManager = new ModeStateManager(mockModeManager, mockLogger);
@@ -92,7 +92,7 @@ describe('ModeStateManager - Validation Integration', () => {
     await newStateManager.init();
 
     // 4. Verify state was persisted and reloaded correctly
-    expect(newStateManager.getMode()).toBe('sprint');
+    expect(newStateManager.getMode()).toBe('local');
     expect(mockLogger.error).not.toHaveBeenCalled();
   });
 
@@ -106,7 +106,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     // 3. Verify fallback
     // The implementation should detect corruption and fall back to safe default
-    expect(stateManager.getMode()).toBe('walk'); // Safe default
+    expect(stateManager.getMode()).toBe('ephemeral'); // Safe default
 
     // Note: Logging verification skipped due to test harness flakiness,
     // but fallback confirms the error path was taken.
@@ -127,9 +127,9 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   it('should maintain state consistency on validation failure', async () => {
-    // 1. Set valid initial state (use 'sprint' so persistence actually happens)
-    // Default is 'walk', so setMode('walk') is a no-op and doesn't write to storage
-    await stateManager.setMode('sprint');
+    // 1. Set valid initial state (use 'local' so persistence actually happens)
+    // Default is 'ephemeral', so setMode('ephemeral') is a no-op and doesn't write to storage
+    await stateManager.setMode('local');
 
     // 2. Attempt invalid transition
     try {
@@ -138,10 +138,10 @@ describe('ModeStateManager - Validation Integration', () => {
       // Ignore expected error
     }
 
-    // 3. Verify state remains 'sprint'
-    expect(stateManager.getMode()).toBe('sprint');
+    // 3. Verify state remains 'local'
+    expect(stateManager.getMode()).toBe('local');
 
-    // 4. Verify storage remains 'sprint'
-    expect(storageData['defaultMode']).toBe('sprint');
+    // 4. Verify storage remains 'local'
+    expect(storageData['defaultMode']).toBe('local');
   });
 });

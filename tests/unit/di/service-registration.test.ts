@@ -155,7 +155,7 @@ describe('Service Registration (8 tests)', () => {
     modeManager.registerMode(walkMode);
 
     // Assert: Should not throw
-    expect(() => modeManager.activateMode('walk')).not.toThrow();
+    expect(() => modeManager.activateMode('ephemeral')).not.toThrow();
     expect(modeManager.getCurrentMode()).toBe(walkMode);
   });
 

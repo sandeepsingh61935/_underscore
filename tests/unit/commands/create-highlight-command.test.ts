@@ -41,7 +41,7 @@ vi.mock('@/content/utils/range-converter', () => ({
  */
 function createMockModeManager() {
   const mockMode: IHighlightMode = {
-    name: 'sprint',
+    name: 'local',
     capabilities: {
       persistence: 'local',
       undo: true,

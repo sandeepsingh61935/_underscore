@@ -8,19 +8,19 @@ describe('RepositoryFactory', () => {
 
   describe('getMode()', () => {
     it('should default to walk mode', () => {
-      expect(RepositoryFactory.getMode()).toBe('walk');
+      expect(RepositoryFactory.getMode()).toBe('ephemeral');
     });
   });
 
   describe('setMode()', () => {
     it('should update current mode', () => {
-      RepositoryFactory.setMode('sprint');
-      expect(RepositoryFactory.getMode()).toBe('sprint');
+      RepositoryFactory.setMode('local');
+      expect(RepositoryFactory.getMode()).toBe('local');
     });
 
     it('should accept vault mode', () => {
-      RepositoryFactory.setMode('vault');
-      expect(RepositoryFactory.getMode()).toBe('vault');
+      RepositoryFactory.setMode('cloud');
+      expect(RepositoryFactory.getMode()).toBe('cloud');
     });
   });
 

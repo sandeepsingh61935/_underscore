@@ -88,7 +88,7 @@ describe('State Migration Infrastructure', () => {
       engine.registerMigration(migration1to2);
       engine.registerMigration(migration2to3);
 
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
       const result = await engine.migrate(v1State, 1, 3);
 
       expect(result.success).toBe(true);
@@ -103,7 +103,7 @@ describe('State Migration Infrastructure', () => {
         fromVersion: 1,
         toVersion: 2,
         migrate: async (state: any) => ({
-          currentMode: state.defaultMode || 'walk',
+          currentMode: state.defaultMode || 'ephemeral',
           version: 2,
           metadata: {
             version: 2,
@@ -115,12 +115,12 @@ describe('State Migration Infrastructure', () => {
 
       engine.registerMigration(migration);
 
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
       const result = await engine.migrate(v1State, 1, 2);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.value.currentMode).toBe('walk');
+        expect(result.value.currentMode).toBe('ephemeral');
         expect(result.value.version).toBe(2);
         expect(result.value.metadata).toBeDefined();
       }
@@ -136,7 +136,7 @@ describe('State Migration Infrastructure', () => {
 
       engine.registerMigration(migration);
 
-      const v2State = { version: 2, currentMode: 'walk' };
+      const v2State = { version: 2, currentMode: 'ephemeral' };
       const result = await engine.migrate(v2State, 2, 2);
 
       expect(result.success).toBe(true);
@@ -160,7 +160,7 @@ describe('State Migration Infrastructure', () => {
 
       engine.registerMigration(failingMigration);
 
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
       const result = await engine.migrate(v1State, 1, 2);
 
       expect(result.success).toBe(false);
@@ -183,7 +183,7 @@ describe('State Migration Infrastructure', () => {
 
       engine.registerMigration(migration);
 
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
       const result = await engine.migrate(v1State, 1, 2);
 
       // Migration completes but should warn about invalid result
@@ -206,7 +206,7 @@ describe('State Migration Infrastructure', () => {
 
       engine.registerMigration(migration);
 
-      await engine.migrate({ defaultMode: 'walk' }, 1, 2);
+      await engine.migrate({ defaultMode: 'ephemeral' }, 1, 2);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.stringContaining('Migrating'),
@@ -221,10 +221,10 @@ describe('State Migration Infrastructure', () => {
     });
 
     it('should detect state version from metadata', () => {
-      const v2State = { version: 2, currentMode: 'walk' };
+      const v2State = { version: 2, currentMode: 'ephemeral' };
       expect(engine.detectVersion(v2State)).toBe(2);
 
-      const v1State = { defaultMode: 'walk' };
+      const v1State = { defaultMode: 'ephemeral' };
       expect(engine.detectVersion(v1State)).toBe(1);
     });
   });
@@ -235,7 +235,7 @@ describe('State Migration Infrastructure', () => {
         fromVersion: 1,
         toVersion: 2,
         migrate: async (state: any) => ({
-          currentMode: state.defaultMode || 'walk',
+          currentMode: state.defaultMode || 'ephemeral',
           version: 2,
         }),
         description: 'v1→v2',
@@ -255,13 +255,13 @@ describe('State Migration Infrastructure', () => {
       engine.registerMigration(migration1to2);
       engine.registerMigration(migration2to3);
 
-      const v1State = { defaultMode: 'sprint' };
+      const v1State = { defaultMode: 'local' };
       const result = await engine.migrate(v1State, 1, 3);
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.value.version).toBe(3);
-        expect(result.value.currentMode).toBe('sprint');
+        expect(result.value.currentMode).toBe('local');
         expect(result.value.newField).toBe('added in v3');
       }
     });

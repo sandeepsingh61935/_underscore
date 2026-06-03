@@ -86,7 +86,7 @@ describe('IPC Layer - Integration Tests', () => {
       messageBus.subscribe('MODE_CHANGE', handler2);
       messageBus.subscribe('HIGHLIGHT_CREATED', handler3); // Different type
 
-      await messageBus.publish('MODE_CHANGE', { mode: 'vault', timestamp: Date.now() });
+      await messageBus.publish('MODE_CHANGE', { mode: 'cloud', timestamp: Date.now() });
 
       expect(handler1).toHaveBeenCalledOnce();
       expect(handler2).toHaveBeenCalledOnce();

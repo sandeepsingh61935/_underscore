@@ -59,17 +59,17 @@ describe('PopupStateManager - Edge Cases', () => {
 
       // Act: Rapidly switch modes (simulating impatient user)
       const switches = [
-        stateManager.switchModeOptimistically('sprint'),
-        stateManager.switchModeOptimistically('vault'),
-        stateManager.switchModeOptimistically('walk'),
+        stateManager.switchModeOptimistically('local'),
+        stateManager.switchModeOptimistically('cloud'),
+        stateManager.switchModeOptimistically('ephemeral'),
       ];
 
       // Assert: All should complete without errors
       await expect(Promise.all(switches)).resolves.toBeDefined();
 
-      // Final state should be 'walk' (last switch)
+      // Final state should be 'ephemeral' (last switch)
       const finalState = stateManager.getState();
-      expect(finalState.currentMode).toBe('walk');
+      expect(finalState.currentMode).toBe('ephemeral');
       expect(finalState.loading).toBe(false);
     });
 
@@ -79,7 +79,7 @@ describe('PopupStateManager - Edge Cases', () => {
         () =>
           new Promise((resolve) =>
             setTimeout(
-              () => resolve({ success: true, data: { mode: 'walk', count: 0 } }),
+              () => resolve({ success: true, data: { mode: 'ephemeral', count: 0 } }),
               100
             )
           )
@@ -87,7 +87,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
       // Act: Start init and immediately try to switch mode
       const initPromise = stateManager.initialize(123);
-      const switchPromise = stateManager.switchModeOptimistically('sprint');
+      const switchPromise = stateManager.switchModeOptimistically('local');
 
       // Assert: Both should complete
       await expect(Promise.all([initPromise, switchPromise])).resolves.toBeDefined();
@@ -96,7 +96,7 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should handle concurrent refreshStats calls', async () => {
       // Arrange: Mock both init calls
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 0 } });
 
       await stateManager.initialize(123);
@@ -125,12 +125,12 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should rollback state when mode switch fails', async () => {
       // Arrange: Initialize with walk mode
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 10 } });
       await stateManager.initialize(123);
 
       const initialState = stateManager.getState();
-      expect(initialState.currentMode).toBe('walk');
+      expect(initialState.currentMode).toBe('ephemeral');
 
       // Act: Try to switch but fail
       sendSpy.mockResolvedValueOnce({
@@ -138,11 +138,11 @@ describe('PopupStateManager - Edge Cases', () => {
         error: 'Network timeout',
       });
 
-      await expect(stateManager.switchModeOptimistically('sprint')).rejects.toThrow();
+      await expect(stateManager.switchModeOptimistically('local')).rejects.toThrow();
 
-      // Assert: State should be rolled back to 'walk'
+      // Assert: State should be rolled back to 'ephemeral'
       const rolledBackState = stateManager.getState();
-      expect(rolledBackState.currentMode).toBe('walk');
+      expect(rolledBackState.currentMode).toBe('ephemeral');
       expect(rolledBackState.stats.totalHighlights).toBe(10);
       expect(rolledBackState.error).toBeInstanceOf(AppError);
     });
@@ -150,7 +150,7 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should preserve stats during failed mode switch', async () => {
       // Arrange
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 42 } });
       await stateManager.initialize(123);
 
@@ -158,7 +158,7 @@ describe('PopupStateManager - Edge Cases', () => {
       sendSpy.mockResolvedValueOnce({ success: false, error: 'Fail' });
 
       try {
-        await stateManager.switchModeOptimistically('vault');
+        await stateManager.switchModeOptimistically('cloud');
       } catch {
         // Expected
       }
@@ -172,20 +172,20 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should handle partial rollback on network error', async () => {
       // Arrange: Successful init
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 10 } });
       await stateManager.initialize(123);
 
       // Act: Network error during switch
       sendSpy.mockRejectedValueOnce(new Error('Network unreachable'));
 
-      await expect(stateManager.switchModeOptimistically('sprint')).rejects.toThrow(
+      await expect(stateManager.switchModeOptimistically('local')).rejects.toThrow(
         'Network unreachable'
       );
 
       // Assert: State rolled back, error captured
       const state = stateManager.getState();
-      expect(state.currentMode).toBe('walk');
+      expect(state.currentMode).toBe('ephemeral');
       expect(state.error).toBeDefined();
       expect(state.loading).toBe(false);
     });
@@ -208,7 +208,7 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should handle timeout during mode switch', async () => {
       // Arrange: Init succeeds
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 0 } });
       await stateManager.initialize(123);
 
@@ -220,7 +220,7 @@ describe('PopupStateManager - Edge Cases', () => {
           )
       );
 
-      await expect(stateManager.switchModeOptimistically('sprint')).rejects.toThrow(
+      await expect(stateManager.switchModeOptimistically('local')).rejects.toThrow(
         'Timeout'
       );
 
@@ -232,7 +232,7 @@ describe('PopupStateManager - Edge Cases', () => {
     it('should handle malformed response from background', async () => {
       // Arrange: Background returns invalid data
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 0 } });
       await stateManager.initialize(123);
 
@@ -240,11 +240,11 @@ describe('PopupStateManager - Edge Cases', () => {
       sendSpy.mockResolvedValueOnce({ success: true } as any);
 
       // Assert: Should reject malformed response
-      await expect(stateManager.switchModeOptimistically('sprint')).rejects.toThrow();
+      await expect(stateManager.switchModeOptimistically('local')).rejects.toThrow();
 
       // State should be rolled back
       const state = stateManager.getState();
-      expect(state.currentMode).toBe('walk'); // Rolled back to original
+      expect(state.currentMode).toBe('ephemeral'); // Rolled back to original
       expect(state.error).toBeDefined();
     });
   });
@@ -262,7 +262,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'sprint', count: 0 },
+        data: { mode: 'local', count: 0 },
       });
 
       // Act
@@ -292,7 +292,7 @@ describe('PopupStateManager - Edge Cases', () => {
       });
 
       sendSpy
-        .mockResolvedValueOnce({ success: true, data: { mode: 'walk' } })
+        .mockResolvedValueOnce({ success: true, data: { mode: 'ephemeral' } })
         .mockResolvedValueOnce({ success: true, data: { count: 0 } });
 
       // Act: Should not throw even if subscriber errors
@@ -313,7 +313,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'walk', count: 0 },
+        data: { mode: 'ephemeral', count: 0 },
       });
 
       await stateManager.initialize(123);
@@ -324,7 +324,7 @@ describe('PopupStateManager - Edge Cases', () => {
 
       // Trigger another state change
       sendSpy.mockResolvedValue({ success: true, data: {} });
-      await stateManager.switchModeOptimistically('sprint');
+      await stateManager.switchModeOptimistically('local');
 
       // Assert: Subscriber not called after unsubscribe
       expect(subscriber.mock.calls.length).toBe(callCountBefore);
@@ -363,7 +363,7 @@ describe('PopupStateManager - Edge Cases', () => {
       // Arrange & Act
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'walk', count: 0 },
+        data: { mode: 'ephemeral', count: 0 },
       });
       await stateManager.initialize(123);
 
@@ -377,7 +377,7 @@ describe('PopupStateManager - Edge Cases', () => {
       // Arrange & Act
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'vault', count: 999999 },
+        data: { mode: 'cloud', count: 999999 },
       });
       await stateManager.initialize(123);
 
@@ -391,7 +391,7 @@ describe('PopupStateManager - Edge Cases', () => {
       // Arrange & Act: Chrome sometimes uses -1 for special tabs
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'walk', count: 0 },
+        data: { mode: 'ephemeral', count: 0 },
       });
 
       // Should not throw
@@ -404,7 +404,7 @@ describe('PopupStateManager - Edge Cases', () => {
       // Arrange
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'walk', count: 10 },
+        data: { mode: 'ephemeral', count: 10 },
       });
       await stateManager.initialize(123);
 
@@ -422,18 +422,18 @@ describe('PopupStateManager - Edge Cases', () => {
       // Arrange
       sendSpy.mockResolvedValue({
         success: true,
-        data: { mode: 'walk', count: 10 },
+        data: { mode: 'ephemeral', count: 10 },
       });
       await stateManager.initialize(123);
 
       // Act: Try to mutate returned state
       const state = stateManager.getState();
-      (state as any).currentMode = 'sprint'; // Force mutation
+      (state as any).currentMode = 'local'; // Force mutation
       (state.stats as any).totalHighlights = 999;
 
       // Assert: Internal state unchanged
       const freshState = stateManager.getState();
-      expect(freshState.currentMode).toBe('walk');
+      expect(freshState.currentMode).toBe('ephemeral');
       expect(freshState.stats.totalHighlights).toBe(10);
     });
   });

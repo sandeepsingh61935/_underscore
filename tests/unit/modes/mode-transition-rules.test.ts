@@ -19,7 +19,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 describe('Mode Transition Rules', () => {
   describe('Transition Matrix Completeness', () => {
     it('should include all 9 combinations (3x3 matrix)', () => {
-      const modes: ModeType[] = ['walk', 'sprint', 'vault'];
+      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
       const expectedTransitions = modes.length * modes.length; // 3x3 = 9
 
       let actualTransitions = 0;
@@ -35,7 +35,7 @@ describe('Mode Transition Rules', () => {
     });
 
     it('should have no undefined transitions', () => {
-      const modes: ModeType[] = ['walk', 'sprint', 'vault'];
+      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
 
       for (const from of modes) {
         for (const to of modes) {
@@ -50,7 +50,7 @@ describe('Mode Transition Rules', () => {
 
   describe('Specific Transition Rules', () => {
     it('should allow walk → sprint without confirmation', () => {
-      const rule = getTransitionRule('walk', 'sprint');
+      const rule = getTransitionRule('ephemeral', 'local');
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(false);
@@ -58,7 +58,7 @@ describe('Mode Transition Rules', () => {
     });
 
     it('should allow sprint → vault with confirmation warning', () => {
-      const rule = getTransitionRule('sprint', 'vault');
+      const rule = getTransitionRule('local', 'cloud');
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(true);
@@ -66,7 +66,7 @@ describe('Mode Transition Rules', () => {
     });
 
     it('should allow vault → walk with data loss warning', () => {
-      const rule = getTransitionRule('vault', 'walk');
+      const rule = getTransitionRule('cloud', 'ephemeral');
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(true);
@@ -74,7 +74,7 @@ describe('Mode Transition Rules', () => {
     });
 
     it('should handle same mode transition as no-op', () => {
-      const modes: ModeType[] = ['walk', 'sprint', 'vault'];
+      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
 
       for (const mode of modes) {
         const rule = getTransitionRule(mode, mode);
@@ -88,18 +88,18 @@ describe('Mode Transition Rules', () => {
   describe('Transition Helpers', () => {
     it('should correctly determine if transition is allowed via canTransition', () => {
       // Allowed transitions
-      expect(canTransition('walk', 'sprint')).toBe(true);
-      expect(canTransition('sprint', 'vault')).toBe(true);
-      expect(canTransition('vault', 'walk')).toBe(true);
+      expect(canTransition('ephemeral', 'local')).toBe(true);
+      expect(canTransition('local', 'cloud')).toBe(true);
+      expect(canTransition('cloud', 'ephemeral')).toBe(true);
 
       // Same mode (no-op, but allowed)
-      expect(canTransition('walk', 'walk')).toBe(true);
+      expect(canTransition('ephemeral', 'ephemeral')).toBe(true);
     });
 
     it('should return detailed reason for blocked transitions', () => {
       // If we ever block a transition (future requirement), the reason should be clear
       // For now, all transitions are allowed, so we verify reason strings are meaningful
-      const modes: ModeType[] = ['walk', 'sprint', 'vault'];
+      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
 
       for (const from of modes) {
         for (const to of modes) {
@@ -113,7 +113,7 @@ describe('Mode Transition Rules', () => {
 
   describe('Guard Execution (Future)', () => {
     it('should define guard functions for transitions requiring confirmation', () => {
-      const rule = getTransitionRule('sprint', 'vault');
+      const rule = getTransitionRule('local', 'cloud');
 
       // Guard should exist for confirmation-required transitions
       if (rule.requiresConfirmation) {

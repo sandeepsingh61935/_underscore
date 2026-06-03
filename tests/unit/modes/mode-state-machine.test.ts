@@ -30,27 +30,27 @@ describe('ModeStateMachine', () => {
 
   describe('canTransition', () => {
     it('should return true for walk → sprint', () => {
-      expect(stateMachine.canTransition('walk', 'sprint')).toBe(true);
+      expect(stateMachine.canTransition('ephemeral', 'local')).toBe(true);
     });
 
     it('should return true for sprint → vault', () => {
-      expect(stateMachine.canTransition('sprint', 'vault')).toBe(true);
+      expect(stateMachine.canTransition('local', 'cloud')).toBe(true);
     });
 
     it('should return true for vault → walk', () => {
-      expect(stateMachine.canTransition('vault', 'walk')).toBe(true);
+      expect(stateMachine.canTransition('cloud', 'ephemeral')).toBe(true);
     });
 
     it('should return true for same mode transition (no-op)', () => {
-      expect(stateMachine.canTransition('walk', 'walk')).toBe(true);
-      expect(stateMachine.canTransition('sprint', 'sprint')).toBe(true);
-      expect(stateMachine.canTransition('vault', 'vault')).toBe(true);
+      expect(stateMachine.canTransition('ephemeral', 'ephemeral')).toBe(true);
+      expect(stateMachine.canTransition('local', 'local')).toBe(true);
+      expect(stateMachine.canTransition('cloud', 'cloud')).toBe(true);
     });
   });
 
   describe('validateTransition', () => {
     it('should return success result for valid transition', () => {
-      const result = stateMachine.validateTransition('walk', 'sprint');
+      const result = stateMachine.validateTransition('ephemeral', 'local');
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -59,38 +59,38 @@ describe('ModeStateMachine', () => {
     });
 
     it('should include transition details in success result', () => {
-      const result = stateMachine.validateTransition('sprint', 'vault');
+      const result = stateMachine.validateTransition('local', 'cloud');
 
       expect(result.success).toBe(true);
     });
 
     it('should log transition validation', () => {
-      stateMachine.validateTransition('walk', 'sprint');
+      stateMachine.validateTransition('ephemeral', 'local');
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('Validating transition'),
-        expect.objectContaining({ from: 'walk', to: 'sprint' })
+        expect.objectContaining({ from: 'ephemeral', to: 'local' })
       );
     });
   });
 
   describe('executeGuards', () => {
     it('should return true for transitions without guards', async () => {
-      const result = await stateMachine.executeGuards('walk', 'sprint');
+      const result = await stateMachine.executeGuards('ephemeral', 'local');
 
       expect(result).toBe(true);
     });
 
     it('should execute guard function for transitions requiring confirmation', async () => {
       // sprint → vault requires confirmation
-      const result = await stateMachine.executeGuards('sprint', 'vault');
+      const result = await stateMachine.executeGuards('local', 'cloud');
 
       // Should execute guard (currently stub returns true)
       expect(result).toBe(true);
     });
 
     it('should log guard execution', async () => {
-      await stateMachine.executeGuards('sprint', 'vault');
+      await stateMachine.executeGuards('local', 'cloud');
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('guard'),
@@ -101,21 +101,21 @@ describe('ModeStateMachine', () => {
 
   describe('getTransitionReason', () => {
     it('should return descriptive reason for walk → sprint', () => {
-      const reason = stateMachine.getTransitionReason('walk', 'sprint');
+      const reason = stateMachine.getTransitionReason('ephemeral', 'local');
 
       expect(reason).toBeTruthy();
       expect(reason.length).toBeGreaterThan(10);
-      expect(reason.toLowerCase()).toContain('sprint');
+      expect(reason.toLowerCase()).toContain('local');
     });
 
     it('should return warning reason for vault → walk', () => {
-      const reason = stateMachine.getTransitionReason('vault', 'walk');
+      const reason = stateMachine.getTransitionReason('cloud', 'ephemeral');
 
       expect(reason).toContain('lost');
     });
 
     it('should return no-op reason for same mode', () => {
-      const reason = stateMachine.getTransitionReason('walk', 'walk');
+      const reason = stateMachine.getTransitionReason('ephemeral', 'ephemeral');
 
       expect(reason.toLowerCase()).toContain('already');
     });
@@ -123,15 +123,15 @@ describe('ModeStateMachine', () => {
 
   describe('Transition logging and metrics', () => {
     it('should log all transition attempts', () => {
-      stateMachine.validateTransition('walk', 'sprint');
+      stateMachine.validateTransition('ephemeral', 'local');
 
       expect(mockLogger.debug).toHaveBeenCalled();
     });
 
     it('should track transition metrics (future)', () => {
       // Future: Verify metrics tracking
-      stateMachine.validateTransition('walk', 'sprint');
-      stateMachine.validateTransition('sprint', 'vault');
+      stateMachine.validateTransition('ephemeral', 'local');
+      stateMachine.validateTransition('local', 'cloud');
 
       // Metrics should be tracked (implementation TBD)
       expect(mockLogger.debug).toHaveBeenCalledTimes(2);
@@ -141,9 +141,9 @@ describe('ModeStateMachine', () => {
   describe('Edge cases', () => {
     it('should handle rapid successive transitions', () => {
       // Simulate user clicking mode buttons rapidly
-      expect(stateMachine.canTransition('walk', 'sprint')).toBe(true);
-      expect(stateMachine.canTransition('sprint', 'vault')).toBe(true);
-      expect(stateMachine.canTransition('vault', 'walk')).toBe(true);
+      expect(stateMachine.canTransition('ephemeral', 'local')).toBe(true);
+      expect(stateMachine.canTransition('local', 'cloud')).toBe(true);
+      expect(stateMachine.canTransition('cloud', 'ephemeral')).toBe(true);
 
       // All should be allowed
       expect(mockLogger.error).not.toHaveBeenCalled();
@@ -151,9 +151,9 @@ describe('ModeStateMachine', () => {
 
     it('should handle full circular transition path', async () => {
       // walk → sprint → vault → walk (full circle)
-      expect(await stateMachine.executeGuards('walk', 'sprint')).toBe(true);
-      expect(await stateMachine.executeGuards('sprint', 'vault')).toBe(true);
-      expect(await stateMachine.executeGuards('vault', 'walk')).toBe(true);
+      expect(await stateMachine.executeGuards('ephemeral', 'local')).toBe(true);
+      expect(await stateMachine.executeGuards('local', 'cloud')).toBe(true);
+      expect(await stateMachine.executeGuards('cloud', 'ephemeral')).toBe(true);
 
       // Should complete without errors
       expect(mockLogger.error).not.toHaveBeenCalled();

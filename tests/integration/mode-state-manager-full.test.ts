@@ -76,7 +76,7 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     // Setup ModeManager with real logic (or minimal mock if dependencies are heavy)
     modeManager = new ModeManager(eventBus, logger);
     // Register basic modes to allow switching
-    ['walk', 'sprint', 'vault'].forEach((mode) => {
+    ['ephemeral', 'local', 'cloud'].forEach((mode) => {
       modeManager.registerMode({
         name: mode as ModeType,
         onActivate: vi.fn().mockResolvedValue(undefined),
@@ -106,44 +106,44 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
   it('Scenario 1: Full Lifecycle (Init -> Set -> Persist -> Reload -> Verify)', async () => {
     // 1. Init
     await stateManager.init();
-    expect(stateManager.getMode()).toBe('walk'); // Default
+    expect(stateManager.getMode()).toBe('ephemeral'); // Default
 
     // 2. Transition
-    await stateManager.setMode('sprint');
-    expect(stateManager.getMode()).toBe('sprint');
+    await stateManager.setMode('local');
+    expect(stateManager.getMode()).toBe('local');
 
     // 3. Verify Persistence
     // Check backing store directly to ensure it was written
-    expect(storageBackingStore).toHaveProperty('defaultMode', 'sprint');
+    expect(storageBackingStore).toHaveProperty('defaultMode', 'local');
 
     // 4. Reload (simulated)
     await simulateReload();
 
     // 5. Verify Resumed State
-    expect(stateManager.getMode()).toBe('sprint'); // Should load from 'storageBackingStore'
+    expect(stateManager.getMode()).toBe('local'); // Should load from 'storageBackingStore'
   });
 
   it('Scenario 2: State Persistence & Validation', async () => {
     await stateManager.init();
 
     // Valid transition
-    await stateManager.setMode('vault');
-    expect(stateManager.getMode()).toBe('vault');
+    await stateManager.setMode('cloud');
+    expect(stateManager.getMode()).toBe('cloud');
 
     // Invalid transition attempts (should fail validation/guards)
     await expect(stateManager.setMode('invalid_mode' as any)).rejects.toThrow();
 
     // State should remain unchanged
-    expect(stateManager.getMode()).toBe('vault');
+    expect(stateManager.getMode()).toBe('cloud');
 
     await simulateReload();
-    expect(stateManager.getMode()).toBe('vault');
+    expect(stateManager.getMode()).toBe('cloud');
   });
 
   it('Scenario 3: Migration on Reload (V1 -> V2)', async () => {
     // 1. Seed V1 State
     storageBackingStore = {
-      defaultMode: 'sprint', // V1 key
+      defaultMode: 'local', // V1 key
       // No metadata
     };
 
@@ -152,15 +152,15 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     await manager.init();
 
     // 3. Verify Migration
-    expect(manager.getMode()).toBe('sprint');
-    expect(storageBackingStore).toHaveProperty('defaultMode', 'sprint'); // V2 key
+    expect(manager.getMode()).toBe('local');
+    expect(storageBackingStore).toHaveProperty('defaultMode', 'local'); // V2 key
     expect(storageBackingStore['metadata']).toBeDefined();
     expect(storageBackingStore['metadata'].version).toBe(2);
 
     // 4. Cleanup check
     // We purposefully DO NOT delete legacy data for safety/backup reasons
     // expect(storageBackingStore['defaultMode']).toBeUndefined();
-    expect(storageBackingStore['defaultMode']).toBe('sprint'); // Legacy data remains
+    expect(storageBackingStore['defaultMode']).toBe('local'); // Legacy data remains
   });
 
   it('Scenario 4: Error Recovery - Storage Failure', async () => {
@@ -172,16 +172,16 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     await manager.init();
 
     // 3. Verify Fallback
-    // Should catch error and default to 'walk'
-    expect(manager.getMode()).toBe('walk');
+    // Should catch error and default to 'ephemeral'
+    expect(manager.getMode()).toBe('ephemeral');
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Failed to initialize'),
       expect.any(Object)
     );
 
     // 4. Verify System works in-memory
-    await manager.setMode('sprint');
-    expect(manager.getMode()).toBe('sprint');
+    await manager.setMode('local');
+    expect(manager.getMode()).toBe('local');
   });
 
   it('Scenario 5: Circuit Breaker resilience', async () => {
@@ -193,7 +193,7 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
 
     // Force 6 failures (threshold is 5)
     for (let i = 0; i < 6; i++) {
-      await stateManager.setMode(i % 2 === 0 ? 'sprint' : 'walk').catch(() => {});
+      await stateManager.setMode(i % 2 === 0 ? 'local' : 'ephemeral').catch(() => {});
     }
 
     // 3. Check Breaker State (indirectly or via debug)
@@ -203,16 +203,16 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
 
     mockChromeStorage.sync.set.mockClear();
     // This call should be blocked by CB immediately (not calling sync.set)
-    await stateManager.setMode('vault');
+    await stateManager.setMode('cloud');
 
     expect(mockChromeStorage.sync.set).not.toHaveBeenCalled(); // Fast fail
-    expect(stateManager.getMode()).toBe('vault'); // Memory state still updates!
+    expect(stateManager.getMode()).toBe('cloud'); // Memory state still updates!
   });
 
   it('Scenario 6: Large Data Migration (Edge Case)', async () => {
     // 1. Seed V1 State with large payload
     storageBackingStore = {
-      defaultMode: 'vault',
+      defaultMode: 'cloud',
       // Add junk data to simulate large store
       junk_1: 'x'.repeat(5000),
       junk_2: 'y'.repeat(5000),
@@ -223,8 +223,8 @@ describe('ModeStateManager - Full Integration Lifecycle', () => {
     await manager.init();
 
     // 3. Verify Migration Succeeded despite size
-    expect(manager.getMode()).toBe('vault');
-    expect(storageBackingStore).toHaveProperty('defaultMode', 'vault');
+    expect(manager.getMode()).toBe('cloud');
+    expect(storageBackingStore).toHaveProperty('defaultMode', 'cloud');
 
     // 4. Verify we didn't lose/corrupt other data (though our logic doesn't touch other keys, storage mock might)
     // In real Chrome storage, other keys persist. In our mock, they persist.
