@@ -1,5 +1,4 @@
 // src/entrypoints/popup/chrome.ts
-import type { ReactNode } from 'react';
 
 export type ActiveTab = 'home' | 'collections' | 'capture' | 'settings';
 export type ViewKey =

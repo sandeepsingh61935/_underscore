@@ -1,5 +1,5 @@
-import React, { type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import React, { type ReactNode } from 'react';
 
 import type { PopupChrome } from '../../../entrypoints/popup/chrome';
 import { modeRegistry } from '../../../features/modes/registry';
