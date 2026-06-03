@@ -4,10 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useCollections } from '@/features/collections/hooks/useCollections';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-
-import { PopupShell } from '@/ui-system/components/layout/PopupShell';
-import { ModeHeader } from '@/ui-system/components/layout/ModeHeader';
-import { TabBar } from '@/ui-system/components/layout/TabBar';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
@@ -17,10 +13,7 @@ export interface CollectionsViewProps {
   isAuthenticated?: boolean;
 }
 
-export function CollectionsView({
-  onCollectionClick,
-  isAuthenticated: propIsAuthenticated,
-}: CollectionsViewProps): React.ReactElement {
+export function CollectionsView({ onCollectionClick, isAuthenticated: propIsAuthenticated }: CollectionsViewProps): React.ReactElement {
   const navigate = useNavigate();
   const appContext = useApp();
 
@@ -46,9 +39,7 @@ export function CollectionsView({
   const totalHighlights = collections.reduce((acc, c) => acc + c.highlightCount, 0);
 
   return (
-    <PopupShell title="_underscore · library" mode={mode}>
-      <ModeHeader modeId={mode} onBack={undefined} backLabel={undefined} />
-      
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '10px 16px 0' }}>
         <div className="u-serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: '-0.025em' }}>
           Library
@@ -58,25 +49,27 @@ export function CollectionsView({
         </div>
       </div>
 
-      <div className="list-scroll" style={{ marginTop: 10, flex: 1 }}>
+      <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
         ) : (
           collections.map((c) => (
-            <Row 
-              key={c.id} 
-              title={c.domain} 
+            <Row
+              key={c.id}
+              title={c.domain}
               sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : ''}
-              right={<span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>{c.highlightCount}</span>}
-              onClick={() => handleCollectionClick(c.domain)} 
+              right={
+                <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
+                  {c.highlightCount}
+                </span>
+              }
+              onClick={() => handleCollectionClick(c.domain)}
             />
           ))
         )}
       </div>
-
-      <TabBar active="collections" />
-    </PopupShell>
+    </div>
   );
 }
