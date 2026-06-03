@@ -37,3 +37,22 @@ export interface ChromeHandlers {
 }
 
 export type ChromeMap = Record<ViewKey, PopupChrome>;
+
+export function buildChrome(handlers: ChromeHandlers): ChromeMap {
+  return {
+    LOADING: {
+      title: '_underscore',
+      showTitleStrip: true,
+      showModeHeader: false,
+      showTabBar: false,
+    },
+    WELCOME: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    MODE_SELECTION: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    COLLECTIONS: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    DOMAIN_DETAILS: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    SUB_DOMAIN: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    AUTH: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    SETTINGS: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    DASHBOARD: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+  };
+}
