@@ -1,486 +1,315 @@
-/* Ink & Glass font stack: DM Sans (body), Instrument Serif (display), DM Mono (mono) */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Mono:wght@300;400&display=swap');
+/* _underscore v2 — design system rules
+ *
+ * 1. SINGLE ACCENT. All theme color flows from --accent.
+ * 2. TINTS. Use --accent-tint-{08,18,35,65} for opacity layers.
+ * 3. UTILITY OPACITIES. Hover/press states use --utility-overlay-{06,08,12,15,25}.
+ * 4. UTILITY SURFACE. Elevated surfaces (tweaks thumbs, primary buttons)
+ *    use --utility-surface-elevated. The 34c759 iOS toggle "on" is
+ *    a system meta-tool, not a theme color — see --utility-ok.
+ * 5. EXCEPTIONS. The following hex values are NOT part of the theme
+ *    and may NOT be tokenized:
+ *      - #fef4a8 — DCPostIt sticky-note yellow
+ *      - #fdfcf8, #222, #333 — FauxPage article surface (different surface)
+ *      - #34c759 — iOS toggle "on" (now exposed as --utility-ok)
+ * 6. TYPE. App-wide type preset is selected by Tweaks; do not hardcode
+ *    font-family outside type-presets.js.
+ * 7. DENSITY. Row height 44px minimum. Compact density is a Tweak, not
+ *    a per-screen override.
+ * 8. MODES. Modes are distinguished by glyph + label, not color.
+ *    The single accent appears as active state and brand color only.
+ * 9. ROW MOTION. Wireframes may not declare motion. Production code
+ *    listens to prefers-reduced-motion.
+ */
 
-@config "../../../tailwind.config.ts";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* _underscore v2 — wireframe tokens
+   Direction: editorial (NYT/Guardian/Anthropic), mid-fi grayscale,
+   warm terracotta accent. Serif display, sans UI, mono meta. */
 
-@layer base {
+:root {
+  /* Paper + ink */
+  --paper:      #f7f5f0;         /* warm off-white */
+  --paper-2:    #efece4;         /* deeper paper */
+  --rule:       #1a1a1a;         /* heavy rule */
+  --rule-soft:  #cfc9bd;         /* hairline */
+  --ink:        #111110;
+  --ink-2:      #3a3835;
+  --ink-3:      #6b6760;
+  --ink-4:      #a39e94;
 
-    /* ===================================
-       Material Design 3 Token System
-       Generated from seed: #5b8db9 (Underscore Blue)
-       Always use semantic tokens, never hardcoded values
-       =================================== */
+  /* Accent — Anthropic-ish terracotta, in oklch so the family is tunable */
+  --accent:     oklch(62% 0.12 45);   /* #c96442-ish */
+  --accent-2:   oklch(72% 0.09 45);
+  --accent-ink: #2a1208;
 
-    :root {
-        /* ============================================================
-           INK & GLASS FOUNDATION TOKENS
-           These are the source values. MD3 tokens reference these.
-           ============================================================ */
+  /* Accent tint scale — opacity layers for the single accent. */
+  --accent-tint-08: color-mix(in oklch, var(--accent) 8%, transparent);
+  --accent-tint-18: color-mix(in oklch, var(--accent) 18%, transparent);
+  --accent-tint-35: color-mix(in oklch, var(--accent) 35%, transparent);
+  --accent-tint-65: color-mix(in oklch, var(--accent) 65%, transparent);
 
-        /* Surfaces (dark default) */
-        --ink-1:         #0c0e13;
-        --ink-2:         #12151c;
-        --ink-3:         #171b24;
-        --ink-4:         #1d212c;
-        --ink-border:    #22283a;
-        --ink-border-hi: #2e3650;
+  /* Utility overlays — alpha layers for hover/press states. */
+  --utility-overlay-06: rgba(0, 0, 0, 0.06);
+  --utility-overlay-08: rgba(0, 0, 0, 0.08);
+  --utility-overlay-12: rgba(0, 0, 0, 0.12);
+  --utility-overlay-15: rgba(0, 0, 0, 0.15);
+  --utility-overlay-25: rgba(0, 0, 0, 0.25);
 
-        /* Text */
-        --ink-text:      #d8dce8;
-        --ink-text-m:    #6e7a9a;
-        --ink-text-f:    #3d4560;
+  /* Utility surface — elevated surfaces (tweaks thumbs, primary buttons). */
+  --utility-surface-elevated: #fff;
 
-        /* Mode ink colors */
-        --ink-focus:     #6b7fa3;
-        --ink-capture:   #f0a030;
-        --ink-memory:    #2ba89a;
-        --ink-neural:    #9b72e8;
+  /* System meta-tool exception — iOS toggle "on" state. */
+  --utility-ok: #34c759;
 
-        /* Current active mode color — updated at runtime by JS */
-        --ink-mode:      var(--ink-capture);
+  /* Tweaks panel custom tokens */
+  --tweak-paper:              rgba(250, 249, 247, 0.78);
+  --tweak-border:             rgba(255, 255, 255, 0.60);
+  --tweak-ink:                #29261b;
+  --tweak-ink-72:             rgba(41, 38, 27, 0.72);
+  --tweak-ink-60:             rgba(41, 38, 27, 0.60);
+  --tweak-ink-55:             rgba(41, 38, 27, 0.55);
+  --tweak-ink-50:             rgba(41, 38, 27, 0.50);
+  --tweak-ink-45:             rgba(41, 38, 27, 0.45);
 
-        /* Motion easings */
-        --ink-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
-        --ink-ease-out:    cubic-bezier(0.22, 1.00, 0.36, 1);
-        --ink-ease-in:     cubic-bezier(0.40, 0.00, 1.00, 1);
+  /* Missing utility opacity overlays */
+  --utility-overlay-10:       rgba(0, 0, 0, 0.10);
+  --utility-overlay-18:       rgba(0, 0, 0, 0.18);
+  --utility-overlay-20:       rgba(0, 0, 0, 0.20);
+  --utility-overlay-78:       rgba(0, 0, 0, 0.78);
+  --utility-overlay-88:       rgba(0, 0, 0, 0.88);
 
-        /* Design-system canonical aliases (match design export names) */
-        --ease-spring:    var(--ink-ease-spring);
-        --ease-out-smooth: var(--ink-ease-out);
+  --paper-overlay-50:         rgba(255, 255, 255, 0.50);
+  --paper-overlay-60:         rgba(255, 255, 255, 0.60);
+  --paper-overlay-85:         rgba(255, 255, 255, 0.85);
+  --paper-overlay-90:         rgba(255, 255, 255, 0.90);
 
-        /* Mode-tinted elevation — used for filled button hover shadow */
-        --elevation-mode: 0 4px 24px color-mix(in srgb, var(--ink-mode) 35%, transparent);
+  /* Design Canvas custom tokens */
+  --dc-bg:                    #f0eee9;
+  --dc-label:                 rgba(60, 50, 40, 0.70);
+  --dc-title:                 rgba(40, 30, 20, 0.85);
+  --dc-subtitle:              rgba(60, 50, 40, 0.60);
+  --dc-postit-text:           #5a4a2a;
+  --dc-ink:                   #2a251f;
+  --dc-backdrop:              rgba(24, 20, 16, 0.60);
 
-        /* ===== MD3 Color Tokens (Dark Default) ===== */
+  /* Extra overlays */
+  --utility-overlay-05:       rgba(0, 0, 0, 0.05);
+  --utility-overlay-40:       rgba(0, 0, 0, 0.40);
 
-        /* Primary Family */
-        --md-sys-color-primary: var(--ink-mode);
-        --md-sys-color-on-primary: var(--ink-1);
-        --md-sys-color-primary-container: color-mix(in srgb, var(--ink-mode) 15%, var(--ink-2));
-        --md-sys-color-on-primary-container: var(--ink-mode);
-        --md-sys-color-primary-fixed: #d5e3ff;
-        --md-sys-color-on-primary-fixed: #001a3e;
-        --md-sys-color-primary-fixed-dim: #a8c8ff;
-        --md-sys-color-on-primary-fixed-variant: #325788;
+  --paper-overlay-08:         rgba(255, 255, 255, 0.08);
+  --paper-overlay-10:         rgba(255, 255, 255, 0.10);
+  --paper-overlay-12:         rgba(255, 255, 255, 0.12);
+  --paper-overlay-18:         rgba(255, 255, 255, 0.18);
+  --paper-overlay-30:         rgba(255, 255, 255, 0.30);
+  --paper-overlay-70:         rgba(255, 255, 255, 0.70);
 
-        /* Secondary Family */
-        --md-sys-color-secondary: var(--ink-text-m);
-        --md-sys-color-on-secondary: var(--ink-1);
-        --md-sys-color-secondary-container: var(--ink-3);
-        --md-sys-color-on-secondary-container: var(--ink-text);
-        --md-sys-color-secondary-fixed: #dae2f9;
-        --md-sys-color-on-secondary-fixed: #131c2b;
-        --md-sys-color-secondary-fixed-dim: #bec6dc;
-        --md-sys-color-on-secondary-fixed-variant: #3e4759;
+  /* Mode palette — single accent across all modes.
+     Modes are distinguished by glyph + label, NOT color. */
+  --mode-ephemeral: var(--accent);
+  --mode-local:     var(--accent);
+  --mode-cloud:     var(--accent);
+  --mode-ai:        var(--accent);
 
-        /* Tertiary Family */
-        --md-sys-color-tertiary: #705575;
-        --md-sys-color-on-tertiary: #ffffff;
-        --md-sys-color-tertiary-container: #fbd7fc;
-        --md-sys-color-on-tertiary-container: #28132e;
-        --md-sys-color-tertiary-fixed: #fbd7fc;
-        --md-sys-color-on-tertiary-fixed: #28132e;
-        --md-sys-color-tertiary-fixed-dim: #debe0;
-        --md-sys-color-on-tertiary-fixed-variant: #573d5c;
+  /* Type */
+  --serif: "GT Alpina", "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --sans:  "Söhne", "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono:  "JetBrains Mono", "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
 
-        /* Error Family */
-        --md-sys-color-error: #ba1a1a;
-        --md-sys-color-on-error: #ffffff;
-        --md-sys-color-error-container: #ffdad6;
-        --md-sys-color-on-error-container: #410002;
+  /* Scale */
+  --step--2: 10px;
+  --step--1: 11px;
+  --step-0:  13px;
+  --step-1:  15px;
+  --step-2:  18px;
+  --step-3:  22px;
+  --step-4:  28px;
+  --step-5:  36px;
+  --step-6:  48px;
 
-        /* Surface & Background */
-        --md-sys-color-background:                var(--ink-1);
-        --md-sys-color-surface-dim:               var(--ink-2);
-        --md-sys-color-surface:                   var(--ink-1);
-        --md-sys-color-surface-bright:            var(--ink-3);
-        --md-sys-color-surface-container-lowest:  var(--ink-2);
-        --md-sys-color-surface-container-low:     var(--ink-3);
-        --md-sys-color-surface-container:         var(--ink-3);
-        --md-sys-color-surface-container-high:    var(--ink-4);
-        --md-sys-color-surface-container-highest: var(--ink-4);
-        --md-sys-color-on-background:             var(--ink-text);
-        --md-sys-color-on-surface:                var(--ink-text);
-        --md-sys-color-on-surface-variant:        var(--ink-text-m);
-
-        /* Inverse */
-        --md-sys-color-inverse-surface: #2e3135;
-        --md-sys-color-inverse-on-surface: #f0f0f7;
-        --md-sys-color-inverse-primary: #a8c8ff;
-
-        /* Outline */
-        --md-sys-color-outline:         var(--ink-text-f);
-        --md-sys-color-outline-variant: var(--ink-border);
-
-        /* Special */
-        --md-sys-color-scrim: rgba(0, 0, 0, 0.7);
-        --md-sys-color-shadow: #000000;
-
-        /* ===== MD3 Typography Tokens ===== */
-
-        /* Display (Hero text) */
-        --md-sys-typescale-display-large-size: 57px;
-        --md-sys-typescale-display-large-line-height: 64px;
-        --md-sys-typescale-display-large-weight: 400;
-
-        --md-sys-typescale-display-medium-size: 45px;
-        --md-sys-typescale-display-medium-line-height: 52px;
-        --md-sys-typescale-display-medium-weight: 400;
-
-        --md-sys-typescale-display-small-size: 36px;
-        --md-sys-typescale-display-small-line-height: 44px;
-        --md-sys-typescale-display-small-weight: 400;
-
-        /* Headline (Page/Section titles) */
-        --md-sys-typescale-headline-large-size: 32px;
-        --md-sys-typescale-headline-large-line-height: 40px;
-        --md-sys-typescale-headline-large-weight: 400;
-
-        --md-sys-typescale-headline-medium-size: 28px;
-        --md-sys-typescale-headline-medium-line-height: 36px;
-        --md-sys-typescale-headline-medium-weight: 400;
-
-        --md-sys-typescale-headline-small-size: 24px;
-        --md-sys-typescale-headline-small-line-height: 32px;
-        --md-sys-typescale-headline-small-weight: 400;
-
-        /* Title (Card titles, Dialog headers) */
-        --md-sys-typescale-title-large-size: 22px;
-        --md-sys-typescale-title-large-line-height: 28px;
-        --md-sys-typescale-title-large-weight: 400;
-
-        --md-sys-typescale-title-medium-size: 16px;
-        --md-sys-typescale-title-medium-line-height: 24px;
-        --md-sys-typescale-title-medium-weight: 500;
-
-        --md-sys-typescale-title-small-size: 14px;
-        --md-sys-typescale-title-small-line-height: 20px;
-        --md-sys-typescale-title-small-weight: 500;
-
-        /* Body (Paragraphs, Descriptions) */
-        --md-sys-typescale-body-large-size: 16px;
-        --md-sys-typescale-body-large-line-height: 24px;
-        --md-sys-typescale-body-large-weight: 400;
-
-        --md-sys-typescale-body-medium-size: 14px;
-        --md-sys-typescale-body-medium-line-height: 20px;
-        --md-sys-typescale-body-medium-weight: 400;
-
-        --md-sys-typescale-body-small-size: 12px;
-        --md-sys-typescale-body-small-line-height: 16px;
-        --md-sys-typescale-body-small-weight: 400;
-
-        /* Label (Buttons, Chips, Captions) */
-        --md-sys-typescale-label-large-size: 14px;
-        --md-sys-typescale-label-large-line-height: 20px;
-        --md-sys-typescale-label-large-weight: 500;
-
-        --md-sys-typescale-label-medium-size: 12px;
-        --md-sys-typescale-label-medium-line-height: 16px;
-        --md-sys-typescale-label-medium-weight: 500;
-
-        --md-sys-typescale-label-small-size: 11px;
-        --md-sys-typescale-label-small-line-height: 16px;
-        --md-sys-typescale-label-small-weight: 500;
-
-        /* ===== MD3 Shape Tokens ===== */
-        --md-sys-shape-corner-none: 0px;
-        --md-sys-shape-corner-extra-small: 4px;
-        --md-sys-shape-corner-small: 8px;
-        --md-sys-shape-corner-medium: 12px;
-        --md-sys-shape-corner-large: 16px;
-        --md-sys-shape-corner-extra-large: 28px;
-        --md-sys-shape-corner-full: 9999px;
-
-        /* ===== MD3 Motion/Easing Tokens ===== */
-        --md-sys-motion-easing-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
-        --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0.0, 0, 1.0);
-        --md-sys-motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
-        --md-sys-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
-
-        --md-sys-motion-duration-short: 200ms;
-        --md-sys-motion-duration-medium: 300ms;
-        --md-sys-motion-duration-long: 500ms;
-
-        /* ===== Elevation (CSS shadow tokens) ===== */
-        --elevation-1: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-        --elevation-2: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
-        --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
-
-        /* Logo badge (dark default) */
-        --logo-bg:                 #191c25;
-        --logo-text:               #e4e8f0;
-        --logo-text-shadow:        none;
-        --logo-ambient-reflection: rgba(255,255,255,0.06);
-
-        /* Typography family vars */
-        --font-display: 'Instrument Serif', serif;
-        --font-body:    'DM Sans', -apple-system, sans-serif;
-        --font-mono:    'DM Mono', monospace;
-
-    }
-
-    /* Light Mode Overrides (Ink & Glass warm paper) */
-    [data-theme="light"], .light {
-        --ink-1:         #faf9f6;
-        --ink-2:         #f2efea;
-        --ink-3:         #e8e4dc;
-        --ink-4:         #ddd8cc;
-        --ink-border:    #d5d0c4;
-        --ink-border-hi: #bbb5a6;
-        --ink-text:      #1a1710;
-        --ink-text-m:    #6b6558;
-        --ink-text-f:    #a09a8d;
-        --ink-focus:     #4e6288;
-        --ink-capture:   #c17a18;
-        --ink-memory:    #1e7d72;
-        --ink-neural:    #6b4dbe;
-
-        --logo-bg:                 #1a1710;
-        --logo-text:               #faf9f6;
-        --logo-ambient-reflection: rgba(255,255,255,0.08);
-    }
-
-    /* Dark Mode — uses :root Ink & Glass defaults; only logo badge differs */
-    .dark {
-        /* Logo badge inverted pearl — light badge on deep dark bg */
-        --logo-bg: #e8e8ec;
-        --logo-text: #1a1a1a;
-        --logo-text-shadow: none;
-        --logo-ambient-reflection: rgba(255, 255, 255, 0.06);
-    }
-
-    /* Mode color data-attribute bindings (keyed by ModeType id) */
-    [data-mode="walk"]   { --c: var(--ink-focus);   }
-    [data-mode="sprint"] { --c: var(--ink-capture);  }
-    [data-mode="vault"]  { --c: var(--ink-memory);   }
-    [data-mode="neural"] { --c: var(--ink-neural);   }
-
-    /* Set body font as default */
-    *,
-    *::before,
-    *::after {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        font-family: var(--font-body);
-        /* Explicitly reset borders */
-        border-width: 0;
-        border-style: solid;
-        border-color: var(--md-sys-color-outline-variant);
-    }
-
-    html {
-        font-family: var(--font-body);
-    }
-
-    body {
-        font-family: var(--font-body);
-        min-height: 100vh;
-        background: var(--md-sys-color-surface);
-        color: var(--md-sys-color-on-surface);
-    }
-
-    /* Material Design 3 focus states - SCOPED to extension only */
-    #app button:focus-visible {
-        outline: 2px solid var(--md-sys-color-primary);
-        outline-offset: 2px;
-    }
-
-    #app input:focus-visible,
-    #app textarea:focus-visible {
-        outline: 2px solid var(--md-sys-color-primary);
-        outline-offset: 0;
-    }
-
-    /* Selection color using primary - SCOPED to extension only */
-    #app ::selection {
-        background-color: color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
-    }
-
-    /* Text wrapping */
-    :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
-        overflow-wrap: anywhere;
-        word-break: break-word;
-    }
-
-    /* ===== Global Scrollbar Styling ===== */
-    /* Thin, subtle, and responsive to light/dark themes */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-        background-color: transparent;
-    }
-
-    ::-webkit-scrollbar-track {
-        background-color: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background-color: color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent);
-        border-radius: var(--md-sys-shape-corner-full);
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background-color: color-mix(in srgb, var(--md-sys-color-outline) 55%, transparent);
-    }
-
-    /* Firefox fallback */
-    * {
-        scrollbar-width: thin;
-        scrollbar-color: color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent) transparent;
-    }
-
-    pre,
-    code {
-        overflow-x: auto;
-        white-space: pre;
-    }
+  /* Geometry */
+  --pop-w: 400px;
+  --pop-h: 600px;
+  --radius: 2px;
 }
 
-/* Smooth mode color transitions — applies to elements consuming --ink-mode */
-.mode-pill,
-.mode-badge,
-[class*="ink-mode"],
-[style*="--ink-mode"] {
-    transition: background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
-                border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
-                color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+/* Dark flip, used inside artboards that opt in via .dark */
+.dark {
+  --paper:     #111110;
+  --paper-2:   #1a1918;
+  --rule:      #f2eee6;
+  --rule-soft: #2a2826;
+  --ink:       #f2eee6;
+  --ink-2:     #cfc9bd;
+  --ink-3:     #8a857c;
+  --ink-4:     #5a564f;
+  --mode-local: #f2eee6;
 }
 
-/* Sonner toast — prevent default background override */
-[data-sonner-toaster] {
-    --normal-bg: var(--md-sys-color-surface-container);
-    --normal-border: var(--md-sys-color-outline-variant);
-    --normal-text: var(--md-sys-color-on-surface);
+/* Base resets inside artboards */
+.ue * { box-sizing: border-box; }
+.ue {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
 }
 
-/* Utility classes */
-@layer utilities {
-    .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
+/* Popup chrome */
+.popup {
+  width: var(--pop-w);
+  height: var(--pop-h);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--sans);
+  color: var(--ink);
+}
 
-    .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-    }
+/* Type helpers */
+.u-serif { font-family: var(--serif); letter-spacing: -0.015em; }
+.u-mono  { font-family: var(--mono); letter-spacing: 0; }
+.u-sans  { font-family: var(--sans); }
+.u-caps  { text-transform: uppercase; letter-spacing: 0.12em; font-size: var(--step--2); }
+.u-rule  { border-top: 1px solid var(--rule); }
+.u-hair  { border-top: 1px solid var(--rule-soft); }
 
-    /* Material Design 3 State Layers */
-    .state-layer-hover {
-        position: relative;
-    }
+.u-kicker {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
 
-    .state-layer-hover::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-color: currentColor;
-        opacity: 0;
-        transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
-    }
+/* Section heading on the canvas (outside artboards) */
+.sec-kicker {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6b6760;
+}
 
-    .state-layer-hover:hover::before {
-        opacity: 0.08;
-    }
+/* Wireframe placeholder pattern */
+.ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(0,0,0,0.06) 6px, rgba(0,0,0,0.06) 7px);
+  border: 1px solid var(--rule-soft);
+}
+.dark .ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(255,255,255,0.06) 6px, rgba(255,255,255,0.06) 7px);
+}
 
-    .state-layer-hover:active::before {
-        opacity: 0.12;
-    }
+/* Quote mark */
+.qmark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-4);
+}
 
-    .state-layer-hover:focus-visible::before {
-        opacity: 0.12;
-    }
+/* Buttons (wireframe) */
+.btn {
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.btn.primary {
+  background: var(--rule);
+  color: var(--paper);
+}
+.btn.accent {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn.ghost {
+  border-color: var(--rule-soft);
+  color: var(--ink-2);
+}
+.btn.sm { min-height: 32px; padding: 6px 10px; font-size: var(--step--1); }
 
-    /* Shimmer animation for skeleton loaders */
-    @keyframes shimmer {
-        0% {
-            background-position: 200% 0;
-        }
+/* Tab bar in popup */
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+.tabbar button {
+  all: unset;
+  padding: 12px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  min-height: 44px;
+}
+.tabbar button.active { color: var(--ink); position: relative; }
+.tabbar button.active::before {
+  content: "";
+  position: absolute; top: 0; left: 20%; right: 20%;
+  border-top: 2px solid var(--accent);
+}
 
-        100% {
-            background-position: -200% 0;
-        }
-    }
+/* Counter ticks */
+.tick { display: inline-block; width: 4px; height: 4px; background: var(--ink-3); border-radius: 50%; vertical-align: middle; }
 
-    .animate-shimmer {
-        animation: shimmer 2s ease-in-out infinite;
-    }
+/* Scroll containers inside popups shouldn't scroll in wireframes */
+.no-scroll { overflow: hidden; }
 
-    /* Fade animations */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
+/* Nice scroll for lists when we do show them */
+.list-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.list-scroll::-webkit-scrollbar { width: 6px; }
+.list-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }
 
-        to {
-            opacity: 1;
-        }
-    }
+/* Focus overlay: make artboards look like newspaper clippings */
+.clip {
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.06);
+}
 
-    @keyframes fadeSlideIn {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
+/* Callout on canvas */
+.callout {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #6b6760;
+  max-width: 280px;
+  line-height: 1.5;
+}
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes scaleIn {
-        from {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(16px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-fadeIn {
-        animation: fadeIn 200ms ease-out forwards;
-    }
-
-    .animate-fadeSlideIn {
-        animation: fadeSlideIn 300ms ease-out forwards;
-    }
-
-    .animate-scaleIn {
-        animation: scaleIn 200ms ease-out forwards;
-    }
-
-    .animate-slideInUp {
-        animation: slideInUp 300ms ease-out forwards;
-    }
-
-    /* Reduced motion support (Critical for accessibility) */
-    @media (prefers-reduced-motion: reduce) {
-
-        *,
-        *::before,
-        *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-        }
-    }
+/* Masthead — used on canvas header */
+.masthead {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
