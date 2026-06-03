@@ -21,10 +21,10 @@ const itemVariants = {
 
 /* Display name mapping (internal → UI) */
 const MODE_DISPLAY: Record<ModeType, string> = {
-  walk: 'Focus',
-  sprint: 'Capture',
-  vault: 'Memory',
-  neural: 'Neural',
+  ephemeral: 'Ephemeral',
+  local: 'Local',
+  cloud: 'Cloud',
+  ai: 'AI',
 };
 
 interface Collection {
@@ -48,7 +48,7 @@ function relativeTime(date: Date): string {
 
 type SortBy = 'most' | 'az' | 'newest';
 
-const AUTH_REQUIRED_MODES: ModeType[] = ['vault', 'neural'];
+const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
 
 interface CollectionsViewProps {
   onLogout?: () => void;
@@ -72,7 +72,7 @@ export function CollectionsView({
   const appContext = useApp();
 
   const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
-  const mode = (appContext.currentMode ?? 'walk') as ModeType;
+  const mode = (appContext.currentMode ?? 'ephemeral') as ModeType;
 
   const [sortBy, setSortBy] = useState<SortBy>('most');
   const [search, setSearch] = useState('');
@@ -199,7 +199,7 @@ export function CollectionsView({
             <p className="text-[13px] text-on-surface-variant mb-1">No collections yet</p>
             {isWebContext ? (
               <p className="text-[11px] text-outline max-w-[220px]">
-                Walk and Sprint highlights stay on your device. Sign in and switch to Vault mode to see them here.
+                Ephemeral and Local highlights stay on your device. Sign in and switch to Cloud mode to see them here.
               </p>
             ) : (
               <p className="text-[11px] text-outline">

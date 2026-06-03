@@ -10,7 +10,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { springs } from '@/ui-system/motion/springs';
 import { cn } from '@/ui-system/utils/cn';
 
-const AUTH_REQUIRED_MODES: ModeType[] = ['vault', 'neural'];
+const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
 
 const listVariants = {
   hidden: {},
@@ -45,7 +45,7 @@ export function DomainDetailsView({ domain: propDomain, onBack }: DomainDetailsV
     const navigate = useNavigate();
     const { isAuthenticated, currentMode } = useApp();
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const mode = (currentMode ?? 'walk') as ModeType;
+    const mode = (currentMode ?? 'ephemeral') as ModeType;
 
     /* Auth redirect: only redirect for modes that require authentication */
     React.useEffect(() => {

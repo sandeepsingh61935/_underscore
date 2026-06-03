@@ -9,14 +9,14 @@ import { SegmentedControl } from '@/ui-system/components/primitives/SegmentedCon
 import { cn } from '@/ui-system/utils/cn';
 
 const MODE_DISPLAY: Record<ModeType, string> = {
-  walk: 'Focus',
-  sprint: 'Capture',
-  vault: 'Memory',
-  neural: 'Neural',
+  ephemeral: 'Ephemeral',
+  local: 'Local',
+  cloud: 'Cloud',
+  ai: 'AI',
 };
 
 const THEME_OPTIONS = ['system', 'light', 'dark'] as const;
-const MODE_OPTIONS = ['walk', 'sprint', 'vault', 'neural'] as const;
+const MODE_OPTIONS = ['ephemeral', 'local', 'cloud', 'ai'] as const;
 const EXPORT_FORMATS = ['PDF', 'TXT', 'JSON', 'CSV', 'MD'] as const;
 
 export interface SettingsPageProps {
@@ -134,7 +134,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}) {
             </div>
             <SegmentedControl
               options={MODE_OPTIONS.map((m) => MODE_DISPLAY[m])}
-              value={MODE_DISPLAY[currentMode ?? 'walk']}
+              value={MODE_DISPLAY[currentMode ?? 'ephemeral']}
               onChange={(label) => {
                 const mode = MODE_OPTIONS.find((m) => MODE_DISPLAY[m] === label);
                 if (mode && availableModes.includes(mode)) setMode(mode);
@@ -143,7 +143,7 @@ export function SettingsPage({ onBack }: SettingsPageProps = {}) {
               modeColors
             />
             {hasLockedModes && (
-              <p className="text-[11px] text-on-surface-variant">Sign in to unlock Memory and Neural.</p>
+              <p className="text-[11px] text-on-surface-variant">Sign in to unlock Cloud and AI modes.</p>
             )}
           </div>
         </Section>
