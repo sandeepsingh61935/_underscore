@@ -154,48 +154,60 @@ Update `ModeRegistry.registerDefaults()` to use the new V2 mode configuration:
     this.register({
       id: MODE_NAMES.EPHEMERAL,
       name: 'Ephemeral',
-      family: 'device',
+      altName: 'Non-persistent',
+      family: 'local',
       tag: '24-hour memory',
       blurb: 'Highlights live on this device and fade after 24 hours.',
-      motif: '\u25f7',
+      motif: '◷',
+      accent: 'var(--mode-ephemeral)',
+      persistence: 'auto-expires · 24h',
+      signin: false,
       ttl: true,
-      requiresAuth: false
     });
     
     this.register({
       id: MODE_NAMES.LOCAL,
       name: 'Local',
-      family: 'device',
+      altName: 'Persistent local',
+      family: 'local',
       tag: 'This device',
       blurb: 'Saved to this browser indefinitely. You delete them.',
-      motif: '\u25a3',
+      motif: '▣',
+      accent: 'var(--mode-local)',
+      persistence: 'kept until deleted',
+      signin: false,
       ttl: false,
-      requiresAuth: false
     });
     
     this.register({
       id: MODE_NAMES.CLOUD,
       name: 'Cloud',
+      altName: 'Persistent cloud',
       family: 'cloud',
       tag: 'Synced',
       blurb: 'Signed in. Synced across every device you use.',
-      motif: '\u25c7',
+      motif: '◇',
+      accent: 'var(--mode-cloud)',
+      persistence: 'synced · always',
+      signin: true,
       ttl: false,
-      requiresAuth: true
     });
     
     this.register({
       id: MODE_NAMES.AI,
       name: 'AI',
+      altName: 'AI-enabled',
       family: 'cloud',
       tag: 'Readable by models',
       blurb: 'Cloud-synced and readable by LLMs you connect via MCP.',
-      motif: '\u2726',
+      motif: '✦',
+      accent: 'var(--mode-ai)',
+      persistence: 'synced · readable by AI',
+      signin: true,
       ttl: false,
-      requiresAuth: true
     });
 ```
-*(Ensure you update the `ModeDefinition` interface in this file to include `family`, `tag`, `blurb`, `motif`, and `ttl` properties if they do not exist.)*
+*(Ensure you update the `ModeDefinition` interface in this file to include `family`, `altName`, `tag`, `blurb`, `motif`, `accent`, `persistence`, `signin` and `ttl` properties if they do not exist, and replace `requiresAuth` with `signin` everywhere.)*
 
 - [ ] **Step 2: Commit registry update**
 
