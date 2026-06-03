@@ -4,10 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-
-import { PopupShell } from '@/ui-system/components/layout/PopupShell';
-import { ModeHeader } from '@/ui-system/components/layout/ModeHeader';
-import { TabBar } from '@/ui-system/components/layout/TabBar';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
@@ -18,11 +14,11 @@ export interface SubDomainViewProps {
   onBack?: () => void;
 }
 
-export function SubDomainView({ domain: propDomain, section: propSection, onBack }: SubDomainViewProps): React.ReactElement {
+export function SubDomainView({ domain: propDomain, section: propSection, onBack: _onBack }: SubDomainViewProps): React.ReactElement {
   const params = useParams<{ domain: string; section: string }>();
   const domain = propDomain ?? params.domain ?? '';
   const section = propSection ?? (params.section ? decodeURIComponent(params.section) : '/');
-  
+
   const navigate = useNavigate();
   const { isAuthenticated, currentMode } = useApp();
   const mode = (currentMode ?? 'ephemeral') as ModeType;
@@ -42,14 +38,6 @@ export function SubDomainView({ domain: propDomain, section: propSection, onBack
     });
   }, [highlights, section]);
 
-  const handleBack = (): void => {
-    if (onBack) {
-      onBack();
-    } else {
-      navigate(`/domain/${domain}`);
-    }
-  };
-
   const getTtlMs = (createdAt: Date): number | undefined => {
     if (mode === 'ephemeral') {
       const expiry = createdAt.getTime() + 24 * 60 * 60 * 1000;
@@ -60,9 +48,7 @@ export function SubDomainView({ domain: propDomain, section: propSection, onBack
   };
 
   return (
-    <PopupShell title="_underscore · library" mode={mode}>
-      <ModeHeader modeId={mode} onBack={handleBack} backLabel={domain} />
-      
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '10px 16px 6px' }}>
         <div className="u-sans" style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
           {section === '/' ? 'HOME' : section}
@@ -72,25 +58,23 @@ export function SubDomainView({ domain: propDomain, section: propSection, onBack
         </div>
       </div>
 
-      <div className="list-scroll" style={{ flex: 1 }}>
+      <div className="list-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
         ) : (
           sectionHighlights.map((h) => (
-            <HighlightCard 
+            <HighlightCard
               key={h.id}
-              quote={h.text} 
-              domain={domain} 
-              section={section === '/' ? undefined : section} 
-              ttlMs={getTtlMs(h.createdAt)} 
+              quote={h.text}
+              domain={domain}
+              section={section === '/' ? undefined : section}
+              ttlMs={getTtlMs(h.createdAt)}
             />
           ))
         )}
       </div>
-
-      <TabBar active="collections" />
-    </PopupShell>
+    </div>
   );
 }
