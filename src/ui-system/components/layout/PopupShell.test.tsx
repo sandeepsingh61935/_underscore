@@ -40,4 +40,47 @@ describe('PopupShell', () => {
     );
     expect(screen.queryByText('_underscore')).not.toBeInTheDocument();
   });
+
+  it('renders ModeHeader when showModeHeader is true', () => {
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore',
+          showTitleStrip: true,
+          showModeHeader: true,
+          showTabBar: false,
+          modeId: 'local',
+          onBack: noopHandlers.onBackToCollections,
+          backLabel: 'Library',
+          onSwitch: noopHandlers.onSwitch,
+        }}
+        viewKey="DOMAIN_DETAILS"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    // ModeHeader renders the back label as text content
+    expect(screen.getByText('← Library')).toBeInTheDocument();
+  });
+
+  it('renders TabBar with active tab when showTabBar is true', () => {
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore · library',
+          showTitleStrip: true,
+          showModeHeader: true,
+          showTabBar: true,
+          modeId: 'local',
+          activeTab: 'collections',
+          onTabChange: noopHandlers.onTabChange,
+        }}
+        viewKey="COLLECTIONS"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    const libraryTab = screen.getByText('Library');
+    expect(libraryTab.className).toContain('active');
+  });
 });
