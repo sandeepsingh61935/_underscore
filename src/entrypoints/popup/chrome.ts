@@ -68,6 +68,15 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       showTabBar: false,
     },
     SETTINGS: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
-    DASHBOARD: { title: '', showTitleStrip: false, showModeHeader: false, showTabBar: false },
+    DASHBOARD: {
+      title: '_underscore',
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: true,
+      modeId: handlers.getModeId(),
+      activeTab: 'home',
+      onTabChange: handlers.onTabChange,
+      onSwitch: handlers.onSwitch,
+    },
   };
 }

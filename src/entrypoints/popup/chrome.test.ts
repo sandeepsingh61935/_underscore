@@ -46,3 +46,24 @@ describe('chrome-having screens', () => {
     expect(map.AUTH.showTabBar).toBe(false);
   });
 });
+
+describe('chrome-having screens with tab bar', () => {
+  it('DASHBOARD has title, ModeHeader, TabBar; activeTab is home', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.DASHBOARD.title).toBe('_underscore');
+    expect(map.DASHBOARD.showTitleStrip).toBe(true);
+    expect(map.DASHBOARD.showModeHeader).toBe(true);
+    expect(map.DASHBOARD.showTabBar).toBe(true);
+    expect(map.DASHBOARD.activeTab).toBe('home');
+    expect(map.DASHBOARD.onTabChange).toBe(handlers.onTabChange);
+    expect(map.DASHBOARD.onSwitch).toBe(handlers.onSwitch);
+  });
+
+  it('DASHBOARD forwards getModeId() into modeId', () => {
+    const handlers = makeHandlers();
+    handlers.getModeId = vi.fn(() => 'cloud');
+    const map = buildChrome(handlers);
+    expect(map.DASHBOARD.modeId).toBe('cloud');
+  });
+});
