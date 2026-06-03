@@ -107,4 +107,15 @@ describe('chrome-having screens with tab bar', () => {
     const map = buildChrome(handlers);
     expect(map.SUB_DOMAIN.backLabel).toBe('theguardian.com');
   });
+
+  it('SETTINGS has "_underscore · settings" title, activeTab settings', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.SETTINGS.title).toBe('_underscore · settings');
+    expect(map.SETTINGS.showModeHeader).toBe(true);
+    expect(map.SETTINGS.showTabBar).toBe(true);
+    expect(map.SETTINGS.activeTab).toBe('settings');
+    expect(map.SETTINGS.onBack).toBe(handlers.onBackFromSettings);
+    expect(map.SETTINGS.backLabel).toBe('Library');
+  });
 });
