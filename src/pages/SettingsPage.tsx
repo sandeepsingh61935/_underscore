@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
-import { ModeHeader } from '@/ui-system/components/layout/ModeHeader';
-import { PopupShell } from '@/ui-system/components/layout/PopupShell';
-import { TabBar } from '@/ui-system/components/layout/TabBar';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 const TYPE_PRESETS = {
@@ -40,19 +36,13 @@ export interface SettingsPageProps {
  * Settings Page
  * Implements exactly what the Settings component in ui_kits/extension/v2/screens-nav.jsx specifies.
  */
-export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps): React.ReactElement {
-  const navigate = useNavigate();
+export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProps): React.ReactElement {
   const { theme, setTheme, currentMode } = useApp();
   const { user, logout } = useCurrentUser();
   const [typeId, setTypeId] = useState<TypePresetId>('editorial');
 
-  const handleBack = (): void => {
-    if (onBack) {
-      onBack();
-    } else {
-      navigate(-1);
-    }
-  };
+  // onBack is still required on the interface for callers passing it to the shell's ModeHeader
+  // _onBack is intentionally unused in the body-only version
 
   const handleSignOut = async (): Promise<void> => {
     if (window.confirm('Sign out of _underscore?')) {
@@ -68,9 +58,7 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps): React
   };
 
   return (
-    <PopupShell title="_underscore · settings" mode={currentMode}>
-      <ModeHeader modeId={currentMode} onBack={handleBack} backLabel="Library" />
-      
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '12px 16px 6px' }}>
         <div className="u-serif" style={{ fontSize: 22, letterSpacing: '-0.02em' }}>Settings</div>
       </div>
@@ -81,15 +69,15 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps): React
           const p = TYPE_PRESETS[id];
           const active = id === typeId;
           return (
-            <button 
-              key={id} 
-              onClick={() => setTypeId(id)} 
+            <button
+              key={id}
+              onClick={() => setTypeId(id)}
               style={{
-                all: 'unset', 
-                cursor: 'pointer', 
-                display: 'block', 
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'block',
                 width: '100%',
-                padding: '12px 16px', 
+                padding: '12px 16px',
                 borderBottom: '1px solid var(--rule-soft)',
                 background: active ? 'var(--paper-2)' : 'transparent',
                 boxSizing: 'border-box'
@@ -113,47 +101,39 @@ export function SettingsPage({ onBack, onChangeMode }: SettingsPageProps): React
         </div>
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
-        <Row 
-          title="Theme" 
-          sub="Match system" 
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>} 
+        <Row
+          title="Theme"
+          sub="Match system"
+          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>}
           onClick={handleToggleTheme}
         />
-        <Row 
-          title="Mode" 
-          sub={`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} · synced`} 
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Change</span>} 
+        <Row
+          title="Mode"
+          sub={`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} · synced`}
+          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Change</span>}
           onClick={onChangeMode}
         />
         <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Edit</span>} />
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
-        <Row 
-          title={user?.email || 'Guest User'} 
-          sub={user ? 'Signed in' : 'Local mode'} 
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{user ? 'Sign out' : 'Sign in'}</span>} 
+        <Row
+          title={user?.email || 'Guest User'}
+          sub={user ? 'Signed in' : 'Local mode'}
+          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{user ? 'Sign out' : 'Sign in'}</span>}
           onClick={user ? handleSignOut : undefined}
         />
-        <Row 
-          title="Configure AI providers" 
-          sub="Opens web app" 
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>↗</span>} 
+        <Row
+          title="Configure AI providers"
+          sub="Opens web app"
+          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>↗</span>}
           onClick={() => {}}
         />
-        <Row 
-          title="Export highlights" 
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>→</span>} 
+        <Row
+          title="Export highlights"
+          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>→</span>}
           onClick={() => {}}
         />
       </div>
-
-      <TabBar 
-        active="settings" 
-        onChange={(tab) => {
-          if (tab === 'collections') handleBack();
-          if (tab === 'home') navigate('/collections'); // Or some dashboard route if it exists
-        }} 
-      />
-    </PopupShell>
+    </div>
   );
 }
