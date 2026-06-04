@@ -104,7 +104,7 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
       expect(highlight!.colorRole).toBe('blue');
     });
 
-    it('should set createdAt and expiresAt timestamps', async () => {
+    it('should set createdAt timestamp (no expiresAt — Sprint is permanent)', async () => {
       // Arrange
       const selection = createMockSelection('Timestamped highlight');
       const beforeCreate = Date.now();
@@ -115,7 +115,6 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
       // Assert
       const highlight = sprintMode.getHighlight(id);
       expect(highlight!.createdAt).toBeDefined();
-      expect(highlight!.expiresAt).toBeDefined();
       expect(highlight!.createdAt!.getTime()).toBeGreaterThanOrEqual(beforeCreate);
     });
   });
@@ -227,7 +226,7 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
         persistence: 'local',
         undo: true,
         sync: false,
-        collections: false,
+        collections: true,
         tags: false,
         export: false,
         ai: false,
@@ -245,7 +244,7 @@ describe('SprintMode - Event Sourcing & Persistence', () => {
       expect(config.requireConfirmation).toBe(true); // Persistent mode
       expect(config.allowUndo).toBe(true);
       expect(config.iconType).toBe('remove'); // Fixed: Issue #4 - Cross icon for consistency
-      expect(config.confirmationMessage).toContain('Undo available');
+      expect(config.confirmationMessage).toContain('Delete this highlight?');
     });
   });
 

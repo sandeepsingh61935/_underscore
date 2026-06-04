@@ -1,0 +1,142 @@
+/**
+ * Context-aware collections hook
+ * Uses dynamic import to load the appropriate hook based on runtime context
+ * Always calls useState/useEffect in the same order
+ */
+
+import { useState, useEffect } from 'react';
+import type { DomainCollection } from './useCollections';
+
+interface CollectionsResult {
+    collections: DomainCollection[];
+    isLoading: boolean;
+    error: Error | null;
+}
+
+/** Check if running in Chrome extension context */
+function isExtensionContext(): boolean {
+    return typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined' && chrome.runtime.id !== undefined;
+}
+
+/**
+ * Unified hook for collections that works in both extension and web contexts.
+ * Uses chrome.runtime for extension, Supabase directly for web.
+ */
+export function useCollections(): CollectionsResult {
+    const [result, setResult] = useState<CollectionsResult>({
+        collections: [],
+        isLoading: true,
+        error: null,
+    });
+
+    const context = isExtensionContext() ? 'extension' : 'web';
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchCollections = async () => {
+            try {
+                if (context === 'extension') {
+                    // Extension context - use chrome.runtime
+                    const response = await chrome.runtime.sendMessage({
+                        type: 'GET_COLLECTIONS',
+                        timestamp: Date.now(),
+                    });
+
+                    if (cancelled) return;
+
+                    if (!response || !response.success) {
+                        throw new Error(response?.error || 'Failed to fetch collections');
+                    }
+
+                    const collections = (response.data.collections || []).map((col: any) => ({
+                        id: col.id,
+                        domain: col.domain,
+                        highlightCount: col.highlightCount,
+                        lastActive: new Date(col.lastActive),
+                    }));
+
+                    setResult({ collections, isLoading: false, error: null });
+                } else {
+                    // Web context - use Supabase directly
+                    const { createClient } = await import('@supabase/supabase-js');
+
+                    const url = import.meta.env.VITE_SUPABASE_URL;
+                    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+                    if (!url || !anonKey) {
+                        setResult({ collections: [], isLoading: false, error: null });
+                        return;
+                    }
+
+                    const supabase = createClient(url, anonKey);
+                    const { data: { session } } = await supabase.auth.getSession();
+
+                    if (cancelled) return;
+
+                    if (!session?.user) {
+                        setResult({ collections: [], isLoading: false, error: null });
+                        return;
+                    }
+
+                    const { data, error: queryError } = await supabase
+                        .from('highlights')
+                        .select('url, created_at, updated_at')
+                        .eq('user_id', session.user.id)
+                        .is('deleted_at', null);
+
+                    if (cancelled) return;
+
+                    if (queryError) throw queryError;
+
+                    // Group by domain
+                    const domainMap = new Map<string, { count: number; lastActive: number }>();
+
+                    for (const hl of data || []) {
+                        try {
+                            const url = new URL(hl.url);
+                            const domain = url.hostname.replace(/^www\./, '');
+                            const hlTime = new Date(hl.updated_at || hl.created_at).getTime();
+
+                            const existing = domainMap.get(domain);
+                            if (existing) {
+                                existing.count += 1;
+                                existing.lastActive = Math.max(existing.lastActive, hlTime);
+                            } else {
+                                domainMap.set(domain, { count: 1, lastActive: hlTime });
+                            }
+                        } catch {
+                            // Skip invalid URLs
+                        }
+                    }
+
+                    const collections: DomainCollection[] = Array.from(domainMap.entries())
+                        .map(([domain, data], index) => ({
+                            id: String(index + 1),
+                            domain,
+                            highlightCount: data.count,
+                            lastActive: new Date(data.lastActive),
+                        }))
+                        .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+
+                    setResult({ collections, isLoading: false, error: null });
+                }
+            } catch (err) {
+                if (cancelled) return;
+                setResult({
+                    collections: [],
+                    isLoading: false,
+                    error: err instanceof Error ? err : new Error('Failed to fetch collections'),
+                });
+            }
+        };
+
+        fetchCollections();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [context]);
+
+    return result;
+}

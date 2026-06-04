@@ -1,0 +1,315 @@
+/* _underscore v2 — design system rules
+ *
+ * 1. SINGLE ACCENT. All theme color flows from --accent.
+ * 2. TINTS. Use --accent-tint-{08,18,35,65} for opacity layers.
+ * 3. UTILITY OPACITIES. Hover/press states use --utility-overlay-{06,08,12,15,25}.
+ * 4. UTILITY SURFACE. Elevated surfaces (tweaks thumbs, primary buttons)
+ *    use --utility-surface-elevated. The 34c759 iOS toggle "on" is
+ *    a system meta-tool, not a theme color — see --utility-ok.
+ * 5. EXCEPTIONS. The following hex values are NOT part of the theme
+ *    and may NOT be tokenized:
+ *      - #fef4a8 — DCPostIt sticky-note yellow
+ *      - #fdfcf8, #222, #333 — FauxPage article surface (different surface)
+ *      - #34c759 — iOS toggle "on" (now exposed as --utility-ok)
+ * 6. TYPE. App-wide type preset is selected by Tweaks; do not hardcode
+ *    font-family outside type-presets.js.
+ * 7. DENSITY. Row height 44px minimum. Compact density is a Tweak, not
+ *    a per-screen override.
+ * 8. MODES. Modes are distinguished by glyph + label, not color.
+ *    The single accent appears as active state and brand color only.
+ * 9. ROW MOTION. Wireframes may not declare motion. Production code
+ *    listens to prefers-reduced-motion.
+ */
+
+/* _underscore v2 — wireframe tokens
+   Direction: editorial (NYT/Guardian/Anthropic), mid-fi grayscale,
+   warm terracotta accent. Serif display, sans UI, mono meta. */
+
+:root {
+  /* Paper + ink */
+  --paper:      #f7f5f0;         /* warm off-white */
+  --paper-2:    #efece4;         /* deeper paper */
+  --rule:       #1a1a1a;         /* heavy rule */
+  --rule-soft:  #cfc9bd;         /* hairline */
+  --ink:        #111110;
+  --ink-2:      #3a3835;
+  --ink-3:      #6b6760;
+  --ink-4:      #a39e94;
+
+  /* Accent — Anthropic-ish terracotta, in oklch so the family is tunable */
+  --accent:     oklch(62% 0.12 45);   /* #c96442-ish */
+  --accent-2:   oklch(72% 0.09 45);
+  --accent-ink: #2a1208;
+
+  /* Accent tint scale — opacity layers for the single accent. */
+  --accent-tint-08: color-mix(in oklch, var(--accent) 8%, transparent);
+  --accent-tint-18: color-mix(in oklch, var(--accent) 18%, transparent);
+  --accent-tint-35: color-mix(in oklch, var(--accent) 35%, transparent);
+  --accent-tint-65: color-mix(in oklch, var(--accent) 65%, transparent);
+
+  /* Utility overlays — alpha layers for hover/press states. */
+  --utility-overlay-06: rgba(0, 0, 0, 0.06);
+  --utility-overlay-08: rgba(0, 0, 0, 0.08);
+  --utility-overlay-12: rgba(0, 0, 0, 0.12);
+  --utility-overlay-15: rgba(0, 0, 0, 0.15);
+  --utility-overlay-25: rgba(0, 0, 0, 0.25);
+
+  /* Utility surface — elevated surfaces (tweaks thumbs, primary buttons). */
+  --utility-surface-elevated: #fff;
+
+  /* System meta-tool exception — iOS toggle "on" state. */
+  --utility-ok: #34c759;
+
+  /* Tweaks panel custom tokens */
+  --tweak-paper:              rgba(250, 249, 247, 0.78);
+  --tweak-border:             rgba(255, 255, 255, 0.60);
+  --tweak-ink:                #29261b;
+  --tweak-ink-72:             rgba(41, 38, 27, 0.72);
+  --tweak-ink-60:             rgba(41, 38, 27, 0.60);
+  --tweak-ink-55:             rgba(41, 38, 27, 0.55);
+  --tweak-ink-50:             rgba(41, 38, 27, 0.50);
+  --tweak-ink-45:             rgba(41, 38, 27, 0.45);
+
+  /* Missing utility opacity overlays */
+  --utility-overlay-10:       rgba(0, 0, 0, 0.10);
+  --utility-overlay-18:       rgba(0, 0, 0, 0.18);
+  --utility-overlay-20:       rgba(0, 0, 0, 0.20);
+  --utility-overlay-78:       rgba(0, 0, 0, 0.78);
+  --utility-overlay-88:       rgba(0, 0, 0, 0.88);
+
+  --paper-overlay-50:         rgba(255, 255, 255, 0.50);
+  --paper-overlay-60:         rgba(255, 255, 255, 0.60);
+  --paper-overlay-85:         rgba(255, 255, 255, 0.85);
+  --paper-overlay-90:         rgba(255, 255, 255, 0.90);
+
+  /* Design Canvas custom tokens */
+  --dc-bg:                    #f0eee9;
+  --dc-label:                 rgba(60, 50, 40, 0.70);
+  --dc-title:                 rgba(40, 30, 20, 0.85);
+  --dc-subtitle:              rgba(60, 50, 40, 0.60);
+  --dc-postit-text:           #5a4a2a;
+  --dc-ink:                   #2a251f;
+  --dc-backdrop:              rgba(24, 20, 16, 0.60);
+
+  /* Extra overlays */
+  --utility-overlay-05:       rgba(0, 0, 0, 0.05);
+  --utility-overlay-40:       rgba(0, 0, 0, 0.40);
+
+  --paper-overlay-08:         rgba(255, 255, 255, 0.08);
+  --paper-overlay-10:         rgba(255, 255, 255, 0.10);
+  --paper-overlay-12:         rgba(255, 255, 255, 0.12);
+  --paper-overlay-18:         rgba(255, 255, 255, 0.18);
+  --paper-overlay-30:         rgba(255, 255, 255, 0.30);
+  --paper-overlay-70:         rgba(255, 255, 255, 0.70);
+
+  /* Mode palette — single accent across all modes.
+     Modes are distinguished by glyph + label, NOT color. */
+  --mode-ephemeral: var(--accent);
+  --mode-local:     var(--accent);
+  --mode-cloud:     var(--accent);
+  --mode-ai:        var(--accent);
+
+  /* Type */
+  --serif: "GT Alpina", "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --sans:  "Söhne", "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono:  "JetBrains Mono", "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+
+  /* Scale */
+  --step--2: 10px;
+  --step--1: 11px;
+  --step-0:  13px;
+  --step-1:  15px;
+  --step-2:  18px;
+  --step-3:  22px;
+  --step-4:  28px;
+  --step-5:  36px;
+  --step-6:  48px;
+
+  /* Geometry */
+  --pop-w: 400px;
+  --pop-h: 600px;
+  --radius: 2px;
+}
+
+/* Dark flip, used inside artboards that opt in via .dark */
+.dark {
+  --paper:     #111110;
+  --paper-2:   #1a1918;
+  --rule:      #f2eee6;
+  --rule-soft: #2a2826;
+  --ink:       #f2eee6;
+  --ink-2:     #cfc9bd;
+  --ink-3:     #8a857c;
+  --ink-4:     #5a564f;
+  --mode-local: #f2eee6;
+}
+
+/* Base resets inside artboards */
+.ue * { box-sizing: border-box; }
+.ue {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* Popup chrome */
+.popup {
+  width: var(--pop-w);
+  height: var(--pop-h);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+
+/* Type helpers */
+.u-serif { font-family: var(--serif); letter-spacing: -0.015em; }
+.u-mono  { font-family: var(--mono); letter-spacing: 0; }
+.u-sans  { font-family: var(--sans); }
+.u-caps  { text-transform: uppercase; letter-spacing: 0.12em; font-size: var(--step--2); }
+.u-rule  { border-top: 1px solid var(--rule); }
+.u-hair  { border-top: 1px solid var(--rule-soft); }
+
+.u-kicker {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+/* Section heading on the canvas (outside artboards) */
+.sec-kicker {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6b6760;
+}
+
+/* Wireframe placeholder pattern */
+.ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(0,0,0,0.06) 6px, rgba(0,0,0,0.06) 7px);
+  border: 1px solid var(--rule-soft);
+}
+.dark .ph {
+  background:
+    repeating-linear-gradient(135deg,
+      transparent 0, transparent 6px,
+      rgba(255,255,255,0.06) 6px, rgba(255,255,255,0.06) 7px);
+}
+
+/* Quote mark */
+.qmark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-4);
+}
+
+/* Buttons (wireframe) */
+.btn {
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.btn.primary {
+  background: var(--rule);
+  color: var(--paper);
+}
+.btn.accent {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn.ghost {
+  border-color: var(--rule-soft);
+  color: var(--ink-2);
+}
+.btn.sm { min-height: 32px; padding: 6px 10px; font-size: var(--step--1); }
+
+/* Tab bar in popup */
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+.tabbar button {
+  all: unset;
+  padding: 12px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  min-height: 44px;
+}
+.tabbar button.active { color: var(--ink); position: relative; }
+.tabbar button.active::before {
+  content: "";
+  position: absolute; top: 0; left: 20%; right: 20%;
+  border-top: 2px solid var(--accent);
+}
+
+/* Counter ticks */
+.tick { display: inline-block; width: 4px; height: 4px; background: var(--ink-3); border-radius: 50%; vertical-align: middle; }
+
+/* Scroll containers inside popups shouldn't scroll in wireframes */
+.no-scroll { overflow: hidden; }
+
+/* Nice scroll for lists when we do show them */
+.list-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.list-scroll::-webkit-scrollbar { width: 6px; }
+.list-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }
+
+/* Focus overlay: make artboards look like newspaper clippings */
+.clip {
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* Callout on canvas */
+.callout {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #6b6760;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* Masthead — used on canvas header */
+.masthead {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}

@@ -6,14 +6,14 @@
 import '@/background/utils/polyfill'; // Polyfill environment first
 import { browser } from 'wxt/browser';
 
-import { LoggerFactory } from '@/shared/utils/logger';
-
-import { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
-import type { AuthState } from '@/background/auth/interfaces/i-auth-manager';
-
-import { Container } from '@/background/di/container';
+import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
 import { initializeBackground } from '@/background/bootstrap'; // Static import
+import type { Container } from '@/background/di/container';
+import { readLocalCollections } from '@/background/services/local-collections-reader';
+import { hashDomain, decryptData } from '@/background/utils/crypto-utils';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
+import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -47,8 +47,11 @@ export default defineBackground({
       logger.info('[INIT] AuthManager resolved');
 
       logger.info('[INIT] Resolving repositoryFacade from container...');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repositoryFacade = container.resolve<any>('repositoryFacade');
       logger.info('[INIT] RepositoryFacade resolved');
+      await repositoryFacade.initialize();
+      logger.info('[INIT] RepositoryFacade initialized');
 
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {
@@ -146,43 +149,11 @@ export default defineBackground({
       // --- Collections API handlers ---
 
       // Get Collections (Grouped by Domain) Handler
+      // Reads unified __collections_index: covers Walk (24h TTL), Sprint (permanent), Vault cache
       messageBus.subscribe('GET_COLLECTIONS', async () => {
         logger.info('Handling GET_COLLECTIONS request');
         try {
-          const highlights = await repositoryFacade.findAll();
-
-          // Group by domain
-          const domainMap = new Map<string, { count: number, lastActive: number }>();
-
-          for (const hl of highlights) {
-            try {
-              const url = new URL(hl.url);
-              // Strip www. prefix for cleaner display
-              const domain = url.hostname.replace(/^www\./, '');
-
-              const existing = domainMap.get(domain);
-              const hlTime = new Date(hl.updatedAt || hl.createdAt).getTime();
-
-              if (existing) {
-                existing.count += 1;
-                existing.lastActive = Math.max(existing.lastActive, hlTime);
-              } else {
-                domainMap.set(domain, { count: 1, lastActive: hlTime });
-              }
-            } catch (e) {
-              // Skip invalid URLs
-              logger.warn('Skipped highlight with invalid URL during collection grouping', hl.url);
-            }
-          }
-
-          // Map to array and sort by most recently active
-          const collections = Array.from(domainMap.entries()).map(([domain, data], index) => ({
-            id: String(index + 1), // Generate arbitrary ID for UI iteration
-            domain,
-            highlightCount: data.count,
-            lastActive: new Date(data.lastActive)
-          })).sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
-
+          const collections = await readLocalCollections();
           return { success: true, data: { collections } };
         } catch (error) {
           logger.error('GET_COLLECTIONS failed', error as Error);
@@ -198,18 +169,38 @@ export default defineBackground({
         }
 
         try {
-          const allHighlights = await repositoryFacade.findAll();
-          const filteredHighlights = allHighlights.filter((hl: any) => {
-            try {
-              const url = new URL(hl.url);
-              const hlDomain = url.hostname.replace(/^www\./, '');
-              return hlDomain === payload.domain;
-            } catch {
-              return false;
-            }
-          });
+          const hashedKey = await hashDomain(payload.domain);
+          const result = await browser.storage.local.get(hashedKey);
+          const domainStorage = result[hashedKey] as DomainStorage | undefined;
 
-          return { success: true, data: { highlights: filteredHighlights } };
+          if (!domainStorage?.data) {
+            return { success: true, data: { highlights: [] } };
+          }
+
+          const decrypted = await decryptData(domainStorage.data, payload.domain);
+          const eventLog: EventLog = JSON.parse(decrypted);
+
+          // Project events: track created highlights, remove deleted ones
+          const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
+          for (const event of eventLog.events) {
+            if (event.type === 'highlight.created') {
+              highlightMap.set(event.data.id, event.data);
+            } else if (event.type === 'highlight.removed') {
+              highlightMap.delete(event.highlightId);
+            } else if (event.type === 'highlights.cleared') {
+              highlightMap.clear();
+            }
+          }
+
+          const highlights = Array.from(highlightMap.values()).map(hl => ({
+            id: hl.id,
+            text: hl.text,
+            url: hl.url ?? '',
+            path: hl.url ? new URL(hl.url).pathname : '/',
+            createdAt: hl.createdAt,
+          })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          return { success: true, data: { highlights } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
           throw error;
@@ -292,8 +283,9 @@ async function cleanupExpiredDomains(): Promise<void> {
     for (const [key, value] of Object.entries(all)) {
       // Check if it's our storage format and has TTL
       if (value && typeof value === 'object' && 'ttl' in value) {
-        const storage = value as { ttl: number };
-        if (now > storage.ttl) {
+        const storage = value as { ttl: number | null };
+        // null means permanent (Sprint/Vault) — never expire these
+        if (storage.ttl !== null && now > storage.ttl) {
           expired.push(key);
         }
       }

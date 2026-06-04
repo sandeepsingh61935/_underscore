@@ -104,10 +104,12 @@ function PopupApp(): React.ReactElement {
           'underscore_seen_welcome',
           'underscore_seen_mode_selection',
           'underscore_last_popup_view',
+          'underscore_last_selected_domain',
         ]);
         const hasSeenWelcome = data['underscore_seen_welcome'] === 'true';
         const hasSeenModeSelection = data['underscore_seen_mode_selection'] === 'true';
         const lastView = data['underscore_last_popup_view'] as View;
+        const lastDomain = (data['underscore_last_selected_domain'] as string) || '';
 
         if (!hasSeenWelcome) {
           setCurrentView(View.WELCOME);
@@ -117,6 +119,7 @@ function PopupApp(): React.ReactElement {
         if (user) {
           // If user is already logged in, skip mode selection and prefer collections/details/settings
           if (lastView === View.DOMAIN_DETAILS || lastView === View.SETTINGS) {
+            if (lastView === View.DOMAIN_DETAILS && lastDomain) setSelectedDomain(lastDomain);
             setCurrentView(lastView);
           } else {
             setCurrentView(View.COLLECTIONS);
@@ -124,15 +127,14 @@ function PopupApp(): React.ReactElement {
         } else if (!hasSeenModeSelection) {
           setCurrentView(View.MODE_SELECTION);
         } else {
-          // Not logged in but seen mode selection
-          if (
-            lastView === View.MODE_SELECTION ||
-            lastView === View.AUTH ||
-            lastView === View.SETTINGS
-          ) {
+          // Not logged in but already chose a mode — go to collections, not mode selection again
+          if (lastView === View.AUTH || lastView === View.SETTINGS) {
             setCurrentView(lastView);
+          } else if (lastView === View.DOMAIN_DETAILS) {
+            if (lastDomain) setSelectedDomain(lastDomain);
+            setCurrentView(View.DOMAIN_DETAILS);
           } else {
-            setCurrentView(View.MODE_SELECTION);
+            setCurrentView(View.COLLECTIONS);
           }
         }
       } catch (err) {
@@ -197,10 +199,12 @@ function PopupApp(): React.ReactElement {
 
   const handleCollectionClick = (domain: string): void => {
     setSelectedDomain(domain);
+    void browser.storage.local.set({ underscore_last_selected_domain: domain });
     setCurrentView(View.DOMAIN_DETAILS);
   };
 
   const handleBackToCollections = (): void => {
+    void browser.storage.local.remove('underscore_last_selected_domain');
     setCurrentView(View.COLLECTIONS);
   };
 

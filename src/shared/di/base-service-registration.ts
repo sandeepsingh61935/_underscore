@@ -59,11 +59,17 @@ export function registerBaseServices(container: Container): void {
     // ============================================
 
     /**
-     * Storage Service - Singleton
-     * Manages event sourcing and domain-scoped highlight persistence
+     * Sprint storage — permanent (null TTL)
      */
     container.registerSingleton<IStorage>('storage', () => {
-        return new StorageService();
+        return new StorageService({ mode: 'sprint', ttlDuration: null });
+    });
+
+    /**
+     * Walk storage — 24h TTL
+     */
+    container.registerSingleton<IStorage>('walkStorage', () => {
+        return new StorageService({ mode: 'walk', ttlDuration: 24 * 60 * 60 * 1000 });
     });
 
     /**

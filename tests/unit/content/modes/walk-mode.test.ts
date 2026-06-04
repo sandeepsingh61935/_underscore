@@ -1,13 +1,18 @@
 /**
  * Walk Mode Unit Tests
  *
- * Tests for ephemeral highlighting with zero persistence
- * Walk Mode Philosophy: "True Incognito" - privacy-first, memory-only
+ * Tests for 24h-TTL highlighting with local persistence
+ * Walk Mode Philosophy: "Light footprint" - persist for 24 hours, then auto-clear
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/content/highlight-type-bridge', () => ({
+  toStorageFormat: vi.fn().mockResolvedValue({ id: 'test-id', text: 'test', colorRole: 'yellow', type: 'underscore', ranges: [], url: 'http://localhost/' }),
+}));
 
 import { WalkMode } from '@/content/modes/walk-mode';
+import type { IStorage } from '@/shared/interfaces/i-storage';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
@@ -15,6 +20,7 @@ import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 describe('WalkMode - Ephemeral Highlighting', () => {
   let walkMode: WalkMode;
   let repository: InMemoryHighlightRepository;
+  let mockStorage: IStorage;
   let eventBus: EventBus;
   let logger: ConsoleLogger;
 
@@ -36,8 +42,13 @@ describe('WalkMode - Ephemeral Highlighting', () => {
     repository = new InMemoryHighlightRepository();
     eventBus = new EventBus(new ConsoleLogger('test', LogLevel.NONE));
     logger = new ConsoleLogger('walk-mode-test', LogLevel.NONE);
+    mockStorage = {
+      saveEvent: vi.fn().mockResolvedValue(undefined),
+      loadEvents: vi.fn().mockResolvedValue([]),
+      clear: vi.fn().mockResolvedValue(undefined),
+    };
 
-    walkMode = new WalkMode(repository, eventBus, logger);
+    walkMode = new WalkMode(repository, mockStorage, eventBus, logger);
   });
 
   describe('Highlight Creation', () => {
@@ -129,42 +140,47 @@ describe('WalkMode - Ephemeral Highlighting', () => {
     });
   });
 
-  describe('Ephemeral Behavior - No Persistence', () => {
-    it('should NOT restore highlights (shouldRestore returns false)', () => {
-      // Act & Assert
-      expect(walkMode.shouldRestore()).toBe(false);
+  describe('Persistence Behavior - 24h TTL', () => {
+    it('should restore highlights on page reload (shouldRestore returns true)', () => {
+      expect(walkMode.shouldRestore()).toBe(true);
     });
 
-    it('should have no-op onHighlightCreated (no persistence)', async () => {
-      // Arrange
+    it('should persist highlight on creation via storage', async () => {
       const event = {
         type: 'highlight:created' as const,
-        highlightId: 'test-id',
-        text: 'test',
         timestamp: new Date(),
-        highlight: {} as any,
+        highlight: {
+          id: 'test-id',
+          text: 'test',
+          colorRole: 'yellow',
+          type: 'underscore' as const,
+          ranges: [],
+          createdAt: new Date(),
+        } as any,
       };
 
-      // Act - should complete without errors
-      await expect(walkMode.onHighlightCreated(event)).resolves.not.toThrow();
+      await walkMode.onHighlightCreated(event);
 
-      // No storage calls should be made (Walk Mode has no storage)
+      expect(mockStorage.saveEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'highlight.created' })
+      );
     });
 
-    it('should have no-op onHighlightRemoved (no persistence)', async () => {
-      // Arrange
+    it('should persist highlight removal via storage', async () => {
       const event = {
         type: 'highlight:removed' as const,
         highlightId: 'test-id',
         timestamp: new Date(),
       };
 
-      // Act - should complete without errors
-      await expect(walkMode.onHighlightRemoved(event)).resolves.not.toThrow();
+      await walkMode.onHighlightRemoved(event);
+
+      expect(mockStorage.saveEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'highlight.removed', highlightId: 'test-id' })
+      );
     });
 
-    it('should use InMemoryRepository (no persistence)', () => {
-      // Assert - repository should be in-memory only
+    it('should use InMemoryRepository for in-session state', () => {
       expect(repository).toBeInstanceOf(InMemoryHighlightRepository);
     });
   });
@@ -173,10 +189,10 @@ describe('WalkMode - Ephemeral Highlighting', () => {
     it('should have correct capability configuration', () => {
       // Assert
       expect(walkMode.capabilities).toEqual({
-        persistence: 'none',
-        undo: false,
+        persistence: 'local',
+        undo: true,
         sync: false,
-        collections: false,
+        collections: true,
         tags: false,
         export: false,
         ai: false,

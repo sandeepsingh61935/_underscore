@@ -87,15 +87,15 @@ export class ModeStateManager {
   async init(): Promise<void> {
     try {
       // Wrap storage read in circuit breaker
-      // Use chrome.storage.sync for cross-device preference sync
+      // Use chrome.storage.local with key underscore-current-mode to match popup persistence
       const result = await this.storageCircuitBreaker.execute(() =>
-        chrome.storage.sync.get(['defaultMode', 'metadata'])
+        chrome.storage.local.get(['underscore-current-mode', 'metadata'])
       );
 
       // [DEBUG] Force log to console to verify persistence
       console.error('[ModeState] Raw storage result:', JSON.stringify(result));
 
-      const loadedMode = result['defaultMode'];
+      const loadedMode = result['underscore-current-mode'];
       const loadedMetadata = result['metadata'];
 
       // Detect state version
@@ -125,10 +125,11 @@ export class ModeStateManager {
           this.metadata = v2State.metadata;
 
           // Persist migrated state (non-blocking) with circuit breaker
+          // Use chrome.storage.local with underscore-current-mode to match popup persistence
           try {
             await this.storageCircuitBreaker.execute(() =>
-              chrome.storage.sync.set({
-                defaultMode: v2State.currentMode,
+              chrome.storage.local.set({
+                'underscore-current-mode': v2State.currentMode,
                 metadata: v2State.metadata,
               })
             );
@@ -325,11 +326,11 @@ export class ModeStateManager {
       });
 
       // 6. Persist preference (Non-blocking / Graceful Degradation) with circuit breaker
-      // Use chrome.storage.sync for cross-device preference sync
+      // Use chrome.storage.local with key underscore-current-mode to match popup persistence
       try {
         await this.storageCircuitBreaker.execute(() =>
-          chrome.storage.sync.set({
-            defaultMode: validatedMode,
+          chrome.storage.local.set({
+            'underscore-current-mode': validatedMode,
             metadata: this.metadata,
           })
         );

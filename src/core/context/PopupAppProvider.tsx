@@ -37,7 +37,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     onLogout
 }) => {
     // Mode state — persisted in chrome.storage.local, reactive via onChanged
-    const { currentMode, persistMode } = usePersistedMode(propIsAuthenticated);
+    const { currentMode, modeReady, persistMode } = usePersistedMode(propIsAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - still use localStorage for theme preference
@@ -86,12 +86,10 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
     }, [onLogout]);
 
-    // Apply mode color on initial mount
+    // Keep --ink-mode CSS variable in sync with currentMode
     useEffect(() => {
-        if (currentMode) {
-            document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[currentMode]);
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[currentMode]);
+    }, [currentMode]);
 
     const setMode = useCallback(async (mode: Mode) => {
         // Apply mode color to root — drives all mode-tinted elements
@@ -128,6 +126,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         login,
         logout,
         currentMode,
+        modeReady,
         setMode,
         availableModes,
         theme,

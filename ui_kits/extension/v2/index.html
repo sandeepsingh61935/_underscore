@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>_underscore v2 — extension wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #f2efe8; }
+  body { font-family: "Inter", sans-serif; color: #111; }
+  /* Canvas masthead */
+  .doc-head {
+    padding: 28px 40px 18px;
+    border-bottom: 1px solid #1a1a1a;
+    background: #f2efe8;
+  }
+  .doc-head .masthead {
+    font-family: "Source Serif 4", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 44px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .doc-head .sub {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6b6760;
+    margin-top: 10px;
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .doc-intro {
+    padding: 20px 40px 8px;
+    border-bottom: 1px solid #cfc9bd;
+    background: #f2efe8;
+    font-family: "Source Serif 4", serif;
+  }
+  .doc-intro .col {
+    display: grid; grid-template-columns: 180px 1fr; gap: 18px; padding: 10px 0;
+    border-bottom: 1px dotted #cfc9bd;
+  }
+  .doc-intro .col:last-child { border-bottom: none; }
+  .doc-intro .col .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6b6760;
+    padding-top: 4px;
+  }
+  .doc-intro .col .v {
+    font-size: 15px; line-height: 1.5; color: #222;
+  }
+  .doc-intro .col .v em { font-style: italic; color: #444; }
+
+  #canvas-host { height: calc(100vh - 0px); }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<script src="type-presets.js"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="screens-mode-select.jsx"></script>
+<script type="text/babel" src="screens-nav.jsx"></script>
+<script type="text/babel" src="screens-expression.jsx"></script>
+
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+
+const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#c96442",
+  "typeface": "editorial",
+  "density": "comfortable",
+  "showFrames": true,
+  "darkSample": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweaks] = useTweaks(TWEAKS_DEFAULTS);
+
+  // Live-apply accent (single brand color across all modes)
+  React.useEffect(() => {
+    const r = document.documentElement.style;
+    r.setProperty("--accent", tweaks.accent);
+    r.setProperty("--mode-ephemeral", tweaks.accent);
+    r.setProperty("--mode-local", tweaks.accent);
+    r.setProperty("--mode-cloud", tweaks.accent);
+    r.setProperty("--mode-ai", tweaks.accent);
+  }, [tweaks.accent]);
+
+  // Live-apply typography preset (uniform across modes)
+  React.useEffect(() => {
+    window.applyTypePreset(tweaks.typeface);
+  }, [tweaks.typeface]);
+
+  return (
+    <>
+      <div className="doc-head">
+        <div className="masthead">_underscore <span style={{ fontStyle: 'normal', color: '#6b6760' }}>— mid-fi wireframes, v2</span></div>
+        <div className="sub">
+          <span>Extension · Popup 400×600</span>
+          <span>Editorial direction (NYT / Guardian / Anthropic)</span>
+          <span>Accent: Anthropic Orange</span>
+          <span>Apr 25, 2026</span>
+        </div>
+      </div>
+
+      <div className="doc-intro">
+        <div className="col">
+          <div className="k">Aesthetic</div>
+          <div className="v">Editorial, paper-first. Warm off-white background (<em>#f7f5f0</em>), heavy black rule, hairline dividers. Type does the work — serif for <em>voice</em> (titles, quotes), sans for <em>UI chrome</em>, mono for <em>metadata</em>. One brand color: Anthropic orange, used sparingly across <em>all four modes</em>.</div>
+        </div>
+        <div className="col">
+          <div className="k">Typography</div>
+          <div className="v">Uniform across modes. Four user-selectable presets in Settings (<em>Editorial · Classic · Modern · Humanist</em>) — each defines serif / sans / mono together so the rhythm stays consistent. Whatever the user picks applies app-wide. Try the Tweaks panel.</div>
+        </div>
+        <div className="col">
+          <div className="k">Library hierarchy</div>
+          <div className="v">Within the library, the levels carry distinct typographic treatment so the user always knows where they are: <em>Library</em> = display serif large · <em>Domain</em> = serif italic medium · <em>Sub-domain</em> = sans semibold tracked uppercase · <em>Highlight</em> = serif body with pull-quote mark. See section ⑦.</div>
+        </div>
+        <div className="col">
+          <div className="k">Modes</div>
+          <div className="v">Two families (Device · Cloud), four modes total. <em>Color is not a mode signal</em> — modes are distinguished by glyph, label and grouping. Family is expressed through grouping. The single accent appears as the active state, the brand color, and the TTL meter.</div>
+        </div>
+        <div className="col">
+          <div className="k">TTL</div>
+          <div className="v">Precise, per the brief — a 24-segment bar (one per hour) plus a live <em>HH:MM:SS</em> countdown on the sub-domain detail. On highlight rows, a compact chip: <em>3h 22m</em> + proportional bar. TTL appears <em>only</em> in ephemeral mode.</div>
+        </div>
+        <div className="col">
+          <div className="k">Navigation (IA)</div>
+          <div className="v">Collections → Domain → Sub-domain. Four approaches explored: classic drill-down, in-place accordion, Miller columns, and breadcrumb + grouped list with peeks.</div>
+        </div>
+        <div className="col">
+          <div className="k">Motion</div>
+          <div className="v">Not designed in these wireframes. Intent: page-style slide between stack levels; TTL countdown uses <em>requestAnimationFrame</em>-pacing at 1s; ephemeral highlights fade-out on expiry with a 200ms paper-unfurl. Respects <em>prefers-reduced-motion</em>.</div>
+        </div>
+        <div className="col">
+          <div className="k">Density</div>
+          <div className="v">Row height 44px minimum (hit target). Comfortable by default; <em>Compact</em> is a Tweak. Lists use hairline dividers, not cards — feels like a reading list, not an inbox.</div>
+        </div>
+      </div>
+
+      <div id="canvas-host">
+        <DesignCanvas>
+          <DCSection id="mode-select" title="① Mode selection" subtitle="Four approaches to picking between four modes across two families, in a 400×600 popup.">
+            <DCArtboard id="ms-a" label="A · Editorial stack" width={440} height={720}>
+              <ModeSelect_A />
+            </DCArtboard>
+            <DCArtboard id="ms-b" label="B · Two-column families" width={440} height={720}>
+              <ModeSelect_B />
+            </DCArtboard>
+            <DCArtboard id="ms-c" label="C · Swatch strip + detail" width={440} height={720}>
+              <ModeSelect_C />
+            </DCArtboard>
+            <DCArtboard id="ms-d" label="D · Privacy slider" width={440} height={720}>
+              <ModeSelect_D />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="mode-expression" title="② Mode visual expression" subtitle="Color, glyph, type and texture treatments for the four modes. Pick one system — or mix.">
+            <DCArtboard id="ex-a" label="A · Glyph + dot" width={360} height={240}>
+              <ExprGlyph />
+            </DCArtboard>
+            <DCArtboard id="ex-b" label="B · Color blocks" width={360} height={240}>
+              <ExprSwatch />
+            </DCArtboard>
+            <DCArtboard id="ex-c" label="C · Typographic only" width={360} height={300}>
+              <ExprType />
+            </DCArtboard>
+            <DCArtboard id="ex-d" label="D · Texture (no color)" width={360} height={240}>
+              <ExprTexture />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="nav" title="③ Collections → Domain → Sub-domain" subtitle="Navigating the three-level IA inside the popup. Same data, four different shapes.">
+            <DCArtboard id="nav-a" label="A · Drill-down" width={440} height={680}>
+              <Nav_A />
+            </DCArtboard>
+            <DCArtboard id="nav-b" label="B · Accordion" width={440} height={680}>
+              <Nav_B />
+            </DCArtboard>
+            <DCArtboard id="nav-c" label="C · Miller columns" width={440} height={680}>
+              <Nav_C />
+            </DCArtboard>
+            <DCArtboard id="nav-d" label="D · Breadcrumb + peeks" width={440} height={680}>
+              <Nav_D />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="home" title="④ Dashboard / Home + Sub-domain detail" subtitle="Home varies by active mode — ephemeral leads with TTL, cloud leads with scope.">
+            <DCArtboard id="home-eph" label="Home · Ephemeral (TTL)" width={440} height={680}>
+              <Home_Ephemeral />
+            </DCArtboard>
+            <DCArtboard id="home-cloud" label="Home · Cloud" width={440} height={680}>
+              <Home_Cloud />
+            </DCArtboard>
+            <DCArtboard id="sub" label="Sub-domain · Academy (ephemeral)" width={440} height={680}>
+              <SubDomainView />
+            </DCArtboard>
+            <DCArtboard id="settings" label="Settings + typography" width={440} height={680}>
+              <Settings typeId={tweaks.typeface} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="hierarchy" title="⑧ Library hierarchy — typographic levels" subtitle="Per Sandy: typography is uniform across modes, but library levels (Domain → Sub-domain → Highlight) get distinct treatment so the user always knows where they are.">
+            <DCArtboard id="hier-spec" label="Spec · four levels" width={420} height={520}>
+              <LibraryHierarchy />
+            </DCArtboard>
+            <DCArtboard id="hier-context" label="In context · anthropic.com" width={440} height={680}>
+              <LibraryHierarchyInContext />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="capture" title="⑤ Content-script capture overlay" subtitle="What appears in-page when the user selects text. Each shown over a faux article.">
+            <DCArtboard id="cap-a" label="A · Tooltip" width={560} height={380}>
+              <Capture_Tooltip />
+            </DCArtboard>
+            <DCArtboard id="cap-b" label="B · Bottom toolbar" width={560} height={380}>
+              <Capture_Toolbar />
+            </DCArtboard>
+            <DCArtboard id="cap-c" label="C · Sidebar" width={560} height={380}>
+              <Capture_Sidebar />
+            </DCArtboard>
+            <DCArtboard id="cap-d" label="D · Popover card" width={560} height={380}>
+              <Capture_Popover />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="empty" title="⑥ Empty states" subtitle="Empty should feel like a fresh notebook — not a missing feature.">
+            <DCArtboard id="em-a" label="A · First-run (big type)" width={440} height={680}>
+              <Empty_A />
+            </DCArtboard>
+            <DCArtboard id="em-b" label="B · Empty sub-domain" width={440} height={680}>
+              <Empty_B />
+            </DCArtboard>
+            <DCArtboard id="em-c" label="C · Library with starters" width={440} height={680}>
+              <Empty_C />
+            </DCArtboard>
+            <DCArtboard id="em-d" label="D · Ephemeral reset" width={440} height={680}>
+              <Empty_D />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      </div>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="System">
+          <TweakColor label="Accent color" value={tweaks.accent} onChange={(v) => setTweaks({ accent: v })} />
+          <TweakSelect label="Typography" value={tweaks.typeface} options={[
+            { value: "editorial", label: "Editorial — Source Serif / Inter" },
+            { value: "classic",   label: "Classic — Playfair / Source Sans" },
+            { value: "modern",    label: "Modern — Fraunces / Manrope" },
+            { value: "humanist",  label: "Humanist — Lora / Work Sans" },
+          ]} onChange={(v) => setTweaks({ typeface: v })} />
+          <TweakRadio label="Density" value={tweaks.density} options={[
+            { value: "comfortable", label: "Comfortable" },
+            { value: "compact", label: "Compact" },
+          ]} onChange={(v) => setTweaks({ density: v })} />
+          <TweakToggle label="Show popup chrome" value={tweaks.showFrames} onChange={(v) => setTweaks({ showFrames: v })} />
+        </TweakSection>
+        <TweakSection title="Notes">
+          <div style={{ fontSize: 11, color: '#8a857c', lineHeight: 1.5, fontFamily: 'JetBrains Mono, monospace' }}>
+            Single accent across all modes · typography uniform across modes (selectable here, also in Settings) · library levels keep distinct typographic treatment.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
