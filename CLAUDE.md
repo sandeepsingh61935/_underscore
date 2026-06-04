@@ -79,6 +79,17 @@ When working on ANY UI code (components, views, styles), you MUST:
 - It is a pure CSS custom properties approach with zero Tailwind dependencies.
 - You must exactly match the wireframes in `ui_kits/extension/v2/`.
 
+### V2 Popup Chrome Ownership (enforced 2026-06-03)
+
+`PopupShell` is the **sole owner** of popup chrome. Views are body-only. This is the contract established on `feature/v2-popup-redesign` (spec at `docs/superpowers/specs/2026-06-03-v2-popup-chrome-alignment-design.md`).
+
+- **`PopupShell` renders, in order**: title strip (outside 400×600) → `ModeHeader` (optional) → body slot with single `AnimatePresence mode="wait"` + `position: absolute, inset: 0` motion div → `TabBar` (optional).
+- **Views NEVER import** `PopupShell`, `ModeHeader`, or `TabBar`. They return body content only: a `display: flex, flex-direction: column, height: 100%, width: 100%` root.
+- **Chrome config** comes from `buildChrome(handlers)` in `src/entrypoints/popup/chrome.ts`, which returns a `Record<ViewKey, PopupChrome>` keyed by the `View` enum. `index.tsx` passes `chrome={chrome[currentView]}` to `PopupShell`.
+- **No `width: 400px` / `height: 600px` inside view components** — `PopupShell` owns the 400×600 box. (Exception: `ErrorBoundary` fallback may be self-contained.)
+- **No per-view `position: absolute, inset: 0` motion wrappers** — the shell's body slot provides this.
+- **No multiple `AnimatePresence` instances** — exactly one, inside `PopupShell`.
+
 **Reference**: `.agent/skills/full-stack-developer/SKILL.md` (Frontend section)
 **Workflows**: `ui-preflight.md`
 
