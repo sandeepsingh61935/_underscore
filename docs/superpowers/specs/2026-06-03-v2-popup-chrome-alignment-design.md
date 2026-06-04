@@ -3,7 +3,7 @@
 **Date**: 2026-06-03
 **Branch**: `feature/v2-popup-redesign`
 **Worktree**: `/home/sandy/projects/_underscore/.worktrees/v2-popup-redesign`
-**Status**: Approved (grilled through 5 architectural questions)
+**Status**: ✅ **IMPLEMENTED** (20 commits on `feature/v2-popup-redesign`, HEAD `6870163`)
 **Out of scope**: re-designing the visual system; this doc only resolves the chrome-ownership and layout-shell contract.
 
 ## 1. Problem

@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status**: ✅ **FULLY EXECUTED** (2026-06-03). All 19 tasks completed via subagent-driven TDD. Plus 1 follow-up lint cleanup commit. 20 commits on `feature/v2-popup-redesign` (HEAD `6870163`). 19 new tests pass (12 chrome factory + 3 TabBar + 4 PopupShell). `wxt build` clean. User confirmed visual verification in Chrome ("It works").
+
 **Goal:** Fix header/footer alignment in the V2 popup by making `PopupShell` the sole owner of the chrome (title strip + `ModeHeader` + `TabBar`) and reducing views to body-only content. The change matches the wireframe contract in `ui_kits/extension/v2/` and makes the 400×600 box invariant structurally true.
 
 **Architecture:** One `AnimatePresence` lives inside `PopupShell`; the chrome above and below it is rendered by the shell itself and does not re-mount on view transitions. A `buildChrome(handlers)` factory returns a `Record<View, PopupChrome>` keyed by the `View` enum — the chrome config is the single source of truth for what chrome is visible on each screen. Views are body-only and never import chrome primitives.
