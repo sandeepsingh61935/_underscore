@@ -1,17 +1,29 @@
+/**
+ * V2 tonalPill helpers — replace MD3 class strings with V2 tokens.
+ * The pill is a "soft chip" container; the V2 version uses --rule-soft
+ * for the border and --paper-2 for the surface, with --accent for the
+ * active selected state.
+ *
+ * Used by Chip and any other primitive that renders a row of selectable
+ * pills (e.g. TweaksPanel). The classes are still Tailwind-flavored
+ * because Chip.tsx uses the cn() helper, but the underlying CSS
+ * variables are V2.
+ */
+
 export const tonalPillShellClass =
-  'inline-flex w-fit flex-wrap gap-1 rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] p-1 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--md-sys-color-inverse-on-surface)_4%,transparent)]';
+    'inline-flex w-fit flex-wrap gap-1 rounded-full border border-[var(--rule-soft)] bg-[var(--paper-2)] p-1';
 
 export const tonalPillBaseClass =
-  'inline-flex min-h-[48px] items-center justify-center appearance-none rounded-full border border-transparent bg-transparent transition-all duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
+    'inline-flex min-h-[44px] items-center justify-center appearance-none rounded-full border border-transparent bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2';
 
 export const tonalPillStandaloneClass =
-  'border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))]';
+    'border-[var(--rule-soft)] bg-[var(--paper-2)]';
 
 export const tonalPillActiveClass =
-  'border-[color-mix(in_srgb,var(--md-sys-color-primary)_22%,transparent)] bg-primary-container text-on-primary-container shadow-elevation-1';
+    'border-[var(--accent)] bg-[var(--paper-2)] text-[var(--accent)]';
 
 export const tonalPillInactiveClass =
-  'text-on-surface-variant hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,var(--md-sys-color-surface-container-high))] hover:text-on-surface';
+    'text-[var(--ink-2)] hover:bg-[color-mix(in_oklch,var(--ink)_6%,var(--paper-2))] hover:text-[var(--ink)]';
 
 export const tonalPillDisabledClass =
-  'pointer-events-none cursor-not-allowed border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_40%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-highest)_55%,transparent)] text-outline opacity-disabled';
+    'pointer-events-none cursor-not-allowed border-[color-mix(in_oklch,var(--rule-soft)_60%,transparent)] bg-[color-mix(in_oklch,var(--paper-2)_60%,transparent)] text-[var(--ink-3)] opacity-50';
