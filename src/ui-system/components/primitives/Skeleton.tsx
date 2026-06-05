@@ -8,20 +8,29 @@ export interface SkeletonProps {
 }
 
 /**
- * Base Skeleton component for creating loading placeholders
+ * V2 Skeleton — surface uses --paper-2; shimmer animation uses
+ * --utility-overlay-08 for the highlight pass.
  */
 export function Skeleton({
     className,
     animation = 'pulse',
+    style,
 }: SkeletonProps) {
     return (
         <div
             className={cn(
-                "bg-secondary rounded-md",
-                animation === 'pulse' && "animate-pulse",
-                animation === 'shimmer' && "animate-shimmer bg-gradient-to-r from-secondary via-secondary/50 to-secondary bg-[length:200%_100%]",
+                animation === 'pulse' && 'animate-pulse',
+                animation === 'shimmer' && 'animate-shimmer',
                 className
             )}
+            style={{
+                backgroundColor: 'var(--paper-2)',
+                ...(animation === 'shimmer' && {
+                    backgroundImage: `linear-gradient(90deg, var(--paper-2) 0%, var(--utility-overlay-08) 50%, var(--paper-2) 100%)`,
+                    backgroundSize: '200% 100%',
+                }),
+                ...style,
+            }}
         />
     );
 }
@@ -35,15 +44,15 @@ export function SkeletonText({
     animation = 'pulse',
 }: SkeletonProps & { lines?: number }) {
     return (
-        <div className={cn("space-y-2", className)}>
+        <div className={cn('space-y-2', className)}>
             {Array.from({ length: lines }).map((_, i) => (
                 <Skeleton
                     key={i}
                     animation={animation}
                     className={cn(
-                        "h-4",
+                        'h-4',
                         // Last line is shorter for visual variety
-                        i === lines - 1 && lines > 1 && "w-3/4"
+                        i === lines - 1 && lines > 1 && 'w-3/4'
                     )}
                 />
             ))}
@@ -68,7 +77,7 @@ export function SkeletonAvatar({
     return (
         <Skeleton
             animation={animation}
-            className={cn("rounded-full", sizes[size], className)}
+            className={cn('rounded-full', sizes[size], className)}
         />
     );
 }
@@ -82,10 +91,8 @@ export function SkeletonCollectionCard({
 }: SkeletonProps) {
     return (
         <div
-            className={cn(
-                "flex items-center gap-4 p-4 bg-card border border-border rounded-xl",
-                className
-            )}
+            className={cn('flex items-center gap-4 p-4 rounded', className)}
+            style={{ backgroundColor: 'var(--paper-2)', border: '1px solid var(--rule-soft)' }}
         >
             {/* Favicon placeholder */}
             <Skeleton animation={animation} className="shrink-0 w-10 h-10 rounded-lg" />
@@ -111,10 +118,8 @@ export function SkeletonHighlightCard({
 }: SkeletonProps) {
     return (
         <div
-            className={cn(
-                "p-4 bg-card border border-border border-l-4 border-l-secondary rounded-lg",
-                className
-            )}
+            className={cn('p-4 rounded', className)}
+            style={{ backgroundColor: 'var(--paper-2)', border: '1px solid var(--rule-soft)', borderLeft: '4px solid var(--rule-soft)' }}
         >
             {/* Text lines */}
             <div className="space-y-2 mb-3">
@@ -141,7 +146,7 @@ export function SkeletonCollectionsList({
     animation = 'pulse',
 }: SkeletonProps & { count?: number }) {
     return (
-        <div className={cn("flex flex-col gap-2", className)}>
+        <div className={cn('flex flex-col gap-2', className)}>
             {Array.from({ length: count }).map((_, i) => (
                 <SkeletonCollectionCard key={i} animation={animation} />
             ))}
@@ -158,7 +163,7 @@ export function SkeletonHighlightsList({
     animation = 'pulse',
 }: SkeletonProps & { count?: number }) {
     return (
-        <div className={cn("flex flex-col gap-3", className)}>
+        <div className={cn('flex flex-col gap-3', className)}>
             {Array.from({ length: count }).map((_, i) => (
                 <SkeletonHighlightCard key={i} animation={animation} />
             ))}
