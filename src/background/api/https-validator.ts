@@ -33,9 +33,9 @@ export class HTTPSValidator {
      * 
      * @example
      * ```typescript
-     * HTTPSValidator.validate('https://api.supabase.co'); // ✅ Pass
-     * HTTPSValidator.validate('http://api.supabase.co');  // ❌ Throws SecurityError
-     * HTTPSValidator.validate('localhost:3000');          // ✅ Pass (dev mode)
+     * HTTPSValidator.validate('https://api.supabase.co'); // [PASS]
+     * HTTPSValidator.validate('http://api.supabase.co');  // [FAIL] Throws SecurityError
+     * HTTPSValidator.validate('localhost:3000');          // [PASS] (dev mode)
      * ```
      */
     static validate(url: string): void {

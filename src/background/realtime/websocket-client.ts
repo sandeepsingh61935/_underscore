@@ -84,7 +84,7 @@ export class WebSocketClient implements IWebSocketClient {
                     });
 
                     if (status === 'SUBSCRIBED') {
-                        this.logger.info('[WebSocketClient] ✅ Successfully subscribed to highlights channel');
+                        this.logger.info('[WebSocketClient] [OK] Successfully subscribed to highlights channel');
                     } else if (status === 'CHANNEL_ERROR') {
                         this.logger.error('Realtime channel error', err || new Error('Unknown channel error'));
                     }
@@ -121,7 +121,7 @@ export class WebSocketClient implements IWebSocketClient {
     private async handleChange(payload: RealtimePostgresChangesPayload<HighlightDataV2>): Promise<void> {
         const anyPayload = payload as any;
         const eventType = anyPayload.eventType;
-        this.logger.info('[WebSocketClient] 📨 Received realtime event', {
+        this.logger.info('[WebSocketClient] [MSG] Received realtime event', {
             event: eventType,
             table: anyPayload.table,
             hasNew: !!anyPayload.new,

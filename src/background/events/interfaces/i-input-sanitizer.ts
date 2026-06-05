@@ -52,8 +52,8 @@ export interface IInputSanitizer {
      * sanitizer.sanitizeText('<script>alert("xss")</script>Important text');
      * // Returns: 'Important text'
      * 
-     * sanitizer.sanitizeText('日本語 <b>text</b> emoji 👍');
-     * // Returns: '日本語 text emoji 👍'
+     * sanitizer.sanitizeText('日本語 <b>text</b> emoji [OK]');
+     * // Returns: '日本語 text emoji [OK]'
      * ```
      */
     sanitizeText(text: string): string;

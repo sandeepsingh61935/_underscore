@@ -213,11 +213,11 @@ export function createCloudModeServiceWithCloudSync(eventBus?: EventBus): CloudM
             logger
         );
 
-        logger.info('[CloudFactory] ✅ Cloud sync enabled with DualWriteRepository');
+        logger.info('[CloudFactory] [OK] Cloud sync enabled with DualWriteRepository');
     } else {
         // Fallback to local-only
         repository = localRepo;
-        logger.info('[CloudFactory] ⚠️ Using local-only storage (Supabase not configured)');
+        logger.info('[CloudFactory] [WARN] Using local-only storage (Supabase not configured)');
     }
 
     // 3. Create supporting services

@@ -111,14 +111,14 @@ export class StorageService implements IStorage {
     try {
       const hashedDomain = await hashDomain(this.currentDomain);
 
-      this.logger.info('🔍 [LOAD] Starting load operation', {
+      this.logger.info('[LOAD] Starting load operation', {
         domain: this.currentDomain,
         hashedDomain,
       });
 
       // Debug: Dump all storage keys
       const allKeys = await browser.storage.local.get(null);
-      this.logger.info('🔍 [LOAD] Storage dump', {
+      this.logger.info('[LOAD] Storage dump', {
         totalKeys: Object.keys(allKeys).length,
         allKeys: Object.keys(allKeys),
         ourKey: hashedDomain,
@@ -137,7 +137,7 @@ export class StorageService implements IStorage {
 
       const domainStorage = result[hashedDomain] as DomainStorage;
 
-      this.logger.info('🔍 [LOAD] Found data', {
+      this.logger.info('[LOAD] Found data', {
         domain: this.currentDomain,
         lastModified: new Date(domainStorage.lastAccessed).toISOString(),
         ttl: domainStorage.ttl,
@@ -151,7 +151,7 @@ export class StorageService implements IStorage {
         const timeUntilExpiry = domainStorage.ttl - now;
         hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
 
-        this.logger.info('🔍 [LOAD] TTL check', {
+        this.logger.info('[LOAD] TTL check', {
           now,
           ttl: domainStorage.ttl,
           hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
@@ -167,7 +167,7 @@ export class StorageService implements IStorage {
           return [];
         }
       } else {
-        this.logger.info('🔍 [LOAD] TTL check skipped (permanent storage)');
+        this.logger.info('[LOAD] TTL check skipped (permanent storage)');
       }
 
       // Decrypt
@@ -248,7 +248,7 @@ export class StorageService implements IStorage {
   private async saveEvents(events: AnyHighlightEvent[]): Promise<void> {
     const hashedDomain = await hashDomain(this.currentDomain);
 
-    this.logger.info('🔍 [SAVE] Starting save operation', {
+    this.logger.info('[SAVE] Starting save operation', {
       domain: this.currentDomain,
       hashedDomain,
       eventCount: events.length,
@@ -264,7 +264,7 @@ export class StorageService implements IStorage {
     const now = Date.now();
     const ttl = this.config.ttlDuration !== null ? now + this.config.ttlDuration : null;
 
-    this.logger.info('🔍 [SAVE] TTL calculation', {
+    this.logger.info('[SAVE] TTL calculation', {
       now,
       ttlDuration: this.config.ttlDuration,
       ttl,

@@ -62,7 +62,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // Only handle internal bridged events
     if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
-    this.logger.info('[CLOUD] 📨 Received remote event', { type: message.type, id: message.payload?.id });
+    this.logger.info('[CLOUD] [MSG] Received remote event', { type: message.type, id: message.payload?.id });
 
     try {
       switch (message.type) {
@@ -116,7 +116,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         this.highlights.set(data.id, highlight);
         this.data.set(data.id, data as any);
 
-        this.logger.info('[CLOUD] ✨ Instant render successful', {
+        this.logger.info('[CLOUD] [FAST] Instant render successful', {
           id: data.id,
           tier: restoreResult.restoredUsing
         });
@@ -174,7 +174,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // This just provides observability for potential concurrent edits
     const localHighlight = this.data.get(id);
     if (localHighlight) {
-      this.logger.info('[CLOUD] 📊 Update received for existing highlight (potential concurrent edit)', {
+      this.logger.info('[CLOUD] [STAT] Update received for existing highlight (potential concurrent edit)', {
         highlightId: id,
         hasLocalVersion: true,
         resolution: 'Last-Write-Wins (accepting remote)'
@@ -407,14 +407,14 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
   async restore(_url?: string): Promise<void> {
     // Use CloudModeService to restore from IndexedDB
-    this.logger.info('[CLOUD] 🔄 Starting restore process...');
+    this.logger.info('[CLOUD] [SYNC] Starting restore process...');
 
     const restored = await this.cloudService.restoreHighlightsForUrl();
 
-    this.logger.info(`[CLOUD] ✅ Restoring ${restored.length} highlights`);
+    this.logger.info(`[CLOUD] [OK] Restoring ${restored.length} highlights`);
 
     if (restored.length === 0) {
-      this.logger.warn('[CLOUD] ⚠️ No highlights found to restore. Check if highlights were saved with correct URL.');
+      this.logger.warn('[CLOUD] [WARN] No highlights found to restore. Check if highlights were saved with correct URL.');
       return;
     }
 
@@ -431,7 +431,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         // Inject CSS for visual rendering
         injectHighlightCSS('underscore', storedData.id, storedData.colorRole || 'yellow');
 
-        this.logger.info(`[CLOUD] ✅ Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
+        this.logger.info(`[CLOUD] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
 
         // Construct full HighlightData with live ranges
         // We cast storedData because it is V2 (persisted) and we need runtime HighlightData
@@ -453,11 +453,11 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
           this.logger.debug('[CLOUD] Skipping duplicate restore', { id: storedData.id });
         }
       } else {
-        this.logger.warn(`[CLOUD] ❌ Failed to restore range for highlight: ${storedData.id}`);
+        this.logger.warn(`[CLOUD] [FAIL] Failed to restore range for highlight: ${storedData.id}`);
       }
     }
 
-    this.logger.info(`[CLOUD] 🎉 Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
+    this.logger.info(`[CLOUD] [DONE] Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
   }
 
   async sync(): Promise<void> {

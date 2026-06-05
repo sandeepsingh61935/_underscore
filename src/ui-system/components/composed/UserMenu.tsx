@@ -1,4 +1,4 @@
-import { Settings, LogOut, Moon, Sun, Monitor, Palette } from 'lucide-react';
+import { Settings, LogOut, Moon, Sun, Monitor, Palette, Check, Lock } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -121,7 +121,7 @@ export function UserMenu({
                       {t.icon}
                       <span>{t.label}</span>
                       {currentTheme === t.id && (
-                        <span className="ml-auto text-primary">✓</span>
+                        <Check className="ml-auto w-4 h-4 text-primary" />
                       )}
                     </DropdownMenuItem>
                   ))}
@@ -143,7 +143,7 @@ export function UserMenu({
         {/* Privacy */}
         <DropdownMenuItem asChild>
           <Link to="/privacy" className="flex items-center gap-2 cursor-pointer">
-            <span className="w-4 h-4">🔒</span>
+            <Lock className="w-4 h-4" />
             <span>Privacy</span>
           </Link>
         </DropdownMenuItem>
