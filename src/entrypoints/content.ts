@@ -478,7 +478,7 @@ export default defineContentScript({
 
         // 3. If Vault Mode is active, re-restore to update UI
         const currentMode = modeManager.getCurrentMode();
-        if (currentMode.name === MODE_NAMES.VAULT) {
+        if (currentMode.name === MODE_NAMES.CLOUD) {
           logger.info('[AUTH] Vault Mode active - triggering re-restoration');
           // Cast to VaultMode to access restore method
           await (currentMode as VaultMode).restore();
@@ -531,7 +531,7 @@ export default defineContentScript({
                 // 2. Run restoration/clearing SYNCHRONOUSLY (before responding)
                 // This ensures popup receives correct count in response
                 logger.info('[IPC] Starting highlight processing for mode switch');
-                if (newMode === MODE_NAMES.SPRINT) {
+                if (newMode === MODE_NAMES.LOCAL) {
                   logger.info('[IPC] Restoring highlights for Sprint Mode...');
                   await restoreHighlights({
                     storage,
@@ -542,7 +542,7 @@ export default defineContentScript({
                     commandFactory,
                   });
                   logger.info('[IPC] Restoration complete');
-                } else if (newMode === MODE_NAMES.VAULT) {
+                } else if (newMode === MODE_NAMES.CLOUD) {
                   // Vault Mode handles its own restoration via onActivate() -> restore()
                   // Do NOT clear here - it would wipe the highlights that were just loaded!
                   logger.info('[IPC] Vault Mode - skipping clear (self-managed restoration)');

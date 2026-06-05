@@ -31,9 +31,9 @@ describe('PopupController - Edge Cases', () => {
     document.body.innerHTML = `
             <div id="app">
                 <select id="mode-selector">
-                    <option value="walk" selected>Walk</option>
-                    <option value="sprint">Sprint</option>
-                    <option value="vault">Vault</option>
+                    <option value="ephemeral" selected>Walk</option>
+                    <option value="local">Sprint</option>
+                    <option value="cloud">Vault</option>
                 </select>
                 <div id="highlight-count">0</div>
                 <div id="loading-state" class="hidden">Loading...</div>
@@ -59,7 +59,7 @@ describe('PopupController - Edge Cases', () => {
     mockMessageBus = {
       send: vi.fn().mockImplementation((_dest, msg) => {
         if (msg.type === 'GET_MODE') {
-          return Promise.resolve({ success: true, data: { mode: 'walk' } });
+          return Promise.resolve({ success: true, data: { mode: 'ephemeral' } });
         }
         if (msg.type === 'GET_HIGHLIGHT_COUNT') {
           return Promise.resolve({ success: true, data: { count: 10 } });
@@ -178,7 +178,7 @@ describe('PopupController - Edge Cases', () => {
       const selectElement = document.getElementById('mode-selector') as HTMLSelectElement;
 
       // Act: Rapidly change select value
-      const changes = ['sprint', 'vault', 'walk', 'sprint', 'vault'];
+      const changes = ['local', 'cloud', 'ephemeral', 'local', 'cloud'];
       for (const mode of changes) {
         selectElement.value = mode;
         selectElement.dispatchEvent(new Event('change'));
@@ -196,7 +196,7 @@ describe('PopupController - Edge Cases', () => {
       // (Mock spy verification would go here if we exposed the spy)
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('Mode change'),
-        expect.objectContaining({ mode: 'vault' })
+        expect.objectContaining({ mode: 'cloud' })
       );
     });
 
@@ -214,7 +214,7 @@ describe('PopupController - Edge Cases', () => {
       vi.spyOn(mockStateManager, 'getState').mockReturnValue({
         loading: true,
         error: null,
-        currentMode: 'walk',
+        currentMode: 'ephemeral',
         stats: { totalHighlights: 0, highlightsOnCurrentPage: 0 },
       });
 
@@ -376,7 +376,7 @@ describe('PopupController - Edge Cases', () => {
 
       // Act: State changes externally (via state manager)
       vi.spyOn(mockStateManager, 'getState').mockReturnValue({
-        currentMode: 'vault',
+        currentMode: 'cloud',
         loading: false,
         error: null,
         stats: { totalHighlights: 50, highlightsOnCurrentPage: 10 },
@@ -410,7 +410,7 @@ describe('PopupController - Edge Cases', () => {
       // We can manually set it or ensure stateManager thinks it's initialized
       (mockStateManager as any).currentTabId = 123;
 
-      const switchPromise = mockStateManager.switchModeOptimistically('sprint');
+      const switchPromise = mockStateManager.switchModeOptimistically('local');
       const refreshPromise = mockStateManager.refreshStats();
 
       // Assert: Both should complete

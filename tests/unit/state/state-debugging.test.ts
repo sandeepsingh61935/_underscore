@@ -38,7 +38,7 @@ describe('ModeStateManager - Debugging Tools', () => {
     vi.spyOn(logger, 'debug').mockImplementation(() => {});
 
     modeManager = new ModeManager(eventBus, logger);
-    ['walk', 'sprint', 'vault'].forEach((mode) => {
+    ['ephemeral', 'local', 'cloud'].forEach((mode) => {
       modeManager.registerMode({
         name: mode as any,
         capabilities: {} as any,
@@ -57,8 +57,8 @@ describe('ModeStateManager - Debugging Tools', () => {
 
   it('should return comprehensive debug state', async () => {
     // Arrange - generate some state
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('walk');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('ephemeral');
 
     // Act
     const debugState = modeStateManager.getDebugState();
@@ -67,7 +67,7 @@ describe('ModeStateManager - Debugging Tools', () => {
     expect(debugState).toBeDefined();
 
     // Check current state
-    expect(debugState.currentMode).toBe('walk');
+    expect(debugState.currentMode).toBe('ephemeral');
     expect(debugState.metadata).toBeDefined();
 
     // Check history
@@ -80,7 +80,7 @@ describe('ModeStateManager - Debugging Tools', () => {
 
   it('should update time metrics before dumping debug state (pragmatic side effect)', async () => {
     // Arrange
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
     const mockNow = vi.spyOn(Date, 'now');
     mockNow.mockReturnValue(Date.now() + 5000); // Advance 5s
 
@@ -88,7 +88,7 @@ describe('ModeStateManager - Debugging Tools', () => {
     const debugState = modeStateManager.getDebugState();
 
     // Assert - Time in mode should be updated (~5000ms)
-    expect(debugState.metrics.timeInMode['sprint']).toBeGreaterThanOrEqual(5000);
+    expect(debugState.metrics.timeInMode['local']).toBeGreaterThanOrEqual(5000);
   });
 
   it('should be structured for easy JSON serialization', async () => {
@@ -105,7 +105,7 @@ describe('ModeStateManager - Debugging Tools', () => {
   describe('Edge Cases (Tricky)', () => {
     it('should ensure deep immutability (modifying return value does not corrupt internal state)', async () => {
       // Arrange
-      await modeStateManager.setMode('sprint');
+      await modeStateManager.setMode('local');
       const debugState = modeStateManager.getDebugState();
 
       // Act - Try to mutate everything
@@ -115,7 +115,7 @@ describe('ModeStateManager - Debugging Tools', () => {
 
       // Assert - Internal state should be untouched
       const freshDebugState = modeStateManager.getDebugState();
-      expect(freshDebugState.currentMode).toBe('sprint');
+      expect(freshDebugState.currentMode).toBe('local');
       expect(freshDebugState.metrics.transitionCounts['walk→sprint']).toBe(1);
       expect(freshDebugState.history).toHaveLength(1);
     });
@@ -125,7 +125,7 @@ describe('ModeStateManager - Debugging Tools', () => {
       // We want to ensure JSON serialization doesn't choke on "large" (for this context) data
       for (let i = 0; i < 150; i++) {
         // Overfill history (100 max)
-        await modeStateManager.setMode(i % 2 === 0 ? 'sprint' : 'walk');
+        await modeStateManager.setMode(i % 2 === 0 ? 'local' : 'ephemeral');
       }
       // Manually inject massive metrics (simulation)
       const stateAny = modeStateManager as any;
@@ -152,7 +152,7 @@ describe('ModeStateManager - Debugging Tools', () => {
 
     it('should produce valid JSON even with "undefined" time values', async () => {
       // Arrange - Create state where some modes have undefined time
-      await modeStateManager.setMode('sprint'); // Walk=0/undefined, Sprint=0
+      await modeStateManager.setMode('local'); // Walk=0/undefined, Sprint=0
 
       // Act
       const debugState = modeStateManager.getDebugState();
@@ -163,9 +163,9 @@ describe('ModeStateManager - Debugging Tools', () => {
       // JSON.stringify drops keys with 'undefined' values, usually
       // We want to ensure the structure is still safe for consumers
       expect(parsed.metrics.timeInMode).toBeDefined();
-      // 'walk' might be missing in JSON if undefined, or 0 if we init'd it.
+      // 'ephemeral' might be missing in JSON if undefined, or 0 if we init'd it.
       // Just ensure no crash.
-      expect(parsed.currentMode).toBe('sprint');
+      expect(parsed.currentMode).toBe('local');
     });
   });
 });

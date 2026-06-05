@@ -25,7 +25,7 @@ describe('Validation Integration (8 tests)', () => {
 
       // Register a mock mode
       const mockMode: IHighlightMode = {
-        name: 'walk',
+        name: 'ephemeral',
         onActivate: async () => {},
         onDeactivate: async () => {},
         createHighlight: async () => 'test-id',
@@ -37,7 +37,7 @@ describe('Validation Integration (8 tests)', () => {
     });
 
     it('1. accepts valid mode names', async () => {
-      await expect(modeManager.activateMode('walk')).resolves.not.toThrow();
+      await expect(modeManager.activateMode('ephemeral')).resolves.not.toThrow();
     });
 
     it('2. rejects invalid mode name (not in enum)', async () => {

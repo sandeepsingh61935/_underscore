@@ -32,7 +32,7 @@ import type { ILogger } from '@/shared/utils/logger';
 export type { ModeType };
 
 export class ModeStateManager {
-  private currentMode: ModeType = 'walk';
+  private currentMode: ModeType = 'ephemeral';
   private metadata: StateMetadata = {
     version: 2,
     lastModified: Date.now(),
@@ -149,7 +149,7 @@ export class ModeStateManager {
         } else {
           // Migration failed - fallback to defaults
           this.logger.error('[ModeState] Migration failed', migrationResult.error);
-          this.currentMode = 'walk';
+          this.currentMode = 'ephemeral';
           this.metadata = {
             version: 2,
             lastModified: Date.now(),
@@ -172,7 +172,7 @@ export class ModeStateManager {
               validationErrors: validation.error.issues,
             })
           );
-          this.currentMode = 'walk';
+          this.currentMode = 'ephemeral';
         }
 
         // Validate and load metadata INDEPENDENTLY
@@ -219,8 +219,8 @@ export class ModeStateManager {
           originalError: error,
         })
       );
-      // Fallback to walk mode
-      this.currentMode = 'walk';
+      // Fallback to ephemeral mode
+      this.currentMode = 'ephemeral';
       await this.applyMode();
     }
   }

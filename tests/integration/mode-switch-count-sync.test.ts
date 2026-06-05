@@ -83,7 +83,7 @@ describe('Mode Switching - Count Synchronization', () => {
     describe('[Issue #3] Extension UI Count Updates', () => {
         it('should broadcast count after switching from Walk to Sprint Mode', async () => {
             // Arrange - Start in Walk Mode
-            await modeManager.activateMode('walk');
+            await modeManager.activateMode('ephemeral');
 
             // Create highlights in Walk Mode
             const selection1 = createMockSelection('Walk highlight 1');
@@ -94,7 +94,7 @@ describe('Mode Switching - Count Synchronization', () => {
             expect(repository.count()).toBe(2);
 
             // Act - Switch to Sprint Mode (should clear Walk highlights)
-            await modeManager.activateMode('sprint');
+            await modeManager.activateMode('local');
 
             // Simulate the background processing that happens in content.ts
             await modeManager.getCurrentMode().clearAll(); // Walk Mode clears on deactivate
@@ -112,7 +112,7 @@ describe('Mode Switching - Count Synchronization', () => {
 
         it('should broadcast count after switching from Sprint to Walk Mode', async () => {
             // Arrange - Start in Sprint Mode with highlights
-            await modeManager.activateMode('sprint');
+            await modeManager.activateMode('local');
 
             const selection1 = createMockSelection('Sprint highlight 1');
             await sprintMode.createHighlight(selection1, 'yellow');
@@ -124,7 +124,7 @@ describe('Mode Switching - Count Synchronization', () => {
             expect(repository.count()).toBe(3);
 
             // Act - Switch to Walk Mode
-            await modeManager.activateMode('walk');
+            await modeManager.activateMode('ephemeral');
 
             // Walk Mode should clear all highlights on activation
             await modeManager.getCurrentMode().clearAll();
@@ -174,7 +174,7 @@ describe('Mode Switching - Count Synchronization', () => {
             mockStorage.loadEvents = vi.fn().mockResolvedValue(mockEvents);
 
             // Act - Activate Sprint Mode (triggers restoration)
-            await modeManager.activateMode('sprint');
+            await modeManager.activateMode('local');
 
             // Simulate restoration process
             const events = await mockStorage.loadEvents();
@@ -197,16 +197,16 @@ describe('Mode Switching - Count Synchronization', () => {
 
         it('should broadcast correct count during rapid mode switches', async () => {
             // Arrange
-            await modeManager.activateMode('sprint');
+            await modeManager.activateMode('local');
             await sprintMode.createHighlight(createMockSelection('Test 1'), 'yellow');
             await sprintMode.createHighlight(createMockSelection('Test 2'), 'blue');
 
             // Act - Rapid mode switches
-            await modeManager.activateMode('walk');
+            await modeManager.activateMode('ephemeral');
             await modeManager.getCurrentMode().clearAll();
             broadcastCountSpy(); // Should broadcast 0
 
-            await modeManager.activateMode('sprint');
+            await modeManager.activateMode('local');
             broadcastCountSpy(); // Should broadcast 0 (no highlights in Sprint after clear)
 
             // Assert

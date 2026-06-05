@@ -225,7 +225,7 @@ describe('VaultMode - IndexedDB Persistence & 3-Tier Anchoring', () => {
       expect(config.requireConfirmation).toBe(true);
       expect(config.allowUndo).toBe(false); // Vault deletions are permanent
       expect(config.iconType).toBe('trash');
-      expect(config.confirmationMessage).toContain('vault');
+      expect(config.confirmationMessage).toContain('cloud');
     });
 
     it('should have beforeDelete hook', () => {

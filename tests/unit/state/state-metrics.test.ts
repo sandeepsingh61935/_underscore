@@ -49,7 +49,7 @@ describe('ModeStateManager - State Metrics', () => {
     modeManager = new ModeManager(eventBus, logger);
 
     // Register modes
-    ['walk', 'sprint', 'vault'].forEach((mode) => {
+    ['ephemeral', 'local', 'cloud'].forEach((mode) => {
       modeManager.registerMode({
         name: mode as any,
         capabilities: {} as any,
@@ -68,11 +68,11 @@ describe('ModeStateManager - State Metrics', () => {
 
   it('should track transition counts', async () => {
     // Act - Make same transition multiple times
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('walk');
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('walk');
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('ephemeral');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('ephemeral');
+    await modeStateManager.setMode('local');
 
     // Assert
     const metrics = modeStateManager.getMetrics();
@@ -88,7 +88,7 @@ describe('ModeStateManager - State Metrics', () => {
 
     // Act - Attempt transition that will be blocked
     try {
-      await modeStateManager.setMode('vault');
+      await modeStateManager.setMode('cloud');
     } catch (error) {
       // Expected to throw
     }
@@ -111,27 +111,27 @@ describe('ModeStateManager - State Metrics', () => {
 
     // Act - Spend time in different modes
     currentTime += 5000; // 5s in walk
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
 
     currentTime += 3000; // 3s in sprint
-    await modeStateManager.setMode('vault');
+    await modeStateManager.setMode('cloud');
 
     currentTime += 2000; // 2s in vault
 
     // Assert
     const metrics = modeStateManager.getMetrics();
     expect(metrics.timeInMode).toBeDefined();
-    expect(metrics.timeInMode['walk']).toBe(5000);
-    expect(metrics.timeInMode['sprint']).toBe(3000);
+    expect(metrics.timeInMode['ephemeral']).toBe(5000);
+    expect(metrics.timeInMode['local']).toBe(3000);
     // Current mode (vault) hasn't switched yet, so timeInMode isn't updated
-    expect(metrics.timeInMode['vault']).toBeUndefined();
+    expect(metrics.timeInMode['cloud']).toBeUndefined();
   });
 
   it('should return complete metrics snapshot', async () => {
     // Arrange & Act
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('vault');
-    await modeStateManager.setMode('walk');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('cloud');
+    await modeStateManager.setMode('ephemeral');
 
     // Assert
     const metrics = modeStateManager.getMetrics();
@@ -156,9 +156,9 @@ describe('ModeStateManager - State Metrics', () => {
     it('should handle concurrent transitions affecting counts correctly', async () => {
       // Act - Fire concurrent transitions
       const promises = [
-        modeStateManager.setMode('sprint'),
-        modeStateManager.setMode('vault'),
-        modeStateManager.setMode('walk'),
+        modeStateManager.setMode('local'),
+        modeStateManager.setMode('cloud'),
+        modeStateManager.setMode('ephemeral'),
       ];
 
       await Promise.all(promises);
@@ -189,9 +189,9 @@ describe('ModeStateManager - State Metrics', () => {
       await modeStateManager.init();
 
       // Act - Rapid switches (0ms elapsed each)
-      await modeStateManager.setMode('sprint'); // 0ms in walk
-      await modeStateManager.setMode('vault'); // 0ms in sprint
-      await modeStateManager.setMode('walk'); // 0ms in vault
+      await modeStateManager.setMode('local'); // 0ms in walk
+      await modeStateManager.setMode('cloud'); // 0ms in sprint
+      await modeStateManager.setMode('ephemeral'); // 0ms in vault
 
       currentTime += 1000; // Now spend actual time
 
@@ -199,12 +199,12 @@ describe('ModeStateManager - State Metrics', () => {
       const metrics = modeStateManager.getMetrics();
 
       // Previous modes should have 0ms
-      expect(metrics.timeInMode['sprint'] || 0).toBeLessThanOrEqual(1);
-      expect(metrics.timeInMode['vault'] || 0).toBeLessThanOrEqual(1);
+      expect(metrics.timeInMode['local'] || 0).toBeLessThanOrEqual(1);
+      expect(metrics.timeInMode['cloud'] || 0).toBeLessThanOrEqual(1);
 
       // Current mode time not updated yet for the *current* session
-      // But 'walk' was visited at start, so it has ~0ms accumulated
-      expect(metrics.timeInMode['walk']).toBeLessThanOrEqual(1);
+      // But 'ephemeral' was visited at start, so it has ~0ms accumulated
+      expect(metrics.timeInMode['ephemeral']).toBeLessThanOrEqual(1);
     });
 
     it('should continue tracking metrics even after errors', async () => {
@@ -216,15 +216,15 @@ describe('ModeStateManager - State Metrics', () => {
         .mockResolvedValueOnce(true); // Third succeeds
 
       // Act
-      await modeStateManager.setMode('sprint'); // Success
+      await modeStateManager.setMode('local'); // Success
 
       try {
-        await modeStateManager.setMode('vault'); // Blocked
+        await modeStateManager.setMode('cloud'); // Blocked
       } catch (error) {
         // Expected
       }
 
-      await modeStateManager.setMode('walk'); // Success
+      await modeStateManager.setMode('ephemeral'); // Success
 
       // Assert
       const metrics = modeStateManager.getMetrics();
@@ -250,8 +250,8 @@ describe('ModeStateManager - State Metrics', () => {
 
       // Act - Make many transitions (test accumulation)
       for (let i = 0; i < 1000; i++) {
-        await modeStateManager.setMode('sprint');
-        await modeStateManager.setMode('walk');
+        await modeStateManager.setMode('local');
+        await modeStateManager.setMode('ephemeral');
       }
 
       // Assert
@@ -270,9 +270,9 @@ describe('ModeStateManager - State Metrics', () => {
       mockStorage.set.mockRejectedValue(new Error('QuotaExceededError'));
 
       // Act - Trigger circuit breaker to open
-      await modeStateManager.setMode('sprint');
-      await modeStateManager.setMode('vault');
-      await modeStateManager.setMode('walk');
+      await modeStateManager.setMode('local');
+      await modeStateManager.setMode('cloud');
+      await modeStateManager.setMode('ephemeral');
 
       // Assert - Metrics still tracked despite storage failures
       const metrics = modeStateManager.getMetrics();

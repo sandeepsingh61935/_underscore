@@ -11,8 +11,8 @@ body {
     /* Explicit height for consistency */
     margin: 0;
     padding: 0;
-    background-color: var(--md-sys-color-surface, #f9f9ff);
-    color: var(--md-sys-color-on-surface, #191c20);
+    background-color: var(--paper);
+    color: var(--ink);
     overflow-x: hidden;
 }
 

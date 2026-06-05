@@ -82,7 +82,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
             (chrome.runtime as any).lastError = null;
             callback({
               success: true,
-              data: { mode: 'walk', total: 10, currentPage: 5 },
+              data: { mode: 'ephemeral', total: 10, currentPage: 5 },
             });
           }
         }
@@ -109,7 +109,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
       // Stats: Success (4)
       expect(callCount).toBe(4);
       const state = stateManager.getState();
-      expect(state.currentMode).toBe('walk');
+      expect(state.currentMode).toBe('ephemeral');
       expect(state.error).toBeNull();
     });
 
@@ -189,7 +189,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
             (chrome.runtime as any).lastError = null;
             callback({
               success: true,
-              data: { mode: 'walk', total: 0, currentPage: 0 },
+              data: { mode: 'ephemeral', total: 0, currentPage: 0 },
             });
           }
         }
@@ -236,7 +236,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
             (chrome.runtime as any).lastError = null;
             callback({
               success: true,
-              data: { mode: 'walk', count: 5, currentPage: 2 },
+              data: { mode: 'ephemeral', count: 5, currentPage: 2 },
             });
           } else {
             // Mode switch fails (3rd call)
@@ -252,15 +252,15 @@ describe('Popup Integration - Realistic Scenarios', () => {
       await stateManager.initialize(123);
 
       const stateBefore = stateManager.getState();
-      expect(stateBefore.currentMode).toBe('walk');
+      expect(stateBefore.currentMode).toBe('ephemeral');
       expect(stateBefore.stats.totalHighlights).toBe(5);
 
       // Act: Try to switch (will fail)
-      await expect(stateManager.switchModeOptimistically('sprint')).rejects.toThrow();
+      await expect(stateManager.switchModeOptimistically('local')).rejects.toThrow();
 
       // Assert: State rolled back
       const stateAfter = stateManager.getState();
-      expect(stateAfter.currentMode).toBe('walk'); // Rolled back
+      expect(stateAfter.currentMode).toBe('ephemeral'); // Rolled back
       expect(stateAfter.stats.totalHighlights).toBe(5); // Preserved
       expect(stateAfter.error).toBeDefined();
     });
@@ -308,9 +308,9 @@ describe('Popup Integration - Realistic Scenarios', () => {
 
       // Act: Fire rapid switches
       const switches = [
-        stateManager.switchModeOptimistically('sprint'),
-        stateManager.switchModeOptimistically('vault'),
-        stateManager.switchModeOptimistically('walk'),
+        stateManager.switchModeOptimistically('local'),
+        stateManager.switchModeOptimistically('cloud'),
+        stateManager.switchModeOptimistically('ephemeral'),
       ];
 
       // Assert: All should complete
@@ -333,7 +333,7 @@ describe('Popup Integration - Realistic Scenarios', () => {
             (chrome.runtime as any).lastError = null;
             callback({
               success: true,
-              data: { mode: 'walk', total: 0, currentPage: 0 },
+              data: { mode: 'ephemeral', total: 0, currentPage: 0 },
             });
           }
         }

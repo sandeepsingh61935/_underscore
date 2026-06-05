@@ -56,16 +56,16 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('State machine validation', () => {
     it('should use state machine to validate transitions', async () => {
       // Act
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Assert - Should call state machine validation internally
       // (We verify this by checking that transition succeeds, which means validation passed)
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should log transition validation', async () => {
       // Act
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Assert - State machine should log validation
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -78,14 +78,14 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('Guard execution', () => {
     it('should execute guards for transitions requiring confirmation', async () => {
       // Arrange - sprint → vault requires confirmation
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
       vi.clearAllMocks();
 
       // Act
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - Guard should have been executed (currently returns true)
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
     });
 
     it('should block transition if guard fails', async () => {
@@ -93,21 +93,21 @@ describe('ModeStateManager - State Machine Integration', () => {
       // For now, we test that the infrastructure is in place
 
       // Arrange
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Act - Try transition that would require confirmation
       // (Currently guards auto-pass, so this will succeed)
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - Transition completed (guard passed)
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
     });
   });
 
   describe('Transition failure handling', () => {
     it('should log failed transitions with reason', async () => {
       // Act - Try invalid transition (though all are currently allowed)
-      await stateManager.setMode('walk');
+      await stateManager.setMode('ephemeral');
 
       // Assert - No errors should be logged for valid transition
       expect(mockLogger.error).not.toHaveBeenCalled();
@@ -115,33 +115,33 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should keep state unchanged if transition validation fails', async () => {
       // Arrange
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Act - This will be more relevant when we add transition blocking
       // For now, verify that successful transitions work
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - State should have changed (valid transition)
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
     });
   });
 
   describe('Success path', () => {
     it('should complete full transition flow: validate → guard → switch', async () => {
       // Arrange - Start in walk mode (default)
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
 
       // Act Step 1: walk → sprint (should validate)
-      await stateManager.setMode('sprint');
-      expect(stateManager.getMode()).toBe('sprint');
+      await stateManager.setMode('local');
+      expect(stateManager.getMode()).toBe('local');
 
       // Act Step 2: sprint → vault (should validate + execute guard)
-      await stateManager.setMode('vault');
-      expect(stateManager.getMode()).toBe('vault');
+      await stateManager.setMode('cloud');
+      expect(stateManager.getMode()).toBe('cloud');
 
       // Act Step 3: vault → walk (should validate + execute guard with warning)
-      await stateManager.setMode('walk');
-      expect(stateManager.getMode()).toBe('walk');
+      await stateManager.setMode('ephemeral');
+      expect(stateManager.getMode()).toBe('ephemeral');
 
       // Assert - Full circular path completed
       expect(mockLogger.error).not.toHaveBeenCalled();
@@ -149,11 +149,11 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should persist mode after successful transition', async () => {
       // Act
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - Mode was persisted to chrome.storage
       expect(mockChromeStorage.sync.set).toHaveBeenCalledWith(
-        expect.objectContaining({ defaultMode: 'vault' })
+        expect.objectContaining({ defaultMode: 'cloud' })
       );
     });
   });
@@ -161,11 +161,11 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('Edge cases', () => {
     it('should handle same-mode transition as no-op', async () => {
       // Arrange
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
       vi.clearAllMocks();
 
       // Act - Try to set same mode
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Assert - Should be handled as no-op (early return)
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -176,13 +176,13 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should handle rapid mode switches correctly', async () => {
       // Act - Simulate rapid user clicks
-      await stateManager.setMode('sprint');
-      await stateManager.setMode('vault');
-      await stateManager.setMode('walk');
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
+      await stateManager.setMode('cloud');
+      await stateManager.setMode('ephemeral');
+      await stateManager.setMode('local');
 
       // Assert - Final mode should be correct
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
       expect(mockLogger.error).not.toHaveBeenCalled();
     });
   });

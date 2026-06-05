@@ -65,7 +65,7 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('setMode() validation', () => {
     it('should accept valid mode names', async () => {
       // Arrange
-      const validModes = ['walk', 'sprint', 'vault'] as const;
+      const validModes = ['ephemeral', 'local', 'cloud'] as const;
 
       // Act & Assert
       for (const mode of validModes) {
@@ -163,13 +163,13 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('init() validation', () => {
     it('should validate loaded state from chrome.storage', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'sprint' });
+      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'local' });
 
       // Act
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should fallback to walk when chrome.storage returns invalid mode', async () => {
@@ -180,7 +180,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert - Migration handles corrupted data, falls back to walk
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should fallback to walk when chrome.storage returns null', async () => {
@@ -191,7 +191,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should fallback to walk when chrome.storage returns undefined', async () => {
@@ -202,7 +202,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should fallback to walk when chrome.storage returns number', async () => {
@@ -213,7 +213,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should fallback to walk when chrome.storage returns object', async () => {
@@ -226,7 +226,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should fallback to walk when chrome.storage throws error', async () => {
@@ -237,19 +237,19 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
       expect(mockLogger.error).toHaveBeenCalled();
     });
 
     it('should handle race condition: init called twice simultaneously', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'sprint' });
+      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'local' });
 
       // Act
       await Promise.all([stateManager.init(), stateManager.init()]);
 
       // Assert
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
       expect(mockChromeStorage.sync.get).toHaveBeenCalledTimes(2);
     });
   });
@@ -298,9 +298,9 @@ describe('ModeStateManager - Validation Integration', () => {
         // Assert
         const validationError = error as StateValidationError;
         const contextStr = JSON.stringify(validationError.context);
-        expect(contextStr).toContain('walk');
-        expect(contextStr).toContain('sprint');
-        expect(contextStr).toContain('vault');
+        expect(contextStr).toContain('ephemeral');
+        expect(contextStr).toContain('local');
+        expect(contextStr).toContain('cloud');
       }
     });
   });
@@ -311,39 +311,39 @@ describe('ModeStateManager - Validation Integration', () => {
       mockChromeStorage.sync.get.mockImplementation(() => {
         // Simulate slow storage read
         return new Promise((resolve) => {
-          setTimeout(() => resolve({ defaultMode: 'sprint' }), 100);
+          setTimeout(() => resolve({ defaultMode: 'local' }), 100);
         });
       });
 
       // Act - Start init, then immediately call setMode
       const initPromise = stateManager.init();
-      await stateManager.setMode('vault'); // Completes first
+      await stateManager.setMode('cloud'); // Completes first
       await initPromise; // Completes second, overwrites
 
       // Assert - init() wins because it completes last (race condition)
       // This is actually "correct" behavior for simple promise overlap if not guarded
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should handle rapid mode switches', async () => {
       // Arrange
-      const modes = ['walk', 'sprint', 'vault', 'walk', 'sprint'] as const;
+      const modes = ['ephemeral', 'local', 'cloud', 'ephemeral', 'local'] as const;
 
       // Act
       const promises = modes.map((mode) => stateManager.setMode(mode));
       await Promise.all(promises);
 
       // Assert - Last one should win (sprint) or at least be valid
-      expect(['walk', 'sprint', 'vault']).toContain(stateManager.getMode());
+      expect(['ephemeral', 'local', 'cloud']).toContain(stateManager.getMode());
     });
 
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
       mockChromeStorage.sync.set.mockClear();
 
       // Act
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - No storage write should happen
       expect(mockChromeStorage.sync.set).not.toHaveBeenCalled();
@@ -354,10 +354,10 @@ describe('ModeStateManager - Validation Integration', () => {
       mockChromeStorage.sync.set.mockRejectedValue(new Error('Quota exceeded'));
 
       // Act
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
 
       // Assert - Memory state updated despite persistence failure
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
       expect(mockLogger.error).toHaveBeenCalled();
     });
 
@@ -369,7 +369,7 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should handle chrome.storage returning string "null"', async () => {
@@ -380,18 +380,18 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should handle chrome.storage returning array instead of string', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: ['sprint'] });
+      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: ['local'] });
 
       // Act
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should handle chrome.storage returning boolean', async () => {
@@ -404,7 +404,7 @@ describe('ModeStateManager - Validation Integration', () => {
            await stateManager.init();
 
            // Assert
-           expect(stateManager.getMode()).toBe('walk');
+           expect(stateManager.getMode()).toBe('ephemeral');
            expect(mockLogger.warn).toHaveBeenCalled();
            */
     });

@@ -3,10 +3,10 @@
  * @description Defines valid mode transitions and their rules
  *
  * State machine rules for mode switching:
- * - Walk (Focus):   Ephemeral highlighting (default)
- * - Sprint (Capture): Persistent highlighting
- * - Vault (Memory):  Archived/permanent highlighting
- * - Neural:         AI-powered connections across highlights
+ * - Ephemeral (Focus):   Ephemeral highlighting (default)
+ * - Local (Capture): Persistent highlighting
+ * - Cloud (Memory):  Archived/permanent highlighting
+ * - AI:         AI-powered connections across highlights
  *
  * Transition matrix enforces business rules and user experience.
  */
@@ -40,24 +40,24 @@ export interface TransitionRule {
  * - Same-mode transitions are no-ops
  */
 export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule>> = {
-  walk: {
-    walk: {
-      from: 'walk',
-      to: 'walk',
+  ephemeral: {
+    ephemeral: {
+      from: 'ephemeral',
+      to: 'ephemeral',
       allowed: true,
       requiresConfirmation: false,
       reason: 'Already in Focus mode (session-only highlighting)',
     },
-    sprint: {
-      from: 'walk',
-      to: 'sprint',
+    local: {
+      from: 'ephemeral',
+      to: 'local',
       allowed: true,
       requiresConfirmation: false,
       reason: 'Your Focus highlights will be saved to Capture',
     },
-    vault: {
-      from: 'walk',
-      to: 'vault',
+    cloud: {
+      from: 'ephemeral',
+      to: 'cloud',
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Focus highlights will be saved to Memory for long-term recall',
@@ -66,22 +66,22 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
         return true;
       },
     },
-    neural: {
-      from: 'walk',
-      to: 'neural',
+    ai: {
+      from: 'ephemeral',
+      to: 'ai',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Neural mode enables AI-powered organization. Requires authentication.',
+      reason: 'Switching to AI mode enables AI-powered organization. Requires authentication.',
       guard: async () => {
         // Future: Check authentication status
         return true;
       },
     },
   },
-  sprint: {
-    walk: {
-      from: 'sprint',
-      to: 'walk',
+  local: {
+    ephemeral: {
+      from: 'local',
+      to: 'ephemeral',
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Capture collections will be copied into this Focus session',
@@ -90,39 +90,39 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
         return true;
       },
     },
-    sprint: {
-      from: 'sprint',
-      to: 'sprint',
+    local: {
+      from: 'local',
+      to: 'local',
       allowed: true,
       requiresConfirmation: false,
       reason: 'Already in Capture mode (persistent highlighting)',
     },
-    vault: {
-      from: 'sprint',
-      to: 'vault',
+    cloud: {
+      from: 'local',
+      to: 'cloud',
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Capture highlights will be saved to Memory for long-term recall',
       guard: async () => {
-        // Future: Confirm vault archival
+        // Future: Confirm cloud archival
         return true;
       },
     },
-    neural: {
-      from: 'sprint',
-      to: 'neural',
+    ai: {
+      from: 'local',
+      to: 'ai',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Neural mode enables AI-powered organization.',
+      reason: 'Switching to AI mode enables AI-powered organization.',
       guard: async () => {
         return true;
       },
     },
   },
-  vault: {
-    walk: {
-      from: 'vault',
-      to: 'walk',
+  cloud: {
+    ephemeral: {
+      from: 'cloud',
+      to: 'ephemeral',
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Memory highlights will be copied into this Focus session',
@@ -131,59 +131,59 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
         return true;
       },
     },
-    sprint: {
-      from: 'vault',
-      to: 'sprint',
+    local: {
+      from: 'cloud',
+      to: 'local',
       allowed: true,
       requiresConfirmation: false,
       reason: 'Your Memory highlights will be copied into Capture mode',
     },
-    vault: {
-      from: 'vault',
-      to: 'vault',
+    cloud: {
+      from: 'cloud',
+      to: 'cloud',
       allowed: true,
       requiresConfirmation: false,
       reason: 'Already in Memory mode (long-term knowledge base)',
     },
-    neural: {
-      from: 'vault',
-      to: 'neural',
+    ai: {
+      from: 'cloud',
+      to: 'ai',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Neural will connect your Memory highlights with AI-powered insights',
+      reason: 'Switching to AI will connect your Memory highlights with AI-powered insights',
     },
   },
-  neural: {
-    walk: {
-      from: 'neural',
-      to: 'walk',
+  ai: {
+    ephemeral: {
+      from: 'ai',
+      to: 'ephemeral',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Walk mode will disable AI features. Data will be preserved.',
+      reason: 'Switching to Ephemeral mode will disable AI features. Data will be preserved.',
       guard: async () => {
         return true;
       },
     },
-    sprint: {
-      from: 'neural',
-      to: 'sprint',
+    local: {
+      from: 'ai',
+      to: 'local',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Sprint mode for persistent highlighting',
+      reason: 'Switching to Local mode for persistent highlighting',
     },
-    vault: {
-      from: 'neural',
-      to: 'vault',
+    cloud: {
+      from: 'ai',
+      to: 'cloud',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Vault mode for archived storage',
+      reason: 'Switching to Cloud mode for archived storage',
     },
-    neural: {
-      from: 'neural',
-      to: 'neural',
+    ai: {
+      from: 'ai',
+      to: 'ai',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Neural mode (AI-powered organization)',
+      reason: 'Already in AI mode (AI-powered organization)',
     },
   },
 };

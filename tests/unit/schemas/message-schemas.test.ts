@@ -58,7 +58,7 @@ describe('Message Schemas', () => {
     it('should validate message without optional requestId', () => {
       const message = {
         type: 'MODE_CHANGE',
-        payload: { mode: 'vault' },
+        payload: { mode: 'cloud' },
         timestamp: Date.now(),
       };
 

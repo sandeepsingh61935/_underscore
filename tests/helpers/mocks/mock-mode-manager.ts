@@ -12,7 +12,7 @@ import type {
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 
 export class MockModeManager implements IModeManager {
-  currentModeName: string = 'walk'; // Default
+  currentModeName: string = 'ephemeral'; // Default
 
   // Mocks/Spies
   registerModeSpy = vi.fn();
@@ -26,7 +26,7 @@ export class MockModeManager implements IModeManager {
 
   // Helper to simulate mode return
   mockCurrentMode: IHighlightMode = {
-    name: 'walk',
+    name: 'ephemeral',
     capabilities: { persistence: 'none' },
     createHighlight: vi.fn(),
     createFromData: vi.fn(),

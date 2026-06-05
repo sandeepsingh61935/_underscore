@@ -73,7 +73,7 @@ describe('ModeStateManager - Metadata Validation', () => {
   describe('Metadata persistence', () => {
     it('should persist metadata with state to chrome.storage', async () => {
       // Arrange
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Act
       const setCall = mockChromeStorage.sync.set.mock.calls[0]?.[0];
@@ -88,7 +88,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should load metadata from chrome.storage on init', async () => {
       // Arrange - Simulate stored state with metadata
       const storedState = {
-        defaultMode: 'vault',
+        defaultMode: 'cloud',
         metadata: {
           version: 2,
           lastModified: Date.now() - 1000,
@@ -101,13 +101,13 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
       // Metadata should be loaded (verified by side effects or checking internal state if exposed)
     });
 
     it('should update lastModified timestamp on each mode change', async () => {
       // Arrange - Set initial mode to sprint (not walk, which is default)
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
       const firstTimestamp =
         mockChromeStorage.sync.set.mock.calls[0]?.[0]?.metadata?.lastModified;
 
@@ -115,7 +115,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Act - Switch to vault
-      await stateManager.setMode('vault');
+      await stateManager.setMode('cloud');
       const secondTimestamp =
         mockChromeStorage.sync.set.mock.calls[1]?.[0]?.metadata?.lastModified;
 
@@ -127,9 +127,9 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should preserve metadata across multiple mode switches', async () => {
       // Arrange
-      await stateManager.setMode('walk');
-      await stateManager.setMode('sprint');
-      await stateManager.setMode('vault');
+      await stateManager.setMode('ephemeral');
+      await stateManager.setMode('local');
+      await stateManager.setMode('cloud');
 
       // Act
       const allCalls = mockChromeStorage.sync.set.mock.calls;
@@ -146,7 +146,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should validate metadata structure on load', async () => {
       // Arrange - Valid metadata
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -155,13 +155,13 @@ describe('ModeStateManager - Metadata Validation', () => {
 
       // Act & Assert - Should not throw
       await expect(stateManager.init()).resolves.not.toThrow();
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should handle missing metadata gracefully', async () => {
       // Arrange - Old state format without metadata
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'walk',
+        defaultMode: 'ephemeral',
         // No metadata field
       });
 
@@ -169,13 +169,13 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.init();
 
       // Assert - Should fall back to default or trigger migration
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
 
     it('should reject metadata with invalid version type', async () => {
       // Arrange - Version is string instead of number
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: '2', // Wrong type
           lastModified: Date.now(),
@@ -187,13 +187,13 @@ describe('ModeStateManager - Metadata Validation', () => {
 
       // Assert - Migration engine detects invalid v2 metadata
       // System handles gracefully - mode still loads
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should reject metadata with negative version', async () => {
       // Arrange
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'vault',
+        defaultMode: 'cloud',
         metadata: {
           version: -1,
           lastModified: Date.now(),
@@ -205,13 +205,13 @@ describe('ModeStateManager - Metadata Validation', () => {
 
       // Assert - Negative version triggers migration, but user preference (vault) is preserved
       // Migration fixes metadata while keeping the valid mode choice
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
     });
 
     it('should reject metadata with invalid lastModified', async () => {
       // Arrange - lastModified is string
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: 2,
           lastModified: 'invalid', // should be number
@@ -224,7 +224,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       // Assert - State should be repaired
       // Mode defaults to fallback (or valid if separate) but here we expect clean slate or repair
       // Implementation: validates metadata, fails -> resets metadata
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
 
       // Verify warning logs for reset
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -236,7 +236,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should handle corrupted metadata object', async () => {
       // Arrange - Metadata is array instead of object
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'walk',
+        defaultMode: 'ephemeral',
         metadata: ['corrupted', 'data'],
       });
 
@@ -244,7 +244,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.init();
 
       // Assert - Handles completely corrupted metadata gracefully
-      expect(stateManager.getMode()).toBe('walk');
+      expect(stateManager.getMode()).toBe('ephemeral');
     });
   });
 
@@ -252,7 +252,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should detect v1 state (no metadata) and trigger migration', async () => {
       // Arrange - v1 state format
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         // No metadata = v1 state
       });
 
@@ -272,7 +272,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should detect old version and trigger migration', async () => {
       // Arrange - v1 state with version 1
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'vault',
+        defaultMode: 'cloud',
         metadata: {
           version: 1,
           lastModified: Date.now(),
@@ -296,7 +296,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should skip migration for current version', async () => {
       // Arrange - Current v2 state
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -319,7 +319,7 @@ describe('ModeStateManager - Metadata Validation', () => {
   describe('Feature flags in metadata', () => {
     it('should persist feature flags in metadata', async () => {
       // Arrange - Set mode to sprint (not walk, which is default)
-      await stateManager.setMode('sprint');
+      await stateManager.setMode('local');
 
       // Act
       const savedState = mockChromeStorage.sync.set.mock.calls[0]?.[0];
@@ -338,7 +338,7 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should load feature flags from storage', async () => {
       // Arrange
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'sprint',
+        defaultMode: 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -353,13 +353,13 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.init();
 
       // Assert - Flags should be loaded
-      expect(stateManager.getMode()).toBe('sprint');
+      expect(stateManager.getMode()).toBe('local');
     });
 
     it('should handle invalid flag types gracefully', async () => {
       // Arrange - Flags with non-boolean values
       mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'vault',
+        defaultMode: 'cloud',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -375,7 +375,7 @@ describe('ModeStateManager - Metadata Validation', () => {
 
       // Assert - Should handle gracefully without crashing.
       // Invalid flags usually trigger metadata repair/reset.
-      expect(stateManager.getMode()).toBe('vault');
+      expect(stateManager.getMode()).toBe('cloud');
 
       // Check that it warned about invalid metadata
       expect(mockLogger.warn).toHaveBeenCalled();

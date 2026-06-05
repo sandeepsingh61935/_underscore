@@ -13,9 +13,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 const STORAGE_KEY = 'underscore-current-mode';
-const DEFAULT_MODE: ModeType = 'walk';
-const VALID_MODES: ModeType[] = ['walk', 'sprint', 'vault', 'neural'];
-const AUTH_REQUIRED_MODES: ModeType[] = ['vault', 'neural'];
+const DEFAULT_MODE: ModeType = 'ephemeral';
+const VALID_MODES: ModeType[] = ['ephemeral', 'local', 'cloud', 'ai'];
+const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
 
 export function usePersistedMode(isAuthenticated: boolean) {
     const [currentMode, setCurrentMode] = useState<ModeType>(DEFAULT_MODE);

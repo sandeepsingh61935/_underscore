@@ -378,7 +378,7 @@ describe('ChromeMessageBus', () => {
 
       const message: Message = {
         type: 'MODE_CHANGE',
-        payload: { mode: 'vault' },
+        payload: { mode: 'cloud' },
         timestamp: Date.now(),
       };
 
@@ -390,7 +390,7 @@ describe('ChromeMessageBus', () => {
       // Wait for async handler execution
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(handler).toHaveBeenCalledWith({ mode: 'vault' }, sender);
+      expect(handler).toHaveBeenCalledWith({ mode: 'cloud' }, sender);
     });
 
     it('should not dispatch to unsubscribed handlers', async () => {
@@ -601,7 +601,7 @@ describe('ChromeMessageBus', () => {
       messageBus.subscribe('MODE_CHANGE', contentHandler);
       messageBus.subscribe('MODE_CHANGE', popupHandler);
 
-      await messageBus.publish('MODE_CHANGE', { mode: 'vault', timestamp: Date.now() });
+      await messageBus.publish('MODE_CHANGE', { mode: 'cloud', timestamp: Date.now() });
 
       expect(contentHandler).toHaveBeenCalled();
       expect(popupHandler).toHaveBeenCalled();

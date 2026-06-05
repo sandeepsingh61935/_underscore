@@ -49,7 +49,7 @@ describe('ModeStateManager - State History Tracking', () => {
     modeManager = new ModeManager(eventBus, logger);
 
     // Register modes
-    ['walk', 'sprint', 'vault'].forEach((mode) => {
+    ['ephemeral', 'local', 'cloud'].forEach((mode) => {
       modeManager.registerMode({
         name: mode as any,
         capabilities: {} as any,
@@ -68,15 +68,15 @@ describe('ModeStateManager - State History Tracking', () => {
 
   it('should track transitions correctly', async () => {
     // Act
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
 
     // Assert
     const history = modeStateManager.getDebugState().history;
     expect(history).toHaveLength(1);
     expect(history[0]).toBeDefined();
     expect(history[0]!).toMatchObject({
-      from: 'walk',
-      to: 'sprint',
+      from: 'ephemeral',
+      to: 'local',
     });
     expect(history[0]!.timestamp).toBeTypeOf('number');
     expect(history[0]!.timestamp).toBeGreaterThan(0);
@@ -84,37 +84,37 @@ describe('ModeStateManager - State History Tracking', () => {
 
   it('should capture transition reasons', async () => {
     // Act
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
 
     // Assert
     const history = modeStateManager.getDebugState().history;
     const entry = history[0];
     expect(entry).toBeDefined();
-    expect(entry!.from).toBe('walk');
-    expect(entry!.to).toBe('sprint');
+    expect(entry!.from).toBe('ephemeral');
+    expect(entry!.to).toBe('local');
     expect(typeof entry!.timestamp).toBe('number');
     expect(typeof entry!.reason).toBe('string');
   });
 
   it('should maintain chronological order', async () => {
     // Act - Make multiple transitions
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('vault');
-    await modeStateManager.setMode('walk');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('cloud');
+    await modeStateManager.setMode('ephemeral');
 
     // Assert
     const history = modeStateManager.getDebugState().history;
     expect(history).toHaveLength(3);
 
     // Verify chronological order
-    expect(history[0]!.from).toBe('walk');
-    expect(history[0]!.to).toBe('sprint');
+    expect(history[0]!.from).toBe('ephemeral');
+    expect(history[0]!.to).toBe('local');
 
-    expect(history[1]!.from).toBe('sprint');
-    expect(history[1]!.to).toBe('vault');
+    expect(history[1]!.from).toBe('local');
+    expect(history[1]!.to).toBe('cloud');
 
-    expect(history[2]!.from).toBe('vault');
-    expect(history[2]!.to).toBe('walk');
+    expect(history[2]!.from).toBe('cloud');
+    expect(history[2]!.to).toBe('ephemeral');
 
     // Verify timestamps are increasing
     expect(history[1]!.timestamp).toBeGreaterThanOrEqual(history[0]!.timestamp);
@@ -123,8 +123,8 @@ describe('ModeStateManager - State History Tracking', () => {
 
   it('should clear history', async () => {
     // Arrange
-    await modeStateManager.setMode('sprint');
-    await modeStateManager.setMode('vault');
+    await modeStateManager.setMode('local');
+    await modeStateManager.setMode('cloud');
     expect(modeStateManager.getHistory()).toHaveLength(2);
 
     // Act
@@ -138,7 +138,7 @@ describe('ModeStateManager - State History Tracking', () => {
     // Arrange & Act - Create 105 transitions
     for (let i = 0; i < 105; i++) {
       // Toggle between sprint and walk
-      await modeStateManager.setMode(i % 2 === 0 ? 'sprint' : 'walk');
+      await modeStateManager.setMode(i % 2 === 0 ? 'local' : 'ephemeral');
     }
 
     // Assert
@@ -148,13 +148,13 @@ describe('ModeStateManager - State History Tracking', () => {
     // Verify newest entry is still there (last transition)
     const lastEntry = history[history.length - 1];
     expect(lastEntry).toBeDefined();
-    expect(lastEntry!.to).toBe('sprint'); // i=104, 104%2=0 → sprint
+    expect(lastEntry!.to).toBe('local'); // i=104, 104%2=0 → sprint
   });
 
   it('should evict oldest entries first (LRU)', async () => {
     // Arrange - Fill history with identifiable entries
     for (let i = 0; i < 102; i++) {
-      await modeStateManager.setMode(i % 2 === 0 ? 'sprint' : 'walk');
+      await modeStateManager.setMode(i % 2 === 0 ? 'local' : 'ephemeral');
     }
 
     const history = modeStateManager.getHistory();
@@ -164,16 +164,16 @@ describe('ModeStateManager - State History Tracking', () => {
     // Entry 0: walk→sprint (evicted)
     // Entry 1: sprint→walk (evicted)
     // Entry 2: walk→sprint (now at index 0)
-    expect(history[0]!.from).toBe('walk');
-    expect(history[0]!.to).toBe('sprint');
+    expect(history[0]!.from).toBe('ephemeral');
+    expect(history[0]!.to).toBe('local');
 
     // Last entry should be the most recent
-    expect(history[99]!.to).toBe('walk'); // i=101, 101%2=1 → walk
+    expect(history[99]!.to).toBe('ephemeral'); // i=101, 101%2=1 → walk
   });
 
   it('should return a defensive copy of history (immutable)', async () => {
     // Arrange
-    await modeStateManager.setMode('sprint');
+    await modeStateManager.setMode('local');
 
     // Act
     const history1 = modeStateManager.getHistory();
@@ -190,10 +190,10 @@ describe('ModeStateManager - State History Tracking', () => {
     it('should handle concurrent setMode calls without race conditions', async () => {
       // Act - Fire multiple setMode calls without awaiting
       const promises = [
-        modeStateManager.setMode('sprint'),
-        modeStateManager.setMode('vault'),
-        modeStateManager.setMode('walk'),
-        modeStateManager.setMode('sprint'),
+        modeStateManager.setMode('local'),
+        modeStateManager.setMode('cloud'),
+        modeStateManager.setMode('ephemeral'),
+        modeStateManager.setMode('local'),
       ];
 
       await Promise.all(promises);
@@ -215,22 +215,22 @@ describe('ModeStateManager - State History Tracking', () => {
       mockStorage.set.mockRejectedValue(new Error('QuotaExceededError'));
 
       // Trigger 3 failures to open circuit
-      await modeStateManager.setMode('sprint');
-      await modeStateManager.setMode('vault');
-      await modeStateManager.setMode('walk');
+      await modeStateManager.setMode('local');
+      await modeStateManager.setMode('cloud');
+      await modeStateManager.setMode('ephemeral');
 
       modeStateManager.clearHistory(); // Clear to isolate test
       mockStorage.set.mockClear();
 
       // Act - Circuit should be OPEN now, but history should still work
-      await modeStateManager.setMode('sprint');
+      await modeStateManager.setMode('local');
 
       // Assert - History recorded despite storage failure
       const history = modeStateManager.getHistory();
       expect(history).toHaveLength(1);
       expect(history[0]).toBeDefined();
-      expect(history[0]!.from).toBe('walk');
-      expect(history[0]!.to).toBe('sprint');
+      expect(history[0]!.from).toBe('ephemeral');
+      expect(history[0]!.to).toBe('local');
 
       // Verify storage NOT called (circuit open)
       expect(mockStorage.set).not.toHaveBeenCalled();
@@ -247,11 +247,11 @@ describe('ModeStateManager - State History Tracking', () => {
       await modeStateManager.init();
 
       // Act - Make transitions in "same millisecond"
-      await modeStateManager.setMode('sprint');
-      await modeStateManager.setMode('vault'); // Same timestamp
+      await modeStateManager.setMode('local');
+      await modeStateManager.setMode('cloud'); // Same timestamp
 
       timestamp += 1; // Next millisecond
-      await modeStateManager.setMode('walk');
+      await modeStateManager.setMode('ephemeral');
 
       // Assert
       const history = modeStateManager.getDebugState().history;
@@ -263,8 +263,8 @@ describe('ModeStateManager - State History Tracking', () => {
       expect(history[2]!.timestamp).toBe(1001);
 
       // Validations
-      expect(history[0]!.to).toBe('sprint');
-      expect(history[1]!.to).toBe('vault');
+      expect(history[0]!.to).toBe('local');
+      expect(history[1]!.to).toBe('cloud');
     });
 
     it('should record history even when setMode throws error', async () => {
@@ -275,10 +275,10 @@ describe('ModeStateManager - State History Tracking', () => {
         .mockResolvedValueOnce(false); // Second call blocked
 
       // Act
-      await modeStateManager.setMode('sprint'); // Success
+      await modeStateManager.setMode('local'); // Success
 
       try {
-        await modeStateManager.setMode('vault'); // Blocked (shouldn't record)
+        await modeStateManager.setMode('cloud'); // Blocked (shouldn't record)
       } catch (error) {
         // Expected to throw
       }
@@ -286,11 +286,11 @@ describe('ModeStateManager - State History Tracking', () => {
       // Assert - Only successful transition recorded
       const history = modeStateManager.getDebugState().history;
       expect(history).toHaveLength(1);
-      expect(history[0]!.from).toBe('walk');
-      expect(history[0]!.to).toBe('sprint');
+      expect(history[0]!.from).toBe('ephemeral');
+      expect(history[0]!.to).toBe('local');
 
       // Blocked transition should NOT be in history
-      expect(history.some((h) => h.to === 'vault')).toBe(false);
+      expect(history.some((h) => h.to === 'cloud')).toBe(false);
     });
   });
 });

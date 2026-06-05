@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { ErrorInfo, ReactNode } from 'react';
 import React, { useState, useEffect } from 'react';
 import { Component } from 'react';
@@ -10,13 +10,15 @@ import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
+import { SubDomainView } from '../../features/collections/views/SubDomainView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
+import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
-import { AppShell } from '../../ui-system/layout/AppShell';
 
+import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 
@@ -30,6 +32,7 @@ enum View {
   MODE_SELECTION = 'MODE_SELECTION',
   COLLECTIONS = 'COLLECTIONS',
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
+  SUB_DOMAIN = 'SUB_DOMAIN',
   AUTH = 'AUTH',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
@@ -64,15 +67,15 @@ class ErrorBoundary extends Component<
   override render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="w-[400px] h-[600px] p-4 bg-surface text-on-surface flex flex-col items-center justify-center text-center">
-          <h2 className="text-title-large text-error mb-2">Something went wrong</h2>
-          <p className="text-body-small text-on-surface-variant mb-4">
+        <div style={{ width: 400, height: 600, padding: 16, backgroundColor: 'var(--paper)', color: 'var(--ink)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <h2 className="u-serif" style={{ fontSize: 22, color: 'var(--accent)', marginBottom: 8 }}>Something went wrong</h2>
+          <p className="u-sans" style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
             {this.state.error?.message || 'Unknown error'}
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-primary px-4 py-2 text-label-large text-on-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="btn"
           >
             Reload Extension
           </button>
@@ -85,14 +88,14 @@ class ErrorBoundary extends Component<
 }
 
 function PopupApp(): React.ReactElement {
-  const { user, logout, isLoading, setMode } = useApp(); // Use from context now!
+  const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
   const [previousView, setPreviousView] = useState<View | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('');
   const [isStorageReady, setIsStorageReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'collections' | 'search' | 'settings'>('home');
 
   // Initialization
   useEffect(() => {
@@ -155,7 +158,8 @@ function PopupApp(): React.ReactElement {
     if (
       currentView === View.COLLECTIONS ||
       currentView === View.MODE_SELECTION ||
-      currentView === View.DOMAIN_DETAILS
+      currentView === View.DOMAIN_DETAILS ||
+      currentView === View.SUB_DOMAIN
     ) {
       browser.storage.local
         .set({ underscore_last_popup_view: currentView })
@@ -208,6 +212,16 @@ function PopupApp(): React.ReactElement {
     setCurrentView(View.COLLECTIONS);
   };
 
+  const handleSectionClick = (domain: string, section: string): void => {
+    setSelectedDomain(domain);
+    setSelectedSection(section);
+    setCurrentView(View.SUB_DOMAIN);
+  };
+
+  const handleBackToDomain = (): void => {
+    setCurrentView(View.DOMAIN_DETAILS);
+  };
+
   const handleSettingsClick = (): void => {
     setPreviousView(currentView);
     setCurrentView(View.SETTINGS);
@@ -227,142 +241,175 @@ function PopupApp(): React.ReactElement {
     }
   };
 
-  if (currentView === View.LOADING || !isStorageReady) {
-    return (
-      <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  const handleBackFromSettings = (): void => {
+    if (previousView && previousView !== View.SETTINGS) {
+      setCurrentView(previousView);
+    } else {
+      setCurrentView(View.COLLECTIONS);
+    }
+  };
 
-  const handleTabChange = (tab: typeof activeTab): void => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: ActiveTab): void => {
     switch (tab) {
       case 'home':        setCurrentView(View.DASHBOARD); break;
       case 'collections': setCurrentView(View.COLLECTIONS); break;
-      case 'search':      /* future — noop */ break;
+      case 'capture':     /* future — noop */ break;
       case 'settings':    handleSettingsClick(); break;
     }
   };
 
+  const chromeHandlers: ChromeHandlers = {
+    onTabChange: handleTabChange,
+    onSwitch: handleSettingsChangeMode,
+    onBackToCollections: handleBackToCollections,
+    onBackToDomain: handleBackToDomain,
+    onBackFromSettings: handleBackFromSettings,
+    subDomainBackLabel: () => selectedDomain,
+    getModeId: () => (typeof currentMode === 'string' ? currentMode : 'local'),
+  };
+  const chrome = buildChrome(chromeHandlers);
+
+  if (currentView === View.LOADING || !isStorageReady) {
+    return (
+      <PopupShell chrome={chrome[View.LOADING]} viewKey={View.LOADING}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner size="lg" />
+        </div>
+      </PopupShell>
+    );
+  }
+
   return (
-    <AppShell>
-      <AnimatePresence mode="wait">
-        {currentView === View.WELCOME && (
-          <motion.div
-            key="welcome"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <WelcomePage onStartClick={handleStartWelcome} />
-          </motion.div>
-        )}
-        {currentView === View.MODE_SELECTION && (
-          <motion.div
-            key="mode-selection"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <ModeSelectionView
-              onModeSelect={handleModeSelect}
-              onSignInClick={handleSignInClick}
-              onBack={previousView ? handleModeSelectionBack : undefined}
-              onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
-            />
-          </motion.div>
-        )}
-        {currentView === View.COLLECTIONS && (
-          <motion.div
-            key="collections"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <CollectionsView
-              onSignInClick={user ? undefined : handleSignInClick}
-              onCollectionClick={handleCollectionClick}
-              onLogout={handleLogout}
-              onSettingsClick={handleSettingsClick}
-              user={user}
-              isAuthenticated={!!user}
-            />
-          </motion.div>
-        )}
-        {currentView === View.DOMAIN_DETAILS && (
-          <motion.div
-            key="domain-details"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <DomainDetailsView domain={selectedDomain} onBack={handleBackToCollections} />
-          </motion.div>
-        )}
-        {currentView === View.AUTH && (
-          <motion.div
-            key="auth"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <AuthView
-              onLoginSuccess={handleLoginSuccess}
-              onBackToModeSelection={handleBackToModeSelection}
-            />
-          </motion.div>
-        )}
-        {currentView === View.SETTINGS && (
-          <motion.div
-            key="settings"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <SettingsPage
-              onBack={handleBackToCollections}
-              onChangeMode={handleSettingsChangeMode}
-            />
-          </motion.div>
-        )}
-        {currentView === View.DASHBOARD && (
-          <motion.div
-            key="dashboard"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springs.gentle}
-            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            <DashboardView
-              onLogout={handleLogout}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </AppShell>
+    <PopupShell chrome={chrome[currentView as ViewKey]} viewKey={currentView}>
+      {currentView === View.WELCOME && (
+        <motion.div
+          key="welcome"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <WelcomePage onStartClick={handleStartWelcome} />
+        </motion.div>
+      )}
+      {currentView === View.MODE_SELECTION && (
+        <motion.div
+          key="mode-selection"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <ModeSelectionView
+            onModeSelect={handleModeSelect}
+            onSignInClick={handleSignInClick}
+            onBack={previousView ? handleModeSelectionBack : undefined}
+            onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
+          />
+        </motion.div>
+      )}
+      {currentView === View.COLLECTIONS && (
+        <motion.div
+          key="collections"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <CollectionsView
+            onCollectionClick={handleCollectionClick}
+            isAuthenticated={!!user}
+          />
+        </motion.div>
+      )}
+      {currentView === View.DOMAIN_DETAILS && (
+        <motion.div
+          key="domain-details"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <DomainDetailsView
+            domain={selectedDomain}
+            onBack={handleBackToCollections}
+            onSectionClick={handleSectionClick}
+          />
+        </motion.div>
+      )}
+      {currentView === View.SUB_DOMAIN && (
+        <motion.div
+          key="sub-domain"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <SubDomainView
+            domain={selectedDomain}
+            section={selectedSection}
+            onBack={handleBackToDomain}
+          />
+        </motion.div>
+      )}
+      {currentView === View.AUTH && (
+        <motion.div
+          key="auth"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <AuthView
+            onLoginSuccess={handleLoginSuccess}
+            onBackToModeSelection={handleBackToModeSelection}
+          />
+        </motion.div>
+      )}
+      {currentView === View.SETTINGS && (
+        <motion.div
+          key="settings"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <SettingsPage
+            onBack={handleBackToCollections}
+            onChangeMode={handleSettingsChangeMode}
+          />
+        </motion.div>
+      )}
+      {currentView === View.DASHBOARD && (
+        <motion.div
+          key="dashboard"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <DashboardView
+            onLogout={handleLogout}
+          />
+        </motion.div>
+      )}
+    </PopupShell>
   );
 }
 
@@ -387,7 +434,7 @@ function PopupAppWithProviders(): React.ReactElement {
 
   if (isLoading) {
     return (
-      <div className="w-[400px] h-[600px] flex items-center justify-center bg-surface">
+      <div style={{ width: 400, height: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--paper)' }}>
         <Spinner size="lg" />
       </div>
     );
@@ -414,12 +461,12 @@ function PopupAppWithProviders(): React.ReactElement {
         position="bottom-center"
         toastOptions={{
           style: {
-            background: 'var(--md-sys-color-surface-container)',
-            border: '1px solid var(--md-sys-color-outline-variant)',
-            color: 'var(--md-sys-color-on-surface)',
-            fontFamily: 'var(--font-body, DM Sans, sans-serif)',
-            fontSize: '12px',
-            borderRadius: '10px',
+            background: 'var(--paper-2)',
+            border: '1px solid var(--rule)',
+            color: 'var(--ink)',
+            fontFamily: 'var(--sans)',
+            fontSize: '13px',
+            borderRadius: 'var(--radius)',
           },
         }}
       />

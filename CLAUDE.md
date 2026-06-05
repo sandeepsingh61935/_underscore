@@ -61,35 +61,37 @@
 When working on ANY UI code (components, views, styles), you MUST:
 
 1. Announce: "Starting UI work on [component]. Following `/ui-preflight` checklist."
-2. Read `.agent/workflows/ui-code-contracts.md` — the authoritative pattern & token contract
-3. Read `.agent/workflows/ui-preflight.md` before coding
-4. Follow `.agent/workflows/md3-ui.md` for new components
-5. Reference `.agent/workflows/md3-tokens-reference.md` for all tokens
+2. Read `.agent/workflows/ui-preflight.md` before coding
+3. Reference wireframe JSX in `ui_kits/extension/v2/`
 
 ### Non-Negotiables
 
-- Never use hardcoded colors (`#3B82F6`, `bg-blue-500`)
-- Never skip hover/focus/active states
-- Never use Tailwind default shadows — use `shadow-elevation-*`
-- Never omit MD3 motion — always `ease-standard duration-short`
-- Never complete UI work without Storybook verification
-- Always use MD3 semantic tokens (`bg-primary`, not `bg-[#4a6fa2]`)
-- Always use `color-mix()` state layers: hover 8%, press 12%
-- Always test in both light and dark mode
-- Always ensure keyboard accessibility
-- Always use >= 48px touch targets
+- **Never** use hardcoded hex colors in `.tsx` files — use `var(--paper)`, `var(--ink)`, `var(--accent)`.
+- **Never** use Tailwind utility classes — Tailwind is removed.
+- **Never** use MD3 tokens (`--md-sys-color-*`, `bg-primary`).
+- **Never** use Inter/Roboto for display fonts — use `var(--serif)`.
+- **Always** use semantic typography classes: `.u-serif`, `.u-mono`, `.u-kicker`, `.u-caps`.
+- **Always** use `var(--rule)` or `var(--rule-soft)` for borders.
+- **Always** reference wireframe JSX in `ui_kits/extension/v2/` as the implementation spec.
 
-### Design System: Material Design 3
+### Design System: V2 "Editorial"
 
-- Colors: MD3 semantic roles (`--md-sys-color-primary`, `--md-sys-color-surface`, etc.)
-- Typography: MD3 type scale (display, headline, title, body, label)
-- Motion: MD3 easings (standard, emphasized, decelerate, accelerate)
-- Shapes: MD3 corner tokens (4px → 28px → 9999px)
-- Elevation: MD3 5-level shadow system
-- State layers: 8% hover, 12% focus/press, 38% disabled
+- It is a pure CSS custom properties approach with zero Tailwind dependencies.
+- You must exactly match the wireframes in `ui_kits/extension/v2/`.
+
+### V2 Popup Chrome Ownership (enforced 2026-06-03)
+
+`PopupShell` is the **sole owner** of popup chrome. Views are body-only. This is the contract established on `feature/v2-popup-redesign` (spec at `docs/superpowers/specs/2026-06-03-v2-popup-chrome-alignment-design.md`).
+
+- **`PopupShell` renders, in order**: title strip (outside 400×600) → `ModeHeader` (optional) → body slot with single `AnimatePresence mode="wait"` + `position: absolute, inset: 0` motion div → `TabBar` (optional).
+- **Views NEVER import** `PopupShell`, `ModeHeader`, or `TabBar`. They return body content only: a `display: flex, flex-direction: column, height: 100%, width: 100%` root.
+- **Chrome config** comes from `buildChrome(handlers)` in `src/entrypoints/popup/chrome.ts`, which returns a `Record<ViewKey, PopupChrome>` keyed by the `View` enum. `index.tsx` passes `chrome={chrome[currentView]}` to `PopupShell`.
+- **No `width: 400px` / `height: 600px` inside view components** — `PopupShell` owns the 400×600 box. (Exception: `ErrorBoundary` fallback may be self-contained.)
+- **No per-view `position: absolute, inset: 0` motion wrappers** — the shell's body slot provides this.
+- **No multiple `AnimatePresence` instances** — exactly one, inside `PopupShell`.
 
 **Reference**: `.agent/skills/full-stack-developer/SKILL.md` (Frontend section)
-**Workflows**: `.agent/workflows/ui-code-contracts.md` (authoritative), `ui-preflight.md`, `md3-ui.md`, `md3-tokens-reference.md`
+**Workflows**: `ui-preflight.md`
 
 ---
 
@@ -155,10 +157,7 @@ Follow `docs/01-development/git-commit-strategy.md`:
 
 ## Workflow Commands
 
-- `/md3-ui` — Full MD3 component creation workflow
 - `/ui-preflight` — Pre-flight checklist (auto-triggered for any UI work)
-- `/md3-tokens-reference` — Token reference (single source of truth)
-- `/design-audit` — Audit existing components for issues
 - `/ui-prompting-guide` — Reference for writing good prompts
 
 ---
@@ -170,6 +169,5 @@ Follow `docs/01-development/git-commit-strategy.md`:
 | UI components, views, styles | `.agent/skills/full-stack-developer/SKILL.md` (Frontend section) |
 | API, services, data layer, IPC | `.agent/skills/full-stack-developer/SKILL.md` (Backend section) |
 | Architecture decisions, patterns, ADRs | `.agent/skills/system-architect/SKILL.md` |
-| New component | Also trigger `/md3-ui` workflow |
-| Fixing UI bugs | Also trigger `/design-audit` workflow |
+| New component | Use wireframe JSX spec |
 | Web app pages, routing | `.agent/skills/full-stack-developer/sub-skills/web-app-patterns.md` |

@@ -90,10 +90,10 @@ describe('Mock Infrastructure (10 tests)', () => {
   it('6. MockModeManager allows spying on mode transitions', async () => {
     const { modeManager } = context.mocks;
 
-    await modeManager.activateMode('sprint');
+    await modeManager.activateMode('local');
 
-    expect(modeManager.activateModeSpy).toHaveBeenCalledWith('sprint');
-    expect(modeManager.currentModeName).toBe('sprint');
+    expect(modeManager.activateModeSpy).toHaveBeenCalledWith('local');
+    expect(modeManager.currentModeName).toBe('local');
   });
 
   it('7. MockModeManager stubs highlight creation', async () => {
