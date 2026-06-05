@@ -494,7 +494,7 @@ export default defineContentScript({
         ) => {
           const msg = message as {
             type: string;
-            mode?: 'walk' | 'sprint';
+            mode?: 'ephemeral' | 'local';
             payload?: unknown;
           };
 
@@ -510,7 +510,7 @@ export default defineContentScript({
             });
           } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
-            const payloadMode = (msg.payload as { mode?: 'walk' | 'sprint' | 'vault' })?.mode;
+            const payloadMode = (msg.payload as { mode?: 'ephemeral' | 'local' | 'cloud' })?.mode;
             const newMode = msg.mode || payloadMode;
 
             if (!newMode) {
