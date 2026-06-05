@@ -3,7 +3,7 @@
  * @description Zod validation schemas for mode state management
  *
  * Provides type-safe validation for:
- * - Mode types (walk, sprint, vault)
+ * - Mode types (ephemeral, local, cloud, ai)
  * - State change events
  * - Persisted state structure
  * - Mode transitions
@@ -15,13 +15,14 @@ import { z } from 'zod';
  * Mode Type Schema
  *
  * Validates mode names. Currently supports:
- * - walk: Ephemeral highlighting (no persistence)
- * - sprint: Session-based highlighting (tab-scoped)
- * - vault: Persistent highlighting (IndexedDB)
+ * - ephemeral: No persistence
+ * - local: Session-based highlighting (tab-scoped)
+ * - cloud: Persistent highlighting (IndexedDB + sync)
+ * - ai: AI-driven highlighting (future)
  *
  * @example
- * ModeTypeSchema.parse('walk'); // ✅ Valid
- * ModeTypeSchema.parse('invalid'); // ❌ Throws ZodError
+ * ModeTypeSchema.parse('ephemeral'); // Valid
+ * ModeTypeSchema.parse('invalid'); // Throws ZodError
  */
 export const ModeTypeSchema = z.enum(['ephemeral', 'local', 'cloud', 'ai']);
 
@@ -110,14 +111,14 @@ export type ModeTransition = z.infer<typeof ModeTransitionSchema>;
  * Analytics data for state transitions and mode usage.
  * Used for debugging, observability, and user behavior analysis.
  *
- * @property transitionCounts - Count of each transition (e.g., "walk→sprint": 5)
- * @property failureCounts - Count of blocked transitions (e.g., "sprint→vault": 2)
+ * @property transitionCounts - Count of each transition (e.g., "ephemeral→local": 5)
+ * @property failureCounts - Count of blocked transitions (e.g., "local→cloud": 2)
  * @property timeInMode - Total milliseconds spent in each mode
  */
 export interface StateMetrics {
-  transitionCounts: Record<string, number>; // "walk→sprint": 5
-  failureCounts: Record<string, number>; // "sprint→vault": 2 (blocked)
-  timeInMode: Partial<Record<ModeType, number>>; // "walk": 5000ms (partial - not all modes may have time tracked)
+  transitionCounts: Record<string, number>; // "ephemeral→local": 5
+  failureCounts: Record<string, number>; // "local→cloud": 2 (blocked)
+  timeInMode: Partial<Record<ModeType, number>>; // "ephemeral": 5000ms (partial - not all modes may have time tracked)
 }
 
 /**
