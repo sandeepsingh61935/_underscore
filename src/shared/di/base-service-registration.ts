@@ -68,7 +68,7 @@ export function registerBaseServices(container: Container): void {
     /**
      * Walk storage — 24h TTL
      */
-    container.registerSingleton<IStorage>('walkStorage', () => {
+    container.registerSingleton<IStorage>('ephemeralStorage', () => {
         return new StorageService({ mode: 'ephemeral', ttlDuration: 24 * 60 * 60 * 1000 });
     });
 

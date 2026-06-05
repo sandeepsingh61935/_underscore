@@ -17,11 +17,11 @@ import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
-import type { ModeManager, SprintMode, WalkMode } from '@/content/modes';
-import type { VaultMode } from '@/content/modes/vault-mode';
+import type { ModeManager, LocalMode, EphemeralMode } from '@/content/modes';
+import type { CloudMode } from '@/content/modes/cloud-mode';
 import { SelectionDetector } from '@/content/selection-detector';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
-// import { isVaultModeEnabled } from '@/content/vault-mode-init';
+// import { isCloudModeEnabled } from '@/content/cloud-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
 import { RepositoryFactory } from '@/shared/repositories';
@@ -90,17 +90,17 @@ export default defineContentScript({
       // Register Modes (Done in container registration, but we need to ensure ModeManager knows about them)
       // Service registration lazy-loads them via factories, but ModeManager needs them registered to switch.
       // We can iterate container services or manually register.
-      // The container DI registers 'walkMode', 'sprintMode', etc. as TRANSIENT.
+      // The container DI registers 'ephemeralMode', 'localMode', etc. as TRANSIENT.
       // ModeManager expects INSTANCES.
 
       // Pre-instantiate and register modes
-      const walkMode = container.resolve<WalkMode>('walkMode');
-      const sprintMode = container.resolve<SprintMode>('sprintMode');
-      const vaultMode = container.resolve<VaultMode>('vaultMode');
+      const ephemeralMode = container.resolve<EphemeralMode>('ephemeralMode');
+      const localMode = container.resolve<LocalMode>('localMode');
+      const cloudMode = container.resolve<CloudMode>('cloudMode');
 
-      modeManager.registerMode(walkMode);
-      modeManager.registerMode(sprintMode);
-      modeManager.registerMode(vaultMode);
+      modeManager.registerMode(ephemeralMode);
+      modeManager.registerMode(localMode);
+      modeManager.registerMode(cloudMode);
 
       // Initialize State Management Pattern
       const { ModeStateManager } = await import('@/content/modes/mode-state-manager');
@@ -118,11 +118,11 @@ export default defineContentScript({
       // const { MessageBus } = await import('@/shared/messaging/message-bus');
       // MessageBus.setup(modeStateManager, repositoryFacade, logger);
 
-      // Initialize Vault Mode if enabled (Separate init removed - moved to VaultMode.onActivate)
-      // if (isVaultModeEnabled()) {
+      // Initialize Vault Mode if enabled (Separate init removed - moved to CloudMode.onActivate)
+      // if (isCloudModeEnabled()) {
       //   try {
       //     // We call this to ensure DB migration/setup is done, even if mode deals with restore
-      //     await initializeVaultMode();
+      //     await initializeCloudMode();
       //   } catch(e) {
       //     logger.error('[VAULT] Init failed', e as Error);
       //   }
@@ -480,8 +480,8 @@ export default defineContentScript({
         const currentMode = modeManager.getCurrentMode();
         if (currentMode.name === MODE_NAMES.CLOUD) {
           logger.info('[AUTH] Vault Mode active - triggering re-restoration');
-          // Cast to VaultMode to access restore method
-          await (currentMode as VaultMode).restore();
+          // Cast to CloudMode to access restore method
+          await (currentMode as CloudMode).restore();
         }
       });
 

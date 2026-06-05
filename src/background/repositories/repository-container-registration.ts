@@ -94,7 +94,7 @@ export function registerRepositoryComponents(container: Container): void {
      * - Write to cloud async (fire-and-forget, auth-aware)
      * - Read from local (fastest, most up-to-date)
      * 
-     * This is the primary repository used by VaultModeService
+     * This is the primary repository used by CloudModeService
      */
     container.registerSingleton<IHighlightRepository>('highlightRepository', () => {
         const localRepo = container.resolve<IHighlightRepository>('localRepository' as any);

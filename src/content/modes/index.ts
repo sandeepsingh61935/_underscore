@@ -4,6 +4,6 @@
 
 export type { IHighlightMode, HighlightData } from './highlight-mode.interface';
 export { BaseHighlightMode } from './base-highlight-mode';
-export { SprintMode } from './sprint-mode';
-export { WalkMode } from './walk-mode';
+export { LocalMode } from './local-mode';
+export { EphemeralMode } from './ephemeral-mode';
 export { ModeManager } from './mode-manager';

@@ -16,9 +16,9 @@ import { registerBaseServices } from './base-service-registration';
 import { CommandFactory } from '@/content/commands/command-factory';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
-import { SprintMode } from '@/content/modes/sprint-mode';
-import { VaultMode } from '@/content/modes/vault-mode';
-import { WalkMode } from '@/content/modes/walk-mode';
+import { LocalMode } from '@/content/modes/local-mode';
+import { CloudMode } from '@/content/modes/cloud-mode';
+import { EphemeralMode } from '@/content/modes/ephemeral-mode';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -56,26 +56,26 @@ export function registerContentServices(container: Container): void {
      * Walk Mode - Transient
      * 24h TTL local persistence
      */
-    container.registerTransient<IHighlightMode>('walkMode', () => {
+    container.registerTransient<IHighlightMode>('ephemeralMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-        const walkStorage = container.resolve<IStorage>('walkStorage');
+        const walkStorage = container.resolve<IStorage>('ephemeralStorage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new WalkMode(repositoryFacade as any, walkStorage, eventBus, logger);
+        return new EphemeralMode(repositoryFacade as any, walkStorage, eventBus, logger);
     });
 
     /**
      * Sprint Mode - Transient
      * Permanent local persistence (manual delete only)
      */
-    container.registerTransient<IHighlightMode>('sprintMode', () => {
+    container.registerTransient<IHighlightMode>('localMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new SprintMode(repositoryFacade as any, storage, eventBus, logger);
+        return new LocalMode(repositoryFacade as any, storage, eventBus, logger);
     });
 
     /**
@@ -83,12 +83,12 @@ export function registerContentServices(container: Container): void {
      * Persistent highlighting (IndexedDB)
      * Created fresh when activated
      */
-    container.registerTransient<IHighlightMode>('vaultMode', () => {
+    container.registerTransient<IHighlightMode>('cloudMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new VaultMode(repositoryFacade as any, eventBus, logger);
+        return new CloudMode(repositoryFacade as any, eventBus, logger);
     });
 
     // ============================================
