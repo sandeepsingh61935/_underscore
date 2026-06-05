@@ -5,7 +5,6 @@ import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Logo } from '@/ui-system/components/primitives/Logo';
-import { SocialButton } from '@/ui-system/components/primitives/SocialButton';
 
 /**
  * SignInView — Registration-first auth page
@@ -139,10 +138,17 @@ export function SignInView(): React.ReactElement {
                     <div className="flex-1 h-px bg-outline-variant" />
                 </div>
 
-                {/* Social buttons */}
-                <div className="flex items-center justify-center gap-3 mb-8">
-                    <SocialButton provider="google" onClick={() => handleSocialAuth('google')} disabled={isLoading} />
-                    <SocialButton provider="apple" onClick={() => handleSocialAuth('apple')} disabled={isLoading} />
+                {/* Single V2 terracotta CTA (Q8: no vendor brand colors). */}
+                <div className="mb-8">
+                    <Button
+                        type="button"
+                        variant="accent"
+                        onClick={() => handleSocialAuth('google')}
+                        disabled={isLoading}
+                        className="w-full"
+                    >
+                        Continue with Google
+                    </Button>
                 </div>
 
                 {/* Toggle sign-in / register */}
