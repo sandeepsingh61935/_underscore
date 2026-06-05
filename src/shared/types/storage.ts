@@ -84,7 +84,7 @@ export interface EventLog {
 /**
  * Storage mode
  */
-export type StorageMode = 'walk' | 'sprint' | 'vault';
+export type StorageMode = 'ephemeral' | 'local' | 'cloud';
 
 /**
  * Storage configuration
@@ -98,10 +98,10 @@ export interface StorageConfig {
 }
 
 /**
- * Default storage configuration (Sprint: permanent, no TTL)
+ * Default storage configuration (local: permanent, no TTL)
  */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
-  mode: 'sprint',
+  mode: 'local',
   ttlDuration: null,
   maxEventsPerDomain: 100,
   maxDomains: 100,
