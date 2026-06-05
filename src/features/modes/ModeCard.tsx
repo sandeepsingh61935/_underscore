@@ -16,10 +16,10 @@ interface ModeCardProps {
 }
 
 const MODE_ICONS: Record<ModeType, React.ReactNode> = {
-    walk:   <Circle size={14} />,
-    sprint: <Zap size={14} />,
-    vault:  <Archive size={14} />,
-    neural: <Brain size={14} />,
+    ephemeral: <Circle size={14} />,
+    local: <Zap size={14} />,
+    cloud:  <Archive size={14} />,
+    ai: <Brain size={14} />,
 };
 
 /**
