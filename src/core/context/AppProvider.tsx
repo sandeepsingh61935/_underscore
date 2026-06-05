@@ -45,7 +45,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [user, setUser] = useState<User | null>(initialUser);
 
     // Mode state - base initial value on auth
-    const [currentMode, setCurrentMode] = useState<Mode>(initialUser ? 'vault' : 'walk');
+    const [currentMode, setCurrentMode] = useState<Mode>(initialUser ? 'cloud' : 'ephemeral');
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - get from localStorage or system preference
@@ -62,8 +62,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Available modes depends on auth state
     const availableModes: Mode[] = isAuthenticated
-        ? ['walk', 'sprint', 'vault', 'neural']
-        : ['walk', 'sprint'];
+        ? ['ephemeral', 'local', 'cloud', 'ai']
+        : ['ephemeral', 'local'];
 
     // Apply theme to document
     useEffect(() => {
@@ -89,13 +89,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const logout = useCallback(() => {
         setUser(null);
         setIsAuthenticated(false);
-        setCurrentMode('walk'); // Reset to walk mode on logout
+        setCurrentMode('ephemeral'); // Reset to ephemeral mode on logout
         localStorage.removeItem('underscore-user');
     }, []);
 
     const setMode = useCallback((mode: Mode) => {
-        // Vault and Neural require authentication
-        if ((mode === 'vault' || mode === 'neural') && !isAuthenticated) {
+        // Cloud and ai require authentication
+        if ((mode === 'cloud' || mode === 'ai') && !isAuthenticated) {
             return;
         }
         setCurrentMode(mode);
