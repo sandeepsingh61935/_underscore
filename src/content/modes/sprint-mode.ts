@@ -42,8 +42,8 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     this.storage = storage; // Explicitly set storage for Sprint Mode (uses event sourcing)
   }
 
-  get name(): 'sprint' {
-    return 'sprint' as const;
+  get name(): 'local' {
+    return 'local' as const;
   }
 
   readonly capabilities: ModeCapabilities = {
@@ -267,7 +267,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    */
   async clearAll(): Promise<void> {
     const count = this.data.size;
-    this.logger.info('Clearing all highlights in sprint mode', { count });
+    this.logger.info('Clearing all highlights in local mode', { count });
 
     // [OK] Clear Custom Highlight API (DOM)
     CSS.highlights.clear();
