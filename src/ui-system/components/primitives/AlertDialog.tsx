@@ -12,12 +12,13 @@ const AlertDialogPortal = AlertDialogPrimitive.Portal;
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
+    style={{ backgroundColor: 'rgba(0,0,0,0.78)', ...style }}
     {...props}
     ref={ref}
   />
@@ -27,15 +28,21 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPortal>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=open]:duration-medium data-[state=closed]:duration-medium data-[state=open]:ease-decelerate data-[state=closed]:ease-accelerate sm:rounded-lg',
+        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         className
       )}
+      style={{
+        backgroundColor: 'var(--paper)',
+        color: 'var(--ink)',
+        border: '1px solid var(--rule)',
+        ...style,
+      }}
       {...props}
     />
   </AlertDialogPortal>
@@ -70,10 +77,11 @@ AlertDialogFooter.displayName = 'AlertDialogFooter';
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn('text-title-large', className)}
+    className={cn('font-serif', className)}
+    style={{ color: 'var(--ink)', fontSize: 'var(--step-3)', ...style }}
     {...props}
   />
 ));
@@ -82,10 +90,11 @@ AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
 const AlertDialogDescription = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
-    className={cn('text-body-small text-muted-foreground', className)}
+    className={cn(className)}
+    style={{ color: 'var(--ink-2)', fontSize: 'var(--step-0)', ...style }}
     {...props}
   />
 ));
@@ -94,13 +103,22 @@ AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayNam
 const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPrimitive.Action
     ref={ref}
     className={cn(
-      'inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-label-large text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+      'inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 border-0 cursor-pointer',
+      'transition-colors',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'disabled:pointer-events-none disabled:opacity-50',
       className
     )}
+    style={{
+      backgroundColor: 'var(--accent)',
+      color: 'var(--paper)',
+      fontSize: 'var(--step-0)',
+      ...style,
+    }}
     {...props}
   />
 ));
@@ -109,13 +127,23 @@ AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
 const AlertDialogCancel = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      'mt-2 inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-label-large ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 sm:mt-0',
+      'mt-2 inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 sm:mt-0',
+      'transition-colors',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'disabled:pointer-events-none disabled:opacity-50',
       className
     )}
+    style={{
+      backgroundColor: 'var(--paper-2)',
+      color: 'var(--ink)',
+      border: '1px solid var(--rule-soft)',
+      fontSize: 'var(--step-0)',
+      ...style,
+    }}
     {...props}
   />
 ));
