@@ -39,7 +39,7 @@ export function AuthView({
         const result = await login(provider);
         setActiveProvider(null);
         if (result.success) {
-            if (isRegistering) setMode('vault');
+            if (isRegistering) setMode('cloud');
             onLoginSuccess();
         } else {
             setLoginError(result.error || 'Login failed. Please try again.');
@@ -52,7 +52,7 @@ export function AuthView({
         const action = isRegistering ? registerWithEmail : loginWithEmail;
         const result = await action(email, password);
         if (result.success) {
-            if (isRegistering) setMode('vault');
+            if (isRegistering) setMode('cloud');
             onLoginSuccess();
         } else {
             setLoginError(result.error || `${isRegistering ? 'Registration' : 'Login'} failed. Please try again.`);
