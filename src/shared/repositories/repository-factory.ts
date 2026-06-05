@@ -40,14 +40,14 @@ export class RepositoryFactory {
     this.instance = null;
   }
 
-  private static currentMode: 'walk' | 'sprint' | 'vault' = 'walk';
+  private static currentMode: 'ephemeral' | 'local' | 'cloud' = 'ephemeral';
 
   /**
    * Set the current operation mode
    *
-   * @param mode 'walk' (no persistence) or 'sprint' (persistence)
+   * @param mode 'ephemeral' (no persistence) or 'local' (persistence)
    */
-  static setMode(mode: 'walk' | 'sprint' | 'vault'): void {
+  static setMode(mode: 'ephemeral' | 'local' | 'cloud'): void {
     this.currentMode = mode;
     // In the future, this might trigger a repository swap
     // For now, both use InMemory, but logic in Facade might differ based on mode
@@ -56,7 +56,7 @@ export class RepositoryFactory {
   /**
    * Get the current mode
    */
-  static getMode(): 'walk' | 'sprint' | 'vault' {
+  static getMode(): 'ephemeral' | 'local' | 'cloud' {
     return this.currentMode;
   }
 
