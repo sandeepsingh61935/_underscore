@@ -2,7 +2,8 @@
  * @file v1-to-v2.ts
  * @description Migration from v1 to v2 state format
  *
- * V1 format: { defaultMode: 'walk' | 'sprint' | 'vault' }
+ * V1 format: { defaultMode: <V1 name> } where V1 names are documented in
+ *            V1_TO_V2_MODE below.
  * V2 format: { currentMode, version, metadata: { version, lastModified } }
  *
  * Handles:
@@ -69,10 +70,9 @@ export async function migrateV1ToV2(
 /**
  * V1 mode name → V2 mode name.
  *
- * V1 used imperative verbs (walk/sprint/vault/neural); V2 uses
- * domain nouns (ephemeral/local/cloud/ai). The migration preserves
- * the user's *intent* (e.g. a v1 'walk' user wanted ephemeral
- * highlighting) while translating to the V2 vocabulary.
+ * The keys of this map are intentionally V1 names — they are the
+ * input vocabulary this migration translates FROM. Do not rename
+ * the keys; rename the values if the V2 vocabulary shifts.
  */
 const V1_TO_V2_MODE: Record<string, ModeType> = {
   walk: 'ephemeral',
