@@ -1,31 +1,31 @@
-import type { ElementType, HTMLAttributes } from 'react';
+import type { CSSProperties, ElementType, HTMLAttributes } from 'react';
 import React, { forwardRef } from 'react';
 
 import { cn } from '../../utils/cn';
 
 export type TextVariant =
-  | 'displayLarge'
-  | 'displaySmall'
-  | 'headlineLarge'
-  | 'headlineMedium'
-  | 'headlineSmall'
-  | 'titleLarge'
-  | 'titleMedium'
-  | 'titleSmall'
-  | 'bodyLarge'
-  | 'bodyMedium'
-  | 'bodySmall'
-  | 'labelLarge'
-  | 'labelMedium'
-  | 'labelSmall'
-  | 'h1' // Headline Large (32px)
-  | 'h2' // Headline Medium (28px)
-  | 'h3' // Title Large (22px)
-  | 'body' // Body Large (16px)
-  | 'small' // Body Medium (14px)
-  | 'tiny' // Label Small (11px)
-  | 'label' // Label Medium (12px)
-  | 'link'; // Interactive text
+  | 'displayLarge'   // --step-6 (48px)
+  | 'displaySmall'   // --step-5 (36px)
+  | 'headlineLarge'  // --step-5 (36px)
+  | 'headlineMedium' // --step-4 (28px)
+  | 'headlineSmall'  // --step-3 (22px)
+  | 'titleLarge'     // --step-3 (22px)
+  | 'titleMedium'    // --step-2 (18px)
+  | 'titleSmall'     // --step-1 (15px)
+  | 'bodyLarge'      // --step-1 (15px)
+  | 'bodyMedium'     // --step-0 (13px)
+  | 'bodySmall'      // --step--1 (11px)
+  | 'labelLarge'     // --step-0 (13px)
+  | 'labelMedium'    // --step--1 (11px)
+  | 'labelSmall'     // --step--2 (10px)
+  | 'h1'             // --step-5
+  | 'h2'             // --step-4
+  | 'h3'             // --step-3
+  | 'body'           // --step-0
+  | 'small'          // --step--1
+  | 'tiny'           // --step--1
+  | 'label'          // --step--1
+  | 'link';          // --step--1 + ink color
 
 interface TextProps extends HTMLAttributes<HTMLElement> {
   variant?: TextVariant;
@@ -33,29 +33,34 @@ interface TextProps extends HTMLAttributes<HTMLElement> {
   muted?: boolean;
 }
 
-const variantClassMap: Record<TextVariant, string> = {
-  displayLarge: 'text-display-large',
-  displaySmall: 'text-display-small',
-  headlineLarge: 'text-headline-large',
-  headlineMedium: 'text-headline-medium',
-  headlineSmall: 'text-headline-small',
-  titleLarge: 'text-title-large',
-  titleMedium: 'text-title-medium',
-  titleSmall: 'text-title-small',
-  bodyLarge: 'text-body-large',
-  bodyMedium: 'text-body-medium',
-  bodySmall: 'text-body-small',
-  labelLarge: 'text-label-large',
-  labelMedium: 'text-label-medium',
-  labelSmall: 'text-label-small',
-  h1: 'text-headline-large',
-  h2: 'text-headline-medium',
-  h3: 'text-title-large',
-  body: 'text-body-large',
-  small: 'text-body-medium',
-  tiny: 'text-label-small',
-  label: 'text-label-medium',
-  link: 'text-label-medium text-primary hover:underline cursor-pointer',
+/**
+ * V2 step scale. Maps the legacy MD3 type-scale variants to V2 --step-*
+ * tokens (10/11/13/15/18/22/28/36/48). The step scale is intentionally
+ * smaller than MD3's 13-variant scale — V2 favors fewer, larger jumps.
+ */
+const variantStepMap: Record<TextVariant, string> = {
+  displayLarge:  'var(--step-6)',
+  displaySmall:  'var(--step-5)',
+  headlineLarge: 'var(--step-5)',
+  headlineMedium: 'var(--step-4)',
+  headlineSmall: 'var(--step-3)',
+  titleLarge:    'var(--step-3)',
+  titleMedium:   'var(--step-2)',
+  titleSmall:    'var(--step-1)',
+  bodyLarge:     'var(--step-1)',
+  bodyMedium:    'var(--step-0)',
+  bodySmall:     'var(--step--1)',
+  labelLarge:    'var(--step-0)',
+  labelMedium:   'var(--step--1)',
+  labelSmall:    'var(--step--2)',
+  h1:            'var(--step-5)',
+  h2:            'var(--step-4)',
+  h3:            'var(--step-3)',
+  body:          'var(--step-0)',
+  small:         'var(--step--1)',
+  tiny:          'var(--step--1)',
+  label:         'var(--step--1)',
+  link:          'var(--step--1)',
 };
 
 const semanticTagMap: Partial<Record<TextVariant, ElementType>> = {
@@ -70,23 +75,30 @@ const semanticTagMap: Partial<Record<TextVariant, ElementType>> = {
   titleMedium: 'h3',
   titleSmall: 'h3',
   h3: 'h2',
-  labelMedium: 'label',
-  label: 'label',
 };
 
 const Text = forwardRef<HTMLElement, TextProps>(
-  ({ className, variant = 'body', as, muted, children, ...props }, ref) => {
+  ({ className, variant = 'body', as, muted, style, children, ...props }, ref) => {
     const Component = as || semanticTagMap[variant] || 'p';
+
+    const isLink = variant === 'link';
+    const colorVar = muted ? 'var(--ink-3)' : isLink ? 'var(--accent)' : 'var(--ink)';
+
+    const computedStyle: CSSProperties = {
+      color: colorVar,
+      fontSize: variantStepMap[variant],
+      ...style,
+    };
 
     return (
       <Component
         ref={ref}
         className={cn(
-          'font-display text-on-surface transition-colors',
-          variantClassMap[variant],
-          muted && 'text-on-surface-variant',
-          className
+          'font-serif',
+          isLink && 'cursor-pointer hover:underline',
+          className,
         )}
+        style={computedStyle}
         {...props}
       >
         {children}
