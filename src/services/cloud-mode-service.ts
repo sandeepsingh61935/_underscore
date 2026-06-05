@@ -6,7 +6,7 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 
 /**
- * @file vault-mode-service.ts
+ * @file cloud-mode-service.ts
  * @description Vault Mode Service - Integration Layer for highlight persistence
  * 
  * Coordinates between Multi-Selector Engine and storage layer.
@@ -33,13 +33,13 @@ import type { IHighlightRepository } from '@/background/repositories/i-highlight
  * - Type-safe with strict TypeScript
  * - Proper error handling and logging
  */
-export class VaultModeService {
+export class CloudModeService {
   private repository: IHighlightRepository;
   private selectorEngine: MultiSelectorEngine;
   private logger: ILogger;
 
   /**
-   * Creates a new VaultModeService instance
+   * Creates a new CloudModeService instance
    * 
    * @param repository - Highlight repository for persistence (can be local, cloud, or dual-write)
    * @param storage - IndexedDBStorage for event sourcing and collections (legacy)
@@ -382,7 +382,7 @@ export class VaultModeService {
 /**
  * Singleton instance
  */
-let instance: VaultModeService | null = null;
+let instance: CloudModeService | null = null;
 
 /**
  * Get or create Vault Mode Service instance
@@ -391,10 +391,10 @@ let instance: VaultModeService | null = null;
  * Uses InMemoryHighlightRepository for backward compatibility.
  * To use DualWriteRepository (cloud sync), construct via DI container instead.
  *
- * @returns VaultModeService instance
+ * @returns CloudModeService instance
  * @deprecated Use DI container for better testability and cloud sync support
  */
-export function getVaultModeService(): VaultModeService {
+export function getCloudModeService(): CloudModeService {
   if (!instance) {
     // Import here to avoid circular dependencies
     const { InMemoryHighlightRepository } = require('@/background/repositories/in-memory-highlight-repository');
@@ -412,7 +412,7 @@ export function getVaultModeService(): VaultModeService {
       setLevel: () => { },
       getLevel: () => 1,
     };
-    instance = new VaultModeService(repository, selectorEngine, logger);
+    instance = new CloudModeService(repository, selectorEngine, logger);
   }
   return instance;
 }

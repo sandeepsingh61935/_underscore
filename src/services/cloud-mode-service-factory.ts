@@ -1,15 +1,15 @@
 /**
- * @file vault-mode-service-factory.ts
- * @description Factory for creating VaultModeService with cloud sync enabled
+ * @file cloud-mode-service-factory.ts
+ * @description Factory for creating CloudModeService with cloud sync enabled
  * 
- * This factory creates VaultModeService instances with DualWriteRepository,
+ * This factory creates CloudModeService instances with DualWriteRepository,
  * enabling automatic sync to Supabase when authenticated.
  * 
  * Used by content scripts which run in a separate context from the background
  * service worker and cannot directly access the DI container.
  */
 
-import { VaultModeService } from './vault-mode-service';
+import { CloudModeService } from './cloud-mode-service';
 import { MultiSelectorEngine } from './multi-selector-engine';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
@@ -28,7 +28,7 @@ import { EventName } from '@/shared/types/events';
 /**
  * Singleton instances
  */
-let serviceInstance: VaultModeService | null = null;
+let serviceInstance: CloudModeService | null = null;
 let authManagerInstance: IAuthManager | null = null;
 
 /**
@@ -83,7 +83,7 @@ class ContentScriptAuthManager implements IAuthManager {
                 });
             }
         } catch (error) {
-            console.warn('[VaultFactory] Failed to initialize auth state', error);
+            console.warn('[CloudFactory] Failed to initialize auth state', error);
         }
     }
 
@@ -140,20 +140,20 @@ class ContentScriptAuthManager implements IAuthManager {
 }
 
 /**
- * Create VaultModeService with cloud sync enabled
+ * Create CloudModeService with cloud sync enabled
  * 
  * This creates a service that writes to both:
  * - Local: InMemoryHighlightRepository (fast)
  * - Cloud: SupabaseHighlightRepository (async, auth-aware)
  * 
- * @returns VaultModeService instance with DualWriteRepository
+ * @returns CloudModeService instance with DualWriteRepository
  */
-export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultModeService {
+export function createCloudModeServiceWithCloudSync(eventBus?: EventBus): CloudModeService {
     if (serviceInstance) {
         return serviceInstance;
     }
 
-    const logger = LoggerFactory.getLogger('VaultModeService');
+    const logger = LoggerFactory.getLogger('CloudModeService');
 
     // 1. Get Supabase configuration
     const supabaseConfig: SupabaseConfig = {
@@ -165,8 +165,8 @@ export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultM
     const hasSupabaseConfig = !!(supabaseConfig.url && supabaseConfig.anonKey);
 
     if (!hasSupabaseConfig) {
-        logger.warn('[VaultFactory] Supabase not configured, using local-only storage');
-        logger.warn('[VaultFactory] Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable cloud sync');
+        logger.warn('[CloudFactory] Supabase not configured, using local-only storage');
+        logger.warn('[CloudFactory] Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable cloud sync');
     }
 
     // 2. Create repositories
@@ -217,14 +217,14 @@ export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultM
     } else {
         // Fallback to local-only
         repository = localRepo;
-        logger.info('[VaultFactory] ⚠️ Using local-only storage (Supabase not configured)');
+        logger.info('[CloudFactory] ⚠️ Using local-only storage (Supabase not configured)');
     }
 
     // 3. Create supporting services
     const selectorEngine = new MultiSelectorEngine();
 
-    // 4. Create VaultModeService
-    serviceInstance = new VaultModeService(repository, selectorEngine, logger);
+    // 4. Create CloudModeService
+    serviceInstance = new CloudModeService(repository, selectorEngine, logger);
 
     return serviceInstance;
 }
@@ -232,8 +232,8 @@ export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultM
 /**
  * Get existing service instance or create new one with cloud sync
  * 
- * @deprecated Use createVaultModeServiceWithCloudSync() for clarity
+ * @deprecated Use createCloudModeServiceWithCloudSync() for clarity
  */
-export function getVaultModeServiceWithCloudSync(): VaultModeService {
-    return createVaultModeServiceWithCloudSync();
+export function getCloudModeServiceWithCloudSync(): CloudModeService {
+    return createCloudModeServiceWithCloudSync();
 }
