@@ -80,8 +80,8 @@ export function AuthView({
             className="w-full h-full flex flex-col bg-surface text-on-surface overflow-y-auto relative"
             style={{
                 backgroundImage: [
-                    'radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--ink-neural) 9%, transparent) 0%, transparent 50%)',
-                    'radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--ink-memory) 7%, transparent) 0%, transparent 50%)',
+                    'radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 50%)',
+                    'radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 50%)',
                 ].join(', '),
             }}
         >
