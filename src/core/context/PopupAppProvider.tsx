@@ -3,10 +3,10 @@ import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 
 const MODE_COLORS: Record<Mode, string> = {
-    walk:   'var(--ink-focus)',
-    sprint: 'var(--ink-capture)',
-    vault:  'var(--ink-memory)',
-    neural: 'var(--ink-neural)',
+    ephemeral: 'var(--ink-focus)',
+    local: 'var(--ink-capture)',
+    cloud:  'var(--ink-memory)',
+    ai: 'var(--ink-neural)',
 };
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
@@ -54,8 +54,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
 
     // Available modes depends on auth state
     const availableModes: Mode[] = propIsAuthenticated
-        ? ['walk', 'sprint', 'vault', 'neural']
-        : ['walk', 'sprint'];
+        ? ['ephemeral', 'local', 'cloud', 'ai']
+        : ['ephemeral', 'local'];
 
     // Apply theme to document
     useEffect(() => {
