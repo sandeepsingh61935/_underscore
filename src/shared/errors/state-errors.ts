@@ -23,7 +23,7 @@ import { AppError, type ErrorContext } from './app-error';
  * throw new StateValidationError('Invalid mode value', {
  *   field: 'defaultMode',
  *   value: 'invalid',
- *   validValues: ['walk', 'sprint', 'vault']
+ *   validValues: ['ephemeral', 'local', 'cloud', 'ai']
  * });
  * ```
  */
@@ -93,9 +93,9 @@ function safeStringify(obj: any): any {
  * @example
  * ```typescript
  * throw new StateTransitionError(
- *   'Cannot transition from walk to gen',
- *   'walk',
- *   'gen'
+ *   'Cannot transition from ephemeral to ai',
+ *   'ephemeral',
+ *   'ai'
  * );
  * ```
  */
