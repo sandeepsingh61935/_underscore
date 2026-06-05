@@ -34,7 +34,7 @@ export abstract class BaseHighlightMode {
     this.repository = repository;
   }
 
-  abstract get name(): 'walk' | 'sprint' | 'vault' | 'gen';
+  abstract get name(): 'ephemeral' | 'local' | 'cloud' | 'ai';
 
   async onActivate(): Promise<void> {
     this.logger.info(`${this.name} mode activated`);
