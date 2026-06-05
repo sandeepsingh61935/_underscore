@@ -43,7 +43,7 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
             }
 
             // Auth-gated modes — redirect to sign-in
-            if ((targetMode === 'vault' || targetMode === 'neural') && !isAuthenticated) {
+            if ((targetMode === 'cloud' || targetMode === 'ai') && !isAuthenticated) {
                 navigate('/sign-in');
                 return;
             }
@@ -86,8 +86,8 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
 
                 // Check for downgrade from auth-required mode to local mode
                 const isDowngrade =
-                    (currentMode === 'neural' || currentMode === 'vault') &&
-                    (targetMode === 'walk' || targetMode === 'sprint');
+                    (currentMode === 'ai' || currentMode === 'cloud') &&
+                    (targetMode === 'ephemeral' || targetMode === 'local');
 
                 if (isDowngrade) {
                     console.log('[useModeTransition] Downgrading local mode. Triggering sync and auto sign-out...');
