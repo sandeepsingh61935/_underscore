@@ -62,14 +62,14 @@ export function registerBaseServices(container: Container): void {
      * Sprint storage — permanent (null TTL)
      */
     container.registerSingleton<IStorage>('storage', () => {
-        return new StorageService({ mode: 'sprint', ttlDuration: null });
+        return new StorageService({ mode: 'local', ttlDuration: null });
     });
 
     /**
      * Walk storage — 24h TTL
      */
     container.registerSingleton<IStorage>('walkStorage', () => {
-        return new StorageService({ mode: 'walk', ttlDuration: 24 * 60 * 60 * 1000 });
+        return new StorageService({ mode: 'ephemeral', ttlDuration: 24 * 60 * 60 * 1000 });
     });
 
     /**
