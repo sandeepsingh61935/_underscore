@@ -7,8 +7,8 @@ import { Logo } from '../../../ui-system/components/primitives/Logo';
 import { VerificationView } from './VerificationView';
 
 import { useApp } from '@/core/context/AppProvider';
+import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
-import { SocialAuthButton } from '@/ui-system/components/primitives/SocialAuthButton';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 import { cn } from '@/ui-system/utils/cn';
 
@@ -103,26 +103,24 @@ export function AuthView({
                     Sign in or create an account to continue
                 </p>
 
-                {/* Social auth buttons */}
+                {/* V2 single terracotta CTA (Q8: no vendor brand colors). */}
                 <div className="w-full flex flex-col gap-3 mb-4 shrink-0">
-                    <SocialAuthButton
-                        provider="google"
+                    <Button
+                        type="button"
+                        variant="accent"
                         onClick={() => handleProviderClick('google')}
                         disabled={isLoading || activeProvider !== null}
-                        isLoading={activeProvider === 'google'}
-                    />
-                    <SocialAuthButton
-                        provider="apple"
+                    >
+                        {activeProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="default"
                         onClick={() => handleProviderClick('apple')}
                         disabled={isLoading || activeProvider !== null}
-                        isLoading={activeProvider === 'apple'}
-                    />
-                    <SocialAuthButton
-                        provider="phone"
-                        onClick={() => handleProviderClick('phone' as OAuthProviderType)}
-                        disabled={isLoading || activeProvider !== null}
-                        isLoading={activeProvider === ('phone' as OAuthProviderType)}
-                    />
+                    >
+                        {activeProvider === 'apple' ? 'Signing in...' : 'Continue with Apple'}
+                    </Button>
                 </div>
 
                 {/* OR divider */}
