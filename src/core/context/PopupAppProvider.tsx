@@ -2,12 +2,8 @@ import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { AppContext, type AppContextType } from './AppProvider';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 
-const MODE_COLORS: Record<Mode, string> = {
-    ephemeral: 'var(--ink-focus)',
-    local: 'var(--ink-capture)',
-    cloud:  'var(--ink-memory)',
-    ai: 'var(--ink-neural)',
-};
+// V2 spec: all modes share --accent (terracotta); modes are distinguished by glyph + label only.
+// No per-mode color map needed.
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
@@ -86,15 +82,9 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         }
     }, [onLogout]);
 
-    // Keep --ink-mode CSS variable in sync with currentMode
-    useEffect(() => {
-        document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[currentMode]);
-    }, [currentMode]);
+
 
     const setMode = useCallback(async (mode: Mode) => {
-        // Apply mode color to root — drives all mode-tinted elements
-        document.documentElement.style.setProperty('--ink-mode', MODE_COLORS[mode]);
-
         // 1. Persist to chrome.storage.local (auth guard is inside persistMode)
         await persistMode(mode);
 
