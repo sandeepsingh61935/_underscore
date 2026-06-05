@@ -28,28 +28,28 @@ export function ModeSelector({
     // In a real app, these might come from a config or prop, but standardizing them here for the UI system is fine for now.
     const modes: ModeOption[] = [
         {
-            id: 'focus',
+            id: 'ephemeral',
             label: 'Focus',
             description: 'Capture content without distractions.',
             icon: <Footprints className="w-5 h-5" />,
             isLocked: false
         },
         {
-            id: 'capture',
+            id: 'local',
             label: 'Capture',
             description: 'High-speed capture session.',
             icon: <Zap className="w-5 h-5" />,
             isLocked: false
         },
         {
-            id: 'memory',
+            id: 'cloud',
             label: 'Memory',
             description: 'Secure storage for sensitive clips.',
             icon: <Archive className="w-5 h-5" />,
             isLocked: !isAuthenticated
         },
         {
-            id: 'neural',
+            id: 'ai',
             label: 'Neural',
             description: 'AI-powered organization.',
             icon: <Brain className="w-5 h-5" />,
