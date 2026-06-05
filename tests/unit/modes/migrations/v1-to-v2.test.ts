@@ -13,9 +13,9 @@ import { describe, it, expect } from 'vitest';
 import { migrateV1ToV2 } from '@/content/modes/migrations/v1-to-v2';
 
 describe('v1 → v2 Migration', () => {
-  describe('Valid v1 states', () => {
-    it('should migrate walk mode correctly', async () => {
-      const v1State = { defaultMode: 'ephemeral' };
+  describe('Valid v1 states (V1 names → V2 names)', () => {
+    it('should migrate walk (v1) → ephemeral (v2)', async () => {
+      const v1State = { defaultMode: 'walk' };
 
       const result = await migrateV1ToV2(v1State);
 
@@ -26,8 +26,8 @@ describe('v1 → v2 Migration', () => {
       expect(result.metadata.lastModified).toBeGreaterThan(0);
     });
 
-    it('should migrate sprint mode correctly', async () => {
-      const v1State = { defaultMode: 'local' };
+    it('should migrate sprint (v1) → local (v2)', async () => {
+      const v1State = { defaultMode: 'sprint' };
 
       const result = await migrateV1ToV2(v1State);
 
@@ -36,14 +36,23 @@ describe('v1 → v2 Migration', () => {
       expect(result.metadata).toBeDefined();
     });
 
-    it('should migrate vault mode correctly', async () => {
-      const v1State = { defaultMode: 'cloud' };
+    it('should migrate vault (v1) → cloud (v2)', async () => {
+      const v1State = { defaultMode: 'vault' };
 
       const result = await migrateV1ToV2(v1State);
 
       expect(result.currentMode).toBe('cloud');
       expect(result.version).toBe(2);
       expect(result.metadata).toBeDefined();
+    });
+
+    it('should migrate neural (v1) → ai (v2)', async () => {
+      const v1State = { defaultMode: 'neural' };
+
+      const result = await migrateV1ToV2(v1State);
+
+      expect(result.currentMode).toBe('ai');
+      expect(result.version).toBe(2);
     });
   });
 
@@ -84,19 +93,19 @@ describe('v1 → v2 Migration', () => {
 
   describe('Preference preservation', () => {
     it('should preserve user mode choice through migration', async () => {
-      // User had chosen 'cloud' in v1
-      const v1State = { defaultMode: 'cloud' };
+      // User had chosen 'vault' in v1 (now 'cloud' in v2)
+      const v1State = { defaultMode: 'vault' };
 
       const result = await migrateV1ToV2(v1State);
 
-      // Their choice should be preserved
+      // Their choice should be preserved (mapped to v2 name)
       expect(result.currentMode).toBe('cloud');
     });
 
     it('should generate fresh timestamp on migration', async () => {
       const before = Date.now();
 
-      const v1State = { defaultMode: 'local' };
+      const v1State = { defaultMode: 'sprint' };
       const result = await migrateV1ToV2(v1State);
 
       const after = Date.now();
@@ -109,7 +118,7 @@ describe('v1 → v2 Migration', () => {
   describe('Edge cases', () => {
     it('should handle extra v1 fields gracefully', async () => {
       const v1State = {
-        defaultMode: 'ephemeral',
+        defaultMode: 'walk',
         someOldField: 'value',
         anotherField: 123,
       };

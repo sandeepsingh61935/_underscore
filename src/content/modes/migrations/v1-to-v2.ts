@@ -67,32 +67,49 @@ export async function migrateV1ToV2(
 }
 
 /**
- * Validate and normalize mode value
+ * V1 mode name → V2 mode name.
+ *
+ * V1 used imperative verbs (walk/sprint/vault/neural); V2 uses
+ * domain nouns (ephemeral/local/cloud/ai). The migration preserves
+ * the user's *intent* (e.g. a v1 'walk' user wanted ephemeral
+ * highlighting) while translating to the V2 vocabulary.
+ */
+const V1_TO_V2_MODE: Record<string, ModeType> = {
+  walk: 'ephemeral',
+  sprint: 'local',
+  vault: 'cloud',
+  neural: 'ai',
+};
+
+const V2_DEFAULT_MODE: ModeType = 'ephemeral';
+
+/**
+ * Validate and normalize mode value.
+ *
+ * Order: (1) accept already-V2 names; (2) map V1 names; (3) fallback.
  *
  * @param rawMode - Raw mode value from v1 state
- * @returns Validated ModeType or 'walk' as fallback
+ * @returns Validated V2 ModeType, with V1 names translated.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function validateAndNormalizeMode(rawMode: any): ModeType {
-  // Try to validate with Zod
-  const validation = ModeTypeSchema.safeParse(rawMode);
-
-  if (validation.success) {
-    return validation.data;
-  }
-
-  // Handle case-insensitive matches
+function validateAndNormalizeMode(rawMode: unknown): ModeType {
+  // 1. Accept already-V2 names (idempotent re-migration, future-proofing).
   if (typeof rawMode === 'string') {
-    const normalized = rawMode.toLowerCase();
-    const retryValidation = ModeTypeSchema.safeParse(normalized);
-
-    if (retryValidation.success) {
-      return retryValidation.data;
+    const validation = ModeTypeSchema.safeParse(rawMode);
+    if (validation.success) {
+      return validation.data;
     }
   }
 
-  // Fallback to safe default
-  return 'walk';
+  // 2. Translate V1 names to V2 names.
+  if (typeof rawMode === 'string') {
+    const translated = V1_TO_V2_MODE[rawMode.toLowerCase()];
+    if (translated) {
+      return translated;
+    }
+  }
+
+  // 3. Fallback to V2 default.
+  return V2_DEFAULT_MODE;
 }
 
 /**
@@ -102,7 +119,7 @@ function validateAndNormalizeMode(rawMode: any): ModeType {
  */
 function createDefaultV2State(): V2State {
   return {
-    currentMode: 'walk',
+    currentMode: V2_DEFAULT_MODE,
     version: 2,
     metadata: {
       version: 2,
