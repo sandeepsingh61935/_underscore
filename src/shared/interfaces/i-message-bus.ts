@@ -84,8 +84,8 @@ export interface IMessageBus {
    * @example
    * ```typescript
    * await messageBus.publish('STATE_CHANGED', {
-   *   from: 'walk',
-   *   to: 'vault',
+   *   from: 'ephemeral',
+   *   to: 'cloud',
    *   timestamp: Date.now()
    * });
    * ```
