@@ -32,8 +32,8 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class WalkMode extends BaseHighlightMode implements IBasicMode {
-  get name(): 'walk' {
-    return 'walk' as const;
+  get name(): 'ephemeral' {
+    return 'ephemeral' as const;
   }
 
   constructor(
