@@ -30,8 +30,8 @@ import type { ILogger } from '@/shared/utils/logger';
 export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   private vaultService: any; // Type is VaultModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
 
-  get name(): 'vault' {
-    return 'vault' as const;
+  get name(): 'cloud' {
+    return 'cloud' as const;
   }
 
   constructor(repository: IHighlightRepository, eventBus: EventBus, logger: ILogger) {
@@ -472,8 +472,8 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     return {
       showDeleteIcon: true,
       requireConfirmation: true,
-      confirmationMessage: 'Delete from vault? This cannot be undone.',
-      allowUndo: false, // Vault deletions are permanent
+      confirmationMessage: 'Delete from cloud? This cannot be undone.',
+      allowUndo: false, // Cloud deletions are permanent
       iconType: 'trash',
       beforeDelete: async (_id: string) => {
         // Future: Check if highlight is synced across devices
