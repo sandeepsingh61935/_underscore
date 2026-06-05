@@ -187,7 +187,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
    *
    * @example
    * ```typescript
-   * await sprintMode.updateHighlight('abc123', { colorRole: 'blue' });
+   * await localMode.updateHighlight('abc123', { colorRole: 'blue' });
    * ```
    */
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
@@ -221,7 +221,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
    *
    * @example
    * ```typescript
-   * await sprintMode.removeHighlight('abc123');
+   * await localMode.removeHighlight('abc123');
    * ```
    */
   override async removeHighlight(id: string): Promise<void> {
@@ -261,7 +261,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
    *
    * @example
    * ```typescript
-   * await sprintMode.clearAll();
+   * await localMode.clearAll();
    * console.log('All Local Mode highlights cleared and persisted');
    * ```
    */

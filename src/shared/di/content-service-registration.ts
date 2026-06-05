@@ -58,11 +58,11 @@ export function registerContentServices(container: Container): void {
      */
     container.registerTransient<IHighlightMode>('ephemeralMode', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-        const walkStorage = container.resolve<IStorage>('ephemeralStorage');
+        const ephemeralStorage = container.resolve<IStorage>('ephemeralStorage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new EphemeralMode(repositoryFacade as any, walkStorage, eventBus, logger);
+        return new EphemeralMode(repositoryFacade as any, ephemeralStorage, eventBus, logger);
     });
 
     /**
