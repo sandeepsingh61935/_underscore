@@ -213,7 +213,7 @@ export function createVaultModeServiceWithCloudSync(eventBus?: EventBus): VaultM
             logger
         );
 
-        logger.info('[VaultFactory] ✅ Cloud sync enabled with DualWriteRepository');
+        logger.info('[CloudFactory] ✅ Cloud sync enabled with DualWriteRepository');
     } else {
         // Fallback to local-only
         repository = localRepo;
