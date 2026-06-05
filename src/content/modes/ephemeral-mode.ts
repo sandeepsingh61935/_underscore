@@ -1,5 +1,5 @@
 /**
- * Walk Mode
+ * Ephemeral Mode
  *
  * Philosophy: "Light footprint" - Persist for 24 hours, then auto-clear.
  *
@@ -31,7 +31,7 @@ import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class WalkMode extends BaseHighlightMode implements IBasicMode {
+export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
   get name(): 'ephemeral' {
     return 'ephemeral' as const;
   }
@@ -74,7 +74,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
     const existing = await this.repository.findByContentHash(contentHash);
 
     if (existing && existing.id) {
-      this.logger.info('Duplicate content detected (Walk Mode)', {
+      this.logger.info('Duplicate content detected (Ephemeral Mode)', {
         existingId: existing.id,
       });
       return existing.id;
@@ -114,7 +114,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
       },
     });
 
-    this.logger.info('Created highlight in Walk Mode', { id });
+    this.logger.info('Created highlight in Ephemeral Mode', { id });
 
     return id;
   }
@@ -149,7 +149,7 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
 
     await this.repository.remove(id);
 
-    this.logger.info('Removed highlight (Walk Mode)', { id });
+    this.logger.info('Removed highlight (Ephemeral Mode)', { id });
   }
 
   async clearAll(): Promise<void> {
@@ -169,11 +169,11 @@ export class WalkMode extends BaseHighlightMode implements IBasicMode {
       });
     }
 
-    this.logger.info('Cleared all highlights (Walk Mode)', { count });
+    this.logger.info('Cleared all highlights (Ephemeral Mode)', { count });
   }
 
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
-    this.logger.debug('[WALK] onHighlightCreated called', {
+    this.logger.debug('[EPHEMERAL] onHighlightCreated called', {
       highlightId: event.highlight.id,
       hasStorage: !!this.storage,
     });

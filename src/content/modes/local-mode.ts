@@ -1,5 +1,5 @@
 /**
- * Sprint Mode
+ * Local Mode
  *
  * Philosophy: "Focused work, permanent record" - Persist until you decide to delete.
  *
@@ -31,7 +31,7 @@ import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class SprintMode extends BaseHighlightMode implements IBasicMode {
+export class LocalMode extends BaseHighlightMode implements IBasicMode {
   constructor(
     repository: IHighlightRepository,
     storage: IStorage,
@@ -39,7 +39,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     logger: ILogger
   ) {
     super(eventBus, logger, repository);
-    this.storage = storage; // Explicitly set storage for Sprint Mode (uses event sourcing)
+    this.storage = storage; // Explicitly set storage for Local Mode (uses event sourcing)
   }
 
   get name(): 'local' {
@@ -115,7 +115,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add({ ...data, version: 2 } as any);
 
-    this.logger.info('[SPRINT] Added to repository', {
+    this.logger.info('[LOCAL] Added to repository', {
       id,
       repoType: this.repository.constructor.name,
       repoCount: await this.repository.count(),
@@ -206,7 +206,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   }
 
   /**
-   * Removes a highlight from Sprint Mode (persistent deletion)
+   * Removes a highlight from Local Mode (persistent deletion)
    *
    * @param id - The highlight ID to remove
    * @returns Promise that resolves when removal is complete
@@ -245,7 +245,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
   }
 
   /**
-   * Clears ALL highlights from Sprint Mode
+   * Clears ALL highlights from Local Mode
    *
    * @returns Promise that resolves when all highlights are cleared
    *
@@ -262,7 +262,7 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
    * @example
    * ```typescript
    * await sprintMode.clearAll();
-   * console.log('All Sprint Mode highlights cleared and persisted');
+   * console.log('All Local Mode highlights cleared and persisted');
    * ```
    */
   async clearAll(): Promise<void> {
@@ -294,10 +294,10 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Event Handler: Highlight Created
-   * Sprint Mode: Persists to event store (permanent)
+   * Local Mode: Persists to event store (permanent)
    */
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
-    this.logger.debug('[SPRINT] onHighlightCreated called', {
+    this.logger.debug('[LOCAL] onHighlightCreated called', {
       highlightId: event.highlight.id,
       hasStorage: !!this.storage,
     });
@@ -322,10 +322,10 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Event Handler: Highlight Removed
-   * Sprint Mode: Persists removal event
+   * Local Mode: Persists removal event
    */
   override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
-    this.logger.debug('Sprint Mode: Persisting removal event');
+    this.logger.debug('Local Mode: Persisting removal event');
 
     // Persist the removal event for event sourcing
     // NOTE: Do NOT call this.removeHighlight() here - it would cause infinite recursion
@@ -342,15 +342,15 @@ export class SprintMode extends BaseHighlightMode implements IBasicMode {
 
   /**
    * Restoration Control
-   * Sprint Mode: Restores from event sourcing
+   * Local Mode: Restores from event sourcing
    */
   override shouldRestore(): boolean {
-    return true; // Sprint Mode restores via event sourcing
+    return true; // Local Mode restores via event sourcing
   }
 
   /**
    * Deletion Configuration
-   * Sprint Mode: Requires confirmation (persistent highlights)
+   * Local Mode: Requires confirmation (persistent highlights)
    */
   override getDeletionConfig(): DeletionConfig {
     return {

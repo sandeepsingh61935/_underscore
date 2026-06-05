@@ -1,5 +1,5 @@
 /**
- * Vault Mode
+ * Cloud Mode
  *
  * Philosophy: "Permanent & Reliable" - Store forever, recover from anything.
  *
@@ -11,7 +11,7 @@
  *
  * Architectural Compliance:
  * - Implements IPersistentMode
- * - Uses VaultModeService Facade for complex persistence logic
+ * - Uses CloudModeService Facade for complex persistence logic
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
@@ -20,15 +20,15 @@ import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
-import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-service-factory';
+import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class VaultMode extends BaseHighlightMode implements IPersistentMode {
-  private vaultService: any; // Type is VaultModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
+export class CloudMode extends BaseHighlightMode implements IPersistentMode {
+  private cloudService: any; // Type is CloudModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
 
   get name(): 'cloud' {
     return 'cloud' as const;
@@ -37,7 +37,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   constructor(repository: IHighlightRepository, eventBus: EventBus, logger: ILogger) {
     super(eventBus, logger, repository);
     // Initialize service here with eventBus
-    this.vaultService = createVaultModeServiceWithCloudSync(eventBus);
+    this.cloudService = createCloudModeServiceWithCloudSync(eventBus);
   }
 
   override async onActivate(): Promise<void> {
@@ -62,7 +62,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     // Only handle internal bridged events
     if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
-    this.logger.info('[VAULT] 📨 Received remote event', { type: message.type, id: message.payload?.id });
+    this.logger.info('[CLOUD] 📨 Received remote event', { type: message.type, id: message.payload?.id });
 
     try {
       switch (message.type) {
@@ -77,7 +77,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
           break;
       }
     } catch (error) {
-      this.logger.error('[VAULT] Failed to handle remote event', error as Error);
+      this.logger.error('[CLOUD] Failed to handle remote event', error as Error);
     }
   }
 
@@ -88,20 +88,20 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   private async handleRemoteHighlightCreated(data: HighlightData): Promise<void> {
     // 1. Deduplication Check
     if (this.highlights.has(data.id)) {
-      this.logger.debug('[VAULT] Skipping remote highlight (already exists)', { id: data.id });
+      this.logger.debug('[CLOUD] Skipping remote highlight (already exists)', { id: data.id });
       return;
     }
 
-    this.logger.info('[VAULT] Process remote highlight', { id: data.id });
+    this.logger.info('[CLOUD] Process remote highlight', { id: data.id });
 
     try {
       // Step 1: Save to DB (Local Only)
       await (this.repository as any).add(data as any, { skipSync: true });
 
-      this.logger.info('[VAULT] Saved remote highlight to local DB. Attempting instant render...');
+      this.logger.info('[CLOUD] Saved remote highlight to local DB. Attempting instant render...');
 
       // Instant Render: Restore range and inject CSS
-      const restoreResult = await this.vaultService.restoreHighlight(data as any);
+      const restoreResult = await this.cloudService.restoreHighlight(data as any);
 
       if (restoreResult.range) {
         // Create CSS Highlight
@@ -116,12 +116,12 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         this.highlights.set(data.id, highlight);
         this.data.set(data.id, data as any);
 
-        this.logger.info('[VAULT] ✨ Instant render successful', {
+        this.logger.info('[CLOUD] ✨ Instant render successful', {
           id: data.id,
           tier: restoreResult.restoredUsing
         });
       } else {
-        this.logger.warn('[VAULT] Instant render failed - range could not be restored');
+        this.logger.warn('[CLOUD] Instant render failed - range could not be restored');
       }
 
     } catch (e) {
@@ -136,7 +136,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const id = payload?.id;
     if (!id) return;
 
-    this.logger.info('[VAULT] Handling remote deleted', { id });
+    this.logger.info('[CLOUD] Handling remote deleted', { id });
 
     // 1. Remove from local repository (skipping cloud sync)
     // Note: Cast because repository generic interface might not have skipSync in type definition depending on version,
@@ -152,7 +152,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     if (exists) {
       CSS.highlights.delete(highlightName);
       removeHighlightCSS(id);
-      this.logger.info('[VAULT] Removed CSS highlight', { id });
+      this.logger.info('[CLOUD] Removed CSS highlight', { id });
     }
 
     // 3. Update internal state
@@ -167,14 +167,14 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const id = data?.id;
     if (!id) return;
 
-    this.logger.info('[VAULT] Handling remote updated', { id });
+    this.logger.info('[CLOUD] Handling remote updated', { id });
 
     // Conflict Detection: Log when update arrives for existing highlight
     // Note: Without updatedAt timestamps, we can't determine "who wins"
     // This just provides observability for potential concurrent edits
     const localHighlight = this.data.get(id);
     if (localHighlight) {
-      this.logger.info('[VAULT] 📊 Update received for existing highlight (potential concurrent edit)', {
+      this.logger.info('[CLOUD] 📊 Update received for existing highlight (potential concurrent edit)', {
         highlightId: id,
         hasLocalVersion: true,
         resolution: 'Last-Write-Wins (accepting remote)'
@@ -206,10 +206,10 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   };
 
   override shouldRestore(): boolean {
-    // Vault Mode handles its own restoration via onActivate() -> vaultService.restoreHighlightsForUrl()
+    // Cloud Mode handles its own restoration via onActivate() -> cloudService.restoreHighlightsForUrl()
     // We must return FALSE here to prevent content.ts from running the default restoreHighlights()
     // which would clear the repository and replay incompatible Sprint Mode events.
-    this.logger.info('[DEBUG] VaultMode.shouldRestore() called - returning false');
+    this.logger.info('[DEBUG] CloudMode.shouldRestore() called - returning false');
     return false;
   }
 
@@ -219,7 +219,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   async createFromData(data: HighlightData, options?: { skipSync?: boolean }): Promise<void> {
     // 1. Ensure live ranges exist
     if (!data.liveRanges || data.liveRanges.length === 0) {
-      this.logger.warn('[VAULT] createFromData called without live ranges', data.id);
+      this.logger.warn('[CLOUD] createFromData called without live ranges', data.id);
       return;
     }
 
@@ -228,7 +228,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
 
     // Use saveHighlight to ensure persistence + selectors
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.vaultService.saveHighlight(data as any, range, { skipSync: options?.skipSync });
+    await this.cloudService.saveHighlight(data as any, range, { skipSync: options?.skipSync });
 
     // 3. Render
     const highlightName = getHighlightName('underscore', data.id);
@@ -248,19 +248,19 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (this.repository as any).add(data as any, { skipSync: options?.skipSync });
     } else {
-      this.logger.debug('[VAULT] Skipping duplicate repo add during create', {
+      this.logger.debug('[CLOUD] Skipping duplicate repo add during create', {
         id: data.id,
       });
     }
   }
 
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
-    // VaultModeService doesn't have partial update yet, but we can implement it or overwrite.
+    // CloudModeService doesn't have partial update yet, but we can implement it or overwrite.
     // For now, get existing -> merge -> save.
 
     const existing = this.data.get(id);
     if (!existing) {
-      this.logger.warn('[VAULT] Cannot update non-existent highlight', id);
+      this.logger.warn('[CLOUD] Cannot update non-existent highlight', id);
       return;
     }
 
@@ -279,12 +279,12 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     const range = existing.liveRanges && existing.liveRanges[0];
     if (range) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.vaultService.saveHighlight(updated as any, range);
+      await this.cloudService.saveHighlight(updated as any, range);
     }
   }
 
   override async clearAll(): Promise<void> {
-    await this.vaultService.clearAll();
+    await this.cloudService.clearAll();
 
     for (const id of this.highlights.keys()) {
       const highlightName = getHighlightName('underscore', id);
@@ -301,11 +301,11 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   async saveToStorage(highlight: HighlightData): Promise<void> {
     if (!highlight.liveRanges || !highlight.liveRanges.length) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.vaultService.saveHighlight(highlight as any, highlight.liveRanges[0]!);
+    await this.cloudService.saveHighlight(highlight as any, highlight.liveRanges[0]!);
   }
 
   async loadFromStorage(_url: string): Promise<HighlightData[]> {
-    const restored = await this.vaultService.restoreHighlightsForUrl();
+    const restored = await this.cloudService.restoreHighlightsForUrl();
     return restored.map(
       (r) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -314,10 +314,10 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   /**
-   * Create a highlight in Vault Mode
+   * Create a highlight in Cloud Mode
    *
    * 1. Check for duplicates
-   * 2. Persist to IndexedDB (via VaultModeService) with robust selectors
+   * 2. Persist to IndexedDB (via CloudModeService) with robust selectors
    * 3. Update Runtime State (CSS.highlights, Repository)
    */
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
@@ -361,7 +361,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     // 1. Persist to Vault Storage (IndexedDB + Selectors)
     // This handles the "Heavy Lifting" of creating selectors and saving to DB
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.vaultService.saveHighlight(data as any, liveRange);
+    await this.cloudService.saveHighlight(data as any, liveRange);
 
     // 2. Update Runtime API (CSS Highlights)
     const highlightName = getHighlightName('underscore', id);
@@ -383,8 +383,8 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   override async removeHighlight(id: string): Promise<void> {
-    // 1. Remove from Storage (VaultModeService handles repository removal via DualWriteRepository)
-    await this.vaultService.deleteHighlight(id);
+    // 1. Remove from Storage (CloudModeService handles repository removal via DualWriteRepository)
+    await this.cloudService.deleteHighlight(id);
 
     // 2. Remove from Runtime
     const highlight = this.highlights.get(id);
@@ -398,7 +398,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
     this.data.delete(id);
 
     // 3. Remove from Session Repository (for UI consistency / HoverDetector)
-    // NOTE: persistence is handled by vaultService above, but we must clear session state
+    // NOTE: persistence is handled by cloudService above, but we must clear session state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((this.repository as any).remove) {
       await (this.repository as any).remove(id);
@@ -406,15 +406,15 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   async restore(_url?: string): Promise<void> {
-    // Use VaultModeService to restore from IndexedDB
-    this.logger.info('[VAULT] 🔄 Starting restore process...');
+    // Use CloudModeService to restore from IndexedDB
+    this.logger.info('[CLOUD] 🔄 Starting restore process...');
 
-    const restored = await this.vaultService.restoreHighlightsForUrl();
+    const restored = await this.cloudService.restoreHighlightsForUrl();
 
-    this.logger.info(`[VAULT] ✅ Restoring ${restored.length} highlights`);
+    this.logger.info(`[CLOUD] ✅ Restoring ${restored.length} highlights`);
 
     if (restored.length === 0) {
-      this.logger.warn('[VAULT] ⚠️ No highlights found to restore. Check if highlights were saved with correct URL.');
+      this.logger.warn('[CLOUD] ⚠️ No highlights found to restore. Check if highlights were saved with correct URL.');
       return;
     }
 
@@ -431,7 +431,7 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
         // Inject CSS for visual rendering
         injectHighlightCSS('underscore', storedData.id, storedData.colorRole || 'yellow');
 
-        this.logger.info(`[VAULT] ✅ Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
+        this.logger.info(`[CLOUD] ✅ Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
 
         // Construct full HighlightData with live ranges
         // We cast storedData because it is V2 (persisted) and we need runtime HighlightData
@@ -450,23 +450,23 @@ export class VaultMode extends BaseHighlightMode implements IPersistentMode {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await this.repository.add(fullData as any);
         } else {
-          this.logger.debug('[VAULT] Skipping duplicate restore', { id: storedData.id });
+          this.logger.debug('[CLOUD] Skipping duplicate restore', { id: storedData.id });
         }
       } else {
-        this.logger.warn(`[VAULT] ❌ Failed to restore range for highlight: ${storedData.id}`);
+        this.logger.warn(`[CLOUD] ❌ Failed to restore range for highlight: ${storedData.id}`);
       }
     }
 
-    this.logger.info(`[VAULT] 🎉 Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
+    this.logger.info(`[CLOUD] 🎉 Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
   }
 
   async sync(): Promise<void> {
-    await this.vaultService.syncToServer();
+    await this.cloudService.syncToServer();
   }
 
   /**
    * Deletion Configuration
-   * Vault Mode: Protected deletion with sync check
+   * Cloud Mode: Protected deletion with sync check
    */
   override getDeletionConfig(): DeletionConfig {
     return {
