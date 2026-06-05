@@ -65,7 +65,7 @@ export interface ModeCapabilities {
  */
 export interface IBasicMode {
   /** Mode identifier */
-  readonly name: 'walk' | 'sprint' | 'vault' | 'gen';
+  readonly name: 'ephemeral' | 'local' | 'cloud' | 'ai';
 
   /** Mode capabilities for feature discovery */
   readonly capabilities: ModeCapabilities;
