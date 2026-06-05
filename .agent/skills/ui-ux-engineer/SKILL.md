@@ -1,6 +1,6 @@
 ---
 name: UI/UX Engineer
-description: Complete guidelines for building and modifying UI in the _underscore browser extension. Covers file placement, state management, styling with MD3/Tailwind, component authoring, and the popup's navigation model.
+description: Complete guidelines for building and modifying UI in the _underscore browser extension. Covers file placement, state management, styling with V2 Editorial CSS custom properties, component authoring, and the popup's navigation model.
 ---
 
 # UI/UX Engineer Skill — _underscore
@@ -14,13 +14,13 @@ description: Complete guidelines for building and modifying UI in the _underscor
 
 ## 1. The Golden Rules (Never Violate)
 
-1. **Never hardcode a color.** Use Tailwind semantic classes (`bg-primary`, `text-on-surface`). See design-tokens.md.
-2. **Never use bare Tailwind colors.** `bg-blue-500`, `text-gray-700`, `bg-white` — all forbidden.
-3. **Never use arbitrary font sizes.** Only MD3 type scale classes: `text-body-medium`, `text-label-large`, etc.
-4. **Never use `box-shadow` directly.** Use `shadow-elevation-1` through `shadow-elevation-5`.
-5. **Never use `opacity-*` for hover states.** Use `color-mix()` state layers (already in existing components — copy the pattern).
-6. **Never use `font-bold`.** MD3 uses weight 400/500 only. The type scale Tailwind classes set weight automatically.
-7. **Never create a new CSS variable.** Use existing MD3 vars or Style C aliases from `global.css`.
+1. **Never hardcode a color.** Use V2 CSS custom properties: `var(--paper)`, `var(--ink)`, `var(--accent)`, `var(--rule)`. See v2-tokens-reference.md.
+2. **Never use Tailwind utility classes.** Tailwind has been removed from this project.
+3. **Never use arbitrary font sizes.** Use V2 step scale: `var(--step-0)` through `var(--step-6)`.
+4. **Never use `box-shadow`.** V2 uses borders: `border: 1px solid var(--rule-soft)`.
+5. **Never use `opacity-*` for hover states.** Use CSS `:hover` pseudo-class.
+6. **Never use explicit `font-weight` declarations.** V2 type vars handle weight.
+7. **Never create a new CSS variable.** Use existing V2 vars from `ui_kits/extension/v2/tokens.css`.
 8. **Never bypass the barrel export.** Import primitives from `@/ui-system/components/primitives`, never the direct file.
 
 ---
@@ -31,7 +31,7 @@ description: Complete guidelines for building and modifying UI in the _underscor
 |---|---|---|
 | Build | WXT + Vite | Extension-first build system |
 | Framework | React 19 | Strict mode enabled |
-| Styling | Tailwind CSS v4 + CSS Variables | Config at `tailwind.config.ts` |
+| Styling | CSS Custom Properties (V2 Editorial) | No Tailwind — use `var(--paper)`, `var(--ink)`, `var(--accent)`, `var(--rule)` |
 | Routing | `MemoryRouter` (imported but not used for view switching) | View switching is manual `View` enum |
 | Primitives | Radix UI + custom wrappers | See component-patterns.md |
 | Variants | `class-variance-authority` (CVA) | For multi-variant components |
@@ -311,24 +311,11 @@ Message format:
 
 ---
 
-## 11. Storybook
+## 11. Removed: Storybook
 
-Every new primitive in `src/ui-system/components/primitives/` needs a `.stories.tsx` file alongside it.
+Storybook has been removed from this project. Do NOT create `.stories.tsx` files.
 
-Minimal story structure:
-```typescript
-import type { Meta, StoryObj } from '@storybook/react';
-import { MyComponent } from './MyComponent';
-
-const meta = { component: MyComponent } satisfies Meta<typeof MyComponent>;
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = { args: {} };
-export const Variant: Story = { args: { variant: 'emphasized' } };
-```
-
-Feature-level composite components do NOT need stories.
+Instead, verify components with: `npm run build && npm run type-check`
 
 ---
 
@@ -336,9 +323,9 @@ Feature-level composite components do NOT need stories.
 
 When there is a conflict or specification gap:
 
-1. **Project `global.css` / `tailwind.config.ts`** — Highest authority. These are the implemented tokens.
-2. **`docs/07-design/` HTML prototypes** — Visual reference for layout and behavior.
-3. **`docs/material_design_reference/`** — Project-adapted MD3 rules.
-4. **`m3.material.io` upstream docs** — Fallback only when all above are silent.
+1. **`ui_kits/extension/v2/tokens.css`** — Highest authority (V2 token definitions)
+2. **`ui_kits/extension/v2/*.jsx`** — Wireframe visual spec
+3. **`src/ui-system/theme/global.css`** — Implemented token values
+4. **`.agent/workflows/v2-tokens-reference.md`** — Token lookup guide
 
-Do NOT blindly apply upstream MD3 if it contradicts the project token values in `global.css`.
+Do NOT use `docs/material_design_reference/` — archived. Do NOT reference m3.material.io — MD3 has been removed from this project.

@@ -3,8 +3,8 @@
 ## Project Overview
 
 - **What**: Chrome Extension + Web App for intelligent web highlighting
-- **Modes**: Walk (ephemeral) → Sprint (4hr TTL) → Vault (permanent) → Gen (AI, future)
-- **Stack**: React 19, TypeScript, Tailwind v4, Supabase, Cloudflare Workers, WXT
+- **Modes**: Ephemeral (no persistence) → Local (24h TTL) → Cloud (permanent sync) → AI (future)
+- **Stack**: React 19, TypeScript, CSS Custom Properties (V2 Editorial), Supabase, Cloudflare Workers, WXT
 
 ## Architecture Quick Reference
 
@@ -69,9 +69,12 @@ When working on ANY UI code (components, views, styles), you MUST:
 - **Never** use hardcoded hex colors in `.tsx` files — use `var(--paper)`, `var(--ink)`, `var(--accent)`.
 - **Never** use Tailwind utility classes — Tailwind is removed.
 - **Never** use MD3 tokens (`--md-sys-color-*`, `bg-primary`).
-- **Never** use Inter/Roboto for display fonts — use `var(--serif)`.
+- **Never** use Ink & Glass era tokens (`--ink-1..4`, `--ink-focus`, `--ink-neural`, `--ink-mode`).
+- **Never** use Style C aliases (`var(--bg)`, `var(--text-primary)`, `var(--border)`, `var(--shadow-hover)`).
+- **Never** use Inter/Roboto declared in components — use `var(--serif)` (headings), `var(--sans)` (body), `var(--mono)` (code).
 - **Always** use semantic typography classes: `.u-serif`, `.u-mono`, `.u-kicker`, `.u-caps`.
 - **Always** use `var(--rule)` or `var(--rule-soft)` for borders.
+- **Always** use `var(--step-*)` scale for font sizes.
 - **Always** reference wireframe JSX in `ui_kits/extension/v2/` as the implementation spec.
 
 ### Design System: V2 "Editorial"
@@ -126,9 +129,9 @@ When working on ANY UI code (components, views, styles), you MUST:
 
 - Unit tests: Vitest, 80%+ coverage target for services/repositories
 - E2E: Playwright for critical user flows
-- Every new primitive component: `.stories.tsx` file alongside it
 - Every new service: unit test file
-- Run tests before marking any task complete
+- Run `npm run build && npm run type-check` before marking any task complete
+- No Storybook — removed from this project
 
 **Reference**: `docs/05-quality-framework/05-testing-framework.md`
 
@@ -158,6 +161,8 @@ Follow `docs/01-development/git-commit-strategy.md`:
 ## Workflow Commands
 
 - `/ui-preflight` — Pre-flight checklist (auto-triggered for any UI work)
+- `/v2-ui` — V2 UI component workflow
+- `/v2-tokens-reference` — V2 token lookup
 - `/ui-prompting-guide` — Reference for writing good prompts
 
 ---

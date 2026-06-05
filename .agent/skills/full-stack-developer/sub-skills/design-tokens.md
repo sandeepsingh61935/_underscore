@@ -1,254 +1,154 @@
 ---
 name: Design Tokens Reference
-description: Complete lookup table for all styling decisions in the _underscore project. Before choosing any class, check this table first.
+description: V2 Editorial token lookup table for all styling decisions in the _underscore project. Before choosing any style, check this table first.
 ---
 
-# Design Tokens Reference
+# V2 Design Tokens Reference
 
-This file is the single source of truth for atomic styling decisions. Every class listed here is wired through `tailwind.config.ts` → `global.css` → CSS variables. Never guess; look it up here.
+This file is the single source of truth for atomic styling decisions in the V2 Editorial design system. Source: `ui_kits/extension/v2/tokens.css` and `src/ui-system/theme/global.css`. Never guess; look it up here.
 
 ---
 
 ## 1. The Decision Lookup Table
 
-This is the most important section. For common UI situations, use exactly these classes.
-
-### Typography Decisions
-
-| Situation | Tailwind Class | Notes |
-|---|---|---|
-| Page/section title | `text-title-large` | 22px / 400 |
-| Card title | `text-title-medium` | 16px / 500 |
-| Card sub-title | `text-title-small` | 14px / 500 |
-| Default body text | `text-body-medium` | 14px / 400 |
-| Secondary / supporting body | `text-body-small` | 12px / 400 |
-| Button label | `text-label-large` | 14px / 500 — set by Button component automatically |
-| Chip / caption | `text-label-medium` | 12px / 500 |
-| Tiny annotation | `text-label-small` | 11px / 500 |
-| Domain name / prominent label | `text-title-medium` | — |
-| Error message text | `text-body-small text-error` | — |
-| Section header (e.g., "MODE") | `text-label-medium uppercase tracking-widest` | — |
-
-**Font**: Inter (NOT Roboto — MD3 docs are wrong for this project).
+For every styling situation, use exactly these tokens.
 
 ### Color Decisions
 
-| Situation | Background | Text |
-|---|---|---|
-| Default view background | `bg-surface` | `text-on-surface` |
-| Card / contained element | `bg-surface-container` | `text-on-surface` |
-| Elevated card | `bg-surface-container-high` | `text-on-surface` |
-| Floating / bottommost element | `bg-surface-container-lowest` | `text-on-surface` |
-| Primary action button | `bg-primary` | `text-on-primary` |
-| Secondary / supporting metadata | — | `text-on-surface-variant` |
-| Destructive action | — | `text-error` |
-| Disabled element | — | `opacity-disabled` |
-| Border / divider | `border-outline-variant` | — |
-| Active/hover border | `border-outline` | — |
-| Accent / brand highlight | `bg-primary-container` | `text-on-primary-container` |
-| Inline code snippet | `bg-surface-container-highest` | `font-mono text-on-surface` |
+| Situation | Token |
+|-----------|-------|
+| View background | `var(--paper)` |
+| Card / container | `var(--paper-2)` |
+| Elevated surface (modal/tooltip) | `var(--utility-surface-elevated)` = `#fff` |
+| Primary text | `var(--ink)` |
+| Secondary text | `var(--ink-2)` |
+| Muted / tertiary text | `var(--ink-3)` |
+| Placeholder / disabled text | `var(--ink-4)` |
+| CTA / accent button background | `var(--accent)` |
+| Text on accent background | `var(--accent-ink)` |
+| Soft accent tint (8%) | `var(--accent-tint-08)` |
+| Standard border | `var(--rule)` |
+| Subtle border / card edge | `var(--rule-soft)` |
+| Overlay / scrim | `var(--utility-overlay-65)` |
+| Light overlay (hover state) | `var(--utility-overlay-08)` |
+
+### Typography Decisions
+
+| Situation | Token | Approx size |
+|-----------|-------|-----------|
+| Hero heading | `var(--step-4)` + `u-serif` class | 28px |
+| Section heading | `var(--step-3)` | 22px |
+| Card title | `var(--step-2)` | 18px |
+| Comfortable body | `var(--step-1)` | 15px |
+| Default body / UI text | `var(--step-0)` | 13px |
+| Caption / metadata | `var(--step--1)` | 11px |
+| Tiny annotation | `var(--step--2)` | 10px |
+| Section label | `var(--step--1)` + `u-kicker` class | mono caps |
+
+**Font families**: `var(--serif)` (Instrument Serif — display only), `var(--sans)` (body), `var(--mono)` (code/kickers).
+
+### Semantic Typography Classes
+
+| Class | Style | When to use |
+|-------|-------|-----------|
+| `.u-serif` | Instrument Serif italic | Display headings ONLY |
+| `.u-kicker` | Mono, uppercase, letter-spaced | Section labels ("HIGHLIGHTS", "COLLECTIONS") |
+| `.u-mono` | Monospace | Code, tab labels, metadata |
+| `.u-caps` | Uppercase, letter-spaced | Small caps labels |
 
 ### Spacing Decisions
 
-| Situation | Class |
-|---|---|
-| Inner padding of a card | `p-4` |
-| Inner padding of a compact card | `p-3` |
-| Inner padding of a dialog | `p-6` |
-| Gap between list items | `gap-2` |
-| Gap between card rows | `gap-3` |
-| Gap between sections | `gap-6` |
-| Horizontal padding on a view | `px-4` |
-| Padding between header and content | `pt-4` |
-| Icon button touch target | `h-12 w-12` (48px) |
-| Standard button height | `min-h-[48px]` — enforced in `Button.tsx` |
-| Dense icon size | `h-5 w-5` (20px) |
-| Standard icon size | `h-6 w-6` (24px) |
+| Situation | Value |
+|-----------|-------|
+| Inner padding of a card | `12px 16px` |
+| Inner padding compact | `8px 12px` |
+| Inner padding dialog | `24px` |
+| Gap between list items | `8px` (`gap: 8px`) |
+| Gap between card rows | `12px` |
+| Gap between sections | `24px` |
+| Horizontal padding on view | `16px` |
+| Icon button touch target | `44px × 44px` (min) |
+| Standard button height | `44px` (min) — V2 spec rule 7 |
+| Dense icon size | `20px × 20px` |
+| Standard icon size | `24px × 24px` |
 
 ### Shape Decisions
 
-| Shape | Class | Raw Value |
-|---|---|---|
-| Button | `rounded-full` | 9999px |
-| Card | `rounded-md` | 12px |
-| Dialog | `rounded-xl` | 28px |
-| Input field | `rounded-sm` | 8px |
-| Chip | `rounded-full` | 9999px |
-| Small badge | `rounded-xs` | 4px |
+| Token | Value | Notes |
+|-------|-------|-------|
+| `var(--radius)` | `2px` | The ONLY radius in V2 Editorial |
 
-### Elevation Decisions
+> V2 uses a single 2px radius for all elements. No `--radius-sm`, `--radius-lg`, `--radius-full`.
 
-| Situation | Class |
-|---|---|
-| Default card | `shadow-elevation-1` |
-| Elevated card | `shadow-elevation-2` |
-| Card on hover | `shadow-elevation-3` |
-| Dialog / floating panel | `shadow-elevation-3` |
-| Bottom sheet | `shadow-elevation-4` |
-| Navigation drawer | `shadow-elevation-5` |
+### Border vs Shadow
 
-**Note**: For elevation hierarchy within a view, prefer using `bg-surface-container-*` levels instead of shadows where possible.
+V2 Editorial uses **borders, not box-shadows** for elevation.
 
-### Motion Decisions
-
-| Situation | Classes |
-|---|---|
-| Default state transition | `transition-all duration-short ease-standard` |
-| Enter animation (element appearing) | `transition-all duration-medium ease-decelerate` |
-| Exit animation (element disappearing) | `transition-all duration-medium ease-accelerate` |
-| Hero / dialog open | `transition-all duration-long ease-emphasized` |
+| Legacy (banned) | V2 replacement |
+|-----------------|---------------|
+| `shadow-elevation-1` | `border: 1px solid var(--rule-soft)` |
+| `shadow-elevation-2` | `border: 1px solid var(--rule-soft)` |
+| `shadow-elevation-3` | `border: 1px solid var(--rule)` |
+| `box-shadow: var(--shadow-hover)` | `border: 1px solid var(--rule)` |
 
 ---
 
-## 2. Style C Hybrid Aliases
+## 2. V2 Token Complete Reference
 
-The project uses short-form "Style C" aliases in `global.css` (lines 172–192) that map to MD3 tokens. Use these in inline styles or CSS only — use Tailwind tokens in TSX.
+### Surface & Ink
 
-| Alias | Resolves To | Tailwind Equivalent |
-|---|---|---|
-| `var(--bg)` | `--md-sys-color-surface` | `bg-surface` |
-| `var(--bg-card)` | `--md-sys-color-surface-container-lowest` | `bg-surface-container-lowest` |
-| `var(--bg-elevated)` | `--md-sys-color-surface-container-low` | `bg-surface-container-low` |
-| `var(--text-primary)` | `--md-sys-color-on-surface` | `text-on-surface` |
-| `var(--text-secondary)` | `--md-sys-color-on-surface-variant` | `text-on-surface-variant` |
-| `var(--text-tertiary)` | `--md-sys-color-outline` | `text-outline` |
-| `var(--accent)` | `--md-sys-color-primary` | `text-primary` / `bg-primary` |
-| `var(--accent-soft)` | `color-mix(primary 8%, transparent)` | Use `color-mix()` inline |
-| `var(--border)` | `--md-sys-color-outline-variant` | `border-outline-variant` |
-| `var(--border-hover)` | `--md-sys-color-outline` | `border-outline` |
-| `var(--radius)` | `--md-sys-shape-corner-medium` (12px) | `rounded-md` |
-| `var(--radius-sm)` | `--md-sys-shape-corner-small` (8px) | `rounded-sm` |
-| `var(--radius-lg)` | `--md-sys-shape-corner-large` (16px) | `rounded-lg` |
+| Token | Tailwind Equivalent (BANNED — use var()) |
+|-------|------------------------------------------|
+| `var(--paper)` | was `bg-surface` |
+| `var(--paper-2)` | was `bg-surface-container-lowest` |
+| `var(--ink)` | was `text-on-surface` |
+| `var(--ink-2)` | was `text-on-surface-variant` |
+| `var(--ink-3)` | was `text-outline` |
+| `var(--ink-4)` | was `opacity-disabled` text |
 
-**Rule**: In TSX files, always use the Tailwind class. Never use `style={{ background: 'var(--bg)' }}` in React components.
+### Accent Family
 
----
+| Token | Usage |
+|-------|-------|
+| `var(--accent)` | Terracotta `oklch(62% 0.12 45)` — CTAs, mode glyphs |
+| `var(--accent-2)` | Accent surface / hover |
+| `var(--accent-ink)` | Text on accent background |
+| `var(--accent-tint-08)` | 8% accent tint |
+| `var(--accent-tint-18)` | 18% accent tint |
+| `var(--accent-tint-35)` | 35% accent tint |
+| `var(--accent-tint-65)` | 65% accent tint |
 
-## 3. MD3 State Layer Implementation
+### Utility Overlays
 
-MD3 state layers use `color-mix()` — not opacity modifiers. This is already implemented in `Button.tsx` and `Card.tsx`. Copy that pattern exactly.
-
-```tsx
-// Hover on primary background (8% white overlay)
-'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]'
-
-// Hover on surface background (8% on-surface overlay)
-'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]'
-
-// Press state (12% overlay)
-'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]'
-```
-
-**State Layer Opacity Reference:**
-
-| State | Opacity |
-|---|---|
-| Hover | 8% (`opacity-hover`) |
-| Focus / Press | 12% (`opacity-focus`) |
-| Drag | 16% (`opacity-drag`) |
-| Disabled | 38% (`opacity-disabled`) |
+| Token | Usage |
+|-------|-------|
+| `var(--utility-overlay-05)` | 5% black |
+| `var(--utility-overlay-08)` | 8% black (hover) |
+| `var(--utility-overlay-18)` | 18% black (pressed) |
+| `var(--utility-overlay-35)` | 35% black |
+| `var(--utility-overlay-65)` | 65% black (scrim) |
+| `var(--utility-overlay-88)` | 88% black (heavy scrim) |
+| `var(--paper-overlay-08)` | 8% white (glass) |
+| `var(--paper-overlay-90)` | 90% paper (glass bg) |
 
 ---
 
-## 4. Complete MD3 Token Reference
-
-### Color Tokens (Light / Dark — both handled by `.dark` class on `<html>`)
-
-#### Primary Family
-| Token | Tailwind Class |
-|---|---|
-| Primary | `bg-primary` / `text-primary` |
-| On Primary | `bg-on-primary` / `text-on-primary` |
-| Primary Container | `bg-primary-container` / `text-primary-container` |
-| On Primary Container | `bg-on-primary-container` / `text-on-primary-container` |
-
-Use `primary-container` + `on-primary-container` for selected pills, segmented controls, and other tonal active states.
-
-#### Secondary Family
-| Token | Tailwind Class |
-|---|---|
-| Secondary | `bg-secondary` / `text-secondary` |
-| On Secondary | `text-on-secondary` |
-| Secondary Container | `bg-secondary-container` |
-| On Secondary Container | `text-on-secondary-container` |
-
-Reserve `secondary-container` for supporting emphasis, not the default selected treatment for filter pills.
-
-#### Surface Family
-| Token | Tailwind Class | Use For |
-|---|---|---|
-| Surface | `bg-surface` | View backgrounds |
-| Surface Dim | `bg-surface-dim` | Slightly dimmed background |
-| Surface Bright | `bg-surface-bright` | Bright surface elements |
-| Surface Container Lowest | `bg-surface-container-lowest` | Cards on surface |
-| Surface Container Low | `bg-surface-container-low` | Slightly elevated |
-| Surface Container | `bg-surface-container` | **Default container** |
-| Surface Container High | `bg-surface-container-high` | Dialogs, sheets |
-| Surface Container Highest | `bg-surface-container-highest` | Code snippets, tooltips |
-| On Surface | `text-on-surface` | Primary text |
-| On Surface Variant | `text-on-surface-variant` | Secondary text, hints |
-
-#### Error Family
-| Token | Tailwind Class |
-|---|---|
-| Error | `bg-error` / `text-error` |
-| On Error | `text-on-error` |
-| Error Container | `bg-error-container` |
-| On Error Container | `text-on-error-container` |
-
-#### Outline & Special
-| Token | Tailwind Class | Use For |
-|---|---|---|
-| Outline | `border-outline` | Prominent borders |
-| Outline Variant | `border-outline-variant` | Subtle dividers |
-| Inverse Surface | `bg-inverse-surface` | Snackbars, toasts |
-| Scrim | `bg-scrim` | Modal overlays |
-
-### Typography Scale
-
-| Role | Tailwind Class | Size / Weight |
-|---|---|---|
-| Display Large | `text-display-large` | 57px / 400 |
-| Display Medium | `text-display-medium` | 45px / 400 |
-| Display Small | `text-display-small` | 36px / 400 |
-| Headline Large | `text-headline-large` | 32px / 400 |
-| Headline Medium | `text-headline-medium` | 28px / 400 |
-| Headline Small | `text-headline-small` | 24px / 400 |
-| Title Large | `text-title-large` | 22px / 400 |
-| Title Medium | `text-title-medium` | 16px / 500 |
-| Title Small | `text-title-small` | 14px / 500 |
-| Body Large | `text-body-large` | 16px / 400 |
-| Body Medium | `text-body-medium` | 14px / 400 ← default |
-| Body Small | `text-body-small` | 12px / 400 |
-| Label Large | `text-label-large` | 14px / 500 ← buttons |
-| Label Medium | `text-label-medium` | 12px / 500 |
-| Label Small | `text-label-small` | 11px / 500 |
-
-### Shape Tokens
-
-| Token | Tailwind | Size |
-|---|---|---|
-| None | `rounded-none` | 0px |
-| Extra Small | `rounded-xs` | 4px |
-| Small | `rounded-sm` | 8px |
-| Medium | `rounded-md` | 12px |
-| Large | `rounded-lg` | 16px |
-| Extra Large | `rounded-xl` | 28px |
-| Full | `rounded-full` | 9999px |
-
----
-
-## 5. Anti-Patterns Checklist
+## 3. Anti-Patterns Checklist
 
 Before submitting any UI code, verify none of these are present:
 
 ```bash
-# Run these grep checks:
-rg 'bg-white|bg-gray|bg-blue|bg-red|bg-green|bg-zinc|bg-slate|bg-neutral' src/ --include='*.tsx'
-rg 'text-gray|text-white|text-black|text-blue|text-red' src/ --include='*.tsx'
-rg 'text-xl|text-2xl|text-3xl|font-bold|font-semibold' src/ --include='*.tsx'
-rg '#[0-9a-fA-F]{3,6}' src/ --include='*.tsx'
-rg 'box-shadow|shadow-sm|shadow-md|shadow-lg|shadow-xl' src/ --include='*.tsx'
+# Legacy MD3/Ink/Style C vars (MUST BE ZERO)
+grep -rn "var(--md-sys-\|var(--ink-[0-9]\|var(--bg\|var(--text-primary\|var(--border\b\|var(--shadow-\|var(--elevation\|var(--logo-" src/ --include='*.tsx'
+
+# Hardcoded hex colors (MUST BE ZERO)
+grep -rn '#[0-9a-fA-F]\{3,8\}\b' src/ --include='*.tsx'
+
+# Arbitrary Tailwind duration classes (MUST BE ZERO)
+grep -rn 'duration-\[[0-9]*ms\]' src/ --include='*.tsx'
+
+# Arbitrary rounded classes (MUST BE ZERO)
+grep -rn 'rounded-\[[0-9]*px\]' src/ --include='*.tsx'
 ```
 
 All should return zero hits.

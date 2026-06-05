@@ -17,13 +17,13 @@ description: Complete guidelines for building UI, backend services, data layer, 
 ## 1. Golden Rules (Never Violate)
 
 **Frontend**
-1. Never hardcode a color. Use Tailwind semantic classes (`bg-primary`, `text-on-surface`).
-2. Never use bare Tailwind colors (`bg-blue-500`, `text-gray-700`).
-3. Never use arbitrary font sizes. Only MD3 type scale classes (`text-body-medium`).
-4. Never use `box-shadow` directly. Use `shadow-elevation-1` through `shadow-elevation-5`.
-5. Never use `opacity-*` for hover states. Use `color-mix()` state layers.
-6. Never use `font-bold`. MD3 uses weight 400/500 only — the type scale sets weight automatically.
-7. Never create a new CSS variable. Use existing MD3 vars or Style C aliases from `global.css`.
+1. Never hardcode a color. Use V2 CSS custom properties: `var(--paper)`, `var(--ink)`, `var(--accent)`, `var(--rule)`.
+2. Never use bare Tailwind colors (`bg-blue-500`, `text-gray-700`) — Tailwind utilities are removed.
+3. Never use arbitrary font sizes. Use V2 step scale: `var(--step-0)` through `var(--step-6)`.
+4. Never use `box-shadow`. V2 uses borders: `border: 1px solid var(--rule-soft)`.
+5. Never use `opacity-*` for hover states. Use CSS `:hover` pseudo-class only.
+6. Never use explicit font-weight declarations. V2 type scale handles weight via `var(--serif)` / `var(--sans)` / `var(--mono)`.
+7. Never create a new CSS variable. Use existing V2 vars from `ui_kits/extension/v2/tokens.css`.
 8. Never bypass the barrel export. Import primitives from `@/ui-system/components/primitives`.
 
 **Backend**
@@ -195,17 +195,15 @@ Rules:
 - Never use `vh`, `vw`, `100%` heights on inner containers — use `flex-1`
 - Overflow: `overflow-y-auto scrollbar-hide` for scrollable lists
 
-### MD3 Compliance Checklist
+### V2 Compliance Checklist
 
 Before completing any UI work:
-- [ ] No hardcoded colors (run: `rg '#[0-9a-fA-F]{3,6}' src/ --include='*.tsx'`)
-- [ ] No bare Tailwind colors (run: `rg 'bg-blue|bg-gray|bg-white' src/ --include='*.tsx'`)
-- [ ] All interactive elements have hover + focus + active states
-- [ ] All interactive elements >= 48px touch target
-- [ ] Shadows use `shadow-elevation-*` tokens
-- [ ] Motion uses `ease-standard duration-short` (or appropriate variant)
-- [ ] Storybook story added for new primitives
-- [ ] Tested in light and dark mode
+- [ ] No hardcoded colors (run: `grep -rn '#[0-9a-fA-F]\{3,8\}' src/ --include='*.tsx'`)
+- [ ] No legacy MD3/Ink/Style C vars (run: `grep -rn 'var(--md-sys-\|var(--ink-[0-9]\|var(--bg\|var(--text-primary\|var(--border\b\|var(--shadow-' src/ --include='*.tsx'`)
+- [ ] All interactive elements ≥ 44px touch target
+- [ ] Borders use `var(--rule)` or `var(--rule-soft)` — not `shadow-elevation-*`
+- [ ] Typography uses `var(--step-*)` scale and `var(--serif)`/`var(--sans)`/`var(--mono)`
+- [ ] Build passes: `npm run build && npm run type-check`
 
 ---
 
@@ -367,9 +365,9 @@ await eventPublisher.publish({ type: 'HIGHLIGHT_CORRECTED', payload: correction 
 
 When there is a conflict or specification gap:
 
-1. **`global.css` / `tailwind.config.ts`** — Highest authority (implemented tokens)
-2. **`docs/07-design/` HTML prototypes** — Visual reference
-3. **`docs/material_design_reference/`** — Project-adapted MD3 rules
-4. **`m3.material.io`** — Fallback only when all above are silent
+1. **`ui_kits/extension/v2/tokens.css`** — Highest authority (V2 token definitions)
+2. **`ui_kits/extension/v2/*.jsx`** — Wireframe visual spec
+3. **`src/ui-system/theme/global.css`** — Implemented token values
+4. **`.agent/workflows/v2-tokens-reference.md`** — Token lookup guide
 
-Do NOT blindly apply upstream MD3 if it contradicts project token values in `global.css`.
+Do NOT use `docs/material_design_reference/` — archived. Do NOT reference m3.material.io — MD3 has been removed from this project.

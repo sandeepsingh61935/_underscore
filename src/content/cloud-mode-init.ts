@@ -7,7 +7,7 @@
  * Now uses DualWriteRepository for automatic Supabase sync when authenticated.
  */
 
-import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-service-factory';
+import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
 
 /**
  * Initialize Vault Mode
@@ -17,11 +17,11 @@ import { createVaultModeServiceWithCloudSync } from '@/services/vault-mode-servi
  * - Restores any existing highlights for current URL
  * - Enables cloud sync to Supabase when authenticated
  */
-export async function initializeVaultMode(): Promise<void> {
+export async function initializeCloudMode(): Promise<void> {
   try {
-    console.warn('[VAULT] Initializing Vault Mode with cloud sync...');
+    console.warn('[CLOUD] Initializing Vault Mode with cloud sync...');
 
-    const service = createVaultModeServiceWithCloudSync();
+    const service = createCloudModeServiceWithCloudSync();
 
 
 
@@ -29,19 +29,19 @@ export async function initializeVaultMode(): Promise<void> {
     // Restore highlights for current page
     const restored = await service.restoreHighlightsForUrl();
 
-    console.warn(`[VAULT] Initialized: ${restored.length} highlights restored`);
+    console.warn(`[CLOUD] Initialized: ${restored.length} highlights restored`);
     restored.forEach((r) => {
-      console.warn(`[VAULT] - ${r.highlight.id}: ${r.restoredUsing} tier`);
+      console.warn(`[CLOUD] - ${r.highlight.id}: ${r.restoredUsing} tier`);
     });
 
     // Expose service globally for debugging
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).vaultModeService = service;
-      console.warn('[VAULT] VaultModeService available as: window.vaultModeService');
+      (window as any).cloudModeService = service;
+      console.warn('[CLOUD] CloudModeService available as: window.cloudModeService');
     }
   } catch (error) {
-    console.error('[VAULT] Failed to initialize Vault Mode:', error);
+    console.error('[CLOUD] Failed to initialize Vault Mode:', error);
     throw error;
   }
 }
@@ -49,7 +49,7 @@ export async function initializeVaultMode(): Promise<void> {
 /**
  * Check if Vault Mode is enabled in settings
  */
-export function isVaultModeEnabled(): boolean {
+export function isCloudModeEnabled(): boolean {
   // TODO: Check user settings/preferences
   // For now, return true to enable Vault Mode
   return true;

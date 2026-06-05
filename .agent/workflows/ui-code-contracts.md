@@ -23,6 +23,7 @@ description: >
 - **Height**: `400–600px` typical, content scrolls inside — never fixed full-height without overflow
 - **No routing**: popup navigates via callback props (`onSignInClick`, `onBack`, `onModeSelect`), never `useNavigate()`
 - **Entry point**: `src/entrypoints/popup/views/` — views here accept only callback props
+- **Chrome ownership**: `PopupShell` owns chrome (ModeHeader + TabBar + AnimatePresence). Views return body content only.
 - **Chrome APIs**: only inside hooks (`src/features/*/hooks/`, `src/ui-system/hooks/`) — never directly in a view or component
 
 ### Web App (SPA)
@@ -31,315 +32,234 @@ description: >
 - **Entry point**: views in `src/features/*/views/` accept both callback props AND fallback to `useNavigate()` for web context
 
 ### Both Contexts
-- **Dark mode**: automatic via CSS custom properties — NEVER use `dark:` Tailwind prefix
-- **Font**: Inter loaded globally — never import or declare another font in components
+- **Font**: `var(--serif)` for display/headings, `var(--sans)` for body, `var(--mono)` for code
 - **Scrollbar**: styled globally — never override in components
 - **Focus ring**: styled globally via `#app` scope — never override `outline` directly
 
 ---
 
-## 2. Banned Patterns — Style C Hybrid Aliases
+## 2. Banned Patterns
 
-The following CSS variables are **BANNED** in all `.tsx` files. They exist in `global.css` as a temporary alias layer but must not appear in component code. ESLint will error on them.
+The following are **BANNED** in all `.tsx` files. ESLint will error on them.
 
-### Complete Alias → MD3 Replacement Table
+### Banned CSS Variables (Legacy Systems — Do Not Use)
 
-| BANNED (var) | CORRECT (Tailwind class) | Notes |
-|---|---|---|
-| `var(--bg)` | `bg-surface` | Page/view root background |
-| `var(--bg-card)` | `bg-surface-container-lowest` | Card background |
-| `var(--bg-elevated)` | `bg-surface-container-low` | Slightly elevated surface |
-| `var(--bg-glass, ...)` | See glass pattern below | Sticky headers only |
-| `var(--text-primary)` | `text-on-surface` | Primary text color |
-| `var(--text-secondary)` | `text-on-surface-variant` | Secondary/supporting text |
-| `var(--text-tertiary)` | `text-outline` | Muted/tertiary text |
-| `var(--accent)` as bg | `bg-primary` | CTA/active backgrounds |
-| `var(--accent)` as text | `text-primary` | Accent-colored text |
-| `var(--accent)` as border | `border-primary` | Accent borders |
-| `var(--accent-soft)` | `bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]` | Soft accent bg |
-| `var(--accent-text)` | `text-primary` | Text in accent regions |
-| `var(--border)` | `border-outline-variant` | Default border color |
-| `var(--border-hover)` | `border-outline` (on hover) | Border on hover |
-| `var(--radius)` / `rounded-[var(--radius)]` | `rounded-md` | 12px |
-| `var(--radius-sm)` / `rounded-[var(--radius-sm)]` | `rounded-sm` | 8px |
-| `var(--radius-lg)` | `rounded-lg` | 16px |
-| `var(--radius-full)` | `rounded-full` | 9999px |
-| `var(--shadow-rest)` / `var(--elevation-1)` | `shadow-elevation-1` | Card at rest |
-| `var(--shadow-hover)` / `var(--elevation-3)` | `shadow-elevation-3` | Card on hover |
+| BANNED | CORRECT V2 | Notes |
+|--------|-----------|-------|
+| `var(--md-sys-color-*)` | `var(--paper)`, `var(--ink)`, `var(--accent)` | MD3 tokens removed |
+| `var(--ink-1)` .. `var(--ink-4)` | `var(--paper-2)` (surface), `var(--ink)` (text) | Ink & Glass vars removed |
+| `var(--ink-focus)`, `var(--ink-capture)`, `var(--ink-memory)`, `var(--ink-neural)` | `var(--accent)` | All modes share one accent |
+| `var(--ink-mode)` | `var(--accent)` | Per-mode color removed from V2 |
+| `var(--bg)`, `var(--bg-card)`, `var(--bg-elevated)` | `var(--paper)`, `var(--paper-2)` | Style C aliases removed |
+| `var(--text-primary)`, `var(--text-secondary)`, `var(--text-tertiary)` | `var(--ink)`, `var(--ink-2)`, `var(--ink-3)` | Style C aliases removed |
+| `var(--border)`, `var(--border-hover)` | `var(--rule)`, `var(--rule-soft)` | V2 border tokens |
+| `var(--shadow-rest)`, `var(--shadow-hover)`, `var(--elevation-*)` | `border: 1px solid var(--rule-soft)` | V2 uses borders, not shadows |
+| `var(--logo-bg)`, `var(--logo-text)`, `var(--logo-ambient-reflection)` | `var(--paper)`, `var(--ink)`, `var(--paper-overlay-08)` | Logo vars removed |
+| `var(--radius-sm)`, `var(--radius-lg)`, `var(--radius-full)` | `var(--radius)` | V2 has single 2px radius |
 
-### Also Banned
+### Banned Inline Style Patterns
 
-| BANNED | CORRECT | Notes |
-|---|---|---|
-| `style={{ background: '...' }}` for MD3 colors | `bg-*` Tailwind class | Inline style only for glass/special |
-| `style={{ color: '...' }}` for MD3 colors | `text-*` Tailwind class | Always |
-| `style={{ border: '...' }}` for MD3 borders | `border border-outline-variant` | Always |
-| `style={{ boxShadow: '...' }}` on hover | `hover:shadow-elevation-3` | Use Tailwind hover state |
-| `onMouseEnter` + `e.currentTarget.style.*` | Tailwind `hover:` utilities | JS DOM mutation for visual state is banned |
-| `onMouseLeave` + `e.currentTarget.style.*` | Tailwind `hover:` utilities | Same — always CSS |
-| `text-[22px]` | `text-title-large` | |
-| `text-[16px]` | `text-body-large` | |
-| `text-[14px]` body | `text-body-medium` | |
-| `text-[14px]` label/button | `text-label-large` | |
-| `text-[13px]` | `text-body-small` | 12px is closest below |
-| `text-[12px]` body | `text-body-small` | |
-| `text-[12px]` label | `text-label-medium` | |
-| `text-[11px]` | `text-label-small` | |
-| `transition-all duration-150` | `transition-all duration-short ease-standard` | Always use MD3 motion tokens |
-| `rounded-[4px]` | `rounded-xs` | |
-| `rgba(0,0,0,0.35)` in overlays | `bg-scrim/40` | Use scrim token |
+| BANNED | CORRECT |
+|--------|---------|
+| `style={{ background: 'var(--bg)' }}` | `style={{ background: 'var(--paper)' }}` |
+| `style={{ color: 'var(--text-primary)' }}` | `style={{ color: 'var(--ink)' }}` |
+| `style={{ border: '1px solid var(--border)' }}` | `style={{ border: '1px solid var(--rule)' }}` |
+| `style={{ boxShadow: 'var(--shadow-hover)' }}` | remove; use `border: 1px solid var(--rule-soft)` |
+| `onMouseEnter` + `e.currentTarget.style.*` | CSS `hover:` pseudo-class |
+| `onMouseLeave` + `e.currentTarget.style.*` | remove entirely |
+| Any `#hex` color in TSX | `var(--paper)`, `var(--ink)`, `var(--accent)` |
+
+### Banned Typography Patterns
+
+| BANNED | CORRECT V2 |
+|--------|-----------|
+| `text-[22px]`, `text-[20px]`, etc. | `var(--step-3)`, `var(--step-4)` or `.u-serif` class |
+| `font-display`, `font-serif`, `font-sans` | `var(--serif)`, `var(--sans)`, `var(--mono)` |
+| `text-body-medium`, `text-label-large` (MD3) | `font-size: var(--step-0)` or semantic class |
+| `duration-[180ms]`, `duration-[280ms]`, `duration-[300ms]` | standard CSS transition |
+| `rounded-[Xpx]` | `var(--radius)` (2px, the only V2 radius) |
+
+### Banned Motion Patterns
+
+```
+BANNED:
+- duration-[XXXms]           → use transition: var(--ease-standard)
+- ease-out (bare)            → transition-timing-function: var(--ease-standard)
+- var(--ink-ease-spring)     → var(--ease-standard) (V2 has no spring curve)
+- style={{ animation: '...' }} → use CSS @keyframes in global.css
+```
+
+### Banned Touch Targets
+
+- `h-7`, `h-8`, `h-9`, `h-10` on interactive elements — minimum is **44px** (`min-h-[44px]` or `min-h-11`)
+- Per V2 spec rule 7: **44px minimum touch target** (supersedes any legacy 48px rule)
 
 ---
 
 ## 3. Approved Patterns (Copy These Exactly)
 
-### 3a. View Root (every view must start with this)
+### 3a. V2 Token Reference
+
+```css
+/* Surface & Ink */
+var(--paper)          /* warm off-white — view background */
+var(--paper-2)        /* slightly warmer — card/container background */
+var(--ink)            /* near-black — primary text */
+var(--ink-2)          /* medium — secondary text */
+var(--ink-3)          /* light — tertiary/muted text */
+var(--ink-4)          /* very light — placeholder, disabled */
+
+/* Borders */
+var(--rule)           /* standard border */
+var(--rule-soft)      /* subtle divider */
+
+/* Accent */
+var(--accent)         /* terracotta oklch(62% 0.12 45) — all modes */
+var(--accent-2)       /* accent hover/surface */
+var(--accent-ink)     /* text on accent background */
+var(--accent-tint-08) /* 8% accent tint */
+var(--accent-tint-18) /* 18% accent tint */
+var(--accent-tint-35) /* 35% accent tint */
+var(--accent-tint-65) /* 65% accent tint */
+
+/* Utility overlays */
+var(--utility-overlay-05)  /* 5% black overlay */
+var(--utility-overlay-08)  /* 8% black overlay */
+var(--utility-overlay-18)  /* 18% black overlay */
+var(--paper-overlay-08)    /* 8% white/paper overlay */
+var(--utility-surface-elevated)  /* #fff — truly elevated surface */
+
+/* Typography */
+var(--serif)   /* Instrument Serif — display/headings only */
+var(--sans)    /* system sans — body text */
+var(--mono)    /* monospace — code, tabs, metadata */
+
+/* Type scale (fluid) */
+var(--step--2)  /* 10px */
+var(--step--1)  /* 11px */
+var(--step-0)   /* 13px */
+var(--step-1)   /* 15px */
+var(--step-2)   /* 18px */
+var(--step-3)   /* 22px */
+var(--step-4)   /* 28px */
+var(--step-5)   /* 36px */
+var(--step-6)   /* 48px */
+
+/* Geometry */
+var(--radius)   /* 2px — the single editorial radius */
+var(--pop-w)    /* 400px — popup width */
+var(--pop-h)    /* 600px — popup height */
+```
+
+### 3b. Semantic Typography Classes
+
+Use these classes instead of inline font styles:
 
 ```tsx
-// Extension popup view
-<div className="w-full h-full flex flex-col bg-surface text-on-surface overflow-hidden">
+<h1 className="u-serif">Display heading</h1>          /* Instrument Serif italic */
+<p className="u-kicker">SECTION LABEL</p>              /* mono caps, letter-spaced */
+<span className="u-mono">abc123</span>                 /* monospace data */
+<span className="u-caps">UPPERCASE LABEL</span>        /* small caps */
+```
+
+### 3c. View Root (every view starts with this)
+
+```tsx
+// Extension popup view (body-only — PopupShell owns chrome)
+<div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
   ...
 </div>
 
 // Web page / full-screen view
-<div className="min-h-screen w-full flex flex-col bg-surface text-on-surface">
+<div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)', color: 'var(--ink)' }}>
   ...
 </div>
 ```
 
-### 3b. Sticky Glass Header — use `<AppHeader>`, never inline `<header>`
-
-**Import:** `@/ui-system/components/layout/AppHeader`
-
-NEVER write an inline `<header>` in a view or page. Always use `<AppHeader>`.
-
-#### Three variants
-
-| Variant | When to use | Layout |
-|---|---|---|
-| `primary` | Top-level screens: Collections, DomainDetails, Dashboard | Logo left · action right |
-| `sub` | Secondary screens with explicit back: ModeSelection (with back) | Back · Logo center · spacer |
-| `standalone` | Auth, legal, settings — no nav controls in header | Logo centered |
-
-#### Usage
+### 3d. Card Pattern (V2 — border, not shadow)
 
 ```tsx
-import { AppHeader } from '@/ui-system/components/layout/AppHeader';
-
-// primary — top-level screen (logo left, action right)
-<AppHeader variant="primary" action={<SettingsButton />} />
-
-// primary compact — popup context (tighter padding, sm logo)
-<AppHeader variant="primary" compact action={<UserMenu />} />
-
-// sub — secondary screen with back
-<AppHeader variant="sub" onBack={handleBack} backLabel="Collections" />
-
-// sub compact — popup secondary screen
-<AppHeader variant="sub" compact onBack={onBack} backLabel="Back" />
-
-// standalone — settings, privacy, auth flows
-<AppHeader variant="standalone" />
-
-// standalone compact — popup auth
-<AppHeader variant="standalone" compact />
-```
-
-#### Rules
-
-- **Logo is NEVER interactive.** Never wrap it in `<Link>` or `<button>`. Logo is a brand mark.
-- **Back navigation** belongs to the `sub` variant's back slot, or a breadcrumb `<button>`/`<Link>` in the **content body** — never the logo.
-- **Back slot** must always be `<button type="button">` — never `<a href="#">`.
-- **Touch targets**: all interactive slots require `min-h-[48px] min-w-[48px]`.
-- **Popup views**: pass `compact` prop → `px-4 py-3`, `min-h-[56px]`, logo `size="sm"`.
-- **Web views**: default → `px-6 py-4`, `min-h-[64px]`, logo `size="md"`.
-- **`max-w-*` never on `<header>`** — `max-w` belongs on the `<main>` content container.
-
-#### Glass background — only one approved pattern
-
-```tsx
-// AppHeader handles this internally. When building one-off overrides:
-style={{ backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface) 80%, transparent)' }}
-className="backdrop-blur-md"
-```
-
-**BANNED glass alternatives** — these produce different visual results:
-```
-bg-surface/80              ← Tailwind opacity modifier, not color-mix
-bg-surface-container/80    ← same
-bg-surface/95              ← same
-```
-
-Note: `backgroundColor` inline style is the ONE allowed exception for glass — `color-mix()` with transparency cannot be expressed as a Tailwind utility directly.
-
-#### Header.tsx (layout component) — DEPRECATED
-
-`src/ui-system/components/layout/Header.tsx` uses banned `bg-card` and `border-border/60` tokens and is not used by any active view. Do not use it. Use `AppHeader` instead.
-
-### 3c. Card with Hover Elevation
-
-```tsx
-// APPROVED: card hover using Tailwind only, no JS event handlers
-<div
-  className={cn(
-    'bg-surface-container-lowest rounded-md border border-outline-variant',
-    'shadow-elevation-1 transition-all duration-short ease-standard',
-    'hover:shadow-elevation-3 hover:-translate-y-0.5',
-  )}
->
+// Static card
+<div style={{
+  background: 'var(--paper-2)',
+  border: '1px solid var(--rule-soft)',
+  borderRadius: 'var(--radius)',
+  padding: '12px 16px',
+}}>
   ...
 </div>
-```
 
-### 3d. Interactive Card / List Item (clickable)
-
-```tsx
-// APPROVED: interactive card — button element, Tailwind hover, no inline style
+// Interactive card
 <button
   type="button"
-  onClick={onClick}
-  className={cn(
-    'w-full text-left',
-    'bg-surface-container-lowest rounded-md border border-outline-variant',
-    'shadow-elevation-1 transition-all duration-short ease-standard',
-    'hover:shadow-elevation-3 hover:border-outline hover:-translate-y-0.5',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-    'disabled:opacity-disabled disabled:pointer-events-none',
-  )}
+  style={{
+    background: 'var(--paper-2)',
+    border: '1px solid var(--rule-soft)',
+    borderRadius: 'var(--radius)',
+    padding: '12px 16px',
+    cursor: 'pointer',
+    width: '100%',
+    minHeight: '44px',
+  }}
 >
   ...
 </button>
 ```
 
-### 3e. Tonal Segmented Control / Filter Pills
+### 3e. Typography Hierarchy
 
 ```tsx
-// APPROVED: dark-safe segmented shell + tonal active pill
-<div className="inline-flex w-fit flex-wrap gap-1 rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] p-1 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--md-sys-color-inverse-on-surface)_4%,transparent)]">
-  <button
-    type="button"
-    className={cn(
-      'appearance-none rounded-full border border-transparent bg-transparent px-3 py-1.5 text-label-medium transition-all duration-short ease-standard',
-      active
-        ? 'border-[color-mix(in_srgb,var(--md-sys-color-primary)_22%,transparent)] bg-primary-container text-on-primary-container shadow-elevation-1'
-        : 'text-on-surface-variant hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_6%,var(--md-sys-color-surface-container-high))] hover:text-on-surface',
-      disabled && 'pointer-events-none cursor-not-allowed border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_40%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-highest)_55%,transparent)] text-outline opacity-disabled',
-    )}
-  >
-    System
-  </button>
-</div>
+// Display — Instrument Serif italic (headings only)
+<h1 className="u-serif" style={{ fontSize: 'var(--step-4)', color: 'var(--ink)' }}>
+  Your knowledge
+</h1>
 
-// Standalone pill / export format / filter chip
-<button className="appearance-none rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_72%,transparent)] bg-[color-mix(in_srgb,var(--md-sys-color-surface-container-low)_92%,var(--md-sys-color-surface))] px-3 py-1.5 text-label-medium text-on-surface-variant transition-all duration-short ease-standard hover:border-outline hover:text-on-surface">
-  JSON
-</button>
-
-// Selected standalone pill
-<div className="rounded-full border border-[color-mix(in_srgb,var(--md-sys-color-primary)_22%,transparent)] bg-primary-container px-3 py-1.5 text-label-medium text-on-primary-container shadow-elevation-1">
-  Active
-</div>
-```
-
-### 3f. Text Hierarchy
-
-```tsx
-// Page/section title
-<h1 className="text-headline-small text-on-surface">Settings</h1>
-
-// Card title / dialog header
-<h2 className="text-title-large text-on-surface">Switch mode?</h2>
-
-// Card subtitle / section label
-<h3 className="text-title-medium text-on-surface">Account</h3>
+// Kicker — mono caps (section labels)
+<p className="u-kicker" style={{ color: 'var(--ink-3)' }}>HIGHLIGHTS</p>
 
 // Body text
-<p className="text-body-medium text-on-surface-variant">Supporting description text</p>
+<p style={{ fontSize: 'var(--step-0)', color: 'var(--ink-2)', lineHeight: 1.5 }}>
+  Supporting description
+</p>
 
-// Caption / metadata
-<p className="text-body-small text-outline">2 hours ago</p>
-
-// Overline / section label (uppercase tracking)
-<p className="text-label-small text-outline uppercase tracking-[0.15em]">Collections</p>
-
-// Button / CTA label
-<span className="text-label-large text-primary">Create account</span>
+// Metadata / caption
+<span style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>2 hours ago</span>
 ```
 
-### 3g. Divider / Separator
+### 3f. Divider / Separator
 
 ```tsx
-// Horizontal rule
-<div className="h-px bg-outline-variant" />
-
-// Or use the Separator primitive
-import { Separator } from '@/ui-system/components/primitives/Separator';
-<Separator />
+// Horizontal rule — V2 uses border-top, not height+bg
+<div style={{ borderTop: '1px solid var(--rule-soft)', width: '100%' }} />
 ```
 
-### 3h. Modal / Confirmation Overlay
+### 3g. Accent CTA Button
 
 ```tsx
-// APPROVED: use Dialog primitive — never roll a custom modal
-import { Dialog, DialogContent } from '@/ui-system/components/primitives/Dialog';
-
-// If you must build inline (transition states, etc.):
-<div
-  className="fixed inset-0 z-[300] flex items-center justify-center bg-scrim/40 backdrop-blur-sm"
-  onClick={onDismiss}
->
-  <div
-    className={cn(
-      'w-[90%] max-w-[360px]',
-      'bg-surface-container-highest rounded-xl p-6',
-      'shadow-elevation-3',
-      'animate-scaleIn',
-    )}
-    onClick={e => e.stopPropagation()}
-  >
-    ...
-  </div>
-</div>
-```
-
-### 3i. State Layers (hover/press)
-
-```tsx
-// On a surface-colored element:
-'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]'
-'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]'
-
-// On a primary-colored element:
-'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]'
-'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]'
-
-// For text-only hover (links, nav items):
-'hover:text-on-surface'           // tertiary → primary on hover
-'hover:text-primary'              // surface-variant → primary on hover
-```
-
-### 3j. Disabled State
-
-```tsx
-// APPROVED: always use MD3 disabled
-'disabled:opacity-disabled disabled:pointer-events-none'
-// opacity-disabled = 38% (from tailwind.config.ts)
-
-// Locked state (non-button element):
-<div className={cn('transition-all duration-short', locked && 'opacity-disabled pointer-events-none')}>
-```
-
-### 3k. Back Navigation Link
-
-```tsx
-// APPROVED: back navigation pattern
+// Primary action — single terracotta button
 <button
-  onClick={onBack}
-  className="inline-flex items-center gap-1.5 text-body-small text-outline hover:text-on-surface transition-colors duration-short ease-standard bg-transparent border-0 p-0 cursor-pointer"
-  aria-label="Go back"
+  type="submit"
+  style={{
+    background: 'var(--accent)',
+    color: 'var(--accent-ink)',
+    border: 'none',
+    borderRadius: 'var(--radius)',
+    minHeight: '44px',
+    padding: '0 24px',
+    fontSize: 'var(--step-0)',
+    cursor: 'pointer',
+  }}
 >
-  <ArrowLeft className="w-4 h-4" />
-  Back
+  Sign in
+</button>
+```
+
+### 3h. Disabled State
+
+```tsx
+// APPROVED: V2 disabled
+<button style={{ opacity: 0.4, pointerEvents: 'none' }} disabled>
+  Disabled
 </button>
 ```
 
@@ -350,8 +270,8 @@ import { Dialog, DialogContent } from '@/ui-system/components/primitives/Dialog'
 ### When to use each primitive vs. custom element:
 
 | Need | Use This | Never Do This |
-|---|---|---|
-| CTA / action button | `<Button>` primitive | Raw `<button>` with custom bg/color styles |
+|------|----------|---------------|
+| CTA / action button | `<Button>` primitive | Raw `<button>` with inline bg/color styles |
 | Text input | `<Input>` primitive | Raw `<input>` with inline styles |
 | Collection / item card | `<Card interactive>` primitive | Custom `<div>` with onMouseEnter |
 | Static info card | `<Card>` primitive | Custom `<div>` with inline bg/border |
@@ -359,52 +279,46 @@ import { Dialog, DialogContent } from '@/ui-system/components/primitives/Dialog'
 | Loading spinner | `<Spinner>` primitive | Custom CSS spinner |
 | Text rendering | `<Text>` primitive (or semantic HTML + type class) | `<p style={{ color: '...' }}>` |
 | Section chip/tag | `<Chip>` primitive | Custom span with accent-soft bg |
-| Social auth button | `<SocialButton>` primitive | Custom button with inline border styles |
 | Trust/privacy message | `<TrustSignal>` primitive | Inline p with text-tertiary style |
 | Visual separator | `<Separator>` primitive | `<hr>` or `<div className="h-px bg-...">` |
 
 ### Button Variant Rules
 
 ```tsx
-// Primary action (submit, confirm, CTA)
-<Button variant="filled">Create account</Button>
+// Primary action (V2 — single terracotta accent button)
+<Button variant="accent">Sign in</Button>
 
-// Secondary/cancel action
-<Button variant="outlined">Cancel</Button>
+// Ghost / secondary
+<Button variant="ghost">Cancel</Button>
 
-// Inline text action (no background needed)
-<Button variant="text">Learn more</Button>
+// Default
+<Button variant="default">Action</Button>
 
-// NEVER: raw button with inline styles for primary actions
-// ❌ <button style={{ background: 'var(--accent)' }}>Submit</button>
-// ❌ <button className="bg-blue-500">Submit</button>
+// NEVER: SocialButton (deleted in Layer 3)
+// NEVER: raw button with hex colors
+// NEVER: Google/Apple brand colors
 ```
 
 ---
 
 ## 5. View Structure Contract
 
-Every view must follow this structure:
+Every popup view must follow this structure (PopupShell owns chrome — views are body-only):
 
 ```tsx
 export function MyView({ onAction }: MyViewProps) {
   return (
-    // 1. Root: full dimensions, bg-surface, text-on-surface
-    <div className="w-full h-full flex flex-col bg-surface text-on-surface overflow-hidden">
+    // Body-only — no chrome (no ModeHeader, no TabBar, no PopupShell import)
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
 
-      {/* 2. Optional sticky header — always use AppHeader, never inline <header> */}
-      <AppHeader variant="primary" action={<SettingsButton />} />
-      {/* For secondary screens: <AppHeader variant="sub" onBack={onBack} backLabel="Collections" /> */}
-      {/* For auth/legal/settings: <AppHeader variant="standalone" /> */}
-
-      {/* 3. Scrollable content area */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+      {/* Scrollable content */}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
         {/* content */}
       </main>
 
-      {/* 4. Optional fixed footer */}
-      <footer className="px-4 py-3 border-t border-outline-variant shrink-0">
-        <Button variant="filled" className="w-full">Primary Action</Button>
+      {/* Optional fixed footer */}
+      <footer style={{ padding: '12px 16px', borderTop: '1px solid var(--rule-soft)', flexShrink: 0 }}>
+        <Button variant="accent" style={{ width: '100%' }}>Primary Action</Button>
       </footer>
 
     </div>
@@ -414,15 +328,12 @@ export function MyView({ onAction }: MyViewProps) {
 
 ### View Props Contract
 
-Views that work in BOTH popup and web must use the callback-or-navigate pattern:
-
 ```tsx
 interface MyViewProps {
   onBack?: () => void;           // popup: provided; web: falls back to navigate()
-  onItemClick?: (id: string) => void;  // popup: provided; web: falls back to navigate()
+  onItemClick?: (id: string) => void;
 }
 
-// Inside handler:
 const handleBack = () => {
   if (onBack) { onBack(); } else { navigate('/collections'); }
 };
@@ -435,60 +346,40 @@ const handleBack = () => {
 ### Rule: All visual hover state via CSS, never via JS event handlers
 
 ```tsx
-// ❌ BANNED — JS DOM mutation for visual state
+// BANNED — JS DOM mutation for visual state
 onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
 
-// ✅ APPROVED — Tailwind hover utility
-className="hover:shadow-elevation-3 transition-all duration-short ease-standard"
+// APPROVED — CSS pseudo-class (in a <style> block or CSS module)
+// Or use className with a CSS class that has :hover styles
 ```
 
 ### Motion Token Usage
 
 ```tsx
-// ALWAYS pair transition with duration AND easing:
-'transition-all duration-short ease-standard'   // 200ms — most interactions
-'transition-all duration-medium ease-standard'  // 300ms — page transitions, modals
-'transition-all duration-long ease-emphasized'  // 500ms — dramatic reveals
+// Standard transitions — use CSS custom properties
+style={{ transition: 'opacity 0.15s var(--ease-standard), transform 0.15s var(--ease-standard)' }}
 
-// NEVER:
-'transition'               // no duration or easing specified
-'transition-all duration-150'  // hardcoded duration, no MD3 easing
-'transition-all'           // missing duration and easing
-```
-
-### Allowed Transform Effects
-
-```tsx
-// Card lift on hover (approved):
-'hover:-translate-y-0.5'   // subtle 2px lift
-
-// Card press:
-'active:scale-[0.98]'      // slight press compression
-
-// Expand/slide in (approved for modals/toasts):
-'animate-scaleIn'          // defined in global.css
-'animate-fadeSlideIn'      // defined in global.css
+// NEVER hardcode durations in Tailwind: duration-[180ms], duration-[280ms]
+// NEVER use var(--ink-ease-spring) — removed in V2
 ```
 
 ---
 
 ## 7. Typography Contract
 
-Use ONLY these tokens. Never hardcode pixel sizes in view/component files.
+Use ONLY these V2 step tokens. Never hardcode pixel sizes.
 
-| When... | Token | Class |
-|---|---|---|
-| Page / section title | Headline Small | `text-headline-small` (24px) |
-| Dialog / modal title | Title Large | `text-title-large` (22px) |
-| Card title | Title Medium | `text-title-medium` (16px, 500wt) |
-| Tag / small heading | Title Small | `text-title-small` (14px, 500wt) |
-| Body paragraph | Body Medium | `text-body-medium` (14px) |
-| Secondary description | Body Small | `text-body-small` (12px) |
-| Button / CTA | Label Large | `text-label-large` (14px, 500wt) |
-| Small chip / badge | Label Medium | `text-label-medium` (12px, 500wt) |
-| Metadata / timestamp | Label Small | `text-label-small` (11px, 500wt) |
-| Overline / section label | Label Small + uppercase | `text-label-small uppercase tracking-[0.15em]` |
+| When... | Token | Approx px |
+|---------|-------|-----------|
+| Display / hero heading | `var(--step-4)` to `var(--step-6)` + `u-serif` | 28–48px |
+| Section heading | `var(--step-3)` | 22px |
+| Card title | `var(--step-2)` | 18px |
+| Body paragraph | `var(--step-1)` | 15px |
+| Default body / UI | `var(--step-0)` | 13px |
+| Secondary / caption | `var(--step--1)` | 11px |
+| Tiny annotation | `var(--step--2)` | 10px |
+| Kicker / section label | `u-kicker` class + `var(--step--1)` | mono caps |
 
 ---
 
@@ -501,8 +392,9 @@ These apply ONLY to files in `src/entrypoints/popup/`:
 3. **No `window.location`** — use Chrome extension APIs
 4. **No direct `chrome.runtime.sendMessage()`** in views — use hooks
 5. **Max one scrollable region** — popup has limited height
-6. **Every scroll container**: `overflow-y-auto` with `max-h-*` or `flex-1`
-7. **Prefer `min-h-[48px]` for touch targets** — popup users often on laptop trackpads
+6. **Every scroll container**: `overflowY: 'auto'` with `maxHeight` or `flex: 1`
+7. **Minimum 44px touch targets** — per V2 spec rule 7
+8. **Views NEVER import PopupShell, ModeHeader, or TabBar** — chrome owned by shell
 
 ---
 
@@ -511,36 +403,31 @@ These apply ONLY to files in `src/entrypoints/popup/`:
 Run AFTER writing any UI code, BEFORE submitting:
 
 ```bash
-# 1. Check for banned Style C vars (MUST return 0 results)
-grep -rn "var(--bg\|var(--text-\|var(--accent\|var(--border\|var(--radius\|var(--shadow-rest\|var(--shadow-hover" src/ --include="*.tsx"
+# 1. Check for legacy MD3/Ink/StyleC vars (MUST return 0)
+grep -rn "var(--md-sys-\|var(--ink-[0-9]\|var(--bg\|var(--text-\|var(--border\|var(--shadow-\|var(--elevation\|var(--logo-" src/ --include="*.tsx"
 
-# 2. Check for hardcoded pixel font sizes (MUST return 0 results)
-grep -rn 'text-\[[0-9]\+px\]' src/ --include="*.tsx"
+# 2. Check for hardcoded hex colors (MUST return 0)
+grep -rn '#[0-9a-fA-F]\{3,8\}' src/ --include="*.tsx"
 
-# 3. Check for onMouseEnter DOM mutation (MUST return 0 results)
+# 3. Check for onMouseEnter DOM mutation (MUST return 0)
 grep -rn "onMouseEnter\|onMouseLeave" src/ --include="*.tsx"
 
-# 4. Check for inline style with color/background (flag for review)
-grep -rn 'style=.*background\|style=.*color:' src/ --include="*.tsx" | grep -v "color-mix"
+# 4. Check for arbitrary duration Tailwind classes (MUST return 0)
+grep -rn 'duration-\[[0-9]*ms\]' src/ --include="*.tsx"
 
-# 5. Check for missing touch targets on buttons (spot check)
-grep -rn "<button" src/ --include="*.tsx" | grep -v "min-h"
+# 5. Check for undersized touch targets on interactive elements
+grep -rn 'h-7\|h-8\|h-9\|h-10\b' src/ --include="*.tsx"
 ```
-
-Expected results after clean UI work:
-- Commands 1, 2, 3: **zero matches**
-- Commands 4, 5: review any matches to ensure they are justified exceptions
 
 ---
 
 ## 10. What Requires Explicit Approval Before Coding
 
-If any of these apply to your task, STOP and define the spec first:
+If any of these apply, STOP and define the spec first:
 
-1. **New primitive component** — run `/md3-ui` workflow, create Storybook story alongside
+1. **New primitive component** — run `/ui-preflight` workflow; reference wireframe JSX in `ui_kits/extension/v2/`
 2. **New view** — define: what context (popup/web/both), what props, what callbacks
 3. **Custom overlay/modal** — justify why `<Dialog>` primitive cannot be used
-4. **Glass effect** — only approved in sticky headers, use exact pattern from §3b
-5. **Any inline `style={}`** — must be one of: glass bg, color-mix, or brand-specific (logo)
-6. **Any `rgba()` or `#hex`** — must reference an MD3 var, never raw value
-7. **Animation beyond `hover:`/`active:`** — must use keyframes defined in `global.css`
+4. **Any `rgba()` or `#hex`** — must reference a V2 var, never raw value
+5. **Animation beyond `:hover`/`:active`** — must use keyframes defined in `global.css`
+6. **New font** — must use `var(--serif)`, `var(--sans)`, or `var(--mono)` only
