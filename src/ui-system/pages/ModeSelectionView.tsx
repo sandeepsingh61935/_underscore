@@ -44,7 +44,7 @@ export function ModeSelectionPage({
                 onClick={onSignInClick}
                 className="group flex min-h-[48px] items-center justify-center gap-1.5 text-label-large text-muted-foreground hover:text-primary transition-colors px-4 py-2 rounded-full hover:bg-secondary/50"
               >
-                <span>Sign in to unlock vault and archive</span>
+                <span>Sign in to unlock cloud and ai</span>
                 <span className="group-hover:translate-x-0.5 transition-transform">
                   →
                 </span>
