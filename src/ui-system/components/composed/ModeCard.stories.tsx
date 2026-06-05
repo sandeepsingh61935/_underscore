@@ -36,8 +36,8 @@ export const Active: Story = {
 
 export const Locked: Story = {
     args: {
-        id: 'neural',
-        label: 'Neural Mode',
+        id: 'ai',
+        label: 'AI Mode',
         description: 'AI-powered organization and connecting of ideas.',
         icon: <Brain className="w-5 h-5" />,
         isLocked: true,
@@ -48,22 +48,22 @@ export const GridExample: Story = {
     render: () => (
         <div className="grid grid-cols-1 gap-4 w-[380px]">
             <ModeCard
-                id="walk"
-                label="Walk"
+                id="ephemeral"
+                label="Ephemeral"
                 description="Casual browsing with manual highlighting."
                 icon={<Footprints className="w-5 h-5" />}
                 isActive={true}
             />
             <ModeCard
-                id="sprint"
-                label="Sprint"
+                id="local"
+                label="Local"
                 description="High-speed capture session."
                 icon={<Zap className="w-5 h-5" />}
             />
             <ModeCard
-                id="vault"
-                label="Vault"
-                description="Secure storage for sensitive clips."
+                id="cloud"
+                label="Cloud"
+                description="Save across devices and sessions."
                 icon={<Archive className="w-5 h-5" />}
                 isLocked={true}
             />
