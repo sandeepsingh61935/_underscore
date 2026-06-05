@@ -30,8 +30,7 @@ src/ui-system/
 │   └── SignInView.tsx
 ├── theme/
 │   └── global.css         # Global styles and design tokens
-├── tokens/
-│   └── design-tokens.css  # Design token definitions
+
 └── utils/
     ├── animations.ts      # Animation utilities
     ├── cn.ts              # Class name utility
