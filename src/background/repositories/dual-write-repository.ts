@@ -43,10 +43,10 @@ export class DualWriteRepository implements IHighlightRepository {
     async add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void> {
         // Write to local immediately (fast, reliable)
         await this.localRepo.add(highlight);
-        this.logger.info('[DualWrite] ✅ Saved to local IndexedDB', { id: highlight.id });
+        this.logger.info('[DualWrite] [OK] Saved to local IndexedDB', { id: highlight.id });
 
         if (options?.skipSync) {
-            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id: highlight.id });
+            this.logger.info('[DualWrite] [SKIP] Skipping cloud sync (requested)', { id: highlight.id });
             return;
         }
 
@@ -68,7 +68,7 @@ export class DualWriteRepository implements IHighlightRepository {
         this.logger.info('[DualWrite] Updated in local', { id });
 
         if (options?.skipSync) {
-            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id });
+            this.logger.info('[DualWrite] [SKIP] Skipping cloud sync (requested)', { id });
             return;
         }
 
@@ -82,7 +82,7 @@ export class DualWriteRepository implements IHighlightRepository {
         this.logger.info('[DualWrite] Removed from local', { id });
 
         if (options?.skipSync) {
-            this.logger.info('[DualWrite] 🛑 Skipping cloud sync (requested)', { id });
+            this.logger.info('[DualWrite] [SKIP] Skipping cloud sync (requested)', { id });
             return;
         }
 
@@ -170,7 +170,7 @@ export class DualWriteRepository implements IHighlightRepository {
         // Read Repair: Backfill cloud-only highlights to local IndexedDB
         // This ensures cross-profile sync (Profile A creates, Profile B fetches and persists locally)
         if (cloudOnlyIds.length > 0) {
-            this.logger.info('[DualWrite] 🔧 Read Repair: Backfilling cloud highlights to local', {
+            this.logger.info('[DualWrite] [REPAIR] Read Repair: Backfilling cloud highlights to local', {
                 count: cloudOnlyIds.length,
                 ids: cloudOnlyIds
             });
@@ -257,7 +257,7 @@ export class DualWriteRepository implements IHighlightRepository {
         // Fire-and-forget cloud write
         operation()
             .then(() => {
-                this.logger.info('[DualWrite] ☁️ Synced to Supabase cloud', {
+                this.logger.info('[DualWrite] [CLOUD] Synced to Supabase cloud', {
                     operation: operationName,
                     id: identifier,
                 });

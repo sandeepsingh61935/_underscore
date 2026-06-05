@@ -103,7 +103,7 @@ export class ModeRegistry {
             family: 'cloud',
             tag: 'Readable by models',
             blurb: 'Cloud-synced and readable by LLMs you connect via MCP.',
-            motif: '✦',
+            motif: '+',
             accent: 'var(--mode-ai)',
             persistence: 'synced · readable by AI',
             signin: true,

@@ -47,8 +47,8 @@ export type TextQuoteSelector = z.infer<typeof TextQuoteSelectorSchema>;
 /**
  * Serialized Range Schema V2 - Extended with TextQuoteSelector
  *
- * Backward Compatible: V1 data (no selector) validates ✓
- * Forward Compatible: V2 data (with selector) validates ✓
+ * Backward Compatible: V1 data (no selector) validates [OK]
+ * Forward Compatible: V2 data (with selector) validates [OK]
  */
 export const SerializedRangeSchema = SerializedRangeSchemaBase.extend({
   selector: TextQuoteSelectorSchema.optional(),

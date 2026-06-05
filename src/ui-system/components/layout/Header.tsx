@@ -3,7 +3,7 @@
  * This component uses banned Style C tokens (bg-card, border-border/60)
  * and is not used by any active view. It will be deleted once confirmed safe.
  */
-import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette } from 'lucide-react';
+import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette, Check, Lock } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 {t.icon}
                                 <span>{t.label}</span>
                                 {theme === t.id && (
-                                  <span className="ml-auto text-primary">✓</span>
+                                  <Check className="ml-auto w-4 h-4 text-primary" />
                                 )}
                               </DropdownMenuItem>
                             ))}
@@ -190,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
                         to="/privacy"
                         className="flex items-center gap-2 cursor-pointer"
                       >
-                        <span className="w-4 h-4">🔒</span>
+                        <Lock className="w-4 h-4" />
                         <span>Privacy</span>
                       </Link>
                     </DropdownMenuItem>

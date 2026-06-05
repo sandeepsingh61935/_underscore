@@ -31,7 +31,7 @@ export class EventBridge {
      * Forward event to all active tabs
      */
     private async forwardToContentScript(eventName: string, payload: any): Promise<void> {
-        this.logger.info(`[EventBridge] 📤 Forwarding ${eventName} to content scripts`, { id: payload?.id });
+        this.logger.info(`[EventBridge] [OUT] Forwarding ${eventName} to content scripts`, { id: payload?.id });
 
         try {
             // Send to current active tab(s)

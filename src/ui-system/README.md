@@ -30,8 +30,7 @@ src/ui-system/
 │   └── SignInView.tsx
 ├── theme/
 │   └── global.css         # Global styles and design tokens
-├── tokens/
-│   └── design-tokens.css  # Design token definitions
+
 └── utils/
     ├── animations.ts      # Animation utilities
     ├── cn.ts              # Class name utility
@@ -141,11 +140,11 @@ bash scripts/check-legacy-ds.sh
 
 All components follow accessibility best practices:
 
-- ✅ ARIA labels on interactive elements
-- ✅ Keyboard navigation support
-- ✅ Focus states visible
-- ✅ Screen reader friendly
-- ✅ `prefers-reduced-motion` respected
+- [x] ARIA labels on interactive elements
+- [x] Keyboard navigation support
+- [x] Focus states visible
+- [x] Screen reader friendly
+- [x] `prefers-reduced-motion` respected
 
 ## Usage Example
 
