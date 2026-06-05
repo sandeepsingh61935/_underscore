@@ -75,19 +75,28 @@ src/ui-system/
 
 ## Design Tokens
 
-Design tokens are defined in `src/ui-system/theme/global.css` and `src/ui-system/tokens/design-tokens.css`.
+Design tokens are defined in `src/ui-system/theme/global.css` and `ui_kits/extension/v2/tokens.css`.
 
-Segmented controls and chip-like toggles should use the shared tonal pill classes from `src/ui-system/utils/tonalPill.ts`, with `primary-container` as the selected state instead of bright filled primary backgrounds.
+See `.agent/workflows/v2-tokens-reference.md` for the complete V2 token lookup table.
 
-### Color System
+### V2 Color System
 
 ```css
---color-primary       /* Primary brand color */
---color-on-primary    /* Text on primary */
---color-secondary     /* Secondary color */
---color-surface       /* Surface backgrounds */
---color-background    /* App background */
---color-destructive   /* Error/delete actions */
+/* Surface & Ink */
+--paper       /* Warm off-white — view background */
+--paper-2     /* Slightly warmer — card/container */
+--ink         /* Near-black — primary text */
+--ink-2       /* Medium — secondary text */
+--ink-3       /* Light — muted/tertiary text */
+--ink-4       /* Very light — placeholder, disabled */
+
+/* Accent (terracotta — all modes) */
+--accent      /* oklch(62% 0.12 45) — CTAs, mode glyphs */
+--accent-ink  /* Text on accent background */
+
+/* Borders */
+--rule        /* Standard border */
+--rule-soft   /* Subtle border / card edge */
 ```
 
 ### Spacing Scale
@@ -111,19 +120,22 @@ Segmented controls and chip-like toggles should use the shared tonal pill classe
 .animate-shimmer      /* Shimmer effect (skeletons) */
 ```
 
-## Storybook
+## Verification
 
-Run Storybook to view all components:
-
-```bash
-npm run storybook
-```
-
-Build static Storybook:
+To verify components after editing:
 
 ```bash
-npm run build-storybook
+# Build
+npm run build
+
+# Type check
+npm run type-check
+
+# Check for legacy token violations
+bash scripts/check-legacy-ds.sh
 ```
+
+> Storybook has been removed from this project (Layer 8). No `.stories.tsx` files required.
 
 ## Accessibility
 
