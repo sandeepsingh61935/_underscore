@@ -27,9 +27,9 @@ export interface CollectionsViewProps {
   onCollectionClick: (collection: Collection) => void;
   onAddNew?: () => void;
   /** Current active mode */
-  mode?: 'focus' | 'capture' | 'memory' | 'neural';
+  mode?: 'ephemeral' | 'local' | 'cloud' | 'ai';
   /** Callback to change mode */
-  onModeChange?: (mode: 'focus' | 'capture' | 'memory' | 'neural') => void;
+  onModeChange?: (mode: 'ephemeral' | 'local' | 'cloud' | 'ai') => void;
   className?: string;
 }
 
