@@ -1,85 +1,102 @@
 ---
-description: Audit existing components for Material Design 3 compliance and fix inconsistencies
+description: Audit existing components for V2 Editorial design system compliance and fix inconsistencies
 ---
 
 # Design System Audit Workflow
 
-Use this workflow to audit existing UI components for MD3 compliance and fix issues.
+Use this workflow to audit existing UI components for V2 Editorial compliance and fix issues.
 
 ## Step 1: Identify Audit Targets
 // turbo
-Run a grep to find potential issues:
+Run the legacy-DS harness first:
 
 ```bash
-# Find hardcoded colors (hex codes not in tokens)
-grep -rn "#[0-9a-fA-F]\{3,6\}" --include="*.tsx" --include="*.css" src/
+# Full harness — reports violations by category
+bash scripts/check-legacy-ds.sh
 
-# Find arbitrary Tailwind colors
-grep -rn "bg-\(blue\|red\|green\|gray\)-" --include="*.tsx" src/
+# Quick targeted sweeps:
 
-# Find missing hover states
-grep -rL "hover:" --include="*.tsx" src/components/
+# V2 violation 1 — legacy MD3/Ink/Style C vars
+grep -rn "var(--md-sys-\|var(--ink-[0-9]\|var(--bg\|var(--text-primary\|var(--text-secondary\|var(--border\b\|var(--shadow-\|var(--elevation\|var(--logo-" \
+  src/ --include="*.tsx"
+
+# V2 violation 2 — hardcoded hex colors
+grep -rn '#[0-9a-fA-F]\{3,8\}\b' src/ --include="*.tsx"
+
+# V2 violation 3 — arbitrary Tailwind duration classes
+grep -rn 'duration-\[[0-9]*ms\]' src/ --include="*.tsx"
+
+# V2 violation 4 — arbitrary rounded classes
+grep -rn 'rounded-\[[0-9]*px\]' src/ --include="*.tsx"
+
+# V2 violation 5 — undersized touch targets on interactive elements
+grep -rn '\bh-7\b\|\bh-8\b\|\bh-9\b\|\bh-10\b' src/ --include="*.tsx"
+
+# V2 violation 6 — emoji in source
+grep -rPn '[\x{1F300}-\x{1F9FF}\x{1F600}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}]' src/ --include="*.tsx" --include="*.ts"
 ```
 
 ## Step 2: Component-by-Component Audit
 
 For each component, check:
 
-### 2.1 Color Compliance
+### 2.1 Color Compliance (V2 Editorial)
 | Check | Pass/Fail | Fix |
 |-------|-----------|-----|
-| All colors from design tokens? | | |
+| All colors from V2 tokens (`--paper`, `--ink`, `--accent`, `--rule`)? | | |
 | No hardcoded hex values? | | |
-| Dark mode variants exist? | | |
+| No MD3 tokens (`--md-sys-color-*`)? | | |
+| No Ink & Glass tokens (`--ink-1..4`, `--ink-focus`, `--ink-neural`)? | | |
+| No Style C aliases (`--bg`, `--text-primary`, `--border`, `--shadow-hover`)? | | |
 
 ### 2.2 Interactive States
 | State | Implemented? | Fix |
 |-------|--------------|-----|
-| Hover (8% state layer) | | |
-| Focus-visible (12% + outline) | | |
-| Pressed (12% state layer) | | |
-| Disabled (38% opacity) | | |
+| Hover — CSS only (no onMouseEnter) | | |
+| Focus-visible ring | | |
+| Disabled (opacity: 0.4, pointer-events: none) | | |
+| Touch target ≥ 44px | | |
 
-### 2.3 Typography
+### 2.3 Typography (V2 scale)
 | Check | Pass/Fail | Fix |
 |-------|-----------|-----|
-| Using type scale tokens? | | |
-| Line height correct? | | |
-| Font weight correct? | | |
+| Using `var(--step-*)` scale? | | |
+| Display headings use `u-serif` class + `var(--serif)`? | | |
+| Section labels use `u-kicker` class? | | |
+| No arbitrary `text-[Npx]` classes? | | |
 
 ### 2.4 Spacing & Layout
 | Check | Pass/Fail | Fix |
 |-------|-----------|-----|
-| Padding from spacing scale? | | |
-| Margins from spacing scale? | | |
-| Touch targets ≥ 48dp? | | |
+| Borders use `var(--rule)` or `var(--rule-soft)`? | | |
+| No `shadow-elevation-*` classes? | | |
+| No `boxShadow` inline styles? | | |
+| `var(--radius)` for border-radius (2px)? | | |
 
 ### 2.5 Motion
 | Check | Pass/Fail | Fix |
 |-------|-----------|-----|
-| Transitions use duration tokens? | | |
-| Easing curves correct? | | |
-| No jarring animations? | | |
+| No `duration-[XXXms]` Tailwind classes? | | |
+| No `var(--ink-ease-spring)`? | | |
+| Animations defined in `global.css` keyframes? | | |
 
 ### 2.6 Accessibility
 | Check | Pass/Fail | Fix |
 |-------|-----------|-----|
-| Contrast ratio ≥ 4.5:1? | | |
-| ARIA labels present? | | |
+| All interactive elements ≥ 44px touch target? | | |
+| ARIA labels on icon-only buttons? | | |
 | Keyboard navigable? | | |
 | Focus order logical? | | |
 
 ## Step 3: Prioritize Fixes
 
 1. **Critical** (fix immediately):
-   - Accessibility failures
-   - Missing focus states
-   - Hardcoded colors breaking dark mode
+   - Accessibility failures (missing focus states, undersized targets)
+   - Hardcoded hex colors breaking theme
 
-2. **High** (fix soon):
-   - Missing hover/pressed states
-   - Inconsistent spacing
-   - Non-token typography
+2. **High** (fix in current layer):
+   - Legacy MD3/Ink/Style C CSS variables
+   - Arbitrary font sizes and durations
 
 3. **Medium** (fix when touching file):
    - Motion improvements
@@ -88,11 +105,10 @@ For each component, check:
 ## Step 4: Apply Fixes
 // turbo
 For each fix:
-1. Update the component
-2. Update/add Storybook story (visual tests screenshot these)
-3. Run visual tests: `npm run test:visual`
-4. Run unit tests: `npm run test`
-5. Commit with descriptive message
+1. Update the component to use V2 tokens
+2. Run build: `npm run build`
+3. Run type check: `npm run type-check`
+4. Commit with descriptive message: `refactor(ui-system): migrate {Component} to V2 tokens`
 
 ## Step 5: Document Findings
 
@@ -113,56 +129,24 @@ Create audit report in `docs/ui-audit-[date].md`:
 - Remaining: ...
 ```
 
-## Quick Audit Command
+## Quick Audit Command (V2)
 // turbo
-Run this to get a quick health check:
+Run this to get a quick V2 health check:
 
 ```bash
-# Count potential issues
-echo "=== Hardcoded colors ===" && grep -rc "#[0-9a-fA-F]\{6\}" --include="*.tsx" src/components/ | grep -v ":0$"
-echo "=== Missing hover ===" && grep -rL "hover:" --include="*.tsx" src/components/
-echo "=== Arbitrary spacing ===" && grep -rn "p-\[" --include="*.tsx" src/components/ | head -20
+# Full harness — all 11 categories
+bash scripts/check-legacy-ds.sh
+
+# Targeted: legacy vars remaining
+grep -rn "var(--md-sys-\|var(--ink-[0-9]\|var(--bg\b\|var(--text-primary\|var(--border\b\|var(--shadow-rest\|var(--shadow-hover" \
+  src/ --include="*.tsx" | wc -l
+
+# Targeted: hex colors remaining
+grep -rn '#[0-9a-fA-F]\{3,8\}\b' src/ --include="*.tsx" | wc -l
 ```
 
-## Project-Specific Audit: Style C Hybrid Violations
+## V2 Source of Truth
 
-Run this full health check for _underscore's known violation patterns:
-
-```bash
-echo "=== Style C Hybrid vars (MUST BE ZERO after migration) ===" && \
-grep -rn "var(--bg\|var(--text-\|var(--accent\|var(--border\|var(--radius\|var(--shadow-rest\|var(--shadow-hover" \
-  src/ --include="*.tsx" | grep -v "node_modules" | grep -v "global.css"
-
-echo "=== Hardcoded pixel font sizes ===" && \
-grep -rn 'text-\[[0-9]\+px\]' src/ --include="*.tsx"
-
-echo "=== JS DOM mutation for visual state ===" && \
-grep -rn "onMouseEnter\|onMouseLeave" src/ --include="*.tsx"
-
-echo "=== Raw rounded-[var(--radius)] ===" && \
-grep -rn "rounded-\[var(--" src/ --include="*.tsx"
-
-echo "=== ESLint design system violations ===" && \
-npx eslint src/ --rule '{}' 2>&1 | grep "no-restricted-syntax" | wc -l
-```
-
-## Files with Known Violations (as of audit 2026-03-08)
-
-| File | Occurrences | Priority |
-|---|---|---|
-| `src/pages/SettingsPage.tsx` | 48 | High |
-| `src/features/collections/views/DomainDetailsView.tsx` | 31 | High |
-| `src/features/auth/SignInView.tsx` | 27 | High |
-| `src/features/collections/views/CollectionsView.tsx` | 25 | High |
-| `src/features/modes/ModeSelectionView.tsx` | 20 | High |
-| `src/features/modes/ModeCard.tsx` | 11 | Medium |
-| `src/entrypoints/popup/views/AuthView.tsx` | 16 | Medium |
-| `src/pages/WelcomePage.tsx` | 13 | Medium |
-| `src/pages/PrivacyPage.tsx` | 12 | Medium |
-| `src/pages/NotFoundPage.tsx` | 4 | Low |
-| `src/ui-system/components/primitives/SocialButton.tsx` | 4 | Low |
-| `src/ui-system/components/primitives/Spinner.tsx` | 2 | Low |
-| `src/ui-system/components/primitives/TrustSignal.tsx` | 1 | Low |
-| `src/ui-system/components/primitives/Logo.tsx` | 1 | Low |
-
-After fixing each file, re-run the audit commands above. Target: zero matches.
+- Token definitions: `ui_kits/extension/v2/tokens.css`
+- Wireframes: `ui_kits/extension/v2/*.jsx`
+- Global CSS: `src/ui-system/theme/global.css`
