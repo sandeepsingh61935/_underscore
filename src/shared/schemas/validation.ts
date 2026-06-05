@@ -42,7 +42,7 @@ export type Message = z.infer<typeof MessageSchema>;
  * (For switching modes or configuring them)
  */
 export const ModeConfigSchema = z.object({
-  modeName: z.enum(['walk', 'sprint', 'vault']),
+  modeName: z.enum(['ephemeral', 'local', 'cloud', 'ai']),
   settings: z.any().optional(),
 });
 
