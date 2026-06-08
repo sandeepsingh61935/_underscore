@@ -1,7 +1,6 @@
 /**
- * @deprecated Use AppHeader from './AppHeader' instead.
- * This component uses banned Style C tokens (bg-card, border-border/60)
- * and is not used by any active view. It will be deleted once confirmed safe.
+ * @deprecated Use AppHeader from './AppHeader' instead. This header remains
+ * only for legacy web SPA consumers; new code should use AppHeader.
  */
 import { Settings, LogOut, CheckSquare, Moon, Sun, Monitor, Palette, Check, Lock } from 'lucide-react';
 import React, { useState } from 'react';
@@ -46,7 +45,6 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
 
-  // Use props if provided, otherwise fall back to context
   const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
   const user = propUser ?? appContext.user;
   const { logout, theme, setTheme } = appContext;
@@ -63,44 +61,56 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleLogout = (): void => {
     if (onLogout) {
-      // Use custom logout handler (for popup)
       onLogout();
     } else {
-      // Default behavior (for web app)
       logout();
       navigate('/');
     }
   };
 
   return (
-    <header className="w-full border-b border-border/60 bg-card sticky top-0 z-50">
+    <header
+      className="w-full sticky top-0 z-50"
+      style={{
+        backgroundColor: 'var(--paper)',
+        borderBottom: '1px solid var(--rule-soft)',
+      }}
+    >
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
         <Link
           to="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
         >
-          <CheckSquare className="w-6 h-6 text-primary group-hover:rotate-12 transition-transform duration-short ease-standard" />
-          <h2 className="text-title-medium tracking-tight text-foreground group-hover:text-primary transition-colors">
+          <CheckSquare
+            className="w-6 h-6 transition-transform duration-step-0 ease-standard"
+            style={{ color: 'var(--ink-2)' }}
+          />
+          <h2
+            className="tracking-tight"
+            style={{ fontSize: 'var(--step-1)', color: 'var(--ink)' }}
+          >
             _underscore
           </h2>
         </Link>
 
-        {/* Right Section */}
         <div className="flex items-center gap-6">
-          {/* Navigation Link */}
           {isAuthenticated && (
             <button
               type="button"
               onClick={() => navigate('/collections')}
-              className="hidden sm:inline-flex min-h-[48px] items-center rounded-md px-3 text-label-large text-muted-foreground transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="hidden sm:inline-flex min-h-[44px] items-center rounded px-3 transition-colors duration-step-0 ease-standard hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+              style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)' }}
             >
               Dashboard
             </button>
           )}
 
-          {/* Divider */}
-          {isAuthenticated && <div className="h-4 w-px bg-border hidden sm:block"></div>}
+          {isAuthenticated && (
+            <div
+              className="h-4 w-px hidden sm:block"
+              style={{ backgroundColor: 'var(--rule-soft)' }}
+            ></div>
+          )}
 
           {isAuthenticated && user
             ? showUserMenu && (
@@ -109,14 +119,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       aria-label={`Open account menu for ${user.displayName}`}
-                      className="flex min-h-[48px] min-w-[48px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      className="flex min-h-[44px] min-w-[44px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
                     >
                       <div className="text-right hidden md:block">
-                        <span className="block text-label-small text-foreground">
+                        <span
+                          className="block"
+                          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)' }}
+                        >
                           {user.displayName}
                         </span>
                       </div>
-                      <div className="h-9 w-9 rounded-full bg-cover bg-center border border-border ring-1 ring-border/50 overflow-hidden">
+                      <div
+                        className="h-9 w-9 rounded-full bg-cover bg-center border overflow-hidden"
+                        style={{ borderColor: 'var(--rule-soft)' }}
+                      >
                         {user.photoUrl ? (
                           <img
                             src={user.photoUrl}
@@ -124,7 +140,14 @@ export const Header: React.FC<HeaderProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground text-title-small">
+                          <div
+                            className="w-full h-full flex items-center justify-center"
+                            style={{
+                              backgroundColor: 'var(--accent)',
+                              color: 'var(--accent-ink)',
+                              fontSize: 'var(--step-0)',
+                            }}
+                          >
                             {user.displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -132,23 +155,27 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
-                    {/* User Identity */}
                     <div className="px-4 py-3">
-                      <p className="text-label-small uppercase tracking-[0.15em] text-muted-foreground truncate">
+                      <p
+                        className="uppercase truncate"
+                        style={{
+                          fontSize: 'var(--step--1)',
+                          color: 'var(--ink-3)',
+                          letterSpacing: '0.15em',
+                        }}
+                      >
                         {user.email}
                       </p>
                     </div>
 
                     <DropdownMenuSeparator />
 
-                    {/* Settings Submenu */}
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
                         <Settings className="w-4 h-4" />
                         <span>Settings</span>
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-56">
-                        {/* Theme Setting */}
                         <DropdownMenuSub>
                           <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
                             <Sun className="w-4 h-4" />
@@ -159,32 +186,34 @@ export const Header: React.FC<HeaderProps> = ({
                               <DropdownMenuItem
                                 key={t.id}
                                 onClick={() => setTheme(t.id)}
-                                className={`flex items-center gap-2 cursor-pointer ${
-                                  theme === t.id ? 'text-primary' : ''
-                                }`}
+                                className="flex items-center gap-2 cursor-pointer"
                               >
                                 {t.icon}
                                 <span>{t.label}</span>
                                 {theme === t.id && (
-                                  <Check className="ml-auto w-4 h-4 text-primary" />
+                                  <Check
+                                    className="ml-auto w-4 h-4"
+                                    style={{ color: 'var(--accent)' }}
+                                  />
                                 )}
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
 
-                        {/* Brand Color (Future Enhancement) */}
                         <DropdownMenuItem className="flex items-center gap-2 cursor-pointer opacity-50 pointer-events-none">
                           <Palette className="w-4 h-4" />
                           <span>Brand Color</span>
-                          <span className="ml-auto text-label-small text-muted-foreground">
+                          <span
+                            className="ml-auto"
+                            style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
+                          >
                             Coming soon
                           </span>
                         </DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
 
-                    {/* Privacy */}
                     <DropdownMenuItem asChild>
                       <Link
                         to="/privacy"
@@ -197,10 +226,10 @@ export const Header: React.FC<HeaderProps> = ({
 
                     <DropdownMenuSeparator />
 
-                    {/* Sign Out */}
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="text-destructive cursor-pointer focus:text-destructive"
+                      className="cursor-pointer"
+                      style={{ color: 'var(--ink)' }}
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sign out</span>
