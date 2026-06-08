@@ -10,8 +10,8 @@ export interface Highlight {
   urlPath?: string;
   /** Timestamp when captured */
   createdAt: Date | string;
-  /** Optional color role */
-  colorRole?: 'yellow' | 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'teal';
+  /** Optional accent color (V2 single-accent mode means "with" or "without") */
+  colorRole?: 'accent' | 'none';
 }
 
 export interface HighlightCardProps {
@@ -21,16 +21,6 @@ export interface HighlightCardProps {
   onNavigate?: (urlPath: string) => void;
   className?: string;
 }
-
-const colorMap: Record<string, string> = {
-  yellow: 'border-l-yellow-400',
-  orange: 'border-l-orange-400',
-  blue: 'border-l-blue-400',
-  green: 'border-l-green-400',
-  purple: 'border-l-purple-400',
-  pink: 'border-l-pink-400',
-  teal: 'border-l-teal-400',
-};
 
 function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -74,27 +64,34 @@ export function HighlightCard({
     }
   };
 
-  const colorClass = highlight.colorRole
-    ? colorMap[highlight.colorRole]
-    : 'border-l-primary';
+  const leftBorderStyle: React.CSSProperties =
+    highlight.colorRole === 'accent'
+      ? { borderLeft: '4px solid var(--accent)' }
+      : { borderLeft: '4px solid var(--rule-soft)' };
 
   return (
     <div
       className={cn(
-        'group relative p-4 bg-card border border-border rounded-lg',
-        'border-l-4 transition-all duration-short ease-standard',
-        'hover:shadow-md hover:bg-secondary/30 group-focus-within:shadow-md group-focus-within:bg-secondary/30',
-        colorClass,
+        'group relative p-4 border rounded min-h-[44px]',
         className
       )}
+      style={{
+        backgroundColor: 'var(--paper)',
+        borderColor: 'var(--rule-soft)',
+        ...leftBorderStyle,
+      }}
     >
-      {/* Highlight Text */}
-      <p className="text-body-medium text-foreground leading-relaxed line-clamp-3 pr-8">
+      <p
+        className="leading-relaxed line-clamp-3 pr-8"
+        style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}
+      >
         "{highlight.text}"
       </p>
 
-      {/* Metadata */}
-      <div className="flex items-center gap-2 mt-3 text-label-small text-muted-foreground">
+      <div
+        className="flex items-center gap-2 mt-3"
+        style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
+      >
         <span>{formatDate(highlight.createdAt)}</span>
         {highlight.urlPath && (
           <>
@@ -102,11 +99,8 @@ export function HighlightCard({
             <button
               type="button"
               onClick={() => onNavigate?.(highlight.urlPath!)}
-              className={cn(
-                'inline-flex min-h-[48px] max-w-[200px] items-center rounded-md px-2 -mx-2 text-left transition-colors duration-short ease-standard',
-                'truncate hover:text-primary hover:underline',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
-              )}
+              className="inline-flex min-h-[44px] max-w-[200px] items-center px-2 -mx-2 text-left truncate transition-colors duration-step-0 ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+              style={{ color: 'inherit' }}
             >
               {highlight.urlPath}
             </button>
@@ -114,18 +108,16 @@ export function HighlightCard({
         )}
       </div>
 
-      {/* Action Buttons - Revealed on hover */}
       <div
-        className={cn(
-          'absolute top-3 right-3 flex items-center gap-1',
-          'opacity-100 transition-opacity duration-short ease-standard sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100'
-        )}
+        className="absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-step-0 ease-standard"
+        aria-hidden={false}
       >
         {highlight.urlPath && onNavigate && (
           <button
             type="button"
             onClick={() => onNavigate(highlight.urlPath!)}
-            className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-short ease-standard hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            style={{ color: 'var(--ink-3)' }}
             aria-label="Open source page"
           >
             <ExternalLink className="w-4 h-4" aria-hidden="true" />
@@ -136,13 +128,8 @@ export function HighlightCard({
           <button
             type="button"
             onClick={handleCopy}
-            className={cn(
-              'inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md transition-colors duration-short ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-              'hover:bg-secondary',
-              copied
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            style={{ color: copied ? 'var(--accent)' : 'var(--ink-3)' }}
             aria-label={copied ? 'Copied to clipboard' : 'Copy highlight text'}
           >
             {copied ? (
@@ -157,7 +144,8 @@ export function HighlightCard({
           <button
             type="button"
             onClick={handleDelete}
-            className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md text-muted-foreground transition-colors duration-short ease-standard hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            style={{ color: 'var(--ink-3)' }}
             aria-label="Delete highlight"
           >
             <Trash2 className="w-4 h-4" aria-hidden="true" />
