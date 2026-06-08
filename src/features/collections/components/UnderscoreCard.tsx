@@ -21,47 +21,67 @@ export function UnderscoreCard({
     onDelete,
 }: UnderscoreCardProps): React.JSX.Element {
     return (
-        <article className="group relative flex flex-col gap-3 p-4 -mx-4 rounded-md transition-all duration-short ease-standard hover:bg-surface-container border border-transparent hover:border-outline">
-            <div className="flex justify-between items-start gap-4">
+        <article className="u-card-row">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                 {isCode ? (
-                    <div className="w-full">
-                        <p className="text-body-large text-on-surface font-mono bg-surface-container p-3 rounded-sm border border-outline">
+                    <div style={{ width: '100%' }}>
+                        <p
+                            className="u-mono"
+                            style={{
+                                fontSize: 'var(--step-0)',
+                                color: 'var(--ink)',
+                                background: 'var(--paper-2)',
+                                padding: 12,
+                                borderRadius: 'var(--radius)',
+                                border: '1px solid var(--rule-soft)',
+                                margin: 0,
+                            }}
+                        >
                             {text}
                         </p>
                     </div>
                 ) : (
-                    <p className="text-body-large text-on-surface">
+                    <p style={{ fontSize: 'var(--step-1)', color: 'var(--ink)', lineHeight: 1.55, margin: 0 }}>
                         {text}
                     </p>
                 )}
 
-                {/* Action buttons (visible on mobile, hover on desktop) */}
-                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                     <button
                         type="button"
                         onClick={() => onCopy(id)}
-                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-sm text-on-surface-variant transition-colors duration-short ease-standard hover:bg-surface-container hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        className="u-icon-btn"
                         aria-label="Copy to clipboard"
                     >
-                        <Copy size={18} />
+                        <Copy size={16} />
                     </button>
                     <button
                         type="button"
                         onClick={() => onDelete(id)}
-                        className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-sm text-on-surface-variant transition-colors duration-short ease-standard hover:bg-error-container hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        className="u-icon-btn"
                         aria-label="Delete highlight"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                     </button>
                 </div>
             </div>
 
             {/* Metadata */}
-            <div className="flex items-center gap-2 text-label-small text-on-surface-variant">
-                <Clock size={14} />
+            <div
+                className="u-mono"
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontSize: 'var(--step--2)',
+                    color: 'var(--ink-3)',
+                }}
+            >
+                <Clock size={12} />
                 <time>{timestamp}</time>
-                <span className="w-1 h-1 rounded-full bg-outline"></span>
-                <span>{url}</span>
+                <span style={{ width: 3, height: 3, borderRadius: 9999, background: 'var(--ink-3)', display: 'inline-block' }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
             </div>
         </article>
     );
