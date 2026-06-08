@@ -59,17 +59,21 @@ export function UserMenu({
         <button
           type="button"
           aria-label={`Open account menu for ${user.displayName}`}
-          className={`flex min-h-[48px] min-w-[48px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${className || ''}`}
+          className={`flex min-h-[44px] min-w-[44px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 ${className || ''}`}
         >
-          {/* Display name (hidden on small screens) */}
           <div className="text-right hidden md:block">
-            <span className="block text-label-small text-foreground">
+            <span
+              className="block"
+              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)' }}
+            >
               {user.displayName}
             </span>
           </div>
 
-          {/* Avatar */}
-          <div className="h-9 w-9 rounded-full bg-cover bg-center border border-border ring-1 ring-border/50 overflow-hidden">
+          <div
+            className="h-9 w-9 rounded-full bg-cover bg-center border overflow-hidden"
+            style={{ borderColor: 'var(--rule-soft)' }}
+          >
             {user.photoUrl ? (
               <img
                 src={user.photoUrl}
@@ -77,7 +81,14 @@ export function UserMenu({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground text-title-small">
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--accent-ink)',
+                  fontSize: 'var(--step-0)',
+                }}
+              >
                 {user.displayName.charAt(0).toUpperCase()}
               </div>
             )}
@@ -86,23 +97,27 @@ export function UserMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align={align} className="w-64">
-        {/* User Identity */}
         <div className="px-4 py-3">
-          <p className="text-label-small uppercase tracking-[0.15em] text-muted-foreground truncate">
+          <p
+            className="uppercase truncate"
+            style={{
+              fontSize: 'var(--step--1)',
+              color: 'var(--ink-3)',
+              letterSpacing: '0.15em',
+            }}
+          >
             {user.email}
           </p>
         </div>
 
         <DropdownMenuSeparator />
 
-        {/* Settings Submenu */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
             <Settings className="w-4 h-4" />
             <span>Settings</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-56">
-            {/* Theme Setting */}
             {onThemeChange && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
@@ -114,14 +129,15 @@ export function UserMenu({
                     <DropdownMenuItem
                       key={t.id}
                       onClick={() => onThemeChange(t.id)}
-                      className={`flex items-center gap-2 cursor-pointer ${
-                        currentTheme === t.id ? 'text-primary' : ''
-                      }`}
+                      className="flex items-center gap-2 cursor-pointer"
                     >
                       {t.icon}
                       <span>{t.label}</span>
                       {currentTheme === t.id && (
-                        <Check className="ml-auto w-4 h-4 text-primary" />
+                        <Check
+                          className="ml-auto w-4 h-4"
+                          style={{ color: 'var(--accent)' }}
+                        />
                       )}
                     </DropdownMenuItem>
                   ))}
@@ -129,18 +145,19 @@ export function UserMenu({
               </DropdownMenuSub>
             )}
 
-            {/* Brand Color (Future Enhancement) */}
             <DropdownMenuItem className="flex items-center gap-2 cursor-pointer opacity-50 pointer-events-none">
               <Palette className="w-4 h-4" />
               <span>Brand Color</span>
-              <span className="ml-auto text-label-small text-muted-foreground">
+              <span
+                className="ml-auto"
+                style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
+              >
                 Coming soon
               </span>
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
-        {/* Privacy */}
         <DropdownMenuItem asChild>
           <Link to="/privacy" className="flex items-center gap-2 cursor-pointer">
             <Lock className="w-4 h-4" />
@@ -150,10 +167,10 @@ export function UserMenu({
 
         <DropdownMenuSeparator />
 
-        {/* Sign Out */}
         <DropdownMenuItem
           onClick={onLogout}
-          className="text-destructive cursor-pointer focus:text-destructive"
+          className="cursor-pointer"
+          style={{ color: 'var(--ink)' }}
         >
           <LogOut className="w-4 h-4" />
           <span>Sign out</span>
