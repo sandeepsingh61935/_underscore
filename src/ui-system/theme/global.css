@@ -348,3 +348,8 @@
 .u-icon-btn:hover {
   color: var(--ink);
 }
+
+/* Avatar button — pill-shaped dropdown trigger */
+.u-avatar-btn:hover {
+  background: var(--paper-2) !important;
+}

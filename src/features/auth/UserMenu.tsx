@@ -2,7 +2,6 @@ import { Settings, LogOut, ChevronDown } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 
 import { Text } from '../../ui-system/components/primitives/Text';
-import { cn } from '../../ui-system/utils/cn';
 
 import type { User } from './hooks/useCurrentUser';
 
@@ -31,54 +30,116 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`Open user menu for ${user.name}`}
-        className="flex min-h-[48px] items-center gap-2 rounded-full px-2 py-1.5 transition-colors duration-short ease-standard hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="u-avatar-btn"
+        style={{
+          display: 'flex',
+          minHeight: '44px',
+          alignItems: 'center',
+          gap: 8,
+          borderRadius: 9999,
+          padding: '6px 8px',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          transition: 'background 0.15s ease',
+        }}
       >
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+        <div style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9999,
+          background: 'var(--accent-tint-18)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--accent)',
+        }}>
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt={user.name}
-              className="w-full h-full rounded-full"
+              style={{ width: '100%', height: '100%', borderRadius: 9999 }}
             />
           ) : (
-            <span className="text-title-small">{user.name?.[0] || 'U'}</span>
+            <span className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
+              {user.name?.[0] || 'U'}
+            </span>
           )}
         </div>
         <ChevronDown
           size={14}
-          className={cn(
-            'text-on-surface-variant transition-transform',
-            isOpen && 'rotate-180'
-          )}
+          style={{
+            color: 'var(--ink-3)',
+            transition: 'transform 0.15s ease',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+          }}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-md border border-outline bg-surface-container shadow-elevation-2 p-2 animate-in fade-in slide-in-from-top-2 z-50">
-          <div className="px-3 py-2 border-b border-outline mb-2">
-            <Text variant="small" className="font-medium truncate">
+        <div style={{
+          position: 'absolute',
+          right: 0,
+          top: '100%',
+          marginTop: 8,
+          width: 224,
+          borderRadius: 'var(--radius)',
+          border: '1px solid var(--rule)',
+          background: 'var(--paper)',
+          boxShadow: '0 8px 24px var(--utility-overlay-08), 0 1px 0 var(--utility-overlay-06)',
+          padding: 8,
+          zIndex: 50,
+        }}>
+          <div style={{ padding: '8px 12px 12px', borderBottom: '1px solid var(--rule-soft)', marginBottom: 8 }}>
+            <Text variant="small" style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.name}
             </Text>
-            <Text variant="tiny" muted className="truncate">
+            <Text variant="tiny" muted style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.email}
             </Text>
           </div>
 
           <button
             type="button"
-            className="flex min-h-[48px] w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-label-medium text-on-surface transition-colors duration-short ease-standard hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="u-card-row"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              width: '100%',
+              gap: 8,
+              minHeight: '44px',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              color: 'var(--ink)',
+              cursor: 'pointer',
+            }}
           >
             <Settings size={16} />
-            Settings
+            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>Settings</span>
           </button>
 
           <button
             type="button"
             onClick={onLogout}
-            className="flex min-h-[48px] w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-label-medium text-error transition-colors duration-short ease-standard hover:bg-error-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="u-card-row"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              width: '100%',
+              gap: 8,
+              minHeight: '44px',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+            }}
           >
             <LogOut size={16} />
-            Sign Out
+            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>Sign Out</span>
           </button>
         </div>
       )}
