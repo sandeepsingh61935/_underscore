@@ -18,7 +18,7 @@ export function CollectionList({
 }: CollectionListProps) {
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 12 }}>
                 <Spinner size={24} />
                 <Text variant="small" muted>Loading collections...</Text>
             </div>
@@ -27,9 +27,17 @@ export function CollectionList({
 
     if (collections.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 border border-dashed border-outline rounded-md">
-                <Text variant="h3" muted>No collections details</Text>
-                <Text variant="small" muted className="mt-1">
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 0',
+                border: '1px dashed var(--rule)',
+                borderRadius: 'var(--radius)',
+            }}>
+                <Text variant="h3" muted>No collections yet</Text>
+                <Text variant="small" muted style={{ marginTop: 4 }}>
                     Highlights will appear here grouped by domain.
                 </Text>
             </div>
@@ -37,7 +45,7 @@ export function CollectionList({
     }
 
     return (
-        <div className="grid grid-cols-1 gap-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {collections.map((collection) => (
                 <CollectionCard
                     key={collection.id}
