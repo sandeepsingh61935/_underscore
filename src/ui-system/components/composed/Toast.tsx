@@ -41,7 +41,6 @@ export function useToast(): ToastContextValue {
   return context;
 }
 
-// Convenience methods
 export function useToastActions(): {
   success: (title: string, description?: string) => string;
   error: (title: string, description?: string) => string;
@@ -89,7 +88,6 @@ export function ToastProvider({
 
       setToasts((prev) => {
         const updated = [newToast, ...prev];
-        // Limit to maxToasts
         return updated.slice(0, maxToasts);
       });
 
@@ -114,36 +112,11 @@ export function ToastProvider({
   );
 }
 
-const variantStyles: Record<
-  ToastVariant,
-  {
-    icon: React.ElementType;
-    containerClass: string;
-    iconClass: string;
-  }
-> = {
-  success: {
-    icon: CheckCircle,
-    containerClass:
-      'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950',
-    iconClass: 'text-green-600 dark:text-green-400',
-  },
-  error: {
-    icon: AlertCircle,
-    containerClass: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950',
-    iconClass: 'text-red-600 dark:text-red-400',
-  },
-  warning: {
-    icon: AlertTriangle,
-    containerClass:
-      'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950',
-    iconClass: 'text-yellow-600 dark:text-yellow-400',
-  },
-  info: {
-    icon: Info,
-    containerClass: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950',
-    iconClass: 'text-blue-600 dark:text-blue-400',
-  },
+const variantIcon: Record<ToastVariant, React.ElementType> = {
+  success: CheckCircle,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
 };
 
 interface ToastContainerProps {
@@ -158,7 +131,10 @@ function ToastContainer({
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[1000] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div
+      className="fixed bottom-4 right-4 z-[1000] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      style={{ fontFamily: 'var(--sans)' }}
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
@@ -173,9 +149,8 @@ interface ToastItemProps {
 
 function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
   const variant = toast.variant || 'info';
-  const { icon: Icon, containerClass, iconClass } = variantStyles[variant];
+  const Icon = variantIcon[variant];
 
-  // Auto-dismiss
   useEffect(() => {
     if (toast.duration && toast.duration > 0) {
       const timer = setTimeout(() => {
@@ -189,18 +164,33 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
   return (
     <div
       className={cn(
-        'pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg',
-        'animate-slideInUp',
-        containerClass
+        'pointer-events-auto flex items-start gap-3 p-4 rounded border',
+        'animate-slideInUp'
       )}
+      style={{
+        backgroundColor: 'var(--paper)',
+        color: 'var(--ink)',
+        borderColor: 'var(--rule-soft)',
+      }}
       role="alert"
     >
-      <Icon className={cn('w-5 h-5 shrink-0 mt-0.5', iconClass)} />
+      <Icon
+        className="w-5 h-5 shrink-0 mt-0.5"
+        style={{ color: 'var(--accent)' }}
+      />
 
       <div className="flex-1 min-w-0">
-        <p className="text-title-small text-foreground">{toast.title}</p>
+        <p
+          className="font-medium"
+          style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}
+        >
+          {toast.title}
+        </p>
         {toast.description && (
-          <p className="text-body-small text-muted-foreground mt-1">
+          <p
+            className="mt-1"
+            style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
+          >
             {toast.description}
           </p>
         )}
@@ -208,7 +198,11 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
           <button
             type="button"
             onClick={toast.action.onClick}
-            className="mt-2 inline-flex min-h-[48px] items-center rounded-md px-3 -ml-3 text-label-large text-primary transition-colors duration-short ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="mt-2 inline-flex min-h-[44px] items-center rounded px-3 -ml-3 transition-colors duration-step-0 ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+            style={{
+              fontSize: 'var(--step-0)',
+              color: 'var(--accent)',
+            }}
           >
             {toast.action.label}
           </button>
@@ -218,10 +212,11 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="inline-flex min-h-[48px] min-w-[48px] shrink-0 items-center justify-center rounded-md transition-colors duration-short ease-standard hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:hover:bg-white/10"
+        className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+        style={{ color: 'var(--ink-3)' }}
         aria-label="Dismiss"
       >
-        <X className="w-4 h-4 text-muted-foreground" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
