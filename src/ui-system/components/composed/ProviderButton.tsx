@@ -7,35 +7,29 @@ export type AuthProvider = 'google' | 'apple' | 'x' | 'facebook' | 'github';
 
 interface ProviderConfig {
   label: string;
-  icon: React.ElementType; // Using Lucide icons as placeholders for brand logos
-  className: string;
+  icon: React.ElementType;
 }
 
 const PROVIDER_CONFIG: Record<AuthProvider, ProviderConfig> = {
   google: {
     label: 'Continue with Google',
-    icon: Mail, // Placeholder for Google G
-    className: 'hover:bg-red-50 hover:text-red-600 hover:border-red-200',
+    icon: Mail,
   },
   apple: {
     label: 'Continue with Apple',
-    icon: Github, // Placeholder (Apple icon often unavailable in free sets) - using Github as tech proxy or just generic
-    className: 'hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300',
+    icon: Github,
   },
   x: {
     label: 'Continue with X',
     icon: Twitter,
-    className: 'hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300',
   },
   facebook: {
     label: 'Continue with Facebook',
     icon: Facebook,
-    className: 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200',
   },
   github: {
     label: 'Continue with GitHub',
     icon: Github,
-    className: 'hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300',
   },
 };
 
@@ -60,19 +54,22 @@ export function ProviderButton({
       type="button"
       disabled={disabled || isLoading}
       className={cn(
-        'relative flex min-h-[48px] w-full items-center justify-center gap-3 px-4 py-3',
-        'bg-surface text-on-surface border border-outline rounded-lg',
-        'text-label-large transition-all duration-short ease-standard',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+        'relative flex min-h-[44px] w-full items-center justify-center gap-3 px-4 py-3',
+        'border rounded duration-step-0 ease-standard',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        !isLoading && !disabled && 'hover:shadow-sm hover:border-primary/50',
-        config.className,
         className
       )}
+      style={{
+        backgroundColor: 'var(--paper)',
+        color: 'var(--ink)',
+        borderColor: 'var(--rule)',
+        fontSize: 'var(--step-0)',
+      }}
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--ink-3)' }} />
       ) : (
         <>
           <Icon className="w-5 h-5 shrink-0" />
