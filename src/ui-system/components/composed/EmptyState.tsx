@@ -79,29 +79,30 @@ const variantConfigs: Record<
   },
 };
 
+// V2 step scale: --step--1=11, --step-0=13, --step-1=15, --step-2=18, --step-3=22
 const sizeStyles = {
   sm: {
-    container: 'py-6 px-4',
-    iconWrapper: 'w-12 h-12',
-    icon: 'w-6 h-6',
-    title: 'text-title-small',
-    description: 'text-body-small',
+    container: { padding: '24px 16px' },
+    iconWrapper: { width: '48px', height: '48px' },
+    icon: { width: '24px', height: '24px' },
+    title: { fontSize: 'var(--step-0)' },
+    description: { fontSize: 'var(--step--1)' },
   },
   md: {
-    container: 'py-8 px-6',
-    iconWrapper: 'w-16 h-16',
-    icon: 'w-8 h-8',
-    title: 'text-title-medium',
-    description: 'text-body-small',
+    container: { padding: '32px 24px' },
+    iconWrapper: { width: '64px', height: '64px' },
+    icon: { width: '32px', height: '32px' },
+    title: { fontSize: 'var(--step-1)' },
+    description: { fontSize: 'var(--step--1)' },
   },
   lg: {
-    container: 'py-12 px-8',
-    iconWrapper: 'w-20 h-20',
-    icon: 'w-10 h-10',
-    title: 'text-title-large',
-    description: 'text-body-medium',
+    container: { padding: '48px 32px' },
+    iconWrapper: { width: '80px', height: '80px' },
+    icon: { width: '40px', height: '40px' },
+    title: { fontSize: 'var(--step-3)' },
+    description: { fontSize: 'var(--step-0)' },
   },
-};
+} as const;
 
 export function EmptyState({
   variant = 'custom',
@@ -113,7 +114,6 @@ export function EmptyState({
   size = 'md',
   className,
 }: EmptyStateProps): React.ReactElement {
-  // Get config from variant or use custom values
   const config = variant !== 'custom' ? variantConfigs[variant] : null;
   const Icon = CustomIcon || config?.icon || FileText;
   const title = customTitle || config?.title || 'No content';
@@ -125,38 +125,48 @@ export function EmptyState({
     <div
       className={cn(
         'flex flex-col items-center justify-center text-center',
-        styles.container,
         className
       )}
+      style={styles.container}
     >
-      {/* Icon */}
       <div
-        className={cn(
-          'rounded-full bg-secondary flex items-center justify-center mb-4',
-          styles.iconWrapper
-        )}
+        className="rounded-full flex items-center justify-center mb-4"
+        style={{
+          ...styles.iconWrapper,
+          backgroundColor: 'var(--paper-2)',
+        }}
       >
-        <Icon className={cn('text-muted-foreground', styles.icon)} />
+        <Icon
+          className={cn('shrink-0')}
+          style={{ ...styles.icon, color: 'var(--ink-3)' }}
+        />
       </div>
 
-      {/* Title */}
-      <h3 className={cn('text-foreground mb-1', styles.title)}>{title}</h3>
+      <h3 className="mb-1" style={{ color: 'var(--ink)', ...styles.title }}>
+        {title}
+      </h3>
 
-      {/* Description */}
       {description && (
-        <p className={cn('text-muted-foreground max-w-xs', styles.description)}>
+        <p
+          className="max-w-xs"
+          style={{ color: 'var(--ink-3)', ...styles.description }}
+        >
           {description}
         </p>
       )}
 
-      {/* Actions */}
       {(action || secondaryAction) && (
         <div className="flex items-center gap-3 mt-6">
           {action && (
             <button
               type="button"
               onClick={action.onClick}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-label-large text-primary-foreground transition-colors duration-short ease-standard hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 transition-colors duration-step-0 ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--accent-ink)',
+                fontSize: 'var(--step-0)',
+              }}
             >
               {action.label}
             </button>
@@ -165,7 +175,12 @@ export function EmptyState({
             <button
               type="button"
               onClick={secondaryAction.onClick}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-secondary px-4 py-2 text-label-large text-secondary-foreground transition-colors duration-short ease-standard hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 transition-colors duration-step-0 ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+              style={{
+                backgroundColor: 'var(--paper-2)',
+                color: 'var(--ink)',
+                fontSize: 'var(--step-0)',
+              }}
             >
               {secondaryAction.label}
             </button>
