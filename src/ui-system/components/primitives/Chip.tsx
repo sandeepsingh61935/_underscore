@@ -1,6 +1,7 @@
 /**
- * MD3 Chip Component
- * @see https://m3.material.io/components/chips/overview
+ * V2 Chip Component
+ * Built on the V2 tonalPill helpers (--rule-soft border, --paper-2 surface,
+ * --accent for the selected state). Per V2 spec, touch target is 44px.
  */
 
 import { X } from 'lucide-react';
@@ -23,13 +24,12 @@ export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Chip = forwardRef<HTMLButtonElement, ChipProps>(
-    ({ className, variant = 'filter', selected, onRemove, icon, children, type, onClick, disabled, ...props }, ref) => {
+    ({ className, variant = 'filter', selected, onRemove, icon, children, type, onClick, disabled, style, ...props }, ref) => {
         const sharedChipClasses = cn(
-            'inline-flex min-h-[48px] items-center justify-center gap-2',
-            'text-label-large',
-            'transition-all duration-short ease-standard',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-            'disabled:opacity-disabled disabled:pointer-events-none'
+            'inline-flex min-h-[44px] items-center justify-center gap-2',
+            'transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+            'disabled:opacity-50 disabled:pointer-events-none'
         );
 
         const variantClasses = cn(
@@ -38,30 +38,32 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                 tonalPillStandaloneClass,
                 !selected && [
                     tonalPillInactiveClass,
-                    'hover:border-outline',
+                    'hover:border-[var(--rule)]',
                 ],
                 selected && [
                     tonalPillActiveClass,
-                    'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary-container)_8%,var(--md-sys-color-primary-container))]',
                 ],
             ],
 
             variant === 'input' && [
-                'rounded-full border border-outline-variant bg-surface-container-high text-on-surface',
-                'hover:bg-surface-container-highest',
+                'rounded-full border border-[var(--rule-soft)] bg-[var(--paper-2)] text-[var(--ink)]',
+                'hover:bg-[color-mix(in_oklch,var(--ink)_4%,var(--paper-2))]',
             ]
         );
 
         if (variant === 'input' && onRemove) {
             return (
-                <div className={cn(sharedChipClasses, variantClasses, 'w-fit pl-4 pr-1', className)}>
+                <div
+                    className={cn(sharedChipClasses, variantClasses, 'w-fit pl-4 pr-1', className)}
+                    style={style}
+                >
                     {icon && <span className="flex h-[18px] w-[18px] items-center justify-center">{icon}</span>}
                     <button
                         ref={ref}
                         type={type ?? 'button'}
                         onClick={onClick}
                         disabled={disabled}
-                        className="min-h-[48px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        className="min-h-[44px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
                         {...props}
                     >
                         {children}
@@ -71,11 +73,11 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
                         disabled={disabled}
                         className={cn(
-                            'inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full',
-                            'text-on-surface-variant transition-colors duration-short ease-standard',
-                            'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)]',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                            'disabled:opacity-disabled disabled:pointer-events-none'
+                            'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full',
+                            'text-[var(--ink-2)] transition-colors',
+                            'hover:bg-[color-mix(in_oklch,var(--ink)_8%,transparent)]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+                            'disabled:opacity-50 disabled:pointer-events-none'
                         )}
                         aria-label="Remove"
                     >
@@ -97,6 +99,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                     'px-4',
                     className
                 )}
+                style={{ fontSize: 'var(--step-0)', ...style }}
                 {...props}
             >
                 {icon && <span className="flex h-[18px] w-[18px] items-center justify-center">{icon}</span>}

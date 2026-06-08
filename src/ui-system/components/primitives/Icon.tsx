@@ -1,6 +1,7 @@
 /**
- * MD3 Icon Component
- * @see https://m3.material.io/styles/icons/overview
+ * V2 Icon Component
+ * Color tokens routed to V2 vars: --ink (default), --accent (primary/error),
+ * --ink-2 (muted). Layout (sm/md/lg sizing) unchanged.
  */
 
 import React, { HTMLAttributes } from 'react';
@@ -13,6 +14,21 @@ export interface IconProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'childr
     color?: 'primary' | 'on-surface' | 'on-surface-variant' | 'error';
 }
 
+const colorVar: Record<NonNullable<IconProps['color']>, string> = {
+    primary: 'var(--accent)',
+    'on-surface': 'var(--ink)',
+    'on-surface-variant': 'var(--ink-2)',
+    // V2 spec rule 1: single accent. Error is an attention signal
+    // and routes through the same channel as primary.
+    error: 'var(--accent)',
+};
+
+const sizeClass: Record<NonNullable<IconProps['size']>, string> = {
+    sm: 'w-[18px] h-[18px]',
+    md: 'w-[24px] h-[24px]',
+    lg: 'w-[40px] h-[40px]',
+};
+
 const Icon: React.FC<IconProps> = ({
     icon: IconComponent,
     size = 'md',
@@ -22,26 +38,14 @@ const Icon: React.FC<IconProps> = ({
 }) => {
     return (
         <span
-            className={cn(
-                'inline-flex items-center justify-center flex-shrink-0',
-                size === 'sm' && 'w-[18px] h-[18px]',
-                size === 'md' && 'w-[24px] h-[24px]',
-                size === 'lg' && 'w-[40px] h-[40px]',
-                color === 'primary' && 'text-primary',
-                color === 'on-surface' && 'text-on-surface',
-                color === 'on-surface-variant' && 'text-on-surface-variant',
-                color === 'error' && 'text-error',
-                className
-            )}
+            className={cn('inline-flex items-center justify-center flex-shrink-0', sizeClass[size], className)}
+            style={{ color: colorVar[color] }}
             {...props}
         >
             <IconComponent
-                className={cn(
-                    size === 'sm' && 'w-[18px] h-[18px]',
-                    size === 'md' && 'w-[24px] h-[24px]',
-                    size === 'lg' && 'w-[40px] h-[40px]'
-                )}
+                className={sizeClass[size]}
                 strokeWidth={2}
+                aria-hidden="true"
             />
         </span>
     );

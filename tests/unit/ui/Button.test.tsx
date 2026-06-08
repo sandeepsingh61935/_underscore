@@ -3,88 +3,80 @@
  */
 
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from '../../../src/ui-system/components/primitives/Button';
 
-describe('MD3 Button', () => {
+describe('V2 Button', () => {
     describe('Basic rendering', () => {
         it('renders with text content', () => {
             render(<Button>Click me</Button>);
             expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
         });
 
-        it('applies filled variant by default', () => {
+        it('applies the default variant (.btn class)', () => {
             render(<Button>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('bg-[var(--md-sys-color-primary)]');
+            expect(screen.getByRole('button')).toHaveClass('btn');
+        });
+
+        it('forwards click events', () => {
+            const onClick = vi.fn();
+            render(<Button onClick={onClick}>Click</Button>);
+            fireEvent.click(screen.getByRole('button'));
+            expect(onClick).toHaveBeenCalledOnce();
         });
 
         it('can be disabled', () => {
             render(<Button disabled>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toBeDisabled();
-            expect(button).toHaveClass('disabled:opacity-40');
+            expect(screen.getByRole('button')).toBeDisabled();
         });
     });
 
-    describe('MD3 specifications', () => {
-        it('has full rounded corners (pill shape)', () => {
+    describe('V2 wireframe classes', () => {
+        it('default variant uses .btn class only', () => {
             render(<Button>Click me</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveClass('rounded-full');
+            expect(button).toHaveClass('btn');
+            expect(button.className).not.toMatch(/\bbtn\.primary\b/);
         });
 
-        it('uses MD3 label-large typography', () => {
-            render(<Button>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('text-[var(--md-sys-typescale-label-large-size)]');
-            expect(button).toHaveClass('font-[var(--md-sys-typescale-label-large-weight)]');
+        it('primary variant adds .btn.primary class', () => {
+            render(<Button variant="primary">Click me</Button>);
+            expect(screen.getByRole('button')).toHaveClass('btn');
+            expect(screen.getByRole('button').className).toContain('primary');
         });
 
-        it('meets 48dp minimum touch target height', () => {
-            render(<Button>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('min-h-[48px]');
+        it('accent variant adds .btn.accent class (V2 single terracotta)', () => {
+            render(<Button variant="accent">Click me</Button>);
+            expect(screen.getByRole('button')).toHaveClass('btn');
+            expect(screen.getByRole('button').className).toContain('accent');
         });
 
-        it('uses MD3 motion duration and easing', () => {
-            render(<Button>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('duration-[var(--md-sys-motion-duration-short)]');
-            expect(button).toHaveClass('ease-[var(--md-sys-motion-easing-standard)]');
+        it('ghost variant adds .btn.ghost class', () => {
+            render(<Button variant="ghost">Click me</Button>);
+            expect(screen.getByRole('button').className).toContain('ghost');
         });
     });
 
-    describe('Variants', () => {
-        it('renders filled variant correctly', () => {
-            render(<Button variant="filled">Filled</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('bg-[var(--md-sys-color-primary)]');
-            expect(button).toHaveClass('text-[var(--md-sys-color-on-primary)]');
+    describe('No legacy design system tokens', () => {
+        it('does not use MD3 classes', () => {
+            render(<Button>Click me</Button>);
+            const html = screen.getByRole('button').outerHTML;
+            expect(html).not.toMatch(/--md-sys-/);
         });
 
-        it('renders outlined variant correctly', () => {
-            render(<Button variant="outlined">Outlined</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('border');
-            expect(button).toHaveClass('border-[var(--md-sys-color-outline)]');
-            expect(button).toHaveClass('text-[var(--md-sys-color-primary)]');
-        });
-
-        it('renders text variant correctly', () => {
-            render(<Button variant="text">Text</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('bg-transparent');
-            expect(button).toHaveClass('text-[var(--md-sys-color-primary)]');
-            expect(button).not.toHaveClass('border');
+        it('does not use banned Tailwind arbitrary utilities', () => {
+            render(<Button>Click me</Button>);
+            const cls = screen.getByRole('button').className;
+            expect(cls).not.toMatch(/duration-\[.*ms\]/);
+            expect(cls).not.toMatch(/rounded-\[\d+px\]/);
         });
     });
 
     describe('Loading state', () => {
-        it('shows spinner when loading', () => {
+        it('shows loading text when isLoading', () => {
             render(<Button isLoading>Click me</Button>);
-            expect(screen.getByRole('button')).toContainHTML('animate-spin');
+            expect(screen.getByText(/Loading/i)).toBeInTheDocument();
         });
 
         it('is disabled when loading', () => {
@@ -93,41 +85,19 @@ describe('MD3 Button', () => {
         });
     });
 
-    describe('Icon support', () => {
-        it('renders icon when provided', () => {
-            const icon = <span data-testid="test-icon">→</span>;
-            render(<Button icon={icon}>With Icon</Button>);
-            expect(screen.getByTestId('test-icon')).toBeInTheDocument();
-        });
-
-        it('does not render icon when loading', () => {
-            const icon = <span data-testid="test-icon">→</span>;
-            render(<Button icon={icon} isLoading>With Icon</Button>);
-            expect(screen.queryByTestId('test-icon')).not.toBeInTheDocument();
-        });
-    });
-
-    describe('Accessibility', () => {
-        it('has proper focus ring', () => {
-            render(<Button>Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('focus-visible:ring-2');
-            expect(button).toHaveClass('focus-visible:ring-[var(--md-sys-color-primary)]');
-        });
-
-        it('forwards ref correctly', () => {
-            const ref = { current: null } as React.RefObject<HTMLButtonElement>;
-            render(<Button ref={ref as any}>Click me</Button>);
-            expect(ref.current).toBeInstanceOf(HTMLButtonElement);
+    describe('Size variants', () => {
+        it('sm size adds .btn.sm class', () => {
+            render(<Button size="sm">Click me</Button>);
+            expect(screen.getByRole('button').className).toContain('btn');
+            expect(screen.getByRole('button').className).toContain('sm');
         });
     });
 
     describe('Custom className', () => {
         it('merges custom className with default classes', () => {
             render(<Button className="custom-class">Click me</Button>);
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('custom-class');
-            expect(button).toHaveClass('rounded-full'); // Still has default classes
+            expect(screen.getByRole('button')).toHaveClass('custom-class');
+            expect(screen.getByRole('button')).toHaveClass('btn');
         });
     });
 });

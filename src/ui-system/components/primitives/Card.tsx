@@ -1,10 +1,15 @@
 /**
- * MD3 Card Component
+ * V2 Card Component
  *
- * @see https://m3.material.io/components/cards/overview
+ * V2 uses borders for separation (not box-shadows). Surface: --paper-2.
+ * Border: --rule-soft. Text: --ink. No spring curve (uses standard ease).
+ *
+ * Per the contract: `rounded-[10px]` → V2 --radius (2px). The Card
+ * uses `rounded` Tailwind utility (V2 radius token) plus an optional
+ * thick `--rule` border for `elevated`.
  */
 
-import React, { type HTMLAttributes, forwardRef } from 'react';
+import React, { type CSSProperties, type HTMLAttributes, forwardRef } from 'react';
 
 import { cn } from '../../utils/cn';
 
@@ -15,38 +20,36 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
     ({ className, interactive, elevated, children, onClick, style, ...props }, ref) => {
-        const baseClasses = cn(
-            'rounded-[10px]',
-            'bg-surface-container',
-            'text-on-surface',
-            'p-4',
-            'transition-[transform,border-color,box-shadow] duration-[280ms]',
-            elevated ? 'shadow-elevation-2' : 'shadow-elevation-1',
-            className
-        );
-
-        const springStyle = { transitionTimingFunction: 'var(--ink-ease-spring)', ...style };
+        const computedStyle: CSSProperties = {
+            backgroundColor: 'var(--paper-2)',
+            color: 'var(--ink)',
+            border: `1px solid ${elevated ? 'var(--rule)' : 'var(--rule-soft)'}`,
+            ...style,
+        };
 
         return interactive ? (
             <button
                 ref={ref as React.Ref<HTMLButtonElement>}
                 onClick={onClick as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                style={springStyle}
+                style={computedStyle}
                 className={cn(
-                    baseClasses,
-                    'hover:shadow-elevation-2',
-                    'hover:-translate-y-[1px]',
-                    'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,var(--md-sys-color-surface-container))]',
-                    'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,var(--md-sys-color-surface-container))]',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                    'border-0 text-left w-full',
+                    'rounded p-4 text-left border-0 w-full cursor-pointer',
+                    'transition-colors',
+                    'hover:bg-[color-mix(in_oklch,var(--ink)_6%,var(--paper-2))]',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+                    className,
                 )}
                 {...(props as React.HTMLAttributes<HTMLElement>)}
             >
                 {children}
             </button>
         ) : (
-            <div ref={ref} style={springStyle} className={baseClasses} {...props}>
+            <div
+                ref={ref}
+                style={computedStyle}
+                className={cn('rounded p-4', className)}
+                {...props}
+            >
                 {children}
             </div>
         );
@@ -56,8 +59,13 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 Card.displayName = 'Card';
 
 export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-    ({ className, children, ...props }, ref) => (
-        <div ref={ref} className={cn('flex items-start justify-between gap-4 mb-3', className)} {...props}>
+    ({ className, children, style, ...props }, ref) => (
+        <div
+            ref={ref}
+            className={cn('flex items-start justify-between gap-4 mb-3', className)}
+            style={{ marginBottom: 12, ...style }}
+            {...props}
+        >
             {children}
         </div>
     )
@@ -65,8 +73,13 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 CardHeader.displayName = 'CardHeader';
 
 export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
-    ({ className, children, ...props }, ref) => (
-        <h3 ref={ref} className={cn('text-title-medium text-on-surface', className)} {...props}>
+    ({ className, children, style, ...props }, ref) => (
+        <h3
+            ref={ref}
+            className={cn('font-serif', className)}
+            style={{ color: 'var(--ink)', fontSize: 'var(--step-2)', ...style }}
+            {...props}
+        >
             {children}
         </h3>
     )
@@ -74,8 +87,13 @@ export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadi
 CardTitle.displayName = 'CardTitle';
 
 export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
-    ({ className, children, ...props }, ref) => (
-        <p ref={ref} className={cn('text-body-medium text-on-surface-variant', className)} {...props}>
+    ({ className, children, style, ...props }, ref) => (
+        <p
+            ref={ref}
+            className={cn(className)}
+            style={{ color: 'var(--ink-2)', fontSize: 'var(--step-0)', ...style }}
+            {...props}
+        >
             {children}
         </p>
     )
@@ -90,8 +108,18 @@ export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElem
 CardContent.displayName = 'CardContent';
 
 export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-    ({ className, children, ...props }, ref) => (
-        <div ref={ref} className={cn('flex items-center gap-2 mt-4 pt-4 border-t border-outline-variant', className)} {...props}>
+    ({ className, children, style, ...props }, ref) => (
+        <div
+            ref={ref}
+            className={cn('flex items-center gap-2', className)}
+            style={{
+                marginTop: 16,
+                paddingTop: 16,
+                borderTop: '1px solid var(--rule-soft)',
+                ...style,
+            }}
+            {...props}
+        >
             {children}
         </div>
     )

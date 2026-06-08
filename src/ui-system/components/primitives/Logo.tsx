@@ -10,19 +10,19 @@ interface LogoProps {
   size?: LogoSize;
 }
 
-const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string }> = {
-  sm: { badge: 'w-7 h-7', text: 'text-title-large', gap: 'gap-2' },
-  md: { badge: 'w-9 h-9', text: 'text-headline-medium', gap: 'gap-[10px]' },
-  lg: { badge: 'w-16 h-16', text: 'text-headline-large', gap: 'gap-3' },
+const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string; textSize: string }> = {
+  sm: { badge: 'w-7 h-7', text: '', gap: 'gap-2', textSize: 'var(--step-1)' },
+  md: { badge: 'w-9 h-9', text: '', gap: 'gap-[10px]', textSize: 'var(--step-3)' },
+  lg: { badge: 'w-16 h-16', text: '', gap: 'gap-3', textSize: 'var(--step-4)' },
 };
 
 /**
- * Logo — MD3 compliant, squircle badge
+ * V2 Logo — editorial squircle badge.
  *
- * CSS vars (global.css):
- *   --logo-bg                 badge fill (dark in light mode, light in dark mode)
- *   --logo-text               mark fill (div background — reliable at all sizes)
- *   --logo-ambient-reflection subtle inner highlight
+ * Tokens (V2):
+ *   --ink                 badge fill (dark in light mode, light in dark mode)
+ *   --paper               mark fill
+ *   --paper-overlay-08    ambient reflection
  *
  * Mark: pill-shaped div in the lower third of the badge.
  * Uses background instead of SVG fill to avoid grey anti-aliasing artifacts at sm/md sizes.
@@ -35,30 +35,17 @@ export function Logo({
   const s = sizeMap[size];
   return (
     <div className={cn('flex items-center', s.gap, className)}>
-      {/* Badge — squircle shape */}
       <div
         className={cn(
           'relative flex items-center justify-center rounded-[22%] overflow-hidden',
           s.badge
         )}
-        style={{
-          background: 'var(--logo-bg)',
-          boxShadow: [
-            'inset 0 0 0 1px rgba(255,255,255,0.06)',
-            '0 2px 8px rgba(0,0,0,0.5)',
-          ].join(', '),
-        }}
+        style={{ backgroundColor: 'var(--ink)' }}
       >
-        {/* Top-edge shine */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[45%] rounded-t-[22%] pointer-events-none z-[1]"
-          style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07), transparent)' }}
-        />
-
         {/* Ambient reflection — subtle inner highlight at badge bottom */}
         <div
           className="absolute bottom-0 left-[10%] right-[10%] h-[28%] rounded-full pointer-events-none z-[1]"
-          style={{ background: 'var(--logo-ambient-reflection)' }}
+          style={{ backgroundColor: 'var(--paper-overlay-08)' }}
         />
 
         {/* Baseline mark */}
@@ -69,14 +56,16 @@ export function Logo({
             left: '18%',
             right: '18%',
             height: '13%',
-            background: 'var(--logo-text)',
+            backgroundColor: 'var(--paper)',
           }}
         />
       </div>
 
-      {/* Wordmark */}
       {showText && (
-        <span className={cn('font-display tracking-[-0.02em] text-on-surface', s.text)}>
+        <span
+          className={cn('font-serif tracking-[-0.02em]', s.text)}
+          style={{ color: 'var(--ink)', fontSize: s.textSize }}
+        >
           underscore
         </span>
       )}

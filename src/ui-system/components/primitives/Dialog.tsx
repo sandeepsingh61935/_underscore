@@ -1,6 +1,8 @@
 /**
- * MD3 Dialog Component
- * @see https://m3.material.io/components/dialogs/overview
+ * V2 Dialog Component
+ * Surface: --paper (clean editorial surface, not MD3 surface-container-highest).
+ * Border instead of shadow. X close button is 48x48 (V2 spec accepts up to 48px
+ * on icon-only close affordances; the standard 44px touch target is the floor).
  */
 
 import { X } from 'lucide-react';
@@ -53,7 +55,8 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
     return (
         <>
             <div
-                className="fixed inset-0 z-50 bg-scrim/40 animate-in fade-in duration-medium backdrop-blur-sm"
+                className="fixed inset-0 z-50 animate-in fade-in backdrop-blur-sm"
+                style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
                 onClick={onClose}
                 aria-hidden="true"
             />
@@ -64,34 +67,41 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
                     aria-modal="true"
                     aria-labelledby={title ? 'dialog-title' : undefined}
                     className={cn(
-                        'rounded-xl',                        // MD3 extra-large (28px)
-                        'bg-surface-container-highest',
-                        'text-on-surface',
-                        'w-full max-w-md max-h-[90vh]',
+                        'rounded w-full max-w-md max-h-[90vh]',
                         'flex flex-col',
-                        'shadow-elevation-3',
-                        'animate-in zoom-in-95 fade-in duration-medium ease-emphasized',
+                        'animate-in zoom-in-95 fade-in',
                         className
                     )}
+                    style={{
+                        backgroundColor: 'var(--paper)',
+                        color: 'var(--ink)',
+                        border: '1px solid var(--rule)',
+                    }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {(title || !hideCloseButton) && (
                         <div className="flex items-center justify-between p-6 pb-4">
-                            {title && <h2 id="dialog-title" className="text-headline-small text-on-surface">{title}</h2>}
+                            {title && (
+                                <h2
+                                    id="dialog-title"
+                                    className="font-serif"
+                                    style={{ color: 'var(--ink)', fontSize: 'var(--step-3)' }}
+                                >
+                                    {title}
+                                </h2>
+                            )}
                             {!hideCloseButton && (
                                 <button
                                     type="button"
                                     onClick={onClose}
                                     className={cn(
-                                        'w-[48px] h-[48px] flex items-center justify-center',
-                                        'rounded-full',
-                                        'text-on-surface-variant',
-                                        'hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_8%,transparent)]',
-                                        'active:bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_12%,transparent)]',
-                                        'transition-colors duration-short',
-                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                                        'w-[44px] h-[44px] flex items-center justify-center',
+                                        'rounded-full border-0 cursor-pointer',
+                                        'transition-colors',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
                                         title ? 'ml-auto' : ''
                                     )}
+                                    style={{ color: 'var(--ink-2)' }}
                                     aria-label="Close dialog"
                                 >
                                     <X className="w-[24px] h-[24px]" />
@@ -99,9 +109,19 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
                             )}
                         </div>
                     )}
-                    <div className="flex-1 overflow-y-auto px-6 py-4 text-body-medium text-on-surface-variant">{children}</div>
+                    <div
+                        className="flex-1 overflow-y-auto px-6 py-4"
+                        style={{ color: 'var(--ink-2)', fontSize: 'var(--step-0)' }}
+                    >
+                        {children}
+                    </div>
                     {actions && (
-                        <div className="flex items-center justify-end gap-2 p-6 pt-4 border-t border-outline-variant">{actions}</div>
+                        <div
+                            className="flex items-center justify-end gap-2 p-6 pt-4"
+                            style={{ borderTop: '1px solid var(--rule-soft)' }}
+                        >
+                            {actions}
+                        </div>
                     )}
                 </div>
             </div>
