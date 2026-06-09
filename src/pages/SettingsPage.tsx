@@ -60,7 +60,7 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '12px 16px 6px' }}>
-        <div className="u-serif" style={{ fontSize: 22, letterSpacing: '-0.02em' }}>Settings</div>
+        <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
       </div>
 
       <div className="list-scroll" style={{ flex: 1 }}>
@@ -85,18 +85,18 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <div>
-                  <div style={{ fontFamily: p.serif, fontSize: 16, letterSpacing: '-0.01em' }}>{p.name}</div>
-                  <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 3, letterSpacing: '0.04em' }}>{p.note}</div>
+                  <div style={{ fontFamily: p.serif, fontSize: 'var(--step-1)', letterSpacing: '-0.01em' }}>{p.name}</div>
+                  <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 3, letterSpacing: '0.04em' }}>{p.note}</div>
                 </div>
                 {/* eslint-disable-next-line no-restricted-syntax */}
-                <span className="u-mono" style={{ fontSize: 10, color: active ? 'var(--accent)' : 'var(--ink-3)' }}>
+                <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: active ? 'var(--accent)' : 'var(--ink-3)' }}>
                   {active ? '● selected' : '○'}
                 </span>
               </div>
             </button>
           );
         })}
-        <div className="u-mono" style={{ fontSize: 9, color: 'var(--ink-4)', padding: '6px 16px 10px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-4)', padding: '6px 16px 10px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           Applied uniformly across the app
         </div>
 
@@ -104,33 +104,33 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
         <Row
           title="Theme"
           sub="Match system"
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>}
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>}
           onClick={handleToggleTheme}
         />
         <Row
           title="Mode"
           sub={`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} · synced`}
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Change</span>}
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>}
           onClick={onChangeMode}
         />
-        <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Edit</span>} />
+        <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Edit</span>} />
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
         <Row
           title={user?.email || 'Guest User'}
           sub={user ? 'Signed in' : 'Local mode'}
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{user ? 'Sign out' : 'Sign in'}</span>}
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>{user ? 'Sign out' : 'Sign in'}</span>}
           onClick={user ? handleSignOut : undefined}
         />
         <Row
           title="Configure AI providers"
           sub="Opens web app"
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>↗</span>}
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>↗</span>}
           onClick={() => {}}
         />
         <Row
           title="Export highlights"
-          right={<span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>→</span>}
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
           onClick={() => {}}
         />
       </div>
