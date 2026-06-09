@@ -9,6 +9,32 @@ interface VerificationViewProps {
     onCancel: () => void;
 }
 
+/**
+ * VerificationView — V2 Editorial migration of the email verification screen.
+ *
+ * Body-only root: `display: flex, flex-direction: column, height: 100%, width: 100%`.
+ * PopupShell owns the 400x600 chrome; this view returns body content only.
+ *
+ * V2 token map applied:
+ *   - bg-primary-container (icon)  -> var(--accent-tint-08)
+ *   - text-primary                 -> var(--accent)
+ *   - bg-surface-container         -> var(--paper-2)
+ *   - text-on-surface / -variant   -> var(--ink) / var(--ink-3)
+ *   - border-outline-variant       -> var(--rule-soft)
+ *   - text-error                   -> var(--accent) (V2 single-accent: errors use --accent)
+ *   - text-display-small           -> var(--step-5) (timer numeral)
+ *   - text-headline-small          -> var(--step-3) (heading)
+ *   - text-body-medium             -> var(--step-0) (paragraph)
+ *   - text-label-large             -> var(--step--1) (button)
+ *   - text-label-small             -> var(--step--2) (caption)
+ *   - min-h-[48px]                 -> minHeight: 44
+ *   - var(--md-sys-color-*)        -> removed (cat-1-md3)
+ *   - rounded-full                 -> var(--radius)
+ *   - duration-short               -> var(--step-0) (V2 standard motion 180ms)
+ *
+ * Behavior preserved: setInterval timer at 1000ms, formatTime(2:30 style),
+ * isExpired transition, button copy.
+ */
 export function VerificationView({
     email,
     expiresAt,
@@ -45,44 +71,169 @@ export function VerificationView({
     };
 
     return (
-        <div className="w-full h-full flex flex-col items-center max-w-[380px] mx-auto overflow-y-auto px-6">
+        <div
+            style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                maxWidth: 380,
+                margin: '0 auto',
+                overflowY: 'auto',
+                padding: '0 24px',
+                backgroundColor: 'var(--paper)',
+                color: 'var(--ink)',
+            }}
+        >
             {/* Logo area */}
-            <div className="flex flex-col items-center mb-8 shrink-0 mt-8">
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginTop: 32,
+                    marginBottom: 32,
+                    flexShrink: 0,
+                }}
+            >
                 <Logo size="lg" showText={true} />
             </div>
 
-            <main className="flex-1 flex flex-col items-center w-full">
+            <main
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    width: '100%',
+                }}
+            >
                 {/* Visual Icon Container */}
-                <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center mb-6 text-primary">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <div
+                    style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--accent-tint-08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 24,
+                        color: 'var(--accent)',
+                    }}
+                >
+                    <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
                     </svg>
                 </div>
 
-                <h1 className="text-headline-small text-on-surface mb-2 text-center">
+                <h1
+                    className="u-serif"
+                    style={{
+                        fontSize: 'var(--step-3)',
+                        fontWeight: 500,
+                        color: 'var(--ink)',
+                        margin: '0 0 8px',
+                        textAlign: 'center',
+                    }}
+                >
                     Check your email
                 </h1>
 
-                <p className="text-body-medium text-on-surface-variant mb-6 text-center">
-                    We've sent a verification link to <span className="font-medium text-on-surface">{email}</span>.
+                <p
+                    className="u-sans"
+                    style={{
+                        fontSize: 'var(--step-0)',
+                        color: 'var(--ink-3)',
+                        margin: '0 0 24px',
+                        textAlign: 'center',
+                    }}
+                >
+                    We&apos;ve sent a verification link to{' '}
+                    <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{email}</span>.
                     Please click the link to verify your account.
                 </p>
 
                 {/* Status Card */}
-                <div className="w-full bg-surface-container rounded-md p-4 mb-8 border border-outline-variant flex flex-col items-center">
+                <div
+                    style={{
+                        width: '100%',
+                        backgroundColor: 'var(--paper-2)',
+                        borderRadius: 'var(--radius)',
+                        padding: 16,
+                        marginBottom: 32,
+                        border: '1px solid var(--rule-soft)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                    }}
+                >
                     {isExpired ? (
-                        <div className="text-error text-label-large mb-1 flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <div
+                            className="u-sans"
+                            style={{
+                                color: 'var(--accent)',
+                                fontSize: 'var(--step--1)',
+                                fontWeight: 500,
+                                marginBottom: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                            }}
+                        >
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                             </svg>
                             Verification Expired
                         </div>
                     ) : (
                         <>
-                            <div className="text-label-small text-on-surface-variant uppercase tracking-wider mb-1">
+                            <div
+                                className="u-mono"
+                                style={{
+                                    color: 'var(--ink-3)',
+                                    fontSize: 'var(--step--2)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.14em',
+                                    marginBottom: 4,
+                                }}
+                            >
                                 Time remaining
                             </div>
-                            <div className="text-display-small text-primary font-variant-numeric tabular-nums">
+                            <div
+                                className="u-serif"
+                                style={{
+                                    fontSize: 'var(--step-5)',
+                                    color: 'var(--accent)',
+                                    fontVariantNumeric: 'tabular-nums',
+                                    lineHeight: 1,
+                                }}
+                            >
                                 {formatTime(timeLeft)}
                             </div>
                         </>
@@ -90,32 +241,50 @@ export function VerificationView({
                 </div>
 
                 {/* Actions */}
-                <div className="w-full flex flex-col gap-3">
+                <div
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                    }}
+                >
                     <button
                         type="button"
                         onClick={onCheckVerification}
-                        className={`
-                            min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
-                            bg-primary text-on-primary border-none cursor-pointer
-                            hover:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_8%,var(--md-sys-color-primary))]
-                            active:bg-[color-mix(in_srgb,var(--md-sys-color-on-primary)_12%,var(--md-sys-color-primary))]
-                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
-                            disabled:opacity-disabled disabled:pointer-events-none
-                        `}
+                        style={{
+                            minHeight: 44,
+                            width: '100%',
+                            borderRadius: 'var(--radius)',
+                            backgroundColor: 'var(--accent)',
+                            color: 'var(--accent-ink)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--sans)',
+                            fontSize: 'var(--step--1)',
+                            fontWeight: 500,
+                            transition: 'opacity 0.18s var(--ease-standard)',
+                        }}
                     >
-                        I've verified my email
+                        I&apos;ve verified my email
                     </button>
 
                     <button
                         type="button"
                         onClick={onCancel}
-                        className={`
-                            min-h-[48px] w-full rounded-full text-label-large font-medium transition-all ease-standard duration-short
-                            bg-transparent text-primary border border-outline cursor-pointer
-                            hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]
-                            active:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_12%,transparent)]
-                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
-                        `}
+                        style={{
+                            minHeight: 44,
+                            width: '100%',
+                            borderRadius: 'var(--radius)',
+                            backgroundColor: 'transparent',
+                            color: 'var(--accent)',
+                            border: '1px solid var(--rule)',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--sans)',
+                            fontSize: 'var(--step--1)',
+                            fontWeight: 500,
+                            transition: 'opacity 0.18s var(--ease-standard)',
+                        }}
                     >
                         {isExpired ? 'Try again' : 'Cancel'}
                     </button>
