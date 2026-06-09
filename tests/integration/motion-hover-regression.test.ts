@@ -16,12 +16,6 @@ const auditedFiles = [
   'src/ui-system/pages/DomainDetailsView.tsx',
 ];
 
-const storyFiles = [
-  'src/ui-system/components/composed/ModeCard.stories.tsx',
-  'src/ui-system/components/primitives/SocialButton.stories.tsx',
-  'src/ui-system/pages/CollectionsView.stories.tsx',
-  'src/ui-system/pages/DomainDetailsView.stories.tsx',
-];
 
 const bannedHoverHandlers = /\bonMouseEnter\b|\bonMouseLeave\b/;
 const bannedVisualMutation =
@@ -75,18 +69,5 @@ describe('Issue #18 hover-state regression', () => {
     }
 
     expect(matches).toEqual([]);
-  });
-
-  it('retains Storybook coverage for the audited UI-system surfaces', async () => {
-    await expect(
-      Promise.all(
-        storyFiles.map(async (relativeFile) => {
-          const absoluteFile = path.join(repoRoot, relativeFile);
-          const source = await fs.readFile(absoluteFile, 'utf8');
-
-          expect(source).toContain('export default');
-        })
-      )
-    ).resolves.toHaveLength(storyFiles.length);
   });
 });

@@ -1,6 +1,3 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from "eslint-plugin-storybook";
-
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
@@ -206,5 +203,21 @@ js.configs.recommended, // TypeScript files
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/consistent-type-assertions': 'off',
   },
+}, // no-storybook-files guard (Layer 8 purge)
+// Any *.stories.{ts,tsx,js,jsx} file that reaches the linter is an error.
+// This fires in CI via `npx eslint src/ --max-warnings 0`, permanently
+// blocking reintroduction of Storybook story files.
+{
+  files: ['**/*.stories.{ts,tsx,js,jsx}'],
+  rules: {
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'Program',
+        message:
+          'Storybook story files are banned (Layer 8 purge). Use V2 wireframes in `ui_kits/extension/v2/` as the implementation spec instead. See `.agent/workflows/v2-ui.md`.',
+      },
+    ],
+  },
 }, // Prettier must be last
-prettierConfig, ...storybook.configs["flat/recommended"]];
+prettierConfig];
