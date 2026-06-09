@@ -4,36 +4,75 @@ import { Link } from 'react-router-dom';
 import { Logo } from '@/ui-system/components/primitives/Logo';
 
 /**
- * 404 Not Found Page — matches 404.html mockup
- * Centered dimmed logo + "404" + message + back link
+ * 404 Not Found Page — editorial split: dimmed logo + serif 404 numeral +
+ * message + V2 link back home.
  */
 export function NotFoundPage(): React.ReactElement {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface">
-      <div className="text-center">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Logo size="sm" showText={false} />
-        </div>
-
-        {/* 404 heading */}
-        <h1 className="text-display-large tracking-[-0.04em] mb-3 text-on-surface">
-          404
-        </h1>
-
-        {/* Message */}
-        <p className="text-body-medium mb-8 text-on-surface-variant">
-          This page doesn't exist.
-        </p>
-
-        {/* Back link */}
-        <Link
-          to="/"
-          className="inline-flex min-h-[48px] items-center rounded-md px-2 text-label-large no-underline text-primary transition-all duration-short ease-standard hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          ← Back to home
-        </Link>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100%',
+        width: '100%',
+        backgroundColor: 'var(--paper)',
+        color: 'var(--ink)',
+        padding: '48px 24px',
+        textAlign: 'center',
+      }}
+    >
+      {/* Logo (small, dimmed) */}
+      <div style={{ marginBottom: 32, opacity: 0.4 }}>
+        <Logo size="sm" showText={false} />
       </div>
+
+      {/* 404 heading — serif display */}
+      <h1
+        className="u-serif"
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--step-7)',
+          fontWeight: 400,
+          letterSpacing: '-0.04em',
+          lineHeight: 1,
+          color: 'var(--ink)',
+        }}
+      >
+        404
+      </h1>
+
+      {/* Message */}
+      <p
+        className="u-sans"
+        style={{
+          margin: '0 0 32px',
+          fontSize: 'var(--step-0)',
+          color: 'var(--ink-2)',
+          maxWidth: 320,
+        }}
+      >
+        This page doesn&apos;t exist.
+      </p>
+
+      {/* Back link — meets 44px touch target */}
+      <Link
+        to="/"
+        className="u-mono"
+        style={{
+          display: 'inline-flex',
+          minHeight: 44,
+          alignItems: 'center',
+          padding: '0 12px',
+          color: 'var(--accent)',
+          textDecoration: 'none',
+          fontSize: 'var(--step--1)',
+          letterSpacing: '0.04em',
+        }}
+      >
+        ← Back to home
+      </Link>
     </div>
   );
 }
