@@ -10,13 +10,31 @@ import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
-import { cn } from '@/ui-system/utils/cn';
 
 interface AuthViewProps {
     onLoginSuccess: () => void;
     onBackToModeSelection?: () => void;
 }
 
+/**
+ * AuthView — V2 Editorial migration of the popup auth screen.
+ *
+ * Body-only root: `display: flex, flex-direction: column, height: 100%, width: 100%`.
+ * PopupShell owns the 400x600 chrome; this view returns body content only.
+ *
+ * V2 token map applied:
+ *   - bg-surface / text-on-surface       -> var(--paper) / var(--ink)
+ *   - text-on-surface-variant / text-outline -> var(--ink-3)
+ *   - text-primary                       -> var(--accent)
+ *   - border-outline-variant            -> var(--rule-soft)
+ *   - bg-primary-container (icon)        -> var(--accent-tint-08)
+ *   - text-[Npx]                         -> var(--step-N)
+ *   - min-h-[48px]                       -> minHeight: 44
+ *   - font-display                       -> .u-serif
+ *   - var(--ink-ease-spring)             -> var(--ease-standard)
+ *   - error red color-mix                -> var(--accent-tint-08) with var(--rule) border
+ *   - bg-on-surface (submit button)      -> var(--ink) (ink fill, paper text)
+ */
 export function AuthView({
     onLoginSuccess,
     onBackToModeSelection,
@@ -77,34 +95,94 @@ export function AuthView({
 
     return (
         <div
-            className="w-full h-full flex flex-col bg-surface text-on-surface overflow-y-auto relative"
             style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--paper)',
+                color: 'var(--ink)',
+                overflowY: 'auto',
+                position: 'relative',
                 backgroundImage: [
                     'radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 50%)',
                     'radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 50%)',
                 ].join(', '),
             }}
         >
-            <main className="flex-1 flex flex-col px-6 py-8 w-full max-w-[380px] mx-auto">
+            <main
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '32px 24px',
+                    width: '100%',
+                    maxWidth: 380,
+                    margin: '0 auto',
+                }}
+            >
 
                 {/* Logo row — left-aligned */}
-                <div className="flex items-center gap-[9px] mb-7 self-start">
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 9,
+                        marginBottom: 28,
+                        alignSelf: 'flex-start',
+                    }}
+                >
                     <Logo size="sm" showText={false} />
-                    <span className="font-display text-[20px] text-on-surface tracking-[-0.02em]">
+                    <span
+                        className="u-serif"
+                        style={{
+                            fontSize: 'var(--step-1)',
+                            color: 'var(--ink)',
+                            letterSpacing: '-0.02em',
+                        }}
+                    >
                         underscore
                     </span>
                 </div>
 
                 {/* Headline — Instrument Serif italic */}
-                <h1 className="font-display text-[27px] font-normal text-on-surface text-center tracking-[-0.025em] leading-[1.25] mb-2">
+                <h1
+                    className="u-serif"
+                    style={{
+                        fontSize: 'var(--step-4)',
+                        fontWeight: 400,
+                        color: 'var(--ink)',
+                        textAlign: 'center',
+                        letterSpacing: '-0.025em',
+                        lineHeight: 1.25,
+                        margin: '0 0 8px',
+                    }}
+                >
                     Your knowledge<br /><em>workspace awaits</em>
                 </h1>
-                <p className="text-[13px] text-on-surface-variant text-center mb-7">
+                <p
+                    className="u-sans"
+                    style={{
+                        fontSize: 'var(--step--1)',
+                        color: 'var(--ink-3)',
+                        textAlign: 'center',
+                        margin: '0 0 28px',
+                    }}
+                >
                     Sign in or create an account to continue
                 </p>
 
-                {/* V2 single terracotta CTA (Q8: no vendor brand colors). */}
-                <div className="w-full flex flex-col gap-3 mb-4 shrink-0">
+                {/* OAuth providers — Google (terracotta) + Apple (paper) */}
+                <div
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        marginBottom: 16,
+                        flexShrink: 0,
+                    }}
+                >
                     <Button
                         type="button"
                         variant="accent"
@@ -124,14 +202,41 @@ export function AuthView({
                 </div>
 
                 {/* OR divider */}
-                <div className="w-full flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-outline-variant" />
-                    <span className="text-[10px] tracking-[0.14em] uppercase text-outline">or</span>
-                    <div className="flex-1 h-px bg-outline-variant" />
+                <div
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        margin: '16px 0',
+                    }}
+                >
+                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
+                    <span
+                        className="u-mono"
+                        style={{
+                            fontSize: 'var(--step--2)',
+                            letterSpacing: '0.14em',
+                            textTransform: 'uppercase',
+                            color: 'var(--ink-3)',
+                        }}
+                    >
+                        or
+                    </span>
+                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
                 </div>
 
                 {/* Email / password form */}
-                <form onSubmit={handleEmailSubmit} className="w-full flex flex-col gap-2 mb-4">
+                <form
+                    onSubmit={handleEmailSubmit}
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                        marginBottom: 16,
+                    }}
+                >
                     <Input
                         type="email"
                         placeholder="Email address"
@@ -140,7 +245,6 @@ export function AuthView({
                         required
                         disabled={isLoading}
                         autoComplete="email"
-                        className="mb-2"
                     />
                     <Input
                         type="password"
@@ -150,43 +254,82 @@ export function AuthView({
                         required
                         disabled={isLoading}
                         autoComplete={isRegistering ? 'new-password' : 'current-password'}
-                        className="mb-2"
                     />
                     <button
                         type="submit"
                         disabled={isLoading || !email || !password}
-                        className={cn(
-                            'w-full py-3 rounded-[10px] mt-1',
-                            'bg-on-surface text-surface',
-                            'text-[13px] font-semibold',
-                            'transition-all duration-[220ms]',
-                            'hover:bg-white hover:-translate-y-[1px]',
-                            'hover:shadow-[0_4px_20px_rgba(255,255,255,0.14)]',
-                            'active:translate-y-0',
-                            'disabled:opacity-40 disabled:pointer-events-none',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                        )}
-                        style={{ transitionTimingFunction: 'var(--ink-ease-spring)' }}
+                        style={{
+                            width: '100%',
+                            minHeight: 44,
+                            padding: '12px 0',
+                            marginTop: 4,
+                            borderRadius: 'var(--radius)',
+                            border: 'none',
+                            backgroundColor: 'var(--ink)',
+                            color: 'var(--paper)',
+                            fontFamily: 'var(--sans)',
+                            fontSize: 'var(--step--1)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'opacity 0.2s var(--ease-standard)',
+                            opacity: 1,
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.88'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
                     >
                         {isLoading && activeProvider === null ? <Spinner size="sm" /> : (isRegistering ? 'Create account' : 'Sign in')}
                     </button>
                 </form>
 
                 {/* Toggle sign-in / register */}
-                <p className="text-[12px] text-outline text-center mt-4">
+                <p
+                    className="u-sans"
+                    style={{
+                        fontSize: 'var(--step--1)',
+                        color: 'var(--ink-3)',
+                        textAlign: 'center',
+                        margin: '16px 0 0',
+                    }}
+                >
                     {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
                     <button
                         type="button"
                         onClick={() => { setIsRegistering(!isRegistering); setLoginError(null); }}
-                        className="inline-flex min-h-[48px] items-center px-2 -mx-2 rounded-md bg-transparent border-0 cursor-pointer text-[12px] text-primary font-medium hover:opacity-80 transition-opacity duration-[180ms]"
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: 44,
+                            alignItems: 'center',
+                            padding: '0 8px',
+                            margin: '0 -8px',
+                            borderRadius: 'var(--radius)',
+                            background: 'transparent',
+                            border: 0,
+                            cursor: 'pointer',
+                            fontFamily: 'var(--sans)',
+                            fontSize: 'var(--step--1)',
+                            color: 'var(--accent)',
+                            fontWeight: 500,
+                        }}
                     >
                         {isRegistering ? 'Sign in' : 'Create one'}
                     </button>
                 </p>
 
-                {/* Error state */}
+                {/* Error state — V2 single-accent: error uses --accent */}
                 {(loginError || error) && (
-                    <div className="w-full mt-3 p-3 rounded-[10px] bg-[color-mix(in_srgb,var(--md-sys-color-error)_12%,transparent)] border border-[color-mix(in_srgb,var(--md-sys-color-error)_30%,transparent)] text-error text-[12px] text-center">
+                    <div
+                        style={{
+                            width: '100%',
+                            marginTop: 12,
+                            padding: 12,
+                            borderRadius: 'var(--radius)',
+                            backgroundColor: 'var(--accent-tint-08)',
+                            border: '1px solid var(--rule)',
+                            color: 'var(--accent)',
+                            fontSize: 'var(--step--1)',
+                            textAlign: 'center',
+                        }}
+                    >
                         {loginError || error}
                     </div>
                 )}
@@ -196,12 +339,21 @@ export function AuthView({
                     <button
                         type="button"
                         onClick={onBackToModeSelection}
-                        className={cn(
-                            'inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 text-body-small text-outline',
-                            'hover:text-on-surface transition-colors duration-[180ms]',
-                            'bg-transparent border-0 cursor-pointer',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
-                        )}
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: 44,
+                            alignItems: 'center',
+                            gap: 6,
+                            borderRadius: 'var(--radius)',
+                            padding: '0 8px',
+                            marginTop: 8,
+                            background: 'transparent',
+                            border: 0,
+                            cursor: 'pointer',
+                            fontFamily: 'var(--sans)',
+                            fontSize: 'var(--step--1)',
+                            color: 'var(--ink-3)',
+                        }}
                     >
                         Back
                     </button>
@@ -210,19 +362,51 @@ export function AuthView({
             </main>
 
             {/* Footer */}
-            <footer className="shrink-0 px-6 pb-6 text-center">
-                <p className="text-label-small text-outline leading-relaxed">
+            <footer
+                style={{
+                    flexShrink: 0,
+                    padding: '0 24px 24px',
+                    textAlign: 'center',
+                }}
+            >
+                <p
+                    className="u-mono"
+                    style={{
+                        fontSize: 'var(--step--2)',
+                        color: 'var(--ink-3)',
+                        lineHeight: 1.5,
+                        margin: 0,
+                    }}
+                >
                     By continuing, you agree to our{' '}
                     <a
                         href="#"
-                        className="inline-flex min-h-[48px] items-center px-2 text-outline hover:text-on-surface-variant underline underline-offset-2 transition-colors duration-[180ms]"
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: 44,
+                            alignItems: 'center',
+                            padding: '0 8px',
+                            margin: '0 -8px',
+                            color: 'var(--ink-3)',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: 2,
+                        }}
                     >
                         Terms of Service
                     </a>{' '}
                     and{' '}
                     <a
                         href="#"
-                        className="inline-flex min-h-[48px] items-center px-2 text-outline hover:text-on-surface-variant underline underline-offset-2 transition-colors duration-[180ms]"
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: 44,
+                            alignItems: 'center',
+                            padding: '0 8px',
+                            margin: '0 -8px',
+                            color: 'var(--ink-3)',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: 2,
+                        }}
                     >
                         Privacy Policy
                     </a>
