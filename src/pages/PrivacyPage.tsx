@@ -4,49 +4,113 @@ import { Link } from 'react-router-dom';
 import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /**
- * Privacy Policy Page — matches privacy.html mockup
- * Article-style layout with clear typography, section headers, callout boxes
+ * Privacy Policy Page — article-style layout with editorial typography.
+ * AppHeader (standalone) provides the centered Logo header; body is a
+ * V2-styled long-form article (640px max width, generous leading).
  */
 export function PrivacyPage(): React.ReactElement {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-surface text-on-surface">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100%',
+        width: '100%',
+        backgroundColor: 'var(--paper)',
+        color: 'var(--ink)',
+      }}
+    >
       <AppHeader variant="standalone" />
 
-      <article className="w-full max-w-[640px] px-6 pb-12">
+      <article
+        style={{
+          width: '100%',
+          maxWidth: 640,
+          margin: '0 auto',
+          padding: '0 24px 48px',
+        }}
+      >
         <Link
           to="/"
-          className="inline-flex min-h-[48px] items-center gap-1.5 rounded-md px-2 -mx-2 mb-5 text-body-small no-underline text-outline transition-colors duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="u-mono"
+          style={{
+            display: 'inline-flex',
+            minHeight: 44,
+            alignItems: 'center',
+            gap: 6,
+            padding: '0 8px',
+            margin: '20px 0 8px -8px',
+            color: 'var(--ink-2)',
+            textDecoration: 'none',
+            fontSize: 'var(--step--1)',
+          }}
         >
           ← Back
         </Link>
 
-        <h1 className="text-headline-small mb-2 text-on-surface">Privacy Policy</h1>
-        <p className="text-body-small mb-8 text-outline">Last updated: February 2026</p>
+        <h1
+          className="u-serif"
+          style={{
+            margin: '0 0 8px',
+            fontSize: 'var(--step-5)',
+            fontWeight: 400,
+            letterSpacing: '-0.02em',
+            color: 'var(--ink)',
+          }}
+        >
+          Privacy Policy
+        </h1>
+        <p
+          className="u-mono"
+          style={{
+            margin: '0 0 32px',
+            fontSize: 'var(--step--2)',
+            color: 'var(--ink-3)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Last updated: February 2026
+        </p>
 
-        {/* Callout */}
-        <div className="p-4 rounded-md mb-8 bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)] border border-outline-variant">
-          <p className="text-body-medium leading-relaxed text-primary">
-            <strong>TL;DR</strong> — Your data stays on your device. We don't track, sell,
-            or share your browsing activity or highlights with anyone. Period.
+        {/* Callout — V2 uses var(--accent-tint-08) for soft emphasis, no glass */}
+        <div
+          style={{
+            padding: 16,
+            marginBottom: 32,
+            backgroundColor: 'var(--accent-tint-08)',
+            border: '1px solid var(--rule-soft)',
+            borderRadius: 'var(--radius)',
+          }}
+        >
+          <p
+            className="u-sans"
+            style={{
+              margin: 0,
+              fontSize: 'var(--step-0)',
+              lineHeight: 1.6,
+              color: 'var(--ink)',
+            }}
+          >
+            <strong style={{ color: 'var(--accent)' }}>TL;DR</strong> — Your data stays
+            on your device. We don&apos;t track, sell, or share your browsing activity
+            or highlights with anyone. Period.
           </p>
         </div>
 
         <PolicySection title="What we collect">
           <p>We collect the minimum data necessary to provide the service:</p>
-          <ul className="list-disc pl-5 mt-2 space-y-1">
+          <ul>
             <li>Account information (email, display name) when you create an account</li>
-            <li>
-              Highlight data you explicitly save in Capture, Memory, or Neural modes
-            </li>
+            <li>Highlight data you explicitly save in ephemeral, local, or cloud modes</li>
             <li>Basic usage analytics (page views, feature usage) — no personal data</li>
           </ul>
         </PolicySection>
 
         <PolicySection title="What we don't collect">
-          <ul className="list-disc pl-5 space-y-1">
+          <ul>
             <li>Browsing history outside of your explicit highlights</li>
             <li>Personal information beyond what you provide at signup</li>
-            <li>Data from Focus mode — it lives only in your browser session</li>
+            <li>Data from ephemeral mode — it lives only in your browser session</li>
           </ul>
         </PolicySection>
 
@@ -54,16 +118,16 @@ export function PrivacyPage(): React.ReactElement {
           <p>
             All data is stored locally in your browser using IndexedDB. When you enable
             cloud sync, your data is encrypted end-to-end before leaving your device. We
-            use AES-256 encryption — even we can't read your highlights.
+            use AES-256 encryption — even we can&apos;t read your highlights.
           </p>
         </PolicySection>
 
         <PolicySection title="Your rights">
           <p>You can:</p>
-          <ul className="list-disc pl-5 mt-2 space-y-1">
+          <ul>
             <li>Export all your data at any time (Settings → Data)</li>
             <li>Delete your account and all associated data</li>
-            <li>Use Focus mode without creating an account</li>
+            <li>Use ephemeral mode without creating an account</li>
           </ul>
         </PolicySection>
 
@@ -72,7 +136,16 @@ export function PrivacyPage(): React.ReactElement {
             Questions? Email us at{' '}
             <a
               href="mailto:privacy@underscore.dev"
-              className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="u-sans"
+              style={{
+                display: 'inline-flex',
+                minHeight: 44,
+                alignItems: 'center',
+                padding: '0 4px',
+                color: 'var(--accent)',
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
+              }}
             >
               privacy@underscore.dev
             </a>
@@ -91,9 +164,27 @@ function PolicySection({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <section className="mb-6">
-      <h2 className="text-title-small mb-3 text-on-surface">{title}</h2>
-      <div className="text-body-medium leading-relaxed text-on-surface-variant">
+    <section style={{ marginBottom: 24 }}>
+      <h2
+        className="u-serif"
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--step-2)',
+          fontWeight: 500,
+          letterSpacing: '-0.01em',
+          color: 'var(--ink)',
+        }}
+      >
+        {title}
+      </h2>
+      <div
+        className="u-sans"
+        style={{
+          fontSize: 'var(--step-0)',
+          lineHeight: 1.65,
+          color: 'var(--ink-2)',
+        }}
+      >
         {children}
       </div>
     </section>
