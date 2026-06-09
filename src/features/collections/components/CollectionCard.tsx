@@ -2,7 +2,6 @@ import { Clock, Hash } from 'lucide-react';
 import React from 'react';
 
 import { Text } from '../../../ui-system/components/primitives/Text';
-import { cn } from '../../../ui-system/utils/cn';
 
 export interface CollectionCardProps {
     id: string;
@@ -23,30 +22,41 @@ export function CollectionCard({
     return (
         <div
             onClick={onClick}
-            className={cn(
-                "group cursor-pointer rounded-md border p-4 transition-all duration-short ease-standard hover:shadow-elevation-2 bg-surface-container",
-                isActive
-                    ? "border-primary ring-1 ring-primary"
-                    : "border-outline hover:border-primary/50"
-            )}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
+            style={{
+                cursor: 'pointer',
+                borderRadius: 'var(--radius)',
+                border: isActive
+                    ? '1px solid var(--accent)'
+                    : '1px solid var(--rule)',
+                padding: '12px 16px',
+                background: isActive ? 'var(--paper-2)' : 'var(--paper)',
+                transition: 'border-color 0.15s ease, background 0.15s ease',
+                minHeight: '44px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+            }}
         >
-            <div className="flex items-start justify-between mb-2">
-                <Text variant="h3" className="truncate flex-1 font-medium group-hover:text-primary transition-colors">
+            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 8 }}>
+                <Text variant="h3" className="u-serif" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {domain}
                 </Text>
             </div>
 
-            <div className="flex items-center gap-4 text-on-surface-variant">
-                <div className="flex items-center gap-1.5">
-                    <Hash size={14} />
-                    <Text variant="tiny" className="font-medium">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'var(--ink-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Hash size={13} />
+                    <Text variant="tiny">
                         {count}
                     </Text>
                 </div>
 
                 {lastActive && (
-                    <div className="flex items-center gap-1.5">
-                        <Clock size={14} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Clock size={13} />
                         <Text variant="tiny">
                             {lastActive.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                         </Text>

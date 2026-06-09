@@ -1,8 +1,4 @@
 import React from 'react';
-
-import { Text } from '../../ui-system/components/primitives/Text';
-import { cn } from '../../ui-system/utils/cn';
-
 import type { ModeDefinition } from './registry';
 
 interface ModeSelectorProps {
@@ -14,53 +10,71 @@ interface ModeSelectorProps {
 
 export function ModeSelector({ modes, currentModeId, onSelect, disabled }: ModeSelectorProps): React.JSX.Element {
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
             {modes.map((mode) => {
                 const isActive = mode.id === currentModeId;
 
                 return (
                     <button
                         key={mode.id}
+                        type="button"
                         onClick={() => onSelect(mode.id)}
                         disabled={disabled}
-                        className={cn(
-                            "group relative flex flex-col items-start p-6 w-full text-left transition-all duration-short ease-standard border rounded-md",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                            // Active State
-                            isActive
-                                ? "border-primary bg-primary/5"
-                                : "border-outline hover:border-on-surface-variant bg-surface-container",
-
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
+                        className="u-card-row"
+                        style={{
+                            alignItems: 'flex-start',
+                            textAlign: 'left',
+                            padding: 24,
+                            margin: 0,
+                            background: isActive ? 'var(--paper-2)' : 'transparent',
+                            borderColor: isActive ? 'var(--rule)' : 'var(--rule-soft)',
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            opacity: disabled ? 0.5 : 1,
+                        }}
                     >
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <Text
-                                variant={isActive ? "h2" : "h2"}
-                                className={cn(
-                                    "font-light tracking-tight transition-colors",
-                                    isActive ? "text-primary" : "text-on-surface group-hover:text-primary"
-                                )}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 4 }}>
+                            <h2 
+                                className="u-serif"
+                                style={{ 
+                                    fontSize: 'var(--step-4)', 
+                                    color: isActive ? 'var(--accent)' : 'var(--ink)',
+                                    fontWeight: 300,
+                                    margin: 0
+                                }}
                             >
                                 {mode.name}
-                            </Text>
+                            </h2>
 
                             {mode.badge && (
-                                <span className="px-2 py-0.5 text-label-small rounded-full bg-surface-container-highest text-on-surface-variant">
+                                <span 
+                                    className="u-mono"
+                                    style={{ 
+                                        padding: '4px 8px', 
+                                        fontSize: 'var(--step--2)',
+                                        borderRadius: 9999,
+                                        background: 'var(--paper-2)',
+                                        color: 'var(--ink-3)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.14em'
+                                    }}
+                                >
                                     {mode.badge}
                                 </span>
                             )}
                         </div>
 
-                        <Text
-                            variant="body"
-                            className={cn(
-                                "line-clamp-2",
-                                isActive ? "text-on-surface" : "text-on-surface-variant"
-                            )}
+                        <p 
+                            className="u-serif"
+                            style={{ 
+                                fontSize: 'var(--step-0)',
+                                color: isActive ? 'var(--ink)' : 'var(--ink-3)',
+                                fontStyle: 'italic',
+                                margin: 0,
+                                lineHeight: 1.45
+                            }}
                         >
-                            {mode.description}
-                        </Text>
+                            {mode.blurb}
+                        </p>
                     </button>
                 );
             })}

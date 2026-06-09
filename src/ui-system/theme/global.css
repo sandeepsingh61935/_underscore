@@ -313,3 +313,43 @@
   font-weight: 500;
   letter-spacing: -0.02em;
 }
+
+/* Card row — list item with hover state (V2 pattern, no JS mutation) */
+.u-card-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 -16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.u-card-row:hover {
+  background: var(--paper-2);
+  border-color: var(--rule-soft);
+}
+
+/* Icon button — small square icon action (44px touch target) */
+.u-icon-btn {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.u-icon-btn:hover {
+  color: var(--ink);
+}
+
+/* Avatar button — pill-shaped dropdown trigger */
+.u-avatar-btn:hover {
+  background: var(--paper-2) !important;
+}

@@ -2,7 +2,6 @@ import { Archive, Brain, Circle, Zap } from 'lucide-react';
 import React from 'react';
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { cn } from '@/ui-system/utils/cn';
 
 interface ModeCardProps {
     id: ModeType;
@@ -18,13 +17,13 @@ interface ModeCardProps {
 const MODE_ICONS: Record<ModeType, React.ReactNode> = {
     ephemeral: <Circle size={14} />,
     local: <Zap size={14} />,
-    cloud:  <Archive size={14} />,
+    cloud: <Archive size={14} />,
     ai: <Brain size={14} />,
 };
 
 /**
- * Mode selection card — Ink & Glass reskin (B6).
- * Uses data-mode attribute for per-mode CSS --c color binding.
+ * Mode selection card — V2 Editorial reskin.
+ * Uses V2 tokens only; no MD3, no Ink & Glass, no arbitrary utilities.
  */
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- JSX return type inferred
 export function ModeCard({
@@ -43,57 +42,79 @@ export function ModeCard({
             onClick={locked ? undefined : onClick}
             disabled={locked}
             data-mode={id}
-            className={cn(
+            className={className}
+            style={{
                 // Base
-                'group relative w-full text-left rounded-[16px] border p-4',
-                'overflow-hidden cursor-pointer',
-                'transition-[transform,border-color,box-shadow,background] duration-[280ms]',
-                // Default state
-                'border-outline-variant bg-surface-container-lowest shadow-elevation-1',
-                // Hover (not locked)
-                'hover:-translate-y-[2px] hover:scale-[1.015]',
-                'hover:shadow-elevation-2',
-                // Active state
-                active && 'border-[color-mix(in_srgb,var(--c)_50%,transparent)] bg-[color-mix(in_srgb,var(--c)_7%,var(--md-sys-color-surface-container-lowest))]',
-                // Locked
-                locked && 'opacity-40 cursor-not-allowed pointer-events-none',
-                className
-            )}
-            style={{ transitionTimingFunction: 'var(--ink-ease-spring)' }}
+                position: 'relative',
+                width: '100%',
+                textAlign: 'left',
+                borderRadius: 'var(--radius)',
+                border: active
+                    ? '1px solid var(--accent)'
+                    : '1px solid var(--rule-soft)',
+                padding: 16,
+                overflow: 'hidden',
+                cursor: locked ? 'not-allowed' : 'pointer',
+                background: active ? 'var(--accent-tint-08)' : 'var(--paper)',
+                transition: 'border-color 0.18s ease, background 0.18s ease',
+                opacity: locked ? 0.4 : 1,
+                // Reset button defaults
+                fontFamily: 'var(--sans)',
+                fontSize: 'var(--step-0)',
+                color: 'var(--ink)',
+            }}
         >
-            {/* Radial glow overlay — visible on hover (and always on active) */}
-            <div className={cn(
-                'absolute inset-0 pointer-events-none transition-opacity duration-[300ms]',
-                'bg-[radial-gradient(ellipse_at_75%_25%,color-mix(in_srgb,var(--c)_14%,transparent),transparent_55%)]',
-                active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-            )} />
-
             {/* Card content */}
-            <div className="relative z-10 flex flex-col gap-3">
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {/* Top row: icon + badge */}
-                <div className="flex items-start justify-between">
-                    <div className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[14px] bg-[color-mix(in_srgb,var(--c)_14%,transparent)] text-[var(--c)]">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 'var(--radius)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: active ? 'var(--accent-tint-18)' : 'var(--paper-2)',
+                        color: active ? 'var(--accent)' : 'var(--ink-2)',
+                    }}>
                         {MODE_ICONS[id]}
                     </div>
-                    <span className={cn(
-                        'text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-[3px] rounded-full',
-                        'bg-[color-mix(in_srgb,var(--c)_12%,transparent)]',
-                        'border border-[color-mix(in_srgb,var(--c)_25%,transparent)]',
-                        'text-[var(--c)]',
-                    )}>
+                    <span
+                        className="u-mono"
+                        style={{
+                            fontSize: 'var(--step--2)',
+                            fontWeight: 'bold',
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            padding: '3px 8px',
+                            borderRadius: 9999,
+                            background: active ? 'var(--accent-tint-18)' : 'var(--paper-2)',
+                            border: '1px solid var(--rule-soft)',
+                            color: active ? 'var(--accent)' : 'var(--ink-3)',
+                        }}
+                    >
                         {locked ? 'Sign in' : active ? 'Active' : 'Free'}
                     </span>
                 </div>
 
                 {/* Labels */}
                 <div>
-                    <p className={cn(
-                        'text-[15px] font-semibold tracking-[-0.01em] mb-1',
-                        active ? 'text-[var(--c)]' : 'text-on-surface',
-                    )}>
+                    <p style={{
+                        fontSize: 'var(--step-1)',
+                        fontWeight: 600,
+                        letterSpacing: '-0.01em',
+                        marginBottom: 4,
+                        color: active ? 'var(--accent)' : 'var(--ink)',
+                    }}>
                         {name}
                     </p>
-                    <p className="text-[11px] text-on-surface-variant leading-[1.45]">
+                    <p className="u-serif" style={{
+                        fontSize: 'var(--step-0)',
+                        color: 'var(--ink-3)',
+                        lineHeight: 1.45,
+                        fontStyle: 'italic',
+                    }}>
                         {description}
                     </p>
                 </div>

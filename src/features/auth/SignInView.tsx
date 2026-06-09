@@ -8,7 +8,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 
 /**
  * SignInView — Registration-first auth page
- * Matches sign-in.html mockup: email/password form + social icons + sign-in toggle
+ * V2 Editorial redesign: uses var(--paper), var(--ink), var(--accent), var(--rule)
  */
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
@@ -58,37 +58,60 @@ export function SignInView(): React.ReactElement {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface">
-            <div className="w-full max-w-[400px] px-6 py-12">
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--paper)',
+            color: 'var(--ink)'
+        }}>
+            <div style={{ width: '100%', maxWidth: 400, padding: '48px 24px' }}>
                 {/* Back to mode selection */}
                 <Link
                     to="/mode"
-                    className="inline-flex min-h-[48px] items-center gap-1 rounded-md px-2 -mx-2 text-body-small no-underline mb-8 text-outline transition-all duration-short ease-standard hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="u-sans"
+                    style={{
+                        display: 'inline-flex',
+                        minHeight: '44px',
+                        alignItems: 'center',
+                        gap: 4,
+                        borderRadius: 'var(--radius)',
+                        padding: '0 8px',
+                        marginLeft: -8,
+                        fontSize: 'var(--step--1)',
+                        textDecoration: 'none',
+                        marginBottom: 32,
+                        color: 'var(--ink-3)',
+                        transition: 'color 0.15s ease'
+                    }}
                 >
                     Back
                 </Link>
 
                 {/* Logo */}
-                <div className="flex justify-center mb-8">
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
                     <Logo size="md" />
                 </div>
 
                 {/* Heading */}
-                <h1 className="text-title-large font-semibold mb-2 text-center">
+                <h1 className="u-serif" style={{ fontSize: 'var(--step-3)', fontWeight: 500, marginBottom: 8, textAlign: 'center' }}>
                     {isSignIn ? 'Welcome back' : 'Create your account'}
                 </h1>
-                <p className="text-body-medium text-on-surface-variant mb-8 text-center">
+                <p className="u-sans" style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center' }}>
                     {isSignIn
                         ? 'Sign in to access your collections'
                         : 'Unlock your full knowledge workspace'}
                 </p>
 
                 {/* Email/password form */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">
-                    <div className="flex flex-col gap-1.5">
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <label
                             htmlFor="email"
-                            className="text-label-medium font-medium uppercase tracking-[0.08em] text-outline"
+                            className="u-kicker"
+                            style={{ color: 'var(--ink-3)' }}
                         >
                             Email
                         </label>
@@ -102,10 +125,11 @@ export function SignInView(): React.ReactElement {
                         />
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <label
                             htmlFor="password"
-                            className="text-label-medium font-medium uppercase tracking-[0.08em] text-outline"
+                            className="u-kicker"
+                            style={{ color: 'var(--ink-3)' }}
                         >
                             Password
                         </label>
@@ -130,16 +154,16 @@ export function SignInView(): React.ReactElement {
                 </form>
 
                 {/* Divider */}
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="flex-1 h-px bg-outline-variant" />
-                    <span className="text-label-small uppercase tracking-[0.08em] text-outline">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                    <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
+                    <span className="u-kicker" style={{ color: 'var(--ink-3)' }}>
                         or continue with
                     </span>
-                    <div className="flex-1 h-px bg-outline-variant" />
+                    <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
                 </div>
 
-                {/* Single V2 terracotta CTA (Q8: no vendor brand colors). */}
-                <div className="mb-8">
+                {/* Single V2 terracotta CTA */}
+                <div style={{ marginBottom: 32 }}>
                     <Button
                         type="button"
                         variant="accent"
@@ -152,7 +176,7 @@ export function SignInView(): React.ReactElement {
                 </div>
 
                 {/* Toggle sign-in / register */}
-                <div className="flex flex-wrap items-center justify-center gap-1 text-center text-body-small text-on-surface-variant">
+                <div className="u-sans" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
                     <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
                     <Button
                         variant="text"
@@ -165,18 +189,36 @@ export function SignInView(): React.ReactElement {
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-label-small mt-8 leading-relaxed text-outline">
+                <p className="u-sans" style={{ textAlign: 'center', fontSize: 'var(--step--2)', marginTop: 32, lineHeight: 1.5, color: 'var(--ink-3)' }}>
                     By continuing, you agree to our{' '}
                     <a
                         href="#terms"
-                        className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: '44px',
+                            alignItems: 'center',
+                            borderRadius: 'var(--radius)',
+                            padding: '0 8px',
+                            margin: '0 -8px',
+                            textDecoration: 'underline',
+                            color: 'var(--ink-3)'
+                        }}
                     >
                         Terms of Service
                     </a>
                     {' '}and{' '}
                     <Link
                         to="/privacy"
-                        className="inline-flex min-h-[48px] items-center rounded-md px-2 -mx-2 underline text-outline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        style={{
+                            display: 'inline-flex',
+                            minHeight: '44px',
+                            alignItems: 'center',
+                            borderRadius: 'var(--radius)',
+                            padding: '0 8px',
+                            margin: '0 -8px',
+                            textDecoration: 'underline',
+                            color: 'var(--ink-3)'
+                        }}
                     >
                         Privacy Policy
                     </Link>

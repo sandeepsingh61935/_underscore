@@ -1,8 +1,6 @@
 import React from 'react';
 import { Drawer } from 'vaul';
 
-import { cn } from '@/ui-system/utils/cn';
-
 interface CollectionsDrawerProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -24,26 +22,43 @@ export function CollectionsDrawer({
         {trigger}
       </Drawer.Trigger>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-scrim/40 z-40" />
+        <Drawer.Overlay style={{ position: 'fixed', inset: 0, background: 'var(--utility-overlay-40)', zIndex: 40 }} />
         <Drawer.Content
-          className={cn(
-            'fixed bottom-0 left-0 right-0 z-50',
-            'flex flex-col max-h-[85vh]',
-            'bg-surface-container-lowest',
-            'rounded-t-[20px]',
-            'border border-outline-variant border-b-0',
-          )}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '85vh',
+            background: 'var(--paper)',
+            borderRadius: 'var(--radius) var(--radius) 0 0',
+            border: '1px solid var(--rule)',
+            borderBottom: 'none',
+          }}
         >
           {/* Drag handle */}
-          <div className="mx-auto mt-3 mb-1 h-[4px] w-[40px] rounded-full bg-outline-variant shrink-0" />
+          <div style={{
+            margin: '12px auto 4px',
+            height: 4,
+            width: 40,
+            borderRadius: 9999,
+            background: 'var(--rule)',
+            flexShrink: 0,
+          }} />
 
           {/* Drawer title */}
-          <Drawer.Title className="px-4 py-3 text-[13px] font-semibold text-on-surface shrink-0">
+          <Drawer.Title
+            className="u-kicker"
+            style={{ padding: '12px 16px 12px', flexShrink: 0, color: 'var(--ink-3)' }}
+          >
             {title}
           </Drawer.Title>
 
           {/* Scrollable content */}
-          <div className="overflow-y-auto flex-1 px-4 pb-6">
+          <div style={{ overflowY: 'auto', flex: 1, padding: '0 16px 24px' }}>
             {children}
           </div>
         </Drawer.Content>
