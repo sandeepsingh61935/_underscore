@@ -24,9 +24,10 @@ When working on ANY UI code (components, views, styles), you MUST:
 - ✅ **Always** use `var(--rule)` or `var(--rule-soft)` for borders.
 - ✅ **Always** reference wireframe JSX in `ui_kits/extension/v2/` as the implementation spec.
 
-### Design System: V2 "Editorial"
+### Design System: V2 "Editorial" (Layer 10 Locked - Post-Purge)
 
 This project uses **V2 Editorial** as the single design system.
+- STATUS: **Layer 10 Locked (Post-Purge)**. No legacy tokens or Tailwind classes exist in the codebase.
 - It is a pure CSS custom properties approach with zero Tailwind dependencies.
 - You must exactly match the wireframes in `ui_kits/extension/v2/`.
 

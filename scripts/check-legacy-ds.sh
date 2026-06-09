@@ -120,12 +120,12 @@ done
 if [[ "$total_violations" -gt 0 ]]; then
   echo "---"
   if [[ "$SOFT" -eq 1 ]]; then
-    echo "Total: $total_violations violation(s) across $total_categories categories. (--soft: exiting 0 for transition; remove --soft to enforce.)"
+    echo "Total: $total_violations violation(s) across $total_categories categories. (--soft mode)"
     exit 0
   fi
   echo "Total: $total_violations violation(s) across $total_categories categories. Exit 1."
   exit 1
 fi
 
-echo "OK — 0 violations across 11 categories."
+echo "OK — Layer 10 baseline: 0 violations across 11 categories confirmed."
 exit 0

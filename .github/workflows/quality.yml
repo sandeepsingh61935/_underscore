@@ -55,10 +55,9 @@ jobs:
         if: github.event_name == 'push'
         run: npm run format:check
 
-      - name: Legacy design system check (advisory until Layer 10)
-        # Switch to check:legacy-ds:strict (no --soft) when src/ reaches 0 violations
-        # across all 11 categories. Until then, this step reports counts but does not block.
-        run: npm run check:legacy-ds -- --soft src/
+      - name: Legacy design system check
+        # Layer 10: Strict enforcement of 0 legacy DS violations.
+        run: npm run check:legacy-ds -- src/
 
       - name: Run unit tests
         if: github.event_name == 'push'
