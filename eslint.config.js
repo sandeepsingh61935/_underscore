@@ -147,7 +147,7 @@ js.configs.recommended, // TypeScript files
     // appear in component code. Use MD3 Tailwind classes instead.
     // Reference: .agent/workflows/ui-code-contracts.md §2
     'no-restricted-syntax': [
-      'warn', // Migration mode (M1–M4): set back to 'error' once all violations are resolved (0 count).
+      'error', // Migration mode (M1–M4): set back to 'error' once all violations are resolved (0 count).
       {
         selector: 'Literal[value=/var\\(--(?:bg|bg-card|bg-elevated|bg-glass|text-primary|text-secondary|text-tertiary|accent(?!-text|-soft)?|accent-soft|accent-text|border(?!-)|border-hover|radius(?!-)|radius-sm|radius-lg|radius-full|shadow-rest|shadow-hover)/]',
         message:
@@ -163,6 +163,42 @@ js.configs.recommended, // TypeScript files
         message:
           'JS DOM style mutation in onMouseLeave is banned. Use Tailwind hover: utilities instead. See .agent/workflows/ui-code-contracts.md §6.',
       },
+      {
+        selector: 'Literal[value=/^#[0-9a-fA-F]{3,8}$/]',
+        message: 'Hardcoded hex colors are banned. Use V2 tokens instead. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'Literal[value=/duration-\\[[0-9]+ms\\]/]',
+        message: 'Arbitrary duration Tailwind classes are banned. Use V2 tokens instead. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'JSXOpeningElement[name.name="button"] JSXAttribute[name.name="className"] Literal[value=/(?:^|\\s)h-(?:7|8|9|10)(?:\\s|$)/]',
+        message: 'Undersized touch target on button (h-7, h-8, h-9, h-10). Minimum 44px required. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'JSXOpeningElement:has(JSXAttribute[name.name="role"][value.value="button"]) JSXAttribute[name.name="className"] Literal[value=/(?:^|\\s)h-(?:7|8|9|10)(?:\\s|$)/]',
+        message: 'Undersized touch target on element with role="button". Minimum 44px required. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'Literal[value=/[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}\\u{1F600}-\\u{1F64F}\\u{1F680}-\\u{1F6FF}\\u{1F700}-\\u{1F77F}\\u{1F780}-\\u{1F7FF}\\u{1F800}-\\u{1F8FF}\\u{1F900}-\\u{1F9FF}\\u{1FA00}-\\u{1FA6F}\\u{1FA70}-\\u{1FAFF}\\u{2B50}\\u{2B55}]/u]',
+        message: 'Emojis are banned in source files to maintain editorial tone. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'TemplateElement[value.raw=/[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}\\u{1F600}-\\u{1F64F}\\u{1F680}-\\u{1F6FF}\\u{1F700}-\\u{1F77F}\\u{1F780}-\\u{1F7FF}\\u{1F800}-\\u{1F8FF}\\u{1F900}-\\u{1F9FF}\\u{1FA00}-\\u{1FA6F}\\u{1FA70}-\\u{1FAFF}\\u{2B50}\\u{2B55}]/u]',
+        message: 'Emojis are banned in source files to maintain editorial tone. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'JSXText[value=/[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}\\u{1F600}-\\u{1F64F}\\u{1F680}-\\u{1F6FF}\\u{1F700}-\\u{1F77F}\\u{1F780}-\\u{1F7FF}\\u{1F800}-\\u{1F8FF}\\u{1F900}-\\u{1F9FF}\\u{1FA00}-\\u{1FA6F}\\u{1FA70}-\\u{1FAFF}\\u{2B50}\\u{2B55}]/u]',
+        message: 'Emojis are banned in source files to maintain editorial tone. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'Literal[value=/(?:^|\\s)(?:text-muted-foreground|bg-primary|text-on-surface|border-outline-variant|shadow-elevation-[0-9]+)(?:\\s|$)/]',
+        message: 'Legacy Tailwind utility classes are banned. Use V2 tokens instead. See ui_kits/extension/v2/tokens.css.',
+      },
+      {
+        selector: 'Literal[value=/(?:^|\\s)(?:rounded-\\[[0-9]+px\\]|text-\\[[0-9]+px\\])(?:\\s|$)/]',
+        message: 'Arbitrary shapes or type sizes are banned. Use V2 single-radius and step-based type scales. See ui_kits/extension/v2/tokens.css.',
+      }
     ],
   },
 }, // Test files - relaxed rules
