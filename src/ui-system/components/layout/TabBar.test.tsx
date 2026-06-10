@@ -5,14 +5,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { TabBar } from './TabBar';
 
 describe('TabBar', () => {
-  it('renders four tabs in order: Home, Library, Capture, Settings', () => {
+  it('renders three tabs in order: Home, Library, Settings', () => {
     render(<TabBar active="home" onChange={vi.fn()} />);
     const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(4);
+    expect(buttons).toHaveLength(3);
     expect(buttons[0]).toHaveTextContent('Home');
     expect(buttons[1]).toHaveTextContent('Library');
-    expect(buttons[2]).toHaveTextContent('Capture');
-    expect(buttons[3]).toHaveTextContent('Settings');
+    expect(buttons[2]).toHaveTextContent('Settings');
   });
 
   it('marks the active tab with the "active" class', () => {
