@@ -253,7 +253,6 @@ function PopupApp(): React.ReactElement {
     switch (tab) {
       case 'home':        setCurrentView(View.DASHBOARD); break;
       case 'collections': setCurrentView(View.COLLECTIONS); break;
-      case 'capture':     /* future — noop */ break;
       case 'settings':    handleSettingsClick(); break;
     }
   };

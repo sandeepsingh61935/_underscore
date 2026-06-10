@@ -1,6 +1,6 @@
 // src/entrypoints/popup/chrome.ts
 
-export type ActiveTab = 'home' | 'collections' | 'capture' | 'settings';
+export type ActiveTab = 'home' | 'collections' | 'settings';
 export type ViewKey =
   | 'LOADING'
   | 'WELCOME'
