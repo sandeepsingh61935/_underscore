@@ -1,12 +1,14 @@
 /**
- * V2 Card Component
- *
- * V2 uses borders for separation (not box-shadows). Surface: --paper-2.
- * Border: --rule-soft. Text: --ink. No spring curve (uses standard ease).
- *
- * Per the contract: `rounded-[10px]` → V2 --radius (2px). The Card
- * uses `rounded` Tailwind utility (V2 radius token) plus an optional
- * thick `--rule` border for `elevated`.
+ * Wireframe: ui_kits/extension/v2/tokens.css L329-343 (.u-card-row CSS — list
+ *   row pattern with hover state, separate from this surface Card).
+ *   The wireframe uses inline-style Cards in screens (e.g. Dialog body, L870
+ *   Card title demo). V2 surface contract locked here:
+ *     - background: var(--paper-2)
+ *     - border: var(--rule-soft) (default) | var(--rule) (elevated)
+ *     - text: var(--ink)
+ *     - no box-shadows; padding: 16px (p-4); border-radius: --radius
+ *     - interactive -> <button> for click target
+ * V2 uses borders for separation (not box-shadows). No spring curve.
  */
 
 import React, { type CSSProperties, type HTMLAttributes, forwardRef } from 'react';
