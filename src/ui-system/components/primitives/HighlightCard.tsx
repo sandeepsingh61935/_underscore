@@ -1,3 +1,12 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L767-795 (V2_HighlightCard)
+ * V2 contract:
+ *   - Background var(--paper), border-bottom 1px var(--rule-soft).
+ *   - Two densities: compact 10px / comfortable 14px vertical padding.
+ *   - Quote: u-serif, 14px, --ink. qmark glyph 28px.
+ *   - Meta: u-mono, 10px, --ink-3, "domain" or "domain / section".
+ *   - Optional inline TTLBadge when ttlMs set.
+ */
 import React from 'react';
 
 import { TTLBadge } from './TTLBadge';
