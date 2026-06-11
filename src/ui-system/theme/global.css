@@ -60,6 +60,16 @@
   /* System meta-tool exception — iOS toggle "on" state. */
   --utility-ok: #34c759;
 
+  /* TTL countdown state colors — fresh/warning/expired wash.
+     State-color exceptions per feedback_v2_state_colors.md. */
+  --ttl-fresh:    #2c7a4b;        /* > 6h remaining */
+  --ttl-low:      #b8731a;        /* < 6h remaining */
+  --ttl-expired:  #8a2a1a;        /* past deadline */
+  --ttl-wash:     rgba(184, 115, 26, 0.12);  /* low-TTL background wash */
+
+  /* Sync success state — matches --utility-ok family. */
+  --synced:       #2c8a3a;
+
   /* Tweaks panel custom tokens */
   --tweak-paper:              rgba(250, 249, 247, 0.78);
   --tweak-border:             rgba(255, 255, 255, 0.60);
