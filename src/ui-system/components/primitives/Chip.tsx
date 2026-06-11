@@ -1,7 +1,10 @@
 /**
- * V2 Chip Component
- * Built on the V2 tonalPill helpers (--rule-soft border, --paper-2 surface,
- * --accent for the selected state). Per V2 spec, touch target is 44px.
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L627-677 (V2_Chip)
+ * V2 contract:
+ *   - filter variant: 44px tall, 2px radius, --paper-2 surface,
+ *     --rule-soft border default, --accent border+text when selected.
+ *   - input variant: pill (borderRadius: 999), --paper-2 surface,
+ *     --rule-soft border, 32px height, trailing × button when onRemove set.
  */
 
 import { X } from 'lucide-react';
