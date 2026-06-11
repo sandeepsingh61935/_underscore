@@ -1,7 +1,9 @@
 /**
- * V2 Text Field Component
- * Border uses --rule (focus: --accent), text --ink, font-size --step-0.
- * Error state uses --accent per V2 single-accent rule.
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L827-850 (V2_Input)
+ * V2 contract: 4 states (default/focus/error/disabled), 44px height,
+ *   border 1px (var(--rule) default | var(--accent) focus/error),
+ *   2px focus ring var(--accent), background var(--paper).
+ *   Error state uses --accent per V2 single-accent rule.
  */
 
 import React, { forwardRef } from 'react';
