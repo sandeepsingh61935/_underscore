@@ -1,3 +1,8 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L1131-1141 (V2_Separator)
+ * V2 contract: hairline 1px tall (horizontal) or 1px wide (vertical) with
+ *   var(--rule-soft) background. No inset or label variants in wireframe.
+ */
 import * as React from "react"
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 import { cn } from "@/ui-system/utils/cn"
