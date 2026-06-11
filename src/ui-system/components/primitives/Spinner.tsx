@@ -1,3 +1,11 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L532-546 (V2_Spinner)
+ * V2 contract:
+ *   - 2px solid ring, border-radius 50%, default border var(--rule-soft),
+ *     border-top-color var(--accent) (the rotating edge).
+ *   - sm/md/lg sizes from SPINNER_SIZES map (16/24/32 in current impl).
+ *   - role="status", aria-label="Loading" for a11y.
+ */
 import React from 'react';
 import { cn } from '../../utils/cn';
 
