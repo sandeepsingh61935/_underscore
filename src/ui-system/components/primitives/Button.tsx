@@ -1,3 +1,10 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L233-262 (.btn CSS in tokens.css)
+ * V2 contract: 4 variants (default/primary/accent/ghost) -> var(--paper) /
+ *   var(--rule) / var(--accent) / var(--rule-soft) borders.
+ *   2 sizes: default (44px) and sm (32px). min-height enforced by .btn CSS.
+ *   Loading state: monospace "Loading..." text + disabled.
+ */
 import React, { type ButtonHTMLAttributes, forwardRef } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
