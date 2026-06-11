@@ -1,3 +1,11 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L548-625 (V2_Skeleton)
+ * V2 contract:
+ *   - Surface: --paper-2, 2px radius, prefers-reduced-motion renders at 0.5 opacity.
+ *   - 5 variants: base | text | avatar | collectionCard | highlightCard.
+ *   - Wireframe collectionCard: 320x64, 40px avatar + 32px action circles.
+ *   - Wireframe highlightCard: 320x80, 4px left rule, 3 text lines + meta.
+ */
 import React from 'react';
 import { cn } from '../../utils/cn';
 
