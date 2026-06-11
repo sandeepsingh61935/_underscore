@@ -1,3 +1,13 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L1019-1037 (V2_Text)
+ * V2 contract:
+ *   - step + family params map to size + u-serif|u-sans|u-mono class.
+ *   - 9 step-scale sizes; families sans/serif/mono.
+ *
+ * Note: current impl uses variant-based step map (MD3-style ramp) but
+ * routes to V2 step tokens. No family prop is exposed yet; family-class
+ * routing is a future cycle. Tests lock what the public contract exposes.
+ */
 import type { CSSProperties, ElementType, HTMLAttributes } from 'react';
 import React, { forwardRef } from 'react';
 
