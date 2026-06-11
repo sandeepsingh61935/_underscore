@@ -1,7 +1,15 @@
 /**
- * V2 Icon Component
- * Color tokens routed to V2 vars: --ink (default), --accent (primary/error),
- * --ink-2 (muted). Layout (sm/md/lg sizing) unchanged.
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L1052-1066 (V2_Icon)
+ * V2 contract:
+ *   - SVG with viewBox "0 0 24 24", fill "none", stroke "var(--ink)",
+ *     strokeWidth "1.6", strokeLinecap/join "round".
+ *   - Size 24 default; sm/md/lg scale variants per impl.
+ *   - aria-hidden since icon is decorative (paired with text label).
+ *
+ * Note: current impl uses lucide-react components (not name-based SVG path
+ * lookup). The lucide component already renders with viewBox "0 0 24 24",
+ * fill "none", stroke-linecap/join round. We lock the public contract:
+ * color routes through V2 tokens, sizes match V2 scale, decorative.
  */
 
 import React, { HTMLAttributes } from 'react';
