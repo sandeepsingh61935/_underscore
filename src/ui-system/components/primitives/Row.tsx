@@ -1,3 +1,10 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L308-331 (Row primitive)
+ * V2 contract: <button> with display:grid, columns auto 1fr auto (when left
+ *   is present) or 1fr auto (no left). min-height 44px. padding 14px 16px
+ *   (default) or 10px 16px (compact). border-bottom 1px var(--rule-soft).
+ *   title in --ink / 14px / 500 weight / ellipsis, sub in --ink-3 / 10px mono.
+ */
 import React, { type ReactNode } from 'react';
 
 export interface RowProps {
