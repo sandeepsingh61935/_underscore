@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
@@ -96,6 +96,23 @@ function PopupApp(): React.ReactElement {
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [isStorageReady, setIsStorageReady] = useState(false);
+  const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
+  const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
+
+  // Authentication & Mode Notification / Swapping Effect
+  useEffect(() => {
+    if (isLoading || !isStorageReady) return;
+
+    if (prevUser !== undefined) {
+      if (user && !prevUser) {
+        const name = user.displayName || user.email || 'User';
+        toast.success(`Welcome, ${name}!`);
+      } else if (!user && prevUser) {
+        toast.success('Signed out · Switched to Ephemeral mode');
+      }
+    }
+    setPrevUser(user);
+  }, [user, prevUser, isLoading, isStorageReady]);
 
   // Initialization
   useEffect(() => {
@@ -183,12 +200,16 @@ function PopupApp(): React.ReactElement {
     setCurrentView(View.COLLECTIONS);
   };
 
-  const handleSignInClick = async (): Promise<void> => {
+  const handleSignInClick = async (modeId: ModeType): Promise<void> => {
+    setPendingMode(modeId);
     await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
     setCurrentView(View.AUTH);
   };
 
   const handleLoginSuccess = (): void => {
+    const targetMode = pendingMode || 'cloud';
+    setMode(targetMode);
+    setPendingMode(null);
     setCurrentView(View.COLLECTIONS);
   };
 
@@ -308,6 +329,8 @@ function PopupApp(): React.ReactElement {
             onSignInClick={handleSignInClick}
             onBack={previousView ? handleModeSelectionBack : undefined}
             onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
+            initialMode={currentMode}
+            isAuthenticated={!!user}
           />
         </motion.div>
       )}
