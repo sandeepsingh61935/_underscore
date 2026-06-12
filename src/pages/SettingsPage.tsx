@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '@/core/context/AppProvider';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { Row } from '@/ui-system/components/primitives/Row';
+import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 const TYPE_PRESETS = {
   editorial: {
@@ -40,13 +41,17 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
   const { theme, setTheme, currentMode } = useApp();
   const { user, logout } = useCurrentUser();
   const [typeId, setTypeId] = useState<TypePresetId>('editorial');
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // onBack is still required on the interface for callers passing it to the shell's ModeHeader
   // _onBack is intentionally unused in the body-only version
 
   const handleSignOut = async (): Promise<void> => {
-    if (window.confirm('Sign out of _underscore?')) {
+    setIsSigningOut(true);
+    try {
       await logout();
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -119,8 +124,16 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
         <Row
           title={user?.email || 'Guest User'}
           sub={user ? 'Signed in' : 'Local mode'}
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>{user ? 'Sign out' : 'Sign in'}</span>}
-          onClick={user ? handleSignOut : undefined}
+          right={
+            isSigningOut ? (
+              <Spinner size="sm" />
+            ) : (
+              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+                {user ? 'Sign out' : 'Sign in'}
+              </span>
+            )
+          }
+          onClick={user && !isSigningOut ? handleSignOut : undefined}
         />
         <Row
           title="Configure AI providers"
