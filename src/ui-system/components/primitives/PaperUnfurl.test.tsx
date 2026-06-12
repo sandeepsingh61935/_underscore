@@ -1,3 +1,9 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx L496-508
+ * V2 contract:
+ *   - Fade-out + lift (opacity: 0, translateY(4px)) when open is false.
+ *   - Skips transition when prefers-reduced-motion is on.
+ */
 import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
