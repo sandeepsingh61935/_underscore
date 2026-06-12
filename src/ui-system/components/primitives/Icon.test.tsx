@@ -25,10 +25,10 @@ describe('Icon (V2 wireframe contract)', () => {
     expect(span.getAttribute('style') ?? '').toContain('var(--ink)');
   });
 
-  it('routes primary color to var(--accent)', () => {
+  it('routes primary color to var( --accent )', () => {
     const { container } = render(<Icon icon={Search} color="primary" />);
     const span = container.firstElementChild as HTMLElement;
-    expect(span.getAttribute('style') ?? '').toContain('var(--accent)');
+    expect(span.getAttribute('style') ?? '').toContain('var( --accent )');
   });
 
   it('routes on-surface-variant color to var(--ink-2)', () => {
@@ -37,10 +37,10 @@ describe('Icon (V2 wireframe contract)', () => {
     expect(span.getAttribute('style') ?? '').toContain('var(--ink-2)');
   });
 
-  it('routes error color to var(--accent) per V2 single-accent rule', () => {
+  it('routes error color to var( --accent ) per V2 single-accent rule', () => {
     const { container } = render(<Icon icon={Search} color="error" />);
     const span = container.firstElementChild as HTMLElement;
-    expect(span.getAttribute('style') ?? '').toContain('var(--accent)');
+    expect(span.getAttribute('style') ?? '').toContain('var( --accent )');
   });
 
   it('default size md renders 24px square (matches wireframe 24px default)', () => {

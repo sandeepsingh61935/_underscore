@@ -2,7 +2,7 @@
  * Wireframe: ui_kits/extension/v2/primitives.jsx L532-546 (V2_Spinner)
  * V2 contract:
  *   - 2px solid ring, border-radius 50%, default border var(--rule-soft),
- *     border-top-color var(--accent) (the rotating edge).
+ *     border-top-color var( --accent ) (the rotating edge).
  *   - sm/md/lg sizes from SPINNER_SIZES map (16/24/32 in current impl).
  *   - role="status", aria-label="Loading" for a11y.
  */
@@ -18,11 +18,11 @@ describe('Spinner (V2 wireframe contract)', () => {
     expect(screen.getByRole('status', { name: /loading/i })).toBeTruthy();
   });
 
-  it('routes border-top-color to var(--accent)', () => {
+  it('routes border-top-color to var( --accent )', () => {
     const { container } = render(<Spinner />);
     const el = container.firstElementChild as HTMLElement;
     const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('border-top-color: var(--accent)');
+    expect(style).toContain('border-top-color: var( --accent )');
   });
 
   it('routes default border (right/bottom/left) to var(--rule-soft)', () => {

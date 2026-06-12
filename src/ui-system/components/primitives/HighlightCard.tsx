@@ -31,7 +31,7 @@ export function HighlightCard({ quote, domain, section, ttlMs, density = "comfor
             {quote}
           </div>
           <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+            <div className="u-mono" style={{ fontSize: 10, color: "var( --ink-3 )", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
               {domain}{section ? ` / ${section}` : ""}
             </div>
             {ttlMs !== undefined && ttlMs !== null && <TTLBadge ms={ttlMs} />}

@@ -28,12 +28,12 @@ describe('Card (V2 surface)', () => {
     const el = container.firstElementChild as HTMLElement;
     const style = el.getAttribute('style') ?? '';
     expect(style).toContain('var(--rule-soft)');
-    expect(style).not.toContain('var(--rule)');
+    expect(style).not.toContain('var( --rule )');
 
     rerender(<Card elevated>x</Card>);
     const elevated = container.firstElementChild as HTMLElement;
     const elevatedStyle = elevated.getAttribute('style') ?? '';
-    expect(elevatedStyle).toContain('var(--rule)');
+    expect(elevatedStyle).toContain('var( --rule )');
   });
 
   it('renders a <button> element when interactive is true', () => {

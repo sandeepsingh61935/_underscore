@@ -40,7 +40,7 @@ export function TTLMeter({ ms, total = 24 * 60 * 60 * 1000 }: TTLMeterProps): Re
                         fontSize: 10,
                         letterSpacing: '0.14em',
                         textTransform: 'uppercase',
-                        color: 'var(--ink-3)',
+                        color: 'var( --ink-3 )',
                     }}
                 >
                     {state === 'expired' ? 'Expired' : 'Expires in'}

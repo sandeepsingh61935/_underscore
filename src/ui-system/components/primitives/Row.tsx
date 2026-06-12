@@ -37,7 +37,7 @@ export function Row({ left, title, right, onClick, compact = false, sub }: RowPr
         <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {title}
         </div>
-        {sub && <div className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 2 }}>{sub}</div>}
+        {sub && <div className="u-mono" style={{ fontSize: 10, color: "var( --ink-3 )", marginTop: 2 }}>{sub}</div>}
       </div>
       {right}
     </button>

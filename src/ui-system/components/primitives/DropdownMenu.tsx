@@ -27,7 +27,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     className={cn(
       'flex min-h-[44px] cursor-default select-none items-center gap-2 rounded px-3 transition-colors',
       'data-[highlighted]:bg-[var(--paper-2)] data-[highlighted]:text-[var(--ink)]',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
       inset && 'pl-8',
       className
     )}
@@ -96,7 +96,7 @@ const DropdownMenuItem = React.forwardRef<
     className={cn(
       'relative flex min-h-[44px] cursor-default select-none items-center gap-2 rounded px-3 transition-colors',
       'data-[highlighted]:bg-[var(--paper-2)] data-[highlighted]:text-[var(--ink)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
       '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
       inset && 'pl-8',
       className
@@ -116,7 +116,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     className={cn(
       'relative flex min-h-[44px] cursor-default select-none items-center rounded pl-10 pr-3 transition-colors',
       'data-[highlighted]:bg-[var(--paper-2)] data-[highlighted]:text-[var(--ink)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
       className
     )}
     style={{ fontSize: 'var(--step-0)', color: 'var(--ink)', ...style }}
@@ -142,7 +142,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     className={cn(
       'relative flex min-h-[44px] cursor-default select-none items-center rounded pl-10 pr-3 transition-colors',
       'data-[highlighted]:bg-[var(--paper-2)] data-[highlighted]:text-[var(--ink)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
       className
     )}
     style={{ fontSize: 'var(--step-0)', color: 'var(--ink)', ...style }}

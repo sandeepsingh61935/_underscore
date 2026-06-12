@@ -38,13 +38,13 @@ describe('Text (V2 wireframe contract)', () => {
   it('muted variant routes to --ink-3', () => {
     const { container } = render(<Text muted>Quiet</Text>);
     const el = container.firstElementChild as HTMLElement;
-    expect(el.getAttribute('style') ?? '').toContain('var(--ink-3)');
+    expect(el.getAttribute('style') ?? '').toContain('var( --ink-3 )');
   });
 
   it('link variant routes to --accent', () => {
     const { container } = render(<Text variant="link">Go</Text>);
     const el = container.firstElementChild as HTMLElement;
-    expect(el.getAttribute('style') ?? '').toContain('var(--accent)');
+    expect(el.getAttribute('style') ?? '').toContain('var( --accent )');
   });
 
   it('h1 variant renders as <h1>', () => {

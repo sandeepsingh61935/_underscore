@@ -2,8 +2,8 @@
  * Wireframe: ui_kits/extension/v2/primitives.jsx L746-760 (V2_TrustSignal)
  * V2 contract:
  *   - Container: inline-flex, items center, gap 8.
- *   - Lock SVG: 12x12, viewBox 0 0 24 24, stroke var(--ink-3), strokeWidth 1.6.
- *   - Text: "Your data stays yours — encrypted and private", .u-sans, 11px, var(--ink-3), 0.02em tracking.
+ *   - Lock SVG: 12x12, viewBox 0 0 24 24, stroke var( --ink-3 ), strokeWidth 1.6.
+ *   - Text: "Your data stays yours — encrypted and private", .u-sans, 11px, var( --ink-3 ), 0.02em tracking.
  */
 import React from 'react';
 
@@ -22,7 +22,7 @@ export function TrustSignal({ className }: TrustSignalProps): React.ReactElement
                 height="12"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--ink-3)"
+                stroke="var( --ink-3 )"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -33,7 +33,7 @@ export function TrustSignal({ className }: TrustSignalProps): React.ReactElement
             </svg>
             <span
                 className="u-sans"
-                style={{ fontSize: 11, color: 'var(--ink-3)', letterSpacing: '0.02em' }}
+                style={{ fontSize: 11, color: 'var( --ink-3 )', letterSpacing: '0.02em' }}
             >
                 Your data stays yours — encrypted and private
             </span>

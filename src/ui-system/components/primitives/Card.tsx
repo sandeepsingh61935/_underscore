@@ -4,7 +4,7 @@
  *   The wireframe uses inline-style Cards in screens (e.g. Dialog body, L870
  *   Card title demo). V2 surface contract locked here:
  *     - background: var(--paper-2)
- *     - border: var(--rule-soft) (default) | var(--rule) (elevated)
+ *     - border: var(--rule-soft) (default) | var( --rule ) (elevated)
  *     - text: var(--ink)
  *     - no box-shadows; padding: 16px (p-4); border-radius: --radius
  *     - interactive -> <button> for click target
@@ -25,7 +25,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         const computedStyle: CSSProperties = {
             backgroundColor: 'var(--paper-2)',
             color: 'var(--ink)',
-            border: `1px solid ${elevated ? 'var(--rule)' : 'var(--rule-soft)'}`,
+            border: `1px solid ${elevated ? 'var( --rule )' : 'var(--rule-soft)'}`,
             ...style,
         };
 
@@ -38,7 +38,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
                     'rounded p-4 text-left border-0 w-full cursor-pointer',
                     'transition-colors',
                     'hover:bg-[color-mix(in_oklch,var(--ink)_6%,var(--paper-2))]',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
                     className,
                 )}
                 {...(props as React.HTMLAttributes<HTMLElement>)}

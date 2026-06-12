@@ -31,7 +31,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
         const sharedChipClasses = cn(
             'inline-flex min-h-[44px] items-center justify-center gap-2',
             'transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
             'disabled:opacity-50 disabled:pointer-events-none'
         );
 
@@ -41,7 +41,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                 tonalPillStandaloneClass,
                 !selected && [
                     tonalPillInactiveClass,
-                    'hover:border-[var(--rule)]',
+                    'hover:border-[var( --rule )]',
                 ],
                 selected && [
                     tonalPillActiveClass,
@@ -66,7 +66,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                         type={type ?? 'button'}
                         onClick={onClick}
                         disabled={disabled}
-                        className="min-h-[44px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+                        className="min-h-[44px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2"
                         {...props}
                     >
                         {children}
@@ -79,7 +79,7 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
                             'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full',
                             'text-[var(--ink-2)] transition-colors',
                             'hover:bg-[color-mix(in_oklch,var(--ink)_8%,transparent)]',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
                             'disabled:opacity-50 disabled:pointer-events-none'
                         )}
                         aria-label="Remove"

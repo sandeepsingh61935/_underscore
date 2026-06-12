@@ -75,7 +75,7 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
                     style={{
                         backgroundColor: 'var(--paper)',
                         color: 'var(--ink)',
-                        border: '1px solid var(--rule)',
+                        border: '1px solid var( --rule )',
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -98,7 +98,7 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
                                         'w-[44px] h-[44px] flex items-center justify-center',
                                         'rounded-full border-0 cursor-pointer',
                                         'transition-colors',
-                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
                                         title ? 'ml-auto' : ''
                                     )}
                                     style={{ color: 'var(--ink-2)' }}

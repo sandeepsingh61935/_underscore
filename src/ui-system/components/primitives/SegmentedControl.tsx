@@ -52,7 +52,7 @@ export function SegmentedControl({
             className={cn(
               'relative flex-1 py-[6px] px-2 rounded border-0 cursor-pointer',
               'transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-1',
             )}
             style={{
               color: isActive ? 'var(--paper)' : 'var(--ink-2)',
@@ -63,7 +63,7 @@ export function SegmentedControl({
               <motion.div
                 layoutId={`seg-indicator-${layoutId}`}
                 className="absolute inset-0 rounded"
-                style={{ backgroundColor: 'var(--accent)' }}
+                style={{ backgroundColor: 'var( --accent )' }}
                 transition={{ type: 'tween', duration: 0.18, ease: 'easeOut' }}
               />
             )}
