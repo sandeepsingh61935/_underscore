@@ -6,7 +6,7 @@ import { Logo } from '../../../ui-system/components/primitives/Logo';
 
 import { VerificationView } from './VerificationView';
 
-import { useApp } from '@/core/context/AppProvider';
+
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
@@ -39,7 +39,7 @@ export function AuthView({
     onLoginSuccess,
     onBackToModeSelection,
 }: AuthViewProps): React.ReactElement {
-    const { setMode } = useApp();
+
     const {
         login, loginWithEmail, registerWithEmail, isLoading, error,
         verificationStatus, verificationExpiresAt
@@ -57,7 +57,6 @@ export function AuthView({
         const result = await login(provider);
         setActiveProvider(null);
         if (result.success) {
-            if (isRegistering) setMode('cloud');
             onLoginSuccess();
         } else {
             setLoginError(result.error || 'Login failed. Please try again.');
@@ -70,7 +69,6 @@ export function AuthView({
         const action = isRegistering ? registerWithEmail : loginWithEmail;
         const result = await action(email, password);
         if (result.success) {
-            if (isRegistering) setMode('cloud');
             onLoginSuccess();
         } else {
             setLoginError(result.error || `${isRegistering ? 'Registration' : 'Login'} failed. Please try again.`);
