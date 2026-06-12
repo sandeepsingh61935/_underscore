@@ -95,3 +95,12 @@ Remove `setMode('cloud')` from `handleProviderClick` (line ~60) and `handleEmail
 4. Already signed in → choose Cloud in Mode Selection → mode switches immediately (no login page)
 5. Sign out → no browser confirm dialog → in-place spinner appears → mode resets to Ephemeral → sign-out toast fires
 6. Auth failure → inline error in `AuthView` only (no toast)
+
+---
+
+## Future Cases (Not In Scope Here)
+
+| Case | Summary | Key Files |
+|------|---------|-----------|
+| Case 2 | `useModeTransition` hook has its own auth-gating (`navigate('/sign-in')`) and mode transition logic used by the web app router — not wired to popup. Needs audit + wiring. | `src/features/modes/useModeTransition.ts`, `src/core/routing/AppRoutes.tsx` |
+| Case 3 | Web app `SignInView` uses **fake localStorage auth** (hardcoded users, no Supabase). Must be replaced with real `useCurrentUser` auth flow. | `src/pages/SignInView.tsx` (the web-app version, not the popup `AuthView`) |

@@ -612,3 +612,12 @@ After all tasks complete, load the unpacked extension and verify manually:
 4. **UX 1:** Click "Continue with Google" in AuthView → **Google account picker appears** (not auto-signed in)
 5. **UX 3:** Settings → Sign out → **no confirm dialog** → spinner appears in-place → navigates away → `"Signed out · Switched to Ephemeral mode"` toast fires
 6. **Regression:** Auth failure (bad password) → **inline error in AuthView** only, no toast
+
+---
+
+## Future Cases (Not In Scope Here)
+
+| Case | Summary | Key Files |
+|------|---------|-----------|
+| Case 2 | `useModeTransition` hook has own auth-gating (`navigate('/sign-in')`) used by web app router — needs audit + wiring to popup flow. | `src/features/modes/useModeTransition.ts`, `src/core/routing/AppRoutes.tsx` |
+| Case 3 | Web app `SignInView` uses fake localStorage auth (hardcoded users, no Supabase). Replace with real `useCurrentUser` flow. | `src/pages/SignInView.tsx` (web-app variant, not popup `AuthView`) |
