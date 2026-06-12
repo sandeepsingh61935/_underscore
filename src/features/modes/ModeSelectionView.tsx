@@ -7,13 +7,22 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export interface ModeSelectionViewProps {
   onModeSelect?: (modeId: string) => void;
-  onSignInClick?: () => void;
+  onSignInClick?: (modeId: ModeType) => void;
   onBack?: () => void;
   onNavigateToCollections?: () => void;
+  initialMode?: ModeType;
+  isAuthenticated?: boolean;
 }
 
-export function ModeSelectionView({ onModeSelect, onSignInClick, onBack: _onBack, onNavigateToCollections }: ModeSelectionViewProps = {}): React.ReactElement {
-  const [sel, setSel] = useState<ModeType>('local');
+export function ModeSelectionView({
+  onModeSelect,
+  onSignInClick,
+  onBack: _onBack,
+  onNavigateToCollections,
+  initialMode,
+  isAuthenticated = false,
+}: ModeSelectionViewProps = {}): React.ReactElement {
+  const [sel, setSel] = useState<ModeType>(initialMode ?? 'local');
 
   const modes = [
     modeRegistry.get('ephemeral')!,
@@ -24,9 +33,9 @@ export function ModeSelectionView({ onModeSelect, onSignInClick, onBack: _onBack
 
   const handleContinue = (): void => {
     const selectedMode = modeRegistry.get(sel);
-    if (selectedMode?.signin) {
+    if (selectedMode?.signin && !isAuthenticated) {
       if (onSignInClick) {
-        onSignInClick();
+        onSignInClick(sel);
       }
       return;
     }
