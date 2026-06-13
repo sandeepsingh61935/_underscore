@@ -44,7 +44,7 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
 
             // Auth-gated modes — redirect to sign-in
             if ((targetMode === 'cloud' || targetMode === 'ai') && !isAuthenticated) {
-                navigate('/sign-in');
+                navigate(`/sign-in?intendedMode=${targetMode}`);
                 return;
             }
 

@@ -26,11 +26,28 @@ function ModeSelectionRoute(): React.JSX.Element {
     );
 }
 
+function IntentCatcher({ children }: { children: React.ReactNode }) {
+    const { setMode } = useApp();
+    const navigate = useNavigate();
+    
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const intendedMode = params.get('intendedMode');
+        if (intendedMode === 'cloud' || intendedMode === 'ai') {
+            setMode(intendedMode);
+            navigate('/collections', { replace: true });
+        }
+    }, [setMode, navigate]);
+
+    return <>{children}</>;
+}
+
 export function AppRoutes() {
     return (
         <AppProvider>
             <BrowserRouter>
-                <Routes>
+                <IntentCatcher>
+                    <Routes>
                     <Route path="/" element={<WelcomePage />} />
                     <Route path="/sign-in" element={<SignInView />} />
                     <Route path="/mode" element={<ModeSelectionRoute />} />
@@ -38,9 +55,9 @@ export function AppRoutes() {
                     <Route path="/domain/:domain" element={<DomainDetailsView />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
-                    {/* Catch-all */}
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
+                </IntentCatcher>
             </BrowserRouter>
         </AppProvider>
     );
