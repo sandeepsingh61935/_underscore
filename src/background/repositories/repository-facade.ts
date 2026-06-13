@@ -14,6 +14,11 @@ import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highligh
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
+import { browser } from 'wxt/browser';
+import { readLocalCollections } from '@/background/services/local-collections-reader';
+import { hashDomain, decryptData } from '@/shared/utils/crypto-utils';
+import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
+
 import type { IHighlightRepository } from './i-highlight-repository';
 
 /**
@@ -255,5 +260,119 @@ export class RepositoryFacade {
     this.repository.addMany(highlights).catch((error) => {
       this.logger.error('Background bulk add failed', error);
     });
+  }
+
+  // ============================================
+  // BACKGROUND QUERIES (Moving from God Object)
+  // ============================================
+
+  async getCollections(mode?: string) {
+    this.ensureInitialized();
+    let collections = await readLocalCollections();
+    if (mode) {
+      collections = collections.filter(c => c.mode === mode);
+    }
+    return collections;
+  }
+
+  async getHighlightsByDomain(domain: string) {
+    this.ensureInitialized();
+    if (!domain) {
+      throw new Error('Domain required');
+    }
+
+    const hashedKey = await hashDomain(domain);
+    const result = await browser.storage.local.get(hashedKey);
+    const domainStorage = result[hashedKey] as DomainStorage | undefined;
+
+    if (!domainStorage?.data) {
+      return [];
+    }
+
+    const decrypted = await decryptData(domainStorage.data, domain);
+    const eventLog: EventLog = JSON.parse(decrypted);
+
+    // Project events: track created highlights, remove deleted ones
+    const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
+    for (const event of eventLog.events) {
+      if (event.type === 'highlight.created') {
+        highlightMap.set(event.data.id, event.data);
+      } else if (event.type === 'highlight.removed') {
+        highlightMap.delete(event.highlightId);
+      } else if (event.type === 'highlights.cleared') {
+        highlightMap.clear();
+      }
+    }
+
+    const highlights = Array.from(highlightMap.values()).map(hl => ({
+      id: hl.id,
+      text: hl.text,
+      url: hl.url ?? '',
+      path: hl.url ? new URL(hl.url).pathname : '/',
+      createdAt: hl.createdAt,
+    })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return highlights;
+  }
+
+  async getDashboardData(mode?: string) {
+    this.ensureInitialized();
+    let collections = await readLocalCollections();
+    if (mode) {
+      collections = collections.filter(c => c.mode === mode);
+    }
+    let totalHighlights = 0;
+    let totalDomains = collections.length;
+    
+    let allRecentHighlights: any[] = [];
+    let thisWeekCount = 0;
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    for (const col of collections) {
+      totalHighlights += col.highlightCount;
+      
+      const hashedKey = await hashDomain(col.domain);
+      const result = await browser.storage.local.get(hashedKey);
+      const domainStorage = result[hashedKey] as DomainStorage | undefined;
+      if (!domainStorage?.data) continue;
+      
+      const decrypted = await decryptData(domainStorage.data, col.domain);
+      const eventLog: EventLog = JSON.parse(decrypted);
+      
+      const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
+      for (const event of eventLog.events) {
+        if (event.type === 'highlight.created') {
+          highlightMap.set(event.data.id, event.data);
+        } else if (event.type === 'highlight.removed') {
+          highlightMap.delete(event.highlightId);
+        } else if (event.type === 'highlights.cleared') {
+          highlightMap.clear();
+        }
+      }
+      
+      for (const hl of highlightMap.values()) {
+        const createdAt = new Date(hl.createdAt).getTime();
+        if (createdAt >= oneWeekAgo) {
+          thisWeekCount++;
+        }
+        allRecentHighlights.push({
+          id: hl.id,
+          text: hl.text,
+          url: hl.url ?? '',
+          path: hl.url ? new URL(hl.url).pathname : '/',
+          domain: col.domain,
+          createdAt: hl.createdAt,
+        });
+      }
+    }
+    
+    allRecentHighlights.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return {
+      totalHighlights,
+      totalDomains,
+      thisWeekCount,
+      recentHighlights: allRecentHighlights.slice(0, 10)
+    };
   }
 }

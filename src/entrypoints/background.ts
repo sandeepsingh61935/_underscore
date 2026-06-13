@@ -6,13 +6,11 @@
 // Polyfill environment removed
 import { browser } from 'wxt/browser';
 
-import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
-import { initializeBackground } from '@/background/bootstrap'; // Static import
+import type { IAuthManager, OAuthProviderType, AuthState } from '@/background/auth/interfaces/i-auth-manager';
+import { initializeBackground } from '@/background/bootstrap';
 import type { Container } from '@/background/di/container';
-import { readLocalCollections } from '@/background/services/local-collections-reader';
-import { hashDomain, decryptData } from '@/shared/utils/crypto-utils';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
+import { DomainQueryService } from '@/background/services/domain-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Background');
@@ -147,16 +145,14 @@ export default defineBackground({
       });
 
       // --- Collections API handlers ---
+      
+      const domainQueryService = new DomainQueryService(repositoryFacade);
 
       // Get Collections (Grouped by Domain) Handler
-      // Reads unified __collections_index: covers Walk (24h TTL), Sprint (permanent), Vault cache
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
         logger.info('Handling GET_COLLECTIONS request', { mode: payload?.mode });
         try {
-          let collections = await readLocalCollections();
-          if (payload?.mode) {
-            collections = collections.filter(c => c.mode === payload.mode);
-          }
+          const collections = await domainQueryService.handleGetCollectionsRequest(payload?.mode);
           return { success: true, data: { collections } };
         } catch (error) {
           logger.error('GET_COLLECTIONS failed', error as Error);
@@ -167,42 +163,8 @@ export default defineBackground({
       // Get Highlights By Domain Handler
       messageBus.subscribe('GET_HIGHLIGHTS_BY_DOMAIN', async (payload: { domain: string }) => {
         logger.info('Handling GET_HIGHLIGHTS_BY_DOMAIN request', { domain: payload.domain });
-        if (!payload.domain) {
-          throw new Error('Domain required');
-        }
-
         try {
-          const hashedKey = await hashDomain(payload.domain);
-          const result = await browser.storage.local.get(hashedKey);
-          const domainStorage = result[hashedKey] as DomainStorage | undefined;
-
-          if (!domainStorage?.data) {
-            return { success: true, data: { highlights: [] } };
-          }
-
-          const decrypted = await decryptData(domainStorage.data, payload.domain);
-          const eventLog: EventLog = JSON.parse(decrypted);
-
-          // Project events: track created highlights, remove deleted ones
-          const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
-          for (const event of eventLog.events) {
-            if (event.type === 'highlight.created') {
-              highlightMap.set(event.data.id, event.data);
-            } else if (event.type === 'highlight.removed') {
-              highlightMap.delete(event.highlightId);
-            } else if (event.type === 'highlights.cleared') {
-              highlightMap.clear();
-            }
-          }
-
-          const highlights = Array.from(highlightMap.values()).map(hl => ({
-            id: hl.id,
-            text: hl.text,
-            url: hl.url ?? '',
-            path: hl.url ? new URL(hl.url).pathname : '/',
-            createdAt: hl.createdAt,
-          })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
+          const highlights = await domainQueryService.handleGetHighlightsByDomainRequest(payload.domain);
           return { success: true, data: { highlights } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
@@ -214,66 +176,8 @@ export default defineBackground({
       messageBus.subscribe('GET_DASHBOARD_DATA', async (payload: { mode?: string }) => {
         logger.info('Handling GET_DASHBOARD_DATA request', { mode: payload?.mode });
         try {
-          let collections = await readLocalCollections();
-          if (payload?.mode) {
-            collections = collections.filter(c => c.mode === payload.mode);
-          }
-          let totalHighlights = 0;
-          let totalDomains = collections.length;
-          
-          let allRecentHighlights: any[] = [];
-          let thisWeekCount = 0;
-          const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-          for (const col of collections) {
-            totalHighlights += col.highlightCount;
-            
-            const hashedKey = await hashDomain(col.domain);
-            const result = await browser.storage.local.get(hashedKey);
-            const domainStorage = result[hashedKey] as DomainStorage | undefined;
-            if (!domainStorage?.data) continue;
-            
-            const decrypted = await decryptData(domainStorage.data, col.domain);
-            const eventLog: EventLog = JSON.parse(decrypted);
-            
-            const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
-            for (const event of eventLog.events) {
-              if (event.type === 'highlight.created') {
-                highlightMap.set(event.data.id, event.data);
-              } else if (event.type === 'highlight.removed') {
-                highlightMap.delete(event.highlightId);
-              } else if (event.type === 'highlights.cleared') {
-                highlightMap.clear();
-              }
-            }
-            
-            for (const hl of highlightMap.values()) {
-              const createdAt = new Date(hl.createdAt).getTime();
-              if (createdAt >= oneWeekAgo) {
-                thisWeekCount++;
-              }
-              allRecentHighlights.push({
-                id: hl.id,
-                text: hl.text,
-                url: hl.url ?? '',
-                path: hl.url ? new URL(hl.url).pathname : '/',
-                domain: col.domain,
-                createdAt: hl.createdAt,
-              });
-            }
-          }
-          
-          allRecentHighlights.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          
-          return {
-            success: true,
-            data: {
-              totalHighlights,
-              totalDomains,
-              thisWeekCount,
-              recentHighlights: allRecentHighlights.slice(0, 10)
-            }
-          };
+          const data = await domainQueryService.handleGetDashboardDataRequest(payload?.mode);
+          return { success: true, data };
         } catch (error) {
           logger.error('GET_DASHBOARD_DATA failed', error as Error);
           throw error;
