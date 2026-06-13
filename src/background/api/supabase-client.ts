@@ -6,7 +6,7 @@
 
 import { createClient, SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces/i-api-client';
-import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import {

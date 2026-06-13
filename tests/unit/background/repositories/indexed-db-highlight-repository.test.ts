@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto';
 import { openDB, deleteDB } from 'idb';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 describe('IndexedDBHighlightRepository', () => {
     let repo: IndexedDBHighlightRepository;

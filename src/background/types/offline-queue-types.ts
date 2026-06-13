@@ -4,7 +4,7 @@
  * @description Type definitions for the offline retry queue
  */
 
-import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 export type OfflineOperationType = 'add' | 'update' | 'remove';
 

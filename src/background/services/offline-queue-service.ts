@@ -10,7 +10,7 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import type { OfflineOperation } from '@/background/types/offline-queue-types';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
-import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 const DB_NAME = 'underscore_offline_queue';
 const DB_VERSION = 1;

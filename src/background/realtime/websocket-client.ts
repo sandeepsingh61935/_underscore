@@ -5,7 +5,7 @@ import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { ILogger } from '@/shared/interfaces/i-logger';
 import { IEncryptionService } from '../auth/interfaces/i-encryption-service';
 import { EventName } from '@/shared/types/events';
-import { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**
  * WebSocket client for real-time synchronization

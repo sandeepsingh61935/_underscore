@@ -18,7 +18,7 @@ import { ResilientAPIClient } from './resilient-api-client';
 import { EncryptedAPIClient } from './encrypted-api-client';
 import { PaginationClient } from './pagination-client';
 import { CacheManager } from './cache-manager';
-import type { HighlightDataV2 } from '@/background/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 /**
  * Register API client components in DI container
