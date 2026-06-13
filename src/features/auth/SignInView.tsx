@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 
 import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
@@ -18,19 +19,30 @@ export function SignInView(): React.ReactElement {
     const [password, setPassword] = useState('');
     const [isSignIn, setIsSignIn] = useState(false);
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            login({
-                id: `email-${Date.now()}`,
-                email,
-                displayName: email.split('@')[0],
-                provider: 'email',
-                photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random`,
-            });
-            navigate('/mode');
+            if (isSignIn) {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.auth.signUp({ email, password });
+                if (error) throw error;
+            }
+            
+            // Email/password doesn't redirect, so manually handle intent or fallback
+            const params = new URLSearchParams(window.location.search);
+            const intendedMode = params.get('intendedMode');
+            if (intendedMode === 'cloud' || intendedMode === 'ai') {
+                window.location.href = `/?intendedMode=${intendedMode}`;
+            } else {
+                navigate('/mode');
+            }
         } catch (err) {
             console.error('Auth error:', err);
         } finally {
@@ -41,18 +53,22 @@ export function SignInView(): React.ReactElement {
     const handleSocialAuth = async (provider: 'google' | 'apple'): Promise<void> => {
         setIsLoading(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            login({
-                id: `${provider}-${Date.now()}`,
-                email: `user@${provider}.com`,
-                displayName: 'Demo User',
+            const params = new URLSearchParams(window.location.search);
+            const intendedMode = params.get('intendedMode');
+            const redirectUrl = new URL(window.location.href);
+            redirectUrl.pathname = '/'; // Base URL
+            if (intendedMode) {
+                redirectUrl.searchParams.set('intendedMode', intendedMode);
+            }
+            
+            await supabase.auth.signInWithOAuth({
                 provider,
-                photoUrl: `https://ui-avatars.com/api/?name=Demo+User&background=random`,
+                options: {
+                    redirectTo: redirectUrl.toString(),
+                }
             });
-            navigate('/mode');
         } catch (err) {
             console.error('Auth error:', err);
-        } finally {
             setIsLoading(false);
         }
     };
