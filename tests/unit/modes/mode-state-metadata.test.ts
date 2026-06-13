@@ -17,7 +17,7 @@ import type { ILogger } from '@/shared/utils/logger';
 
 // Mock chrome.storage
 const mockChromeStorage = {
-  sync: {
+  local: {
     get: vi.fn(),
     set: vi.fn(),
   },
@@ -61,8 +61,8 @@ describe('ModeStateManager - Metadata Validation', () => {
       mockLogger as unknown as ILogger
     );
 
-    mockChromeStorage.sync.get.mockReset();
-    mockChromeStorage.sync.set.mockReset();
+    mockChromeStorage.local.get.mockReset();
+    mockChromeStorage.local.set.mockReset();
     vi.clearAllMocks();
   });
 
@@ -76,7 +76,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.setMode('local');
 
       // Act
-      const setCall = mockChromeStorage.sync.set.mock.calls[0]?.[0];
+      const setCall = mockChromeStorage.local.set.mock.calls[0]?.[0];
 
       // Assert - Metadata should be included in persisted state
       expect(setCall).toBeDefined();
@@ -88,14 +88,14 @@ describe('ModeStateManager - Metadata Validation', () => {
     it('should load metadata from chrome.storage on init', async () => {
       // Arrange - Simulate stored state with metadata
       const storedState = {
-        defaultMode: 'cloud',
+        'underscore-current-mode': 'cloud',
         metadata: {
           version: 2,
           lastModified: Date.now() - 1000,
           flags: { betaFeatures: true },
         },
       };
-      mockChromeStorage.sync.get.mockResolvedValue(storedState);
+      mockChromeStorage.local.get.mockResolvedValue(storedState);
 
       // Act
       await stateManager.init();
@@ -109,7 +109,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       // Arrange - Set initial mode to sprint (not walk, which is default)
       await stateManager.setMode('local');
       const firstTimestamp =
-        mockChromeStorage.sync.set.mock.calls[0]?.[0]?.metadata?.lastModified;
+        mockChromeStorage.local.set.mock.calls[0]?.[0]?.metadata?.lastModified;
 
       // Wait a bit to ensure timestamp difference
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -117,7 +117,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       // Act - Switch to vault
       await stateManager.setMode('cloud');
       const secondTimestamp =
-        mockChromeStorage.sync.set.mock.calls[1]?.[0]?.metadata?.lastModified;
+        mockChromeStorage.local.set.mock.calls[1]?.[0]?.metadata?.lastModified;
 
       // Assert - Both timestamps should be defined and second should be >= first
       expect(firstTimestamp).toBeDefined();
@@ -132,7 +132,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.setMode('cloud');
 
       // Act
-      const allCalls = mockChromeStorage.sync.set.mock.calls;
+      const allCalls = mockChromeStorage.local.set.mock.calls;
 
       // Assert - All calls should have metadata
       allCalls.forEach((call) => {
@@ -145,8 +145,8 @@ describe('ModeStateManager - Metadata Validation', () => {
   describe('Metadata validation', () => {
     it('should validate metadata structure on load', async () => {
       // Arrange - Valid metadata
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'local',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -160,8 +160,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should handle missing metadata gracefully', async () => {
       // Arrange - Old state format without metadata
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'ephemeral',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'ephemeral',
         // No metadata field
       });
 
@@ -174,8 +174,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should reject metadata with invalid version type', async () => {
       // Arrange - Version is string instead of number
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'local',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'local',
         metadata: {
           version: '2', // Wrong type
           lastModified: Date.now(),
@@ -192,8 +192,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should reject metadata with negative version', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'cloud',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'cloud',
         metadata: {
           version: -1,
           lastModified: Date.now(),
@@ -210,8 +210,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should reject metadata with invalid lastModified', async () => {
       // Arrange - lastModified is string
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'local',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'local',
         metadata: {
           version: 2,
           lastModified: 'invalid', // should be number
@@ -235,8 +235,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should handle corrupted metadata object', async () => {
       // Arrange - Metadata is array instead of object
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'ephemeral',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'ephemeral',
         metadata: ['corrupted', 'data'],
       });
 
@@ -251,7 +251,7 @@ describe('ModeStateManager - Metadata Validation', () => {
   describe('Migration trigger detection', () => {
     it('should detect v1 state (no metadata) and trigger migration', async () => {
       // Arrange - v1 state format
-      mockChromeStorage.sync.get.mockResolvedValue({
+      mockChromeStorage.local.get.mockResolvedValue({
         defaultMode: 'local',
         // No metadata = v1 state
       });
@@ -271,8 +271,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should detect old version and trigger migration', async () => {
       // Arrange - v1 state with version 1
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'cloud',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'cloud',
         metadata: {
           version: 1,
           lastModified: Date.now(),
@@ -295,8 +295,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should skip migration for current version', async () => {
       // Arrange - Current v2 state
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'local',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -322,7 +322,7 @@ describe('ModeStateManager - Metadata Validation', () => {
       await stateManager.setMode('local');
 
       // Act
-      const savedState = mockChromeStorage.sync.set.mock.calls[0]?.[0];
+      const savedState = mockChromeStorage.local.set.mock.calls[0]?.[0];
 
       // Assert - Metadata should be persisted (flags are optional)
       expect(savedState).toBeDefined();
@@ -337,8 +337,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should load feature flags from storage', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'local',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'local',
         metadata: {
           version: 2,
           lastModified: Date.now(),
@@ -358,8 +358,8 @@ describe('ModeStateManager - Metadata Validation', () => {
 
     it('should handle invalid flag types gracefully', async () => {
       // Arrange - Flags with non-boolean values
-      mockChromeStorage.sync.get.mockResolvedValue({
-        defaultMode: 'cloud',
+      mockChromeStorage.local.get.mockResolvedValue({
+        'underscore-current-mode': 'cloud',
         metadata: {
           version: 2,
           lastModified: Date.now(),

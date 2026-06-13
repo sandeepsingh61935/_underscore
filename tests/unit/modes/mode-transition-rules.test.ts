@@ -54,7 +54,7 @@ describe('Mode Transition Rules', () => {
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(false);
-      expect(rule.reason.toLowerCase()).toContain('switching');
+      expect(rule.reason.toLowerCase()).toContain('focus');
     });
 
     it('should allow sprint → vault with confirmation warning', () => {
@@ -62,7 +62,7 @@ describe('Mode Transition Rules', () => {
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(true);
-      expect(rule.reason).toContain('persist');
+      expect(rule.reason).toContain('Capture');
     });
 
     it('should allow vault → walk with data loss warning', () => {
@@ -70,7 +70,7 @@ describe('Mode Transition Rules', () => {
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(true);
-      expect(rule.reason).toContain('lost');
+      expect(rule.reason).toContain('Memory');
     });
 
     it('should handle same mode transition as no-op', () => {

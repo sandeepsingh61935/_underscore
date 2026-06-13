@@ -105,13 +105,19 @@ describe('ModeStateMachine', () => {
 
       expect(reason).toBeTruthy();
       expect(reason.length).toBeGreaterThan(10);
-      expect(reason.toLowerCase()).toContain('local');
+      expect(reason.toLowerCase()).toContain('focus');
+    });
+
+    it('should return warning reason for sprint → vault', () => {
+      const reason = stateMachine.getTransitionReason('local', 'cloud');
+
+      expect(reason).toContain('Capture');
     });
 
     it('should return warning reason for vault → walk', () => {
       const reason = stateMachine.getTransitionReason('cloud', 'ephemeral');
 
-      expect(reason).toContain('lost');
+      expect(reason).toContain('Memory');
     });
 
     it('should return no-op reason for same mode', () => {

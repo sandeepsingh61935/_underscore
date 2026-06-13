@@ -14,7 +14,7 @@ import type { ILogger } from '@/shared/utils/logger';
 
 // Mock chrome.storage
 const mockChromeStorage = {
-  sync: {
+  local: {
     get: vi.fn(),
     set: vi.fn(),
   },
@@ -48,8 +48,8 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     stateManager = new ModeStateManager(mockModeManager, mockLogger);
 
-    mockChromeStorage.sync.get.mockReset();
-    mockChromeStorage.sync.set.mockReset();
+    mockChromeStorage.local.get.mockReset();
+    mockChromeStorage.local.set.mockReset();
     vi.clearAllMocks();
   });
 
@@ -152,8 +152,8 @@ describe('ModeStateManager - State Machine Integration', () => {
       await stateManager.setMode('cloud');
 
       // Assert - Mode was persisted to chrome.storage
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith(
-        expect.objectContaining({ defaultMode: 'cloud' })
+      expect(mockChromeStorage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({ 'underscore-current-mode': 'cloud' })
       );
     });
   });

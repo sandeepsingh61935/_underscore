@@ -19,7 +19,7 @@ import type { ILogger } from '@/shared/utils/logger';
 
 // Mock chrome.storage
 const mockChromeStorage = {
-  sync: {
+  local: {
     get: vi.fn(),
     set: vi.fn(),
   },
@@ -53,8 +53,8 @@ describe('ModeStateManager - Validation Integration', () => {
     stateManager = new ModeStateManager(mockModeManager, mockLogger);
 
     // Reset chrome.storage mocks
-    mockChromeStorage.sync.get.mockReset();
-    mockChromeStorage.sync.set.mockReset();
+    mockChromeStorage.local.get.mockReset();
+    mockChromeStorage.local.set.mockReset();
     vi.clearAllMocks();
   });
 
@@ -163,7 +163,7 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('init() validation', () => {
     it('should validate loaded state from chrome.storage', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'local' });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'local' });
 
       // Act
       await stateManager.init();
@@ -174,7 +174,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage returns invalid mode', async () => {
       // Arrange - Simulate corrupted storage
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'corrupted' });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'corrupted' });
 
       // Act
       await stateManager.init();
@@ -185,7 +185,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage returns null', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: null });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: null });
 
       // Act
       await stateManager.init();
@@ -196,7 +196,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage returns undefined', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({});
+      mockChromeStorage.local.get.mockResolvedValue({});
 
       // Act
       await stateManager.init();
@@ -207,7 +207,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage returns number', async () => {
       // Arrange - Type coercion edge case
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 123 });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 123 });
 
       // Act
       await stateManager.init();
@@ -218,7 +218,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage returns object', async () => {
       // Arrange - Type coercion edge case
-      mockChromeStorage.sync.get.mockResolvedValue({
+      mockChromeStorage.local.get.mockResolvedValue({
         defaultMode: { complex: 'object' },
       });
 
@@ -231,7 +231,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should fallback to walk when chrome.storage throws error', async () => {
       // Arrange - Storage access failure
-      mockChromeStorage.sync.get.mockRejectedValue(new Error('Access denied'));
+      mockChromeStorage.local.get.mockRejectedValue(new Error('Access denied'));
 
       // Act
       await stateManager.init();
@@ -243,14 +243,14 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle race condition: init called twice simultaneously', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'local' });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'local' });
 
       // Act
       await Promise.all([stateManager.init(), stateManager.init()]);
 
       // Assert
       expect(stateManager.getMode()).toBe('local');
-      expect(mockChromeStorage.sync.get).toHaveBeenCalledTimes(2);
+      expect(mockChromeStorage.local.get).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -308,7 +308,7 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('Edge cases and boundary conditions', () => {
     it('should handle setMode() called during init()', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockImplementation(() => {
+      mockChromeStorage.local.get.mockImplementation(() => {
         // Simulate slow storage read
         return new Promise((resolve) => {
           setTimeout(() => resolve({ defaultMode: 'local' }), 100);
@@ -340,18 +340,18 @@ describe('ModeStateManager - Validation Integration', () => {
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
       await stateManager.setMode('cloud');
-      mockChromeStorage.sync.set.mockClear();
+      mockChromeStorage.local.set.mockClear();
 
       // Act
       await stateManager.setMode('cloud');
 
       // Assert - No storage write should happen
-      expect(mockChromeStorage.sync.set).not.toHaveBeenCalled();
+      expect(mockChromeStorage.local.set).not.toHaveBeenCalled();
     });
 
     it('should validate mode even if chrome.storage.set fails', async () => {
       // Arrange
-      mockChromeStorage.sync.set.mockRejectedValue(new Error('Quota exceeded'));
+      mockChromeStorage.local.set.mockRejectedValue(new Error('Quota exceeded'));
 
       // Act
       await stateManager.setMode('cloud');
@@ -363,7 +363,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle chrome.storage returning string "undefined"', async () => {
       // Arrange - some extensions serialize undefined as string
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'undefined' });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'undefined' });
 
       // Act
       await stateManager.init();
@@ -374,7 +374,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle chrome.storage returning string "null"', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: 'null' });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'null' });
 
       // Act
       await stateManager.init();
@@ -385,7 +385,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle chrome.storage returning array instead of string', async () => {
       // Arrange
-      mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: ['local'] });
+      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: ['local'] });
 
       // Act
       await stateManager.init();
@@ -398,7 +398,7 @@ describe('ModeStateManager - Validation Integration', () => {
       // SKIPPED
       /*
            // Arrange
-           mockChromeStorage.sync.get.mockResolvedValue({ defaultMode: true });
+           mockChromeStorage.local.get.mockResolvedValue({ defaultMode: true });
 
            // Act
            await stateManager.init();
