@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/PopupAppProvider';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
@@ -10,11 +11,13 @@ import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlight
 
 export interface DashboardViewProps {
   onLogout?: () => void;
+  onSectionClick?: (domain: string, section: string) => void;
 }
 
-export function DashboardView({ onLogout: _onLogout }: DashboardViewProps): React.ReactElement {
+export function DashboardView({ onLogout: _onLogout, onSectionClick }: DashboardViewProps): React.ReactElement {
   const { currentMode, user } = useApp();
   const tabContext = useCurrentTabContext();
+  const navigate = useNavigate();
   const { data: dashboardData } = useDashboardData(currentMode || 'ephemeral');
   const { highlights: currentDomainHighlights } = useHighlightsByDomain(tabContext.domain || undefined);
 
@@ -65,7 +68,18 @@ export function DashboardView({ onLogout: _onLogout }: DashboardViewProps): Reac
         <div className="list-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           {dashboardData?.recentHighlights && dashboardData.recentHighlights.length > 0 ? (
             dashboardData.recentHighlights.map(hl => (
-              <HighlightCard key={hl.id} quote={hl.text} domain={hl.domain} section={hl.path !== '/' ? hl.path.split('/')[1] : 'Home'} ttlMs={ttlMs} />
+              <HighlightCard
+                key={hl.id}
+                quote={hl.text}
+                domain={hl.domain}
+                section={!hl.path || hl.path === '/' ? undefined : hl.path}
+                ttlMs={ttlMs}
+                onSectionClick={
+                  onSectionClick
+                    ? () => onSectionClick(hl.domain, hl.path || '/')
+                    : undefined
+                }
+              />
             ))
           ) : (
             <div style={{ padding: '16px', color: 'var(--ink-3)' }}>No highlights yet.</div>
@@ -87,17 +101,36 @@ export function DashboardView({ onLogout: _onLogout }: DashboardViewProps): Reac
         <Stat label="This week" value={dashboardData ? String(dashboardData.thisWeekCount) : '-'} />
         <Stat label="Domains" value={dashboardData ? String(dashboardData.totalDomains) : '-'} mono />
       </div>
-      <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
-        Jump to this page
-      </div>
-      <Row title={`${currentDomainDisplay} / ${currentPathDisplay}`} sub={`${currentPageHighlightsCount} highlights on this page`} right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>} onClick={() => {}} />
+      {currentPageHighlightsCount > 0 && (
+        <>
+          <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+            Current Page
+          </div>
+          <Row 
+            title={`${currentDomainDisplay} / ${currentPathDisplay}`} 
+            sub={`${currentPageHighlightsCount} highlights on this page`} 
+            right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>} 
+            onClick={() => tabContext.domain && navigate(`/domain/${tabContext.domain}`)} 
+          />
+        </>
+      )}
       <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
         Recent
       </div>
       <div className="list-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {dashboardData?.recentHighlights && dashboardData.recentHighlights.length > 0 ? (
           dashboardData.recentHighlights.map(hl => (
-            <HighlightCard key={hl.id} quote={hl.text} domain={hl.domain} section={hl.path !== '/' ? hl.path.split('/')[1] : 'Home'} />
+            <HighlightCard
+              key={hl.id}
+              quote={hl.text}
+              domain={hl.domain}
+              section={!hl.path || hl.path === '/' ? undefined : hl.path}
+              onSectionClick={
+                onSectionClick
+                  ? () => onSectionClick(hl.domain, hl.path || '/')
+                  : undefined
+              }
+            />
           ))
         ) : (
           <div style={{ padding: '16px', color: 'var(--ink-3)' }}>No recent highlights.</div>
