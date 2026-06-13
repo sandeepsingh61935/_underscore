@@ -639,53 +639,19 @@ interface RestoreContext {
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { storage, repositoryFacade, highlightManager, modeManager, commandFactory } =
+  const { repositoryFacade, highlightManager, modeManager, commandFactory } =
     context;
   try {
-    const events = await storage.loadEvents();
+    const currentUrl = window.location.href;
+    const activeHighlights = await repositoryFacade.getHighlightsForUrl(currentUrl);
 
-    // [OK] PURE EVENT SOURCING: Clear projection before rebuilding
-    // This ensures repository is a true projection of events, not a persistent cache
-    repositoryFacade.clear();
-    logger.info('[CLEAR] Cleared repository projection before event replay');
-
-    // Replay events to reconstruct state
-    const activeHighlights = new Map<string, HighlightDataV2WithRuntime>();
-
-    logger.warn(`[DEBUG] Processing ${events.length} events to rebuild state...`);
-
-    for (const event of events) {
-      logger.warn(`[DEBUG] Event type: ${event.type}`, event);
-
-      // [OK] Handle CLEAR ALL event (waterline - discard all previous highlights)
-      if (event.type === 'highlights.cleared') {
-        logger.info('[CLEAR] CLEAR ALL event detected - discarding all highlights', {
-          previousCount: activeHighlights.size,
-        });
-        activeHighlights.clear();
-        continue;
-      }
-
-      if (event.type === 'highlight.created' && event.data) {
-        activeHighlights.set(event.data.id, event.data as HighlightDataV2WithRuntime);
-        logger.warn(`[OK] Added highlight to map: ${event.data.id}`);
-      } else if (event.type === 'highlight.removed' && event.highlightId) {
-        activeHighlights.delete(event.highlightId);
-        logger.warn(`[DELETE] Removed highlight from map: ${event.highlightId}`);
-      } else {
-        logger.error(`[ERROR] Event didn't match expected format: ${event.type}`);
-      }
-    }
-
-    logger.warn(
-      `[TARGET] Final map size: ${activeHighlights.size} highlights to restore`
-    );
+    logger.warn(`[TARGET] Found ${activeHighlights.length} highlights to restore`);
 
     // Render active highlights at their original positions
     let restored = 0;
     let failed = 0;
 
-    for (const highlightData of activeHighlights.values()) {
+    for (const highlightData of activeHighlights) {
       try {
         // Support both old (single range) and new (multi-range) formats
         // Cast to any to access legacy 'range' property if present
@@ -763,7 +729,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
     logger.info('Restoration complete', {
       restored,
       failed,
-      total: activeHighlights.size,
+      total: activeHighlights.length,
     });
 
     // Broadcast initial count
@@ -773,7 +739,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
       );
     }
     logger.info(
-      `Restored ${restored}/${activeHighlights.size} highlights from ${events.length} events`
+      `Restored ${restored}/${activeHighlights.length} highlights`
     );
   } catch (error) {
     logger.error('Failed to restore highlights', error as Error);

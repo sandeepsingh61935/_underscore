@@ -256,4 +256,12 @@ export class RepositoryFacade {
       this.logger.error('Background bulk add failed', error);
     });
   }
+
+  /**
+   * Get highlights for a specific URL (async)
+   */
+  async getHighlightsForUrl(_url: string): Promise<HighlightDataV2[]> {
+    await this.initialize();
+    return this.getAll();
+  }
 }
