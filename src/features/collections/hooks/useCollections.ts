@@ -58,7 +58,9 @@ function isExtensionContext(): boolean {
   );
 }
 
-export function useCollections(): CollectionsResult {
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+
+export function useCollections(currentMode: ModeType): CollectionsResult {
   const [result, setResult] = useState<CollectionsResult>({
     collections: [],
     isLoading: true,
@@ -74,6 +76,7 @@ export function useCollections(): CollectionsResult {
         if (isExtensionContext()) {
           const response = await chrome.runtime.sendMessage({
             type: 'GET_COLLECTIONS',
+            mode: currentMode,
             timestamp: Date.now(),
           });
 
@@ -142,7 +145,7 @@ export function useCollections(): CollectionsResult {
 
     fetch();
     return () => { cancelled = true; };
-  }, []);
+  }, [currentMode]);
 
   return result;
 }

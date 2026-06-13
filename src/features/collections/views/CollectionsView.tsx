@@ -20,7 +20,7 @@ export function CollectionsView({ onCollectionClick, isAuthenticated: propIsAuth
   const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
   const mode = (appContext.currentMode ?? 'ephemeral') as ModeType;
 
-  const { collections, isLoading } = useCollections();
+  const { collections, isLoading } = useCollections(mode);
 
   useEffect(() => {
     if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
