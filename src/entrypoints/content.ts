@@ -104,7 +104,7 @@ export default defineContentScript({
 
       // Initialize State Management Pattern
       const { ModeStateManager } = await import('@/content/modes/mode-state-manager');
-      const modeStateManager = new ModeStateManager(modeManager, logger);
+      const modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
 
       console.error(
         '[MODE-STATE] Initializing state manager at ' + new Date().toISOString()

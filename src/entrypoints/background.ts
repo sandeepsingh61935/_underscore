@@ -3,7 +3,7 @@
  * @description Background service worker with TTL cleanup
  */
 
-import '@/shared/utils/polyfill'; // Polyfill environment first
+// Polyfill environment removed
 import { browser } from 'wxt/browser';
 
 import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
