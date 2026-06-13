@@ -88,7 +88,7 @@ export function useCollections(currentMode: ModeType): CollectionsResult {
             throw new Error(response?.error || 'Failed to fetch collections');
           }
 
-          const collections: DomainCollection[] = (response.data.collections || []).map(
+          const rawCollections: DomainCollection[] = (response.data.collections || []).map(
             (col: { id: string; domain: string; highlightCount: number; lastActive: string | Date }) => ({
               id: col.id,
               domain: col.domain,
@@ -96,6 +96,30 @@ export function useCollections(currentMode: ModeType): CollectionsResult {
               lastActive: new Date(col.lastActive),
             })
           );
+
+          // Group by eTLD+1
+          const domainMap = new Map<string, { count: number; lastActive: number }>();
+          for (const col of rawCollections) {
+              const parsedTld = parse(col.domain);
+              const baseDomain = parsedTld.domain || col.domain.replace(/^www\./, '');
+              const existing = domainMap.get(baseDomain);
+              const t = col.lastActive.getTime();
+              if (existing) {
+                  existing.count += col.highlightCount;
+                  existing.lastActive = Math.max(existing.lastActive, t);
+              } else {
+                  domainMap.set(baseDomain, { count: col.highlightCount, lastActive: t });
+              }
+          }
+          
+          const collections = Array.from(domainMap.entries())
+            .map(([domain, d], i) => ({
+              id: String(i + 1),
+              domain,
+              highlightCount: d.count,
+              lastActive: new Date(d.lastActive),
+            }))
+            .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
 
           setResult({ collections, isLoading: false, error: null, isWebContext: false });
         } else {
