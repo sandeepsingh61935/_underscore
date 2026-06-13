@@ -1,5 +1,5 @@
-import type { DomainCollectionV2 } from '@/shared/schemas/mode-state-schemas';
+import type { DomainCollection } from '@/shared/types/domain-collection';
 
 export interface IDataProvider {
-  getCollections(mode: string): Promise<DomainCollectionV2[]>;
+  getCollections(mode: string): Promise<DomainCollection[]>;
 }

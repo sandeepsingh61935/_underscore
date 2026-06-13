@@ -7,6 +7,7 @@ import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 
 interface PopupAppProviderProps {
@@ -17,6 +18,8 @@ interface PopupAppProviderProps {
     isAuthenticated: boolean;
     /** Optional logout handler */
     onLogout?: () => void;
+    /** Data Provider for collections */
+    dataProvider: IDataProvider;
 }
 
 /**
@@ -30,7 +33,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     children,
     user: propUser,
     isAuthenticated: propIsAuthenticated,
-    onLogout
+    onLogout,
+    dataProvider
 }) => {
     // Mode state — persisted in chrome.storage.local, reactive via onChanged
     const { currentMode, modeReady, persistMode } = usePersistedMode(propIsAuthenticated);
@@ -123,6 +127,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         setTheme,
         isLoading,
         setIsLoading,
+        dataProvider,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -18,7 +18,7 @@ const mockChrome = {
 // Import after mocking chrome
 import { ThemeProvider, useTheme } from '../../ui-system/theme/ThemeProvider';
 import { AuthProvider, useAuth } from '../../ui-system/providers/AuthProvider';
-import { PopupRouter, Route, Switch, useRouter, useNavigate } from '../../ui-system/router/PopupRouter';
+import { PopupRouter, Route, Switch, useRouter } from '../../ui-system/router/PopupRouter';
 
 describe('ThemeProvider', () => {
     beforeEach(() => {

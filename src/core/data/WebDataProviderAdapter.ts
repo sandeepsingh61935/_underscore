@@ -1,8 +1,8 @@
 import type { IDataProvider } from '@/shared/interfaces/i-data-provider';
-import type { DomainCollectionV2 } from '@/shared/schemas/mode-state-schemas';
+import type { DomainCollection } from '@/shared/types/domain-collection';
 
 export class WebDataProviderAdapter implements IDataProvider {
-  async getCollections(_mode: string): Promise<DomainCollectionV2[]> {
+  async getCollections(_mode: string): Promise<DomainCollection[]> {
     // Make direct Supabase REST/SDK call here
     return []; 
   }

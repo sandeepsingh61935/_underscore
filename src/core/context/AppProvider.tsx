@@ -3,7 +3,7 @@ import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 
-
+import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 export interface AppContextType {
     // Authentication
@@ -25,11 +25,14 @@ export interface AppContextType {
     // Loading states
     isLoading: boolean;
     setIsLoading: (loading: boolean) => void;
+
+    // Data Provider
+    dataProvider: IDataProvider;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: IDataProvider }> = ({ children, dataProvider }) => {
     // Authentication state - initialize synchronously from localStorage
     const getInitialUser = () => {
         try {
@@ -120,6 +123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setTheme,
         isLoading,
         setIsLoading,
+        dataProvider,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

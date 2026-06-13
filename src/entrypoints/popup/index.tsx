@@ -22,6 +22,9 @@ import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from '
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 
+import { EventBus } from '@/shared/utils/event-bus';
+import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
+import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
 import { springs } from '@/ui-system/motion/springs';
 import '../../ui-system/theme/global.css';
 import './base.css';
@@ -428,6 +431,7 @@ function PopupApp(): React.ReactElement {
         >
           <DashboardView
             onLogout={handleLogout}
+            onSectionClick={handleSectionClick}
           />
         </motion.div>
       )}
@@ -450,6 +454,9 @@ if (container) {
 } else {
   console.error('Failed to find #app container');
 }
+
+const popupEventBus = new EventBus(new ConsoleLogger('PopupData', LogLevel.WARN));
+const popupDataProvider = new ExtensionDataProviderAdapter(popupEventBus);
 
 function PopupAppWithProviders(): React.ReactElement {
   const { user, isLoading, logout } = useCurrentUser();
@@ -477,6 +484,7 @@ function PopupAppWithProviders(): React.ReactElement {
       }
       isAuthenticated={!!user}
       onLogout={logout}
+      dataProvider={popupDataProvider}
     >
       <PopupApp />
       <Toaster

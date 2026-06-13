@@ -1,0 +1,133 @@
+<h2>Export UX: How do you pick a format?</h2>
+<p class="subtitle">When you tap "Export" in the extension popup, how should format selection work?</p>
+
+<div class="options">
+  <div class="option" data-choice="ux-sheet" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Format Picker Sheet</h3>
+      <p>Tapping "Export" opens a bottom sheet with format buttons. One tap → picks format → file downloads immediately. Clean, explicit.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ux-default" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>One-tap with Default Format</h3>
+      <p>Export button fires immediately using a default format (set in Settings). Good for power users who always use the same format. A small "▾" arrow lets you override the format inline.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ux-inline" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Inline Format Chips</h3>
+      <p>The section/library footer shows small chips: <code>MD · TXT · CSV</code>. Tap any chip to download in that format immediately. No modal, no default — always all options visible.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 2rem;">
+  <h3 class="label">Visual Mockups — How each option looks in context</h3>
+
+  <div class="split">
+
+    <!-- Option A: Sheet -->
+    <div class="mockup">
+      <div class="mockup-header">A — Format Picker Sheet</div>
+      <div class="mockup-body" style="padding: 0; font-family: system-ui;">
+        <!-- Simulated popup -->
+        <div style="background: var(--bg-secondary); border-radius: 8px 8px 0 0; overflow: hidden;">
+          <!-- Section header -->
+          <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); font-family: monospace;">/wiki/Antigravity</div>
+              <div style="font-size: 13px; color: var(--text-primary); margin-top: 2px;">3 highlights</div>
+            </div>
+            <button style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;">Export ↑</button>
+          </div>
+          <!-- Highlight rows -->
+          <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c542;margin-right:6px;"></span>
+            "Antigravity is the idea of creating..."
+          </div>
+          <div style="padding: 10px 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0a84ff;margin-right:6px;"></span>
+            "In general relativity, gravity is..."
+          </div>
+        </div>
+
+        <!-- Bottom Sheet overlay -->
+        <div style="background: var(--bg-primary); border-top: 2px solid var(--border); padding: 16px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); margin-bottom: 12px; font-family: monospace;">Choose format</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; font-size: 13px; cursor: pointer; display:flex; justify-content: space-between;">
+              <span>Markdown (.md)</span>
+              <span style="color: var(--text-secondary); font-size: 11px;">Obsidian / Notion</span>
+            </button>
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; font-size: 13px; cursor: pointer; display:flex; justify-content: space-between;">
+              <span>Plain Text (.txt)</span>
+              <span style="color: var(--text-secondary); font-size: 11px;">Universal</span>
+            </button>
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; font-size: 13px; cursor: pointer; display:flex; justify-content: space-between;">
+              <span>Spreadsheet (.csv)</span>
+              <span style="color: var(--text-secondary); font-size: 11px;">Excel / Sheets</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option C: Inline chips -->
+    <div class="mockup">
+      <div class="mockup-header">C — Inline Format Chips</div>
+      <div class="mockup-body" style="padding: 0; font-family: system-ui;">
+        <div style="background: var(--bg-secondary); border-radius: 8px 8px 0 0; overflow: hidden;">
+          <div style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); font-family: monospace;">/wiki/Antigravity</div>
+            <div style="font-size: 13px; color: var(--text-primary); margin-top: 2px;">3 highlights</div>
+          </div>
+          <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-secondary);">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c542;margin-right:6px;"></span>
+            "Antigravity is the idea of creating..."
+          </div>
+          <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-secondary);">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0a84ff;margin-right:6px;"></span>
+            "In general relativity, gravity is..."
+          </div>
+          <!-- Inline chips footer -->
+          <div style="padding: 10px 16px; display: flex; align-items: center; gap: 8px; background: var(--bg-primary);">
+            <span style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-family: monospace;">Export:</span>
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; font-size: 11px; font-family: monospace; cursor: pointer; color: var(--text-primary);">.md</button>
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; font-size: 11px; font-family: monospace; cursor: pointer; color: var(--text-primary);">.txt</button>
+            <button style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; font-size: 11px; font-family: monospace; cursor: pointer; color: var(--text-primary);">.csv</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mockup" style="margin-top: 1rem;">
+    <div class="mockup-header">B — One-tap with default (+ split button override)</div>
+    <div class="mockup-body" style="padding: 0; font-family: system-ui;">
+      <div style="background: var(--bg-secondary); border-radius: 8px 8px 0 0; overflow: hidden;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); font-family: monospace;">/wiki/Antigravity</div>
+            <div style="font-size: 13px; color: var(--text-primary); margin-top: 2px;">3 highlights</div>
+          </div>
+          <!-- Split button -->
+          <div style="display: flex; border: 1px solid var(--accent); border-radius: 6px; overflow: hidden;">
+            <button style="background: var(--accent); color: white; border: none; padding: 6px 10px; font-size: 12px; cursor: pointer;">↑ .md</button>
+            <button style="background: var(--accent); color: white; border: none; border-left: 1px solid rgba(255,255,255,0.3); padding: 6px 8px; font-size: 10px; cursor: pointer;">▾</button>
+          </div>
+        </div>
+        <div style="padding: 10px 16px; font-size: 11px; color: var(--text-tertiary, var(--text-secondary)); font-style: italic;">
+          Default format: Markdown — change in Settings
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

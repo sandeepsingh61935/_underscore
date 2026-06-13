@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider, useApp } from '@/core/context/AppProvider';
+import { WebDataProviderAdapter } from '@/core/data/WebDataProviderAdapter';
 import { WelcomePage } from '@/pages/WelcomePage';
 import { SignInView } from '@/features/auth/SignInView';
 import { ModeSelectionView } from '@/features/modes/ModeSelectionView';
@@ -43,8 +44,10 @@ function IntentCatcher({ children }: { children: React.ReactNode }) {
 }
 
 export function AppRoutes() {
+    const dataProvider = new WebDataProviderAdapter();
+
     return (
-        <AppProvider>
+        <AppProvider dataProvider={dataProvider}>
             <BrowserRouter>
                 <IntentCatcher>
                     <Routes>

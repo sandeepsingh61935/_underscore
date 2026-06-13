@@ -136,7 +136,10 @@ export default defineContentScript({
       const detector = new SelectionDetector(eventBus);
 
       // Initialize click detector for double-click deletion
-      const clickDetector = new HighlightClickDetector(repositoryFacade, eventBus);
+      const { HighlightDOMHitTester } = await import('@/content/ui/highlight-dom-hit-tester');
+      const hitTester = new HighlightDOMHitTester(repositoryFacade);
+
+      const clickDetector = new HighlightClickDetector(eventBus, hitTester);
       clickDetector.init();
 
       // Initialize delete icon overlay system (Phase 4.3)
@@ -154,7 +157,8 @@ export default defineContentScript({
       const hoverDetector = new HighlightHoverDetector(
         repositoryFacade,
         eventBus,
-        logger
+        logger,
+        hitTester
       );
 
       hoverDetector.init();
