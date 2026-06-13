@@ -85,7 +85,7 @@ export function DashboardView({ onLogout: _onLogout }: DashboardViewProps): Reac
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--rule)' }}>
         <Stat label="This week" value={dashboardData ? String(dashboardData.thisWeekCount) : '-'} />
-        <Stat label="Synced" value={currentMode === 'local' ? 'This device' : '4 devices'} mono />
+        <Stat label="Domains" value={dashboardData ? String(dashboardData.totalDomains) : '-'} mono />
       </div>
       <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
         Jump to this page
