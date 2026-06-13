@@ -15,9 +15,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
 import { browser } from 'wxt/browser';
-import { readLocalCollections } from '@/background/services/local-collections-reader';
-import { hashDomain, decryptData } from '@/shared/utils/crypto-utils';
-import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
+import type { HighlightCreatedEvent } from '@/shared/types/storage';
 
 import type { IHighlightRepository } from './i-highlight-repository';
 
@@ -266,11 +264,29 @@ export class RepositoryFacade {
   // BACKGROUND QUERIES (Moving from God Object)
   // ============================================
 
-  async getCollections(mode?: string) {
+  async getCollections(_mode?: string) {
     this.ensureInitialized();
-    let collections = await readLocalCollections();
-    if (mode) {
-      collections = collections.filter(c => c.mode === mode);
+    const highlights = this.getAll();
+    const domainMap = new Map<string, number>();
+
+    for (const hl of highlights) {
+      if (!hl.url) continue;
+      try {
+        const domain = new URL(hl.url).hostname;
+        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+      } catch (e) {
+        continue;
+      }
+    }
+
+    let collections = Array.from(domainMap.entries()).map(([domain, count]) => ({
+      domain,
+      highlightCount: count,
+      mode: 'local' // Always fallback to local
+    }));
+
+    if (_mode) {
+      collections = collections.filter(c => c.mode === _mode);
     }
     return collections;
   }
@@ -281,98 +297,64 @@ export class RepositoryFacade {
       throw new Error('Domain required');
     }
 
-    const hashedKey = await hashDomain(domain);
-    const result = await browser.storage.local.get(hashedKey);
-    const domainStorage = result[hashedKey] as DomainStorage | undefined;
-
-    if (!domainStorage?.data) {
-      return [];
-    }
-
-    const decrypted = await decryptData(domainStorage.data, domain);
-    const eventLog: EventLog = JSON.parse(decrypted);
-
-    // Project events: track created highlights, remove deleted ones
-    const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
-    for (const event of eventLog.events) {
-      if (event.type === 'highlight.created') {
-        highlightMap.set(event.data.id, event.data);
-      } else if (event.type === 'highlight.removed') {
-        highlightMap.delete(event.highlightId);
-      } else if (event.type === 'highlights.cleared') {
-        highlightMap.clear();
+    const highlights = this.getAll().filter(hl => {
+      if (!hl.url) return false;
+      try {
+        return new URL(hl.url).hostname === domain;
+      } catch {
+        return false;
       }
-    }
+    });
 
-    const highlights = Array.from(highlightMap.values()).map(hl => ({
+    return highlights.map(hl => ({
       id: hl.id,
       text: hl.text,
       url: hl.url ?? '',
       path: hl.url ? new URL(hl.url).pathname : '/',
       createdAt: hl.createdAt,
     })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return highlights;
   }
 
-  async getDashboardData(mode?: string) {
+  async getDashboardData(_mode?: string) {
     this.ensureInitialized();
-    let collections = await readLocalCollections();
-    if (mode) {
-      collections = collections.filter(c => c.mode === mode);
-    }
-    let totalHighlights = 0;
-    let totalDomains = collections.length;
+    const highlights = this.getAll();
     
-    let allRecentHighlights: any[] = [];
+    const domainMap = new Map<string, number>();
     let thisWeekCount = 0;
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentHighlights: any[] = [];
 
-    for (const col of collections) {
-      totalHighlights += col.highlightCount;
-      
-      const hashedKey = await hashDomain(col.domain);
-      const result = await browser.storage.local.get(hashedKey);
-      const domainStorage = result[hashedKey] as DomainStorage | undefined;
-      if (!domainStorage?.data) continue;
-      
-      const decrypted = await decryptData(domainStorage.data, col.domain);
-      const eventLog: EventLog = JSON.parse(decrypted);
-      
-      const highlightMap = new Map<string, HighlightCreatedEvent['data']>();
-      for (const event of eventLog.events) {
-        if (event.type === 'highlight.created') {
-          highlightMap.set(event.data.id, event.data);
-        } else if (event.type === 'highlight.removed') {
-          highlightMap.delete(event.highlightId);
-        } else if (event.type === 'highlights.cleared') {
-          highlightMap.clear();
-        }
-      }
-      
-      for (const hl of highlightMap.values()) {
+    for (const hl of highlights) {
+      if (!hl.url) continue;
+      try {
+        const domain = new URL(hl.url).hostname;
+        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+
         const createdAt = new Date(hl.createdAt).getTime();
         if (createdAt >= oneWeekAgo) {
           thisWeekCount++;
         }
-        allRecentHighlights.push({
+        
+        recentHighlights.push({
           id: hl.id,
           text: hl.text,
           url: hl.url ?? '',
-          path: hl.url ? new URL(hl.url).pathname : '/',
-          domain: col.domain,
+          path: new URL(hl.url).pathname,
+          domain: domain,
           createdAt: hl.createdAt,
         });
+      } catch (e) {
+        continue;
       }
     }
     
-    allRecentHighlights.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    recentHighlights.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
     return {
-      totalHighlights,
-      totalDomains,
+      totalHighlights: highlights.length,
+      totalDomains: domainMap.size,
       thisWeekCount,
-      recentHighlights: allRecentHighlights.slice(0, 10)
+      recentHighlights: recentHighlights.slice(0, 10)
     };
   }
 }
