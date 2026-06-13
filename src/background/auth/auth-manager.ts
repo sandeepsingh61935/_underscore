@@ -8,7 +8,7 @@
 import { SupabaseClient as SupabaseSDKClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { IAuthManager, AuthState, AuthResult, User, OAuthProviderType } from './interfaces/i-auth-manager';
 import type { ILogger } from '@/background/utils/logger';
-import { EventBus } from '@/background/utils/event-bus';
+import { EventBus } from '@/shared/utils/event-bus';
 import { RateLimiter } from '@/background/utils/rate-limiter';
 import { OAuthProvider } from './interfaces/i-auth-manager';
 import {

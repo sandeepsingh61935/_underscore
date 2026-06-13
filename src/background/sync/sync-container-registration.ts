@@ -15,7 +15,7 @@ import { OfflineQueue } from '@/background/sync/offline-queue';
 import { NetworkDetector } from '@/background/sync/network-detector';
 import { RateLimiter } from '@/background/sync/rate-limiter';
 import { SyncStatus } from '@/background/sync/sync-status';
-import { EventBus } from '@/background/utils/event-bus';
+import { EventBus } from '@/shared/utils/event-bus';
 
 /**
  * Register sync engine components in DI container

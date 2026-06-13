@@ -4,11 +4,11 @@ import type { IEventBus, EventHandler } from '@/shared/interfaces/i-event-bus';
 export class MockEventBus implements IEventBus {
     public emittedEvents: Array<{ event: string, data: any }> = [];
 
-    on<T>(event: string, handler: EventHandler<T>): void { }
-    off<T>(event: string, handler: EventHandler<T>): void { }
-    once<T>(event: string, handler: EventHandler<T>): void { }
+    on<T>(_event: string, _handler: EventHandler<T>): () => void { return () => {}; }
+    off<T>(_event: string, _handler: EventHandler<T>): void { }
+    once<T>(_event: string, _handler: EventHandler<T>): void { }
 
-    clear(event?: string): void {
+    clear(_event?: string): void {
         this.emittedEvents = [];
     }
 

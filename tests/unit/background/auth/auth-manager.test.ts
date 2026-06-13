@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { AuthManager } from '@/background/auth/auth-manager';
 import type { ITokenStore } from '@/background/auth/interfaces/i-token-store';
 import type { ILogger } from '@/shared/utils/logger';
-import { EventBus } from '@/background/utils/event-bus';
+import { EventBus } from '@/shared/utils/event-bus';
 import { OAuthProvider } from '@/background/auth/interfaces/i-auth-manager';
 import { RateLimitError, OAuthRedirectError } from '@/background/auth/auth-errors';
 import { SupabaseClient, Session, User } from '@supabase/supabase-js';

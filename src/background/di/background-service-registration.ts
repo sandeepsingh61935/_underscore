@@ -12,7 +12,7 @@
 
 import type { Container } from './container';
 import { registerBaseServices } from './base-service-registration';
-import type { EventBus } from '@/background/utils/event-bus';
+import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/background/utils/logger';
 
 // Auth Components (Static Import)

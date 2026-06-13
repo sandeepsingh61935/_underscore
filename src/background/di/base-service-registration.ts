@@ -26,7 +26,7 @@ import { CircuitBreakerMessageBus } from '@/background/services/circuit-breaker-
 import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/background/services/retry-decorator';
 import { StorageService } from '@/background/services/storage-service';
 import { CircuitBreaker } from '@/background/utils/circuit-breaker';
-import { EventBus } from '@/background/utils/event-bus';
+import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/background/utils/logger';
 import type { ILogger } from '@/background/utils/logger';
 
