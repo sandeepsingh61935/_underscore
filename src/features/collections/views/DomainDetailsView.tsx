@@ -28,6 +28,16 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
     }
   }, [isAuthenticated, mode, navigate]);
 
+  const [editingSection, setEditingSection] = React.useState<string | null>(null);
+  const [editValue, setEditValue] = React.useState('');
+
+  const handleSaveEdit = (e: React.FormEvent, originalKey: string) => {
+      e.preventDefault();
+      // NOTE: Storage integration will be done in the next task
+      console.log('Saved label for', originalKey, '->', editValue);
+      setEditingSection(null);
+  };
+
   const { highlights, isLoading } = useHighlightsByDomain(domain);
 
   const sections = useMemo(() => {
@@ -81,16 +91,36 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
           </div>
         ) : (
           sections.map((s) => (
+            editingSection === s.path ? (
+               <form key={s.path} onSubmit={(e) => handleSaveEdit(e, s.path)} style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
+                   <input 
+                      autoFocus 
+                      value={editValue} 
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => setEditingSection(null)}
+                      style={{ flex: 1, padding: '4px 8px', background: 'transparent', border: '1px solid var(--rule)', color: 'var(--ink)' }}
+                   />
+               </form>
+            ) : (
             <Row
               key={s.path}
               title={s.path === '/' ? 'Home' : s.path}
               right={
-                <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
-                  {s.count}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button 
+                     onClick={(e) => { e.stopPropagation(); setEditingSection(s.path); setEditValue(s.path); }}
+                     style={{ all: 'unset', cursor: 'pointer', fontSize: 12, color: 'var(--accent)' }}
+                  >
+                     [edit]
+                  </button>
+                  <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
+                    {s.count}
+                  </span>
+                </div>
               }
               onClick={() => handleSectionClick(s.path)}
             />
+            )
           ))
         )}
       </div>
