@@ -5,7 +5,7 @@
  */
 
 import type { Container } from '@/background/di/container';
-import type { ILogger } from '@/background/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/background/repositories/in-memory-highlight-repository';

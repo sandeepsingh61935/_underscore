@@ -13,7 +13,7 @@
 import type { Container } from './container';
 import { registerBaseServices } from './base-service-registration';
 import type { EventBus } from '@/shared/utils/event-bus';
-import type { ILogger } from '@/background/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 // Auth Components (Static Import)
 import { TokenStore } from '@/background/auth/token-store';

@@ -1,4 +1,4 @@
-import { LoggerFactory } from '@/background/utils/logger';
+import { LoggerFactory } from '@/shared/utils/logger';
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';

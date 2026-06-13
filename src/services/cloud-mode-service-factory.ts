@@ -17,7 +17,7 @@ import { DualWriteRepository } from '@/background/repositories/dual-write-reposi
 import { SupabaseClient, type SupabaseConfig } from '@/background/api/supabase-client';
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseStorageAdapter } from '@/background/auth/supabase-storage-adapter';
-import { LoggerFactory } from '@/background/utils/logger';
+import { LoggerFactory } from '@/shared/utils/logger';
 import type { IAuthManager, User } from '@/background/auth/interfaces/i-auth-manager';
 import { OfflineQueueService } from '@/background/services/offline-queue-service';
 

@@ -25,10 +25,10 @@ import { ChromeMessaging, ChromeTabQuery } from '@/background/services/chrome-me
 import { CircuitBreakerMessageBus } from '@/background/services/circuit-breaker-message-bus';
 import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/background/services/retry-decorator';
 import { StorageService } from '@/background/services/storage-service';
-import { CircuitBreaker } from '@/background/utils/circuit-breaker';
+import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
-import { LoggerFactory } from '@/background/utils/logger';
-import type { ILogger } from '@/background/utils/logger';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Register base services available in all contexts

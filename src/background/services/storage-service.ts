@@ -6,9 +6,9 @@
 import { browser } from 'wxt/browser';
 
 import { ValidationError } from '@/background/errors/app-error';
-import { hashDomain, encryptData, decryptData } from '@/background/utils/crypto-utils';
-import { LoggerFactory } from '@/background/utils/logger';
-import type { ILogger } from '@/background/utils/logger';
+import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import {
   DEFAULT_STORAGE_CONFIG,

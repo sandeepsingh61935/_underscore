@@ -8,7 +8,7 @@ import { registerSyncComponents } from '@/background/sync/sync-container-registr
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
 import { registerRepositoryComponents } from '@/background/repositories/repository-container-registration';
 import { SupabaseConfig } from '@/background/api/supabase-client';
-import { LoggerFactory } from '@/background/utils/logger';
+import { LoggerFactory } from '@/shared/utils/logger';
 import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
 import { EventBridge } from '@/background/services/event-bridge';

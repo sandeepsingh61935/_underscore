@@ -7,7 +7,7 @@
 import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces/i-api-client';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import { CircuitBreaker, type CircuitBreakerConfig } from '@/background/utils/circuit-breaker';
+import { CircuitBreaker, type CircuitBreakerConfig } from '@/shared/utils/circuit-breaker';
 import { AuthenticationError, ValidationError, RateLimitError } from './api-errors';
 
 /**

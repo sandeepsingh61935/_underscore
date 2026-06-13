@@ -3,14 +3,14 @@
  * @description Background service worker with TTL cleanup
  */
 
-import '@/background/utils/polyfill'; // Polyfill environment first
+import '@/shared/utils/polyfill'; // Polyfill environment first
 import { browser } from 'wxt/browser';
 
 import type { AuthState, IAuthManager, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
 import { initializeBackground } from '@/background/bootstrap'; // Static import
 import type { Container } from '@/background/di/container';
 import { readLocalCollections } from '@/background/services/local-collections-reader';
-import { hashDomain, decryptData } from '@/background/utils/crypto-utils';
+import { hashDomain, decryptData } from '@/shared/utils/crypto-utils';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { DomainStorage, EventLog, HighlightCreatedEvent } from '@/shared/types/storage';
 import { LoggerFactory } from '@/shared/utils/logger';

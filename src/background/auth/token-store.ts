@@ -6,9 +6,9 @@
  */
 
 import type { IPersistentStorage } from '@/shared/interfaces/i-storage';
-import type { ILogger } from '@/background/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 import type { ITokenStore, AuthToken } from './interfaces/i-token-store';
-import { CircuitBreaker } from '@/background/utils/circuit-breaker';
+import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { PersistenceError } from '@/background/errors/app-error';
 
 /**
