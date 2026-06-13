@@ -61,7 +61,6 @@ export async function toStorageFormat(
   }
 
   return {
-    version: 2,
     id: highlight.id,
     text: highlight.text,
     contentHash,

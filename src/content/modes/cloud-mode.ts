@@ -19,7 +19,7 @@ import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
-import { getHighlightName, injectHighlightCSS, removeHighlightCSS } from '@/content/styles/highlight-styles';
+
 import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
@@ -104,17 +104,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       const restoreResult = await this.cloudService.restoreHighlight(data as any);
 
       if (restoreResult.range) {
-        // Create CSS Highlight
-        const highlightName = getHighlightName('underscore', data.id);
-        const highlight = new Highlight(restoreResult.range);
-        CSS.highlights.set(highlightName, highlight);
-
-        // Inject CSS
-        injectHighlightCSS('underscore', data.id, data.colorRole || 'yellow');
-
-        // Update Internal State
-        this.highlights.set(data.id, highlight);
-        this.data.set(data.id, data as any);
+        const fullData = { ...data, liveRanges: [restoreResult.range] } as unknown as HighlightData;
+        await this.renderAndRegister(fullData);
 
         this.logger.info('[CLOUD] [FAST] Instant render successful', {
           id: data.id,
@@ -145,19 +136,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       await (this.repository as any).remove(id, { skipSync: true });
     }
 
-    // 2. Remove from Runtime
-    const highlightName = getHighlightName('underscore', id);
-    const exists = CSS.highlights.get(highlightName);
-
-    if (exists) {
-      CSS.highlights.delete(highlightName);
-      removeHighlightCSS(id);
-      this.logger.info('[CLOUD] Removed CSS highlight', { id });
-    }
-
-    // 3. Update internal state
-    this.highlights.delete(id);
-    this.data.delete(id);
+    // 2 & 3. Remove from Runtime & Update internal state
+    await super.removeHighlight(id);
   }
 
   /**
@@ -185,12 +165,13 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     await (this.repository as any).update(id, data, { skipSync: true });
 
     // 2. Update properties if changed (e.g. Color)
-    if (data.colorRole) {
-      injectHighlightCSS('underscore', id, data.colorRole);
+    if (data.colorRole && localHighlight && data.colorRole !== localHighlight.colorRole) {
+      await super.removeHighlight(id);
+      await this.renderAndRegister({ ...localHighlight, ...data });
+    } else {
+      // Update internal data
+      this.data.set(id, data as any);
     }
-
-    // Update internal data
-    this.data.set(id, data as any);
   }
 
   readonly capabilities: ModeCapabilities = {
@@ -231,14 +212,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     await this.cloudService.saveHighlight(data as any, range, { skipSync: options?.skipSync });
 
     // 3. Render
-    const highlightName = getHighlightName('underscore', data.id);
-    const highlight = new Highlight(...data.liveRanges);
-    CSS.highlights.set(highlightName, highlight);
-    this.highlights.set(data.id, highlight);
-    this.data.set(data.id, data);
-
-    // Inject CSS for visual rendering
-    injectHighlightCSS('underscore', data.id, data.colorRole || 'yellow');
+    await this.renderAndRegister(data);
 
     // 4. Update Repository (Idempotent check)
     // Note: repository is RepositoryFacade with sync API (get/has, not findById)
@@ -267,7 +241,12 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     const updated = { ...existing, ...updates };
 
     // Update runtime
-    this.data.set(id, updated);
+    if (updates.colorRole && updates.colorRole !== existing.colorRole) {
+      await super.removeHighlight(id);
+      await this.renderAndRegister(updated);
+    } else {
+      this.data.set(id, updated);
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (this.repository as any).add(updated as any); // Updates existing in repo
 
@@ -286,13 +265,9 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   override async clearAll(): Promise<void> {
     await this.cloudService.clearAll();
 
-    for (const id of this.highlights.keys()) {
-      const highlightName = getHighlightName('underscore', id);
-      CSS.highlights.delete(highlightName);
-      removeHighlightCSS(id);
+    for (const id of this.data.keys()) {
+      await super.removeHighlight(id);
     }
-    this.highlights.clear();
-    this.data.clear();
     await this.repository.clear(); // If facade supports it
   }
 
@@ -307,8 +282,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   async loadFromStorage(_url: string): Promise<HighlightData[]> {
     const restored = await this.cloudService.restoreHighlightsForUrl();
     return restored.map(
-      (r) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (r: any) =>
         ({ ...r.highlight, liveRanges: r.range ? [r.range] : [] }) as any as HighlightData
     );
   }
@@ -363,17 +338,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.cloudService.saveHighlight(data as any, liveRange);
 
-    // 2. Update Runtime API (CSS Highlights)
-    const highlightName = getHighlightName('underscore', id);
-    const highlight = new Highlight(range);
-    CSS.highlights.set(highlightName, highlight);
-
-    // Inject CSS for visual rendering
-    injectHighlightCSS('underscore', id, colorRole || 'yellow');
-
-    // 3. Update Internal State
-    this.highlights.set(id, highlight);
-    this.data.set(id, data);
+    // 2 & 3. Update Runtime API & Internal State
+    await this.renderAndRegister(data);
 
     // 4. Update In-Memory Repository (for UI consistency)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -387,15 +353,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     await this.cloudService.deleteHighlight(id);
 
     // 2. Remove from Runtime
-    const highlight = this.highlights.get(id);
-
-    if (highlight) {
-      const highlightName = getHighlightName('underscore', id);
-      CSS.highlights.delete(highlightName);
-      removeHighlightCSS(id);
-      this.highlights.delete(id);
-    }
-    this.data.delete(id);
+    await super.removeHighlight(id);
 
     // 3. Remove from Session Repository (for UI consistency / HoverDetector)
     // NOTE: persistence is handled by cloudService above, but we must clear session state
@@ -422,25 +380,15 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       const { highlight: storedData, range } = item;
 
       if (range) {
-        // Register in Runtime with proper naming convention
-        const highlightName = getHighlightName('underscore', storedData.id);
-        const hl = new Highlight(range);
-        CSS.highlights.set(highlightName, hl);
-        this.highlights.set(storedData.id, hl);
-
-        // Inject CSS for visual rendering
-        injectHighlightCSS('underscore', storedData.id, storedData.colorRole || 'yellow');
-
-        this.logger.info(`[CLOUD] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
-
         // Construct full HighlightData with live ranges
-        // We cast storedData because it is V2 (persisted) and we need runtime HighlightData
         const fullData = {
           ...storedData,
           liveRanges: [range],
         } as unknown as HighlightData;
 
-        this.data.set(storedData.id, fullData);
+        await this.renderAndRegister(fullData);
+
+        this.logger.info(`[CLOUD] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
 
         // Sync to Repository (Idempotent check)
         // Note: repository is RepositoryFacade with sync API (get/has, not findById)
@@ -457,7 +405,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       }
     }
 
-    this.logger.info(`[CLOUD] [DONE] Restoration complete: ${restored.filter(r => r.range).length}/${restored.length} highlights rendered`);
+    this.logger.info(`[CLOUD] [DONE] Restoration complete: ${restored.filter((r: any) => r.range).length}/${restored.length} highlights rendered`);
   }
 
   async sync(): Promise<void> {

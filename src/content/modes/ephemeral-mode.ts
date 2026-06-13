@@ -21,7 +21,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
-import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
+
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
@@ -130,22 +130,20 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     if (!existing) return;
 
     const updated = { ...existing, ...updates };
-    this.data.set(id, updated);
+
+    if (updates.colorRole && updates.colorRole !== existing.colorRole) {
+      await super.removeHighlight(id);
+      await this.renderAndRegister(updated);
+    } else {
+      this.data.set(id, updated);
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.update(id, updates as any);
-
-    if (updates.colorRole) {
-      injectHighlightCSS(updated.type, id, updates.colorRole);
-    }
   }
 
   override async removeHighlight(id: string): Promise<void> {
-    const highlightName = getHighlightName('underscore', id);
-    if (CSS.highlights.has(highlightName)) CSS.highlights.delete(highlightName);
-
-    this.highlights.delete(id);
-    this.data.delete(id);
+    await super.removeHighlight(id);
 
     await this.repository.remove(id);
 

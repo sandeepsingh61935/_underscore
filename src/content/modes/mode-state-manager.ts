@@ -402,7 +402,9 @@ export class ModeStateManager {
 
   private async applyMode(): Promise<void> {
     await this.modeManager.activateMode(this.currentMode);
-    RepositoryFactory.setMode(this.currentMode);
+    if (this.currentMode !== 'ai') {
+      RepositoryFactory.setMode(this.currentMode);
+    }
   }
 
   private notifyListeners(): void {

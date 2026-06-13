@@ -109,11 +109,13 @@ export class CreateHighlightCommand implements Command {
           id: this.createdHighlightId,
           text,
           contentHash,
-          colorRole: this.colorRole,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          colorRole: this.colorRole as any,
           type: 'underscore' as const,
           ranges: [this.serializedRange],
           liveRanges: [range],
           createdAt: new Date(),
+          url: window.location.origin + window.location.pathname,
         });
 
         this.logger.debug('Highlight recreated (redo)', {

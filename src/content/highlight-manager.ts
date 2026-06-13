@@ -11,8 +11,7 @@
 
 import {
   getHighlightName,
-  injectHighlightCSS,
-  removeHighlightCSS,
+  injectGlobalHighlightStyles,
 } from './styles/highlight-styles';
 
 import { serializeRange } from '@/content/utils/range-converter';
@@ -22,73 +21,44 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
-/**
- * Highlight data structure (no DOM element needed!)
- * UPDATED: Now supports multiple ranges per highlight
- */
 export interface HighlightData {
   id: string;
   text: string;
   color: string;
-  type: 'underscore'; // Single mode only
-  ranges: SerializedRange[]; // Multiple ranges!
+  type: 'underscore';
+  ranges: SerializedRange[];
   createdAt: Date;
-  liveRanges?: Range[]; // Multiple live ranges for click detection
+  liveRanges?: Range[];
 }
 
-/**
- * Extended with live Range for CSS.highlights
- */
-export interface HighlightWithLiveRange extends HighlightData {
-  liveRange: Range;
-}
-
-/**
- * Manages CSS Custom Highlights
- *
- * Uses the native CSS Custom Highlight API:
- * - CSS.highlights.set(name, Highlight)
- * - Styled via ::highlight(name) pseudo-element
- */
 export class HighlightManager {
   private readonly logger: ILogger;
   private readonly eventBus: EventBus;
 
-  // Map of highlight id → Highlight object
-  private readonly highlights: Map<string, Highlight> = new Map();
-
-  // Map of highlight id → Range (for undo/redo)
-  private readonly ranges: Map<string, Range> = new Map();
+  // Map of highlight id → Range (for undo/redo and tracking)
+  private readonly ranges: Map<string, Range[]> = new Map();
 
   constructor(eventBus: EventBus) {
     this.logger = LoggerFactory.getLogger('HighlightManager');
     this.eventBus = eventBus;
 
     this.logger.info('HighlightManager initialized (Custom Highlight API)');
+    injectGlobalHighlightStyles();
   }
 
-  /**
-   * Check if Custom Highlight API is supported
-   */
   static isSupported(): boolean {
     return 'highlights' in CSS;
   }
 
-  /**
-   * Create a new highlight from selection
-   * Now supports creating with multiple ranges
-   */
   createHighlight(
     selection: Selection,
-    color: string,
-    type: 'underscore' = 'underscore'
+    color: string
   ): HighlightData | null {
     if (selection.rangeCount === 0) {
       this.logger.warn('No range in selection');
       return null;
     }
 
-    // For now, take first range (we'll add multi-selection support later)
     const range = selection.getRangeAt(0);
     const text = range.toString().trim();
 
@@ -97,39 +67,36 @@ export class HighlightManager {
       return null;
     }
 
-    // Generate unique ID
     const id = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const highlightName = getHighlightName(type, id);
+    const highlightName = getHighlightName('underscore', color);
 
-    // Serialize range for storage
     const serializedRange = serializeRange(range);
     if (!serializedRange) {
       this.logger.error('Failed to serialize range');
       return null;
     }
 
-    // Create native Highlight with the range
-    const nativeHighlight = new Highlight(range);
-    CSS.highlights.set(highlightName, nativeHighlight);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let semanticHighlight = (CSS as any).highlights.get(highlightName);
+    if (!semanticHighlight) {
+      semanticHighlight = new Highlight();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CSS as any).highlights.set(highlightName, semanticHighlight);
+    }
+    semanticHighlight.add(range);
 
-    // Inject CSS for this specific highlight
-    injectHighlightCSS(type, id, color);
-
-    // Register in internal maps (CRITICAL for removal!)
-    this.highlights.set(id, nativeHighlight);
-    this.ranges.set(id, range);
+    this.ranges.set(id, [range]);
 
     const highlightData: HighlightData = {
       id,
       text,
       color,
-      type,
-      ranges: [serializedRange], // Array format
+      type: 'underscore',
+      ranges: [serializedRange],
       createdAt: new Date(),
-      liveRanges: [range], // Array format - CRITICAL for click detection!
+      liveRanges: [range],
     };
 
-    // Emit event
     this.eventBus.emit(
       EventName.HIGHLIGHT_CREATED,
       createEvent({
@@ -138,81 +105,56 @@ export class HighlightManager {
           id,
           text,
           color,
-          type,
+          type: 'underscore',
           createdAt: new Date(),
           ranges: [serializedRange],
         },
       })
     );
 
-    this.logger.info('Highlight created', {
-      id,
-      type,
-      textLength: text.length,
-    });
-
+    this.logger.info('Highlight created', { id, type: 'underscore', textLength: text.length });
     return highlightData;
   }
 
-  /**
-   * Remove a highlight by ID (underscore mode only)
-   */
-  removeHighlight(id: string, type: 'underscore' = 'underscore'): void {
-    const highlight = this.highlights.get(id);
-    if (!highlight) {
+  removeHighlight(id: string, _type: 'underscore' = 'underscore'): void {
+    const ranges = this.ranges.get(id);
+    if (!ranges) {
       this.logger.warn('Highlight not found', { id });
       return;
     }
 
-    // Remove from CSS.highlights
-    const highlightName = getHighlightName(type, id);
-    CSS.highlights.delete(highlightName);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const highlights = (CSS as any).highlights;
+    for (const semanticHighlight of highlights.values()) {
+      for (const range of ranges) {
+        if (semanticHighlight.has(range)) {
+          semanticHighlight.delete(range);
+        }
+      }
+    }
 
-    // Remove CSS
-    removeHighlightCSS(id);
-
-    // Remove from internal maps
-    this.highlights.delete(id);
     this.ranges.delete(id);
-
     this.logger.info('Highlight removed', { id });
   }
 
-  /**
-   * Register an externally-created highlight (e.g., from range subtraction)
-   * This ensures HighlightManager tracks it for future removal
-   */
-  registerHighlight(id: string, nativeHighlight: Highlight, range: Range): void {
-    this.highlights.set(id, nativeHighlight);
-    this.ranges.set(id, range);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registerHighlight(id: string, _nativeHighlight: any, range: Range): void {
+    this.ranges.set(id, [range]);
     this.logger.debug('Highlight registered', { id });
   }
 
-  /**
-   * Clear all highlights
-   */
   clearAll(): void {
-    // Clear all CSS highlights
-    CSS.highlights.clear();
-
-    // Clear internal maps
-    this.highlights.clear();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (CSS as any).highlights.clear();
     this.ranges.clear();
-
     this.logger.info('All highlights cleared');
   }
 
-  /**
-   * Get highlight count
-   */
   getHighlightCount(): number {
-    return this.highlights.size;
+    return this.ranges.size;
   }
 
-  /**
-   * Check if a highlight exists
-   */
   hasHighlight(id: string): boolean {
-    return this.highlights.has(id);
+    return this.ranges.has(id);
   }
 }

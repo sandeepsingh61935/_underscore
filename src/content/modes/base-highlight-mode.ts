@@ -8,11 +8,7 @@
 
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 
-import {
-  getHighlightName,
-  injectHighlightCSS,
-  removeHighlightCSS,
-} from '@/content/styles/highlight-styles';
+import { getHighlightName } from '@/content/styles/highlight-styles';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
@@ -63,19 +59,24 @@ export abstract class BaseHighlightMode {
    * This ensures EVERY highlight goes through same path → always registers!
    */
   protected async renderAndRegister(data: HighlightData): Promise<void> {
-    const highlightName = getHighlightName(data.type, data.id);
+    const highlightName = getHighlightName(data.type, data.colorRole);
 
-    // 1. Create native Highlight
-    const nativeHighlight = new Highlight(...data.liveRanges);
+    // Get existing semantic highlight group or create new one
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let semanticHighlight = (CSS as any).highlights.get(highlightName);
+    if (!semanticHighlight) {
+      semanticHighlight = new Highlight();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CSS as any).highlights.set(highlightName, semanticHighlight);
+    }
 
-    // 2. Register with CSS
-    CSS.highlights.set(highlightName, nativeHighlight);
+    // Add ranges to semantic highlight group
+    for (const range of data.liveRanges) {
+      semanticHighlight.add(range);
+    }
 
-    // 3. Inject styles with colorRole (CSS variable)
-    injectHighlightCSS(data.type, data.id, data.colorRole);
-
-    // 4. Track internally (replaces HighlightManager tracking)
-    this.highlights.set(data.id, nativeHighlight);
+    // Track internally
+    // We don't store a Highlight object anymore, just keep the data for ranges
     this.data.set(data.id, data);
 
     this.logger.debug('Highlight rendered and registered', { id: data.id });
@@ -88,15 +89,19 @@ export abstract class BaseHighlightMode {
       return;
     }
 
-    const highlightName = getHighlightName(data.type, id);
+    const highlightName = getHighlightName(data.type, data.colorRole);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const semanticHighlight = (CSS as any).highlights.get(highlightName);
 
-    // 1. Remove from CSS (using proper prefixed key)
-    CSS.highlights.delete(highlightName);
+    if (semanticHighlight) {
+      for (const range of data.liveRanges) {
+        if (semanticHighlight.has(range)) {
+          semanticHighlight.delete(range);
+        }
+      }
+    }
 
-    // 2. Remove styles
-    removeHighlightCSS(id);
-
-    // 3. Remove from tracking
+    // Remove from tracking
     this.highlights.delete(id);
     this.data.delete(id);
 

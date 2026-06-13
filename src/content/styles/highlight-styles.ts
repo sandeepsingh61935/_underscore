@@ -11,79 +11,46 @@ import type { AnnotationType } from '@/shared/types/annotation';
 export type HighlightType = AnnotationType;
 
 /**
- * Get the CSS highlight name for a given mode and id
- * CRITICAL: Must be unique per highlight to avoid collisions
+ * Get the CSS highlight name for a given mode and color role
+ * CRITICAL: Must be semantic per color/type to avoid DOM explosion
  */
-export function getHighlightName(mode: HighlightType, id: string): string {
-  return `${mode}-${id}`;
+export function getHighlightName(type: HighlightType, colorRole: string): string {
+  return `${type}-${colorRole}`;
 }
 
+const COLORS = ['yellow', 'blue', 'green', 'pink', 'purple'];
+
 /**
- * Inject highlight CSS using semantic design tokens
+ * Inject global highlight CSS using semantic design tokens
  * Automatically reactive to theme changes via CSS variables
- *
- * @param type Highlight type
- * @param id Highlight ID
- * @param colorRole Semantic color role (e.g., 'yellow', 'blue')
  */
-export function injectHighlightCSS(
-  type: HighlightType,
-  id: string,
-  colorRole: string
-): void {
-  const highlightName = getHighlightName(type, id);
-  const styleId = `hl-style-${id}`;
+export function injectGlobalHighlightStyles(): void {
+  const styleId = `underscore-global-highlight-styles`;
+  if (document.getElementById(styleId)) return;
 
-  // Remove existing style if present
-  const existing = document.getElementById(styleId);
-  if (existing) {
-    existing.remove();
-  }
-
-  // Create style element
   const style = document.createElement('style');
   style.id = styleId;
 
-  // Generate CSS based on mode
   let css = '';
-  switch (type) {
-    case 'underscore':
-      css = `::highlight(${highlightName}) {
-                text-decoration: underline solid;
-                text-decoration-color: var(--highlight-${colorRole});
-                text-underline-offset: 3px;
-                text-decoration-thickness: 2px;
-            }`;
-      break;
-    case 'highlight':
-      css = `::highlight(${highlightName}) {
-                background-color: var(--highlight-${colorRole});
-                color: inherit;
-            }`;
-      break;
-    case 'box':
-      css = `::highlight(${highlightName}) {
-                outline: 2px solid var(--highlight-${colorRole});
-                outline-offset: 2px;
-            }`;
-      break;
-    default:
-      css = `::highlight(${highlightName}) {
-                background-color: var(--highlight-${colorRole});
-            }`;
+  for (const color of COLORS) {
+    css += `
+      ::highlight(underscore-${color}) {
+        text-decoration: underline solid;
+        text-decoration-color: var(--highlight-${color});
+        text-underline-offset: 3px;
+        text-decoration-thickness: 2px;
+      }
+      ::highlight(highlight-${color}) {
+        background-color: var(--highlight-${color});
+        color: inherit;
+      }
+      ::highlight(box-${color}) {
+        outline: 2px solid var(--highlight-${color});
+        outline-offset: 2px;
+      }
+    `;
   }
 
   style.textContent = css;
   document.head.appendChild(style);
-}
-
-/**
- * Remove CSS for a highlight
- */
-export function removeHighlightCSS(id: string): void {
-  const styleId = `hl-style-${id}`;
-  const existing = document.getElementById(styleId);
-  if (existing) {
-    existing.remove();
-  }
 }

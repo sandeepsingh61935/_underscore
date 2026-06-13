@@ -9,6 +9,7 @@ import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
 
 export class HighlightHoverDetector {
   private currentHoveredId: string | null = null;
@@ -18,7 +19,8 @@ export class HighlightHoverDetector {
   constructor(
     private repositoryFacade: RepositoryFacade,
     private eventBus: EventBus,
-    private logger: ILogger
+    private logger: ILogger,
+    private hitTester: HighlightDOMHitTester
   ) { }
 
   /**
@@ -95,7 +97,7 @@ export class HighlightHoverDetector {
    * Detect which highlight is being hovered
    */
   private detectHover(x: number, y: number): void {
-    const highlight = this.findHighlightAtPoint(x, y);
+    const highlight = this.hitTester.findHighlightAtPoint(x, y);
 
     // Check if hover state changed
     if (highlight?.id !== this.currentHoveredId) {
@@ -123,85 +125,7 @@ export class HighlightHoverDetector {
     }
   }
 
-  /**
-   * Find highlight at point (reuses logic from HighlightClickDetector)
-   */
-  /**
-   * Find highlight at point (reuses logic from HighlightClickDetector)
-   */
-  private findHighlightAtPoint(x: number, y: number): HighlightDataV2 | null {
-    // Get highlights from repository facade (cache)
-    const highlights = this.repositoryFacade.getAll();
 
-    if (highlights.length === 0) {
-      if (highlights.length === 0) {
-        return null;
-      }
-    }
-
-    this.logger.debug('[HOVER] Checking highlights at point', {
-      x,
-      y,
-      highlightCount: highlights.length,
-    });
-
-    const matches: HighlightDataV2[] = [];
-
-    try {
-      // Find highlight under the cursor
-      for (const highlight of highlights) {
-        if (this.isPointInHighlight(highlight, x, y)) {
-          this.logger.debug('[HOVER] Found highlight at point', { id: highlight.id });
-          matches.push(highlight);
-        }
-      }
-
-      // If multiple matches (e.g. nested highlights), prioritize the specific one
-      if (matches.length > 0) {
-        matches.sort((a, b) => a.text.length - b.text.length);
-        return matches[0] || null;
-      }
-    } catch (error) {
-      this.logger.warn('Error finding highlight at point', error as Error);
-    }
-
-    return null;
-  }
-
-  /**
-   * Check if a point is inside a highlight's bounding boxes
-   */
-  private isPointInHighlight(highlight: HighlightDataV2, x: number, y: number): boolean {
-    // Note: We need real DOM ranges for this, which we can get from CSS.highlights
-    const highlightName = `underscore-${highlight.id}`;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nativeHighlight = (CSS as any).highlights.get(highlightName);
-
-    if (!nativeHighlight) {
-      this.logger.warn('[HOVER] No CSS highlight found for ID', { id: highlight.id });
-      return false;
-    }
-
-    // Check all ranges in the native highlight
-    for (const abstractRange of nativeHighlight) {
-      const range = abstractRange as Range;
-      const rects = range.getClientRects();
-      for (let i = 0; i < rects.length; i++) {
-        const rect = rects[i];
-        if (
-          rect &&
-          x >= rect.left &&
-          x <= rect.right &&
-          y >= rect.top &&
-          y <= rect.bottom
-        ) {
-          // console.log('[HOVER-DEBUG] HIT! Point inside rect');
-          return true;
-        }
-      }
-    }
-    return false;
-  }
 
   /**
    * Get bounding rect for highlight (for icon positioning)

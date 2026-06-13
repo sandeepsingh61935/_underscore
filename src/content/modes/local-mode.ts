@@ -21,7 +21,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
-import { getHighlightName, injectHighlightCSS } from '@/content/styles/highlight-styles';
+
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
@@ -197,11 +197,12 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
     }
 
     const updated = { ...existing, ...updates };
-    this.data.set(id, updated);
 
-    // Re-inject CSS if colorRole changed
-    if (updates.colorRole) {
-      injectHighlightCSS(updated.type, id, updates.colorRole);
+    if (updates.colorRole && updates.colorRole !== existing.colorRole) {
+      await super.removeHighlight(id);
+      await this.renderAndRegister(updated);
+    } else {
+      this.data.set(id, updated);
     }
   }
 
@@ -227,16 +228,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
   override async removeHighlight(id: string): Promise<void> {
     this.logger.info('Removing highlight', { id });
 
-    // FIXED: Only prefixed key needed after removing double-registration
-    const highlightName = getHighlightName('underscore', id);
-    if (CSS.highlights.has(highlightName)) {
-      CSS.highlights.delete(highlightName);
-      this.logger.info('Removed from CSS.highlights', { highlightName });
-    }
-
-    // [OK] Remove from internal maps (state)
-    this.highlights.delete(id);
-    this.data.delete(id);
+    await super.removeHighlight(id);
 
     // [OK] Remove from repository (persistence)
     await this.repository.remove(id);
