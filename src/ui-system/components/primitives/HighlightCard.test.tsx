@@ -8,8 +8,8 @@
  *   - Optional inline TTLBadge when ttlMs set.
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { HighlightCard } from './HighlightCard';
 
@@ -35,9 +35,9 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(meta.className).toContain('u-mono');
   });
 
-  it('renders "domain / section" when section provided', () => {
-    render(<HighlightCard quote="Apple" domain="example.com" section="Notes" />);
-    expect(screen.getByText('example.com / Notes')).toBeTruthy();
+  it('renders "domain/path" when section (path) provided', () => {
+    render(<HighlightCard quote="Apple" domain="example.com" section="/notes" />);
+    expect(screen.getByText('example.com/notes')).toBeTruthy();
   });
 
   it('omits TTL badge when ttlMs absent', () => {
@@ -67,5 +67,25 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.getAttribute('style') ?? '').toContain('14px 16px');
+  });
+
+  it('renders domain only when section is absent', () => {
+    render(<HighlightCard quote="Apple" domain="example.com" />);
+    expect(screen.getByText('example.com')).toBeTruthy();
+  });
+
+  it('renders meta as plain div when onSectionClick is not provided', () => {
+    render(<HighlightCard quote="Apple" domain="example.com" section="/docs" />);
+    expect(screen.queryByRole('button', { name: /example\.com/ })).toBeNull();
+  });
+
+  it('calls onSectionClick when meta line is clicked', () => {
+    const handler = vi.fn();
+    render(
+      <HighlightCard quote="Apple" domain="example.com" section="/docs" onSectionClick={handler} />
+    );
+    const btn = screen.getByRole('button', { name: 'example.com/docs' });
+    fireEvent.click(btn);
+    expect(handler).toHaveBeenCalledOnce();
   });
 });
