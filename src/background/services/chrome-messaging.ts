@@ -7,8 +7,8 @@
  */
 
 import type { IMessaging, ITabQuery, Message } from '@/shared/interfaces/i-messaging';
-import { LoggerFactory } from '../utils/logger';
-import type { ILogger } from '../utils/logger';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Chrome messaging implementation

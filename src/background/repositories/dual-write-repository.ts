@@ -9,11 +9,11 @@
  */
 
 import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
-import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 
 import type { SupabaseHighlightRepository } from './supabase-highlight-repository';
 import type { IAuthManager } from '../auth/interfaces/i-auth-manager';
-import type { ILogger } from '../utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 import type { OfflineQueueService } from '@/background/services/offline-queue-service';
 
 /**

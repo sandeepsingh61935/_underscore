@@ -7,9 +7,9 @@
  */
 
 import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
-import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import { SupabaseClient } from '../api/supabase-client';
-import type { ILogger } from '../utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Supabase-backed highlight repository

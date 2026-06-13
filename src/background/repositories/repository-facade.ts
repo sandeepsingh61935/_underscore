@@ -10,9 +10,9 @@
  * From Quality Framework: "Facade Pattern for complex subsystems"
  */
 
-import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
-import { LoggerFactory } from '../utils/logger';
-import type { ILogger } from '../utils/logger';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 import type { IHighlightRepository } from './i-highlight-repository';
 

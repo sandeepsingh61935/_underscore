@@ -29,10 +29,12 @@ global.chrome = {
 
 describe('ModeStateManager - State Machine Integration', () => {
   let stateManager: ModeStateManager;
+  let mockEventBus: any;
   let mockModeManager: ModeManager;
   let mockLogger: ILogger;
 
   beforeEach(() => {
+    mockEventBus = { emit: vi.fn(), on: vi.fn() };
     mockModeManager = {
       activateMode: vi.fn().mockResolvedValue(undefined),
     } as any;
@@ -46,7 +48,7 @@ describe('ModeStateManager - State Machine Integration', () => {
       getLevel: vi.fn(),
     } as any;
 
-    stateManager = new ModeStateManager(mockModeManager, mockLogger);
+    stateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
 
     mockChromeStorage.local.get.mockReset();
     mockChromeStorage.local.set.mockReset();
@@ -147,14 +149,13 @@ describe('ModeStateManager - State Machine Integration', () => {
       expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should persist mode after successful transition', async () => {
+    it('should dispatch INTENT_SET_MODE instead of persisting locally', async () => {
       // Act
       await stateManager.setMode('cloud');
 
-      // Assert - Mode was persisted to chrome.storage
-      expect(mockChromeStorage.local.set).toHaveBeenCalledWith(
-        expect.objectContaining({ 'underscore-current-mode': 'cloud' })
-      );
+      // Assert - Intent was dispatched via eventBus
+      expect(mockEventBus.emit).toHaveBeenCalledWith('INTENT_SET_MODE', { mode: 'cloud' });
+      expect(mockChromeStorage.local.set).not.toHaveBeenCalled();
     });
   });
 

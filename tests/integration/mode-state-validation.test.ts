@@ -50,6 +50,7 @@ global.chrome = {
 
 describe('ModeStateManager - Validation Integration', () => {
   let stateManager: ModeStateManager;
+  let mockEventBus: any;
   let mockModeManager: ModeManager;
   let mockLogger: ILogger;
 
@@ -57,6 +58,7 @@ describe('ModeStateManager - Validation Integration', () => {
     // Clear storage between tests
     for (const key in storageData) delete storageData[key];
 
+    mockEventBus = { emit: vi.fn(), on: vi.fn() };
     mockModeManager = {
       activateMode: vi.fn().mockResolvedValue(undefined),
     } as any;
@@ -70,7 +72,7 @@ describe('ModeStateManager - Validation Integration', () => {
       getLevel: vi.fn(),
     } as any;
 
-    stateManager = new ModeStateManager(mockModeManager, mockLogger);
+    stateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
     vi.clearAllMocks();
   });
 
@@ -86,7 +88,7 @@ describe('ModeStateManager - Validation Integration', () => {
     expect(stateManager.getMode()).toBe('local');
 
     // 2. Simulate app restart (new instance)
-    const newStateManager = new ModeStateManager(mockModeManager, mockLogger);
+    const newStateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
 
     // 3. Initialize new instance (loads from storage)
     await newStateManager.init();

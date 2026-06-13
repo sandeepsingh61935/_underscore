@@ -8,7 +8,7 @@
  */
 
 import type { IRepository } from '@/shared/interfaces/i-repository';
-import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 
 /**
  * Options for repository operations

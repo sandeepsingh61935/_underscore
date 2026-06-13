@@ -34,11 +34,13 @@ global.chrome = {
 
 describe('ModeStateManager - Validation Integration', () => {
   let stateManager: ModeStateManager;
+  let mockEventBus: any;
   let mockModeManager: ModeManager;
   let mockLogger: ILogger;
 
   beforeEach(() => {
     // Setup mocks
+    mockEventBus = { emit: vi.fn(), on: vi.fn() };
     mockModeManager = {
       activateMode: vi.fn().mockResolvedValue(undefined),
     } as any;
@@ -50,7 +52,7 @@ describe('ModeStateManager - Validation Integration', () => {
       warn: vi.fn(),
     } as any;
 
-    stateManager = new ModeStateManager(mockModeManager, mockLogger);
+    stateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
 
     // Reset chrome.storage mocks
     mockChromeStorage.local.get.mockReset();
@@ -161,96 +163,12 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   describe('init() validation', () => {
-    it('should validate loaded state from chrome.storage', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'local' });
-
+    it('should subscribe to STATE_MODE_CHANGED via eventBus', async () => {
       // Act
       await stateManager.init();
 
       // Assert
-      expect(stateManager.getMode()).toBe('local');
-    });
-
-    it('should fallback to walk when chrome.storage returns invalid mode', async () => {
-      // Arrange - Simulate corrupted storage
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'corrupted' });
-
-      // Act
-      await stateManager.init();
-
-      // Assert - Migration handles corrupted data, falls back to walk
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should fallback to walk when chrome.storage returns null', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: null });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should fallback to walk when chrome.storage returns undefined', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({});
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should fallback to walk when chrome.storage returns number', async () => {
-      // Arrange - Type coercion edge case
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 123 });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should fallback to walk when chrome.storage returns object', async () => {
-      // Arrange - Type coercion edge case
-      mockChromeStorage.local.get.mockResolvedValue({
-        defaultMode: { complex: 'object' },
-      });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should fallback to walk when chrome.storage throws error', async () => {
-      // Arrange - Storage access failure
-      mockChromeStorage.local.get.mockRejectedValue(new Error('Access denied'));
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-
-    it('should handle race condition: init called twice simultaneously', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'local' });
-
-      // Act
-      await Promise.all([stateManager.init(), stateManager.init()]);
-
-      // Assert
-      expect(stateManager.getMode()).toBe('local');
-      expect(mockChromeStorage.local.get).toHaveBeenCalledTimes(2);
+      expect(mockEventBus.on).toHaveBeenCalledWith('STATE_MODE_CHANGED', expect.any(Function));
     });
   });
 
@@ -306,25 +224,6 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   describe('Edge cases and boundary conditions', () => {
-    it('should handle setMode() called during init()', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockImplementation(() => {
-        // Simulate slow storage read
-        return new Promise((resolve) => {
-          setTimeout(() => resolve({ defaultMode: 'local' }), 100);
-        });
-      });
-
-      // Act - Start init, then immediately call setMode
-      const initPromise = stateManager.init();
-      await stateManager.setMode('cloud'); // Completes first
-      await initPromise; // Completes second, overwrites
-
-      // Assert - init() wins because it completes last (race condition)
-      // This is actually "correct" behavior for simple promise overlap if not guarded
-      expect(stateManager.getMode()).toBe('local');
-    });
-
     it('should handle rapid mode switches', async () => {
       // Arrange
       const modes = ['ephemeral', 'local', 'cloud', 'ephemeral', 'local'] as const;
@@ -340,73 +239,13 @@ describe('ModeStateManager - Validation Integration', () => {
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
       await stateManager.setMode('cloud');
-      mockChromeStorage.local.set.mockClear();
+      mockEventBus.emit.mockClear();
 
       // Act
       await stateManager.setMode('cloud');
 
-      // Assert - No storage write should happen
-      expect(mockChromeStorage.local.set).not.toHaveBeenCalled();
-    });
-
-    it('should validate mode even if chrome.storage.set fails', async () => {
-      // Arrange
-      mockChromeStorage.local.set.mockRejectedValue(new Error('Quota exceeded'));
-
-      // Act
-      await stateManager.setMode('cloud');
-
-      // Assert - Memory state updated despite persistence failure
-      expect(stateManager.getMode()).toBe('cloud');
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-
-    it('should handle chrome.storage returning string "undefined"', async () => {
-      // Arrange - some extensions serialize undefined as string
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'undefined' });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should handle chrome.storage returning string "null"', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: 'null' });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should handle chrome.storage returning array instead of string', async () => {
-      // Arrange
-      mockChromeStorage.local.get.mockResolvedValue({ defaultMode: ['local'] });
-
-      // Act
-      await stateManager.init();
-
-      // Assert
-      expect(stateManager.getMode()).toBe('ephemeral');
-    });
-
-    it('should handle chrome.storage returning boolean', async () => {
-      // SKIPPED
-      /*
-           // Arrange
-           mockChromeStorage.local.get.mockResolvedValue({ defaultMode: true });
-
-           // Act
-           await stateManager.init();
-
-           // Assert
-           expect(stateManager.getMode()).toBe('ephemeral');
-           expect(mockLogger.warn).toHaveBeenCalled();
-           */
+      // Assert - No intent should be sent
+      expect(mockEventBus.emit).not.toHaveBeenCalled();
     });
   });
 });

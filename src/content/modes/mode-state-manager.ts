@@ -26,6 +26,7 @@ import {
   type DebugState,
 } from '@/shared/schemas/mode-state-schemas';
 import { CircuitBreaker, CircuitBreakerOpenError } from '@/shared/utils/circuit-breaker';
+import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 // Re-export ModeType for backward compatibility
@@ -53,6 +54,7 @@ export class ModeStateManager {
   private modeActivatedAt: number = Date.now();
 
   constructor(
+    private readonly eventBus: EventBus,
     private readonly modeManager: ModeManager,
     private readonly logger: ILogger
   ) {
@@ -85,144 +87,12 @@ export class ModeStateManager {
    * Implements error boundary with fallback to default mode
    */
   async init(): Promise<void> {
-    try {
-      // Wrap storage read in circuit breaker
-      // Use chrome.storage.local with key underscore-current-mode to match popup persistence
-      const result = await this.storageCircuitBreaker.execute(() =>
-        chrome.storage.local.get(['underscore-current-mode', 'metadata'])
-      );
-
-      // [DEBUG] Force log to console to verify persistence
-      console.error('[ModeState] Raw storage result:', JSON.stringify(result));
-
-      const loadedMode = result['underscore-current-mode'];
-      const loadedMetadata = result['metadata'];
-
-      // Detect state version
-      // Pass FULL result to allow detection of legacy keys ('mode')
-      const currentVersion = this.migrationEngine.detectVersion(result);
-      console.error('[ModeState] Detected version:', currentVersion);
-
-      // Check if migration is needed
-      if (currentVersion < this.migrationEngine.getCurrentVersion()) {
-        this.logger.info('[ModeState] Migration needed', {
-          currentVersion,
-          targetVersion: this.migrationEngine.getCurrentVersion(),
-        });
-
-        // Perform migration
-        const migrationResult = await this.migrationEngine.migrate(
-          result, // Pass full source state
-          currentVersion,
-          this.migrationEngine.getCurrentVersion()
-        );
-
-        if (migrationResult.success) {
-          const v2State = migrationResult.value;
-
-          // Apply migrated state IN MEMORY first
-          this.currentMode = v2State.currentMode;
-          this.metadata = v2State.metadata;
-
-          // Persist migrated state (non-blocking) with circuit breaker
-          // Use chrome.storage.local with underscore-current-mode to match popup persistence
-          try {
-            await this.storageCircuitBreaker.execute(() =>
-              chrome.storage.local.set({
-                'underscore-current-mode': v2State.currentMode,
-                metadata: v2State.metadata,
-              })
-            );
-
-            this.logger.info('[ModeState] Migration complete', {
-              mode: this.currentMode,
-            });
-          } catch (persistError) {
-            // Log but don't fail - state is good in memory
-            this.logger.error(
-              '[ModeState] Failed to persist migrated state',
-              new StatePersistenceError('Failed to save migrated state', {
-                originalError: persistError,
-              })
-            );
-          }
-        } else {
-          // Migration failed - fallback to defaults
-          this.logger.error('[ModeState] Migration failed', migrationResult.error);
-          this.currentMode = 'ephemeral';
-          this.metadata = {
-            version: 2,
-            lastModified: Date.now(),
-          };
-        }
-      } else {
-        // No migration needed - validate and load normally
-        const validation = ModeTypeSchema.safeParse(loadedMode);
-
-        if (validation.success) {
-          this.currentMode = validation.data;
-          this.logger.info('[ModeState] Loaded user preference via local storage', {
-            mode: this.currentMode,
-          });
-        } else {
-          this.logger.warn(
-            '[ModeState] Invalid mode in storage (or missing), falling back',
-            new StateValidationError(`Invalid mode "${loadedMode}"`, {
-              mode: loadedMode,
-              validationErrors: validation.error.issues,
-            })
-          );
-          this.currentMode = 'ephemeral';
-        }
-
-        // Validate and load metadata INDEPENDENTLY
-        if (loadedMetadata) {
-          const metadataValidation = StateMetadataSchema.safeParse(loadedMetadata);
-
-          if (metadataValidation.success) {
-            this.metadata = metadataValidation.data;
-          } else {
-            // Warn but don't reset MODE. Just repair metadata.
-            this.logger.warn(
-              '[ModeState] Invalid metadata in storage, resetting metadata',
-              new StateValidationError('Invalid metadata', {
-                validationErrors: metadataValidation.error.issues,
-              })
-            );
-            // Fallback metadata only
-            this.metadata = {
-              version: 2,
-              lastModified: Date.now(),
-            };
-          }
-        }
-      }
-
-      await this.applyMode();
-    } catch (error) {
-      // Check if circuit breaker is open
-      if (error instanceof CircuitBreakerOpenError) {
-        this.logger.warn(
-          '[ModeState] Circuit breaker open - using in-memory state only',
-          { circuitName: 'ModeStateStorage' }
-        );
-        // Don't reset mode - keep current in-memory state
-        // Just apply the current mode without storage
+    this.eventBus.on('STATE_MODE_CHANGED', async (event: any) => {
+      if (event && event.mode) {
+        this.currentMode = event.mode;
         await this.applyMode();
-        return;
       }
-
-      // Critical initialization failure - fallback to safe default
-      this.logger.error(
-        '[ModeState] Failed to initialize mode state',
-        new StatePersistenceError('Storage read failed during init', {
-          originalError: error,
-        })
-      );
-      // Fallback to ephemeral mode
-      this.currentMode = 'ephemeral';
-      await this.applyMode();
-    }
+    });
   }
 
   /**
@@ -325,41 +195,23 @@ export class ModeStateManager {
         to: validatedMode,
       });
 
-      // 6. Persist preference (Non-blocking / Graceful Degradation) with circuit breaker
-      // Use chrome.storage.local with key underscore-current-mode to match popup persistence
+      // 6. Dispatch Intent to Background Worker
+      // Background worker is the single source of truth and will persist and broadcast state.
       try {
-        await this.storageCircuitBreaker.execute(() =>
-          chrome.storage.local.set({
-            'underscore-current-mode': validatedMode,
-            metadata: this.metadata,
-          })
-        );
-      } catch (persistError) {
-        // DON'T THROW - State is valid in memory
+        this.eventBus.emit('INTENT_SET_MODE', { mode: validatedMode });
+      } catch (intentError) {
         this.logger.error(
-          '[ModeState] Failed to persist mode change',
-          new StatePersistenceError('Persistence failed during setMode', {
-            originalError: persistError,
+          '[ModeState] Failed to dispatch mode change intent',
+          new StatePersistenceError('Intent dispatch failed during setMode', {
+            originalError: intentError,
           })
         );
       }
 
-      // 7. Apply to ModeManager and Broadcast
+      // 7. Apply to ModeManager and Notify Local Listeners (Optimistic)
       try {
         await this.applyMode();
-        this.notifyListeners(); // Notify local first
-
-        // Broadcast to popup (fire and forget - DON'T AWAIT)
-        chrome.runtime
-          .sendMessage({
-            type: 'MODE_CHANGED',
-            mode: validatedMode,
-          })
-          .catch((msgError) => {
-            this.logger.debug('[ModeState] Failed to broadcast mode change', {
-              error: msgError,
-            });
-          });
+        this.notifyListeners();
       } catch (activationError) {
         // Critical failure: We claimed to be in 'mode' but failed to activate it.
         // Revert state?

@@ -5,7 +5,7 @@ import {
   type Message,
   type MessageTarget,
   type MessageHandler,
-} from '../schemas/message-schemas';
+} from '@/shared/schemas/message-schemas';
 
 /**
  * ChromeMessageBus - Cross-context messaging for Chrome extensions
