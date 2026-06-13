@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { parse } from 'tldts';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
@@ -32,8 +33,18 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const sections = useMemo(() => {
     const map = new Map<string, number>();
     highlights.forEach((h) => {
-      const path = h.path || '/';
-      map.set(path, (map.get(path) || 0) + 1);
+      let sectionKey = h.path || '/';
+      try {
+        const url = new URL(h.url);
+        const parsedTld = parse(url.hostname);
+        const subdomain = parsedTld.subdomain;
+        if (subdomain && subdomain !== 'www') {
+           sectionKey = `${subdomain} · ${sectionKey}`;
+        }
+      } catch (e) {
+        // ignore invalid urls
+      }
+      map.set(sectionKey, (map.get(sectionKey) || 0) + 1);
     });
     return Array.from(map.entries())
       .map(([path, count]) => ({ path, count }))
