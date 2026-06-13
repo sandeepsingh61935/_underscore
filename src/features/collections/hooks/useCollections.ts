@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { parse } from 'tldts';
 
 export interface DomainCollection {
   id: string;
@@ -27,7 +28,8 @@ function groupByDomain(rows: RawHighlight[]): DomainCollection[] {
     let t: number;
     try {
       const parsed = new URL(hl.url);
-      domain = parsed.hostname.replace(/^www\./, '');
+      const parsedTld = parse(parsed.hostname);
+      domain = parsedTld.domain || parsed.hostname.replace(/^www\./, '');
       t = new Date(hl.updated_at || hl.created_at).getTime();
     } catch {
       continue; // skip invalid URLs
