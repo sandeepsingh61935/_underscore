@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
+import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
@@ -47,21 +48,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
     const [isAuthenticated, setIsAuthenticated] = useState(!!initialUser);
     const [user, setUser] = useState<User | null>(initialUser);
 
-    // Mode state - base initial value on auth
-    const [currentMode, setCurrentMode] = useState<Mode>(initialUser ? 'cloud' : 'ephemeral');
+    // Mode state - bridge to Chrome Storage via usePersistedMode
+    const { currentMode, modeReady, persistMode } = usePersistedMode(isAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Theme state - get from localStorage or system preference
-    const [theme, setThemeState] = useState<Theme>(() => {
-        const saved = localStorage.getItem('underscore-theme') as Theme | null;
-        if (saved) return saved;
+    // Theme state - get from chrome.storage or system preference
+    const [theme, setThemeState] = useState<Theme>('system');
 
-        // Check system preference
-        if (typeof window !== 'undefined') {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    useEffect(() => {
+        if (window.chrome && chrome.storage) {
+            chrome.storage.local.get(['underscore-theme']).then(data => {
+                if (data['underscore-theme']) {
+                    setThemeState(data['underscore-theme'] as Theme);
+                }
+            });
         }
-        return 'light';
-    });
+    }, []);
 
     // Available modes depends on auth state
     const availableModes: Mode[] = isAuthenticated
@@ -80,35 +82,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             root.classList.add(prefersDark ? 'dark' : 'light');
         }
-        localStorage.setItem('underscore-theme', theme);
+        
+        if (window.chrome && chrome.storage) {
+            chrome.storage.local.set({ 'underscore-theme': theme });
+        }
     }, [theme]);
 
     const login = useCallback((newUser: User) => {
         setUser(newUser);
         setIsAuthenticated(true);
-        localStorage.setItem('underscore-user', JSON.stringify(newUser));
+        // Dispatch Auth sync intent instead of using localStorage directly
+        if (window.chrome && chrome.runtime) {
+            chrome.runtime.sendMessage({
+                type: 'SYNC_AUTH_SESSION',
+                session: newUser // Simplification for now
+            });
+        }
     }, []);
 
     const logout = useCallback(() => {
         setUser(null);
         setIsAuthenticated(false);
-        setCurrentMode('ephemeral'); // Reset to ephemeral mode on logout
-        localStorage.removeItem('underscore-user');
-    }, []);
+        persistMode('ephemeral'); // Reset to ephemeral mode on logout
+        if (window.chrome && chrome.runtime) {
+            chrome.runtime.sendMessage({ type: 'SYNC_AUTH_SESSION', session: null });
+        }
+    }, [persistMode]);
 
     const setMode = useCallback((mode: Mode) => {
         // Cloud and ai require authentication
         if ((mode === 'cloud' || mode === 'ai') && !isAuthenticated) {
             return;
         }
-        setCurrentMode(mode);
-    }, [isAuthenticated]);
+        persistMode(mode);
+    }, [isAuthenticated, persistMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
     }, []);
-
-    // Removed async useEffect auth restore since we do it synchronously on mount
 
     const value: AppContextType = {
         isAuthenticated,

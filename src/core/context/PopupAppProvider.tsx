@@ -92,22 +92,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         // 1. Persist to chrome.storage.local (auth guard is inside persistMode)
         await persistMode(mode);
 
-        // 2. Also transmit to active tab's content script for immediate effect
-        try {
-            if (chrome?.tabs) {
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                if (tab?.id) {
-                    await chrome.tabs.sendMessage(tab.id, {
-                        type: 'SET_MODE',
-                        mode: mode,
-                        timestamp: Date.now()
-                    });
-                    console.log(`[PopupAppProvider] Transmitted SET_MODE (${mode}) to tab ${tab.id}`);
-                }
-            }
-        } catch (err) {
-            // Ignore — content script may not be injected on chrome:// or empty tabs
-        }
+        // 2. The Background Worker handles broadcasting this state change to Content Scripts
+        // seamlessly via the EventBus bridge. No imperative chrome.tabs messaging needed here.
     }, [persistMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
