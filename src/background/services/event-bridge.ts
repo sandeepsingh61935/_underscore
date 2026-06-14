@@ -49,7 +49,7 @@ export class EventBridge {
                         type: eventName,
                         payload: payload,
                         timestamp: Date.now()
-                    }).catch(err => {
+                    }).catch(_err => {
                         // Ignore connection errors (tab might not have content script)
                         this.logger.debug('[EventBridge] Tab not ready for messages', { tabId: tab.id });
                     });

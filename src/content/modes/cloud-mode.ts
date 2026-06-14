@@ -37,7 +37,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   constructor(repository: IHighlightRepository, eventBus: EventBus, logger: ILogger) {
     super(eventBus, logger, repository);
     // Initialize service here with eventBus
-    this.cloudService = createCloudModeServiceWithCloudSync(eventBus);
+    this.cloudService = createCloudModeServiceWithCloudSync();
   }
 
   override async onActivate(): Promise<void> {
@@ -345,6 +345,12 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.repository.add(data as any);
 
+    this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
+      type: EventName.HIGHLIGHT_CREATED,
+      highlight: data,
+      timestamp: Date.now()
+    });
+
     return id;
   }
 
@@ -361,6 +367,12 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     if ((this.repository as any).remove) {
       await (this.repository as any).remove(id);
     }
+
+    this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
+      type: EventName.HIGHLIGHT_REMOVED,
+      highlightId: id,
+      timestamp: Date.now()
+    });
   }
 
   async restore(_url?: string): Promise<void> {

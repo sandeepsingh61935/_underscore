@@ -11,219 +11,35 @@
 
 import { CloudModeService } from './cloud-mode-service';
 import { MultiSelectorEngine } from './multi-selector-engine';
-import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
-import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
-import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
-import { SupabaseClient, type SupabaseConfig } from '@/background/api/supabase-client';
-import { createClient } from '@supabase/supabase-js';
-import { SupabaseStorageAdapter } from '@/background/auth/supabase-storage-adapter';
+import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
 import { LoggerFactory } from '@/shared/utils/logger';
-import type { IAuthManager, User } from '@/background/auth/interfaces/i-auth-manager';
-import { OfflineQueueService } from '@/background/services/offline-queue-service';
-
-// Update imports to include EventBus
-import type { EventBus } from '@/shared/utils/event-bus';
-import { EventName } from '@/shared/types/events';
-
 /**
- * Singleton instances
+ * Singleton instance
  */
 let serviceInstance: CloudModeService | null = null;
-let authManagerInstance: IAuthManager | null = null;
 
 /**
- * Simple auth manager for content script context
- * Checks Supabase session state via v2 SDK
- * Maintains internal state since v2 accessors are async
- */
-class ContentScriptAuthManager implements IAuthManager {
-    private supabaseSDK: any;
-    private _currentUser: User | null = null;
-    private initPromise: Promise<void>;
-
-    constructor(supabaseSDK: any, private eventBus?: EventBus) {
-        this.supabaseSDK = supabaseSDK;
-        this.initPromise = this.initAuthState();
-    }
-
-    private async initAuthState() {
-        try {
-            // 1. Get initial session
-            const { data } = await this.supabaseSDK.auth.getSession();
-            this.updateUser(data.session);
-
-            // 2. Subscribe to Supabase SDK changes
-            this.supabaseSDK.auth.onAuthStateChange((_event: string, session: any) => {
-                console.log('[AuthManager] Supabase onAuthStateChange fired', { hasSession: !!session });
-                this.updateUser(session);
-            });
-
-            // 3. Listen to chrome.storage changes (for auth changes from background script)
-            // This catches when background script completes login
-            if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
-                chrome.storage.onChanged.addListener((changes, areaName) => {
-                    console.log('[AuthManager] Storage changed', { areaName, keys: Object.keys(changes) });
-
-                    // Check if auth-related storage changed
-                    // Supabase stores session under a key like "sb-<project-ref>-auth-token"
-                    const authKeyChanged = Object.keys(changes).some(key =>
-                        key.includes('sb-') && key.includes('-auth-token')
-                    );
-
-                    if (areaName === 'local' && authKeyChanged) {
-                        console.log('[AuthManager] Chrome storage auth change detected, refreshing session');
-                        // Re-fetch current session
-                        this.supabaseSDK.auth.getSession().then((result: any) => {
-                            console.log('[AuthManager] Session refreshed', { hasSession: !!result.data?.session });
-                            this.updateUser(result.data?.session);
-                        }).catch((err: any) => {
-                            console.warn('[AuthManager] Failed to refresh session after storage change', err);
-                        });
-                    }
-                });
-            }
-        } catch (error) {
-            console.warn('[CloudFactory] Failed to initialize auth state', error);
-        }
-    }
-
-    private updateUser(session: any) {
-        const previousUser = this._currentUser;
-
-        if (session?.user) {
-            this._currentUser = {
-                id: session.user.id,
-                email: session.user.email || '',
-                displayName: session.user.user_metadata?.displayName || session.user.email || 'User',
-            };
-        } else {
-            this._currentUser = null;
-        }
-
-        // Emit auth state change if status changed
-        const isAuthenticated = this._currentUser !== null;
-        const wasAuthenticated = previousUser !== null;
-
-        if (isAuthenticated !== wasAuthenticated || (isAuthenticated && this._currentUser?.id !== previousUser?.id)) {
-            console.log('[AuthManager] Auth state changed:', { isAuthenticated, userId: this._currentUser?.id });
-
-            if (this.eventBus) {
-                this.eventBus.emit(EventName.AUTH_STATE_CHANGED, {
-                    isAuthenticated,
-                    user: this._currentUser,
-                    timestamp: Date.now()
-                });
-            }
-        }
-    }
-
-    get currentUser() {
-        return this._currentUser;
-    }
-
-    get isAuthenticated(): boolean {
-        return this.currentUser !== null;
-    }
-
-    // IAuthManager Implementation
-    async initialize(): Promise<void> {
-        return this.initPromise;
-    }
-    async signIn(): Promise<any> { throw new Error('Not implemented in content script context'); }
-    async signInWithEmail(): Promise<any> { throw new Error('Not implemented in content script context'); }
-    async signUpWithEmail(): Promise<any> { throw new Error('Not implemented in content script context'); }
-    async signOut(): Promise<void> { throw new Error('Not implemented in content script context'); }
-    async refreshToken(): Promise<void> { }
-    getAuthState(): any { return { isAuthenticated: this.isAuthenticated, user: this.currentUser }; }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onAuthStateChanged(_callback: (state: any) => void): () => void { return () => { }; }
-}
-
-/**
- * Create CloudModeService with cloud sync enabled
+ * Create CloudModeService with IPC proxy to background worker
  * 
- * This creates a service that writes to both:
- * - Local: InMemoryHighlightRepository (fast)
- * - Cloud: SupabaseHighlightRepository (async, auth-aware)
+ * This creates a service that delegates all persistence to the background
+ * worker via message passing.
  * 
- * @returns CloudModeService instance with DualWriteRepository
+ * @returns CloudModeService instance
  */
-export function createCloudModeServiceWithCloudSync(eventBus?: EventBus): CloudModeService {
+export function createCloudModeServiceWithCloudSync(): CloudModeService {
     if (serviceInstance) {
         return serviceInstance;
     }
 
     const logger = LoggerFactory.getLogger('CloudModeService');
+    
+    // Create IPC repository (proxy to Background worker)
+    const repository = new IpcHighlightRepository(logger);
 
-    // 1. Get Supabase configuration
-    const supabaseConfig: SupabaseConfig = {
-        url: import.meta.env.VITE_SUPABASE_URL || '',
-        anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-    };
-
-    // Check if Supabase is configured
-    const hasSupabaseConfig = !!(supabaseConfig.url && supabaseConfig.anonKey);
-
-    if (!hasSupabaseConfig) {
-        logger.warn('[CloudFactory] Supabase not configured, using local-only storage');
-        logger.warn('[CloudFactory] Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable cloud sync');
-    }
-
-    // 2. Create repositories
-    const localRepo = new IndexedDBHighlightRepository(logger);
-
-    let repository;
-
-    if (hasSupabaseConfig) {
-        // Create Supabase SDK client
-        const supabaseSDK = createClient(supabaseConfig.url, supabaseConfig.anonKey, {
-            auth: {
-                storage: new SupabaseStorageAdapter(),
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: false,
-            },
-        });
-
-        // Create simple auth manager
-        if (!authManagerInstance) {
-            authManagerInstance = new ContentScriptAuthManager(supabaseSDK, eventBus);
-        }
-
-        // Create Supabase repository
-        const supabaseClient = new SupabaseClient(
-            authManagerInstance,
-            logger,
-            supabaseConfig,
-            supabaseSDK
-        );
-        const cloudRepo = new SupabaseHighlightRepository(supabaseClient, logger);
-
-
-
-        // Create Offline Queue Service
-        const offlineQueue = new OfflineQueueService(cloudRepo, authManagerInstance!, logger);
-
-        // Create dual-write repository
-        repository = new DualWriteRepository(
-            localRepo,
-            cloudRepo,
-            authManagerInstance!, // Non-null assertion: we just created it above
-            offlineQueue,
-            logger
-        );
-
-        logger.info('[CloudFactory] [OK] Cloud sync enabled with DualWriteRepository');
-    } else {
-        // Fallback to local-only
-        repository = localRepo;
-        logger.info('[CloudFactory] [WARN] Using local-only storage (Supabase not configured)');
-    }
-
-    // 3. Create supporting services
+    // Create supporting services
     const selectorEngine = new MultiSelectorEngine();
 
-    // 4. Create CloudModeService
+    // Create CloudModeService
     serviceInstance = new CloudModeService(repository, selectorEngine, logger);
 
     return serviceInstance;
