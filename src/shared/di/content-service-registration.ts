@@ -19,9 +19,10 @@ import { ModeManager } from '@/content/modes/mode-manager';
 import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
+import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
+import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -57,12 +58,11 @@ export function registerContentServices(container: Container): void {
      * 24h TTL local persistence
      */
     container.registerTransient<IHighlightMode>('ephemeralMode', () => {
-        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const ipcRepository = container.resolve<IHighlightRepository>('ipcHighlightRepository');
         const ephemeralStorage = container.resolve<IStorage>('ephemeralStorage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new EphemeralMode(repositoryFacade as any, ephemeralStorage, eventBus, logger);
+        return new EphemeralMode(ipcRepository, ephemeralStorage, eventBus, logger);
     });
 
     /**
@@ -70,12 +70,11 @@ export function registerContentServices(container: Container): void {
      * Permanent local persistence (manual delete only)
      */
     container.registerTransient<IHighlightMode>('localMode', () => {
-        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const ipcRepository = container.resolve<IHighlightRepository>('ipcHighlightRepository');
         const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new LocalMode(repositoryFacade as any, storage, eventBus, logger);
+        return new LocalMode(ipcRepository, storage, eventBus, logger);
     });
 
     /**
@@ -84,11 +83,10 @@ export function registerContentServices(container: Container): void {
      * Created fresh when activated
      */
     container.registerTransient<IHighlightMode>('cloudMode', () => {
-        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const ipcRepository = container.resolve<IHighlightRepository>('ipcHighlightRepository');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new CloudMode(repositoryFacade as any, eventBus, logger);
+        return new CloudMode(ipcRepository, eventBus, logger);
     });
 
     // ============================================
@@ -101,5 +99,18 @@ export function registerContentServices(container: Container): void {
      */
     container.registerSingleton<CommandFactory>('commandFactory', () => {
         return new CommandFactory(container);
+    });
+
+    // ============================================
+    // IPC HIGHLIGHT REPOSITORY (Content -> SW bridge)
+    // ============================================
+
+    /**
+     * IpcHighlightRepository - Singleton
+     * Sends highlight writes/reads across the content-script to SW boundary.
+     * Used by Local / Ephemeral / Cloud modes in place of the local facade.
+     */
+    container.registerSingleton<IHighlightRepository>('ipcHighlightRepository', () => {
+        return new IpcHighlightRepository();
     });
 }
