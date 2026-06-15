@@ -90,30 +90,41 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
       throw new Error('Failed to serialize range');
     }
 
-    const data: HighlightData = {
+    // Build the runtime highlight with the live Range for in-page rendering.
+    const runtimeHighlight = {
       id,
       text,
-      contentHash,
-      url: window.location.href,
       colorRole,
-      type: 'underscore',
+      type: 'underscore' as const,
+      createdAt: new Date(),
       ranges: [serializedRange],
       liveRanges: [range],
-      createdAt: new Date(),
     };
 
-    // FIXED: renderAndRegister() handles CSS.highlights registration
-    // Removed duplicate: CSS.highlights.set(id, highlight)
-    // Removed duplicate: this.highlights.set(id, highlight)
-    // Removed duplicate: this.data.set(id, data)
-
     // 1. Render and register with CSS Custom Highlight API
-    await this.renderAndRegister(data);
+    await this.renderAndRegister(runtimeHighlight as unknown as HighlightData);
 
-    // 2. Add to repository (persistence)
-    // CRITICAL: Add to repository cache and storage
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add({ ...data, version: 2 } as any);
+    // 2. Convert to storage format (strips liveRanges + computes contentHash).
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const storageData = await toStorageFormat({
+      ...runtimeHighlight,
+      color: colorRole,
+    });
+
+    // 3. Persist to repository (IDB-safe; no liveRanges).
+    await this.repository.add({
+      ...storageData,
+      url: window.location.href,
+    });
+
+    // [DEBUG-hl-vis] Boundary log: where did the content script's write actually land?
+    this.logger.info('[DEBUG-hl-vis] LocalMode.createHighlight post-add', {
+      origin: window.location.origin,
+      url: window.location.href,
+      id,
+      repoType: this.repository.constructor.name,
+      repoCount: await this.repository.count(),
+    });
 
     this.logger.info('[LOCAL] Added to repository', {
       id,
@@ -125,10 +136,10 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
       highlight: {
-        id: data.id,
-        text: data.text,
-        colorRole: data.colorRole,
-        ranges: data.ranges,
+        id: runtimeHighlight.id,
+        text: runtimeHighlight.text,
+        colorRole: runtimeHighlight.colorRole,
+        ranges: runtimeHighlight.ranges,
       },
     });
 
@@ -151,14 +162,20 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
    * Emits HIGHLIGHT_CREATED event for consistency
    */
   async createFromData(data: HighlightData): Promise<void> {
-    // Used by undo/redo and range subtraction
-    // CRITICAL: Goes through same renderAndRegister path!
     await this.renderAndRegister(data);
 
-    // CRITICAL FIX: Populate repository cache during restore
-    // This ensures hover detector can find highlights after page reload
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add({ ...data, version: 2 } as any);
+    // Strip runtime-only fields (liveRanges) before persisting.
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const { liveRanges, ...persisted } = data as HighlightData & { liveRanges?: Range[] };
+    const storageData = await toStorageFormat({
+      ...persisted,
+      color: data.colorRole,
+      type: 'underscore',
+      createdAt: data.createdAt ?? new Date(),
+      ranges: data.ranges,
+    });
+
+    await this.repository.add(storageData);
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,

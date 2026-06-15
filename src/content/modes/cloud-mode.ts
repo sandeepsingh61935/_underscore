@@ -96,6 +96,10 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
     try {
       // Step 1: Save to DB (Local Only)
+      // Precondition: `data` is a server-side highlight payload (HighlightDataV2) and
+      // does NOT carry `liveRanges`. The live DOM Range is only added below (line 107)
+      // for `renderAndRegister`. Persisting a Range object to IDB would throw
+      // DataCloneError — Bug A.
       await (this.repository as any).add(data as any, { skipSync: true });
 
       this.logger.info('[CLOUD] Saved remote highlight to local DB. Attempting instant render...');
@@ -219,8 +223,18 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
     if (!alreadyExists) {
+      // Strip runtime-only fields (liveRanges) before persisting — Bug A.
+      const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+      const { liveRanges: _lr, ...persisted } = data as HighlightData & { liveRanges?: Range[] };
+      const storageData = await toStorageFormat({
+        ...persisted,
+        color: data.colorRole,
+        type: 'underscore',
+        createdAt: data.createdAt ?? new Date(),
+        ranges: data.ranges,
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.repository as any).add(data as any, { skipSync: options?.skipSync });
+      await (this.repository as any).add(storageData as any, { skipSync: options?.skipSync });
     } else {
       this.logger.debug('[CLOUD] Skipping duplicate repo add during create', {
         id: data.id,

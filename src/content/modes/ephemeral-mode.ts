@@ -87,30 +87,36 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
       throw new Error('Failed to serialize range');
     }
 
-    const data: HighlightData = {
+    const runtimeHighlight = {
       id,
       text,
-      contentHash,
-      url: window.location.href,
       colorRole,
-      type: 'underscore',
+      type: 'underscore' as const,
+      createdAt: new Date(),
       ranges: [serializedRange],
       liveRanges: [range],
-      createdAt: new Date(),
     };
 
-    await this.renderAndRegister(data);
+    await this.renderAndRegister(runtimeHighlight as unknown as HighlightData);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(data as any);
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const storageData = await toStorageFormat({
+      ...runtimeHighlight,
+      color: colorRole,
+    });
+
+    await this.repository.add({
+      ...storageData,
+      url: window.location.href,
+    });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
       highlight: {
-        id: data.id,
-        text: data.text,
-        colorRole: data.colorRole,
-        ranges: data.ranges,
+        id: runtimeHighlight.id,
+        text: runtimeHighlight.text,
+        colorRole: runtimeHighlight.colorRole,
+        ranges: runtimeHighlight.ranges,
       },
     });
 
@@ -121,8 +127,18 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
 
   async createFromData(data: HighlightData): Promise<void> {
     await this.renderAndRegister(data);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(data as any);
+
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const { liveRanges, ...persisted } = data as HighlightData & { liveRanges?: Range[] };
+    const storageData = await toStorageFormat({
+      ...persisted,
+      color: data.colorRole,
+      type: 'underscore',
+      createdAt: data.createdAt ?? new Date(),
+      ranges: data.ranges,
+    });
+
+    await this.repository.add(storageData);
   }
 
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
