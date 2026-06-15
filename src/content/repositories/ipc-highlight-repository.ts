@@ -13,7 +13,8 @@ export class IpcHighlightRepository implements IHighlightRepository {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 type: 'IPC_HIGHLIGHT_ADD',
-                payload: highlight
+                payload: highlight,
+                timestamp: Date.now(),
             }, () => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
@@ -28,7 +29,8 @@ export class IpcHighlightRepository implements IHighlightRepository {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 type: 'IPC_HIGHLIGHT_UPDATE',
-                payload: { id, updates }
+                payload: { id, updates },
+                timestamp: Date.now(),
             }, () => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
@@ -43,7 +45,8 @@ export class IpcHighlightRepository implements IHighlightRepository {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 type: 'IPC_HIGHLIGHT_REMOVE',
-                payload: { id }
+                payload: { id },
+                timestamp: Date.now(),
             }, () => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
@@ -58,7 +61,8 @@ export class IpcHighlightRepository implements IHighlightRepository {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 type: 'IPC_HIGHLIGHTS_FIND_BY_URL',
-                payload: { url }
+                payload: { url },
+                timestamp: Date.now(),
             }, (response) => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
