@@ -2,14 +2,17 @@
  * @file in-memory-highlight-repository.ts
  * @description In-memory implementation of highlight repository
  *
- * Fast, in-memory storage with indexes for efficient queries
+ * Fast, in-memory storage with indexes for efficient queries.
+ *
+ * Consolidated from src/background/repositories/in-memory-highlight-repository.ts
+ * (had RepositoryOptions + findByUrl) and the prior bare shared version.
  */
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
-import type { IHighlightRepository } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
 
 /**
  * In-memory highlight repository
@@ -29,7 +32,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
   // CRUD Operations
   // ============================================
 
-  async add(highlight: HighlightDataV2): Promise<void> {
+  async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
     // Idempotent - no error if already exists
     if (this.highlights.has(highlight.id)) {
       this.logger.warn('Highlight already exists, skipping', {
@@ -51,7 +54,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
     });
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+  async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
     const existing = this.highlights.get(id);
 
     if (!existing) {
@@ -82,7 +85,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
     });
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, _options?: RepositoryOptions): Promise<void> {
     const highlight = this.highlights.get(id);
 
     if (!highlight) {
@@ -133,12 +136,24 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
     if (!id) {
       this.logger.debug('No highlight found for content hash', {
-        hash: hash.substring(0, 16) + '...',
+        hash: hash ? hash.substring(0, 16) + '...' : 'undefined',
       });
       return null;
     }
 
     return this.findById(id);
+  }
+
+  async findByUrl(url: string): Promise<HighlightDataV2[]> {
+    const all = Array.from(this.highlights.values());
+    const matches = all.filter(h => h.url === url);
+
+    this.logger.debug('Found highlights by URL', {
+      url,
+      count: matches.length,
+    });
+
+    return matches;
   }
 
   async findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]> {
@@ -158,11 +173,11 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
   // Metadata
   // ============================================
 
-  count(): number {
+  async count(): Promise<number> {
     return this.highlights.size;
   }
 
-  exists(id: string): boolean {
+  async exists(id: string): Promise<boolean> {
     return this.highlights.has(id);
   }
 

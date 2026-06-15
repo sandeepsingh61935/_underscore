@@ -3,7 +3,7 @@ import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 
 /**
  * @file cloud-mode-service.ts

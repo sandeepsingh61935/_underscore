@@ -7,8 +7,8 @@
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/utils/logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
-import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
-import { InMemoryHighlightRepository } from '@/background/repositories/in-memory-highlight-repository';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { SupabaseClient } from '@/background/api/supabase-client';

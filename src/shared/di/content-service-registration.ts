@@ -20,7 +20,7 @@ import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
 import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
-import type { IHighlightRepository } from '@/background/repositories/i-highlight-repository';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { EventBus } from '@/shared/utils/event-bus';

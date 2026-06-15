@@ -1,4 +1,4 @@
-import type { IHighlightRepository, RepositoryOptions } from '@/background/repositories/i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 
 /**

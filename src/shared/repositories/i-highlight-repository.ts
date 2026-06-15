@@ -5,10 +5,24 @@
  * Provides abstraction over underlying storage mechanism
  * Implements Repository Pattern from quality framework
  * Extends generic IRepository<T> with highlight-specific operations
+ *
+ * Consolidated from src/background/repositories/i-highlight-repository.ts
+ * (had RepositoryOptions + findByUrl) and the prior bare shared version.
  */
 
 import type { IRepository } from '../interfaces/i-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
+
+/**
+ * Options for repository operations
+ */
+export interface RepositoryOptions {
+  /**
+   * If true, prevents the operation from triggering a sync to the cloud.
+   * Critical for preventing infinite loops when applying remote changes.
+   */
+  skipSync?: boolean;
+}
 
 /**
  * Repository interface for highlight data access
@@ -22,14 +36,20 @@ import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-sche
  */
 export interface IHighlightRepository extends IRepository<HighlightDataV2> {
   // ============================================
-  // Inherited from IRepository<HighlightDataV2>
+  // Overrides with Options (for Loop Prevention)
   // ============================================
-  // add(highlight: HighlightDataV2): Promise<void>
+
+  add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void>;
+
+  remove(id: string, options?: RepositoryOptions): Promise<void>;
+
+  // ============================================
+  // Valid Method Signatures (inherited from IRepository)
+  // ============================================
   // findById(id: string): Promise<HighlightDataV2 | null>
-  // remove(id: string): Promise<void>
   // findAll(): Promise<HighlightDataV2[]>
-  // count(): number
-  // exists(id: string): boolean
+  // count(): Promise<number>
+  // exists(id: Promise<boolean>>
   // clear(): Promise<void>
 
   // ============================================
@@ -40,7 +60,7 @@ export interface IHighlightRepository extends IRepository<HighlightDataV2> {
    * Update existing highlight
    * Throws error if highlight not found
    */
-  update(id: string, updates: Partial<HighlightDataV2>): Promise<void>;
+  update(id: string, updates: Partial<HighlightDataV2>, options?: RepositoryOptions): Promise<void>;
 
   // ============================================
   // Highlight-Specific Queries
@@ -58,12 +78,18 @@ export interface IHighlightRepository extends IRepository<HighlightDataV2> {
    */
   findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
 
+  /**
+   * Find highlights by page URL
+   */
+  findByUrl(url: string): Promise<HighlightDataV2[]>;
+
   // ============================================
   // Bulk Operations
   // ============================================
 
   /**
    * Add multiple highlights in batch
-   * More efficient than individual adds  */
+   * More efficient than individual adds
+   */
   addMany(highlights: HighlightDataV2[]): Promise<void>;
 }

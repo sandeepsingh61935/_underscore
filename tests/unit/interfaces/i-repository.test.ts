@@ -48,13 +48,13 @@ describe('IRepository Interface (5 tests)', () => {
     // Arrange
     const highlight = createTestHighlight();
     await repository.add(highlight);
-    expect(repository.count()).toBe(1);
+    expect(await repository.count()).toBe(1);
 
     // Act
     await repository.remove(highlight.id);
 
     // Assert
-    expect(repository.count()).toBe(0);
+    expect(await repository.count()).toBe(0);
     const retrieved = await repository.findById(highlight.id);
     expect(retrieved).toBeNull();
   });
@@ -66,7 +66,7 @@ describe('IRepository Interface (5 tests)', () => {
     await repository.add(createTestHighlight());
 
     // Act
-    const count = repository.count();
+    const count = await repository.count();
     const all = await repository.findAll();
 
     // Assert

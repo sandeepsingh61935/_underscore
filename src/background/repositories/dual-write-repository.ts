@@ -8,7 +8,7 @@
  * - Authentication-aware: skips cloud when offline/unauthenticated
  */
 
-import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 
 import type { SupabaseHighlightRepository } from './supabase-highlight-repository';

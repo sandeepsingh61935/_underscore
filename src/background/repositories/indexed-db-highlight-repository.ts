@@ -5,7 +5,7 @@
  */
 
 import { openDB, type IDBPDatabase } from 'idb';
-import type { IHighlightRepository, RepositoryOptions } from './i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 
