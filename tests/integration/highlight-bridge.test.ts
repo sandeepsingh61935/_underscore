@@ -5,6 +5,7 @@ import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
+import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { MessageSchema } from '@/shared/schemas/message-schemas';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
@@ -38,18 +39,8 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
 
     // The SW side subscribes to IPC_HIGHLIGHT_* via the message bus.
     swBus = new ChromeMessageBus(logger) as unknown as IMessageBus;
-    // Foregrounded for the orchestrator (which is added in Task 6):
-    //   swBus.subscribe('IPC_HIGHLIGHT_ADD',  async (p) => { facade.add(p); return { success: true }; });
-    //   swBus.subscribe('IPC_HIGHLIGHT_UPDATE', async ({id, updates}) => { facade.update(id, updates); ... });
-    //   swBus.subscribe('IPC_HIGHLIGHT_REMOVE', async ({id}) => { facade.remove(id); ... });
-    //   swBus.subscribe('IPC_HIGHLIGHTS_FIND_BY_URL', async ({url}) => ({ success: true, data: facade.getAll().filter(h => h.url === url) }));
-    //
-    // For this RED test we wire the SW-side handler inline so the test exercises the
-    // full path; the orchestrator extraction happens in Task 6.
-    swBus.subscribe('IPC_HIGHLIGHT_ADD', async (p: HighlightDataV2) => {
-      facade.add(p);
-      return { success: true, data: undefined };
-    });
+    // SW side: orchestrator owns the wiring.
+    new BackgroundHighlightOrchestrator(facade, swBus as any, logger).initialize();
 
     // The content side sends via chrome.runtime.sendMessage, which dispatches to
     // the SW's message bus. Simulate that hop.
@@ -59,13 +50,27 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
         // mock must invoke the callback to deliver the response.
         sendMessage: vi.fn((msg: unknown, callback: (response: unknown) => void) => {
           const validated = MessageSchema.parse(msg);
-          const handler = (swBus as any).listeners?.get(validated.type);
+          // Mirror the dispatch shape used by ChromeMessageBus.setupMessageListener:
+          // it reads from the `handlers` map (Map<string, Set<MessageHandler>>) and
+          // runs every handler, sending the first non-undefined result back.
+          const handlers: Set<(payload: unknown, sender: unknown) => unknown> | undefined = (
+            swBus as any
+          ).handlers?.get(validated.type);
+          const handler = handlers ? Array.from(handlers)[0] : undefined;
           if (!handler) {
             callback({ success: false, error: `No handler for ${validated.type}` });
             return;
           }
-          Promise.resolve(handler(validated.payload, { id: 'extension' } as any))
-            .then((result) => callback(result))
+          Promise.resolve(handler(validated.payload, { id: 'extension' }))
+            .then((result) => {
+              if (result === undefined) {
+                // Fire-and-forget path: send a generic success so the IpcHighlightRepository
+                // doesn't hang waiting for a response.
+                callback({ success: true, data: undefined });
+              } else {
+                callback(result);
+              }
+            })
             .catch((err) => callback({ success: false, error: String(err) }));
         }),
         lastError: undefined,
