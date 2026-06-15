@@ -643,7 +643,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
     context;
   try {
     const currentUrl = window.location.href;
-    const activeHighlights = await repositoryFacade.getHighlightsForUrl(currentUrl);
+    const activeHighlights = repositoryFacade.findByUrl(currentUrl);
 
     logger.warn(`[TARGET] Found ${activeHighlights.length} highlights to restore`);
 

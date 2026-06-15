@@ -12,6 +12,7 @@ import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { DomainQueryService } from '@/background/services/domain-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -50,6 +51,11 @@ export default defineBackground({
       logger.info('[INIT] RepositoryFacade resolved');
       await repositoryFacade.initialize();
       logger.info('[INIT] RepositoryFacade initialized');
+
+      // Initialize the highlight bridge orchestrator (subscribes to IPC_HIGHLIGHT_*)
+      const backgroundHighlightOrchestrator = container.resolve<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator');
+      backgroundHighlightOrchestrator.initialize();
+      logger.info('[INIT] BackgroundHighlightOrchestrator initialized');
 
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {

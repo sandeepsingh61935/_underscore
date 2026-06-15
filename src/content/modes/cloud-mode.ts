@@ -96,6 +96,10 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
     try {
       // Step 1: Save to DB (Local Only)
+      // Precondition: `data` is a server-side highlight payload (HighlightDataV2) and
+      // does NOT carry `liveRanges`. The live DOM Range is only added below (line 107)
+      // for `renderAndRegister`. Persisting a Range object to IDB would throw
+      // DataCloneError — Bug A.
       await (this.repository as any).add(data as any, { skipSync: true });
 
       this.logger.info('[CLOUD] Saved remote highlight to local DB. Attempting instant render...');
@@ -219,8 +223,18 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
     if (!alreadyExists) {
+      // Strip runtime-only fields (liveRanges) before persisting — Bug A.
+      const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+      const { liveRanges: _lr, ...persisted } = data as HighlightData & { liveRanges?: Range[] };
+      const storageData = await toStorageFormat({
+        ...persisted,
+        color: data.colorRole,
+        type: 'underscore',
+        createdAt: data.createdAt ?? new Date(),
+        ranges: data.ranges,
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.repository as any).add(data as any, { skipSync: options?.skipSync });
+      await (this.repository as any).add(storageData as any, { skipSync: options?.skipSync });
     } else {
       this.logger.debug('[CLOUD] Skipping duplicate repo add during create', {
         id: data.id,
@@ -247,11 +261,29 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     } else {
       this.data.set(id, updated);
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (this.repository as any).add(updated as any); // Updates existing in repo
 
+    // Strip runtime-only fields (liveRanges) before persisting — Bug A.
+    // `updated` carries liveRanges from `existing`; we must remove them so the
+    // repository can serialize the object via structuredClone (IDB).
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const { liveRanges: _lrFromUpdated, ...persisted } = updated as HighlightData & { liveRanges?: Range[] };
+    const storageData = await toStorageFormat({
+      ...persisted,
+      color: updated.colorRole,
+      type: 'underscore',
+      createdAt: updated.createdAt ?? new Date(),
+      ranges: updated.ranges,
+    });
+    await (this.repository as any).add({
+      ...storageData,
+      url: window.location.href,
+    });
+
+    // Also strip liveRanges from the partial update payload in case the caller
+    // included it — Bug A.
+    const { liveRanges: _lrFromUpdates, ...cleanUpdates } = updates as Partial<HighlightData> & { liveRanges?: Range[] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (this.repository as any).update(id, updates as any);
+    await (this.repository as any).update(id, cleanUpdates as any);
 
     // Update storage
     // Assuming ranges didn't change, we use the first live range
@@ -313,41 +345,46 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
 
-    // Normalize URL (remove hash fragment for consistent querying)
-    const url = window.location.href.split('#')[0] || window.location.href;
-
-    const data: HighlightData = {
+    // Build the runtime highlight with the live Range for in-page rendering.
+    const runtimeHighlight = {
       id,
       text,
       contentHash,
-      url, // CRITICAL: Must include URL for findByUrl() to work
-      colorRole: colorRole || 'yellow', // Default color if missing
-      type: 'underscore',
+      colorRole: colorRole || 'yellow',
+      type: 'underscore' as const,
+      createdAt: new Date(),
       ranges: [serializedRange],
       liveRanges: [range],
-      createdAt: new Date(),
     };
 
-    if (!data.liveRanges || !data.liveRanges.length) {
+    if (!runtimeHighlight.liveRanges || !runtimeHighlight.liveRanges.length) {
       throw new Error('Cannot create highlight without live ranges');
     }
-    const liveRange = data.liveRanges[0]!;
+    const liveRange = runtimeHighlight.liveRanges[0]!;
 
     // 1. Persist to Vault Storage (IndexedDB + Selectors)
     // This handles the "Heavy Lifting" of creating selectors and saving to DB
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.cloudService.saveHighlight(data as any, liveRange);
+    await this.cloudService.saveHighlight(runtimeHighlight as any, liveRange);
 
     // 2 & 3. Update Runtime API & Internal State
-    await this.renderAndRegister(data);
+    await this.renderAndRegister(runtimeHighlight as unknown as HighlightData);
 
     // 4. Update In-Memory Repository (for UI consistency)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.add(data as any);
+    // Strip runtime-only fields (liveRanges) before persisting — Bug A.
+    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+    const storageData = await toStorageFormat({
+      ...runtimeHighlight,
+      color: runtimeHighlight.colorRole,
+    });
+    await this.repository.add({
+      ...storageData,
+      url: window.location.href.split('#')[0] || window.location.href,
+    });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
-      highlight: data,
+      highlight: runtimeHighlight as unknown as HighlightData,
       timestamp: Date.now()
     });
 
@@ -407,8 +444,20 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const exists = (this.repository as any).get?.(storedData.id) || (this.repository as any).has?.(storedData.id);
         if (!exists) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await this.repository.add(fullData as any);
+          // Strip runtime-only fields (liveRanges) before persisting — Bug A.
+          const { toStorageFormat } = await import('@/content/highlight-type-bridge');
+          const { liveRanges: _lr, ...persisted } = fullData as HighlightData & { liveRanges?: Range[] };
+          const storageData = await toStorageFormat({
+            ...persisted,
+            color: storedData.colorRole,
+            type: 'underscore',
+            createdAt: storedData.createdAt ?? new Date(),
+            ranges: storedData.ranges,
+          });
+          await this.repository.add({
+            ...storageData,
+            url: window.location.href,
+          });
         } else {
           this.logger.debug('[CLOUD] Skipping duplicate restore', { id: storedData.id });
         }

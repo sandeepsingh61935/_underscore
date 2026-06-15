@@ -8,6 +8,11 @@
  * - Lazy Loading: Async initialization, sync access thereafter
  *
  * From Quality Framework: "Facade Pattern for complex subsystems"
+ *
+ * Consolidated from src/background/repositories/repository-facade.ts
+ * (had getCollections/getHighlightsByDomain/getDashboardData) and the prior
+ * bare shared version (had getHighlightsForUrl). This is the single shared
+ * facade used by both background and content contexts.
  */
 
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
@@ -191,6 +196,17 @@ export class RepositoryFacade {
   }
 
   /**
+   * Find highlights by page URL (sync, filters from cache)
+   *
+   * Same pattern as the BackgroundHighlightOrchestrator's
+   * onFindByUrl handler: filter the in-memory cache by URL.
+   */
+  findByUrl(url: string): HighlightDataV2[] {
+    this.ensureInitialized();
+    return this.getAll().filter((h) => h.url === url);
+  }
+
+  /**
    * Find overlapping highlights (sync)
    */
   findOverlapping(_range: SerializedRange): HighlightDataV2[] {
@@ -259,9 +275,119 @@ export class RepositoryFacade {
 
   /**
    * Get highlights for a specific URL (async)
+   *
+   * Convenience wrapper used by the content restore pipeline
+   * (src/entrypoints/content.ts:646). Falls back to initializing
+   * the facade on first call.
    */
-  async getHighlightsForUrl(_url: string): Promise<HighlightDataV2[]> {
+  async getHighlightsForUrl(url: string): Promise<HighlightDataV2[]> {
     await this.initialize();
-    return this.getAll();
+    return this.findByUrl(url);
+  }
+
+  // ============================================
+  // DOMAIN / DASHBOARD QUERIES
+  // (Moved from background God Object)
+  // ============================================
+
+  async getCollections(_mode?: string) {
+    this.ensureInitialized();
+    const highlights = this.getAll();
+    const domainMap = new Map<string, number>();
+
+    for (const hl of highlights) {
+      if (!hl.url) continue;
+      try {
+        const domain = new URL(hl.url).hostname;
+        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+      } catch (e) {
+        continue;
+      }
+    }
+
+    let collections = Array.from(domainMap.entries()).map(([domain, count]) => ({
+      domain,
+      highlightCount: count,
+      mode: 'local' // Always fallback to local
+    }));
+
+    if (_mode) {
+      collections = collections.filter(c => c.mode === _mode);
+    }
+    return collections;
+  }
+
+  async getHighlightsByDomain(domain: string) {
+    this.ensureInitialized();
+    if (!domain) {
+      throw new Error('Domain required');
+    }
+
+    const highlights = this.getAll().filter(hl => {
+      if (!hl.url) return false;
+      try {
+        return new URL(hl.url).hostname === domain;
+      } catch {
+        return false;
+      }
+    });
+
+    return highlights.map(hl => ({
+      id: hl.id,
+      text: hl.text,
+      url: hl.url ?? '',
+      path: hl.url ? new URL(hl.url).pathname : '/',
+      createdAt: hl.createdAt,
+    })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getDashboardData(_mode?: string) {
+    this.ensureInitialized();
+    const highlights = this.getAll();
+
+    const domainMap = new Map<string, number>();
+    let thisWeekCount = 0;
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentHighlights: Array<{
+      id: string;
+      text: string;
+      url: string;
+      path: string;
+      domain: string;
+      createdAt: Date;
+    }> = [];
+
+    for (const hl of highlights) {
+      if (!hl.url) continue;
+      try {
+        const domain = new URL(hl.url).hostname;
+        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+
+        const createdAt = new Date(hl.createdAt).getTime();
+        if (createdAt >= oneWeekAgo) {
+          thisWeekCount++;
+        }
+
+        recentHighlights.push({
+          id: hl.id,
+          text: hl.text,
+          url: hl.url ?? '',
+          path: new URL(hl.url).pathname,
+          domain: domain,
+          createdAt: hl.createdAt,
+        });
+      } catch (e) {
+        continue;
+      }
+    }
+
+    recentHighlights.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return {
+      totalHighlights: highlights.length,
+      totalDomains: domainMap.size,
+      thisWeekCount,
+      recentHighlights: recentHighlights.slice(0, 10)
+    };
   }
 }
