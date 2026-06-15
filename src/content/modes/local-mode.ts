@@ -117,15 +117,6 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
       url: window.location.href,
     });
 
-    // [DEBUG-hl-vis] Boundary log: where did the content script's write actually land?
-    this.logger.info('[DEBUG-hl-vis] LocalMode.createHighlight post-add', {
-      origin: window.location.origin,
-      url: window.location.href,
-      id,
-      repoType: this.repository.constructor.name,
-      repoCount: await this.repository.count(),
-    });
-
     this.logger.info('[LOCAL] Added to repository', {
       id,
       repoType: this.repository.constructor.name,
