@@ -12,6 +12,9 @@ import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-hig
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { SupabaseClient } from '@/background/api/supabase-client';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 
 /**
  * Register repository components in DI container
@@ -104,6 +107,16 @@ export function registerRepositoryComponents(container: Container): void {
         const logger = container.resolve<ILogger>('logger');
 
         return new DualWriteRepository(localRepo, cloudRepo, authManager, offlineQueue, logger);
+    });
+
+    // ============================================
+    // BACKGROUND HIGHLIGHT ORCHESTRATOR
+    // ============================================
+    container.registerSingleton<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator', () => {
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        const logger = container.resolve<ILogger>('logger');
+        return new BackgroundHighlightOrchestrator(repositoryFacade, messageBus, logger);
     });
 }
 
