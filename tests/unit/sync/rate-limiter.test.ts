@@ -157,7 +157,7 @@ describe('RateLimiter Unit Tests - SECURITY CRITICAL', () => {
 
         it('should emit RATE_LIMIT_EXCEEDED event when blocked', async () => {
             const events: any[] = [];
-            eventBus.on('RATE_LIMIT_EXCEEDED', (data) => events.push(data));
+            eventBus.on('RATE_LIMIT_EXCEEDED', (data) => { events.push(data); });
 
             const userId = 'user-123';
             const operation = 'sync';

@@ -61,7 +61,6 @@ describe('RollbackService', () => {
         // We need apiClient to fail on delete or get?
         // MockApiClient doesn't support failDelete flag yet, let's just spy on it?
         // Or cleaner: allow mocking getHighlights to throw
-        const originalGet = apiClient.getHighlights.bind(apiClient);
         apiClient.getHighlights = async () => { throw new Error('API Down'); };
 
         await expect(service.rollback()).rejects.toThrow('API Down');

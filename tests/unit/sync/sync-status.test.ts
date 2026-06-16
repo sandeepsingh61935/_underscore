@@ -35,7 +35,7 @@ describe('SyncStatus Unit Tests', () => {
 
         it('should change state and emit event', () => {
             const events: any[] = [];
-            eventBus.on('SYNC_STATUS_CHANGED', (data) => events.push(data));
+            eventBus.on('SYNC_STATUS_CHANGED', (data) => { events.push(data); });
 
             status.setState(SyncState.SYNCING);
 
@@ -64,7 +64,7 @@ describe('SyncStatus Unit Tests', () => {
     describe('Progress Tracking', () => {
         it('should track sync progress', () => {
             const events: any[] = [];
-            eventBus.on('SYNC_PROGRESS_UPDATED', (data) => events.push(data));
+            eventBus.on('SYNC_PROGRESS_UPDATED', (data) => { events.push(data); });
 
             status.setSyncProgress(50);
 

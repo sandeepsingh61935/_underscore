@@ -9,7 +9,6 @@ import {
     injectCSSVariables,
     DEFAULT_SEED_COLOR,
     DEFAULT_THEME,
-    type MD3ColorScheme,
 } from '../../../src/ui-system/theme/ThemeGenerator';
 
 describe('ThemeGenerator', () => {

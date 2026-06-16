@@ -161,7 +161,6 @@ describe('Integration: Conflict Resolution + Encryption', () => {
         it('should resolve conflict between local plaintext and remote encrypted then re-encrypt', async () => {
             // 1. Prepare Local Event (Plaintext)
             const localHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-conf-1',
                 text: 'Local change',
                 contentHash: 'hash-local',
@@ -197,8 +196,7 @@ describe('Integration: Conflict Resolution + Encryption', () => {
                 user_id: testUserId,
                 type: 'highlight.updated' as any,
                 data: {
-                    version: 2,
-                    id: 'hl-conf-1',
+                        id: 'hl-conf-1',
                     text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                     contentHash: 'hash-remote',
                     colorRole: 'blue',
@@ -253,7 +251,6 @@ describe('Integration: Conflict Resolution + Encryption', () => {
         it('should handle MERGE resolution with encrypted data', async () => {
             // 1. Local: Tag change
             const localHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-merge-1',
                 text: 'Base text',
                 contentHash: 'hash',
@@ -291,8 +288,7 @@ describe('Integration: Conflict Resolution + Encryption', () => {
                 user_id: testUserId,
                 type: 'highlight.updated' as any,
                 data: {
-                    version: 2,
-                    id: 'hl-merge-1',
+                        id: 'hl-merge-1',
                     text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                     contentHash: 'hash',
                     colorRole: 'blue',

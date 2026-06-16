@@ -60,7 +60,7 @@ describe('SyncBatcher Unit Tests', () => {
     describe('Batching Logic', () => {
         it('should batch events up to batch size (50 events)', async () => {
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             // Add 49 events (below batch size)
             for (let i = 0; i < 49; i++) {
@@ -84,7 +84,7 @@ describe('SyncBatcher Unit Tests', () => {
             vi.useFakeTimers();
 
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             // Add 10 events (below batch size)
             for (let i = 0; i < 10; i++) {
@@ -106,7 +106,7 @@ describe('SyncBatcher Unit Tests', () => {
 
         it('should flush full batch immediately (no waiting)', async () => {
             const batchEvents: any[] = [];
-            eventBus.on('BATCH_SENT', (data) => batchEvents.push(data));
+            eventBus.on('BATCH_SENT', (data) => { batchEvents.push(data); });
 
             // Add exactly 50 events
             for (let i = 0; i < 50; i++) {
@@ -124,7 +124,7 @@ describe('SyncBatcher Unit Tests', () => {
     describe('Optimization', () => {
         it('should deduplicate events - latest wins (Tricky: User updates highlight color 5 times rapidly)', async () => {
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             const entityId = 'highlight-123';
 
@@ -157,7 +157,7 @@ describe('SyncBatcher Unit Tests', () => {
             });
 
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             // Add 250 events
             for (let i = 0; i < 250; i++) {
@@ -187,8 +187,8 @@ describe('SyncBatcher Unit Tests', () => {
             const batchEvents: any[] = [];
             const failedEvents: any[] = [];
 
-            eventBus.on('BATCH_SENT', (data) => batchEvents.push(data));
-            eventBus.on('BATCH_FAILED', (data) => failedEvents.push(data));
+            eventBus.on('BATCH_SENT', (data) => { batchEvents.push(data); });
+            eventBus.on('BATCH_FAILED', (data) => { failedEvents.push(data); });
 
             // Add events
             for (let i = 0; i < 10; i++) {
@@ -213,7 +213,7 @@ describe('SyncBatcher Unit Tests', () => {
             });
 
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             // Create realistic highlight data (not tiny test strings)
             const largeText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(20);

@@ -13,7 +13,7 @@
  *
  * Run with: npx vitest run tests/unit/harness/layer-8-storybook-purge.test.ts
  */
-import { access, readdir } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 

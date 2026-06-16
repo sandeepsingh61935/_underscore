@@ -30,7 +30,6 @@ describe('V2 Input', () => {
     it('uses --ink-3 for placeholder color (not MD3 text-on-surface-variant)', () => {
         render(<Input placeholder="Email" />);
         const input = screen.getByPlaceholderText('Email');
-        const style = input.getAttribute('style') ?? '';
         // Placeholder pseudo is hard to assert in jsdom; check the
         // className does not contain the MD3 utility.
         expect(input.className).not.toMatch(/placeholder:text-on-surface-variant/);

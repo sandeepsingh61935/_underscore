@@ -57,7 +57,7 @@ describe('ConnectionManager', () => {
             // However, connect logic is: try { subscribe } catch { await handleReconnect }
             // If handleReconnect waits, connect waits.
 
-            const connectPromise = manager.connect('user-1');
+            void manager.connect('user-1');
 
             // Should schedule reconnect after failure
             await Promise.resolve(); // Allow catch block to execute

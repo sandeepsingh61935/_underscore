@@ -110,8 +110,7 @@ describe('Integration: Sync + Encryption', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as any,
                 data: {
-                    version: 2,
-                    id: 'hl-1',
+                        id: 'hl-1',
                     text: 'Sensitive sync data',
                     contentHash: 'hash',
                     colorRole: 'yellow',
@@ -151,8 +150,7 @@ describe('Integration: Sync + Encryption', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as any,
                 data: {
-                    version: 2,
-                    id: 'hl-server-1',
+                        id: 'hl-server-1',
                     text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                     contentHash: 'hash',
                     colorRole: 'blue',
@@ -182,8 +180,7 @@ describe('Integration: Sync + Encryption', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as any,
                 data: {
-                    version: 2,
-                    id: 'hl-local-1',
+                        id: 'hl-local-1',
                     text: 'Local data to sync',
                     contentHash: 'hash1',
                     colorRole: 'green',
@@ -214,7 +211,6 @@ describe('Integration: Sync + Encryption', () => {
 
         it('should maintain data integrity through sync', async () => {
             const complexData: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-complex-1',
                 text: 'Complex: émojis 🎉, quotes "test", newlines\n\ntabs\t\there',
                 contentHash: 'hash-complex',

@@ -66,7 +66,7 @@ describe('EventStore Integration Tests', () => {
 
             const events = await store.getEvents();
             expect(events).toHaveLength(1);
-            expect(events[0].id).toBe(event.id);
+            expect(events[0]?.id).toBe(event.id);
         });
 
         it('should return events in chronological order (CRITICAL)', async () => {
@@ -93,12 +93,12 @@ describe('EventStore Integration Tests', () => {
 
             // **CRITICAL**: Must be in chronological order
             expect(events).toHaveLength(3);
-            expect(events[0].timestamp).toBe(100);
-            expect(events[0].payload).toEqual({ id: 'entity-1', text: 'First' });
-            expect(events[1].timestamp).toBe(150);
-            expect(events[1].payload).toEqual({ id: 'entity-3', text: 'Middle' });
-            expect(events[2].timestamp).toBe(200);
-            expect(events[2].payload).toEqual({ id: 'entity-2', text: 'Second' });
+            expect(events[0]?.timestamp).toBe(100);
+            expect(events[0]?.payload).toEqual({ id: 'entity-1', text: 'First' });
+            expect(events[1]?.timestamp).toBe(150);
+            expect(events[1]?.payload).toEqual({ id: 'entity-3', text: 'Middle' });
+            expect(events[2]?.timestamp).toBe(200);
+            expect(events[2]?.payload).toEqual({ id: 'entity-2', text: 'Second' });
         });
 
         it('should get events since timestamp', async () => {
@@ -113,8 +113,8 @@ describe('EventStore Integration Tests', () => {
             const events = await store.getEventsSince(150);
 
             expect(events).toHaveLength(2);
-            expect(events[0].timestamp).toBe(200);
-            expect(events[1].timestamp).toBe(300);
+            expect(events[0]?.timestamp).toBe(200);
+            expect(events[1]?.timestamp).toBe(300);
         });
 
         it('should get latest event for entity', async () => {
@@ -197,23 +197,23 @@ describe('EventStore Integration Tests', () => {
             });
 
             expect(events).toHaveLength(1);
-            expect(events[0].type).toBe(SyncEventType.HIGHLIGHT_CREATED);
+            expect(events[0]?.type).toBe(SyncEventType.HIGHLIGHT_CREATED);
         });
 
         it('should filter by entity ID', async () => {
             const events = await store.getEvents({ entityId: 'h1' });
 
             expect(events).toHaveLength(2); // CREATED and UPDATED
-            expect(events[0].type).toBe(SyncEventType.HIGHLIGHT_CREATED);
-            expect(events[1].type).toBe(SyncEventType.HIGHLIGHT_UPDATED);
+            expect(events[0]?.type).toBe(SyncEventType.HIGHLIGHT_CREATED);
+            expect(events[1]?.type).toBe(SyncEventType.HIGHLIGHT_UPDATED);
         });
 
         it('should filter by timestamp range', async () => {
             const events = await store.getEvents({ since: 150, until: 350 });
 
             expect(events).toHaveLength(2);
-            expect(events[0].timestamp).toBe(200);
-            expect(events[1].timestamp).toBe(300);
+            expect(events[0]?.timestamp).toBe(200);
+            expect(events[1]?.timestamp).toBe(300);
         });
 
         it('should return empty array when no events match filter', async () => {
@@ -272,8 +272,8 @@ describe('EventStore Integration Tests', () => {
             await store.append(event);
 
             const events = await store.getEvents();
-            expect(events[0].checksum).toBe(event.checksum);
-            expect(events[0].checksum).toHaveLength(64); // SHA-256 hex length
+            expect(events[0]?.checksum).toBe(event.checksum);
+            expect(events[0]?.checksum).toHaveLength(64); // SHA-256 hex length
         });
 
         it('should verify checksum on retrieval', async () => {
@@ -282,7 +282,7 @@ describe('EventStore Integration Tests', () => {
 
             // Checksum should be valid
             const events = await store.getEvents();
-            expect(events[0].checksum).toBeTruthy();
+            expect(events[0]?.checksum).toBeTruthy();
         });
 
         it('should detect corrupted event (checksum mismatch)', async () => {
@@ -311,7 +311,7 @@ describe('EventStore Integration Tests', () => {
 
             const events = await store.getEvents();
             expect(events).toHaveLength(1);
-            expect((events[0].payload as any).text).toHaveLength(largeText.length);
+            expect((events[0]?.payload as any).text).toHaveLength(largeText.length);
         });
 
         it('should handle 1000+ events query efficiently', async () => {
@@ -342,8 +342,8 @@ describe('EventStore Integration Tests', () => {
 
             // Verify chronological order
             for (let i = 1; i < events.length; i++) {
-                expect(events[i].timestamp).toBeGreaterThanOrEqual(
-                    events[i - 1].timestamp
+                expect(events[i]?.timestamp).toBeGreaterThanOrEqual(
+                    events[i - 1]?.timestamp
                 );
             }
         });
@@ -374,8 +374,8 @@ describe('EventStore Integration Tests', () => {
 
             // Verify chronological order maintained
             for (let i = 1; i < events.length; i++) {
-                expect(events[i].timestamp).toBeGreaterThanOrEqual(
-                    events[i - 1].timestamp
+                expect(events[i]?.timestamp).toBeGreaterThanOrEqual(
+                    events[i - 1]?.timestamp
                 );
             }
         });
@@ -404,7 +404,7 @@ describe('EventStore Integration Tests', () => {
 
             const events = await store.getEvents();
             expect(events).toHaveLength(1);
-            expect(events[0].payload).toEqual({});
+            expect(events[0]?.payload).toEqual({});
         });
 
         it('should handle Unicode text preservation', async () => {
@@ -416,7 +416,7 @@ describe('EventStore Integration Tests', () => {
             await store.append(event);
 
             const events = await store.getEvents();
-            expect((events[0].payload as any).text).toBe(unicodeText);
+            expect((events[0]?.payload as any).text).toBe(unicodeText);
         });
 
         it('should handle limit parameter correctly', async () => {
@@ -433,8 +433,8 @@ describe('EventStore Integration Tests', () => {
 
             expect(events).toHaveLength(5);
             // Should return first 5 (oldest)
-            expect(events[0].timestamp).toBe(1000);
-            expect(events[4].timestamp).toBe(1004);
+            expect(events[0]?.timestamp).toBe(1000);
+            expect(events[4]?.timestamp).toBe(1004);
         });
 
         it('should handle getLatestEvent when entity has no events', async () => {

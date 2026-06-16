@@ -117,7 +117,7 @@ describe('OfflineQueue Integration Tests', () => {
 
         it('should emit OFFLINE_EVENT_QUEUED event', async () => {
             const queuedEvents: any[] = [];
-            eventBus.on('OFFLINE_EVENT_QUEUED', (data) => queuedEvents.push(data));
+            eventBus.on('OFFLINE_EVENT_QUEUED', (data) => { queuedEvents.push(data); });
 
             const event = await createTestEvent();
             await queue.queueOffline(event);
@@ -142,9 +142,9 @@ describe('OfflineQueue Integration Tests', () => {
     describe('Auto-Sync on Reconnection', () => {
         it('should sync events when network comes back online', async () => {
             const syncEvents: any[] = [];
-            eventBus.on('OFFLINE_EVENT_READY', (data) => syncEvents.push(data));
-            eventBus.on('OFFLINE_SYNC_STARTED', (data) => syncEvents.push(data));
-            eventBus.on('OFFLINE_SYNC_COMPLETE', (data) => syncEvents.push(data));
+            eventBus.on('OFFLINE_EVENT_READY', (data) => { syncEvents.push(data); });
+            eventBus.on('OFFLINE_SYNC_STARTED', (data) => { syncEvents.push(data); });
+            eventBus.on('OFFLINE_SYNC_COMPLETE', (data) => { syncEvents.push(data); });
 
             // Queue 5 events while offline
             for (let i = 0; i < 5; i++) {
@@ -206,7 +206,7 @@ describe('OfflineQueue Integration Tests', () => {
 
         it('should emit OFFLINE_MODE_ENABLED when going offline', async () => {
             const offlineEvents: any[] = [];
-            eventBus.on('OFFLINE_MODE_ENABLED', (data) => offlineEvents.push(data));
+            eventBus.on('OFFLINE_MODE_ENABLED', (data) => { offlineEvents.push(data); });
 
             // Start online, then go offline
             const onlineQueue = new OfflineQueue(

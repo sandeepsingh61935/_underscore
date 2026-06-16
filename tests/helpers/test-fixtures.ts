@@ -26,7 +26,6 @@ export function createTestHighlight(
   };
 
   return {
-    version: 2,
     id: uuid(),
     text: 'Test highlight text',
     contentHash: 'abc123def456',

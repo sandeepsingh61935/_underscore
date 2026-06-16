@@ -236,7 +236,7 @@ describe('SyncQueue Integration Tests', () => {
             });
 
             const nearFullEvents: any[] = [];
-            eventBus.on('QUEUE_NEAR_FULL', (data) => nearFullEvents.push(data));
+            eventBus.on('QUEUE_NEAR_FULL', (data) => { nearFullEvents.push(data); });
 
             // Fill to 80% (8 events) - should warn on 9th enqueue
             for (let i = 0; i < 9; i++) {
@@ -345,7 +345,7 @@ describe('SyncQueue Integration Tests', () => {
 
         it('should emit QUEUE_UPDATED event on enqueue', async () => {
             const queueUpdates: any[] = [];
-            eventBus.on('QUEUE_UPDATED', (data) => queueUpdates.push(data));
+            eventBus.on('QUEUE_UPDATED', (data) => { queueUpdates.push(data); });
 
             await queue.enqueue(await createTestEvent());
 

@@ -46,7 +46,7 @@ describe('Integration: Real-Time + Encryption', () => {
 
         // Mock Supabase SDK
         const mockChannel = {
-            on: vi.fn().mockImplementation((event, filter, callback) => {
+            on: vi.fn().mockImplementation((_event, _filter, callback) => {
                 realtimeCallback = callback;
                 return mockChannel;
             }),
@@ -88,7 +88,6 @@ describe('Integration: Real-Time + Encryption', () => {
             const encrypted = await encryptionService.encrypt(rawHighlight);
 
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-rt-1',
                 text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                 contentHash: 'hash-rt',
@@ -129,7 +128,6 @@ describe('Integration: Real-Time + Encryption', () => {
             const encrypted = await encryptionService.encrypt(rawHighlight);
 
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-rt-update',
                 text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                 contentHash: 'hash-upd',

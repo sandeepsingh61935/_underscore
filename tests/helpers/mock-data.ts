@@ -10,7 +10,6 @@ export function createMockHighlight(
   overrides?: Partial<HighlightDataV2>
 ): HighlightDataV2 {
   return {
-    version: 2,
     id: crypto.randomUUID(),
     text: 'Mock highlight text',
     contentHash: 'a'.repeat(64), // SHA-256 = 64 hex chars

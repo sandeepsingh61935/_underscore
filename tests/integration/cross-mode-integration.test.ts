@@ -71,7 +71,6 @@ describe('Cross-Mode Integration Tests', () => {
       range.setEnd(p1.firstChild!, 15);
 
       const vaultHighlight: HighlightDataV2 = {
-        version: 2,
         id: 'vault-isolation-1',
         text: 'This paragraph',
         contentHash: 'a'.repeat(64),
@@ -117,7 +116,6 @@ describe('Cross-Mode Integration Tests', () => {
       vaultRange.setEnd(p1.firstChild!, 14);
 
       const vaultHighlight: HighlightDataV2 = {
-        version: 2,
         id: 'vault-concurrent-1',
         text: 'paragraph',
         contentHash: 'b'.repeat(64),
@@ -158,7 +156,6 @@ describe('Cross-Mode Integration Tests', () => {
       range.setEnd(p1.firstChild!, 10);
 
       const vaultHighlight: HighlightDataV2 = {
-        version: 2,
         id: 'switch-test-1',
         text: 'This parag',
         contentHash: 'c'.repeat(64),
@@ -205,8 +202,7 @@ describe('Cross-Mode Integration Tests', () => {
 
         highlights.push({
           data: {
-            version: 2,
-            id: `multi-switch-${i}`,
+                id: `multi-switch-${i}`,
             text: 'This ',
             contentHash: String(i).repeat(64),
             colorRole: 'purple',

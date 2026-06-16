@@ -64,4 +64,21 @@ describe('V2 Dialog', () => {
         expect(html).not.toMatch(/border-outline-variant/);
         expect(html).not.toMatch(/bg-surface-container-highest/);
     });
+
+    it('does not leak keydown listeners when toggled open then closed', () => {
+        const onClose = vi.fn();
+        const { rerender } = render(<Dialog open onClose={onClose}>body</Dialog>);
+        // Spy on document.addEventListener to count keydown handlers.
+        const addSpy = vi.spyOn(document, 'addEventListener');
+        const removeSpy = vi.spyOn(document, 'removeEventListener');
+
+        // Close the dialog; expect a removeEventListener for the escape handler.
+        rerender(<Dialog open={false} onClose={onClose}>body</Dialog>);
+
+        const removeCalls = removeSpy.mock.calls.filter((c) => c[0] === 'keydown');
+        expect(removeCalls.length).toBeGreaterThanOrEqual(1);
+
+        addSpy.mockRestore();
+        removeSpy.mockRestore();
+    });
 });

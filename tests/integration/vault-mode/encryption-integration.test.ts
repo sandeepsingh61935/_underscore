@@ -197,7 +197,6 @@ describe('Integration: Encryption Components', () => {
 
         it('should encrypt highlight before API call', async () => {
             const highlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-integration-1',
                 text: 'Sensitive integration data',
                 contentHash: 'hash123',
@@ -247,7 +246,6 @@ describe('Integration: Encryption Components', () => {
 
             // Create encrypted highlight with proper JSON format
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-encrypted-1',
                 text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
                 contentHash: 'hash',
@@ -270,7 +268,6 @@ describe('Integration: Encryption Components', () => {
 
         it('should handle mixed encrypted and plaintext highlights', async () => {
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: '[ENCRYPTED:data]',
                 contentHash: 'hash1',
@@ -281,7 +278,6 @@ describe('Integration: Encryption Components', () => {
             };
 
             const plaintextHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-2',
                 text: 'Plaintext legacy highlight',
                 contentHash: 'hash2',
@@ -309,8 +305,7 @@ describe('Integration: Encryption Components', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as any, // Type assertion for test
                 data: {
-                    version: 2,
-                    id: 'hl-1',
+                        id: 'hl-1',
                     text: 'Event highlight text',
                     contentHash: 'hash',
                     colorRole: 'green',
@@ -339,7 +334,6 @@ describe('Integration: Encryption Components', () => {
             await keyManager.generateKeyPair(testUserId);
 
             const highlight: HighlightDataV2 = {
-                version: 2,
                 id: 'perf-test-1',
                 text: 'Performance test highlight with some content',
                 contentHash: 'hash',

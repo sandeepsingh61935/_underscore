@@ -177,7 +177,6 @@ describe('VaultModeService - Integration Tests', () => {
       highlights.push({
         data: {
           id: 'multi-1',
-          version: 2,
           contentHash: 'a'.repeat(64),
           colorRole: 'yellow' as const,
           type: 'underscore' as const,
@@ -197,7 +196,6 @@ describe('VaultModeService - Integration Tests', () => {
       highlights.push({
         data: {
           id: 'multi-2',
-          version: 2,
           contentHash: 'b'.repeat(64),
           colorRole: 'green' as const,
           type: 'underscore' as const,
@@ -221,7 +219,6 @@ describe('VaultModeService - Integration Tests', () => {
           ranges: [],
           color: '#2196f3',
           createdAt: new Date(),
-          version: 2,
           contentHash: 'c'.repeat(64),
           colorRole: 'blue' as const,
           type: 'underscore' as const,

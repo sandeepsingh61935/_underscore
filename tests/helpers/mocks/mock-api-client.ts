@@ -1,5 +1,5 @@
 
-import type { IAPIClient, PushResult, SyncEvent, Collection, CollectionData } from '@/background/api/interfaces/i-api-client';
+import type { IAPIClient, PushResult, SyncEvent, Collection } from '@/background/api/interfaces/i-api-client';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 export class MockAPIClient implements IAPIClient {
@@ -41,7 +41,7 @@ export class MockAPIClient implements IAPIClient {
         };
     }
 
-    async pullEvents(since: number): Promise<SyncEvent[]> {
+    async pullEvents(_since: number): Promise<SyncEvent[]> {
         return [];
     }
 

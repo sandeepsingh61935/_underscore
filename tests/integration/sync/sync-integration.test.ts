@@ -4,7 +4,7 @@
  * Following Testing Strategy v2: Realistic end-to-end scenarios
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import 'fake-indexeddb/auto';
 import { Container } from '@/shared/di/container';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
@@ -74,7 +74,7 @@ describe('Sync Engine Integration Tests', () => {
     describe('End-to-End Sync Flow', () => {
         it('should complete full sync cycle: enqueue → batch → sync (Realistic: User creates 50 highlights)', async () => {
             const chunkEvents: any[] = [];
-            eventBus.on('CHUNK_READY', (data) => chunkEvents.push(data));
+            eventBus.on('CHUNK_READY', (data) => { chunkEvents.push(data); });
 
             // User creates 50 highlights
             for (let i = 0; i < 50; i++) {
@@ -109,7 +109,7 @@ describe('Sync Engine Integration Tests', () => {
 
         it('should handle offline → online transition with auto-sync (Tricky: Network flapping)', async () => {
             const offlineEvents: any[] = [];
-            eventBus.on('OFFLINE_EVENT_READY', (data) => offlineEvents.push(data));
+            eventBus.on('OFFLINE_EVENT_READY', (data) => { offlineEvents.push(data); });
 
             // Queue events while offline
             for (let i = 0; i < 5; i++) {
@@ -157,7 +157,7 @@ describe('Sync Engine Integration Tests', () => {
     describe('Component Integration', () => {
         it('should integrate SyncQueue + SyncBatcher correctly', async () => {
             const batchEvents: any[] = [];
-            eventBus.on('BATCH_SENT', (data) => batchEvents.push(data));
+            eventBus.on('BATCH_SENT', (data) => { batchEvents.push(data); });
 
             // Enqueue events
             for (let i = 0; i < 10; i++) {
@@ -176,10 +176,8 @@ describe('Sync Engine Integration Tests', () => {
 
         it('should integrate NetworkDetector + OfflineQueue correctly', async () => {
             // This test verifies the subscription works
-            let subscriptionCalled = false;
-
-            const unsubscribe = networkDetector.subscribe((online) => {
-                subscriptionCalled = true;
+            const unsubscribe = networkDetector.subscribe(() => {
+                // Subscription wiring verified by unsubscribe being a function below
             });
 
             // Cleanup
@@ -224,7 +222,7 @@ describe('Sync Engine Integration Tests', () => {
 
         it('should handle rate limit exceeded', async () => {
             const events: any[] = [];
-            eventBus.on('RATE_LIMIT_EXCEEDED', (data) => events.push(data));
+            eventBus.on('RATE_LIMIT_EXCEEDED', (data) => { events.push(data); });
 
             const userId = 'user-456';
 

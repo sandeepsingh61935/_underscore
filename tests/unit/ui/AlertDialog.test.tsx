@@ -98,7 +98,7 @@ describe('V2 AlertDialog', () => {
     });
 
     it('AlertDialog action has 44px min touch target (V2 spec)', () => {
-        const { baseElement } = render(
+        render(
             <AlertDialog open>
                 <AlertDialogContent>
                     <AlertDialogAction>OK</AlertDialogAction>

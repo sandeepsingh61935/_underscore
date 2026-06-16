@@ -301,7 +301,7 @@ describe('KeyManager', () => {
             const startTime = performance.now();
 
             await keyManager.generateKeyPair(userId);
-            const publicKey = await keyManager.getPublicKey(userId);
+            await keyManager.getPublicKey(userId);
 
             const endTime = performance.now();
             const duration = endTime - startTime;
