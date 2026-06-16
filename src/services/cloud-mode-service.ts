@@ -1,8 +1,17 @@
 import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine';
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2, TextQuoteSelector } from '@/shared/schemas/highlight-schema';
 import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
+import { TextQuoteFinder } from '@/content/utils/text-quote-finder';
+
+/**
+ * Discriminated union: a highlight range's selector is either the W3C
+ * TextQuoteSelector (current format written by saveHighlight) or the legacy
+ * multi-tier MultiSelector (xpath/position/fuzzy). restoreHighlightRange
+ * dispatches between them.
+ */
+type HighlightSelector = TextQuoteSelector | MultiSelector;
 
 /**
  * @file cloud-mode-service.ts
@@ -35,6 +44,7 @@ import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositor
 export class CloudModeService {
   private repository: IHighlightRepository;
   private selectorEngine: MultiSelectorEngine;
+  private quoteFinder: TextQuoteFinder;
   private logger: ILogger;
 
   /**
@@ -52,6 +62,7 @@ export class CloudModeService {
   ) {
     this.repository = repository;
     this.selectorEngine = selectorEngine;
+    this.quoteFinder = new TextQuoteFinder();
     this.logger = logger;
   }
 
@@ -73,7 +84,7 @@ export class CloudModeService {
    */
   async saveHighlight(
     highlight: HighlightDataV2,
-    range: Range,
+    _range: Range,
     options?: RepositoryOptions
   ): Promise<void> {
     try {
@@ -140,7 +151,7 @@ export class CloudModeService {
     Array<{
       highlight: HighlightDataV2;
       range: Range | null;
-      restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
+      restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'text-quote' | 'failed';
     }>
   > {
     try {
@@ -157,9 +168,11 @@ export class CloudModeService {
       // Restore Ranges
       const results = await Promise.all(
         highlights.map(async (highlight) => {
-          // Selectors are embedded in the highlight ranges (HighlightDataV2 schema)
-          // We cast because schema parser might not be strictly typed for full object
-          const selector = highlight.ranges[0]?.selector as unknown as MultiSelector;
+          // Selectors are embedded in the highlight ranges (HighlightDataV2 schema).
+          // The runtime value may be a W3C TextQuoteSelector (current format
+          // written by saveHighlight) or a legacy MultiSelector; the dispatcher
+          // in restoreHighlightRange discriminates by `type` field.
+          const selector = highlight.ranges[0]?.selector as unknown as HighlightSelector;
 
           if (!selector) {
             this.logger.warn('[VAULT] No selectors found for highlight', highlight.id);
@@ -196,7 +209,7 @@ export class CloudModeService {
    */
   async restoreHighlight(highlight: HighlightDataV2): Promise<{
     range: Range | null;
-    restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'failed';
+    restoredUsing: 'xpath' | 'position' | 'fuzzy' | 'text-quote' | 'failed';
   }> {
     try {
       this.logger.info('[VAULT] Restoring single highlight', {
@@ -222,7 +235,7 @@ export class CloudModeService {
         return { range: null, restoredUsing: 'failed' };
       }
 
-      const selector = highlight.ranges[0]?.selector as unknown as MultiSelector;
+      const selector = highlight.ranges[0]?.selector as unknown as HighlightSelector;
 
       if (!selector) {
         this.logger.warn('[VAULT] No selectors found for highlight', highlight.id);
@@ -248,15 +261,20 @@ export class CloudModeService {
   }
 
   /**
-   * Restore a single highlight's DOM Range using multi-selector
+   * Restore a single highlight's DOM Range from its serialized selector.
    *
-   * Tries all 3 tiers: XPath → Position → Fuzzy
+   * Dispatches on selector shape:
+   * - TextQuoteSelector (W3C) → TextQuoteFinder.find() (current format)
+   * - MultiSelector (legacy) → MultiSelectorEngine.restore() (xpath/position/fuzzy)
    *
-   * @param selectors - Multi-selector data
+   * @param selectors - The serialized selector carried in the highlight range
    * @returns Restored Range or null
    */
-  private async restoreHighlightRange(selectors: MultiSelector): Promise<Range | null> {
+  private async restoreHighlightRange(selectors: HighlightSelector): Promise<Range | null> {
     try {
+      if (this.isTextQuoteSelector(selectors)) {
+        return this.quoteFinder.find(selectors);
+      }
       return await this.selectorEngine.restore(selectors);
     } catch (error) {
       this.logger.error('Restoration error:', error as Error);
@@ -265,17 +283,37 @@ export class CloudModeService {
   }
 
   /**
+   * Type guard: discriminate TextQuoteSelector from MultiSelector by its
+   * `type` discriminator field. W3C TextQuoteSelector uses
+   * `type: 'TextQuoteSelector'`; legacy MultiSelector has no such field.
+   */
+  private isTextQuoteSelector(
+    selector: HighlightSelector
+  ): selector is TextQuoteSelector {
+    return (
+      typeof selector === 'object' &&
+      selector !== null &&
+      'type' in selector &&
+      (selector as { type: unknown }).type === 'TextQuoteSelector'
+    );
+  }
+
+  /**
    * Determine which tier was used for successful restoration
    *
    * @param range - Restored range
-   * @param selectors - Multi-selector data
+   * @param selectors - Selector data (TextQuoteSelector or MultiSelector)
    * @returns Tier name
    */
   private determineRestorationTier(
     range: Range | null,
-    selectors: MultiSelector
-  ): 'xpath' | 'position' | 'fuzzy' | 'failed' {
+    selectors: HighlightSelector
+  ): 'xpath' | 'position' | 'fuzzy' | 'text-quote' | 'failed' {
     if (!range) return 'failed';
+
+    if (this.isTextQuoteSelector(selectors)) {
+      return 'text-quote';
+    }
 
     // Try to determine which tier succeeded by testing each
     const rangeText = range.toString();
