@@ -13,7 +13,6 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { SyncEvent } from '@/background/api/interfaces/i-api-client';
 import {
     AuthenticationError,
-    NetworkError,
     TimeoutError,
     RateLimitError,
 } from '@/background/api/api-errors';
@@ -82,7 +81,6 @@ describe('SupabaseClient', () => {
         it('should transform HighlightDataV2 to Supabase row format', async () => {
             // Arrange
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'highlight-123',
                 text: 'Test highlight text',
                 contentHash: 'a'.repeat(64), // SHA-256 hash
@@ -361,7 +359,6 @@ describe('SupabaseClient', () => {
             });
 
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'test',
                 text: 'test',
                 contentHash: 'a'.repeat(64),
@@ -401,7 +398,6 @@ describe('SupabaseClient', () => {
             });
 
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'test',
                 text: 'test',
                 contentHash: 'a'.repeat(64),
@@ -447,7 +443,6 @@ describe('SupabaseClient', () => {
             });
 
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'test',
                 text: 'test',
                 contentHash: 'a'.repeat(64),
@@ -484,7 +479,6 @@ describe('SupabaseClient', () => {
             // Arrange: Create 1.5MB text (realistic: long article)
             const largeText = 'A'.repeat(1.5 * 1024 * 1024); // 1.5MB
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'large-highlight',
                 text: largeText,
                 contentHash: 'a'.repeat(64),
@@ -523,7 +517,6 @@ describe('SupabaseClient', () => {
             // Arrange: 3 different highlights
             const highlights: HighlightDataV2[] = [
                 {
-                    version: 2,
                     id: 'h1',
                     text: 'Text 1',
                     contentHash: '1'.repeat(64),
@@ -542,7 +535,6 @@ describe('SupabaseClient', () => {
                     createdAt: new Date(),
                 },
                 {
-                    version: 2,
                     id: 'h2',
                     text: 'Text 2',
                     contentHash: '2'.repeat(64),
@@ -561,7 +553,6 @@ describe('SupabaseClient', () => {
                     createdAt: new Date(),
                 },
                 {
-                    version: 2,
                     id: 'h3',
                     text: 'Text 3',
                     contentHash: '3'.repeat(64),
@@ -614,7 +605,6 @@ describe('SupabaseClient', () => {
             // Arrange
             const unicodeText = '👍 日本語 ñoño 🎉 中文';
             const highlightData: HighlightDataV2 = {
-                version: 2,
                 id: 'unicode-test',
                 text: unicodeText,
                 contentHash: 'a'.repeat(64),

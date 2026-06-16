@@ -216,6 +216,15 @@ describe('AuditLogger', () => {
 
             expect(results).toHaveLength(0);
         });
+
+        it('loadLogs returns an empty array when storage has no entry', async () => {
+            // Exercise the private loadLogs via query(), which calls it.
+            // Mock returns {} (no STORAGE_KEY), so loadLogs must return [] not {}.
+            mockStorage.clear();
+            const results = await auditLogger.query({});
+            expect(Array.isArray(results)).toBe(true);
+            expect(results).toHaveLength(0);
+        });
     });
 
     describe('Retention Policy', () => {

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DomainQueryService } from '@/background/services/domain-query-service';
-import type { RepositoryFacade } from '@/shared/repositories';
 
 describe('DomainQueryService', () => {
   let facade: any;

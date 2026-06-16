@@ -77,7 +77,6 @@ describe('EncryptedAPIClient', () => {
     describe('createHighlight()', () => {
         it('should encrypt highlight before creating', async () => {
             const highlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: 'Sensitive text',
                 contentHash: 'hash',
@@ -109,7 +108,6 @@ describe('EncryptedAPIClient', () => {
             (mockEncryptionService.encrypt as any).mockRejectedValue(new Error('Encryption failed'));
 
             const highlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: 'Text',
                 contentHash: 'hash',
@@ -126,7 +124,6 @@ describe('EncryptedAPIClient', () => {
     describe('getHighlights()', () => {
         it('should decrypt highlights after retrieval', async () => {
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: '[ENCRYPTED:encrypted-base64-data]',
                 contentHash: 'hash',
@@ -149,7 +146,6 @@ describe('EncryptedAPIClient', () => {
 
         it('should handle legacy plaintext highlights', async () => {
             const plaintextHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: 'Plaintext highlight',
                 contentHash: 'hash',
@@ -172,7 +168,6 @@ describe('EncryptedAPIClient', () => {
 
         it('should handle decryption failures gracefully', async () => {
             const encryptedHighlight: HighlightDataV2 = {
-                version: 2,
                 id: 'hl-1',
                 text: '[ENCRYPTED:corrupted-data]',
                 contentHash: 'hash',
@@ -200,8 +195,7 @@ describe('EncryptedAPIClient', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as SyncEventType,
                 data: {
-                    version: 2,
-                    id: 'hl-1',
+                        id: 'hl-1',
                     text: 'Sensitive text',
                     contentHash: 'hash',
                     colorRole: 'yellow',
@@ -251,8 +245,7 @@ describe('EncryptedAPIClient', () => {
                 user_id: testUserId,
                 type: 'highlight.created' as SyncEventType,
                 data: {
-                    version: 2,
-                    id: 'hl-1',
+                        id: 'hl-1',
                     text: '[ENCRYPTED:encrypted-data]',
                     contentHash: 'hash',
                     colorRole: 'yellow',

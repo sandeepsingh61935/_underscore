@@ -1,10 +1,10 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Container } from '@/shared/di/container';
+import type { Container as BackgroundContainer } from '@/background/di/container';
 import { registerServices } from '@/shared/di/service-registration';
 import { registerAPIComponents } from '@/background/api/api-container-registration';
 import { registerEventComponents } from '@/background/events/events-container-registration';
-import { registerMigrationComponents } from '@/background/migration/migration-container-registration';
 import { IAPIClient } from '@/background/api/interfaces/i-api-client';
 import { MockAPIClient } from '../../helpers/mocks/mock-api-client';
 import { IMigrator } from '@/background/migration/interfaces/i-migrator';
@@ -12,7 +12,6 @@ import { IHighlightRepository } from '@/shared/repositories/i-highlight-reposito
 import { createTestHighlight } from '../../helpers/test-fixtures';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
-import { SupabaseClient } from '@/background/api/supabase-client';
 
 describe('Migration E2E Flow (DI Container)', () => {
     let container: Container;
@@ -24,12 +23,16 @@ describe('Migration E2E Flow (DI Container)', () => {
         // Note: We need to register configurations first if expected
         container.registerInstance('supabaseConfig', { url: 'http://mock', anonKey: 'mock' });
 
+        // The two parallel DI trees (src/shared/di and src/background/di) define
+        // their own Container classes. They're runtime-compatible but nominally
+        // distinct types. Cast at the boundary so the test can mix registrations
+        // from both trees.
+        const bg = container as unknown as BackgroundContainer;
         registerServices(container);
-        registerAPIComponents(container);
-        registerEventComponents(container);
-        registerSyncComponents(container);
-        registerRealtimeComponents(container);
-        registerMigrationComponents(container);
+        registerAPIComponents(bg);
+        registerEventComponents(bg);
+        registerSyncComponents(bg);
+        registerRealtimeComponents(bg);
 
         // Override API Client with Mock for E2E safety (don't hit real network)
         // We re-register it to overwrite the real one
@@ -58,6 +61,6 @@ describe('Migration E2E Flow (DI Container)', () => {
         // Check Remote State via API Client
         const remote = await api.getHighlights();
         expect(remote).toHaveLength(1);
-        expect(remote[0].id).toBe('e2e-1');
+        expect(remote[0]?.id).toBe('e2e-1');
     });
 });

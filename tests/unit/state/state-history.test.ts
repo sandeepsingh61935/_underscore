@@ -58,7 +58,7 @@ describe('ModeStateManager - State History Tracking', () => {
       } as any);
     });
 
-    modeStateManager = new ModeStateManager(modeManager, logger);
+    modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
     await modeStateManager.init();
   });
 
@@ -202,10 +202,10 @@ describe('ModeStateManager - State History Tracking', () => {
       const history = modeStateManager.getHistory();
       expect(history.length).toBeGreaterThanOrEqual(3); // At least some transitions recorded
 
-      // Verify no corrupted entries
+      // Verify no corrupted entries (canonical mode vocabulary: ephemeral/local/cloud/ai)
       history.forEach((entry) => {
-        expect(entry.from).toMatch(/^(walk|sprint|vault)$/);
-        expect(entry.to).toMatch(/^(walk|sprint|vault)$/);
+        expect(entry.from).toMatch(/^(ephemeral|local|cloud|ai)$/);
+        expect(entry.to).toMatch(/^(ephemeral|local|cloud|ai)$/);
         expect(entry.timestamp).toBeTypeOf('number');
       });
     });
@@ -243,7 +243,7 @@ describe('ModeStateManager - State History Tracking', () => {
       mockNow.mockImplementation(() => timestamp);
 
       // Reinit with mocked time
-      modeStateManager = new ModeStateManager(modeManager, logger);
+      modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
       await modeStateManager.init();
 
       // Act - Make transitions in "same millisecond"

@@ -58,7 +58,7 @@ describe('ModeStateManager - State Metrics', () => {
       } as any);
     });
 
-    modeStateManager = new ModeStateManager(modeManager, logger);
+    modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
     await modeStateManager.init();
   });
 
@@ -106,7 +106,7 @@ describe('ModeStateManager - State Metrics', () => {
     mockNow.mockImplementation(() => currentTime);
 
     // Reinitialize manager with mocked time
-    modeStateManager = new ModeStateManager(modeManager, logger);
+    modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
     await modeStateManager.init();
 
     // Act - Spend time in different modes
@@ -185,7 +185,7 @@ describe('ModeStateManager - State Metrics', () => {
       let currentTime = 1000;
       mockNow.mockImplementation(() => currentTime);
 
-      modeStateManager = new ModeStateManager(modeManager, logger);
+      modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
       await modeStateManager.init();
 
       // Act - Rapid switches (0ms elapsed each)
@@ -245,7 +245,7 @@ describe('ModeStateManager - State Metrics', () => {
       const mockNow = vi.spyOn(Date, 'now');
       mockNow.mockReturnValue(1000); // Freeze time
 
-      modeStateManager = new ModeStateManager(modeManager, logger);
+      modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
       await modeStateManager.init();
 
       // Act - Make many transitions (test accumulation)

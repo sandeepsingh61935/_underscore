@@ -47,7 +47,7 @@ describe('ModeStateManager - Debugging Tools', () => {
       } as any);
     });
 
-    modeStateManager = new ModeStateManager(modeManager, logger);
+    modeStateManager = new ModeStateManager(eventBus, modeManager, logger);
     await modeStateManager.init();
   });
 
