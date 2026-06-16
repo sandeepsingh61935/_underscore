@@ -141,7 +141,7 @@ describe('EncryptedAPIClient', () => {
             expect(mockEncryptionService.decrypt).toHaveBeenCalled();
 
             // Verify result contains decrypted data
-            expect(result[0].text).toBe('Decrypted text');
+            expect(result[0]!.text).toBe('Decrypted text');
         });
 
         it('should handle legacy plaintext highlights', async () => {
@@ -163,7 +163,7 @@ describe('EncryptedAPIClient', () => {
             expect(mockEncryptionService.decrypt).not.toHaveBeenCalled();
 
             // Should return plaintext as-is
-            expect(result[0].text).toBe('Plaintext highlight');
+            expect(result[0]!.text).toBe('Plaintext highlight');
         });
 
         it('should handle decryption failures gracefully', async () => {
@@ -183,7 +183,7 @@ describe('EncryptedAPIClient', () => {
             const result = await encryptedClient.getHighlights();
 
             // Should return placeholder for failed decryption
-            expect(result[0].text).toBe('[DECRYPTION FAILED]');
+            expect(result[0]!.text).toBe('[DECRYPTION FAILED]');
             expect(mockLogger.warn).toHaveBeenCalled();
         });
     });
@@ -267,7 +267,7 @@ describe('EncryptedAPIClient', () => {
             expect(mockEncryptionService.decrypt).toHaveBeenCalled();
 
             // Verify result contains decrypted data
-            expect((result[0].data as HighlightDataV2).text).toBe('Decrypted text');
+            expect((result[0]!.data as HighlightDataV2).text).toBe('Decrypted text');
         });
 
         it('should not decrypt collection events', async () => {
@@ -290,7 +290,7 @@ describe('EncryptedAPIClient', () => {
             expect(mockEncryptionService.decrypt).not.toHaveBeenCalled();
 
             // Should return as-is
-            expect(result[0].data).toEqual(collectionEvent.data);
+            expect(result[0]!.data).toEqual(collectionEvent.data);
         });
     });
 
