@@ -36,7 +36,7 @@ describe('Mock Infrastructure (10 tests)', () => {
 
     repository.reset();
 
-    expect(repository.count()).toBe(0);
+    expect(await repository.count()).toBe(0);
     expect(repository.addSpy).not.toHaveBeenCalled(); // Cleared history
   });
 
@@ -137,7 +137,7 @@ describe('Mock Infrastructure (10 tests)', () => {
     const context2 = createMockContainer();
     const { repository: repo2 } = context2.mocks;
 
-    expect(repo1.count()).toBe(1);
-    expect(repo2.count()).toBe(0);
+    expect(await repo1.count()).toBe(1);
+    expect(await repo2.count()).toBe(0);
   });
 });

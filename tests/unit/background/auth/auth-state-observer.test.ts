@@ -180,6 +180,9 @@ describe('AuthStateObserver Unit Tests', () => {
 
         // Assert: Count is 2
         expect(observer.getSubscriberCount()).toBe(2);
+        // Suppress unused-var warnings for the captured handles; the contract
+        // is that subscribe() returns an unsubscribe function.
+        void unsub1; void unsub3;
 
         // Act: Clear all
         observer.clearSubscribers();

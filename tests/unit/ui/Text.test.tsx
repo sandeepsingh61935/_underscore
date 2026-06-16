@@ -69,7 +69,7 @@ describe('V2 Text', () => {
     describe('No legacy design system tokens', () => {
         it('does not use MD3 type scale classes', () => {
             const { container } = render(<Text variant="body">x</Text>);
-            const cls = container.firstChild?.className ?? '';
+            const cls = (container.firstChild as Element | null)?.className ?? '';
             expect(cls).not.toMatch(/text-display-large/);
             expect(cls).not.toMatch(/text-headline-medium/);
             expect(cls).not.toMatch(/text-body-large/);

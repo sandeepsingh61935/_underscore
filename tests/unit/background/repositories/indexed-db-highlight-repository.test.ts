@@ -1,17 +1,14 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { openDB, deleteDB } from 'idb';
-import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
+import { deleteDB } from 'idb';
+import { IndexedDBHighlightRepository, DB_NAME } from '@/background/repositories/indexed-db-highlight-repository';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 describe('IndexedDBHighlightRepository', () => {
     let repo: IndexedDBHighlightRepository;
     let mockLogger: any;
-
-    const DB_NAME = 'underscore_vault';
-    const STORE_NAME = 'highlights';
 
     const mockHighlight: HighlightDataV2 = {
         id: 'hl-1',

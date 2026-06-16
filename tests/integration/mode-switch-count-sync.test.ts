@@ -69,10 +69,11 @@ describe('Mode Switching - Count Synchronization', () => {
         modeManager.registerMode(sprintMode);
 
         // Mock broadcastCount function (simulates content.ts behavior)
-        broadcastCountSpy = vi.fn(() => {
+        broadcastCountSpy = vi.fn(async () => {
+            const count = await repository.count();
             browser.runtime.sendMessage({
                 type: 'HIGHLIGHT_COUNT_UPDATE',
-                count: repository.count(),
+                count,
             });
         });
 
@@ -91,7 +92,7 @@ describe('Mode Switching - Count Synchronization', () => {
             const selection2 = createMockSelection('Walk highlight 2');
             await walkMode.createHighlight(selection2, 'blue');
 
-            expect(repository.count()).toBe(2);
+            expect(await repository.count()).toBe(2);
 
             // Act - Switch to Sprint Mode (should clear Walk highlights)
             await modeManager.activateMode('local');
@@ -121,7 +122,7 @@ describe('Mode Switching - Count Synchronization', () => {
             const selection3 = createMockSelection('Sprint highlight 3');
             await sprintMode.createHighlight(selection3, 'green');
 
-            expect(repository.count()).toBe(3);
+            expect(await repository.count()).toBe(3);
 
             // Act - Switch to Walk Mode
             await modeManager.activateMode('ephemeral');

@@ -8,6 +8,17 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppProvider } from '../../../src/core/context/AppProvider';
 import { Header } from '../../../src/ui-system/components/layout/Header';
+import type { IDataProvider } from '../../../src/shared/interfaces/i-data-provider';
+
+const mockDataProvider: IDataProvider = {
+    getHighlights: vi.fn().mockResolvedValue([]),
+    getHighlightsByUrl: vi.fn().mockResolvedValue([]),
+    saveHighlight: vi.fn().mockResolvedValue(undefined),
+    deleteHighlight: vi.fn().mockResolvedValue(undefined),
+    getCollections: vi.fn().mockResolvedValue([]),
+    createCollection: vi.fn().mockResolvedValue('col-1'),
+    syncWithCloud: vi.fn().mockResolvedValue(undefined),
+} as unknown as IDataProvider;
 
 beforeEach(() => {
     window.matchMedia = vi.fn().mockReturnValue({
@@ -26,7 +37,7 @@ const user = {
 function Wrap({ children }: { children: React.ReactNode }) {
     return (
         <MemoryRouter>
-            <AppProvider>{children}</AppProvider>
+            <AppProvider dataProvider={mockDataProvider}>{children}</AppProvider>
         </MemoryRouter>
     );
 }

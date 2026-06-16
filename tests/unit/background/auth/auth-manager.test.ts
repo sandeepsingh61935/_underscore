@@ -12,7 +12,6 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { OAuthProvider } from '@/background/auth/interfaces/i-auth-manager';
 import { RateLimitError, OAuthRedirectError } from '@/background/auth/auth-errors';
 import { SupabaseClient, Session, User } from '@supabase/supabase-js';
-import { browser } from 'wxt/browser';
 
 vi.mock('wxt/browser', () => ({
     browser: {
@@ -68,7 +67,6 @@ class MockLogger implements ILogger {
 
 describe('AuthManager Unit Tests', () => {
     let authManager: AuthManager;
-    let mockTokenStore: MockTokenStore;
     let mockEventBus: EventBus;
     let mockLogger: MockLogger;
     let mockSupabase: any;
@@ -94,7 +92,6 @@ describe('AuthManager Unit Tests', () => {
     };
 
     beforeEach(() => {
-        mockTokenStore = new MockTokenStore();
         mockEventBus = new EventBus();
         mockLogger = new MockLogger();
 
@@ -255,9 +252,9 @@ describe('AuthManager Unit Tests', () => {
 
         // Trigger 3 concurrent sign-ins
         const results = await Promise.all([
-            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
-            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
-            authManager.signIn(OAuthProvider.GOOGLE).catch(e => ({ success: false })),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(() => ({ success: false })),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(() => ({ success: false })),
+            authManager.signIn(OAuthProvider.GOOGLE).catch(() => ({ success: false })),
         ]);
 
         expect(results.every(r => r.success)).toBe(true);
