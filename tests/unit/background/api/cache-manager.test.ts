@@ -238,7 +238,7 @@ describe('CacheManager', () => {
             // Assert
             expect(result).toEqual(highlights);
             expect(result).toHaveLength(2);
-            expect(result![0].id).toBe('1');
+            expect(result![0]!.id).toBe('1');
         });
     });
 
