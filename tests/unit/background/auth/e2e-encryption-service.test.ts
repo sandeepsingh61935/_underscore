@@ -292,8 +292,8 @@ describe('E2EEncryptionService', () => {
             const decrypted = await Promise.all(encrypted.map(e => service.decrypt(e)));
 
             // Verify
-            expect(decrypted[0].text).toBe('First highlight');
-            expect(decrypted[1].text).toBe('Second highlight');
+            expect(decrypted[0]!.text).toBe('First highlight');
+            expect(decrypted[1]!.text).toBe('Second highlight');
         });
 
         it('should maintain data integrity through multiple cycles', async () => {
