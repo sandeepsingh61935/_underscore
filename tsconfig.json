@@ -102,7 +102,9 @@
     // Preserve const enums
     "preserveConstEnums": true,
     // Specify what JSX code is generated
-    "jsx": "preserve"
+    "jsx": "preserve",
+    // Global type packages to include (provides ImportMeta.env via vite/client, chrome.* via @types/chrome, node globals via @types/node)
+    "types": ["vite/client", "chrome", "node"]
   },
   // ===================================
   // INCLUDE & EXCLUDE
