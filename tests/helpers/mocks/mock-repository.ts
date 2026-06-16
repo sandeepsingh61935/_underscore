@@ -23,7 +23,7 @@ export class MockRepository implements IHighlightRepository {
   findOverlappingSpy = vi.fn();
   addManySpy = vi.fn();
 
-  async add(item: HighlightDataV2): Promise<void> {
+  async add(item: HighlightDataV2, _options?: unknown): Promise<void> {
     this.addSpy(item);
     this.items.set(item.id, item);
   }
@@ -33,7 +33,7 @@ export class MockRepository implements IHighlightRepository {
     return this.items.get(id) || null;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, _options?: unknown): Promise<void> {
     this.removeSpy(id);
     this.items.delete(id);
   }
@@ -43,21 +43,21 @@ export class MockRepository implements IHighlightRepository {
     return Array.from(this.items.values());
   }
 
-  count(): number {
-    this.countSpy();
-    return this.items.size;
-  }
-
-  exists(id: string): boolean {
-    return this.items.has(id);
-  }
-
   async clear(): Promise<void> {
     this.clearSpy();
     this.items.clear();
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+  async count(): Promise<number> {
+    this.countSpy();
+    return this.items.size;
+  }
+
+  async exists(id: string): Promise<boolean> {
+    return this.items.has(id);
+  }
+
+  async update(id: string, updates: Partial<HighlightDataV2>, _options?: unknown): Promise<void> {
     this.updateSpy(id, updates);
     const existing = this.items.get(id);
     if (!existing) {
@@ -80,6 +80,11 @@ export class MockRepository implements IHighlightRepository {
     // or specific logic if needed for complex tests.
     // For now, return empty unless pre-configured.
     return [];
+  }
+
+  async findByUrl(url: string): Promise<HighlightDataV2[]> {
+    // Simple mock: filter items by checking against id prefix or content hash.
+    return Array.from(this.items.values()).filter((item) => item.contentHash.includes(url));
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {
