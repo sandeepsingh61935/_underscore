@@ -89,7 +89,7 @@ export class IndexedDBHighlightRepository implements IHighlightRepository {
         return highlights;
     }
 
-    async findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]> {
+    async findOverlapping(_range: SerializedRange): Promise<HighlightDataV2[]> {
         // Range overlap logic is complex in IndexedDB without spatial index.
         // For now, fetch all by URL (if we had URL context) or scan all?
         // Since findAll is expensive, we might skip this optimization for now 

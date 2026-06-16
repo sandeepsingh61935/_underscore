@@ -310,9 +310,8 @@ export class DualWriteRepository implements IHighlightRepository {
         type: 'add' | 'update' | 'remove',
         targetId: string,
         payload: any,
-        error: any
+        _error: any
     ): void {
-        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
         // Simple retry check: Offline OR 5xx error OR Network Error
         // For now, we queue almost everything except auth errors (which are handled by "if authenticated" check usually,
         // but token expiry might happen during filtering).

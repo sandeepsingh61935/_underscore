@@ -18,14 +18,13 @@ import {
 import { RepositoryFactory } from '@/shared/repositories';
 import {
   ModeTypeSchema,
-  StateMetadataSchema,
   type ModeType,
   type StateMetadata,
   type StateChangeEvent,
   type StateMetrics,
   type DebugState,
 } from '@/shared/schemas/mode-state-schemas';
-import { CircuitBreaker, CircuitBreakerOpenError } from '@/shared/utils/circuit-breaker';
+import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 

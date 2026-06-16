@@ -61,18 +61,23 @@ export abstract class BaseHighlightMode {
   protected async renderAndRegister(data: HighlightData): Promise<void> {
     const highlightName = getHighlightName(data.type, data.colorRole);
 
-    // Get existing semantic highlight group or create new one
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let semanticHighlight = (CSS as any).highlights.get(highlightName);
-    if (!semanticHighlight) {
-      semanticHighlight = new Highlight();
+    // Add ranges to semantic highlight group, but only when liveRanges is present.
+    // `liveRanges` is optional because Range cannot survive structured clone — payloads
+    // round-tripped through IDB/Supabase omit it. In that case the caller is expected
+    // to restore the Range from serialized data and re-render; this method still
+    // tracks the data internally so removeHighlight can succeed.
+    if (data.liveRanges) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (CSS as any).highlights.set(highlightName, semanticHighlight);
-    }
+      let semanticHighlight = (CSS as any).highlights.get(highlightName);
+      if (!semanticHighlight) {
+        semanticHighlight = new Highlight();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (CSS as any).highlights.set(highlightName, semanticHighlight);
+      }
 
-    // Add ranges to semantic highlight group
-    for (const range of data.liveRanges) {
-      semanticHighlight.add(range);
+      for (const range of data.liveRanges) {
+        semanticHighlight.add(range);
+      }
     }
 
     // Track internally
@@ -93,7 +98,7 @@ export abstract class BaseHighlightMode {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const semanticHighlight = (CSS as any).highlights.get(highlightName);
 
-    if (semanticHighlight) {
+    if (semanticHighlight && data.liveRanges) {
       for (const range of data.liveRanges) {
         if (semanticHighlight.has(range)) {
           semanticHighlight.delete(range);

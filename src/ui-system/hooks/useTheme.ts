@@ -37,14 +37,13 @@ export function useTheme() {
 
         applyTheme(theme);
 
-        // Listen for system theme changes when in 'system' mode
-        if (theme === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            const handleChange = () => applyTheme('system');
+        // Listen for system theme changes only in 'system' mode
+        if (theme !== 'system') return;
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => applyTheme('system');
 
-            mediaQuery.addEventListener('change', handleChange);
-            return () => mediaQuery.removeEventListener('change', handleChange);
-        }
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
     }, [theme]);
 
     const changeTheme = (newTheme: Theme) => {

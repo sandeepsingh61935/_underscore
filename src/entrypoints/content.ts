@@ -289,10 +289,9 @@ export default defineContentScript({
                   id: newId,
                   text,
                   contentHash,
-                  colorRole: existingHighlight.color || 'yellow',
+                  colorRole: (existingHighlight.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
                   type: 'underscore' as const,
                   ranges: serializedRanges,
-                  liveRanges: mergedRanges,
                   createdAt: new Date(),
                 };
 
@@ -691,10 +690,9 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             id: highlightData.id,
             text: highlightData.text,
             contentHash,
-            colorRole: highlightData.color || 'yellow',
+            colorRole: (highlightData.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
             type: 'underscore' as const,
             ranges: serializedRanges,
-            liveRanges: liveRanges,
             createdAt: highlightData.createdAt,
           });
 

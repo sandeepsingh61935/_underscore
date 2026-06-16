@@ -35,19 +35,18 @@ export function Dialog({ open, onClose, title, children, actions, hideCloseButto
     }, [open]);
 
     useEffect(() => {
-        if (open && dialogRef.current) {
-            const focusable = dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            const first = focusable[0] as HTMLElement;
-            const last = focusable[focusable.length - 1] as HTMLElement;
-            const handleTab = (e: KeyboardEvent): void => {
-                if (e.key !== 'Tab') return;
-                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
-                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
-            };
-            document.addEventListener('keydown', handleTab);
-            first?.focus();
-            return () => document.removeEventListener('keydown', handleTab);
-        }
+        if (!open || !dialogRef.current) return;
+        const focusable = dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const first = focusable[0] as HTMLElement;
+        const last = focusable[focusable.length - 1] as HTMLElement;
+        const handleTab = (e: KeyboardEvent): void => {
+            if (e.key !== 'Tab') return;
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+        };
+        document.addEventListener('keydown', handleTab);
+        first?.focus();
+        return () => document.removeEventListener('keydown', handleTab);
     }, [open]);
 
     if (!open) return null;

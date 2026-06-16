@@ -4,7 +4,7 @@
  * @author System Architect
  */
 
-import type { SyncEvent, SyncEventType } from './interfaces/i-event-store';
+import type { SyncEvent } from './interfaces/i-event-store';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type {

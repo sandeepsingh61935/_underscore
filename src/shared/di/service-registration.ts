@@ -30,6 +30,9 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { TokenStore } from '@/background/auth/token-store';
+import { AuthManager } from '@/background/auth/auth-manager';
+import { AuthStateObserver } from '@/background/auth/auth-state-observer';
 
 /**
  * Register all application services
@@ -276,8 +279,6 @@ export function registerServices(container: Container): void {
       },
     };
 
-    // eslint-disable-next-line no-undef
-    const { TokenStore } = require('@/background/auth/token-store');
     return new TokenStore(persistentStorage, logger);
   });
 
@@ -288,13 +289,10 @@ export function registerServices(container: Container): void {
   container.registerSingleton('authManager', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = container.resolve<any>('_supabaseSDK');
-    const tokenStore = container.resolve('tokenStore');
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
-    // eslint-disable-next-line no-undef
-    const { AuthManager } = require('@/background/auth/auth-manager');
-    return new AuthManager(supabase, tokenStore, eventBus, logger);
+    return new AuthManager(supabase, eventBus, logger);
   });
 
   /**
@@ -305,8 +303,6 @@ export function registerServices(container: Container): void {
     const eventBus = container.resolve<EventBus>('eventBus');
     const logger = container.resolve<ILogger>('logger');
 
-    // eslint-disable-next-line no-undef
-    const { AuthStateObserver } = require('@/background/auth/auth-state-observer');
     return new AuthStateObserver(eventBus, logger);
   });
 

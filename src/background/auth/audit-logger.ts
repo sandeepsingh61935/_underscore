@@ -140,7 +140,7 @@ export class AuditLogger implements IAuditLogger {
      */
     private async loadLogs(): Promise<AuditLogEntry[]> {
         const result = await chrome.storage.local.get(this.STORAGE_KEY);
-        return result[this.STORAGE_KEY] || [];
+        return (result[this.STORAGE_KEY] as AuditLogEntry[] | undefined) ?? [];
     }
 
     /**

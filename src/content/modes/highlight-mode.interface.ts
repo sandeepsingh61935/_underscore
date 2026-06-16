@@ -18,7 +18,7 @@ export interface HighlightData {
   id: string;
   text: string;
   contentHash: string; // SHA-256 hash for deduplication
-  url: string; // Page URL where highlight was created (normalized, without hash)
+  url?: string; // Page URL where highlight was created (normalized, without hash). Optional: data-layer payloads may omit it.
 
   /** Semantic color role (e.g., 'yellow', 'blue') - maps to CSS design tokens */
   colorRole: string;
@@ -28,7 +28,8 @@ export interface HighlightData {
 
   type: 'underscore';
   ranges: SerializedRange[];
-  liveRanges: Range[];
+  /** Optional in serialized payloads — Range cannot survive structured clone. */
+  liveRanges?: Range[];
   createdAt?: Date;
 
   /**

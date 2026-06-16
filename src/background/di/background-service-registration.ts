@@ -20,8 +20,6 @@ import { TokenStore } from '@/background/auth/token-store';
 import { AuthManager } from '@/background/auth/auth-manager';
 import { AuthStateObserver } from '@/background/auth/auth-state-observer';
 
-import type { ITokenStore } from '@/background/auth/interfaces/i-token-store';
-
 /**
  * Register all background services
  * 

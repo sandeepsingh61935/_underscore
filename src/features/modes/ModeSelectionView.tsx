@@ -24,12 +24,15 @@ export function ModeSelectionView({
 }: ModeSelectionViewProps = {}): React.ReactElement {
   const [sel, setSel] = useState<ModeType>(initialMode ?? 'local');
 
-  const modes = [
-    modeRegistry.get('ephemeral')!,
-    modeRegistry.get('local')!,
-    modeRegistry.get('cloud')!,
-    modeRegistry.get('ai')!,
-  ];
+  const allModes = [
+    modeRegistry.get('ephemeral'),
+    modeRegistry.get('local'),
+    modeRegistry.get('cloud'),
+    modeRegistry.get('ai'),
+  ].filter((m): m is ModeDefinition => m !== undefined);
+
+  const localModes = allModes.filter((m) => m.id === 'ephemeral' || m.id === 'local');
+  const cloudModes = allModes.filter((m) => m.id === 'cloud' || m.id === 'ai');
 
   const handleContinue = (): void => {
     const selectedMode = modeRegistry.get(sel);
@@ -66,11 +69,11 @@ export function ModeSelectionView({
       <div className="u-rule" style={{ margin: "12px 18px 0" }} />
 
       <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>On this device</div>
-      {[modes[0], modes[1]].map((m) => (
+      {localModes.map((m) => (
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
       ))}
       <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>In the cloud</div>
-      {[modes[2], modes[3]].map((m) => (
+      {cloudModes.map((m) => (
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
       ))}
 

@@ -8,9 +8,10 @@ import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/utils/logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
-import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
+import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
+import { OfflineQueueService } from '@/background/services/offline-queue-service';
 import { SupabaseClient } from '@/background/api/supabase-client';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
@@ -54,7 +55,6 @@ export function registerRepositoryComponents(container: Container): void {
      */
     container.registerSingleton<IHighlightRepository>('localRepository', () => {
         const logger = container.resolve<ILogger>('logger');
-        const { IndexedDBHighlightRepository } = require('@/background/repositories/indexed-db-highlight-repository');
         return new IndexedDBHighlightRepository(logger);
     });
 
@@ -82,7 +82,6 @@ export function registerRepositoryComponents(container: Container): void {
         const authManager = container.resolve<IAuthManager>('authManager');
         const logger = container.resolve<ILogger>('logger');
 
-        const { OfflineQueueService } = require('@/background/services/offline-queue-service');
         return new OfflineQueueService(cloudRepo, authManager, logger);
     });
 

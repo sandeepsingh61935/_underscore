@@ -14,6 +14,9 @@ import type { Container } from './container';
 import { registerBaseServices } from './base-service-registration';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import { TokenStore } from '@/background/auth/token-store';
+import { AuthManager } from '@/background/auth/auth-manager';
+import { AuthStateObserver } from '@/background/auth/auth-state-observer';
 
 /**
  * Register all background services
@@ -49,7 +52,6 @@ export function registerBackgroundServices(container: Container): void {
             },
         };
 
-        const { TokenStore } = require('@/background/auth/token-store');
         return new TokenStore(persistentStorage, logger);
     });
 
@@ -59,12 +61,10 @@ export function registerBackgroundServices(container: Container): void {
      */
     container.registerSingleton('authManager', () => {
         const supabase = container.resolve<any>('_supabaseSDK');
-        const tokenStore = container.resolve('tokenStore');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
-        const { AuthManager } = require('@/background/auth/auth-manager');
-        return new AuthManager(supabase, tokenStore, eventBus, logger);
+        return new AuthManager(supabase, eventBus, logger);
     });
 
     /**
@@ -75,7 +75,6 @@ export function registerBackgroundServices(container: Container): void {
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
-        const { AuthStateObserver } = require('@/background/auth/auth-state-observer');
         return new AuthStateObserver(eventBus, logger);
     });
 }

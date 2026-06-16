@@ -81,7 +81,7 @@ export function PopupRouter({
         { route: initialRoute, params: {} }
     ]);
 
-    const current = history[history.length - 1];
+    const current = history[history.length - 1]!;
     const canGoBack = history.length > 1;
 
     const navigate = useCallback((route: PopupRoute, params: RouteParams = {}) => {
@@ -93,7 +93,9 @@ export function PopupRouter({
         setHistory(prev => {
             if (prev.length <= 1) return prev;
             const newHistory = prev.slice(0, -1);
-            const lastEntry = newHistory[newHistory.length - 1];
+            // `newHistory` has the same length as `prev` minus one, so when
+            // prev.length > 1, newHistory.length >= 1 and the last entry exists.
+            const lastEntry = newHistory[newHistory.length - 1]!;
             onRouteChange?.(lastEntry.route, lastEntry.params);
             return newHistory;
         });

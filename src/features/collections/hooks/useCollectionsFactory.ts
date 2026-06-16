@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { DomainCollection } from './useCollections';
+import type { DomainCollection } from '@/shared/types/domain-collection';
 
 interface CollectionsResult {
     collections: DomainCollection[];

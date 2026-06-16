@@ -1,14 +1,21 @@
 import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * IPC Highlight Repository (Content Script Side)
- * 
+ *
  * Acts as a dumb terminal adapter that implements IHighlightRepository
  * but delegates all write operations to the Background Worker via Chrome IPC.
  * This ensures the Background Worker remains the single source of truth for the database.
  */
 export class IpcHighlightRepository implements IHighlightRepository {
+    constructor(_logger?: ILogger) {
+        // Logger is accepted for API symmetry with other repositories but not
+        // required: IPC calls are short-lived and the background worker is
+        // responsible for diagnostic logging on its side.
+    }
+
     async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({

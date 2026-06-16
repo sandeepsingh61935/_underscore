@@ -9,7 +9,6 @@ import type {
     IEventStore,
     SyncEvent,
     EventFilter,
-    SyncEventType,
 } from './interfaces/i-event-store';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 
@@ -284,7 +283,7 @@ export class EventStore implements IEventStore {
         }
 
         // Events are already sorted chronologically, return last one
-        return events[events.length - 1];
+        return events[events.length - 1] ?? null;
     }
 
     async count(): Promise<number> {

@@ -49,7 +49,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
     const [user, setUser] = useState<User | null>(initialUser);
 
     // Mode state - bridge to Chrome Storage via usePersistedMode
-    const { currentMode, modeReady, persistMode } = usePersistedMode(isAuthenticated);
+    const { currentMode, persistMode } = usePersistedMode(isAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - get from chrome.storage or system preference

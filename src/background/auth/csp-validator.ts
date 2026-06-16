@@ -116,12 +116,12 @@ export class CSPValidator {
         if (!scriptSrcMatch) {
             // No script-src means default-src applies
             const defaultSrcMatch = csp.match(/default-src\s+([^;]+)/);
-            if (defaultSrcMatch && defaultSrcMatch[1].includes('unsafe-inline')) {
+            if (defaultSrcMatch && (defaultSrcMatch[1] ?? '').includes('unsafe-inline')) {
                 return true;
             }
             return false;
         }
 
-        return scriptSrcMatch[1].includes('unsafe-inline');
+        return (scriptSrcMatch[1] ?? '').includes('unsafe-inline');
     }
 }

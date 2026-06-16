@@ -89,6 +89,18 @@ export class RepositoryFacade {
     }
   }
 
+  /**
+   * Reload facade cache from the underlying repository.
+   * Used after auth state changes (login/logout) so the cache reflects
+   * the new user's data instead of the previous session's.
+   */
+  async reload(): Promise<void> {
+    this.cache.clear();
+    this.contentHashIndex.clear();
+    this.initialized = false;
+    await this.initialize();
+  }
+
   // ============================================
   // SYNCHRONOUS API (from cache)
   // ============================================
