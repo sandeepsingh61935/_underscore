@@ -13,6 +13,7 @@ export interface SkeletonProps {
     className?: string;
     /** Animation style */
     animation?: 'pulse' | 'shimmer' | 'none';
+    style?: React.CSSProperties;
 }
 
 /**

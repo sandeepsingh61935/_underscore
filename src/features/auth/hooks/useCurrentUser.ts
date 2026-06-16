@@ -9,6 +9,7 @@ export interface User {
     displayName?: string;
     avatarUrl?: string;
     photoUrl?: string;
+    provider?: OAuthProviderType;
 }
 
 export interface AuthStateData {

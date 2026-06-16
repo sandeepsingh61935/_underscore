@@ -19,7 +19,7 @@ export function CollectionList({
     if (isLoading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 12 }}>
-                <Spinner size={24} />
+                <Spinner size="md" />
                 <Text variant="small" muted>Loading collections...</Text>
             </div>
         );

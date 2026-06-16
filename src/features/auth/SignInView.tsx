@@ -13,7 +13,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
  */
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
-    const { login, setIsLoading, isLoading } = useApp();
+    const { setIsLoading, isLoading } = useApp();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -161,7 +161,7 @@ export function SignInView(): React.ReactElement {
 
                     <Button
                         type="submit"
-                        variant="filled"
+                        variant="accent"
                         isLoading={isLoading}
                         className="w-full"
                     >
@@ -195,7 +195,7 @@ export function SignInView(): React.ReactElement {
                 <div className="u-sans" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
                     <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
                     <Button
-                        variant="text"
+                        variant="ghost"
                         type="button"
                         onClick={() => setIsSignIn(!isSignIn)}
                         className="px-2 font-medium underline"

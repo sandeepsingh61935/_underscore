@@ -73,7 +73,7 @@ export function CollectionsView({
         {/* Mode Switcher (New Navigation Fix) */}
         {mode && onModeChange && (
           <button
-            onClick={() => onModeChange('focus')} // Simplest way to go back to selection or just use a dedicated back handler?
+            onClick={() => onModeChange('local')} // Simplest way to go back to selection or just use a dedicated back handler?
             // Actually, the user wants "Change Mode".
             // In PopupRouter, we might want to go back to ModeSelectionView
             // But here we just have onModeChange.
