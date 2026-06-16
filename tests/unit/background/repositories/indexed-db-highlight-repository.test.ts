@@ -55,7 +55,7 @@ describe('IndexedDBHighlightRepository', () => {
 
         const results = await repo.findByUrl('https://example.com');
         expect(results).toHaveLength(1);
-        expect(results[0].id).toBe('hl-1');
+        expect(results[0]!.id).toBe('hl-1');
     });
 
     it('should update a highlight', async () => {
