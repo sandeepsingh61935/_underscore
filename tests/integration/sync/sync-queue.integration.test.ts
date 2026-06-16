@@ -300,8 +300,8 @@ describe('SyncQueue Integration Tests', () => {
 
             // Verify chronological order maintained
             for (let i = 1; i < dequeuedEvents.length; i++) {
-                expect(dequeuedEvents[i].timestamp).toBeGreaterThanOrEqual(
-                    dequeuedEvents[i - 1].timestamp
+                expect(dequeuedEvents[i]!.timestamp).toBeGreaterThanOrEqual(
+                    dequeuedEvents[i - 1]!.timestamp
                 );
             }
 
