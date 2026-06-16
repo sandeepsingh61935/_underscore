@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
-export type Theme = 'light' | 'dark' | 'sepia';
+export type Theme = 'light' | 'dark';
 export type ThemePreference = Theme | 'system';
 
 interface ThemeContextValue {
@@ -54,7 +54,7 @@ function loadPreference(): ThemePreference {
     if (typeof window === 'undefined') return 'system';
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored && ['light', 'dark', 'sepia', 'system'].includes(stored)) {
+        if (stored && ['light', 'dark', 'system'].includes(stored)) {
             return stored as ThemePreference;
         }
     } catch {
@@ -84,7 +84,7 @@ function applyTheme(theme: Theme) {
     const root = document.documentElement;
 
     // Remove existing theme classes
-    root.classList.remove('light', 'dark', 'sepia');
+    root.classList.remove('light', 'dark');
 
     // Add new theme class
     root.classList.add(theme);
@@ -164,10 +164,11 @@ export function useThemeToggle() {
     const { preference, setTheme } = useTheme();
 
     const cycle = useCallback(() => {
-        const themes: ThemePreference[] = ['light', 'dark', 'sepia', 'system'];
+        const themes: ThemePreference[] = ['light', 'dark', 'system'];
         const currentIndex = themes.indexOf(preference);
         const nextIndex = (currentIndex + 1) % themes.length;
-        setTheme(themes[nextIndex]);
+        // (currentIndex + 1) % length is always in [0, length-1]
+        setTheme(themes[nextIndex]!);
     }, [preference, setTheme]);
 
     return { cycle, current: preference };

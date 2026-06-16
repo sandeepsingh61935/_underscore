@@ -23,7 +23,7 @@ import { PopupRouter, Route, Switch, useRouter } from '../../ui-system/router/Po
 describe('ThemeProvider', () => {
     beforeEach(() => {
         localStorage.clear();
-        document.documentElement.classList.remove('light', 'dark', 'sepia');
+        document.documentElement.classList.remove('light', 'dark');
     });
 
     it('should default to system theme', async () => {
@@ -70,7 +70,7 @@ describe('ThemeProvider', () => {
     it('should persist theme to localStorage', async () => {
         function TestComponent() {
             const { setTheme } = useTheme();
-            return <button onClick={() => setTheme('sepia')}>Set Sepia</button>;
+            return <button onClick={() => setTheme('light')}>Set Light</button>;
         }
 
         render(
@@ -79,10 +79,10 @@ describe('ThemeProvider', () => {
             </ThemeProvider>
         );
 
-        fireEvent.click(screen.getByText('Set Sepia'));
+        fireEvent.click(screen.getByText('Set Light'));
 
         await waitFor(() => {
-            expect(localStorage.getItem('underscore-theme-preference')).toBe('sepia');
+            expect(localStorage.getItem('underscore-theme-preference')).toBe('light');
         });
     });
 });

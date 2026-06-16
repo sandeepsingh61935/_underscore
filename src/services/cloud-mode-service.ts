@@ -1,9 +1,8 @@
-import { IndexedDBStorage } from './indexeddb-storage';
 import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine';
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 
 /**
  * @file cloud-mode-service.ts
@@ -78,12 +77,11 @@ export class CloudModeService {
     options?: RepositoryOptions
   ): Promise<void> {
     try {
-      // Generate multi-selectors from the DOM Range
-      const selectors = this.selectorEngine.createSelectors(range);
-
       // Store using repository pattern (local, cloud, or dual-write)
-      // Note: We embed selectors directly into the highlight ranges
-      // This eliminates the need for separate IndexedDB selector storage
+      // Note: We embed a W3C TextQuoteSelector directly into the highlight
+      // ranges; this eliminates the need for separate IndexedDB selector
+      // storage. The MultiSelectorEngine is still used for restoration
+      // via restoreHighlight().
 
       // key: Ensure we don't save DOM objects (liveRanges) to IndexedDB
       // clone the object to avoid mutating the runtime instance if shared
@@ -94,11 +92,20 @@ export class CloudModeService {
         delete (payload as any).liveRanges;
       }
 
-      // Attach the generated selectors to the first range
+      // Attach a TextQuoteSelector to the first range
       if (payload.ranges && payload.ranges.length > 0) {
+        const first = payload.ranges[0]!;
         payload.ranges[0] = {
-          ...payload.ranges[0],
-          selector: selectors
+          xpath: first.xpath,
+          startOffset: first.startOffset,
+          endOffset: first.endOffset,
+          text: first.text,
+          textBefore: first.textBefore,
+          textAfter: first.textAfter,
+          selector: {
+            type: 'TextQuoteSelector',
+            exact: highlight.text,
+          },
         };
       }
 
@@ -380,39 +387,6 @@ export class CloudModeService {
 }
 
 /**
- * Singleton instance
+ * Singleton helper removed. Construct CloudModeService directly (typically
+ * via the DI container) so dependencies are explicit and testable.
  */
-let instance: CloudModeService | null = null;
-
-/**
- * Get or create Vault Mode Service instance
- *
- * Implements Singleton pattern with lazy initialization.
- * Uses InMemoryHighlightRepository for backward compatibility.
- * To use DualWriteRepository (cloud sync), construct via DI container instead.
- *
- * @returns CloudModeService instance
- * @deprecated Use DI container for better testability and cloud sync support
- */
-export function getCloudModeService(): CloudModeService {
-  if (!instance) {
-    // Import here to avoid circular dependencies
-    const { InMemoryHighlightRepository } = require('@/background/repositories/in-memory-highlight-repository');
-
-    const repository = new InMemoryHighlightRepository();
-    const storage = new IndexedDBStorage();
-    const selectorEngine = new MultiSelectorEngine();
-    const logger: ILogger = {
-      // eslint-disable-next-line no-console
-      debug: (msg, ...args) => console.debug(msg, ...args),
-      // eslint-disable-next-line no-console
-      info: (msg, ...args) => console.info(msg, ...args),
-      warn: (msg, ...args) => console.warn(msg, ...args),
-      error: (msg, ...args) => console.error(msg, ...args),
-      setLevel: () => { },
-      getLevel: () => 1,
-    };
-    instance = new CloudModeService(repository, selectorEngine, logger);
-  }
-  return instance;
-}

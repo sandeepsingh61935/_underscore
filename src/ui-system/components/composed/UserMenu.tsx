@@ -1,4 +1,4 @@
-import { Settings, LogOut, Moon, Sun, Monitor, Palette, Check, Lock } from 'lucide-react';
+import { Settings, LogOut, Moon, Sun, Palette, Check, Lock } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -20,7 +20,7 @@ export interface UserMenuUser {
   photoUrl?: string;
 }
 
-export type ThemeOption = 'light' | 'dark' | 'sepia';
+export type ThemeOption = 'light' | 'dark';
 
 export interface UserMenuProps {
   user: UserMenuUser;
@@ -39,7 +39,6 @@ export interface UserMenuProps {
 const themes: Array<{ id: ThemeOption; label: string; icon: React.ReactNode }> = [
   { id: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
   { id: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
-  { id: 'sepia', label: 'Sepia', icon: <Monitor className="w-4 h-4" /> },
 ];
 
 export function UserMenu({

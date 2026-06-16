@@ -278,7 +278,8 @@ export class KeyManager implements IKeyManager {
         let binary = '';
         const length = bytes.byteLength;
         for (let i = 0; i < length; i++) {
-            binary += String.fromCharCode(bytes[i]);
+            // Loop bound guarantees `bytes[i]` is defined here.
+            binary += String.fromCharCode(bytes[i] as number);
         }
         return btoa(binary);
     }

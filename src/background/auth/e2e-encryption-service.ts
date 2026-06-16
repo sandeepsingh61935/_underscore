@@ -71,8 +71,12 @@ export class E2EEncryptionService implements IEncryptionService {
                 new Uint8Array(encryptedData)
             );
 
-            // Convert to base64
-            const encryptedBase64 = this.arrayBufferToBase64(combined.buffer);
+            // Convert to base64. Copy through a fresh ArrayBuffer because
+            // `combined.buffer` is typed as ArrayBufferLike (could be
+            // SharedArrayBuffer under TS 5.7+ WebCrypto types).
+            const combinedCopy = new Uint8Array(combined.byteLength);
+            combinedCopy.set(combined);
+            const encryptedBase64 = this.arrayBufferToBase64(combinedCopy.buffer as ArrayBuffer);
 
             // Get key ID from stored key
             const keyId = await this.getKeyIdForUser(data.userId);
@@ -115,11 +119,19 @@ export class E2EEncryptionService implements IEncryptionService {
             // Split: encryptedAesKey (256 bytes) + iv (12 bytes) + encryptedData (rest)
             const { encryptedAesKey, iv, encryptedData } = this.splitEncryptedParts(combinedBytes);
 
+            // Copy into a fresh ArrayBuffer-backed Uint8Array so the WebCrypto
+            // API accepts it under TS 5.7+ types (BufferSource requires
+            // ArrayBufferView<ArrayBuffer>, not the more general
+            // ArrayBufferView<ArrayBufferLike>).
+            const rsaInput = new Uint8Array(encryptedAesKey);
+            const rsaCopy = new Uint8Array(rsaInput.byteLength);
+            rsaCopy.set(rsaInput);
+
             // Decrypt AES key with RSA-OAEP
             const aesKeyBytes = await crypto.subtle.decrypt(
                 { name: 'RSA-OAEP' },
                 privateKey,
-                encryptedAesKey
+                rsaCopy
             );
 
             // Import AES key
@@ -131,11 +143,19 @@ export class E2EEncryptionService implements IEncryptionService {
                 ['decrypt']
             );
 
-            // Decrypt data with AES-GCM
+            // Decrypt data with AES-GCM. `iv` from splitEncryptedParts is
+            // already a Uint8Array backed by a fresh ArrayBuffer; copy again
+            // for type safety.
+            const aesInput = new Uint8Array(encryptedData.byteLength);
+            aesInput.set(encryptedData);
+            // Copy iv into a fresh ArrayBuffer-backed Uint8Array so it
+            // satisfies WebCrypto's BufferSource requirement.
+            const ivCopy = new Uint8Array(iv.byteLength);
+            ivCopy.set(iv);
             const decryptedBytes = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv },
+                { name: 'AES-GCM', iv: ivCopy },
                 aesKey,
-                encryptedData
+                aesInput
             );
 
             // Deserialize data
@@ -198,7 +218,11 @@ export class E2EEncryptionService implements IEncryptionService {
             throw new Error(`No keys found for user: ${userId}`);
         }
 
-        return result[storageKey].keyId;
+        const stored = result[storageKey] as { keyId?: string };
+        if (!stored.keyId) {
+            throw new Error(`Stored key for user ${userId} has no keyId`);
+        }
+        return stored.keyId;
     }
 
     /**
@@ -209,7 +233,8 @@ export class E2EEncryptionService implements IEncryptionService {
         let binary = '';
         const length = bytes.byteLength;
         for (let i = 0; i < length; i++) {
-            binary += String.fromCharCode(bytes[i]);
+            // Loop bound guarantees `bytes[i]` is defined here.
+            binary += String.fromCharCode(bytes[i] as number);
         }
         return btoa(binary);
     }

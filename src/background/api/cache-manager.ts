@@ -48,8 +48,9 @@ export class CacheManager<K, V> implements ICacheManager<K, V> {
     set(key: K, value: V): void {
         // Check if cache is full
         if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
-            // Evict oldest entry (first in Map)
-            const oldestKey = this.cache.keys().next().value;
+            // Evict oldest entry (first in Map). The size check above
+            // guarantees a key exists at this point.
+            const oldestKey = this.cache.keys().next().value as K;
             this.cache.delete(oldestKey);
 
             this.logger.debug('Cache eviction (LRU)', {
