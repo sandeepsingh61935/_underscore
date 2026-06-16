@@ -189,8 +189,8 @@ describe('ConflictDetector', () => {
 
             expect(grouped.size).toBe(2);
             expect(grouped.get('h-1')).toHaveLength(2);
-            expect(grouped.get('h-1')![0].id).toBe('e1'); // Sorted by time
-            expect(grouped.get('h-1')![1].id).toBe('e3');
+            expect(grouped.get('h-1')![0]!.id).toBe('e1'); // Sorted by time
+            expect(grouped.get('h-1')![1]!.id).toBe('e3');
         });
     });
 
