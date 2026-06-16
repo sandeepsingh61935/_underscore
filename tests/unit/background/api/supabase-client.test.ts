@@ -121,7 +121,7 @@ describe('SupabaseClient', () => {
                 url: expect.any(String), // window.location.href
                 text: 'Test highlight text',
                 color_role: 'yellow',
-                selectors: highlightData.ranges[0].selector,
+                selectors: highlightData.ranges[0]!.selector,
                 content_hash: 'a'.repeat(64),
                 created_at: '2024-01-01T00:00:00.000Z',
                 updated_at: expect.any(String),
@@ -154,7 +154,7 @@ describe('SupabaseClient', () => {
                 updated_at: expect.any(String),
             });
             // Verify text and content_hash NOT in payload
-            const payload = mockUpdate.mock.calls[0][0];
+            const payload = mockUpdate.mock.calls[0]![0];
             expect(payload).not.toHaveProperty('text');
             expect(payload).not.toHaveProperty('content_hash');
         });
@@ -316,9 +316,9 @@ describe('SupabaseClient', () => {
             // Assert - CRITICAL: Events MUST be in chronological order
             expect(mockGt).toHaveBeenCalledWith('timestamp', since);
             expect(mockOrder).toHaveBeenCalledWith('timestamp', { ascending: true });
-            expect(result[0].event_id).toBe('1');
-            expect(result[1].event_id).toBe('2');
-            expect(result[2].event_id).toBe('3');
+            expect(result[0]!.event_id).toBe('1');
+            expect(result[1]!.event_id).toBe('2');
+            expect(result[2]!.event_id).toBe('3');
         });
     });
 
@@ -506,7 +506,7 @@ describe('SupabaseClient', () => {
             await client.createHighlight(highlightData);
 
             // Assert: Verify full text sent (no truncation)
-            const insertedData = mockInsert.mock.calls[0][0];
+            const insertedData = mockInsert.mock.calls[0]![0];
             expect(insertedData.text).toHaveLength(1.5 * 1024 * 1024);
             expect(insertedData.text).toBe(largeText);
         });
@@ -632,7 +632,7 @@ describe('SupabaseClient', () => {
             await client.createHighlight(highlightData);
 
             // Assert: Exact match after round-trip
-            const insertedData = mockInsert.mock.calls[0][0];
+            const insertedData = mockInsert.mock.calls[0]![0];
             expect(insertedData.text).toBe(unicodeText);
             expect(insertedData.text).toContain('👍');
             expect(insertedData.text).toContain('日本語');
@@ -693,7 +693,7 @@ describe('SupabaseClient', () => {
             await client.updateHighlight('h1', updates);
 
             // Assert
-            const payload = mockUpdate.mock.calls[0][0];
+            const payload = mockUpdate.mock.calls[0]![0];
             expect(payload['text']).toBe('Updated text');
             expect(payload).not.toHaveProperty('color_role'); // undefined ignored
         });
