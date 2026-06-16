@@ -296,7 +296,7 @@ describe('Integration: Encryption Components', () => {
 
             expect(results).toHaveLength(2);
             // Plaintext should pass through unchanged
-            expect(results[1].text).toBe('Plaintext legacy highlight');
+            expect(results[1]!.text).toBe('Plaintext legacy highlight');
         });
 
         it('should encrypt events before push', async () => {
@@ -357,7 +357,7 @@ describe('Integration: Encryption Components', () => {
 
             const totalTime = performance.now() - startTime;
 
-            expect(results[0].text).toBe(highlight.text);
+            expect(results[0]!.text).toBe(highlight.text);
             expect(totalTime).toBeLessThan(500);
         });
     });
