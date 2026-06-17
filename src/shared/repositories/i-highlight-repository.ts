@@ -1,16 +1,19 @@
 /**
  * @file i-highlight-repository.ts
- * @description Repository interface for highlight CRUD operations
+ * @description Repository interfaces for highlight CRUD operations
  *
- * Provides abstraction over underlying storage mechanism
- * Implements Repository Pattern from quality framework
- * Extends generic IRepository<T> with highlight-specific operations
+ * Per ADR-005, the IHighlightRepository interface is split into:
+ *   - IReadableHighlightRepository: read-side operations
+ *   - IWritableHighlightRepository: write-side operations
+ *   - IHighlightRepository: union of both
  *
- * Consolidated from src/background/repositories/i-highlight-repository.ts
- * (had RepositoryOptions + findByUrl) and the prior bare shared version.
+ * Local/Supabase/InMemory adapters implement the union. The content-side
+ * IPC adapter implements IWritableHighlightRepository only — reads go
+ * through RepositoryFacade on the content side (synchronous, in-memory).
+ *
+ * Implements Repository Pattern from quality framework.
  */
 
-import type { IRepository } from '../interfaces/i-repository';
 import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-schema';
 
 /**
@@ -25,71 +28,48 @@ export interface RepositoryOptions {
 }
 
 /**
- * Repository interface for highlight data access
- *
- * Single source of truth for all highlight data
- * Abstracts storage implementation details
- *
- * @extends IRepository<HighlightDataV2>
- * Inherits base CRUD operations (add, get, remove, getAll, count, clear)
- * Adds highlight-specific query methods
+ * Read-side repository contract. Storage backends (IndexedDB, Supabase,
+ * InMemory) implement this; the content-side IPC adapter does not.
  */
-export interface IHighlightRepository extends IRepository<HighlightDataV2> {
-  // ============================================
-  // Overrides with Options (for Loop Prevention)
-  // ============================================
-
-  add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void>;
-
-  remove(id: string, options?: RepositoryOptions): Promise<void>;
-
-  // ============================================
-  // Valid Method Signatures (inherited from IRepository)
-  // ============================================
-  // findById(id: string): Promise<HighlightDataV2 | null>
-  // findAll(): Promise<HighlightDataV2[]>
-  // count(): Promise<number>
-  // exists(id: Promise<boolean>>
-  // clear(): Promise<void>
-
-  // ============================================
-  // Update Operation (extends base CRUD)
-  // ============================================
-
-  /**
-   * Update existing highlight
-   * Throws error if highlight not found
-   */
-  update(id: string, updates: Partial<HighlightDataV2>, options?: RepositoryOptions): Promise<void>;
-
-  // ============================================
-  // Highlight-Specific Queries
-  // ============================================
-
-  /**
-   * Find highlight by content hash
-   * Used for deduplication
-   */
-  findByContentHash(hash: string): Promise<HighlightDataV2 | null>;
-
-  /**
-   * Find highlights that overlap with given range
-   * Returns empty array if no overlaps
-   */
-  findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
-
-  /**
-   * Find highlights by page URL
-   */
+export interface IReadableHighlightRepository {
+  findById(id: string): Promise<HighlightDataV2 | null>;
+  findAll(): Promise<HighlightDataV2[]>;
+  count(): Promise<number>;
+  exists(id: string): Promise<boolean>;
   findByUrl(url: string): Promise<HighlightDataV2[]>;
+  findByContentHash(hash: string): Promise<HighlightDataV2 | null>;
+  findOverlapping(range: SerializedRange): Promise<HighlightDataV2[]>;
+}
 
-  // ============================================
-  // Bulk Operations
-  // ============================================
-
-  /**
-   * Add multiple highlights in batch
-   * More efficient than individual adds
-   */
+/**
+ * Write-side repository contract. Implemented by every adapter,
+ * including the content-side IPC adapter.
+ *
+ * `clear` lives here because it is destructive: it removes all rows in
+ * the storage layer. The content-side IPC adapter does NOT implement
+ * clear (no IPC_HIGHLIGHT_CLEAR message exists). When a mode calls clear,
+ * it must route through the facade, not the IPC adapter.
+ */
+export interface IWritableHighlightRepository {
+  add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void>;
+  update(id: string, updates: Partial<HighlightDataV2>, options?: RepositoryOptions): Promise<void>;
+  remove(id: string, options?: RepositoryOptions): Promise<void>;
+  clear(): Promise<void>;
   addMany(highlights: HighlightDataV2[]): Promise<void>;
+}
+
+/**
+ * Combined repository contract. Storage backends implement both halves.
+ *
+ * The facade and orchestrator use this union because they need to perform
+ * both reads and writes. Modes that hold a content-side reference should
+ * prefer the narrower IWritableHighlightRepository or the in-memory
+ * RepositoryFacade for reads.
+ */
+export interface IHighlightRepository
+  extends IReadableHighlightRepository, IWritableHighlightRepository {
+  // Convenience accessor for the generic IRepository<T> shape (used by
+  // some legacy helpers that don't care which half of the contract they
+  // call).
+  add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void>;
 }

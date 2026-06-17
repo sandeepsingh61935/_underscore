@@ -2,7 +2,7 @@ import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2, TextQuoteSelector } from '@/shared/schemas/highlight-schema';
-import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { TextQuoteFinder } from '@/content/utils/text-quote-finder';
 
 /**
@@ -16,51 +16,28 @@ type HighlightSelector = TextQuoteSelector | MultiSelector;
 /**
  * @file cloud-mode-service.ts
  * @description Vault Mode Service - Integration Layer for highlight persistence
- * 
+ *
  * Coordinates between Multi-Selector Engine and storage layer.
  * Implements the Facade pattern following quality framework guidelines.
- * 
- * Architecture:
- * - Facade Pattern: Hides complexity of multi-selector + storage coordination
- * - Dependency Injection: Accepts repository via constructor
- * - Single Responsibility: Only handles integration, delegates to specialists
  *
- * Flow:
- * 1. User creates highlight → saveHighlight()
- * 2. Generate selectors from DOM Range → MultiSelectorEngine.createSelectors()
- * 3. Store highlight + selectors → IHighlightRepository.add()
- *
- * Restoration:
- * 1. Load from storage  → IHighlightRepository.findAll()
- * 2. Restore DOM Range → MultiSelectorEngine.restore()
- * 3. Render highlight in UI
- *
- * @architecture Applies quality framework standards:
- * - JSDoc comments for all public methods
- * - Dependency injection via constructor
- * - Type-safe with strict TypeScript
- * - Proper error handling and logging
+ * Per ADR-005, the service holds a RepositoryFacade (synchronous read/write
+ * over the in-memory cache). Writes are fire-and-forget; reads are
+ * immediate. This replaces the prior IHighlightRepository dependency
+ * because the IPC adapter (the only thing available in content context)
+ * is write-only.
  */
 export class CloudModeService {
-  private repository: IHighlightRepository;
+  private facade: RepositoryFacade;
   private selectorEngine: MultiSelectorEngine;
   private quoteFinder: TextQuoteFinder;
   private logger: ILogger;
 
-  /**
-   * Creates a new CloudModeService instance
-   * 
-   * @param repository - Highlight repository for persistence (can be local, cloud, or dual-write)
-   * @param storage - IndexedDBStorage for event sourcing and collections (legacy)
-   * @param selectorEngine - Multi-selector engine for DOM Range operations
-   * @param logger - Logger instance for debugging and monitoring
-   */
   constructor(
-    repository: IHighlightRepository,
+    facade: RepositoryFacade,
     selectorEngine: MultiSelectorEngine,
     logger: ILogger
   ) {
-    this.repository = repository;
+    this.facade = facade;
     this.selectorEngine = selectorEngine;
     this.quoteFinder = new TextQuoteFinder();
     this.logger = logger;
@@ -68,12 +45,12 @@ export class CloudModeService {
 
 
   /**
-   * Save a highlight to storage (local, cloud, or both depending on repository implementation)
+   * Save a highlight via the facade
    *
    * Flow:
    * 1. Generate multi-selectors from DOM Range
-   * 2. Store highlight via repository pattern
-   * 3. Create event for sync tracking
+   * 2. Store highlight via facade.add
+   * 3. Facade persists asynchronously in the background
    *
    * @param highlight - Highlight data to save
    * @param range - DOM Range for selector generation
@@ -84,8 +61,7 @@ export class CloudModeService {
    */
   async saveHighlight(
     highlight: HighlightDataV2,
-    _range: Range,
-    options?: RepositoryOptions
+    _range: Range
   ): Promise<void> {
     try {
       // Store using repository pattern (local, cloud, or dual-write)
@@ -120,13 +96,12 @@ export class CloudModeService {
         };
       }
 
-      await this.repository.add(payload, options);
+      this.facade.add(payload);
 
       this.logger.info('[VAULT] Highlight saved', {
         id: payload.id,
         text: payload.text.substring(0, 50),
-        repository: 'DualWrite',
-        skippedSync: !!options?.skipSync
+        repository: 'Facade',
       });
     } catch (error) {
       this.logger.error('[VAULT] Failed to save highlight', error as Error, {
@@ -161,7 +136,7 @@ export class CloudModeService {
       this.logger.info(`[VAULT] [QUERY] Querying highlights for URL: ${url}`);
 
       // Fetch from Repository (DualWriteRepo handles local + cloud merging)
-      const highlights = await this.repository.findByUrl(url);
+      const highlights = this.facade.findByUrl(url);
 
       this.logger.info(`[VAULT] [HIT] Found ${highlights.length} highlights from repository`);
 
@@ -352,15 +327,12 @@ export class CloudModeService {
 
   /**
    * Find a highlight by its content hash (for deduplication)
-   * 
+   *
    * @param contentHash - Hash of the text content
    * @returns Highlight object if found, null otherwise
    */
   async findByContentHash(contentHash: string): Promise<HighlightDataV2 | null> {
-    if ('findByContentHash' in this.repository && typeof (this.repository as any).findByContentHash === 'function') {
-      return (this.repository as any).findByContentHash(contentHash);
-    }
-    return null;
+    return this.facade.findByContentHash(contentHash) ?? null;
   }
 
   /**
@@ -372,7 +344,7 @@ export class CloudModeService {
     try {
       // Delete from repository only (Single Source of Truth)
       // Implementation handles local/cloud dual write
-      await this.repository.remove(highlightId);
+      this.facade.remove(highlightId);
 
       this.logger.info('[VAULT] Highlight deleted', highlightId);
     } catch (error) {
@@ -416,10 +388,7 @@ export class CloudModeService {
    * Note: This only clears local repository now
    */
   async clearAll(): Promise<void> {
-    // Only clear if repository supports it (optional interface)
-    if ('clear' in this.repository && typeof (this.repository as any).clear === 'function') {
-      await (this.repository as any).clear();
-    }
+    this.facade.clear();
     this.logger.info('[VAULT] Vault Mode repository data cleared');
   }
 }

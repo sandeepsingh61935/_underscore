@@ -24,17 +24,13 @@ import type { IMessageBus } from '../../shared/interfaces/i-message-bus';
 
 // Build a MessageBus that proxies send() to the mocked chrome.runtime.sendMessage.
 const mockMessageBus: IMessageBus = {
-    send: vi.fn(async <T,>(_target, message) => {
+    send: vi.fn(async (_target: 'background' | 'content' | 'popup', message: unknown) => {
         const response = await mockChrome.runtime.sendMessage(message);
-        return response as T;
+        return response;
     }),
     subscribe: vi.fn(() => () => {}),
     publish: vi.fn(async () => {}),
 } as unknown as IMessageBus;
-
-const wrapWithBus = (ui: React.ReactElement) => (
-    <MessageBusProvider messageBus={mockMessageBus}>{ui}</MessageBusProvider>
-);
 
 describe('ThemeProvider', () => {
     beforeEach(() => {

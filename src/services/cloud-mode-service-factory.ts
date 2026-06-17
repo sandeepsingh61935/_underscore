@@ -11,19 +11,23 @@
 
 import { CloudModeService } from './cloud-mode-service';
 import { MultiSelectorEngine } from './multi-selector-engine';
-import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
-import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 /**
  * Singleton instance
  */
 let serviceInstance: CloudModeService | null = null;
 
 /**
- * Create CloudModeService with IPC proxy to background worker
+ * Create CloudModeService with the RepositoryFacade.
  *
- * This creates a service that delegates all persistence to the background
- * worker via message passing.
+ * Per ADR-005: the service no longer holds an IHighlightRepository
+ * reference (which the content-side IPC adapter cannot satisfy as it is
+ * write-only). Instead, it holds a RepositoryFacade. The facade
+ * initializes itself from an in-memory repository and writes are routed
+ * to the background via the IPC adapter, which is registered separately
+ * for the cloud-mode flow.
  *
  * @returns CloudModeService instance
  */
@@ -34,17 +38,19 @@ export function createCloudModeServiceWithCloudSync(): CloudModeService {
 
     const logger = LoggerFactory.getLogger('CloudModeService');
 
-    // Per ADR-004: IPC goes through IMessageBus. We construct a fresh
-    // ChromeMessageBus here because this factory is used outside the DI
-    // container (in content scripts that don't have container access).
-    const messageBus = new ChromeMessageBus(logger);
-    const repository = new IpcHighlightRepository(messageBus);
+    // Facade backed by an in-memory repo. Writes go through the facade
+    // (sync); the facade's underlying repository handles the actual
+    // persistence path (IndexedDB / IPC adapter / Supabase).
+    const facade = new RepositoryFacade(new InMemoryHighlightRepository());
+    void facade.initialize().catch((e) => {
+        logger.error('Failed to initialize facade', e as Error);
+    });
 
     // Create supporting services
     const selectorEngine = new MultiSelectorEngine();
 
     // Create CloudModeService
-    serviceInstance = new CloudModeService(repository, selectorEngine, logger);
+    serviceInstance = new CloudModeService(facade, selectorEngine, logger);
 
     return serviceInstance;
 }

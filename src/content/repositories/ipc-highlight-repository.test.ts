@@ -30,7 +30,7 @@ describe('IpcHighlightRepository IPC payload contract', () => {
       send: vi.fn(async (target: 'background' | 'content' | 'popup', message: unknown): Promise<unknown> => {
         sentMessages.push({ target, message });
         captured.push(message);
-        return { success: true, data: makeHighlight() };
+        return { success: true };
       }),
       subscribe: vi.fn(() => () => {}),
       publish: vi.fn(async () => {}),
@@ -62,23 +62,27 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     expect(parsed.timestamp).toBeGreaterThan(0);
   });
 
-  it('findByUrl: payload passes MessageSchema', async () => {
-    await repo.findByUrl('https://example.com');
-    const parsed = MessageSchema.parse(captured[0]);
-    expect(parsed.type).toBe('IPC_HIGHLIGHTS_FIND_BY_URL');
-    expect(parsed.timestamp).toBeGreaterThan(0);
-  });
-
-  it('findByContentHash: payload passes MessageSchema', async () => {
-    await repo.findByContentHash('hash-1');
-    const parsed = MessageSchema.parse(captured[0]);
-    expect(parsed.type).toBe('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH');
-    expect(parsed.timestamp).toBeGreaterThan(0);
-  });
-
   it('send always targets background', async () => {
     await repo.add(makeHighlight());
-    await repo.findByUrl('https://example.com');
+    await repo.remove('h-1');
     expect(sentMessages.every((m) => m.target === 'background')).toBe(true);
+  });
+
+  it('addMany: loops add() per highlight (TODO ADR-011 batches this)', async () => {
+    await repo.addMany([makeHighlight(), makeHighlight()]);
+    expect(captured).toHaveLength(2);
+    expect(MessageSchema.parse(captured[0]).type).toBe('IPC_HIGHLIGHT_ADD');
+    expect(MessageSchema.parse(captured[1]).type).toBe('IPC_HIGHLIGHT_ADD');
+  });
+
+  it('does not implement read methods (interface narrowed per ADR-005)', () => {
+    // Compile-time check: IpcHighlightRepository only has write methods.
+    // This test guards against accidental re-introduction of read methods
+    // that throw at runtime.
+    const repoAsWriteOnly: { add: unknown; update: unknown; remove: unknown; addMany: unknown } = repo;
+    expect(typeof repoAsWriteOnly.add).toBe('function');
+    expect(typeof repoAsWriteOnly.update).toBe('function');
+    expect(typeof repoAsWriteOnly.remove).toBe('function');
+    expect(typeof repoAsWriteOnly.addMany).toBe('function');
   });
 });

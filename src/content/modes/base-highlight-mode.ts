@@ -10,7 +10,7 @@ import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 
 import { getHighlightName } from '@/content/styles/highlight-styles';
 import type { IStorage } from '@/shared/interfaces/i-storage';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
@@ -19,15 +19,21 @@ export abstract class BaseHighlightMode {
   // Internal tracking (replaces HighlightManager.highlights)
   protected highlights = new Map<string, Highlight>();
   protected data = new Map<string, HighlightData>();
-  protected repository: IHighlightRepository;
+  /**
+   * The RepositoryFacade: synchronous read/write API over the in-memory
+   * cache. Per ADR-006, the facade is the only seam between modes and
+   * storage. Reads and writes both go through it. Writes are fire-and-forget
+   * (the facade persists asynchronously in the background).
+   */
+  protected readonly facade: RepositoryFacade;
   protected storage?: IStorage; // Optional, strict DI for modes that need it
 
   constructor(
     protected readonly eventBus: EventBus,
     protected readonly logger: ILogger,
-    repository: IHighlightRepository // [OK] Interface-based DI
+    facade: RepositoryFacade
   ) {
-    this.repository = repository;
+    this.facade = facade;
   }
 
   abstract get name(): 'ephemeral' | 'local' | 'cloud' | 'ai';

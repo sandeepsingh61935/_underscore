@@ -15,7 +15,7 @@ import { BaseHighlightMode } from '@/content/modes/base-highlight-mode';
 import type { HighlightData } from '@/content/modes/highlight-mode.interface';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 
 class TestMode extends BaseHighlightMode {
     get name(): 'ephemeral' {
@@ -39,7 +39,7 @@ describe('BaseHighlightMode.renderAndRegister (liveRanges-optional defensive)', 
     let mode: TestMode;
     let eventBus: EventBus;
     let logger: ILogger;
-    let repository: IHighlightRepository;
+    let facade: RepositoryFacade;
 
     beforeEach(() => {
         eventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as unknown as EventBus;
@@ -51,14 +51,22 @@ describe('BaseHighlightMode.renderAndRegister (liveRanges-optional defensive)', 
             setLevel: vi.fn(),
             getLevel: vi.fn(),
         } as unknown as ILogger;
-        repository = {
+        facade = {
             add: vi.fn(),
             update: vi.fn(),
-            delete: vi.fn(),
-            getById: vi.fn(),
+            remove: vi.fn(),
+            clear: vi.fn(),
+            get: vi.fn(),
             getAll: vi.fn(),
+            has: vi.fn(),
+            count: vi.fn(),
+            findByContentHash: vi.fn(),
+            findByUrl: vi.fn(),
+            findOverlapping: vi.fn(),
+            addMany: vi.fn(),
+            initialize: vi.fn(),
             reload: vi.fn(),
-        } as unknown as IHighlightRepository;
+        } as unknown as RepositoryFacade;
 
         // Override the global Highlight polyfill with one that exposes the
         // API used by base-highlight-mode.ts (add/has/delete on a Range set).
@@ -73,7 +81,7 @@ describe('BaseHighlightMode.renderAndRegister (liveRanges-optional defensive)', 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (CSS as any).highlights = new Map();
 
-        mode = new TestMode(eventBus, logger, repository);
+        mode = new TestMode(eventBus, logger, facade);
     });
 
     it('does not throw when data lacks liveRanges (defensive guard)', async () => {

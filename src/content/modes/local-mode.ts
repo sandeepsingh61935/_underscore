@@ -24,7 +24,7 @@ import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
@@ -33,12 +33,12 @@ import type { ILogger } from '@/shared/utils/logger';
 
 export class LocalMode extends BaseHighlightMode implements IBasicMode {
   constructor(
-    repository: IHighlightRepository,
+    facade: RepositoryFacade,
     storage: IStorage,
     eventBus: EventBus,
     logger: ILogger
   ) {
-    super(eventBus, logger, repository);
+    super(eventBus, logger, facade);
     this.storage = storage; // Explicitly set storage for Local Mode (uses event sourcing)
   }
 
@@ -73,7 +73,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
     // DEDUPLICATION: Check for existing highlight
     // ============================================
     const contentHash = await generateContentHash(text);
-    const existing = await this.repository.findByContentHash(contentHash);
+    const existing = this.facade.findByContentHash(contentHash);
 
     if (existing && existing.id) {
       this.logger.info('Duplicate content detected - returning existing highlight', {
@@ -111,16 +111,16 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
       color: colorRole,
     });
 
-    // 3. Persist to repository (IDB-safe; no liveRanges).
-    await this.repository.add({
+    // 3. Persist via facade (sync; fire-and-forget in background).
+    this.facade.add({
       ...storageData,
       url: window.location.href,
     });
 
     this.logger.info('[LOCAL] Added to repository', {
       id,
-      repoType: this.repository.constructor.name,
-      repoCount: await this.repository.count(),
+      facadeType: this.facade.constructor.name,
+      facadeCount: this.facade.count(),
     });
 
     // 3. Emit event for event sourcing
@@ -166,7 +166,7 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
       ranges: data.ranges,
     });
 
-    await this.repository.add(storageData);
+    this.facade.add(storageData);
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
@@ -238,8 +238,8 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
 
     await super.removeHighlight(id);
 
-    // [OK] Remove from repository (persistence)
-    await this.repository.remove(id);
+    // [OK] Remove via facade (sync; fire-and-forget).
+    this.facade.remove(id);
 
     this.logger.info('Highlight removed completely', { id });
   }
@@ -276,8 +276,8 @@ export class LocalMode extends BaseHighlightMode implements IBasicMode {
     this.highlights.clear();
     this.data.clear();
 
-    // [OK] Clear repository (persistence)
-    await this.repository.clear();
+    // [OK] Clear via facade (sync; fire-and-forget).
+    this.facade.clear();
 
     // [OK] Emit storage event for event sourcing (CRITICAL FIX!)
     if (this.storage) {

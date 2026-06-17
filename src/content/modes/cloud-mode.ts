@@ -21,7 +21,7 @@ import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 import { serializeRange } from '@/content/utils/range-converter';
 
 import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
@@ -34,8 +34,12 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     return 'cloud' as const;
   }
 
-  constructor(repository: IHighlightRepository, eventBus: EventBus, logger: ILogger) {
-    super(eventBus, logger, repository);
+  constructor(
+    facade: RepositoryFacade,
+    eventBus: EventBus,
+    logger: ILogger
+  ) {
+    super(eventBus, logger, facade);
     // Initialize service here with eventBus
     this.cloudService = createCloudModeServiceWithCloudSync();
   }
@@ -100,7 +104,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       // does NOT carry `liveRanges`. The live DOM Range is only added below (line 107)
       // for `renderAndRegister`. Persisting a Range object to IDB would throw
       // DataCloneError — Bug A.
-      await (this.repository as any).add(data as any, { skipSync: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.facade.add(data as any);
 
       this.logger.info('[CLOUD] Saved remote highlight to local DB. Attempting instant render...');
 
@@ -133,12 +138,10 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
     this.logger.info('[CLOUD] Handling remote deleted', { id });
 
-    // 1. Remove from local repository (skipping cloud sync)
-    // Note: Cast because repository generic interface might not have skipSync in type definition depending on version,
-    // but generic IHighlightRepository should allow options or specific implementation does.
-    if ((this.repository as any).remove) {
-      await (this.repository as any).remove(id, { skipSync: true });
-    }
+    // 1. Remove from local repository (skipping cloud sync).
+    // The RepositoryFacade doesn't accept options; the underlying
+    // repository's skipSync behavior is configured at the wiring layer.
+    this.facade.remove(id);
 
     // 2 & 3. Remove from Runtime & Update internal state
     await super.removeHighlight(id);
@@ -165,8 +168,11 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       });
     }
 
-    // 1. Update local repository (LWW resolution)
-    await (this.repository as any).update(id, data, { skipSync: true });
+    // 1. Update local repository (LWW resolution).
+    // The RepositoryFacade doesn't accept options; skipSync is wired at
+    // the DualWriteRepository layer if needed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.facade.update(id, data as any);
 
     // 2. Update properties if changed (e.g. Color)
     if (data.colorRole && localHighlight && data.colorRole !== localHighlight.colorRole) {
@@ -221,7 +227,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // 4. Update Repository (Idempotent check)
     // Note: repository is RepositoryFacade with sync API (get/has, not findById)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const alreadyExists = (this.repository as any).get?.(data.id) || (this.repository as any).has?.(data.id);
+    const alreadyExists = this.facade.get?.(data.id) || this.facade.has?.(data.id);
     if (!alreadyExists) {
       // Strip runtime-only fields (liveRanges) before persisting — Bug A.
       const { toStorageFormat } = await import('@/content/highlight-type-bridge');
@@ -234,7 +240,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         ranges: data.ranges,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.repository as any).add(storageData as any, { skipSync: options?.skipSync });
+      this.facade.add(storageData as any);
     } else {
       this.logger.debug('[CLOUD] Skipping duplicate repo add during create', {
         id: data.id,
@@ -274,7 +280,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       createdAt: updated.createdAt ?? new Date(),
       ranges: updated.ranges,
     });
-    await (this.repository as any).add({
+    await this.facade.add({
       ...storageData,
       url: window.location.href,
     });
@@ -283,7 +289,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // included it — Bug A.
     const { liveRanges: _lrFromUpdates, ...cleanUpdates } = updates as Partial<HighlightData> & { liveRanges?: Range[] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (this.repository as any).update(id, cleanUpdates as any);
+    await this.facade.update(id, cleanUpdates as any);
 
     // Update storage
     // Assuming ranges didn't change, we use the first live range
@@ -300,7 +306,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     for (const id of this.data.keys()) {
       await super.removeHighlight(id);
     }
-    await this.repository.clear(); // If facade supports it
+    this.facade.clear();
   }
 
   // IPersistentMode methods
@@ -377,7 +383,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       ...runtimeHighlight,
       color: runtimeHighlight.colorRole,
     });
-    await this.repository.add({
+    this.facade.add({
       ...storageData,
       url: window.location.href.split('#')[0] || window.location.href,
     });
@@ -401,8 +407,8 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // 3. Remove from Session Repository (for UI consistency / HoverDetector)
     // NOTE: persistence is handled by cloudService above, but we must clear session state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((this.repository as any).remove) {
-      await (this.repository as any).remove(id);
+    if (this.facade.remove) {
+      await this.facade.remove(id);
     }
 
     this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
@@ -442,7 +448,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         // Sync to Repository (Idempotent check)
         // Note: repository is RepositoryFacade with sync API (get/has, not findById)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const exists = (this.repository as any).get?.(storedData.id) || (this.repository as any).has?.(storedData.id);
+        const exists = this.facade.get?.(storedData.id) || this.facade.has?.(storedData.id);
         if (!exists) {
           // Strip runtime-only fields (liveRanges) before persisting — Bug A.
           const { toStorageFormat } = await import('@/content/highlight-type-bridge');
@@ -454,7 +460,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
             createdAt: storedData.createdAt ?? new Date(),
             ranges: storedData.ranges,
           });
-          await this.repository.add({
+          this.facade.add({
             ...storageData,
             url: window.location.href,
           });

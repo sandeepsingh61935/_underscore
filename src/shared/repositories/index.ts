@@ -4,7 +4,12 @@
  */
 
 // Interfaces
-export type { IHighlightRepository } from './i-highlight-repository';
+export type {
+  IHighlightRepository,
+  IReadableHighlightRepository,
+  IWritableHighlightRepository,
+  RepositoryOptions,
+} from './i-highlight-repository';
 
 // Implementations
 export { InMemoryHighlightRepository } from './in-memory-highlight-repository';

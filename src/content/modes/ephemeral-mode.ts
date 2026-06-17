@@ -24,7 +24,7 @@ import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
@@ -37,12 +37,12 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
   }
 
   constructor(
-    repository: IHighlightRepository,
+    facade: RepositoryFacade,
     storage: IStorage,
     eventBus: EventBus,
     logger: ILogger
   ) {
-    super(eventBus, logger, repository);
+    super(eventBus, logger, facade);
     this.storage = storage;
   }
 
@@ -71,7 +71,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     }
 
     const contentHash = await generateContentHash(text);
-    const existing = await this.repository.findByContentHash(contentHash);
+    const existing = this.facade.findByContentHash(contentHash);
 
     if (existing && existing.id) {
       this.logger.info('Duplicate content detected (Ephemeral Mode)', {
@@ -105,7 +105,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
       color: colorRole,
     });
 
-    await this.repository.add({
+    this.facade.add({
       ...storageData,
       url: window.location.href,
     });
@@ -138,7 +138,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
       ranges: data.ranges,
     });
 
-    await this.repository.add(storageData);
+    this.facade.add(storageData);
   }
 
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
@@ -155,13 +155,13 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.repository.update(id, updates as any);
+    this.facade.update(id, updates as any);
   }
 
   override async removeHighlight(id: string): Promise<void> {
     await super.removeHighlight(id);
 
-    await this.repository.remove(id);
+    this.facade.remove(id);
 
     this.logger.info('Removed highlight (Ephemeral Mode)', { id });
   }
@@ -172,7 +172,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     CSS.highlights.clear();
     this.highlights.clear();
     this.data.clear();
-    await this.repository.clear();
+    this.facade.clear();
 
     if (this.storage) {
       await this.storage.saveEvent({

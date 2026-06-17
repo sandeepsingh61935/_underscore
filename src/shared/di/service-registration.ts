@@ -206,8 +206,7 @@ export function registerServices(container: Container): void {
       const ephemeralStorage = container.resolve<IStorage>('ephemeralStorage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new EphemeralMode(repositoryFacade as any, ephemeralStorage, eventBus, logger);
+      return new EphemeralMode(repositoryFacade, ephemeralStorage, eventBus, logger);
     });
 
     /**
@@ -219,8 +218,7 @@ export function registerServices(container: Container): void {
       const storage = container.resolve<IStorage>('storage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new LocalMode(repositoryFacade as any, storage, eventBus, logger);
+      return new LocalMode(repositoryFacade, storage, eventBus, logger);
     });
 
     /**
@@ -231,8 +229,7 @@ export function registerServices(container: Container): void {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new CloudMode(repositoryFacade as any, eventBus, logger);
+      return new CloudMode(repositoryFacade, eventBus, logger);
     });
   }
 
