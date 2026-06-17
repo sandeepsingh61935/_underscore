@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { IpcHighlightRepository } from './ipc-highlight-repository';
 import { MessageSchema } from '@/shared/schemas/message-schemas';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 
 function makeHighlight(): HighlightDataV2 {
   return {
@@ -17,22 +18,25 @@ function makeHighlight(): HighlightDataV2 {
 }
 
 describe('IpcHighlightRepository IPC payload contract', () => {
-  let captured: any[];
+  let captured: unknown[];
+  let sentMessages: Array<{ target: 'background' | 'content' | 'popup'; message: unknown }>;
   let repo: IpcHighlightRepository;
 
   beforeEach(() => {
     captured = [];
-    (globalThis as any).chrome = {
-      runtime: {
-        sendMessage: vi.fn((msg: unknown, cb: (resp?: any) => void) => {
-          captured.push(msg);
-          // Simulate success: no lastError, optional response.
-          cb({ success: true, data: makeHighlight() });
-        }),
-        lastError: undefined,
-      },
-    };
-    repo = new IpcHighlightRepository();
+    sentMessages = [];
+
+    const mockBus = {
+      send: vi.fn(async (target: 'background' | 'content' | 'popup', message: unknown): Promise<unknown> => {
+        sentMessages.push({ target, message });
+        captured.push(message);
+        return { success: true, data: makeHighlight() };
+      }),
+      subscribe: vi.fn(() => () => {}),
+      publish: vi.fn(async () => {}),
+    } as unknown as IMessageBus;
+
+    repo = new IpcHighlightRepository(mockBus);
   });
 
   it('add: payload passes MessageSchema (has timestamp)', async () => {
@@ -63,5 +67,18 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     const parsed = MessageSchema.parse(captured[0]);
     expect(parsed.type).toBe('IPC_HIGHLIGHTS_FIND_BY_URL');
     expect(parsed.timestamp).toBeGreaterThan(0);
+  });
+
+  it('findByContentHash: payload passes MessageSchema', async () => {
+    await repo.findByContentHash('hash-1');
+    const parsed = MessageSchema.parse(captured[0]);
+    expect(parsed.type).toBe('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH');
+    expect(parsed.timestamp).toBeGreaterThan(0);
+  });
+
+  it('send always targets background', async () => {
+    await repo.add(makeHighlight());
+    await repo.findByUrl('https://example.com');
+    expect(sentMessages.every((m) => m.target === 'background')).toBe(true);
   });
 });

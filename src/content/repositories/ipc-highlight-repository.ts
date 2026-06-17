@@ -1,122 +1,103 @@
-import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
-import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
-import type { ILogger } from '@/shared/utils/logger';
-
 /**
- * IPC Highlight Repository (Content Script Side)
+ * @file ipc-highlight-repository.ts
+ * @description IPC Highlight Repository (Content Script Side)
  *
- * Acts as a dumb terminal adapter that implements IHighlightRepository
- * but delegates all write operations to the Background Worker via Chrome IPC.
- * This ensures the Background Worker remains the single source of truth for the database.
+ * Per ADR-004: this adapter delegates writes to the Background Worker via
+ * IMessageBus. Per ADR-005 (separate step): this adapter will be narrowed
+ * to IWritableHighlightRepository only, with reads going through
+ * RepositoryFacade. For now it still implements IHighlightRepository so the
+ * existing DI wiring is preserved.
  */
+
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { MessageResponse } from '@/shared/schemas/message-schemas';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
+import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
+
 export class IpcHighlightRepository implements IHighlightRepository {
-    constructor(_logger?: ILogger) {
-        // Logger is accepted for API symmetry with other repositories but not
-        // required: IPC calls are short-lived and the background worker is
-        // responsible for diagnostic logging on its side.
-    }
+  constructor(private readonly messageBus: IMessageBus) {}
 
-    async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
-                type: 'IPC_HIGHLIGHT_ADD',
-                payload: highlight,
-                timestamp: Date.now(),
-            }, () => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve();
-                }
-            });
-        });
-    }
+  async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
+    await this.messageBus.send<MessageResponse<void>>('background', {
+      type: 'IPC_HIGHLIGHT_ADD',
+      payload: highlight as unknown as object,
+      timestamp: Date.now(),
+    });
+  }
 
-    async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
-                type: 'IPC_HIGHLIGHT_UPDATE',
-                payload: { id, updates },
-                timestamp: Date.now(),
-            }, () => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve();
-                }
-            });
-        });
-    }
+  async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
+    await this.messageBus.send<MessageResponse<void>>('background', {
+      type: 'IPC_HIGHLIGHT_UPDATE',
+      payload: { id, updates } as unknown as object,
+      timestamp: Date.now(),
+    });
+  }
 
-    async remove(id: string, _options?: RepositoryOptions): Promise<void> {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
-                type: 'IPC_HIGHLIGHT_REMOVE',
-                payload: { id },
-                timestamp: Date.now(),
-            }, () => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve();
-                }
-            });
-        });
-    }
+  async remove(id: string, _options?: RepositoryOptions): Promise<void> {
+    await this.messageBus.send<MessageResponse<void>>('background', {
+      type: 'IPC_HIGHLIGHT_REMOVE',
+      payload: { id } as unknown as object,
+      timestamp: Date.now(),
+    });
+  }
 
-    async findByUrl(url: string): Promise<HighlightDataV2[]> {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
-                type: 'IPC_HIGHLIGHTS_FIND_BY_URL',
-                payload: { url },
-                timestamp: Date.now(),
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else if (response && response.success) {
-                    resolve(response.data);
-                } else {
-                    reject(new Error(response?.error || 'Failed to fetch highlights by url via IPC'));
-                }
-            });
-        });
+  async addMany(highlights: HighlightDataV2[]): Promise<void> {
+    // TODO(ADR-011): batch via single IPC_HIGHLIGHT_ADD_MANY message.
+    for (const highlight of highlights) {
+      await this.add(highlight);
     }
+  }
 
-    // ============================================
-    // Read operations (Should be handled via state or events, not direct IPC calls here)
-    // ============================================
+  // ============================================
+  // Read operations — TODO(ADR-005): migrate to RepositoryFacade.
+  // Throwing preserves today's contract until the split lands.
+  // ============================================
 
-    async findById(_id: string): Promise<HighlightDataV2 | null> {
-        throw new Error('findById not implemented in IpcHighlightRepository');
+  async findById(_id: string): Promise<HighlightDataV2 | null> {
+    throw new Error('findById not implemented in IpcHighlightRepository');
+  }
+
+  async findAll(): Promise<HighlightDataV2[]> {
+    throw new Error('findAll not implemented in IpcHighlightRepository');
+  }
+
+  async count(): Promise<number> {
+    throw new Error('count not implemented in IpcHighlightRepository');
+  }
+
+  async exists(_id: string): Promise<boolean> {
+    throw new Error('exists not implemented in IpcHighlightRepository');
+  }
+
+  async clear(): Promise<void> {
+    throw new Error('clear not implemented in IpcHighlightRepository');
+  }
+
+  async findOverlapping(_range: SerializedRange): Promise<HighlightDataV2[]> {
+    throw new Error('findOverlapping not implemented in IpcHighlightRepository');
+  }
+
+  async findByUrl(url: string): Promise<HighlightDataV2[]> {
+    const response = await this.messageBus.send<MessageResponse<HighlightDataV2[]>>('background', {
+      type: 'IPC_HIGHLIGHTS_FIND_BY_URL',
+      payload: { url } as unknown as object,
+      timestamp: Date.now(),
+    });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch highlights by url via IPC');
     }
+    return response.data;
+  }
 
-    async findAll(): Promise<HighlightDataV2[]> {
-        throw new Error('findAll not implemented in IpcHighlightRepository');
+  async findByContentHash(hash: string): Promise<HighlightDataV2 | null> {
+    const response = await this.messageBus.send<MessageResponse<HighlightDataV2 | null>>('background', {
+      type: 'IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH',
+      payload: { hash } as unknown as object,
+      timestamp: Date.now(),
+    });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch highlight by content hash via IPC');
     }
-
-    async count(): Promise<number> {
-        throw new Error('count not implemented in IpcHighlightRepository');
-    }
-
-    async exists(_id: string): Promise<boolean> {
-        throw new Error('exists not implemented in IpcHighlightRepository');
-    }
-
-    async clear(): Promise<void> {
-        throw new Error('clear not implemented in IpcHighlightRepository');
-    }
-
-    async findByContentHash(_hash: string): Promise<HighlightDataV2 | null> {
-        throw new Error('findByContentHash not implemented in IpcHighlightRepository');
-    }
-
-    async findOverlapping(_range: SerializedRange): Promise<HighlightDataV2[]> {
-        throw new Error('findOverlapping not implemented in IpcHighlightRepository');
-    }
-
-    async addMany(highlights: HighlightDataV2[]): Promise<void> {
-        for (const highlight of highlights) {
-            await this.add(highlight);
-        }
-    }
+    return response.data ?? null;
+  }
 }

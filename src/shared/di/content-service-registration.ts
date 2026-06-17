@@ -19,6 +19,7 @@ import { ModeManager } from '@/content/modes/mode-manager';
 import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
@@ -111,6 +112,7 @@ export function registerContentServices(container: Container): void {
      * Used by Local / Ephemeral / Cloud modes in place of the local facade.
      */
     container.registerSingleton<IHighlightRepository>('ipcHighlightRepository', () => {
-        return new IpcHighlightRepository();
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        return new IpcHighlightRepository(messageBus);
     });
 }
