@@ -10,12 +10,10 @@ import { describe, it, expect } from 'vitest';
 
 import {
   ModeTypeSchema,
-  StateChangeEventSchema,
   StateMetadataSchema,
   ModeStateSchema,
   ModeTransitionSchema,
   type ModeType,
-  type StateChangeEvent,
   type ModeState,
 } from '@/shared/schemas/mode-state-schemas';
 
@@ -85,88 +83,6 @@ describe('ModeTypeSchema', () => {
     if (!result.success) {
       expect(result.error.issues[0]!.message).toContain('Invalid');
     }
-  });
-});
-
-describe('StateChangeEventSchema', () => {
-  it('should validate complete state change event', () => {
-    // Arrange
-    const event: StateChangeEvent = {
-      from: 'ephemeral',
-      to: 'local',
-      timestamp: Date.now(),
-      reason: 'User clicked sprint mode button',
-    };
-
-    // Act
-    const result = StateChangeEventSchema.safeParse(event);
-
-    // Assert
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.from).toBe('ephemeral');
-      expect(result.data.to).toBe('local');
-      expect(result.data.timestamp).toBeGreaterThan(0);
-    }
-  });
-
-  it('should validate event without optional reason', () => {
-    // Arrange
-    const event = {
-      from: 'local',
-      to: 'cloud',
-      timestamp: Date.now(),
-    };
-
-    // Act
-    const result = StateChangeEventSchema.safeParse(event);
-
-    // Assert
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject event with missing required fields', () => {
-    // Arrange
-    const invalidEvents = [
-      { from: 'ephemeral', timestamp: Date.now() }, // Missing 'to'
-      { to: 'local', timestamp: Date.now() }, // Missing 'from'
-      { from: 'ephemeral', to: 'local' }, // Missing 'timestamp'
-    ];
-
-    // Act & Assert
-    invalidEvents.forEach((event) => {
-      const result = StateChangeEventSchema.safeParse(event);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  it('should reject invalid mode types in event', () => {
-    // Arrange
-    const event = {
-      from: 'invalid',
-      to: 'local',
-      timestamp: Date.now(),
-    };
-
-    // Act
-    const result = StateChangeEventSchema.safeParse(event);
-
-    // Assert
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject negative or zero timestamps', () => {
-    // Arrange
-    const events = [
-      { from: 'ephemeral', to: 'local', timestamp: -1 },
-      { from: 'ephemeral', to: 'local', timestamp: 0 },
-    ];
-
-    // Act & Assert
-    events.forEach((event) => {
-      const result = StateChangeEventSchema.safeParse(event);
-      expect(result.success).toBe(false);
-    });
   });
 });
 
@@ -335,11 +251,6 @@ describe('Type Inference', () => {
   it('should infer correct TypeScript types', () => {
     // Arrange & Act
     const mode: ModeType = 'ephemeral';
-    const event: StateChangeEvent = {
-      from: 'ephemeral',
-      to: 'local',
-      timestamp: Date.now(),
-    };
     const state: ModeState = {
       currentMode: 'cloud',
       version: 2,
@@ -347,7 +258,6 @@ describe('Type Inference', () => {
 
     // Assert - TypeScript compilation is the test
     expect(mode).toBe('ephemeral');
-    expect(event.from).toBe('ephemeral');
     expect(state.currentMode).toBe('cloud');
   });
 });

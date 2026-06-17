@@ -4,7 +4,6 @@
  *
  * Provides type-safe validation for:
  * - Mode types (ephemeral, local, cloud, ai)
- * - State change events
  * - Persisted state structure
  * - Mode transitions
  */
@@ -30,25 +29,6 @@ export const ModeTypeSchema = z.enum(['ephemeral', 'local', 'cloud', 'ai']);
  * Inferred TypeScript type from schema
  */
 export type ModeType = z.infer<typeof ModeTypeSchema>;
-
-/**
- * State Change Event Schema
- *
- * Validates state transition events for observability and debugging.
- *
- * @property from - Previous mode
- * @property to - New mode
- * @property timestamp - Unix timestamp (milliseconds)
- * @property reason - Optional reason for transition (user action, system event, etc.)
- */
-export const StateChangeEventSchema = z.object({
-  from: ModeTypeSchema,
-  to: ModeTypeSchema,
-  timestamp: z.number().int().positive(),
-  reason: z.string().optional(),
-});
-
-export type StateChangeEvent = z.infer<typeof StateChangeEventSchema>;
 
 /**
  * State Metadata Schema
@@ -104,33 +84,3 @@ export const ModeTransitionSchema = z.object({
 });
 
 export type ModeTransition = z.infer<typeof ModeTransitionSchema>;
-
-/**
- * State Metrics
- *
- * Analytics data for state transitions and mode usage.
- * Used for debugging, observability, and user behavior analysis.
- *
- * @property transitionCounts - Count of each transition (e.g., "ephemeral→local": 5)
- * @property failureCounts - Count of blocked transitions (e.g., "local→cloud": 2)
- * @property timeInMode - Total milliseconds spent in each mode
- */
-export interface StateMetrics {
-  transitionCounts: Record<string, number>; // "ephemeral→local": 5
-  failureCounts: Record<string, number>; // "local→cloud": 2 (blocked)
-  timeInMode: Partial<Record<ModeType, number>>; // "ephemeral": 5000ms (partial - not all modes may have time tracked)
-}
-
-/**
- * Debug State Snapshot
- *
- * Comprehensive state dump for debugging purposes.
- * Aggregates current state, history, and metrics.
- */
-export interface DebugState {
-  currentMode: ModeType;
-  metadata: StateMetadata;
-  history: readonly StateChangeEvent[];
-  metrics: StateMetrics;
-  timestamp: number;
-}
