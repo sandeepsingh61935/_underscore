@@ -68,6 +68,14 @@ describe('E2EEncryptionService', () => {
         });
 
         mockKeyManager = {
+            unlock: vi.fn(),
+            lock: vi.fn(),
+            get isUnlocked(): boolean {
+                return false;
+            },
+            get currentUserId(): string | null {
+                return null;
+            },
             generateKeyPair: vi.fn(),
             getPublicKey: vi.fn().mockResolvedValue(testKeyPair.publicKey),
             getPrivateKey: vi.fn().mockResolvedValue(testKeyPair.privateKey),

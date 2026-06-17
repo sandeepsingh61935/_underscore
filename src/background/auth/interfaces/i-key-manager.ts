@@ -31,6 +31,37 @@ export interface KeyMetadata {
  */
 export interface IKeyManager {
     /**
+     * Derive and cache the master key for a user from their passphrase.
+     *
+     * The passphrase is never stored. The derived AES-GCM CryptoKey lives
+     * only in service-worker memory and is wiped by `lock()` (or on SW
+     * restart). On first unlock for a user (no StoredKey exists), a fresh
+     * per-user salt is generated and cached.
+     *
+     * @param userId - User ID to unlock vault for
+     * @param passphrase - User-supplied vault passphrase
+     * @throws Error if an existing StoredKey uses a deprecated format
+     */
+    unlock(userId: string, passphrase: string): Promise<void>;
+
+    /**
+     * Wipe in-memory master key and cached private keys.
+     *
+     * Call on sign-out, vault lock, or service-worker idle.
+     */
+    lock(): void;
+
+    /**
+     * True if a master key is currently cached in memory.
+     */
+    readonly isUnlocked: boolean;
+
+    /**
+     * User ID for which the vault is currently unlocked, or `null` if locked.
+     */
+    readonly currentUserId: string | null;
+
+    /**
      * Generate new RSA-2048 keypair for user
      *
      * @param userId - User ID to generate keys for

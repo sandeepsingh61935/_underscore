@@ -45,7 +45,9 @@ export class KeyManager implements IKeyManager {
     private readonly publicKeyCache = new Map<string, CryptoKey>();
     private readonly privateKeyCache = new Map<string, CryptoKey>();
     private masterKey: CryptoKey | null = null;
-    private currentUserId: string | null = null;
+    private unlockedForUserId: string | null = null;
+    private currentSalt: Uint8Array | null = null;
+    private currentKdfIterations: number = 0;
 
     constructor(
         private readonly logger: ILogger,
@@ -86,9 +88,7 @@ export class KeyManager implements IKeyManager {
         } else {
             // First-unlock bootstrap: generate a per-user salt. The salt + KDF
             // iterations are written to storage by the next storeKeyPair() call.
-            const buf = new ArrayBuffer(this.SALT_BYTES);
-            salt = new Uint8Array(buf);
-            crypto.getRandomValues(salt);
+            salt = this.generateSalt();
             iterations = this.KDF_ITERATIONS;
         }
 
@@ -113,8 +113,24 @@ export class KeyManager implements IKeyManager {
             ['encrypt', 'decrypt']
         );
 
-        this.currentUserId = userId;
+        this.unlockedForUserId = userId;
+        this.currentSalt = salt;
+        this.currentKdfIterations = iterations;
         this.logger.info('Vault unlocked', { userId });
+    }
+
+    /**
+     * True if a master key is currently cached in memory.
+     */
+    get isUnlocked(): boolean {
+        return this.masterKey !== null;
+    }
+
+    /**
+     * User ID for which the vault is currently unlocked, or `null` if locked.
+     */
+    get currentUserId(): string | null {
+        return this.unlockedForUserId;
     }
 
     /**
@@ -125,7 +141,9 @@ export class KeyManager implements IKeyManager {
      */
     lock(): void {
         this.masterKey = null;
-        this.currentUserId = null;
+        this.unlockedForUserId = null;
+        this.currentSalt = null;
+        this.currentKdfIterations = 0;
         this.privateKeyCache.clear();
         this.logger.info('Vault locked');
     }
@@ -141,12 +159,25 @@ export class KeyManager implements IKeyManager {
     }
 
     /**
+     * Generate a fresh per-user PBKDF2 salt.
+     *
+     * Used during first-unlock bootstrap. The same helper covers both call
+     * sites that previously duplicated the ArrayBuffer/getRandomValues dance.
+     */
+    private generateSalt(): Uint8Array<ArrayBuffer> {
+        return crypto.getRandomValues(new Uint8Array(this.SALT_BYTES));
+    }
+
+    /**
      * Generate new RSA-2048 keypair
      */
     async generateKeyPair(userId: string): Promise<KeyPair> {
         this.logger.info('Generating RSA-2048 keypair', { userId });
 
-        if (!this.masterKey || this.currentUserId !== userId) {
+        // Lock check must be OUTSIDE the try block so the actionable
+        // 'Vault locked for user X' error is not re-wrapped as
+        // 'Key generation failed: ...'.
+        if (!this.masterKey || this.unlockedForUserId !== userId) {
             throw new Error(`Vault locked for user ${userId}`);
         }
 
@@ -162,10 +193,12 @@ export class KeyManager implements IKeyManager {
                 ['encrypt', 'decrypt']
             );
 
-            // Store encrypted private key
+            // Store encrypted private key first. If this throws, the public
+            // key is NOT cached — storage has no matching entry, so caching
+            // the public key would leave a stale in-memory record that
+            // disagrees with persistence.
             await this.storeKeyPair(userId, keyPair);
 
-            // Cache public key
             this.publicKeyCache.set(userId, keyPair.publicKey);
 
             this.logger.info('Keypair generated and stored', { userId });
@@ -193,22 +226,19 @@ export class KeyManager implements IKeyManager {
 
         const iv = crypto.getRandomValues(new Uint8Array(12));
 
-        // Preserve the existing salt/iterations if the user already has a stored
-        // vault (e.g. key rotation) — the salt is per-user and must match across
-        // unlock calls. On first vault creation, generate a fresh salt.
-        const storageKey = `${this.STORAGE_KEY_PREFIX}${userId}`;
-        const existing = (await chrome.storage.local.get(storageKey))[storageKey] as
-            | StoredKey
-            | undefined;
-        const salt: Uint8Array<ArrayBuffer> = existing
-            ? new Uint8Array(this.base64ToArrayBuffer(existing.salt))
-            : (() => {
-                  const buf = new ArrayBuffer(this.SALT_BYTES);
-                  const u8 = new Uint8Array(buf);
-                  crypto.getRandomValues(u8);
-                  return u8;
-              })();
-        const kdfIterations = existing?.kdfIterations ?? this.KDF_ITERATIONS;
+        // Salt + KDF iterations are cached on the instance by unlock() (loaded
+        // from storage for returning users, freshly generated on bootstrap).
+        // Re-using them here avoids a second chrome.storage read and keeps
+        // the salt per-user stable across key rotations.
+        if (!this.currentSalt) {
+            throw new Error('Vault is locked — call unlock() first');
+        }
+        // Copy through a fresh ArrayBuffer-backed Uint8Array so the
+        // BufferSource-typed WebCrypto APIs accept it under TS 5.7+ types.
+        const saltCopy = new Uint8Array(this.currentSalt.byteLength);
+        saltCopy.set(this.currentSalt);
+        const salt: Uint8Array<ArrayBuffer> = saltCopy;
+        const kdfIterations = this.currentKdfIterations;
 
         const encryptedPrivateKey = await crypto.subtle.encrypt(
             { name: 'AES-GCM', iv },
@@ -216,6 +246,7 @@ export class KeyManager implements IKeyManager {
             privateKeyData
         );
 
+        const storageKey = `${this.STORAGE_KEY_PREFIX}${userId}`;
         const storedKey: StoredKey = {
             keyId,
             userId,

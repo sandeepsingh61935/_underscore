@@ -518,6 +518,61 @@ describe('KeyManager', () => {
         });
     });
 
+    describe('isUnlocked / currentUserId', () => {
+        it('isUnlocked is false before unlock, true after, false after lock', async () => {
+            expect(keyManager.isUnlocked).toBe(false);
+
+            await keyManager.unlock('user-iso', TEST_PASSPHRASE);
+            expect(keyManager.isUnlocked).toBe(true);
+
+            keyManager.lock();
+            expect(keyManager.isUnlocked).toBe(false);
+        });
+
+        it('currentUserId is null before unlock, set after, null after lock', async () => {
+            expect(keyManager.currentUserId).toBeNull();
+
+            await keyManager.unlock('user-cuid', TEST_PASSPHRASE);
+            expect(keyManager.currentUserId).toBe('user-cuid');
+
+            keyManager.lock();
+            expect(keyManager.currentUserId).toBeNull();
+        });
+    });
+
+    describe('generateKeyPair error wrapping', () => {
+        it('locked-vault error is the exact "Vault locked for user X" string, not wrapped', async () => {
+            await expect(keyManager.generateKeyPair('user-wrap')).rejects.toThrow(
+                'Vault locked for user user-wrap'
+            );
+            // Belt-and-suspenders: ensure the wrapping prefix is NOT present.
+            await expect(keyManager.generateKeyPair('user-wrap')).rejects.not.toThrow(
+                'Key generation failed'
+            );
+        });
+
+        it('generateKeyPair failure does not leave a stale entry in publicKeyCache', async () => {
+            const userId = 'user-cache-fail';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
+
+            // Force storeKeyPair (the second step of generateKeyPair) to throw,
+            // so we can verify publicKeyCache stays clean on failure.
+            const originalSet = chrome.storage.local.set;
+            chrome.storage.local.set = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('Storage write failed'));
+
+            await expect(keyManager.generateKeyPair(userId)).rejects.toThrow(
+                'Key generation failed'
+            );
+
+            // After a failed generation, getPublicKey must NOT serve a cached
+            // value — it should hit storage and find nothing.
+            chrome.storage.local.set = originalSet;
+            await expect(keyManager.getPublicKey(userId)).rejects.toThrow('No keys found');
+        });
+    });
+
     describe('getCurrentUserId() (via getPublicKey() without userId)', () => {
         it('should return the real user id from AuthManager, not the literal "current-user"', async () => {
             const userId = 'user-123';
