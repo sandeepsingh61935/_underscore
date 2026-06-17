@@ -2,7 +2,6 @@
  * Mode State Manager
  *
  * Single Source of Truth for mode state with persistence and broadcasting.
- * Implements State Management Pattern with Circuit Breaker for storage resilience.
  */
 
 import { migrateV1ToV2 } from './migrations/v1-to-v2';
@@ -19,11 +18,7 @@ import {
   ModeTypeSchema,
   type ModeType,
   type StateMetadata,
-  type StateChangeEvent,
-  type StateMetrics,
-  type DebugState,
 } from '@/shared/schemas/mode-state-schemas';
-import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -39,17 +34,6 @@ export class ModeStateManager {
   private listeners: Set<(mode: ModeType) => void> = new Set();
   private stateMachine: ModeStateMachine;
   private migrationEngine: MigrationEngine;
-  private storageCircuitBreaker: CircuitBreaker;
-
-  // History tracking
-  private history: StateChangeEvent[] = [];
-  private readonly MAX_HISTORY_SIZE = 100;
-
-  // Metrics tracking
-  private transitionCounts = new Map<string, number>();
-  private failureCounts = new Map<string, number>();
-  private timeInMode = new Map<ModeType, number>();
-  private modeActivatedAt: number = Date.now();
 
   constructor(
     private readonly eventBus: EventBus,
@@ -58,17 +42,6 @@ export class ModeStateManager {
   ) {
     this.stateMachine = new ModeStateMachine(logger);
     this.migrationEngine = new MigrationEngine(logger);
-
-    // Initialize circuit breaker for storage operations
-    this.storageCircuitBreaker = new CircuitBreaker(
-      {
-        failureThreshold: 3,
-        resetTimeout: 30000, // 30 seconds
-        successThreshold: 1,
-        name: 'ModeStateStorage',
-      },
-      logger
-    );
 
     // Register v1→v2 migration
     this.migrationEngine.registerMigration({
@@ -100,7 +73,7 @@ export class ModeStateManager {
     } catch (e) {
       this.logger.warn('[ModeState] Failed to load mode preference', e as Error);
     }
-    
+
     await this.applyMode();
   }
 
@@ -111,9 +84,6 @@ export class ModeStateManager {
     return this.currentMode;
   }
 
-  /**
-   * Set mode (with persistence and broadcast)
-   */
   /**
    * Set mode (with persistence and broadcast)
    */
@@ -169,9 +139,6 @@ export class ModeStateManager {
           validatedMode
         );
 
-        // Record failed transition for metrics
-        this.recordTransitionFailure(this.currentMode, validatedMode);
-
         const error = new StateTransitionError(
           `Transition guard failed: ${reason}`,
           this.currentMode,
@@ -188,23 +155,15 @@ export class ModeStateManager {
       // 5. Update Memory State (Optimistic Update)
       const previousMode = this.currentMode;
 
-      // Update time tracking before switching
-      this.updateTimeInMode();
-
       this.currentMode = validatedMode;
       this.metadata.lastModified = Date.now();
-
-      // Record state change to history and metrics
-      const reason = this.stateMachine.getTransitionReason(previousMode, validatedMode);
-      this.recordHistory(previousMode, validatedMode, reason);
-      this.recordTransition(previousMode, validatedMode);
 
       this.logger.info('[ModeState] Switching mode', {
         from: previousMode,
         to: validatedMode,
       });
 
-      // Save user preference locally
+      // Save user preference locally (direct, no circuit breaker)
       try {
         await chrome.storage.local.set({ underscore_mode: validatedMode });
       } catch (e) {
@@ -274,102 +233,5 @@ export class ModeStateManager {
 
   private notifyListeners(): void {
     this.listeners.forEach((listener) => listener(this.currentMode));
-  }
-
-  /**
-   * Record state change to history
-   * @private
-   */
-  private recordHistory(from: ModeType, to: ModeType, reason?: string): void {
-    const entry: StateChangeEvent = {
-      from,
-      to,
-      timestamp: Date.now(),
-      reason,
-    };
-
-    this.history.push(entry);
-
-    // LRU eviction - remove oldest if exceeding max size
-    if (this.history.length > this.MAX_HISTORY_SIZE) {
-      this.history.shift();
-    }
-
-    this.logger.debug('[ModeState] History recorded', entry);
-  }
-
-  /**
-   * Get state change history (readonly copy)
-   * @returns Readonly array of state change events
-   */
-  getHistory(): ReadonlyArray<StateChangeEvent> {
-    return [...this.history]; // Defensive copy
-  }
-
-  /**
-   * Clear history (useful for testing and debugging)
-   */
-  clearHistory(): void {
-    this.history = [];
-    this.logger.debug('[ModeState] History cleared');
-  }
-
-  /**
-   * Record successful transition for metrics
-   * @private
-   */
-  private recordTransition(from: ModeType, to: ModeType): void {
-    const key = `${from}→${to}`;
-    this.transitionCounts.set(key, (this.transitionCounts.get(key) || 0) + 1);
-  }
-
-  /**
-   * Record failed transition (guard blocked)
-   * @private
-   */
-  private recordTransitionFailure(from: ModeType, to: ModeType): void {
-    const key = `${from}→${to}`;
-    this.failureCounts.set(key, (this.failureCounts.get(key) || 0) + 1);
-  }
-
-  /**
-   * Update time tracking when switching modes
-   * @private
-   */
-  private updateTimeInMode(): void {
-    const now = Date.now();
-    const elapsed = now - this.modeActivatedAt;
-    const current = this.timeInMode.get(this.currentMode) || 0;
-    this.timeInMode.set(this.currentMode, current + elapsed);
-    this.modeActivatedAt = now;
-  }
-
-  /**
-   * Get all metrics snapshot
-   * @returns Current state metrics
-   */
-  getMetrics(): StateMetrics {
-    return {
-      transitionCounts: Object.fromEntries(this.transitionCounts),
-      failureCounts: Object.fromEntries(this.failureCounts),
-      timeInMode: Object.fromEntries(this.timeInMode),
-    };
-  }
-
-  /**
-   * Get comprehensive debug state
-   * Useful for debugging tools/devtools
-   */
-  getDebugState(): DebugState {
-    // Explicitly update time tracking to get latest numbers
-    this.updateTimeInMode();
-
-    return {
-      currentMode: this.currentMode,
-      metadata: { ...this.metadata },
-      history: this.getHistory(),
-      metrics: this.getMetrics(), // Now pure (no side effect)
-      timestamp: Date.now(),
-    };
   }
 }

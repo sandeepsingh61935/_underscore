@@ -149,13 +149,13 @@ describe('ModeStateManager - State Machine Integration', () => {
       expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should dispatch INTENT_SET_MODE instead of persisting locally', async () => {
+    it('should dispatch INTENT_SET_MODE and persist locally', async () => {
       // Act
       await stateManager.setMode('cloud');
 
-      // Assert - Intent was dispatched via eventBus
+      // Assert - Intent was dispatched via eventBus and saved locally
       expect(mockEventBus.emit).toHaveBeenCalledWith('INTENT_SET_MODE', { mode: 'cloud' });
-      expect(mockChromeStorage.local.set).not.toHaveBeenCalled();
+      expect(mockChromeStorage.local.set).toHaveBeenCalledWith({ underscore_mode: 'cloud' });
     });
   });
 
