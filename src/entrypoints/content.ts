@@ -24,7 +24,7 @@ import { serializeRange, deserializeRange } from '@/content/utils/range-converte
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
-import { RepositoryFactory } from '@/shared/repositories';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
@@ -76,6 +76,7 @@ export default defineContentScript({
       const modeManager = container.resolve<ModeManager>('modeManager');
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const commandFactory = container.resolve<CommandFactory>('commandFactory');
+      const ipcHighlightRepository = container.resolve<IHighlightRepository>('ipcHighlightRepository');
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
@@ -225,6 +226,7 @@ export default defineContentScript({
           highlightManager,
           modeManager,
           commandFactory,
+          ipcHighlightRepository,
         });
       } else {
         logger.info(
@@ -509,7 +511,7 @@ export default defineContentScript({
           } else if (msg && msg.type === 'GET_MODE') {
             sendResponse({
               success: true,
-              data: { mode: RepositoryFactory.getMode() },
+              data: { mode: modeManager.getCurrentMode().name },
             });
           } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
@@ -543,6 +545,7 @@ export default defineContentScript({
                     highlightManager,
                     modeManager,
                     commandFactory,
+                    ipcHighlightRepository,
                   });
                   logger.info('[IPC] Restoration complete');
                 } else if (newMode === MODE_NAMES.CLOUD) {
@@ -632,17 +635,22 @@ interface RestoreContext {
   highlightManager: HighlightManager | null;
   modeManager: ModeManager;
   commandFactory: CommandFactory;
+  ipcHighlightRepository: IHighlightRepository;
 }
 
 /**
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { repositoryFacade, highlightManager, modeManager, commandFactory } =
+  const { repositoryFacade, highlightManager, modeManager, commandFactory, ipcHighlightRepository } =
     context;
   try {
     const currentUrl = window.location.href;
-    const activeHighlights = repositoryFacade.findByUrl(currentUrl);
+    // Fetch highlights from background via IPC
+    const activeHighlights = await ipcHighlightRepository.findByUrl(currentUrl);
+    
+    // Hydrate the synchronous in-memory facade for UI operations (hover detection, etc)
+    repositoryFacade.addMany(activeHighlights);
 
     logger.warn(`[TARGET] Found ${activeHighlights.length} highlights to restore`);
 

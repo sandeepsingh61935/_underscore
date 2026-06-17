@@ -2,7 +2,11 @@
  * @file repository-factory.ts
  * @description Factory for creating repository instances
  *
- * Implements Factory Pattern for swappable repository implementations
+ * Per ADR-008, mode handling lives at the service layer (ModeManager +
+ * per-mode services). The factory is a plain singleton accessor for the
+ * repository implementation; it does NOT track or react to mode.
+ *
+ * Implements Factory Pattern for swappable repository implementations.
  */
 
 import type { IHighlightRepository } from './i-highlight-repository';
@@ -11,17 +15,18 @@ import { InMemoryHighlightRepository } from './in-memory-highlight-repository';
 /**
  * Repository factory
  *
- * Provides centralized access to repository instances
- * Allows swapping implementations (in-memory, IndexedDB, etc.)
+ * Provides centralized access to repository instances.
+ * Allows swapping implementations (in-memory, IndexedDB, etc.) via
+ * setRepository() for testing or alternative storage backends.
  */
 export class RepositoryFactory {
   private static instance: IHighlightRepository | null = null;
 
   /**
-   * Get singleton repository instance
+   * Get singleton repository instance.
    *
-   * Returns the same instance across all calls
-   * Creates new instance on first call
+   * Returns the same instance across all calls.
+   * Creates new instance on first call.
    */
   static getHighlightRepository(): IHighlightRepository {
     if (!this.instance) {
@@ -33,38 +38,18 @@ export class RepositoryFactory {
   /**
    * Reset factory (for testing)
    *
-   * Clears singleton instance
-   * Next getHighlightRepository() call will create new instance
+   * Clears singleton instance.
+   * Next getHighlightRepository() call will create new instance.
    */
   static reset(): void {
     this.instance = null;
   }
 
-  private static currentMode: 'ephemeral' | 'local' | 'cloud' = 'ephemeral';
-
   /**
-   * Set the current operation mode
-   *
-   * @param mode 'ephemeral' (no persistence) or 'local' (persistence)
-   */
-  static setMode(mode: 'ephemeral' | 'local' | 'cloud'): void {
-    this.currentMode = mode;
-    // In the future, this might trigger a repository swap
-    // For now, both use InMemory, but logic in Facade might differ based on mode
-  }
-
-  /**
-   * Get the current mode
-   */
-  static getMode(): 'ephemeral' | 'local' | 'cloud' {
-    return this.currentMode;
-  }
-
-  /**
-   * Set custom repository implementation
+   * Set custom repository implementation.
    *
    * Allows dependency injection for testing
-   * or switching to different storage backend
+   * or switching to different storage backend.
    */
   static setRepository(repository: IHighlightRepository): void {
     this.instance = repository;

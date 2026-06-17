@@ -15,7 +15,6 @@ import {
   StateValidationError,
   StateTransitionError,
 } from '@/shared/errors/state-errors';
-import { RepositoryFactory } from '@/shared/repositories';
 import {
   ModeTypeSchema,
   type ModeType,
@@ -92,6 +91,17 @@ export class ModeStateManager {
         await this.applyMode();
       }
     });
+
+    try {
+      const data = await chrome.storage.local.get('underscore_mode');
+      if (data && data.underscore_mode) {
+         this.currentMode = data.underscore_mode;
+      }
+    } catch (e) {
+      this.logger.warn('[ModeState] Failed to load mode preference', e as Error);
+    }
+    
+    await this.applyMode();
   }
 
   /**
@@ -194,6 +204,13 @@ export class ModeStateManager {
         to: validatedMode,
       });
 
+      // Save user preference locally
+      try {
+        await chrome.storage.local.set({ underscore_mode: validatedMode });
+      } catch (e) {
+        this.logger.warn('[ModeState] Failed to save mode preference', e as Error);
+      }
+
       // 6. Dispatch Intent to Background Worker
       // Background worker is the single source of truth and will persist and broadcast state.
       try {
@@ -253,9 +270,6 @@ export class ModeStateManager {
 
   private async applyMode(): Promise<void> {
     await this.modeManager.activateMode(this.currentMode);
-    if (this.currentMode !== 'ai') {
-      RepositoryFactory.setMode(this.currentMode);
-    }
   }
 
   private notifyListeners(): void {
