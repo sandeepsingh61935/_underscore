@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import type { OAuthProviderType } from '../../../background/auth/interfaces/i-auth-manager';
+import { useClearVerificationState } from '../../../features/auth/hooks/useClearVerificationState';
 import { useCurrentUser } from '../../../features/auth/hooks/useCurrentUser';
 import { Logo } from '../../../ui-system/components/primitives/Logo';
 
@@ -45,6 +46,8 @@ export function AuthView({
         verificationStatus, verificationExpiresAt
     } = useCurrentUser();
 
+    const clearVerification = useClearVerificationState();
+
     const [loginError, setLoginError] = useState<string | null>(null);
     const [isRegistering, setIsRegistering] = useState(false);
     const [email, setEmail] = useState('');
@@ -81,11 +84,8 @@ export function AuthView({
                 email={email}
                 expiresAt={verificationExpiresAt}
                 onCheckVerification={onLoginSuccess}
-                onCancel={async () => {
-                    await chrome.runtime.sendMessage({
-                        type: 'CLEAR_VERIFICATION_STATE',
-                        timestamp: Date.now()
-                    });
+                onCancel={() => {
+                    void clearVerification(undefined);
                 }}
             />
         );

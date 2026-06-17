@@ -15,49 +15,36 @@ export interface DashboardData {
 }
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
 export function useDashboardData(mode: ModeType) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const fetchAction = useIpcAction<{ mode: ModeType }, DashboardData>('GET_DASHBOARD_DATA');
+
   useEffect(() => {
     let cancelled = false;
 
     const fetchDashboardData = async () => {
-      try {
-        if (typeof chrome !== 'undefined' && chrome.runtime) {
-          const response = await chrome.runtime.sendMessage({
-            type: 'GET_DASHBOARD_DATA',
-            mode: mode,
-            timestamp: Date.now(),
-          });
+      const result = await fetchAction({ mode });
+      if (cancelled) return;
 
-          if (cancelled) return;
-
-          if (!response || !response.success) {
-            throw new Error(response?.error || 'Failed to fetch dashboard data');
-          }
-
-          setData(response.data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err : new Error('Failed to fetch dashboard data'));
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+      if (!result.success) {
+        setError(new Error(result.error));
+      } else {
+        setData(result.data);
       }
+      setIsLoading(false);
     };
 
-    fetchDashboardData();
+    void fetchDashboardData();
 
     return () => {
       cancelled = true;
     };
-  }, [mode]);
+  }, [mode, fetchAction]);
 
   return { data, isLoading, error };
 }

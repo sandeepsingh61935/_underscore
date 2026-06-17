@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
 export interface User {
     id: string;
@@ -62,47 +63,29 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     const isAuthenticated = status === 'authenticated';
     const isLoading = status === 'loading';
 
+    const loginAction = useIpcAction<{ provider?: OAuthProviderType }, { user?: User }>('LOGIN');
+    const logoutAction = useIpcAction<void, void>('LOGOUT');
+    const getAuthStateAction = useIpcAction<Record<string, never>, { user?: User }>('GET_AUTH_STATE');
+
     // Fetch initial auth state from background
     useEffect(() => {
         let mounted = true;
 
         const fetchAuthState = async () => {
-            try {
-                // Check if chrome runtime is available (extension context)
-                if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
-                    // Not in extension context - keep current state
-                    if (mounted && status === 'loading') {
-                        setStatus('unauthenticated');
-                    }
-                    return;
-                }
+            if (status !== 'loading') return;
+            const result = await getAuthStateAction({});
+            if (!mounted) return;
 
-                const response = await chrome.runtime.sendMessage({
-                    type: 'GET_AUTH_STATE',
-                    payload: {},
-                    timestamp: Date.now()
-                });
-
-                if (!mounted) return;
-
-                if (response?.success && response.data?.user) {
-                    setUser(response.data.user);
-                    setStatus('authenticated');
-                } else {
-                    setUser(null);
-                    setStatus('unauthenticated');
-                }
-            } catch (err) {
-                if (!mounted) return;
-                console.error('[AuthProvider] Error fetching auth state:', err);
+            if (result.success && result.data.user) {
+                setUser(result.data.user);
+                setStatus('authenticated');
+            } else {
                 setUser(null);
                 setStatus('unauthenticated');
             }
         };
 
-        if (status === 'loading') {
-            fetchAuthState();
-        }
+        void fetchAuthState();
 
         // Listen for auth state changes from background
         const handleMessage = (message: any) => {
@@ -122,64 +105,36 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         }
 
         return () => { mounted = false; };
-    }, [status]);
+    }, [status, getAuthStateAction]);
 
     // Login function
     const login = useCallback(async (provider: OAuthProviderType = 'google') => {
         setStatus('loading');
         setError(null);
 
-        try {
-            if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
-                throw new Error('Not in extension context');
-            }
+        const result = await loginAction({ provider });
 
-            const response = await chrome.runtime.sendMessage({
-                type: 'LOGIN',
-                payload: { provider },
-                timestamp: Date.now()
-            });
-
-            if (response?.success && response.data?.user) {
-                setUser(response.data.user);
-                setStatus('authenticated');
-                return { success: true };
-            } else {
-                const errorMsg = response?.error || 'Login failed';
-                setError(errorMsg);
-                setStatus('unauthenticated');
-                return { success: false, error: errorMsg };
-            }
-        } catch (err) {
-            const errorMsg = (err as Error).message;
-            setError(errorMsg);
-            setStatus('unauthenticated');
-            return { success: false, error: errorMsg };
+        if (result.success && result.data.user) {
+            setUser(result.data.user);
+            setStatus('authenticated');
+            return { success: true };
         }
-    }, []);
+
+        const errorMsg = result.success ? 'Login failed' : result.error;
+        setError(errorMsg);
+        setStatus('unauthenticated');
+        return { success: false, error: errorMsg };
+    }, [loginAction]);
 
     // Logout function
     const logout = useCallback(async () => {
         setStatus('loading');
         setError(null);
 
-        try {
-            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-                await chrome.runtime.sendMessage({
-                    type: 'LOGOUT',
-                    payload: {},
-                    timestamp: Date.now()
-                });
-            }
-            setUser(null);
-            setStatus('unauthenticated');
-        } catch (err) {
-            console.error('[AuthProvider] Logout error:', err);
-            // Still clear user on error - logout should always succeed locally
-            setUser(null);
-            setStatus('unauthenticated');
-        }
-    }, []);
+        await logoutAction(undefined);
+        setUser(null);
+        setStatus('unauthenticated');
+    }, [logoutAction]);
 
     const clearError = useCallback(() => {
         setError(null);

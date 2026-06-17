@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import type { DomainCollection } from '@/shared/types/domain-collection';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
 interface CollectionsResult {
     collections: DomainCollection[];
@@ -31,25 +32,24 @@ export function useCollections(): CollectionsResult {
 
     const context = isExtensionContext() ? 'extension' : 'web';
 
+    const getCollectionsAction = useIpcAction<void, { collections: Array<{ id: string; domain: string; highlightCount: number; lastActive: string }> }>('GET_COLLECTIONS');
+
     useEffect(() => {
         let cancelled = false;
 
         const fetchCollections = async () => {
             try {
                 if (context === 'extension') {
-                    // Extension context - use chrome.runtime
-                    const response = await chrome.runtime.sendMessage({
-                        type: 'GET_COLLECTIONS',
-                        timestamp: Date.now(),
-                    });
+                    // Extension context - use IMessageBus via useIpcAction
+                    const ipcResult = await getCollectionsAction(undefined);
 
                     if (cancelled) return;
 
-                    if (!response || !response.success) {
-                        throw new Error(response?.error || 'Failed to fetch collections');
+                    if (!ipcResult.success) {
+                        throw new Error(ipcResult.error || 'Failed to fetch collections');
                     }
 
-                    const collections = (response.data.collections || []).map((col: any) => ({
+                    const collections = (ipcResult.data.collections || []).map((col) => ({
                         id: col.id,
                         domain: col.domain,
                         highlightCount: col.highlightCount,
@@ -136,7 +136,7 @@ export function useCollections(): CollectionsResult {
         return () => {
             cancelled = true;
         };
-    }, [context]);
+    }, [context, getCollectionsAction]);
 
     return result;
 }

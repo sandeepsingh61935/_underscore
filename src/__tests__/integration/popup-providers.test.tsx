@@ -19,6 +19,22 @@ const mockChrome = {
 import { ThemeProvider, useTheme } from '../../ui-system/theme/ThemeProvider';
 import { AuthProvider, useAuth } from '../../ui-system/providers/AuthProvider';
 import { PopupRouter, Route, Switch, useRouter } from '../../ui-system/router/PopupRouter';
+import { MessageBusProvider } from '../../shared/contexts/MessageBusContext';
+import type { IMessageBus } from '../../shared/interfaces/i-message-bus';
+
+// Build a MessageBus that proxies send() to the mocked chrome.runtime.sendMessage.
+const mockMessageBus: IMessageBus = {
+    send: vi.fn(async <T,>(_target, message) => {
+        const response = await mockChrome.runtime.sendMessage(message);
+        return response as T;
+    }),
+    subscribe: vi.fn(() => () => {}),
+    publish: vi.fn(async () => {}),
+} as unknown as IMessageBus;
+
+const wrapWithBus = (ui: React.ReactElement) => (
+    <MessageBusProvider messageBus={mockMessageBus}>{ui}</MessageBusProvider>
+);
 
 describe('ThemeProvider', () => {
     beforeEach(() => {
@@ -103,9 +119,11 @@ describe('AuthProvider', () => {
         }
 
         render(
-            <AuthProvider>
-                <TestComponent />
-            </AuthProvider>
+            <MessageBusProvider messageBus={mockMessageBus}>
+                <AuthProvider>
+                    <TestComponent />
+                </AuthProvider>
+            </MessageBusProvider>
         );
 
         expect(screen.getByTestId('status').textContent).toBe('loading');
@@ -123,9 +141,11 @@ describe('AuthProvider', () => {
         }
 
         render(
-            <AuthProvider>
-                <TestComponent />
-            </AuthProvider>
+            <MessageBusProvider messageBus={mockMessageBus}>
+                <AuthProvider>
+                    <TestComponent />
+                </AuthProvider>
+            </MessageBusProvider>
         );
 
         await waitFor(() => {
@@ -151,9 +171,11 @@ describe('AuthProvider', () => {
         }
 
         render(
-            <AuthProvider>
-                <TestComponent />
-            </AuthProvider>
+            <MessageBusProvider messageBus={mockMessageBus}>
+                <AuthProvider>
+                    <TestComponent />
+                </AuthProvider>
+            </MessageBusProvider>
         );
 
         await waitFor(() => {

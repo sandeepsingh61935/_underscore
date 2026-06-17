@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
 export interface Highlight {
     id: string;
@@ -38,6 +39,8 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
 
     const context = isExtensionContext() ? 'extension' : 'web';
 
+    const getHighlightsAction = useIpcAction<{ domain: string }, { highlights: Array<{ id: string; url: string; text: string; path?: string; createdAt: string }> }>('GET_HIGHLIGHTS_BY_DOMAIN');
+
     useEffect(() => {
         if (!domain) {
             setResult({ highlights: [], isLoading: false, error: null });
@@ -49,20 +52,16 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
         const fetchHighlights = async () => {
             try {
                 if (context === 'extension') {
-                    // Extension context - use chrome.runtime
-                    const response = await chrome.runtime.sendMessage({
-                        type: 'GET_HIGHLIGHTS_BY_DOMAIN',
-                        payload: { domain },
-                        timestamp: Date.now(),
-                    });
+                    // Extension context - use IMessageBus via useIpcAction
+                    const ipcResult = await getHighlightsAction({ domain });
 
                     if (cancelled) return;
 
-                    if (!response || !response.success) {
-                        throw new Error(response?.error || 'Failed to fetch highlights');
+                    if (!ipcResult.success) {
+                        throw new Error(ipcResult.error || 'Failed to fetch highlights');
                     }
 
-                    const highlights: Highlight[] = (response.data.highlights || []).map((hl: any) => ({
+                    const highlights: Highlight[] = (ipcResult.data.highlights || []).map((hl) => ({
                         id: hl.id,
                         url: hl.url,
                         text: hl.text,
@@ -132,7 +131,7 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
         return () => {
             cancelled = true;
         };
-    }, [domain, context]);
+    }, [domain, context, getHighlightsAction]);
 
     return result;
 }
