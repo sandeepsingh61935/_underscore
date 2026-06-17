@@ -10,7 +10,7 @@ import type { IAuthManager, OAuthProviderType, AuthState } from '@/background/au
 import { initializeBackground } from '@/background/bootstrap';
 import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { DomainQueryService } from '@/background/services/domain-query-service';
+import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 
@@ -151,14 +151,17 @@ export default defineBackground({
       });
 
       // --- Collections API handlers ---
-      
-      const domainQueryService = new DomainQueryService(repositoryFacade);
+
+      // Per ADR-006: the HighlightQueryService owns domain aggregations.
+      // It holds the readable side of the repository (the facade's
+      // underlying IHighlightRepository, since the facade wraps it).
+      const highlightQueryService = new HighlightQueryService(repositoryFacade as any);
 
       // Get Collections (Grouped by Domain) Handler
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
         logger.info('Handling GET_COLLECTIONS request', { mode: payload?.mode });
         try {
-          const collections = await domainQueryService.handleGetCollectionsRequest(payload?.mode);
+          const collections = await highlightQueryService.getCollections(payload?.mode);
           return { success: true, data: { collections } };
         } catch (error) {
           logger.error('GET_COLLECTIONS failed', error as Error);
@@ -170,7 +173,7 @@ export default defineBackground({
       messageBus.subscribe('GET_HIGHLIGHTS_BY_DOMAIN', async (payload: { domain: string }) => {
         logger.info('Handling GET_HIGHLIGHTS_BY_DOMAIN request', { domain: payload.domain });
         try {
-          const highlights = await domainQueryService.handleGetHighlightsByDomainRequest(payload.domain);
+          const highlights = await highlightQueryService.getHighlightsByDomain(payload.domain);
           return { success: true, data: { highlights } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
@@ -182,7 +185,7 @@ export default defineBackground({
       messageBus.subscribe('GET_DASHBOARD_DATA', async (payload: { mode?: string }) => {
         logger.info('Handling GET_DASHBOARD_DATA request', { mode: payload?.mode });
         try {
-          const data = await domainQueryService.handleGetDashboardDataRequest(payload?.mode);
+          const data = await highlightQueryService.getDashboardData(payload?.mode);
           return { success: true, data };
         } catch (error) {
           logger.error('GET_DASHBOARD_DATA failed', error as Error);
