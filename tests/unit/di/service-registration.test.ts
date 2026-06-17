@@ -10,7 +10,7 @@ import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
 import { Container } from '@/shared/di/container';
 import { registerServices, getDependencyGraph } from '@/shared/di/service-registration';
-import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
@@ -39,8 +39,7 @@ describe('Service Registration (8 tests)', () => {
       'eventBus',
       'storage',
       'repository',
-      'messaging',
-      'tabQuery',
+      'messageBus',
       'modeManager',
       'walkMode',
       'sprintMode',
@@ -58,8 +57,7 @@ describe('Service Registration (8 tests)', () => {
     expect(() => container.resolve<EventBus>('eventBus')).not.toThrow();
     expect(() => container.resolve<IStorage>('storage')).not.toThrow();
     expect(() => container.resolve<IHighlightRepository>('repository')).not.toThrow();
-    expect(() => container.resolve<IMessaging>('messaging')).not.toThrow();
-    expect(() => container.resolve<ITabQuery>('tabQuery')).not.toThrow();
+    expect(() => container.resolve<IMessageBus>('messageBus')).not.toThrow();
     expect(() => container.resolve<IModeManager>('modeManager')).not.toThrow();
     expect(() => container.resolve<IHighlightMode>('walkMode')).not.toThrow();
     expect(() => container.resolve<IHighlightMode>('sprintMode')).not.toThrow();
@@ -77,8 +75,7 @@ describe('Service Registration (8 tests)', () => {
       container.resolve('eventBus');
       container.resolve('storage');
       container.resolve('repository');
-      container.resolve('messaging');
-      container.resolve('tabQuery');
+      container.resolve('messageBus');
       container.resolve('modeManager');
       container.resolve('walkMode');
       container.resolve('sprintMode');

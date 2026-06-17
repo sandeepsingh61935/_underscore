@@ -4,7 +4,7 @@
  */
 
 import { MockLogger } from './mocks/mock-logger';
-import { MockMessaging } from './mocks/mock-messaging';
+import { MockMessageBus } from './mocks/mock-message-bus';
 import { MockModeManager } from './mocks/mock-mode-manager';
 import { MockRepository } from './mocks/mock-repository';
 import { MockStorage } from './mocks/mock-storage';
@@ -18,7 +18,7 @@ export interface MockContainerContext {
     logger: MockLogger;
     repository: MockRepository;
     storage: MockStorage;
-    messaging: MockMessaging;
+    messageBus: MockMessageBus;
     modeManager: MockModeManager;
     eventBus: EventBus;
   };
@@ -35,7 +35,7 @@ export function createMockContainer(): MockContainerContext {
   const logger = new MockLogger();
   const repository = new MockRepository();
   const storage = new MockStorage();
-  const messaging = new MockMessaging();
+  const messageBus = new MockMessageBus();
   const modeManager = new MockModeManager();
   const eventBus = new EventBus();
 
@@ -43,7 +43,7 @@ export function createMockContainer(): MockContainerContext {
   container.registerInstance('logger', logger);
   container.registerInstance('repository', repository);
   container.registerInstance('storage', storage);
-  container.registerInstance('messaging', messaging);
+  container.registerInstance('messageBus', messageBus);
   container.registerInstance('modeManager', modeManager);
   container.registerInstance('eventBus', eventBus);
 
@@ -53,7 +53,7 @@ export function createMockContainer(): MockContainerContext {
       logger,
       repository,
       storage,
-      messaging,
+      messageBus,
       modeManager,
       eventBus,
     },

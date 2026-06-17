@@ -15,14 +15,12 @@ import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
 import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
 import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
 import { StorageService } from '@/shared/services/storage-service';
@@ -118,22 +116,6 @@ export function registerServices(container: Container): void {
     const repository = container.resolve<IHighlightRepository>('repository');
     // We initialize facade asynchronously in content script
     return new RepositoryFacade(repository);
-  });
-
-  /**
-   * Chrome Messaging - Singleton
-   * Wraps chrome.runtime and chrome.tabs APIs
-   */
-  container.registerSingleton<IMessaging>('messaging', () => {
-    return new ChromeMessaging();
-  });
-
-  /**
-   * Chrome Tab Query - Singleton
-   * Wraps chrome.tabs.query API
-   */
-  container.registerSingleton<ITabQuery>('tabQuery', () => {
-    return new ChromeTabQuery();
   });
 
   // ============================================
@@ -327,8 +309,6 @@ export function getDependencyGraph(): Map<string, string[]> {
     ['storage', []],
     ['ephemeralStorage', []],
     ['repository', []],
-    ['messaging', []],
-    ['tabQuery', []],
     ['messagingCircuitBreaker', ['logger']],
     ['messageBus', ['logger', 'messagingCircuitBreaker']],
     ['modeManager', ['eventBus', 'logger']],

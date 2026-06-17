@@ -70,17 +70,18 @@ describe('Mock Infrastructure (10 tests)', () => {
   });
 
   // ============================================
-  // Mock Messaging Tests
+  // Mock MessageBus Tests
   // ============================================
 
-  it('5. MockMessaging handles simulator helpers', () => {
-    const { messaging } = context.mocks;
+  it('5. MockMessageBus handles simulator helpers', () => {
+    const { messageBus } = context.mocks;
     const handler = vi.fn();
 
-    messaging.onMessage(handler);
-    messaging.simulateMessage({ type: 'TEST' });
+    const unsubscribe = messageBus.subscribe('TEST', handler);
+    messageBus.simulateIncoming('TEST', { foo: 'bar' });
 
-    expect(handler).toHaveBeenCalledWith({ type: 'TEST' }, {}, expect.any(Function));
+    expect(handler).toHaveBeenCalledWith({ foo: 'bar' }, expect.anything());
+    unsubscribe();
   });
 
   // ============================================

@@ -15,13 +15,11 @@
 import type { Container } from './container';
 
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { IMessaging, ITabQuery } from '@/shared/interfaces/i-messaging';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { ChromeMessaging, ChromeTabQuery } from '@/shared/services/chrome-messaging';
 import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
 import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
 import { StorageService } from '@/shared/services/storage-service';
@@ -92,22 +90,6 @@ export function registerBaseServices(container: Container): void {
     // ============================================
     // MESSAGING LAYER (Chrome Extension IPC)
     // ============================================
-
-    /**
-     * Chrome Messaging - Singleton
-     * Low-level wrapper for chrome.runtime messaging
-     */
-    container.registerSingleton<IMessaging>('messaging', () => {
-        return new ChromeMessaging();
-    });
-
-    /**
-     * Chrome Tab Query - Singleton
-     * Utility for querying active tabs
-     */
-    container.registerSingleton<ITabQuery>('tabQuery', () => {
-        return new ChromeTabQuery();
-    });
 
     /**
      * Messaging Circuit Breaker - Singleton
