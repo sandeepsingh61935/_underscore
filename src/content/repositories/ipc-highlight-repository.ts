@@ -50,6 +50,7 @@ export class IpcHighlightRepository implements IWritableHighlightRepository {
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {
+    if (highlights.length === 0) return;
     await this.messageBus.send<MessageResponse<void>>('background', {
       type: 'IPC_HIGHLIGHT_ADD_MANY',
       payload: { highlights } as unknown as object,

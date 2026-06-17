@@ -79,12 +79,6 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     expect(sentMessages[0]!.target).toBe('background');
   });
 
-  it('addMany: sends one message even for empty array (no N+1)', async () => {
-    await repo.addMany([]);
-    expect(captured).toHaveLength(1);
-    expect(MessageSchema.parse(captured[0]).type).toBe('IPC_HIGHLIGHT_ADD_MANY');
-  });
-
   it('does not implement read methods (interface narrowed per ADR-005)', () => {
     // Compile-time check: IpcHighlightRepository only has write methods.
     // This test guards against accidental re-introduction of read methods
