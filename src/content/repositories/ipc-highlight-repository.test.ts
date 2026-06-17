@@ -68,11 +68,21 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     expect(sentMessages.every((m) => m.target === 'background')).toBe(true);
   });
 
-  it('addMany: loops add() per highlight (TODO ADR-011 batches this)', async () => {
-    await repo.addMany([makeHighlight(), makeHighlight()]);
-    expect(captured).toHaveLength(2);
-    expect(MessageSchema.parse(captured[0]).type).toBe('IPC_HIGHLIGHT_ADD');
-    expect(MessageSchema.parse(captured[1]).type).toBe('IPC_HIGHLIGHT_ADD');
+  it('addMany: sends exactly one IPC_HIGHLIGHT_ADD_MANY message with highlights array (ADR-011)', async () => {
+    const highlights = [makeHighlight(), makeHighlight(), makeHighlight()];
+    await repo.addMany(highlights);
+    expect(captured).toHaveLength(1);
+    const parsed = MessageSchema.parse(captured[0]);
+    expect(parsed.type).toBe('IPC_HIGHLIGHT_ADD_MANY');
+    expect(parsed.timestamp).toBeGreaterThan(0);
+    expect((parsed.payload as { highlights: HighlightDataV2[] }).highlights).toEqual(highlights);
+    expect(sentMessages[0]!.target).toBe('background');
+  });
+
+  it('addMany: sends one message even for empty array (no N+1)', async () => {
+    await repo.addMany([]);
+    expect(captured).toHaveLength(1);
+    expect(MessageSchema.parse(captured[0]).type).toBe('IPC_HIGHLIGHT_ADD_MANY');
   });
 
   it('does not implement read methods (interface narrowed per ADR-005)', () => {

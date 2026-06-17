@@ -50,9 +50,10 @@ export class IpcHighlightRepository implements IWritableHighlightRepository {
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {
-    // TODO(ADR-011): batch via single IPC_HIGHLIGHT_ADD_MANY message.
-    for (const highlight of highlights) {
-      await this.add(highlight);
-    }
+    await this.messageBus.send<MessageResponse<void>>('background', {
+      type: 'IPC_HIGHLIGHT_ADD_MANY',
+      payload: { highlights } as unknown as object,
+      timestamp: Date.now(),
+    });
   }
 }

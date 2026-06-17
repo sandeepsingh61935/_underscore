@@ -23,9 +23,11 @@ export class BackgroundHighlightOrchestrator {
 
   initialize(): void {
     this.messageBus.subscribe('IPC_HIGHLIGHT_ADD', this.onAdd.bind(this));
+    this.messageBus.subscribe('IPC_HIGHLIGHT_ADD_MANY', this.onAddMany.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHT_UPDATE', this.onUpdate.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHT_REMOVE', this.onRemove.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHTS_FIND_BY_URL', this.onFindByUrl.bind(this));
+    this.messageBus.subscribe('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH', this.onFindByContentHash.bind(this));
   }
 
   private async onAdd(highlight: HighlightDataV2) {
@@ -37,6 +39,19 @@ export class BackgroundHighlightOrchestrator {
     } catch (e) {
       const err = e as Error;
       this.logger.error('[bridge] add failed', err, { id: highlight.id });
+      return { success: false, error: err.message };
+    }
+  }
+
+  private async onAddMany({ highlights }: { highlights: HighlightDataV2[] }) {
+    this.logger.info('[bridge] addMany', { count: highlights.length });
+    try {
+      this.facade.addMany(highlights);
+      this.logger.debug('[bridge] response', { count: highlights.length, ok: true });
+      return { success: true, data: undefined as void };
+    } catch (e) {
+      const err = e as Error;
+      this.logger.error('[bridge] addMany failed', err, { count: highlights.length });
       return { success: false, error: err.message };
     }
   }
@@ -74,6 +89,18 @@ export class BackgroundHighlightOrchestrator {
     } catch (e) {
       const err = e as Error;
       this.logger.error('[bridge] findByUrl failed', err, { url });
+      return { success: false, error: err.message };
+    }
+  }
+
+  private async onFindByContentHash({ hash }: { hash: string }) {
+    this.logger.info('[bridge] findByContentHash', { hash });
+    try {
+      const data = this.facade.findByContentHash(hash);
+      return { success: true, data: data || null };
+    } catch (e) {
+      const err = e as Error;
+      this.logger.error('[bridge] findByContentHash failed', err, { hash });
       return { success: false, error: err.message };
     }
   }
