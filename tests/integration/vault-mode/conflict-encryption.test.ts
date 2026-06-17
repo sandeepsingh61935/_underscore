@@ -143,7 +143,8 @@ describe('Integration: Conflict Resolution + Encryption', () => {
         } as any;
 
         // Initialize components
-        keyManager = new KeyManager(mockLogger);
+        keyManager = new KeyManager(mockLogger, mockAuthManager);
+        await keyManager.unlock(testUserId, 'test-passphrase');
         await keyManager.generateKeyPair(testUserId);
 
         encryptionService = new E2EEncryptionService(keyManager, mockLogger);

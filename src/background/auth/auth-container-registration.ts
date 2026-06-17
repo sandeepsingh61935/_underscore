@@ -6,6 +6,7 @@
 
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IAuthManager } from './interfaces/i-auth-manager';
 import type { IKeyManager } from './interfaces/i-key-manager';
 import type { IEncryptionService } from './interfaces/i-encryption-service';
 import type { IAuditLogger } from './interfaces/i-audit-logger';
@@ -53,7 +54,8 @@ export function registerAuthComponents(container: Container): void {
      */
     container.registerSingleton<IKeyManager>('keyManager', () => {
         const logger = container.resolve<ILogger>('logger');
-        return new KeyManager(logger);
+        const authManager = container.resolve<IAuthManager>('authManager');
+        return new KeyManager(logger, authManager);
     });
 
     // ==================== E2E Encryption Service ====================

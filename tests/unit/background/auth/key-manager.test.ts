@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { KeyManager } from '@/background/auth/key-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 
 // Mock chrome.storage.local
 const mockStorage = new Map<string, any>();
@@ -44,9 +45,14 @@ global.chrome = {
     },
 } as any;
 
+const TEST_PASSPHRASE = 'test-passphrase-correct-horse-battery-staple';
+const TEST_KDF_ITERATIONS = 1; // Tests only need a valid PBKDF2 derivation, not 600k
+
 describe('KeyManager', () => {
     let keyManager: KeyManager;
     let mockLogger: ILogger;
+    let mockAuthManager: IAuthManager;
+    const testUserId = 'user-123';
 
     beforeEach(() => {
         mockStorage.clear();
@@ -61,12 +67,92 @@ describe('KeyManager', () => {
             getLevel: vi.fn(),
         };
 
-        keyManager = new KeyManager(mockLogger);
+        mockAuthManager = {
+            currentUser: { id: testUserId, email: 'test@example.com', displayName: 'Test User' },
+            isAuthenticated: true,
+            signIn: vi.fn(),
+            signOut: vi.fn(),
+            refreshToken: vi.fn(),
+            onAuthStateChanged: vi.fn(),
+        } as unknown as IAuthManager;
+
+        keyManager = new KeyManager(mockLogger, mockAuthManager);
     });
+
+    /**
+     * Helper: seed a v2 StoredKey for a user, then unlock the vault.
+     *
+     * `generateKeyPair` calls `storeKeyPair` (which now writes a fresh salt +
+     * 600_000-iteration KDF) and writes the resulting blob. To test the
+     * `unlock -> getPrivateKey` round trip, we seed a pre-derived blob with
+     * a low iteration count so the suite stays fast.
+     */
+    async function seedAndUnlock(userId: string, passphrase: string = TEST_PASSPHRASE): Promise<void> {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(passphrase),
+            'PBKDF2',
+            false,
+            ['deriveKey']
+        );
+        const masterKey = await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: TEST_KDF_ITERATIONS, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+
+        const keyPair = await crypto.subtle.generateKey(
+            { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+            true,
+            ['encrypt', 'decrypt']
+        );
+        const publicKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
+        const privateKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+        const privateKeyData = new TextEncoder().encode(JSON.stringify(privateKeyJwk));
+
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv },
+            masterKey,
+            privateKeyData
+        );
+
+        const storageKey = `key_manager_${userId}`;
+        mockStorage.set(storageKey, {
+            keyId: `${userId}_${Date.now()}`,
+            userId,
+            publicKeyJwk,
+            encryptedPrivateKey: bufferToBase64(encrypted),
+            iv: bufferToBase64(iv.buffer),
+            salt: bufferToBase64(salt.buffer),
+            kdfIterations: TEST_KDF_ITERATIONS,
+            createdAt: new Date().toISOString(),
+            algorithm: 'RSA-OAEP',
+            version: 2,
+        });
+
+        // Re-import the same passphrase via the manager to keep the master key
+        // pinned to the same salt/iterations stored in the fixture.
+        await keyManager.unlock(userId, passphrase);
+    }
+
+    function bufferToBase64(buffer: ArrayBuffer): string {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            // Loop bound guarantees `bytes[i]` is defined here.
+            binary += String.fromCharCode(bytes[i] as number);
+        }
+        return btoa(binary);
+    }
 
     describe('generateKeyPair()', () => {
         it('should generate RSA-2048 keypair and store it', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
 
             const keyPair = await keyManager.generateKeyPair(userId);
 
@@ -88,11 +174,20 @@ describe('KeyManager', () => {
             expect(storedKey.publicKeyJwk).toBeDefined();
             expect(storedKey.encryptedPrivateKey).toBeDefined();
             expect(storedKey.iv).toBeDefined();
+            expect(storedKey.salt).toBeDefined();
+            expect(storedKey.kdfIterations).toBeDefined();
             expect(storedKey.algorithm).toBe('RSA-OAEP');
+            expect(storedKey.version).toBe(2);
+        });
+
+        it('should throw when vault is locked', async () => {
+            await expect(keyManager.generateKeyPair('user-locked')).rejects.toThrow('Vault locked');
         });
 
         it('should generate unique keys for different users', async () => {
+            await keyManager.unlock('user-1', TEST_PASSPHRASE);
             const keyPair1 = await keyManager.generateKeyPair('user-1');
+            await keyManager.unlock('user-2', TEST_PASSPHRASE);
             const keyPair2 = await keyManager.generateKeyPair('user-2');
 
             // Export and compare
@@ -106,6 +201,7 @@ describe('KeyManager', () => {
             // Mock crypto.subtle.generateKey to fail
             const originalGenerateKey = crypto.subtle.generateKey;
             crypto.subtle.generateKey = vi.fn().mockRejectedValue(new Error('Crypto failure'));
+            await keyManager.unlock('user-fail', TEST_PASSPHRASE);
 
             await expect(keyManager.generateKeyPair('user-fail')).rejects.toThrow('Key generation failed');
 
@@ -117,6 +213,7 @@ describe('KeyManager', () => {
     describe('getPublicKey()', () => {
         it('should retrieve public key from storage', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(userId);
 
             const publicKey = await keyManager.getPublicKey(userId);
@@ -127,6 +224,7 @@ describe('KeyManager', () => {
 
         it('should cache public key in memory', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(userId);
 
             // First call
@@ -148,6 +246,7 @@ describe('KeyManager', () => {
     describe('getPrivateKey()', () => {
         it('should decrypt and retrieve private key', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             const keyPair = await keyManager.generateKeyPair(userId);
 
             const storageKey = `key_manager_${userId}`;
@@ -177,6 +276,7 @@ describe('KeyManager', () => {
 
         it('should cache private key in memory', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(userId);
 
             const storageKey = `key_manager_${userId}`;
@@ -196,15 +296,21 @@ describe('KeyManager', () => {
 
         it('should throw error for key ID mismatch', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(userId);
 
             await expect(keyManager.getPrivateKey('wrong-key-id')).rejects.toThrow();
+        });
+
+        it('should throw when vault is locked', async () => {
+            await expect(keyManager.getPrivateKey('user-locked_key')).rejects.toThrow('Vault is locked');
         });
     });
 
     describe('rotateKey()', () => {
         it('should generate new keypair and invalidate caches', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
 
             // Generate initial key
             await keyManager.generateKeyPair(userId);
@@ -227,6 +333,7 @@ describe('KeyManager', () => {
     describe('backupKey() and restoreKey()', () => {
         it('should backup and restore keys successfully', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             const originalKeyPair = await keyManager.generateKeyPair(userId);
 
             // Backup
@@ -258,6 +365,7 @@ describe('KeyManager', () => {
     describe('Edge Cases & Security', () => {
         it('should encrypt private key before storage (not plaintext)', async () => {
             const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(userId);
 
             const storageKey = `key_manager_${userId}`;
@@ -272,8 +380,9 @@ describe('KeyManager', () => {
         it('should use unique IV for each key storage', async () => {
             const user1 = 'user-1';
             const user2 = 'user-2';
-
+            await keyManager.unlock(user1, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(user1);
+            await keyManager.unlock(user2, TEST_PASSPHRASE);
             await keyManager.generateKeyPair(user2);
 
             const key1 = mockStorage.get(`key_manager_${user1}`);
@@ -284,6 +393,7 @@ describe('KeyManager', () => {
 
         it('should handle concurrent key generation requests', async () => {
             const userId = 'user-concurrent';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
 
             // Simulate concurrent calls
             const [keyPair1, keyPair2] = await Promise.all([
@@ -299,6 +409,7 @@ describe('KeyManager', () => {
         it('should handle large key operations efficiently', async () => {
             const userId = 'user-perf';
             const startTime = performance.now();
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
 
             await keyManager.generateKeyPair(userId);
             await keyManager.getPublicKey(userId);
@@ -314,6 +425,7 @@ describe('KeyManager', () => {
     describe('Integration: Encrypt/Decrypt Flow', () => {
         it('should support full encrypt/decrypt cycle with generated keys', async () => {
             const userId = 'user-integration';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
             const keyPair = await keyManager.generateKeyPair(userId);
 
             // Encrypt with public key
@@ -337,6 +449,90 @@ describe('KeyManager', () => {
             );
 
             expect(new TextDecoder().decode(decrypted)).toBe(plaintext);
+        });
+    });
+
+    describe('unlock() / lock()', () => {
+        it('should derive master key from passphrase and round-trip private key', async () => {
+            const userId = 'user-unlock';
+            await seedAndUnlock(userId);
+
+            const storedKey = mockStorage.get(`key_manager_${userId}`);
+            // Round-trip: derive the same master key from the stored salt + passphrase,
+            // then decrypt the stored private key and assert keyId survives a fresh load.
+            const privateKey = await keyManager.getPrivateKey(storedKey.keyId);
+            expect(privateKey.type).toBe('private');
+        });
+
+        it('should reject an invalid passphrase (PBKDF2 derives a different key, AES-GCM fails)', async () => {
+            const userId = 'user-bad-pass';
+            await seedAndUnlock(userId, TEST_PASSPHRASE);
+
+            // Re-derive a master key with a wrong passphrase and try to decrypt.
+            // Use a fresh manager so the unlock uses the wrong passphrase.
+            const badKeyManager = new KeyManager(mockLogger, mockAuthManager);
+            const storedKey = mockStorage.get(`key_manager_${userId}`);
+            // Unlock succeeds (it derives SOME key); decryption is what fails.
+            await badKeyManager.unlock(userId, 'wrong-passphrase');
+            await expect(badKeyManager.getPrivateKey(storedKey.keyId)).rejects.toThrow();
+        });
+
+        it('should throw on v1 StoredKey (deprecated format)', async () => {
+            const userId = 'user-v1';
+            mockStorage.set(`key_manager_${userId}`, {
+                keyId: `${userId}_1`,
+                userId,
+                publicKeyJwk: {},
+                encryptedPrivateKey: 'AAAA',
+                iv: 'AAAA',
+                createdAt: new Date().toISOString(),
+                algorithm: 'RSA-OAEP',
+                version: 1,
+            });
+
+            await expect(keyManager.unlock(userId, TEST_PASSPHRASE)).rejects.toThrow(/deprecated v1/);
+        });
+
+        it('should bootstrap a fresh vault when no StoredKey exists', async () => {
+            // No prior storage entry — unlock should derive a fresh master key
+            // (salted with a random per-user salt) so a subsequent storeKeyPair
+            // call can persist the blob.
+            await keyManager.unlock('new-user', TEST_PASSPHRASE);
+            await keyManager.generateKeyPair('new-user');
+
+            const storedKey = mockStorage.get(`key_manager_new-user`);
+            expect(storedKey).toBeDefined();
+            expect(storedKey.version).toBe(2);
+            expect(storedKey.salt).toBeTruthy();
+            expect(storedKey.kdfIterations).toBe(600_000);
+        });
+
+        it('lock() should wipe master key so subsequent ops fail', async () => {
+            const userId = 'user-lock';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
+            await keyManager.generateKeyPair(userId);
+
+            keyManager.lock();
+
+            await expect(keyManager.generateKeyPair(userId)).rejects.toThrow('Vault locked');
+        });
+    });
+
+    describe('getCurrentUserId() (via getPublicKey() without userId)', () => {
+        it('should return the real user id from AuthManager, not the literal "current-user"', async () => {
+            const userId = 'user-123';
+            await keyManager.unlock(userId, TEST_PASSPHRASE);
+            await keyManager.generateKeyPair(userId);
+
+            // No explicit userId: getPublicKey should fall through to authManager.currentUser.id
+            const publicKey = await keyManager.getPublicKey();
+            expect(publicKey).toBeInstanceOf(CryptoKey);
+            expect(publicKey.type).toBe('public');
+        });
+
+        it('should throw if no authenticated user is available', async () => {
+            (mockAuthManager as any).currentUser = null;
+            await expect(keyManager.getPublicKey()).rejects.toThrow('No authenticated user');
         });
     });
 });

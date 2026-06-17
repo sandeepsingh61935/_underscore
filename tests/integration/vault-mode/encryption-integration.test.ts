@@ -83,7 +83,8 @@ describe('Integration: Encryption Components', () => {
         };
 
         // Initialize components
-        keyManager = new KeyManager(mockLogger);
+        keyManager = new KeyManager(mockLogger, mockAuthManager);
+        await keyManager.unlock(testUserId, 'test-passphrase');
         encryptionService = new E2EEncryptionService(keyManager, mockLogger);
         encryptedAPIClient = new EncryptedAPIClient(
             mockInnerClient,

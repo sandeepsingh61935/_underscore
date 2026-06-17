@@ -12,6 +12,7 @@ import { EventName } from '@/shared/types/events';
 import type { SupabaseClient } from '@/background/api/supabase-client';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 describe('Integration: Real-Time + Encryption', () => {
@@ -21,11 +22,21 @@ describe('Integration: Real-Time + Encryption', () => {
     let mockSupabase: any;
     let mockEventBus: IEventBus;
     let mockLogger: ILogger;
+    let mockAuthManager: IAuthManager;
     let realtimeCallback: (payload: any) => void;
     const testUserId = 'rt-user-123';
 
     beforeEach(async () => {
         vi.clearAllMocks();
+
+        mockAuthManager = {
+            currentUser: { id: testUserId, email: 'test@example.com', displayName: 'Test User' },
+            isAuthenticated: true,
+            signIn: vi.fn(),
+            signOut: vi.fn(),
+            refreshToken: vi.fn(),
+            onAuthStateChanged: vi.fn(),
+        } as unknown as IAuthManager;
 
         mockLogger = {
             debug: vi.fn(),
@@ -65,7 +76,8 @@ describe('Integration: Real-Time + Encryption', () => {
         } as unknown as SupabaseClient;
 
         // Initialize encryption
-        keyManager = new KeyManager(mockLogger);
+        keyManager = new KeyManager(mockLogger, mockAuthManager);
+        await keyManager.unlock(testUserId, 'test-passphrase');
         await keyManager.generateKeyPair(testUserId);
         encryptionService = new E2EEncryptionService(keyManager, mockLogger);
 
