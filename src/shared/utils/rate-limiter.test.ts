@@ -3,16 +3,14 @@ import { RateLimiter } from './rate-limiter';
 
 describe('RateLimiter (persistent)', () => {
     beforeEach(() => {
-        // @ts-expect-error - test-only mock
-        globalThis.chrome = {
-            storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) } },
+        (globalThis as any).chrome = {
+            storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => {}) } as any },
         };
     });
 
     it('persists attempt count to chrome.storage.local on tryAcquire', async () => {
         const set = vi.fn(async () => {});
-        // @ts-expect-error - test-only mock
-        globalThis.chrome.storage.local.set = set;
+        (globalThis as any).chrome.storage.local.set = set;
         const limiter = await RateLimiter.persistent(
             { maxAttempts: 3, windowMs: 60_000, storageKey: 'rl:test' },
             { logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn(), setLevel: vi.fn(), getLevel: vi.fn() } as any }
@@ -27,8 +25,7 @@ describe('RateLimiter (persistent)', () => {
         const get = vi.fn(async () => ({
             'rl:test': { attempts: 2, windowStart: Date.now() },
         }));
-        // @ts-expect-error
-        globalThis.chrome.storage.local.get = get;
+        (globalThis as any).chrome.storage.local.get = get;
         const limiter = await RateLimiter.persistent(
             { maxAttempts: 3, windowMs: 60_000, storageKey: 'rl:test' },
             { logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn(), setLevel: vi.fn(), getLevel: vi.fn() } as any }
@@ -38,7 +35,6 @@ describe('RateLimiter (persistent)', () => {
     });
 
     it('fails closed (returns false) when chrome.storage.local is unavailable', async () => {
-        // @ts-expect-error
         delete (globalThis as any).chrome;
         const limiter = await RateLimiter.persistent(
             { maxAttempts: 3, windowMs: 60_000, storageKey: 'rl:test' },
@@ -51,8 +47,7 @@ describe('RateLimiter (persistent)', () => {
         const get = vi.fn(async () => ({
             'rl:test': { attempts: 99, windowStart: Date.now() - 120_000 },
         }));
-        // @ts-expect-error
-        globalThis.chrome.storage.local.get = get;
+        (globalThis as any).chrome.storage.local.get = get;
         const limiter = await RateLimiter.persistent(
             { maxAttempts: 3, windowMs: 60_000, storageKey: 'rl:test' },
             { logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn(), setLevel: vi.fn(), getLevel: vi.fn() } as any }

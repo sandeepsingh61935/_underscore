@@ -86,7 +86,7 @@ export class RateLimiter {
     }
 
     /** Test/internal seam: hydrate from persisted state. */
-    private hydrate(state: PersistedState): void {
+    hydrate(state: PersistedState): void {
         this.attempts = state.attempts;
         this.windowStart = state.windowStart;
     }

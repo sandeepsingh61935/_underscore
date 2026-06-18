@@ -26,6 +26,7 @@ export interface DomainHighlightSummary {
   text: string;
   url: string;
   path: string;
+  domain: string;
   createdAt: Date;
 }
 
@@ -88,6 +89,7 @@ export class HighlightQueryService {
         text: hl.text,
         url: hl.url ?? '',
         path: hl.url ? new URL(hl.url).pathname : '/',
+        domain,
         createdAt: hl.createdAt,
       }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
