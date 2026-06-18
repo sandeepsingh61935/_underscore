@@ -92,7 +92,7 @@ const Text = forwardRef<HTMLElement, TextProps>(
     const Component = as || semanticTagMap[variant] || 'p';
 
     const isLink = variant === 'link';
-    const colorVar = muted ? 'var( --ink-3 )' : isLink ? 'var( --accent )' : 'var(--ink)';
+    const colorVar = muted ? 'var(--ink-3)' : isLink ? 'var(--accent)' : 'var(--ink)';
 
     const computedStyle: CSSProperties = {
       color: colorVar,

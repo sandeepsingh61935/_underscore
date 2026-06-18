@@ -23,12 +23,12 @@ export interface IconProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'childr
 }
 
 const colorVar: Record<NonNullable<IconProps['color']>, string> = {
-    primary: 'var( --accent )',
+    primary: 'var(--accent)',
     'on-surface': 'var(--ink)',
     'on-surface-variant': 'var(--ink-2)',
     // V2 spec rule 1: single accent. Error is an attention signal
     // and routes through the same channel as primary.
-    error: 'var( --accent )',
+    error: 'var(--accent)',
 };
 
 const sizeClass: Record<NonNullable<IconProps['size']>, string> = {

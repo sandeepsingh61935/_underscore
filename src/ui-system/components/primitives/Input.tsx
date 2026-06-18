@@ -22,7 +22,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         const inputStyle: CSSProperties = {
             color: 'var(--ink)',
             fontSize: 'var(--step-0)',
-            borderColor: error ? 'var( --accent )' : 'var( --rule )',
+            borderColor: error ? 'var(--accent)' : 'var(--rule)',
             ...style,
         };
         return (
@@ -37,8 +37,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                             'min-h-[44px]',
                             'placeholder:opacity-60',
                             'transition-colors',
-                            'focus:outline-none focus:border-[var( --accent )]',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
+                            'focus:outline-none focus:border-[var(--accent)]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
                             'disabled:opacity-50 disabled:cursor-not-allowed',
                             className
                         )}
@@ -50,7 +50,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     <p
                         className="mt-1"
                         style={{
-                            color: error ? 'var( --accent )' : 'var( --ink-3 )',
+                            color: error ? 'var(--accent)' : 'var(--ink-3)',
                             fontSize: 'var(--step--1)',
                         }}
                     >

@@ -25,7 +25,7 @@ export function Spinner({ className, size = 'md' }: SpinnerProps) {
         <div
             className={cn('rounded-full animate-spin border-2', sizeMap[size], className)}
             style={{
-                borderTopColor: 'var( --accent )',
+                borderTopColor: 'var(--accent)',
                 borderRightColor: 'var(--rule-soft)',
                 borderBottomColor: 'var(--rule-soft)',
                 borderLeftColor: 'var(--rule-soft)',
