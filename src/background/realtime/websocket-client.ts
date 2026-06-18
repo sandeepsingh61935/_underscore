@@ -52,6 +52,12 @@ export class WebSocketClient implements IWebSocketClient {
             // Supabase Realtime requires the JWT token to authenticate the WebSocket connection
             const { data: { session } } = await this.supabase.auth.getSession();
 
+            // Check if unsubscribed or switched user while waiting for session
+            if (this.currentUserId !== userId) {
+                this.logger.info('Subscription aborted: user changed or unsubscribed during authentication');
+                return;
+            }
+
             if (!session || !session.access_token) {
                 this.logger.error('Cannot subscribe to realtime: No active session or access token');
                 throw new Error('No active session for realtime subscription');
@@ -100,12 +106,12 @@ export class WebSocketClient implements IWebSocketClient {
      * Unsubscribe from the current channel
      */
     unsubscribe(): void {
+        this.logger.info('Unsubscribing from realtime updates');
         if (this.channel) {
-            this.logger.info('Unsubscribing from realtime updates');
             this.channel.unsubscribe();
             this.channel = undefined;
-            this.currentUserId = undefined;
         }
+        this.currentUserId = undefined;
     }
 
     /**

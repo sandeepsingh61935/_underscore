@@ -45,7 +45,7 @@ export class ConnectionManager {
             this.logger.info('Connected to realtime service');
         } catch (error) {
             this.logger.error('Failed to connect to realtime service', error as Error);
-            await this.handleReconnect();
+            void this.handleReconnect();
         } finally {
             this.isConnecting = false;
         }

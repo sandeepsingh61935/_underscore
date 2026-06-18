@@ -1,7 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WebSocketClient } from '@/background/realtime/websocket-client';
-import { SupabaseClient } from '@/background/api/supabase-client';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { ILogger } from '@/shared/interfaces/i-logger';
 import { EventName } from '@/shared/types/events';
@@ -16,7 +15,7 @@ describe('WebSocketClient', () => {
     beforeEach(() => {
         mockChannel = {
             on: vi.fn().mockReturnThis(),
-            subscribe: vi.fn().mockImplementation((cb) => {
+            subscribe: vi.fn().mockImplementation((cb: any) => {
                 if (cb) cb('SUBSCRIBED');
                 return mockChannel;
             }),
@@ -25,8 +24,18 @@ describe('WebSocketClient', () => {
         };
 
         mockSupabase = {
-            supabase: {
-                channel: vi.fn().mockReturnValue(mockChannel)
+            channel: vi.fn().mockReturnValue(mockChannel),
+            auth: {
+                getSession: vi.fn().mockResolvedValue({
+                    data: {
+                        session: {
+                            access_token: 'fake-token-123'
+                        }
+                    }
+                })
+            },
+            realtime: {
+                setAuth: vi.fn()
             }
         };
 
@@ -44,7 +53,7 @@ describe('WebSocketClient', () => {
         };
 
         wsClient = new WebSocketClient(
-            mockSupabase as unknown as SupabaseClient,
+            mockSupabase as any,
             mockEventBus as unknown as IEventBus,
             mockLogger as unknown as ILogger
         );
@@ -54,7 +63,7 @@ describe('WebSocketClient', () => {
         it('should subscribe to user channel', async () => {
             await wsClient.subscribe('user-123');
 
-            expect(mockSupabase.supabase.channel).toHaveBeenCalledWith('highlights-sync');
+            expect(mockSupabase.channel).toHaveBeenCalledWith('highlights-sync');
             expect(mockChannel.on).toHaveBeenCalledWith(
                 'postgres_changes',
                 expect.objectContaining({
@@ -71,10 +80,10 @@ describe('WebSocketClient', () => {
 
         it('should not resubscribe if already subscribed to same user', async () => {
             await wsClient.subscribe('user-123');
-            mockSupabase.supabase.channel.mockClear();
+            mockSupabase.channel.mockClear();
 
             await wsClient.subscribe('user-123');
-            expect(mockSupabase.supabase.channel).not.toHaveBeenCalled();
+            expect(mockSupabase.channel).not.toHaveBeenCalled();
         });
 
         it('should unsubscribe before subscribing to new user', async () => {
@@ -82,11 +91,11 @@ describe('WebSocketClient', () => {
             await wsClient.subscribe('user-2');
 
             expect(mockChannel.unsubscribe).toHaveBeenCalled();
-            expect(mockSupabase.supabase.channel).toHaveBeenCalledTimes(2);
+            expect(mockSupabase.channel).toHaveBeenCalledTimes(2);
         });
 
         it('should handle subscription errors', async () => {
-            mockChannel.subscribe.mockImplementation((cb) => {
+            mockChannel.subscribe.mockImplementation((cb: any) => {
                 if (cb) cb('CHANNEL_ERROR', new Error('Fail'));
                 return mockChannel;
             });

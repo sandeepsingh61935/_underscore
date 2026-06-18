@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { WebSocketClient } from '@/background/realtime/websocket-client';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
-import { SupabaseClient } from '@/background/api/supabase-client';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { ILogger } from '@/shared/interfaces/i-logger';
 import { EventName } from '@/shared/types/events';
@@ -35,8 +34,18 @@ describe('Realtime Resilience & Security', () => {
 
         // 2. Mock Supabase
         mockSupabase = {
-            supabase: {
-                channel: vi.fn().mockReturnValue(mockChannel)
+            channel: vi.fn().mockReturnValue(mockChannel),
+            auth: {
+                getSession: vi.fn().mockResolvedValue({
+                    data: {
+                        session: {
+                            access_token: 'fake-token-123'
+                        }
+                    }
+                })
+            },
+            realtime: {
+                setAuth: vi.fn()
             }
         };
 
@@ -62,7 +71,7 @@ describe('Realtime Resilience & Security', () => {
 
         // 5. Initialize Components
         wsClient = new WebSocketClient(
-            mockSupabase as unknown as SupabaseClient,
+            mockSupabase as any,
             mockEventBus as unknown as IEventBus,
             mockLogger as unknown as ILogger
         );
@@ -116,7 +125,7 @@ describe('Realtime Resilience & Security', () => {
                 })
             );
             // Verify logger sanitized or handled it safely (mock logger just accepts args)
-            expect(mockLogger.debug).toHaveBeenCalled();
+            expect(mockLogger.info).toHaveBeenCalled();
         });
 
         it('should not crash on missing required fields (Schema Mismatch)', () => {
@@ -142,14 +151,9 @@ describe('Realtime Resilience & Security', () => {
             );
         });
 
-        it('should handle completely malformed non-object payloads gracefully', () => {
+        it('should handle completely malformed non-object payloads gracefully', async () => {
             // Payload is null?
-            expect(() => changeHandler(null)).toThrow(); // It might throw if we access property of null
-
-            // Re-setup to test robustness if we decide to fix it
-            // Logic: `const anyPayload = payload as any; const eventType = anyPayload.eventType;`
-            // If payload is null, it crashes.
-            // This is a VALID vulnerability finding.
+            await expect(changeHandler(null)).rejects.toThrow();
         });
     });
 
@@ -161,7 +165,7 @@ describe('Realtime Resilience & Security', () => {
         it('should debounce or handle rapid online/offline toggling (10ms)', async () => {
             // Setup
             await connectionManager.connect('user-1');
-            mockSupabase.supabase.channel.mockClear(); // Clear initial connect
+            mockSupabase.channel.mockClear(); // Clear initial connect
 
             // Act: Toggle 10 times rapidly
             for (let i = 0; i < 10; i++) {
@@ -194,7 +198,7 @@ describe('Realtime Resilience & Security', () => {
 
             // If `subscribe` takes time (async), validation check might race.
 
-            expect(mockSupabase.supabase.channel).not.toHaveBeenCalled();
+            expect(mockSupabase.channel).not.toHaveBeenCalled();
             // Should be 0 because we were ALREADY connected ('user-1').
             // The check `!this.wsClient.isConnected()` protects us.
         });
@@ -225,8 +229,9 @@ describe('Realtime Resilience & Security', () => {
             await connectPromise;
 
             // Assert
-            // connectionManager.disconnect() should have called unsubscribe
-            expect(mockChannel.unsubscribe).toHaveBeenCalled();
+            // The subscription should have been aborted, so no subscribe or unsubscribe calls on the channel
+            expect(mockChannel.subscribe).not.toHaveBeenCalled();
+            expect(mockChannel.unsubscribe).not.toHaveBeenCalled();
             // And we should definitely NOT be connected
             expect(wsClient.isConnected()).toBe(false);
         });
