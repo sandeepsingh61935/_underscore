@@ -159,6 +159,18 @@ export class KeyManager implements IKeyManager {
     }
 
     /**
+     * Run an operation against the cached master key without exposing it.
+     *
+     * The CryptoKey is held in a local constant so it cannot be re-read after
+     * a concurrent `lock()` clears `this.masterKey` mid-operation. The caller
+     * must not retain the key reference past the await chain.
+     */
+    async withMasterKey<T>(fn: (key: CryptoKey) => Promise<T>): Promise<T> {
+        const key = this.getMasterKey();
+        return fn(key);
+    }
+
+    /**
      * Generate a fresh per-user PBKDF2 salt.
      *
      * Used during first-unlock bootstrap. The same helper covers both call

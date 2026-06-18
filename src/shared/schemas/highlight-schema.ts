@@ -76,6 +76,30 @@ export type ColorRole = z.infer<typeof ColorRoleSchema>;
 // ============================================
 
 /**
+ * Encrypted highlight text envelope
+ *
+ * Per ADR-013, the content script is a courier (sends plaintext) and the
+ * background is the vault (encrypts before persisting). The on-disk /
+ * on-cloud shape carries the ciphertext in `textEncrypted`; `text` itself
+ * is dropped at the persistence boundary.
+ *
+ * Shape mirrors the ADR's example: { ciphertext, iv, keyId }.
+ *
+ * Encryption algorithm is master-key symmetric AES-GCM (Option B in the
+ * task plan): the same passphrase-derived master key (ADR-012) that wraps
+ * the user's RSA private key also wraps each highlight's text. See
+ * `src/background/services/highlight-encryptor.ts` for the encrypt/decrypt
+ * implementation and `IKeyManager.withMasterKey` for key access.
+ */
+export const EncryptedTextSchema = z.object({
+  ciphertext: z.string().min(1, 'ciphertext cannot be empty'), // base64
+  iv: z.string().min(1, 'iv cannot be empty'), // base64, 12-byte AES-GCM IV
+  keyId: z.string().min(1, 'keyId cannot be empty'), // identifier for the key that encrypted this
+});
+
+export type EncryptedText = z.infer<typeof EncryptedTextSchema>;
+
+/**
  * Highlight Data Schema - Core highlight data structure
  */
 export const HighlightDataSchemaV2 = z.object({
@@ -83,6 +107,10 @@ export const HighlightDataSchemaV2 = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid().optional(), // Added for RLS
   text: z.string().min(1).max(10000),
+  // ADR-013: ciphertext envelope written by the background after the
+  // plaintext `text` is encrypted under the user's master key. Set by
+  // `BackgroundHighlightOrchestrator`; absent for in-flight payloads.
+  textEncrypted: EncryptedTextSchema.optional(),
   url: z.string().optional(),
 
   // Content hash for deduplication

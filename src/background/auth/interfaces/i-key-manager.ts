@@ -57,6 +57,19 @@ export interface IKeyManager {
     readonly isUnlocked: boolean;
 
     /**
+     * Run an operation against the cached master key without exposing it.
+     *
+     * Per ADR-013 the master key never leaves the background's memory; this
+     * callback keeps that boundary atomic. The CryptoKey is valid only for
+     * the duration of `fn` and must not be retained by the caller.
+     *
+     * @param fn - Operation to perform with the master key
+     * @returns Whatever `fn` returns
+     * @throws Error if the vault is locked
+     */
+    withMasterKey<T>(fn: (key: CryptoKey) => Promise<T>): Promise<T>;
+
+    /**
      * User ID for which the vault is currently unlocked, or `null` if locked.
      */
     readonly currentUserId: string | null;

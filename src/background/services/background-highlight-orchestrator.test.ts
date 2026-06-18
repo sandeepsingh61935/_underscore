@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BackgroundHighlightOrchestrator } from './background-highlight-orchestrator';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2, EncryptedText } from '@/shared/schemas/highlight-schema';
+import type { HighlightEncryptor } from './highlight-encryptor';
 
 const logger = LoggerFactory.getLogger('Test');
 
@@ -19,8 +20,13 @@ function makeHighlight(id: string): HighlightDataV2 {
   } as unknown as HighlightDataV2;
 }
 
+function makeEnvelope(): EncryptedText {
+  return { ciphertext: 'AAAA', iv: 'BBBB', keyId: 'user-abc' };
+}
+
 describe('BackgroundHighlightOrchestrator', () => {
   let facade: RepositoryFacade;
+  let encryptor: HighlightEncryptor;
   let subscriptions: Map<string, (payload: any) => Promise<any>>;
   let orchestrator: BackgroundHighlightOrchestrator;
 
@@ -31,11 +37,22 @@ describe('BackgroundHighlightOrchestrator', () => {
       update: vi.fn(),
       remove: vi.fn(),
       getAll: vi.fn(() => [makeHighlight('h-1')]),
+      get: vi.fn((id: string) => (id === 'h-1' ? makeHighlight('h-1') : undefined)),
       findByContentHash: vi.fn((hash: string) => {
         if (hash === 'hash-h-1') return makeHighlight('h-1');
         return undefined;
       }),
     } as unknown as RepositoryFacade;
+
+    // Encryptor stub: clears `text` and sets `textEncrypted` (mirrors
+    // the real HighlightEncryptor contract).
+    encryptor = {
+      encrypt: vi.fn(async (h: HighlightDataV2) => {
+        if (h.textEncrypted) return h;
+        return { ...h, text: '', textEncrypted: makeEnvelope() };
+      }),
+      decrypt: vi.fn(async (e: EncryptedText) => e.ciphertext + '-plaintext'),
+    } as unknown as HighlightEncryptor;
 
     subscriptions = new Map();
     const messageBus = {
@@ -44,7 +61,12 @@ describe('BackgroundHighlightOrchestrator', () => {
       }),
     };
 
-    orchestrator = new BackgroundHighlightOrchestrator(facade, messageBus as any, logger);
+    orchestrator = new BackgroundHighlightOrchestrator(
+      facade,
+      encryptor,
+      messageBus as any,
+      logger
+    );
     orchestrator.initialize();
   });
 
@@ -55,21 +77,45 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(subscriptions.has('IPC_HIGHLIGHT_REMOVE')).toBe(true);
     expect(subscriptions.has('IPC_HIGHLIGHTS_FIND_BY_URL')).toBe(true);
     expect(subscriptions.has('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH')).toBe(true);
+    expect(subscriptions.has('IPC_HIGHLIGHT_DECRYPT_TEXT')).toBe(true);
+    expect(subscriptions.has('IPC_HIGHLIGHT_GET')).toBe(true);
   });
 
-  it('onAdd: delegates to facade.add and returns success envelope', async () => {
+  it('onAdd: encrypts the highlight then delegates to facade.add with ciphertext in textEncrypted', async () => {
     const h = makeHighlight('h-2');
     const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(h);
-    expect(facade.add).toHaveBeenCalledWith(h);
+    expect(encryptor.encrypt).toHaveBeenCalledWith(h);
+    const persisted = (facade.add as any).mock.calls[0][0];
+    expect(persisted.id).toBe('h-2');
+    expect(persisted.text).toBe('');
+    expect(persisted.textEncrypted).toEqual(makeEnvelope());
     expect(result).toEqual({ success: true, data: undefined });
   });
 
-  it('onAddMany: delegates to facade.addMany (single call, not a loop) and returns success envelope', async () => {
+  it('onAdd: returns error envelope when encryptor throws (vault locked)', async () => {
+    (encryptor.encrypt as any).mockRejectedValueOnce(new Error('Vault is locked'));
+    const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(makeHighlight('h-locked'));
+    expect(result).toEqual({ success: false, error: 'Vault is locked' });
+    expect(facade.add).not.toHaveBeenCalled();
+  });
+
+  it('onAdd: returns error envelope when facade throws', async () => {
+    (facade.add as any).mockImplementation(() => { throw new Error('boom'); });
+    const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(makeHighlight('h-err'));
+    expect(result).toEqual({ success: false, error: 'boom' });
+  });
+
+  it('onAddMany: encrypts the batch and calls facade.addMany once', async () => {
     const highlights = [makeHighlight('h-bulk-1'), makeHighlight('h-bulk-2')];
     const result = await subscriptions.get('IPC_HIGHLIGHT_ADD_MANY')!({ highlights });
+    expect(encryptor.encrypt).toHaveBeenCalledTimes(2);
     expect(facade.addMany).toHaveBeenCalledTimes(1);
-    expect(facade.addMany).toHaveBeenCalledWith(highlights);
     expect(facade.add).not.toHaveBeenCalled();
+    const persisted = (facade.addMany as any).mock.calls[0][0];
+    expect(persisted[0].text).toBe('');
+    expect(persisted[0].textEncrypted).toEqual(makeEnvelope());
+    expect(persisted[1].text).toBe('');
+    expect(persisted[1].textEncrypted).toEqual(makeEnvelope());
     expect(result).toEqual({ success: true, data: undefined });
   });
 
@@ -79,9 +125,22 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(result).toEqual({ success: false, error: 'boom-batch' });
   });
 
-  it('onUpdate: delegates to facade.update', async () => {
+  it('onUpdate: encrypts the text when the caller sends plaintext', async () => {
+    (facade.get as any) = vi.fn(() => makeHighlight('h-3'));
     await subscriptions.get('IPC_HIGHLIGHT_UPDATE')!({ id: 'h-3', updates: { text: 'new' } });
-    expect(facade.update).toHaveBeenCalledWith('h-3', { text: 'new' });
+    expect(encryptor.encrypt).toHaveBeenCalledTimes(1);
+    const persisted = (facade.update as any).mock.calls[0];
+    expect(persisted[0]).toBe('h-3');
+    expect(persisted[1].text).toBe('');
+    expect(persisted[1].textEncrypted).toEqual(makeEnvelope());
+  });
+
+  it('onUpdate: passes through when the caller does not touch text', async () => {
+    await subscriptions.get('IPC_HIGHLIGHT_UPDATE')!({ id: 'h-3', updates: { colorRole: 'blue' } });
+    expect(encryptor.encrypt).not.toHaveBeenCalled();
+    const persisted = (facade.update as any).mock.calls[0];
+    expect(persisted[0]).toBe('h-3');
+    expect(persisted[1].colorRole).toBe('blue');
   });
 
   it('onRemove: delegates to facade.remove', async () => {
@@ -106,9 +165,70 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(notFoundResult.data).toBeNull();
   });
 
-  it('onAdd: returns error envelope when facade throws', async () => {
-    (facade.add as any).mockImplementation(() => { throw new Error('boom'); });
-    const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(makeHighlight('h-err'));
-    expect(result).toEqual({ success: false, error: 'boom' });
+  it('onDecryptText: returns plaintext for a stored envelope', async () => {
+    (facade.get as any) = vi.fn(() => ({
+      ...makeHighlight('h-5'),
+      text: '',
+      textEncrypted: makeEnvelope(),
+    }));
+    const result = await subscriptions.get('IPC_HIGHLIGHT_DECRYPT_TEXT')!({ id: 'h-5' });
+    expect(result.success).toBe(true);
+    expect(result.data.plaintext).toBe('AAAA-plaintext');
+  });
+
+  it('onDecryptText: passes through when no envelope is present (legacy plaintext)', async () => {
+    (facade.get as any) = vi.fn(() => makeHighlight('h-6'));
+    const result = await subscriptions.get('IPC_HIGHLIGHT_DECRYPT_TEXT')!({ id: 'h-6' });
+    expect(result.success).toBe(true);
+    expect(result.data.plaintext).toBe('sample');
+    expect(encryptor.decrypt).not.toHaveBeenCalled();
+  });
+
+  it('onDecryptText: returns NOT_FOUND when the highlight is missing', async () => {
+    (facade.get as any) = vi.fn(() => undefined);
+    const result = await subscriptions.get('IPC_HIGHLIGHT_DECRYPT_TEXT')!({ id: 'nope' });
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('NOT_FOUND');
+  });
+
+  it('onDecryptText: surfaces encryptor errors', async () => {
+    (facade.get as any) = vi.fn(() => ({
+      ...makeHighlight('h-7'),
+      text: '',
+      textEncrypted: makeEnvelope(),
+    }));
+    (encryptor.decrypt as any).mockRejectedValueOnce(new Error('Vault is locked'));
+    const result = await subscriptions.get('IPC_HIGHLIGHT_DECRYPT_TEXT')!({ id: 'h-7' });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Vault is locked');
+  });
+
+  it('onGetHighlight: returns the stored record with textEncrypted when includePlaintext is false', async () => {
+    const stored = { ...makeHighlight('h-8'), text: '', textEncrypted: makeEnvelope() };
+    (facade.get as any) = vi.fn(() => stored);
+    const result = await subscriptions.get('IPC_HIGHLIGHT_GET')!({ id: 'h-8' });
+    expect(result.success).toBe(true);
+    expect(result.data.textEncrypted).toBe(stored.textEncrypted);
+    expect(encryptor.decrypt).not.toHaveBeenCalled();
+  });
+
+  it('onGetHighlight: decrypts textEncrypted when includePlaintext is true', async () => {
+    const envelope = makeEnvelope();
+    const stored = { ...makeHighlight('h-9'), text: '', textEncrypted: envelope };
+    (facade.get as any) = vi.fn(() => stored);
+    const result = await subscriptions.get('IPC_HIGHLIGHT_GET')!({
+      id: 'h-9',
+      includePlaintext: true,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data.text).toBe('AAAA-plaintext');
+    expect(encryptor.decrypt).toHaveBeenCalledWith(envelope);
+  });
+
+  it('onGetHighlight: returns NOT_FOUND when the highlight is missing', async () => {
+    (facade.get as any) = vi.fn(() => undefined);
+    const result = await subscriptions.get('IPC_HIGHLIGHT_GET')!({ id: 'nope' });
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('NOT_FOUND');
   });
 });

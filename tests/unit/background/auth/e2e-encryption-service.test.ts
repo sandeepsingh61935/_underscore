@@ -76,6 +76,7 @@ describe('E2EEncryptionService', () => {
             get currentUserId(): string | null {
                 return null;
             },
+            withMasterKey: vi.fn(),
             generateKeyPair: vi.fn(),
             getPublicKey: vi.fn().mockResolvedValue(testKeyPair.publicKey),
             getPrivateKey: vi.fn().mockResolvedValue(testKeyPair.privateKey),

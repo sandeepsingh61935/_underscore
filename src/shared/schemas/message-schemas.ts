@@ -62,6 +62,16 @@ export function validateMessage(message: unknown): Message {
 }
 
 /**
+ * IPC channel identifiers for the highlight bridge (ADR-013).
+ *
+ * These are owned by the background-side `BackgroundHighlightOrchestrator`
+ * and the content-side `IpcHighlightRepository`. Defining them in one
+ * place prevents typo-driven channel mismatches.
+ */
+export const IPC_HIGHLIGHT_DECRYPT_TEXT = 'IPC_HIGHLIGHT_DECRYPT_TEXT' as const;
+export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
+
+/**
  * Validates message target
  * @throws {z.ZodError} if target is invalid
  */
