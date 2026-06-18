@@ -26,7 +26,7 @@ function makeStubBus(): IMessageBus {
 
 function wrap(bus: IMessageBus): ({ children }: { children: ReactNode }) => React.ReactElement {
   return ({ children }: { children: ReactNode }) =>
-    React.createElement(MessageBusProvider, { messageBus: bus }, children);
+    React.createElement(MessageBusProvider, { messageBus: bus, children });
 }
 
 describe('useUnlockVault', () => {

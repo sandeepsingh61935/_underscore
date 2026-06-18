@@ -317,18 +317,18 @@ describe('TokenStore Integration Tests', () => {
 
         // Act: Save first time
         await tokenStore.saveToken(token);
-        const stored1 = mockStorage.data.get('auth_token_user-123') as Record<
-            string,
-            unknown
-        >;
+        const stored1 = mockStorage.data.get('auth_token_user-123') as {
+            iv: string;
+            encryptedData: string;
+        };
 
         // Act: Update (save again)
         await tokenStore.removeToken(token.userId);
         await tokenStore.saveToken(token);
-        const stored2 = mockStorage.data.get('auth_token_user-123') as Record<
-            string,
-            unknown
-        >;
+        const stored2 = mockStorage.data.get('auth_token_user-123') as {
+            iv: string;
+            encryptedData: string;
+        };
 
         // Assert: Different IVs even for same plaintext
         expect(stored1.iv).toBeDefined();

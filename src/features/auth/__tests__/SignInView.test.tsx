@@ -10,6 +10,27 @@ vi.mock('../../../core/context/AppProvider', () => ({
     useApp: vi.fn(),
 }));
 
+const mockSupabase = {
+    auth: {
+        signInWithPassword: vi.fn().mockResolvedValue({
+            data: { user: { id: 'test-user-id', email: 'test@example.com' } },
+            error: null,
+        }),
+        signUp: vi.fn().mockResolvedValue({
+            data: { user: { id: 'test-user-id', email: 'test@example.com' } },
+            error: null,
+        }),
+        signInWithOAuth: vi.fn().mockResolvedValue({
+            data: { url: 'https://google.com' },
+            error: null,
+        }),
+    },
+};
+
+vi.mock('@supabase/supabase-js', () => ({
+    createClient: vi.fn(() => mockSupabase),
+}));
+
 const mockLogin = vi.fn();
 const mockSetIsLoading = vi.fn();
 

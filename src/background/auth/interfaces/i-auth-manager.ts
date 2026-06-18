@@ -37,6 +37,7 @@ export interface User {
     readonly email: string;
     readonly displayName: string;
     readonly photoUrl?: string;
+    readonly provider?: string;
 }
 
 /**

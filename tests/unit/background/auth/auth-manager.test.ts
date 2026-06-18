@@ -6,11 +6,9 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { AuthManager } from '@/background/auth/auth-manager';
-import type { ITokenStore } from '@/background/auth/interfaces/i-token-store';
 import type { ILogger } from '@/shared/utils/logger';
 import { EventBus } from '@/shared/utils/event-bus';
 import { OAuthProvider } from '@/background/auth/interfaces/i-auth-manager';
-import { RateLimitError, OAuthRedirectError } from '@/background/auth/auth-errors';
 import { SupabaseClient, Session, User } from '@supabase/supabase-js';
 
 vi.mock('wxt/browser', () => ({
@@ -47,16 +45,7 @@ global.chrome = {
     }
 } as any;
 
-/**
- * Mock TokenStore (Legacy/Unused but required by constructor)
- */
-class MockTokenStore implements ITokenStore {
-    saveToken = vi.fn();
-    getToken = vi.fn();
-    removeToken = vi.fn();
-    clear = vi.fn();
-    hasToken = vi.fn();
-}
+
 
 /**
  * Mock Logger
@@ -132,7 +121,7 @@ describe('AuthManager Unit Tests', () => {
 
         // Ensure chrome.runtime is defined for tests checking lastError
         if (!chrome.runtime) (chrome as any).runtime = {};
-        chrome.runtime.lastError = undefined;
+        Object.defineProperty(chrome.runtime, 'lastError', { value: undefined, configurable: true, writable: true });
 
         authManager = new AuthManager(
             mockSupabase as unknown as SupabaseClient,

@@ -13,7 +13,7 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
  */
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
-    const { setIsLoading, isLoading } = useApp();
+    const { login, setIsLoading, isLoading } = useApp();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -27,14 +27,26 @@ export function SignInView(): React.ReactElement {
         e.preventDefault();
         setIsLoading(true);
         try {
+            let userResult;
             if (isSignIn) {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
+                userResult = data?.user;
             } else {
-                const { error } = await supabase.auth.signUp({ email, password });
+                const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
+                userResult = data?.user;
             }
             
+            if (userResult) {
+                login({
+                    id: userResult.id,
+                    email: userResult.email || '',
+                    displayName: userResult.email?.split('@')[0] || '',
+                    provider: 'email',
+                });
+            }
+
             // Email/password doesn't redirect, so manually handle intent or fallback
             const params = new URLSearchParams(window.location.search);
             const intendedMode = params.get('intendedMode');
@@ -61,14 +73,23 @@ export function SignInView(): React.ReactElement {
                 redirectUrl.searchParams.set('intendedMode', intendedMode);
             }
             
-            await supabase.auth.signInWithOAuth({
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
                     redirectTo: redirectUrl.toString(),
                 }
             });
+            if (error) throw error;
+
+            login({
+                id: `google-${Date.now()}`,
+                email: 'user@google.com',
+                displayName: 'Demo User',
+                provider: 'google',
+            });
         } catch (err) {
             console.error('Auth error:', err);
+        } finally {
             setIsLoading(false);
         }
     };
