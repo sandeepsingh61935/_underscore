@@ -143,6 +143,15 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(persisted[1].colorRole).toBe('blue');
   });
 
+  it('onUpdate: returns NOT_FOUND when the caller updates text on a missing highlight (no plaintext leak)', async () => {
+    (facade.get as any) = vi.fn(() => undefined);
+    const result = await subscriptions.get('IPC_HIGHLIGHT_UPDATE')!({ id: 'missing', updates: { text: 'secret' } });
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('NOT_FOUND');
+    expect(encryptor.encrypt).not.toHaveBeenCalled();
+    expect(facade.update).not.toHaveBeenCalled();
+  });
+
   it('onRemove: delegates to facade.remove', async () => {
     await subscriptions.get('IPC_HIGHLIGHT_REMOVE')!({ id: 'h-4' });
     expect(facade.remove).toHaveBeenCalledWith('h-4');

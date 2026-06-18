@@ -76,19 +76,23 @@ export class BackgroundHighlightOrchestrator {
       // plaintext `text` so no plaintext lands at rest.
       if (typeof updates.text === 'string') {
         const existing = this.facade.get(id);
-        if (existing) {
-          const stub: HighlightDataV2 = {
-            ...existing,
-            text: updates.text,
-            userId: existing.userId,
-          };
-          const encrypted = await this.encryptor.encrypt(stub);
-          updates = {
-            ...updates,
-            text: encrypted.text,
-            textEncrypted: encrypted.textEncrypted,
-          };
+        if (!existing) {
+          // No existing record to derive userId from. Reject the update
+          // rather than persist plaintext with a possibly-mismatched
+          // userId; the caller can re-send with the correct id.
+          return { success: false, error: `Highlight not found: ${id}`, code: 'NOT_FOUND' };
         }
+        const stub: HighlightDataV2 = {
+          ...existing,
+          text: updates.text,
+          userId: existing.userId,
+        };
+        const encrypted = await this.encryptor.encrypt(stub);
+        updates = {
+          ...updates,
+          text: encrypted.text,
+          textEncrypted: encrypted.textEncrypted,
+        };
       }
       this.facade.update(id, updates);
       return { success: true, data: undefined as void };
