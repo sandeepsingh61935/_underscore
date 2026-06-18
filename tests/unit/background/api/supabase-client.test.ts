@@ -7,10 +7,9 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { SupabaseClient } from '@/background/api/supabase-client';
-import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { SyncEvent } from '@/background/api/interfaces/i-api-client';
+import { SyncEventType, type SyncEvent } from '@/background/api/interfaces/i-api-client';
 import {
     AuthenticationError,
     TimeoutError,
@@ -42,7 +41,7 @@ const defaultRlsQueryChain = () => {
 };
 
 // Mock auth manager
-const mockAuthManager: IAuthManager = {
+const mockAuthManager: any = {
     isAuthenticated: true,
     currentUser: {
         id: 'user-123',
@@ -63,6 +62,7 @@ const mockLogger: ILogger = {
     warn: vi.fn(),
     error: vi.fn(),
     setLevel: vi.fn(),
+    getLevel: vi.fn(),
 };
 
 describe('SupabaseClient', () => {
@@ -263,7 +263,7 @@ describe('SupabaseClient', () => {
             const events: SyncEvent[] = Array.from({ length: 100 }, (_, i) => ({
                 event_id: `event-${i}`,
                 user_id: 'user-123',
-                type: 'highlight.created' as const,
+                type: SyncEventType.HIGHLIGHT_CREATED,
                 data: {
                     id: `highlight-${i}`,
                     text: `Text ${i}`,

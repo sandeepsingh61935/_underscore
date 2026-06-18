@@ -94,7 +94,8 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
       },
     };
 
-    contentRepo = new IpcHighlightRepository();
+    const contentBus = new ChromeMessageBus(logger) as unknown as IMessageBus;
+    contentRepo = new IpcHighlightRepository(contentBus);
   });
 
   it('content.add reaches the SW facade and extension-origin IDB', async () => {

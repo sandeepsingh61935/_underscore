@@ -9,7 +9,6 @@ import { WebSocketClient } from '@/background/realtime/websocket-client';
 import { E2EEncryptionService } from '@/background/auth/e2e-encryption-service';
 import { KeyManager } from '@/background/auth/key-manager';
 import { EventName } from '@/shared/types/events';
-import type { SupabaseClient } from '@/background/api/supabase-client';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
@@ -70,10 +69,20 @@ describe('Integration: Real-Time + Encryption', () => {
         };
 
         mockSupabase = {
-            supabase: {
-                channel: vi.fn().mockReturnValue(mockChannel),
+            channel: vi.fn().mockReturnValue(mockChannel),
+            auth: {
+                getSession: vi.fn().mockResolvedValue({
+                    data: {
+                        session: {
+                            access_token: 'fake-token-123'
+                        }
+                    }
+                })
             },
-        } as unknown as SupabaseClient;
+            realtime: {
+                setAuth: vi.fn()
+            }
+        } as any;
 
         // Initialize encryption
         keyManager = new KeyManager(mockLogger, mockAuthManager);

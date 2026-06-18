@@ -125,7 +125,7 @@ describe('EncryptedAPIClient', () => {
         it('should decrypt highlights after retrieval', async () => {
             const encryptedHighlight: HighlightDataV2 = {
                 id: 'hl-1',
-                text: '[ENCRYPTED:encrypted-base64-data]',
+                text: '[ENCRYPTED:{"version":1,"keyId":"key-123","data":"encrypted-base64-data","timestamp":12345}]',
                 contentHash: 'hash',
                 colorRole: 'yellow',
                 type: 'underscore',
@@ -169,7 +169,7 @@ describe('EncryptedAPIClient', () => {
         it('should handle decryption failures gracefully', async () => {
             const encryptedHighlight: HighlightDataV2 = {
                 id: 'hl-1',
-                text: '[ENCRYPTED:corrupted-data]',
+                text: '[ENCRYPTED:{"version":1,"keyId":"key-123","data":"corrupted-data","timestamp":12345}]',
                 contentHash: 'hash',
                 colorRole: 'yellow',
                 type: 'underscore',
@@ -246,7 +246,7 @@ describe('EncryptedAPIClient', () => {
                 type: 'highlight.created' as SyncEventType,
                 data: {
                         id: 'hl-1',
-                    text: '[ENCRYPTED:encrypted-data]',
+                    text: '[ENCRYPTED:{"version":1,"keyId":"key-123","data":"encrypted-data","timestamp":12345}]',
                     contentHash: 'hash',
                     colorRole: 'yellow',
                     type: 'underscore',

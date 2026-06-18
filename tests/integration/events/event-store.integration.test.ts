@@ -343,7 +343,7 @@ describe('EventStore Integration Tests', () => {
             // Verify chronological order
             for (let i = 1; i < events.length; i++) {
                 expect(events[i]?.timestamp).toBeGreaterThanOrEqual(
-                    events[i - 1]?.timestamp
+                    events[i - 1]!.timestamp
                 );
             }
         });
@@ -375,7 +375,7 @@ describe('EventStore Integration Tests', () => {
             // Verify chronological order maintained
             for (let i = 1; i < events.length; i++) {
                 expect(events[i]?.timestamp).toBeGreaterThanOrEqual(
-                    events[i - 1]?.timestamp
+                    events[i - 1]!.timestamp
                 );
             }
         });

@@ -216,7 +216,7 @@ describe('Integration: Conflict Resolution + Encryption', () => {
             const pulledEvents = await encryptedAPIClient.pullEvents(0);
             const decryptedRemoteEventAPI = pulledEvents[0]!;
 
-            expect(decryptedRemoteEventAPI.data.text).toBe('Remote change (winner)');
+            expect((decryptedRemoteEventAPI.data as HighlightDataV2).text).toBe('Remote change (winner)');
 
             // Convert to StoreSyncEvent for resolver
             const decryptedRemoteEvent = apiToStoreEvent(decryptedRemoteEventAPI);

@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { Container } from '@/shared/di/container';
+import { Container } from '@/background/di/container';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
 import type { ISyncQueue } from '@/background/sync/interfaces/i-sync-queue';
