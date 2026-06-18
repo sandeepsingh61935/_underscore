@@ -55,6 +55,22 @@ export class ChromeMessageBus implements IMessageBus {
   }
 
   /**
+   * Determine whether a chrome.runtime message sender is this extension.
+   *
+   * Per ADR-014: only messages whose `sender.id` matches `chrome.runtime.id`
+   * are trusted. This blocks external extensions (whose `sender.id` is set to
+   * their own extension ID) and any senders that lack an `id` at all (e.g.
+   * the background's own internal publish path). Content scripts and the
+   * popup both carry our extension ID on the sender.
+   */
+  private isTrustedSender(sender: chrome.runtime.MessageSender | undefined | null): boolean {
+    if (!sender || typeof sender.id !== 'string') {
+      return false;
+    }
+    return sender.id === chrome.runtime.id;
+  }
+
+  /**
    * Setup chrome.runtime.onMessage listener
    * Dispatches incoming messages to registered handlers
    */
@@ -71,6 +87,22 @@ export class ChromeMessageBus implements IMessageBus {
         });
         // Send error back if possible
         sendResponse({ success: false, error: 'Invalid message structure' });
+        return false;
+      }
+
+      // Sender-origin guard (ADR-014): reject any message whose sender is
+      // not this extension. Runs after validation so a structurally invalid
+      // message is still classified as "invalid" (not "untrusted").
+      if (!this.isTrustedSender(sender)) {
+        this.logger.warn('Rejected IPC from untrusted sender', {
+          messageType: validatedMessage.type,
+          senderId: sender?.id,
+        });
+        sendResponse({
+          success: false,
+          error: 'Untrusted sender',
+          code: 'UNTRUSTED_SENDER',
+        });
         return false;
       }
 

@@ -11,6 +11,7 @@ const mockChromeRuntime = {
     removeListener: vi.fn(),
   },
   lastError: null as { message: string } | null,
+  id: 'test-extension-id',
 };
 
 // Mock chrome.tabs API
@@ -382,7 +383,10 @@ describe('ChromeMessageBus', () => {
         timestamp: Date.now(),
       };
 
-      const sender = { tab: { id: 123 } } as chrome.runtime.MessageSender;
+      const sender = {
+        id: 'test-extension-id',
+        tab: { id: 123 },
+      } as chrome.runtime.MessageSender;
 
       // Simulate chrome.runtime.onMessage firing
       messageListener(message, sender, vi.fn());
@@ -400,7 +404,11 @@ describe('ChromeMessageBus', () => {
 
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
 
-      messageListener({ type: 'TEST', payload: {}, timestamp: Date.now() }, {}, vi.fn());
+      messageListener(
+        { type: 'TEST', payload: {}, timestamp: Date.now() },
+        { id: 'test-extension-id' },
+        vi.fn()
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -414,7 +422,7 @@ describe('ChromeMessageBus', () => {
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
 
       // Invalid message (missing required fields)
-      const result = messageListener({ type: '' }, {}, vi.fn());
+      const result = messageListener({ type: '' }, { id: 'test-extension-id' }, vi.fn());
 
       expect(result).toBe(false); // Don't keep channel open
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -431,7 +439,11 @@ describe('ChromeMessageBus', () => {
 
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
 
-      messageListener({ type: 'TEST', payload: {}, timestamp: Date.now() }, {}, vi.fn());
+      messageListener(
+        { type: 'TEST', payload: {}, timestamp: Date.now() },
+        { id: 'test-extension-id' },
+        vi.fn()
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -453,7 +465,11 @@ describe('ChromeMessageBus', () => {
 
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
 
-      messageListener({ type: 'TEST', payload: {}, timestamp: Date.now() }, {}, vi.fn());
+      messageListener(
+        { type: 'TEST', payload: {}, timestamp: Date.now() },
+        { id: 'test-extension-id' },
+        vi.fn()
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -477,7 +493,11 @@ describe('ChromeMessageBus', () => {
 
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
 
-      messageListener({ type: 'TEST', payload: {}, timestamp: Date.now() }, {}, vi.fn());
+      messageListener(
+        { type: 'TEST', payload: {}, timestamp: Date.now() },
+        { id: 'test-extension-id' },
+        vi.fn()
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -496,7 +516,7 @@ describe('ChromeMessageBus', () => {
       const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
       const result = messageListener(
         { type: 'TEST', payload: {}, timestamp: Date.now() },
-        {},
+        { id: 'test-extension-id' },
         vi.fn()
       );
 
@@ -509,11 +529,152 @@ describe('ChromeMessageBus', () => {
 
       const result = messageListener(
         { type: 'ORPHAN', payload: {}, timestamp: Date.now() },
-        {},
+        { id: 'test-extension-id' },
         vi.fn()
       );
 
       expect(result).toBe(false); // No handlers, return false
+    });
+  });
+
+  describe('subscribe() - Sender Validation (ADR-014)', () => {
+    it('should dispatch messages from this extension (sender.id === chrome.runtime.id)', async () => {
+      const handler = vi.fn();
+      messageBus.subscribe('TRUSTED', handler);
+
+      const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
+      const sender = { id: 'test-extension-id' } as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      messageListener(
+        { type: 'TRUSTED', payload: { ok: true }, timestamp: Date.now() },
+        sender,
+        sendResponse
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(handler).toHaveBeenCalledWith({ ok: true }, sender);
+      expect(mockLogger.warn).not.toHaveBeenCalledWith(
+        'Rejected IPC from untrusted sender',
+        expect.any(Object)
+      );
+    });
+
+    it('should reject messages from a different extension id with UNTRUSTED_SENDER', () => {
+      const handler = vi.fn();
+      messageBus.subscribe('UNTRUSTED', handler);
+
+      const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
+      const sendResponse = vi.fn();
+
+      const result = messageListener(
+        { type: 'UNTRUSTED', payload: { evil: true }, timestamp: Date.now() },
+        { id: 'some-other-extension-id' } as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(result).toBe(false); // Channel closed
+      expect(handler).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        error: 'Untrusted sender',
+        code: 'UNTRUSTED_SENDER',
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Rejected IPC from untrusted sender',
+        expect.objectContaining({
+          messageType: 'UNTRUSTED',
+          senderId: 'some-other-extension-id',
+        })
+      );
+    });
+
+    it('should reject messages with no sender id (sender.id === undefined)', () => {
+      const handler = vi.fn();
+      messageBus.subscribe('NO_ID', handler);
+
+      const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
+      const sendResponse = vi.fn();
+
+      const result = messageListener(
+        { type: 'NO_ID', payload: {}, timestamp: Date.now() },
+        {} as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(result).toBe(false);
+      expect(handler).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        error: 'Untrusted sender',
+        code: 'UNTRUSTED_SENDER',
+      });
+    });
+
+    it('should reject messages with a missing sender argument', () => {
+      const handler = vi.fn();
+      messageBus.subscribe('NO_SENDER', handler);
+
+      const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
+      const sendResponse = vi.fn();
+
+      // Cast through unknown to allow the missing-sender edge case in the test.
+      const result = messageListener(
+        { type: 'NO_SENDER', payload: {}, timestamp: Date.now() },
+        undefined as unknown as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(result).toBe(false);
+      expect(handler).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        error: 'Untrusted sender',
+        code: 'UNTRUSTED_SENDER',
+      });
+    });
+
+    it('should run the sender check AFTER message validation (invalid message wins over untrusted)', () => {
+      // Structural validation must take priority: a malformed message is
+      // "invalid", not "untrusted" — keeps the existing invalid-message path
+      // observable for telemetry / debugging.
+      const handler = vi.fn();
+      messageBus.subscribe('ANY', handler);
+
+      const messageListener = mockChromeRuntime.onMessage.addListener.mock.calls[0]![0];
+      const sendResponse = vi.fn();
+
+      const result = messageListener(
+        { type: '' }, // invalid: empty type fails Zod
+        { id: 'attacker-extension' } as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(result).toBe(false);
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        error: 'Invalid message structure',
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Invalid message received',
+        expect.any(Object)
+      );
+    });
+
+    it('publish() should NOT apply the untrusted-sender guard to in-process subscribers', async () => {
+      // publish() is an internal broadcast — it does not come from
+      // chrome.runtime.onMessage and so must not be classified as untrusted.
+      const handler = vi.fn();
+      messageBus.subscribe('INTERNAL', handler);
+
+      await messageBus.publish('INTERNAL', { hello: 'world' });
+
+      expect(handler).toHaveBeenCalledWith({ hello: 'world' }, expect.any(Object));
+      expect(mockLogger.warn).not.toHaveBeenCalledWith(
+        'Rejected IPC from untrusted sender',
+        expect.any(Object)
+      );
     });
   });
 
