@@ -39,6 +39,12 @@ global.chrome = {
             removeListener: vi.fn(),
         },
     },
+    storage: {
+        local: {
+            get: vi.fn().mockResolvedValue({}),
+            set: vi.fn().mockResolvedValue({}),
+        }
+    }
 } as any;
 
 /**
@@ -174,7 +180,10 @@ describe('AuthManager Unit Tests', () => {
             provider: 'google',
             options: {
                 redirectTo: expect.any(String),
-                skipBrowserRedirect: true
+                skipBrowserRedirect: true,
+                queryParams: {
+                    prompt: 'select_account',
+                },
             }
         });
         expect(chrome.identity.launchWebAuthFlow).toHaveBeenCalledWith({

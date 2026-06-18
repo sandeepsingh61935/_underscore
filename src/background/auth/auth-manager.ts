@@ -35,22 +35,13 @@ export class AuthManager implements IAuthManager {
     private readonly VERIFICATION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
     private initializationPromise: Promise<void> | null = null;
-    private rateLimiter: RateLimiter;
+    private rateLimiter!: RateLimiter;
 
     constructor(
         private readonly supabase: SupabaseSDKClient,
         private readonly eventBus: EventBus,
         private readonly logger: ILogger
     ) {
-        // Initialize rate limiter: 5 attempts per 15 minutes
-        this.rateLimiter = new RateLimiter(
-            {
-                maxAttempts: 5,
-                windowMs: 15 * 60 * 1000,
-            },
-            logger
-        );
-
         // Start initialization immediately
         this.initialize().catch(err => {
             this.logger.error('Auth initialization failed', err);
@@ -63,6 +54,16 @@ export class AuthManager implements IAuthManager {
         }
 
         this.initializationPromise = (async () => {
+            // Initialize rate limiter: 5 attempts per 15 minutes
+            this.rateLimiter = await RateLimiter.persistent(
+                {
+                    maxAttempts: 5,
+                    windowMs: 15 * 60 * 1000,
+                    storageKey: 'rate_limit:auth'
+                },
+                { logger: this.logger }
+            );
+
             // Setup Alarm Listener for Token Refresh
             chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
 
@@ -160,13 +161,14 @@ export class AuthManager implements IAuthManager {
      * Sign in with OAuth provider
      */
     async signIn(provider: OAuthProviderType): Promise<AuthResult> {
+        await this.initialize();
         this.logger.info('Sign in attempt', { provider });
 
         if (!Object.values(OAuthProvider).includes(provider)) {
             throw new InvalidProviderError(provider);
         }
 
-        if (!this.rateLimiter.tryAcquire()) {
+        if (!(await this.rateLimiter.tryAcquire())) {
             const error = new RateLimitError('Too many login attempts');
             return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
         }
@@ -267,9 +269,10 @@ export class AuthManager implements IAuthManager {
      * Sign in with Email and Password
      */
     async signInWithEmail(email: string, password: string): Promise<AuthResult> {
+        await this.initialize();
         this.logger.info('Email sign in attempt', { email });
 
-        if (!this.rateLimiter.tryAcquire()) {
+        if (!(await this.rateLimiter.tryAcquire())) {
             const error = new RateLimitError('Too many login attempts');
             return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
         }
@@ -303,9 +306,10 @@ export class AuthManager implements IAuthManager {
      * Sign up with Email and Password
      */
     async signUpWithEmail(email: string, password: string): Promise<AuthResult> {
+        await this.initialize();
         this.logger.info('Email sign up attempt', { email });
 
-        if (!this.rateLimiter.tryAcquire()) {
+        if (!(await this.rateLimiter.tryAcquire())) {
             const error = new RateLimitError('Too many sign up attempts');
             return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
         }
