@@ -67,8 +67,9 @@ export class ModeStateManager {
 
     try {
       const data = await chrome.storage.local.get('underscore_mode');
-      if (data && data.underscore_mode) {
-         this.currentMode = data.underscore_mode;
+      const storedMode = data['underscore_mode'];
+      if (storedMode) {
+         this.currentMode = storedMode as ModeType;
       }
     } catch (e) {
       this.logger.warn('[ModeState] Failed to load mode preference', e as Error);

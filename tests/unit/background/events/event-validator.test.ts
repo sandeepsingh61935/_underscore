@@ -82,8 +82,10 @@ describe('EventValidator', () => {
         });
 
         it('should throw on future timestamp', () => {
-            const event = createValidEvent();
-            event.timestamp = Date.now() + 120000; // 2 minutes in future
+            const event = {
+                ...createValidEvent(),
+                timestamp: Date.now() + 120000, // 2 minutes in future
+            };
 
             expect(() => validator.validate(event)).toThrow(
                 'Event timestamp cannot be in the future'

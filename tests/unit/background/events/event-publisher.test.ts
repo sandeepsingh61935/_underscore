@@ -76,9 +76,9 @@ describe('EventPublisher', () => {
     describe('Multiple Subscribers', () => {
         it('should call subscribers in registration order', async () => {
             const callOrder: number[] = [];
-            const handler1 = vi.fn(() => callOrder.push(1));
-            const handler2 = vi.fn(() => callOrder.push(2));
-            const handler3 = vi.fn(() => callOrder.push(3));
+            const handler1 = vi.fn(() => { callOrder.push(1); });
+            const handler2 = vi.fn(() => { callOrder.push(2); });
+            const handler3 = vi.fn(() => { callOrder.push(3); });
 
             publisher.subscribe('test.event', handler1);
             publisher.subscribe('test.event', handler2);
