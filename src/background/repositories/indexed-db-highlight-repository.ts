@@ -9,7 +9,7 @@ import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositor
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 
-const DB_NAME = 'underscore_vault';
+export const DB_NAME = 'underscore_vault';
 const DB_VERSION = 1;
 const STORE_NAME = 'highlights';
 

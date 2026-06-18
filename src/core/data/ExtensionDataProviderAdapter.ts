@@ -3,7 +3,7 @@ import type { DomainCollection } from '@/shared/types/domain-collection';
 import type { EventBus } from '@/shared/utils/event-bus';
 
 export class ExtensionDataProviderAdapter implements IDataProvider {
-  constructor(private eventBus: EventBus) {}
+  constructor(_eventBus: EventBus) {}
 
   async getCollections(_mode: string): Promise<DomainCollection[]> {
     // Send IPC request to background worker via EventBus request-response

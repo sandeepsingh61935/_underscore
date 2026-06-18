@@ -18,7 +18,9 @@ describe('IndexedDBHighlightRepository', () => {
         contentHash: 'hash-1',
         createdAt: new Date(),
         updatedAt: new Date(),
-        userId: 'user-1'
+        userId: 'user-1',
+        colorRole: 'yellow',
+        type: 'underscore'
     };
 
     beforeEach(async () => {
