@@ -1,15 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo } from 'react';
+import { useCurrentUser, type User } from '@/features/auth/hooks/useCurrentUser';
 import type { OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
-export interface User {
-    id: string;
-    email: string;
-    name?: string;
-    displayName?: string;
-    avatarUrl?: string;
-    photoUrl?: string;
-}
+// Re-export User so existing consumers of `import { User } from '.../AuthProvider'`
+// keep compiling. The canonical definition now lives in useCurrentUser.
+export type { User };
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -26,18 +21,25 @@ interface AuthContextValue {
     error: string | null;
     /** Login with OAuth provider */
     login: (provider?: OAuthProviderType) => Promise<{ success: boolean; error?: string }>;
+    /** Login with email + password (new — surfaced via useCurrentUser) */
+    loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    /** Register with email + password (new — surfaced via useCurrentUser) */
+    registerWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     /** Logout current user */
     logout: () => Promise<void>;
-    /** Clear error state */
+    /** Clear error state (no-op: error state is owned by useCurrentUser) */
     clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
- * Hook to access auth context
+ * Hook to access auth context.
+ *
+ * Throws if used outside an AuthProvider so deep-tree consumers get a clear
+ * wiring error rather than a silent `null` context.
  */
-export function useAuth() {
+export function useAuth(): AuthContextValue {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
@@ -52,112 +54,64 @@ interface AuthProviderProps {
 }
 
 /**
- * Authentication provider that connects to background AuthManager
- * via Chrome messaging
+ * Authentication provider.
+ *
+ * Thin context wrapper around `useCurrentUser` (ADR-017). All chrome.runtime
+ * auth IPC lives in useCurrentUser; this provider only:
+ *   1. Derives an `AuthStatus` (`loading` | `authenticated` | `unauthenticated`)
+ *      from useCurrentUser's `isLoading` + `user` for context consumers.
+ *   2. Exposes useCurrentUser's actions under a stable AuthContext surface
+ *      so deep-tree consumers read via context, not by re-calling the hook.
  */
 export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
-    const [user, setUser] = useState<User | null>(initialUser);
-    const [status, setStatus] = useState<AuthStatus>(initialUser ? 'authenticated' : 'loading');
-    const [error, setError] = useState<string | null>(null);
+    const {
+        user: liveUser,
+        isLoading,
+        error,
+        login,
+        loginWithEmail,
+        registerWithEmail,
+        logout,
+    } = useCurrentUser();
 
+    // Honor an SSR/test-time initialUser until live state supersedes it.
+    // useCurrentUser's first paint has isLoading=true and user=null, so we
+    // surface initialUser as a non-loading seed. Once isLoading flips to
+    // false, the live state wins.
+    const user = isLoading && initialUser ? initialUser : liveUser;
+    const status: AuthStatus = isLoading ? 'loading' : user ? 'authenticated' : 'unauthenticated';
     const isAuthenticated = status === 'authenticated';
-    const isLoading = status === 'loading';
 
-    const loginAction = useIpcAction<{ provider?: OAuthProviderType }, { user?: User }>('LOGIN');
-    const logoutAction = useIpcAction<void, void>('LOGOUT');
-    const getAuthStateAction = useIpcAction<Record<string, never>, { user?: User }>('GET_AUTH_STATE');
-
-    // Fetch initial auth state from background
-    useEffect(() => {
-        let mounted = true;
-
-        const fetchAuthState = async () => {
-            if (status !== 'loading') return;
-            const result = await getAuthStateAction({});
-            if (!mounted) return;
-
-            if (result.success && result.data.user) {
-                setUser(result.data.user);
-                setStatus('authenticated');
-            } else {
-                setUser(null);
-                setStatus('unauthenticated');
-            }
-        };
-
-        void fetchAuthState();
-
-        // Listen for auth state changes from background
-        const handleMessage = (message: any) => {
-            if (message?.type === 'AUTH_STATE_CHANGED') {
-                const newUser = message.user || message.payload?.user || null;
-                setUser(newUser);
-                setStatus(newUser ? 'authenticated' : 'unauthenticated');
-            }
-        };
-
-        if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
-            chrome.runtime.onMessage.addListener(handleMessage);
-            return () => {
-                mounted = false;
-                chrome.runtime.onMessage.removeListener(handleMessage);
-            };
-        }
-
-        return () => { mounted = false; };
-    }, [status, getAuthStateAction]);
-
-    // Login function
-    const login = useCallback(async (provider: OAuthProviderType = 'google') => {
-        setStatus('loading');
-        setError(null);
-
-        const result = await loginAction({ provider });
-
-        if (result.success && result.data.user) {
-            setUser(result.data.user);
-            setStatus('authenticated');
-            return { success: true };
-        }
-
-        const errorMsg = result.success ? 'Login failed' : result.error;
-        setError(errorMsg);
-        setStatus('unauthenticated');
-        return { success: false, error: errorMsg };
-    }, [loginAction]);
-
-    // Logout function
-    const logout = useCallback(async () => {
-        setStatus('loading');
-        setError(null);
-
-        await logoutAction(undefined);
-        setUser(null);
-        setStatus('unauthenticated');
-    }, [logoutAction]);
-
+    // AuthProvider no longer owns error state (useCurrentUser does), so this
+    // exists only for source-compat. It is a no-op because useCurrentUser
+    // clears `error` itself on the next action.
     const clearError = useCallback(() => {
-        setError(null);
+        // intentional no-op: error lifecycle is managed by useCurrentUser.
     }, []);
 
-    return (
-        <AuthContext.Provider value={{
-            user,
-            status,
-            isAuthenticated,
-            isLoading,
-            error,
-            login,
-            logout,
-            clearError,
-        }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    // Note: any local useEffect to bridge `useCurrentUser` -> context is
+    // unnecessary; the provider recomputes `value` on every render, and the
+    // underlying hook handles subscription + fetching.
+
+    const value = useMemo<AuthContextValue>(() => ({
+        user,
+        status,
+        isAuthenticated,
+        isLoading,
+        error,
+        login,
+        loginWithEmail,
+        registerWithEmail,
+        logout,
+        clearError,
+    }), [user, status, isAuthenticated, isLoading, error, login, loginWithEmail, registerWithEmail, logout, clearError]);
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 /**
- * Hook for auth-dependent rendering
+ * Hook for auth-dependent rendering. Reads `isAuthenticated` and `isLoading`
+ * from AuthContext; useful for gated routes or redirect logic.
  */
 export function useRequireAuth(redirectTo?: string) {
     const { isAuthenticated, isLoading } = useAuth();

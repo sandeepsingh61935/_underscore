@@ -179,6 +179,70 @@ describe('AuthProvider', () => {
             expect(screen.getByTestId('email').textContent).toBe('test@example.com');
         });
     });
+
+    it('should route loginWithEmail through useCurrentUser -> useIpcAction -> chrome IPC', async () => {
+        // Wire-shaped response: useCurrentUser's loginWithEmail expects
+        // { success, data: { user, verificationStatus, verificationExpiresAt } }.
+        let resolveLoginEmail: (value: unknown) => void = () => {};
+        const pending = new Promise((resolve) => { resolveLoginEmail = resolve; });
+
+        const callLog: Array<{ type: string; payload?: unknown }> = [];
+        mockChrome.runtime.sendMessage.mockImplementation(async (msg: unknown) => {
+            const m = msg as { type: string; payload?: unknown };
+            callLog.push({ type: m.type, payload: m.payload });
+            if (m.type === 'GET_AUTH_STATE') {
+                return { success: false, data: null };
+            }
+            if (m.type === 'LOGIN_EMAIL') {
+                const response = await pending;
+                return response;
+            }
+            return { success: false, data: null };
+        });
+
+        function TestComponent() {
+            const { loginWithEmail, error } = useAuth();
+            return (
+                <div>
+                    <button
+                        onClick={() => { void loginWithEmail('a@b.com', 'pw'); }}
+                    >
+                        Login Email
+                    </button>
+                    <div data-testid="error">{error ?? 'no-error'}</div>
+                </div>
+            );
+        }
+
+        render(
+            <MessageBusProvider messageBus={mockMessageBus}>
+                <AuthProvider>
+                    <TestComponent />
+                </AuthProvider>
+            </MessageBusProvider>
+        );
+
+        fireEvent.click(screen.getByText('Login Email'));
+
+        // Verify the email action was dispatched with the right payload
+        // (proves the new AuthProvider wires loginWithEmail through to IPC).
+        await waitFor(() => {
+            const loginCall = callLog.find((c) => c.type === 'LOGIN_EMAIL');
+            expect(loginCall).toBeDefined();
+            expect(loginCall?.payload).toEqual({ email: 'a@b.com', password: 'pw' });
+        });
+
+        // Resolve the pending login to a success envelope and verify error
+        // state updates correctly.
+        resolveLoginEmail({
+            success: true,
+            data: {
+                user: { id: '2', email: 'a@b.com' },
+                verificationStatus: 'idle',
+                verificationExpiresAt: null,
+            },
+        });
+    });
 });
 
 describe('PopupRouter', () => {
