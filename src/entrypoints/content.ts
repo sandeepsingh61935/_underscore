@@ -49,6 +49,11 @@ const logger = LoggerFactory.getLogger('ContentScript');
 // Main content script initialization
 export default defineContentScript({
   matches: ['<all_urls>'],
+  // ADR-015: run in the ISOLATED world so page scripts cannot reach
+  // content-script state. Defense-in-depth for ADR-013's content-script
+  // = courier contract: even if a future change accidentally exposes a
+  // global, the page cannot read or override it.
+  world: 'ISOLATED',
 
   async main() {
     logger.info(
