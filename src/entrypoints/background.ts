@@ -7,6 +7,7 @@
 import { browser } from 'wxt/browser';
 
 import type { IAuthManager, OAuthProviderType, AuthState } from '@/background/auth/interfaces/i-auth-manager';
+import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import { initializeBackground } from '@/background/bootstrap';
 import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
@@ -140,6 +141,33 @@ export default defineBackground({
             provider: state.provider
           }
         };
+      });
+
+      // Vault Unlock Handler (ADR-018)
+      messageBus.subscribe('IPC_VAULT_UNLOCK', async (payload: { passphrase: string }) => {
+        logger.info('Handling IPC_VAULT_UNLOCK request');
+        try {
+          if (!payload?.passphrase) {
+            throw new Error('Passphrase is required');
+          }
+          const user = authManager.getAuthState().user;
+          if (!user) {
+            return { success: false, error: 'Not authenticated', code: 'NOT_AUTHENTICATED' };
+          }
+          const keyManager = container.resolve<IKeyManager>('keyManager');
+          await keyManager.unlock(user.id, payload.passphrase);
+          return { success: true, data: { keyId: `${user.id}_unlocked` } };
+        } catch (e) {
+          const err = e as Error;
+          logger.error('IPC_VAULT_UNLOCK failed', err);
+          const code =
+            err.message.includes('deprecated')
+              ? 'DEPRECATED_FORMAT'
+              : err.message.includes('locked')
+                ? 'VAULT_LOCKED'
+                : 'INVALID_PASSPHRASE';
+          return { success: false, error: err.message, code };
+        }
       });
 
       // Forward Auth State Changes to Popup (via broadcast)

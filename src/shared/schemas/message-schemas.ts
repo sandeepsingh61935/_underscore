@@ -72,6 +72,15 @@ export const IPC_HIGHLIGHT_DECRYPT_TEXT = 'IPC_HIGHLIGHT_DECRYPT_TEXT' as const;
 export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
 
 /**
+ * IPC channel for the user-facing vault unlock prompt (ADR-018).
+ *
+ * Payload: { passphrase: string }
+ * Success: { success: true, data: { keyId: string } }
+ * Failure: { success: false, error: string, code: 'VAULT_LOCKED' | 'INVALID_PASSPHRASE' | 'DEPRECATED_FORMAT' | 'NOT_AUTHENTICATED' }
+ */
+export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
+
+/**
  * Validates message target
  * @throws {z.ZodError} if target is invalid
  */

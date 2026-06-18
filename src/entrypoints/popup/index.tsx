@@ -8,6 +8,7 @@ import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
+import { useUnlockVault } from '../../features/auth/hooks/useUnlockVault';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
 import { SubDomainView } from '../../features/collections/views/SubDomainView';
@@ -21,6 +22,7 @@ import { Spinner } from '../../ui-system/components/primitives/Spinner';
 import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
+import { UnlockVaultView } from './views/UnlockVaultView';
 
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
@@ -39,6 +41,7 @@ enum View {
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
   SUB_DOMAIN = 'SUB_DOMAIN',
   AUTH = 'AUTH',
+  UNLOCK_VAULT = 'UNLOCK_VAULT',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
 }
@@ -94,6 +97,7 @@ class ErrorBoundary extends Component<
 
 function PopupApp(): React.ReactElement {
   const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
+  const { unlock: unlockVault, isUnlocking: isUnlockingVault } = useUnlockVault();
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
@@ -215,7 +219,19 @@ function PopupApp(): React.ReactElement {
     const targetMode = pendingMode || 'cloud';
     setMode(targetMode);
     setPendingMode(null);
+    if (targetMode === 'cloud' || targetMode === 'ai') {
+      setCurrentView(View.UNLOCK_VAULT);
+      return;
+    }
     setCurrentView(View.COLLECTIONS);
+  };
+
+  const handleUnlockSuccess = (): void => {
+    setCurrentView(View.COLLECTIONS);
+  };
+
+  const handleUnlockCancel = (): void => {
+    setCurrentView(View.MODE_SELECTION);
   };
 
   const handleLogout = async (): Promise<void> => {
@@ -402,6 +418,24 @@ function PopupApp(): React.ReactElement {
           <AuthView
             onLoginSuccess={handleLoginSuccess}
             onBackToModeSelection={handleBackToModeSelection}
+          />
+        </motion.div>
+      )}
+      {currentView === View.UNLOCK_VAULT && (
+        <motion.div
+          key="unlock-vault"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <UnlockVaultView
+            onUnlock={unlockVault}
+            onUnlockSuccess={handleUnlockSuccess}
+            onCancel={handleUnlockCancel}
+            isUnlocking={isUnlockingVault}
           />
         </motion.div>
       )}

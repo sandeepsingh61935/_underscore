@@ -9,6 +9,7 @@ export type ViewKey =
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
   | 'AUTH'
+  | 'UNLOCK_VAULT'
   | 'SETTINGS'
   | 'DASHBOARD';
 
@@ -96,6 +97,14 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       showTitleStrip: true,
       showModeHeader: false,
       showTabBar: false,
+    },
+    UNLOCK_VAULT: {
+      title: '_underscore · vault',
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: false,
+      modeId: handlers.getModeId(),
+      onSwitch: handlers.onSwitch,
     },
     SETTINGS: {
       title: '_underscore · settings',

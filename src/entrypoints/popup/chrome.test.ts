@@ -46,6 +46,14 @@ describe('chrome-having screens', () => {
     expect(map.AUTH.showModeHeader).toBe(false);
     expect(map.AUTH.showTabBar).toBe(false);
   });
+
+  it('UNLOCK_VAULT has title strip and ModeHeader but no TabBar', () => {
+    const map = buildChrome(makeHandlers());
+    expect(map.UNLOCK_VAULT.title).toBe('_underscore · vault');
+    expect(map.UNLOCK_VAULT.showTitleStrip).toBe(true);
+    expect(map.UNLOCK_VAULT.showModeHeader).toBe(true);
+    expect(map.UNLOCK_VAULT.showTabBar).toBe(false);
+  });
 });
 
 describe('chrome-having screens with tab bar', () => {
