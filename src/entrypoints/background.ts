@@ -181,9 +181,14 @@ export default defineBackground({
       // --- Collections API handlers ---
 
       // Per ADR-006: the HighlightQueryService owns domain aggregations.
-      // It holds the readable side of the repository (the facade's
-      // underlying IHighlightRepository, since the facade wraps it).
-      const highlightQueryService = new HighlightQueryService(repositoryFacade as any);
+      // It holds the readable side of the repository, exposed via
+      // repositoryFacade.getReadable() — the facade wraps a single
+      // IHighlightRepository and surfaces the readable half for query
+      // services that need fresh data (the facade's own cache holds the
+      // write-through view; the query service iterates the full set).
+      const highlightQueryService = new HighlightQueryService(
+        repositoryFacade.getReadable()
+      );
 
       // Get Collections (Grouped by Domain) Handler
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
