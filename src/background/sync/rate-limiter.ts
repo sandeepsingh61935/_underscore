@@ -219,3 +219,112 @@ export class RateLimiter implements IRateLimiter {
         }
     }
 }
+
+/**
+ * Persistent variant — mirrors the auth-side `RateLimiter.persistent`
+ * pattern from ADR-019. Different shape (token bucket, multi-user,
+ * multi-operation) but the same threat model: an attacker triggers an
+ * SW unload mid-flood to reset the in-memory bucket.
+ *
+ * Persistence rules:
+ * - On construction, hydrate the deny state for `storageKey`. If a deny
+ *   was persisted within the deny window, the limiter denies immediately
+ *   until the bucket would have refilled.
+ * - On a deny, persist `{ state: 'denied', since: now }`.
+ * - On an allow, do NOT persist (perf — allow path is hot, write amp).
+ * - If chrome.storage.local is unavailable, fail closed: deny everything
+ *   and log a warn. Better to block legitimate users briefly than to
+ *   let an attacker bypass throttling.
+ */
+export interface PersistentRateLimiterOptions {
+    logger: ILogger;
+    eventBus: EventBus;
+    storageKey: string;
+}
+
+interface PersistedDenyState {
+    state: 'denied';
+    since: number;
+}
+
+function hasChromeStorage(): boolean {
+    return (
+        typeof chrome !== 'undefined' &&
+        typeof chrome?.storage?.local?.get === 'function' &&
+        typeof chrome?.storage?.local?.set === 'function'
+    );
+}
+
+declare module './rate-limiter' {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
+    namespace RateLimiter {
+        function persistent(options: PersistentRateLimiterOptions): Promise<RateLimiter>;
+    }
+}
+
+(RateLimiter as unknown as {
+    persistent: (options: PersistentRateLimiterOptions) => Promise<RateLimiter>;
+}).persistent = async function persistent(
+    options: PersistentRateLimiterOptions
+): Promise<RateLimiter> {
+    const { logger, eventBus, storageKey } = options;
+    const limiter = new RateLimiter(logger, eventBus);
+
+    if (!hasChromeStorage()) {
+        logger.warn('chrome.storage.local unavailable; sync rate limiter is fail-closed', {
+            storageKey,
+        });
+        // Short-circuit checkLimit to always deny.
+        limiter.checkLimit = async () => false;
+        return limiter;
+    }
+
+    // Hydrate deny state.
+    let persistedDeny: PersistedDenyState | null = null;
+    try {
+        const stored = await chrome.storage.local.get(storageKey);
+        persistedDeny = (stored[storageKey] as PersistedDenyState | undefined) ?? null;
+    } catch (e) {
+        logger.warn('sync rate-limiter hydrate failed; using in-memory defaults', {
+            error: (e as Error).message,
+        });
+    }
+
+    // Wrap checkLimit to consult persisted deny first and persist on deny.
+    const originalCheck = limiter.checkLimit.bind(limiter);
+    limiter.checkLimit = async (userId: string, operation: string): Promise<boolean> => {
+        if (persistedDeny) {
+            const config = (limiter as unknown as {
+                getRateLimitConfig: (op: string) => { capacity: number; refillRate: number };
+            }).getRateLimitConfig(operation);
+            const elapsedMs = Date.now() - persistedDeny.since;
+            const refillMs = (config.capacity / config.refillRate) * 1000;
+            if (elapsedMs < refillMs) {
+                logger.warn('Rate limit denied (persisted state)', { userId, operation });
+                return false;
+            }
+            persistedDeny = null;
+            try {
+                await chrome.storage.local.remove(storageKey);
+            } catch {
+                // Best-effort.
+            }
+        }
+
+        const allowed = await originalCheck(userId, operation);
+        if (!allowed) {
+            try {
+                await chrome.storage.local.set({
+                    [storageKey]: { state: 'denied', since: Date.now() } satisfies PersistedDenyState,
+                });
+            } catch (e) {
+                logger.warn('sync rate-limiter persist failed', {
+                    error: (e as Error).message,
+                });
+            }
+        }
+        return allowed;
+    };
+
+    return limiter;
+};
