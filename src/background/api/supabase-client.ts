@@ -72,6 +72,12 @@ interface PgPolicyRow {
     roles?: string[] | string | null;
 }
 
+interface RlsRpcRow {
+    table_name?: string;
+    rls_enabled?: boolean;
+    policy_count?: number;
+}
+
 /**
  * Supabase configuration
  */
@@ -153,6 +159,60 @@ export class SupabaseClient implements IAPIClient {
      * @see docs/06-security/rls-policies.md
      */
     private async verifyRls(): Promise<void> {
+        // Preferred path: call public.verify_rls() RPC. PostgREST does
+        // not expose pg_catalog on Supabase Cloud, so the .from('pg_policies')
+        // path is a no-op there. The RPC is SECURITY DEFINER — anon/authenticated
+        // roles can call it (see docs/03-implementation/supabase_schema.sql §6
+        // and ADR-016 "Future work: RPC for tripwire").
+        // Falls through to the pg_policies path if the SDK does not
+        // expose .rpc() (older test mocks, non-Supabase clients).
+        const rpcFn = (this.sdkClient as unknown as {
+            rpc?: (name: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+        }).rpc;
+        if (typeof rpcFn === 'function') {
+            try {
+                const response = await this.withTimeout(
+                    rpcFn.call(this.sdkClient, 'verify_rls', {})
+                ) as { data: RlsRpcRow[] | null; error: { message: string } | null };
+
+                if (response.error) {
+                    this.logger.warn('verify_rls RPC returned an error; RLS is unverified', {
+                        error: response.error.message,
+                    });
+                    return;
+                }
+
+                const rpcRows = response.data ?? [];
+                for (const table of REQUIRED_RLS_TABLES) {
+                    const row = rpcRows.find((r) => r.table_name === table);
+                    const required = REQUIRED_RLS_POLICIES[table];
+                    if (!row) {
+                        this.logger.warn('verify_rls RPC did not return a row for a protected table', {
+                            table,
+                        });
+                        continue;
+                    }
+                    if (!row.rls_enabled) {
+                        this.logger.warn('RLS disabled on protected table — production may be vulnerable', {
+                            table,
+                        });
+                    } else if ((row.policy_count ?? 0) < required.length) {
+                        this.logger.warn('RLS policy count below required — production may be vulnerable', {
+                            table,
+                            required: required.length,
+                            present: row.policy_count,
+                        });
+                    }
+                }
+                return;
+            } catch (error) {
+                this.logger.warn('verify_rls RPC threw; falling back to pg_policies query', {
+                    error: (error as Error).message,
+                });
+                // fall through to the legacy path below
+            }
+        }
+
         let rows: PgPolicyRow[] | null = null;
         let fetchError: Error | null = null;
 

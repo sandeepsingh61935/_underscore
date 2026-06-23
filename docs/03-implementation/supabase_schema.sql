@@ -65,3 +65,34 @@ CREATE POLICY "Users can only access their own sync events" ON public.sync_event
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can only access their own collections" ON public.collections
     FOR ALL USING (auth.uid() = user_id);
+
+-- 6. public.verify_rls() RPC
+-- Lets anon/authenticated roles read RLS status + policy count for the
+-- three protected tables. PostgREST does not expose pg_catalog by default
+-- on Supabase Cloud, so the runtime tripwire in SupabaseClient.verifyRls()
+-- cannot query pg_policies directly. This RPC is SECURITY DEFINER — runs
+-- as the function owner (catalog access), exposed to anon/authenticated.
+-- See ADR-016 + docs/06-security/rls-policies.md "Known limitation".
+CREATE OR REPLACE FUNCTION public.verify_rls()
+RETURNS TABLE (
+    table_name text,
+    rls_enabled boolean,
+    policy_count int
+)
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+    SELECT
+        c.relname::text AS table_name,
+        c.relrowsecurity AS rls_enabled,
+        (SELECT count(*)::int FROM pg_policy p WHERE p.polrelid = c.oid) AS policy_count
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relname IN ('highlights', 'sync_events', 'collections')
+    ORDER BY c.relname;
+$$;
+
+REVOKE ALL ON FUNCTION public.verify_rls() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.verify_rls() TO anon, authenticated;
