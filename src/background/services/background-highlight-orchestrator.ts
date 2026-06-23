@@ -115,11 +115,31 @@ export class BackgroundHighlightOrchestrator {
     }
   }
 
-  private async onFindByUrl({ url }: { url: string }) {
-    this.logger.info('[bridge] findByUrl', { url });
+  private async onFindByUrl({
+    url,
+    mode,
+  }: {
+    url: string;
+    mode?: 'ephemeral' | 'local' | 'cloud';
+  }) {
+    this.logger.info('[bridge] findByUrl', { url, mode });
     try {
       const all = this.facade.getAll();
-      const data = all.filter((h) => h.url === url);
+      // Ephemeral mode: filter out highlights older than 24h. The IDB
+      // rows do not physically expire (cleanup sweep is out of scope);
+      // we enforce TTL at the read seam so the user sees the right set.
+      const TTL_MS = 24 * 60 * 60 * 1000;
+      const cutoff = mode === 'ephemeral' ? Date.now() - TTL_MS : null;
+      const data = all.filter((h) => {
+        if (h.url !== url) return false;
+        if (cutoff !== null) {
+          const created = h.createdAt instanceof Date
+            ? h.createdAt.getTime()
+            : new Date(h.createdAt).getTime();
+          if (created < cutoff) return false;
+        }
+        return true;
+      });
       return { success: true, data };
     } catch (e) {
       const err = e as Error;
