@@ -19,30 +19,38 @@
 import { describe, it, expect, vi } from 'vitest';
 import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
-function makeReadable(items: { id: string; url: string; text: string; createdAt: Date }[] = []): IReadableHighlightRepository {
+function makeReadable(items: HighlightDataV2[] = []): IReadableHighlightRepository {
+    const findAll = vi.fn(async (): Promise<HighlightDataV2[]> => items);
     return {
         findById: vi.fn(),
-        findAll: vi.fn(async () => items),
+        findAll,
         findByUrl: vi.fn(),
         findByContentHash: vi.fn(),
         findOverlapping: vi.fn(),
         count: vi.fn(),
         exists: vi.fn(),
-        clear: vi.fn(),
+    };
+}
+
+function hl(over: Partial<HighlightDataV2> = {}): HighlightDataV2 {
+    return {
+        id: 'h-1',
+        text: 'alpha',
+        contentHash: 'a'.repeat(64),
+        colorRole: 'yellow',
+        type: 'underscore',
+        ranges: [],
+        createdAt: new Date('2024-01-01'),
+        url: 'https://example.com/a',
+        ...over,
     };
 }
 
 describe('HighlightQueryService (readable contract)', () => {
     it('calls findAll on the readable passed in (not the facade)', async () => {
-        const readable = makeReadable([
-            {
-                id: 'h-1',
-                url: 'https://example.com/a',
-                text: 'alpha',
-                createdAt: new Date('2024-01-01'),
-            },
-        ]);
+        const readable = makeReadable([hl()]);
 
         const svc = new HighlightQueryService(readable);
         const result = await svc.getCollections('local');
@@ -53,8 +61,8 @@ describe('HighlightQueryService (readable contract)', () => {
 
     it('filters by domain using the readable\'s findAll', async () => {
         const readable = makeReadable([
-            { id: 'h-1', url: 'https://example.com/a', text: 'a', createdAt: new Date('2024-01-01') },
-            { id: 'h-2', url: 'https://other.com/b', text: 'b', createdAt: new Date('2024-01-02') },
+            hl({ id: 'h-1', url: 'https://example.com/a' }),
+            hl({ id: 'h-2', url: 'https://other.com/b' }),
         ]);
 
         const svc = new HighlightQueryService(readable);
