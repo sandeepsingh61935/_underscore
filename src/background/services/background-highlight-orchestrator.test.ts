@@ -163,6 +163,41 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(Array.isArray(result.data)).toBe(true);
   });
 
+  it('onFindByUrl: ephemeral mode filters out highlights older than 24h', async () => {
+    const fresh = makeHighlight('h-fresh');
+    const stale = {
+      ...makeHighlight('h-stale'),
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25h old
+    };
+    (facade.getAll as any) = vi.fn(() => [fresh, stale]);
+
+    const result = await subscriptions.get('IPC_HIGHLIGHTS_FIND_BY_URL')!({
+      url: 'https://example.com',
+      mode: 'ephemeral',
+    });
+    expect(result.success).toBe(true);
+    const ids = (result.data as HighlightDataV2[]).map((h) => h.id);
+    expect(ids).toContain('h-fresh');
+    expect(ids).not.toContain('h-stale');
+  });
+
+  it('onFindByUrl: local and cloud modes do NOT filter by TTL', async () => {
+    const stale = {
+      ...makeHighlight('h-stale'),
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+    };
+    (facade.getAll as any) = vi.fn(() => [stale]);
+
+    for (const mode of ['local', 'cloud'] as const) {
+      const result = await subscriptions.get('IPC_HIGHLIGHTS_FIND_BY_URL')!({
+        url: 'https://example.com',
+        mode,
+      });
+      const ids = (result.data as HighlightDataV2[]).map((h) => h.id);
+      expect(ids).toContain('h-stale');
+    }
+  });
+
   it('onFindByContentHash: returns facade.findByContentHash(hash)', async () => {
     const result = await subscriptions.get('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH')!({ hash: 'hash-h-1' });
     expect(result.success).toBe(true);
