@@ -24,7 +24,7 @@ import { serializeRange, deserializeRange } from '@/content/utils/range-converte
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+// (no repository type import — restoreHighlights reads via the facade)
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
@@ -81,7 +81,6 @@ export default defineContentScript({
       const modeManager = container.resolve<ModeManager>('modeManager');
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const commandFactory = container.resolve<CommandFactory>('commandFactory');
-      const ipcHighlightRepository = container.resolve<IHighlightRepository>('ipcHighlightRepository');
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
@@ -231,7 +230,6 @@ export default defineContentScript({
           highlightManager,
           modeManager,
           commandFactory,
-          ipcHighlightRepository,
         });
       } else {
         logger.info(
@@ -550,7 +548,6 @@ export default defineContentScript({
                     highlightManager,
                     modeManager,
                     commandFactory,
-                    ipcHighlightRepository,
                   });
                   logger.info('[IPC] Restoration complete');
                 } else if (newMode === MODE_NAMES.CLOUD) {
@@ -640,20 +637,23 @@ interface RestoreContext {
   highlightManager: HighlightManager | null;
   modeManager: ModeManager;
   commandFactory: CommandFactory;
-  ipcHighlightRepository: IHighlightRepository;
 }
 
 /**
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { repositoryFacade, highlightManager, modeManager, commandFactory, ipcHighlightRepository } =
+  const { repositoryFacade, highlightManager, modeManager, commandFactory } =
     context;
   try {
     const currentUrl = window.location.href;
-    // Fetch highlights from background via IPC
-    const activeHighlights = await ipcHighlightRepository.findByUrl(currentUrl);
-    
+    // Reads go through the in-memory facade (synchronous, cached).
+    // The IPC adapter is write-only (ADR-005) — restoreHighlights must
+    // not call read methods on it; that path crashes with
+    // "findByUrl is not a function" because the IPC adapter implements
+    // IWritableHighlightRepository only.
+    const activeHighlights = repositoryFacade.findByUrl(currentUrl);
+
     // Hydrate the synchronous in-memory facade for UI operations (hover detection, etc)
     repositoryFacade.addMany(activeHighlights);
 
