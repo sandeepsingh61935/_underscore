@@ -899,5 +899,68 @@ describe('SupabaseClient', () => {
             const allWarnMessages = warnCalls.flat().map(String).join(' | ');
             expect(allWarnMessages).not.toMatch(/RLS policy gap/);
         });
+
+        it('prefers the verify_rls RPC over pg_policies when both are available', async () => {
+            // The SDK exposes an `.rpc(name, params)` method. When present,
+            // the tripwire should call it — PostgREST does not expose
+            // pg_catalog on Supabase Cloud, so the .from('pg_policies')
+            // path is a no-op. The RPC (SECURITY DEFINER) is the only way
+            // anon/authenticated roles can read the catalog.
+            const rpc = vi.fn(async () => ({
+                data: [
+                    { table_name: 'highlights', rls_enabled: true, policy_count: 4 },
+                    { table_name: 'sync_events', rls_enabled: true, policy_count: 2 },
+                    { table_name: 'collections', rls_enabled: true, policy_count: 4 },
+                ],
+                error: null,
+            }));
+            (mockSupabaseClient as any).rpc = rpc;
+
+            // .from('pg_policies') would also resolve if called, but
+            // it should not be the path chosen.
+            mockSupabaseClient.from.mockImplementation(() => defaultRlsQueryChain());
+
+            const c = new SupabaseClient(mockAuthManager, mockLogger, {
+                url: 'https://test.supabase.co',
+                anonKey: 'test-anon-key',
+                timeoutMs: 5000,
+            });
+            await c.rlsVerification;
+
+            expect(rpc).toHaveBeenCalledWith('verify_rls', expect.anything());
+        });
+
+        it('logs a warn for each table missing required policies under the RPC', async () => {
+            // RPC returns a row per protected table with policy count. The
+            // tripwire should warn when count is below the required minimum.
+            const rpc = vi.fn(async () => ({
+                data: [
+                    { table_name: 'highlights', rls_enabled: true, policy_count: 1 },
+                    { table_name: 'sync_events', rls_enabled: false, policy_count: 0 },
+                    { table_name: 'collections', rls_enabled: true, policy_count: 4 },
+                ],
+                error: null,
+            }));
+            (mockSupabaseClient as any).rpc = rpc;
+            mockSupabaseClient.from.mockImplementation(() => defaultRlsQueryChain());
+
+            (mockLogger.warn as ReturnType<typeof vi.fn>).mockClear();
+
+            const c = new SupabaseClient(mockAuthManager, mockLogger, {
+                url: 'https://test.supabase.co',
+                anonKey: 'test-anon-key',
+                timeoutMs: 5000,
+            });
+            await c.rlsVerification;
+
+            // The tripwire must never raise.
+            expect(mockLogger.error).not.toHaveBeenCalled();
+
+            // At least one warn identifies an RLS gap on the under-protected
+            // tables. Either "rls disabled" or "policy count below required".
+            const warnCalls = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls;
+            const allWarnMessages = warnCalls.flat().map(String).join(' | ');
+            expect(allWarnMessages).toMatch(/sync_events|policy.*gap|rls.*disabled/i);
+        });
     });
 });
