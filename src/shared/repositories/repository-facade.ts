@@ -19,7 +19,7 @@ import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-sche
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
-import type { IHighlightRepository } from './i-highlight-repository';
+import type { IHighlightRepository, IReadableHighlightRepository } from './i-highlight-repository';
 
 /**
  * Synchronous Repository Facade
@@ -48,6 +48,16 @@ export class RepositoryFacade {
     if (!repository) throw new Error('Repository is required');
     this.repository = repository;
     this.logger = LoggerFactory.getLogger('RepositoryFacade');
+  }
+
+  /**
+   * Expose the underlying readable for read-side aggregations
+   * (HighlightQueryService per ADR-006). The facade remains a
+   * write/cache seam — callers MUST go through the facade for writes
+   * and MUST consume the readable only for query-side operations.
+   */
+  getReadable(): IReadableHighlightRepository {
+    return this.repository;
   }
 
   /**
