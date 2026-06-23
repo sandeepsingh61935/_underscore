@@ -20,11 +20,13 @@ import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { IWritableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IWritableHighlightRepository, IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
+import { IpcReadableHighlightRepository } from '@/content/repositories/ipc-readable-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
+import { ModeStateManager } from '@/content/modes/mode-state-manager';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -49,6 +51,18 @@ export function registerContentServices(container: Container): void {
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
         return new ModeManager(eventBus, logger);
+    });
+
+    /**
+     * ModeStateManager - Singleton
+     * Source of truth for the current mode. Consumed by the read IPC
+     * adapter so restoreHighlights() can apply per-mode TTL.
+     */
+    container.registerSingleton<ModeStateManager>('modeStateManager', () => {
+        const eventBus = container.resolve<EventBus>('eventBus');
+        const modeManager = container.resolve<ModeManager>('modeManager');
+        const logger = container.resolve<ILogger>('logger');
+        return new ModeStateManager(eventBus, modeManager, logger);
     });
 
     // ============================================
@@ -116,5 +130,19 @@ export function registerContentServices(container: Container): void {
     container.registerSingleton<IWritableHighlightRepository>('ipcHighlightRepository', () => {
         const messageBus = container.resolve<IMessageBus>('messageBus');
         return new IpcHighlightRepository(messageBus);
+    });
+
+    /**
+     * IpcReadableHighlightRepository - Singleton
+     * Read-side IPC adapter. Used by restoreHighlights() on page load to
+     * pull persisted highlights from the background's real store (the
+     * local in-memory cache is empty after a reload). Mode is read per
+     * call from the ModeStateManager so a mode switch takes effect on
+     * the next restore.
+     */
+    container.registerSingleton<IReadableHighlightRepository>('ipcReadableHighlightRepository', () => {
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        const modeState = container.resolve<ModeStateManager>('modeStateManager');
+        return new IpcReadableHighlightRepository(messageBus, () => modeState.getMode());
     });
 }
