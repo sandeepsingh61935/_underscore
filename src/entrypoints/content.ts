@@ -711,6 +711,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             colorRole: (highlightData.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
             type: 'underscore' as const,
             ranges: serializedRanges,
+            liveRanges,
             createdAt: highlightData.createdAt,
           });
 
