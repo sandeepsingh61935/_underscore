@@ -25,13 +25,17 @@ export interface PromptContext {
 }
 
 export const PROMPT_TEMPLATES = {
-  explain: (ctx: PromptContext): string => `
+  explain: (ctx: PromptContext): string => {
+    const first = ctx.highlights[0];
+    if (!first) throw new Error('PROMPT_TEMPLATES.explain requires at least one highlight');
+    return `
 You are helping a reader understand a specific passage they marked.
 Page: ${ctx.pageTitle} (${ctx.pageUrl})
 Surrounding context: ${ctx.pageContext}
-Highlighted span: """${ctx.highlights[0].text}"""
+Highlighted span: """${first.text}"""
 Explain this passage in 2-3 sentences, focusing on what makes it worth highlighting.
-`.trim(),
+`.trim();
+  },
 
   summarizePage: (ctx: PromptContext): string => `
 You are summarizing what a reader found important on this page.

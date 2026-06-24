@@ -23,7 +23,7 @@ describe('handleStreamChat', () => {
     const provider: ILLMService = {
       providerName: 'anthropic',
       capabilities: { contextWindow: 1, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
-      streamChat: async (_req, onChunk, signal) => {
+      streamChat: async (_req, onChunk, _signal) => {
         onChunk({ delta: 'A' });
         onChunk({ delta: 'B' });
         return { text: 'AB', inputTokens: 1, outputTokens: 2, durationMs: 5 };
@@ -36,7 +36,9 @@ describe('handleStreamChat', () => {
     await handleStreamChat(port as any, provider, req);
 
     expect(posts.map(p => p.type)).toEqual(['CHUNK', 'CHUNK', 'DONE']);
-    const done = posts[2].payload as LLMResult;
+    const donePost = posts[2];
+    expect(donePost).toBeDefined();
+    const done = donePost!.payload as LLMResult;
     expect(done.text).toBe('AB');
   });
 
@@ -47,7 +49,7 @@ describe('handleStreamChat', () => {
       providerName: 'ollama',
       capabilities: { contextWindow: 1, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
       streamChat: async (_req, _onChunk, signal) => {
-        return new Promise<LLMResult>((resolve, reject) => {
+        return new Promise<LLMResult>((_resolve, reject) => {
           signal.addEventListener('abort', () => { aborted = true; reject(new DOMException('aborted', 'AbortError')); });
         });
       },

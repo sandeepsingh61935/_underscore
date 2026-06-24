@@ -102,15 +102,14 @@ export class ModeRegistry {
             altName: 'AI-enabled',
             family: 'cloud',
             tag: 'Readable by models',
-            blurb: 'Cloud-synced and readable by LLMs you connect via MCP.',
+            blurb: 'Summarize pages, synthesize domains, and ask questions about what you have highlighted.',
             motif: '+',
             accent: 'var(--mode-ai)',
             persistence: 'synced · readable by AI',
             signin: true,
             ttl: false,
-            enabled: false, // Disabled by default
+            enabled: true,
             order: 4,
-            badge: 'Coming Soon'
         });
     }
 }
