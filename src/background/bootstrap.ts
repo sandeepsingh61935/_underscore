@@ -12,6 +12,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
 import { EventBridge } from '@/background/services/event-bridge';
+import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 
 const logger = LoggerFactory.getLogger('Bootstrap');
 
@@ -56,6 +57,12 @@ export async function initializeBackground(): Promise<Container> {
     registerSyncComponents(container);   // Sync Engine
     registerRealtimeComponents(container); // Realtime Sync
 
+    // 2.5 Hydrate the repository facade from IndexedDB so the in-memory cache
+    //     reflects persisted data on startup (e.g. after a service-worker restart).
+    //     Without this, reads after a cold start return 0 even when data exists in IDB.
+    const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+    await repositoryFacade.initialize();
+
     // 3. Initialize & Wire Signals
     const authManager = container.resolve<IAuthManager>('authManager');
     const connectionManager = container.resolve<ConnectionManager>('connectionManager');
@@ -98,6 +105,10 @@ export async function initializeBackground(): Promise<Container> {
             logger.info('User logged out, disconnecting realtime');
             connectionManager.disconnect();
         }
+        // Reload facade cache so it reflects the (possibly new) authenticated
+        // user's data. RepositoryFacade.reload() clears the cache and re-reads
+        // from IndexedDB. Safe and fast for anonymous ephemeral users too.
+        await repositoryFacade.reload();
     });
 
     // Wiring handled by individual components via EventBus?
