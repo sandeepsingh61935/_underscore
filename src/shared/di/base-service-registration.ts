@@ -27,6 +27,7 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { LLMRegistry } from '@/background/services/llm/llm-registry';
 
 /**
  * Register base services available in all contexts
@@ -135,5 +136,18 @@ export function registerBaseServices(container: Container): void {
         );
 
         return resilientMessageBus;
+    });
+
+    // ============================================
+    // LLM LAYER (ADR-021)
+    // ============================================
+
+    /**
+     * LLM Registry - Singleton
+     * Holds provider implementations (Anthropic, Ollama).
+     * Providers register themselves at boot.
+     */
+    container.registerSingleton<LLMRegistry>('llmRegistry', () => {
+        return new LLMRegistry();
     });
 }
