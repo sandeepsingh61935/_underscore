@@ -43,11 +43,19 @@ export class HighlightEncryptor {
      *   resulting record to the repository, which persists it.
      * - Idempotent: if `textEncrypted` is already set, the highlight is
      *   returned unchanged.
-     * - Throws if the vault is locked; the caller is expected to surface a
-     *   user-visible error per ADR-013.
+     * - Returns the highlight unchanged if the vault is locked (no user
+     *   signed in). Ephemeral and Local modes are anonymous and have no
+     *   encryption boundary; the plaintext text is stored as-is. ADR-013
+     *   only requires encryption for cloud-mode persistence.
      */
     async encrypt(highlight: HighlightDataV2): Promise<HighlightDataV2> {
         if (highlight.textEncrypted) {
+            return highlight;
+        }
+
+        // No user = no vault = no encryption. Return as-is so writes
+        // from anonymous ephemeral/local users still reach IndexedDB.
+        if (!this.keyManager.isUnlocked || this.keyManager.currentUserId === null) {
             return highlight;
         }
 
