@@ -81,6 +81,25 @@ export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
 export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
 
 /**
+ * IPC channels for ADR-021 (LLM service architecture).
+ *
+ * - IPC_AI_STREAM_CHAT_REQUEST:  opens a Port; payload = { template, highlights, opts }
+ *                               responses on the port: CHUNK, DONE, ERROR
+ * - IPC_AI_CHAT:                 single-shot completion (non-streaming)
+ * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic' | 'ollama' } -> { ok, model, error? }
+ * - IPC_AI_SET_API_KEY:          { provider, key } -> { ok: true } | error
+ * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, mode: ModeName }
+ * - IPC_AI_LIST_PROVIDERS:       -> [{ name, configured }]
+ */
+export const IPC_AI_STREAM_CHAT_REQUEST = 'IPC_AI_STREAM_CHAT_REQUEST' as const;
+export const IPC_AI_CHAT = 'IPC_AI_CHAT' as const;
+export const IPC_AI_HEALTH_CHECK = 'IPC_AI_HEALTH_CHECK' as const;
+export const IPC_AI_SET_API_KEY = 'IPC_AI_SET_API_KEY' as const;
+export const IPC_AI_GET_API_KEY_STATUS = 'IPC_AI_GET_API_KEY_STATUS' as const;
+export const IPC_AI_LIST_PROVIDERS = 'IPC_AI_LIST_PROVIDERS' as const;
+export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
+
+/**
  * Validates message target
  * @throws {z.ZodError} if target is invalid
  */
