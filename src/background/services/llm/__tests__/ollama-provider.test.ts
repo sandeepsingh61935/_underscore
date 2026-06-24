@@ -55,9 +55,9 @@ describe('OllamaProvider', () => {
       new AbortController().signal,
     );
 
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://localhost:11434/api/chat');
-    const body = JSON.parse(init.body);
+    const body = JSON.parse(init.body as string);
     expect(body.model).toBe('mistral');
     expect(body.messages).toContainEqual({ role: 'user', content: 'msg' });
     expect(body.stream).toBe(true);

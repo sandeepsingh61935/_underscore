@@ -89,7 +89,6 @@ export class AnthropicProvider implements ILLMService {
 
     let inputTokens = 0;
     let outputTokens = 0;
-    let finishReason: LLMChunk['finishReason'] = 'stop';
     let accumulated = '';
 
     const reader = response.body.getReader();
@@ -113,18 +112,18 @@ export class AnthropicProvider implements ILLMService {
         let event: AnthropicEvent;
         try { event = JSON.parse(json); } catch { continue; }
         if (event.type === 'message_start') {
-          inputTokens = event.message.usage.input_tokens;
+          const e = event as AnthropicMessageStart;
+          inputTokens = e.message.usage.input_tokens;
         } else if (event.type === 'content_block_delta') {
-          accumulated += event.delta.text;
-          onChunk({ delta: event.delta.text });
+          const e = event as AnthropicContentBlockDelta;
+          accumulated += e.delta.text;
+          onChunk({ delta: e.delta.text });
         } else if (event.type === 'message_delta') {
-          outputTokens = event.usage.output_tokens;
-          finishReason = event.delta.stop_reason === 'max_tokens' ? 'max_tokens' : 'stop';
+          const e = event as AnthropicMessageDelta;
+          outputTokens = e.usage.output_tokens;
         }
       }
     }
-
-    if (signal.aborted) finishReason = 'abort';
 
     return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
   }

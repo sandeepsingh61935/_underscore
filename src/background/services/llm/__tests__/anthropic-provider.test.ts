@@ -67,16 +67,16 @@ describe('AnthropicProvider', () => {
       new AbortController().signal,
     );
 
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://api.anthropic.com/v1/messages');
-    const body = JSON.parse(init.body);
+    const body = JSON.parse(init.body as string);
     expect(body.model).toBe('claude-sonnet-4-6');
     expect(body.max_tokens).toBe(256);
     expect(body.system).toBe('sys');
     expect(body.messages).toEqual([{ role: 'user', content: 'msg' }]);
     expect(body.stream).toBe(true);
-    expect(init.headers['x-api-key']).toBe('sk-test');
-    expect(init.headers['anthropic-version']).toBe('2023-06-01');
+    expect((init.headers as Record<string, string>)['x-api-key']).toBe('sk-test');
+    expect((init.headers as Record<string, string>)['anthropic-version']).toBe('2023-06-01');
   });
 
   it('reports 200K context window for default model', () => {

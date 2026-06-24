@@ -28,6 +28,7 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import { LLMRegistry } from '@/background/services/llm/llm-registry';
+import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 
 /**
  * Register base services available in all contexts
@@ -149,5 +150,20 @@ export function registerBaseServices(container: Container): void {
      */
     container.registerSingleton<LLMRegistry>('llmRegistry', () => {
         return new LLMRegistry();
+    });
+
+    /**
+     * LLMKeyStore - Singleton
+     * Three-tier (ephemeral/local-AES/cloud-vault) key persistence.
+     * The vault dependency is optional; in cloud mode the AiOrchestrator
+     * provides the actual vault reference at construction. For tests,
+     * the LLMKeyStore is constructed directly with a known mode.
+     */
+    container.registerSingleton<LLMKeyStore>('llmKeyStore', () => {
+        // Default to ephemeral mode; AiOrchestrator reconstructs against
+        // the active mode on initialize(). Constructed lazily so that
+        // the (currently nonexistent in this layer) mode state can be
+        // injected without circular dependencies.
+        return new LLMKeyStore('ephemeral');
     });
 }

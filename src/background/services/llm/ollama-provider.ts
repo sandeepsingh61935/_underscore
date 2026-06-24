@@ -64,7 +64,6 @@ export class OllamaProvider implements ILLMService {
 
     let inputTokens = 0;
     let outputTokens = 0;
-    let finishReason: LLMChunk['finishReason'] = 'stop';
     let accumulated = '';
 
     const reader = response.body.getReader();
@@ -90,12 +89,9 @@ export class OllamaProvider implements ILLMService {
         if (chunk.done) {
           inputTokens = chunk.prompt_eval_count ?? 0;
           outputTokens = chunk.eval_count ?? 0;
-          if (chunk.done_reason === 'length') finishReason = 'max_tokens';
         }
       }
     }
-
-    if (signal.aborted) finishReason = 'abort';
 
     return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
   }
