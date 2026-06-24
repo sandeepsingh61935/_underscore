@@ -476,8 +476,8 @@ function PopupApp(): React.ReactElement {
 }
 
 const popupEventBus = new EventBus(new ConsoleLogger('PopupData', LogLevel.WARN));
-const popupDataProvider = new ExtensionDataProviderAdapter(popupEventBus);
 const popupMessageBus = new ChromeMessageBus(new ConsoleLogger('PopupMessageBus', LogLevel.WARN));
+const popupDataProvider = new ExtensionDataProviderAdapter(popupEventBus, popupMessageBus);
 
 const container = document.getElementById('app');
 if (container) {
