@@ -3,6 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   srcDir: 'src',
+  // Ponytail: WXT's CLI --mode flag is ignored for env loading; build
+  // always resolves to production mode and skips .env.development.
+  // Single Supabase project; keep dev vars in .env.development and
+  // hardcode mode here so both `wxt` and `wxt build` load them.
+  // Side effect: output dir is .output/chrome-mv3-development instead of
+  // chrome-mv3. Update any deploy / load paths accordingly.
+  mode: 'development',
   manifest: {
     name: 'Underscore Highlighter',
     description: 'Intelligent web highlighting with Sprint, Vault, and Gen modes',
