@@ -41,11 +41,13 @@ describe('LocalCacheIpcRepository', () => {
     await repo.add(h);
     const all = await repo.findAll();
     expect(all).toHaveLength(1);
-    expect(all[0].id).toBe('h-1');
+    expect(all[0]?.id).toBe('h-1');
     expect(sentMessages).toHaveLength(1);
-    const parsed = MessageSchema.parse(sentMessages[0].message);
+    const first = sentMessages[0];
+    expect(first).toBeDefined();
+    const parsed = MessageSchema.parse(first!.message);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_ADD');
-    expect(sentMessages[0].target).toBe('background');
+    expect(first!.target).toBe('background');
   });
 
   it('addMany writes to local cache AND sends IPC_HIGHLIGHT_ADD_MANY', async () => {
@@ -54,7 +56,9 @@ describe('LocalCacheIpcRepository', () => {
     const all = await repo.findAll();
     expect(all.map((h) => h.id).sort()).toEqual(['a', 'b']);
     expect(sentMessages).toHaveLength(1);
-    const parsed = MessageSchema.parse(sentMessages[0].message);
+    const first = sentMessages[0];
+    expect(first).toBeDefined();
+    const parsed = MessageSchema.parse(first!.message);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_ADD_MANY');
   });
 
@@ -66,7 +70,9 @@ describe('LocalCacheIpcRepository', () => {
     const all = await repo.findAll();
     expect(all).toHaveLength(0);
     expect(sentMessages).toHaveLength(1);
-    const parsed = MessageSchema.parse(sentMessages[0].message);
+    const first = sentMessages[0];
+    expect(first).toBeDefined();
+    const parsed = MessageSchema.parse(first!.message);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_REMOVE');
     expect((parsed.payload as { id: string }).id).toBe('h-1');
   });
@@ -77,9 +83,11 @@ describe('LocalCacheIpcRepository', () => {
     sentMessages.length = 0;
     await repo.update('h-1', { text: 'changed' });
     const all = await repo.findAll();
-    expect(all[0].text).toBe('changed');
+    expect(all[0]?.text).toBe('changed');
     expect(sentMessages).toHaveLength(1);
-    const parsed = MessageSchema.parse(sentMessages[0].message);
+    const first = sentMessages[0];
+    expect(first).toBeDefined();
+    const parsed = MessageSchema.parse(first!.message);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_UPDATE');
   });
 
@@ -91,7 +99,9 @@ describe('LocalCacheIpcRepository', () => {
     const all = await repo.findAll();
     expect(all).toHaveLength(0);
     expect(sentMessages).toHaveLength(1);
-    const parsed = MessageSchema.parse(sentMessages[0].message);
+    const first = sentMessages[0];
+    expect(first).toBeDefined();
+    const parsed = MessageSchema.parse(first!.message);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_CLEAR');
   });
 
@@ -107,7 +117,7 @@ describe('LocalCacheIpcRepository', () => {
     await repo.add(makeHighlight({ id: 'b', url: 'https://b.test' }));
     const found = await repo.findByUrl('https://a.test');
     expect(found).toHaveLength(1);
-    expect(found[0].id).toBe('a');
+    expect(found[0]?.id).toBe('a');
   });
 
   it('findByContentHash returns the matching highlight', async () => {

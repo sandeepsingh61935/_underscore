@@ -20,9 +20,14 @@ import { LocalMode } from '@/content/modes/local-mode';
 import { CloudMode } from '@/content/modes/cloud-mode';
 import { EphemeralMode } from '@/content/modes/ephemeral-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { IWritableHighlightRepository, IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type {
+    IWritableHighlightRepository,
+    IReadableHighlightRepository,
+    IHighlightRepository,
+} from '@/shared/repositories/i-highlight-repository';
 import { IpcHighlightRepository } from '@/content/repositories/ipc-highlight-repository';
 import { IpcReadableHighlightRepository } from '@/content/repositories/ipc-readable-highlight-repository';
+import { LocalCacheIpcRepository } from '@/content/repositories/local-cache-ipc-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
@@ -130,6 +135,24 @@ export function registerContentServices(container: Container): void {
     container.registerSingleton<IWritableHighlightRepository>('ipcHighlightRepository', () => {
         const messageBus = container.resolve<IMessageBus>('messageBus');
         return new IpcHighlightRepository(messageBus);
+    });
+
+    /**
+     * LocalCacheIpcRepository - Singleton (content context only)
+     *
+     * Rebinds the 'repository' DI token (which base-service-registration.ts
+     * binds to a pure InMemoryHighlightRepository) to this composite, so the
+     * content-side RepositoryFacade wraps local-cache + IPC-write-forwarding
+     * instead of in-memory-only. Modes' this.facade.add(...) calls now
+     * transparently dual-write: local cache (for sync UI reads) and IPC
+     * (for background persistence to IndexedDB).
+     *
+     * Background context is unaffected — repository-container-registration.ts
+     * rebinds 'repositoryFacade' there to use DualWriteRepository.
+     */
+    container.registerSingleton<IHighlightRepository>('repository', () => {
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        return new LocalCacheIpcRepository(messageBus);
     });
 
     /**
