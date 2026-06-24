@@ -4,6 +4,7 @@ import { parse } from 'tldts';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { useGenerateSummary } from '@/features/ai/hooks/useGenerateSummary';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { Row } from '@/ui-system/components/primitives/Row';
 
@@ -39,6 +40,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   };
 
   const { highlights, isLoading } = useHighlightsByDomain(domain);
+  const summary = useGenerateSummary();
 
   const sections = useMemo(() => {
     const map = new Map<string, number>();
@@ -82,6 +84,45 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
         <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: 4 }}>
           Sections
         </div>
+
+        {highlights.length > 0 && (
+          <button
+            type="button"
+            onClick={() => summary.start({
+              pageTitle: domain,
+              pageUrl: '',
+              pageContextWithMarks: '',
+              pageContext: '',
+              highlights: highlights.map(h => ({ id: h.id, text: h.text, url: h.url, title: domain })),
+              domain,
+              uniqueUrls: new Set(highlights.map(h => h.url)).size,
+              length: 'long',
+            })}
+            disabled={summary.status === 'streaming'}
+            style={{
+              marginTop: 8,
+              font: 'var(--sans)', fontSize: 'var(--step--1)',
+              padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
+              border: '1px solid var(--rule)', cursor: summary.status === 'streaming' ? 'wait' : 'pointer',
+            }}
+          >
+            Synthesize this domain
+          </button>
+        )}
+
+        {summary.chunks && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              marginTop: 8, padding: 8, whiteSpace: 'pre-wrap',
+              font: 'var(--sans)', fontSize: 'var(--step--1)', color: 'var(--ink)',
+              border: '1px solid var(--rule)', maxHeight: '160px', overflowY: 'auto',
+            }}
+          >
+            {summary.chunks}
+          </div>
+        )}
       </div>
 
       <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { useGenerateSummary } from '@/features/ai/hooks/useGenerateSummary';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
@@ -30,6 +31,7 @@ export function SubDomainView({ domain: propDomain, section: propSection, onBack
   }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading } = useHighlightsByDomain(domain);
+  const summary = useGenerateSummary();
 
   const sectionHighlights = useMemo(() => {
     return highlights.filter((h) => {
@@ -57,6 +59,44 @@ export function SubDomainView({ domain: propDomain, section: propSection, onBack
           {sectionHighlights.length} highlights · {mode}
         </div>
       </div>
+
+      {sectionHighlights.length > 0 && (
+        <div style={{ padding: '4px 16px 8px' }}>
+          <button
+            type="button"
+            onClick={() => summary.start({
+              pageTitle: section,
+              pageUrl: domain,
+              pageContextWithMarks: sectionHighlights.map(h => h.text).join('\n\n'),
+              pageContext: sectionHighlights.map(h => h.text).join(' '),
+              highlights: sectionHighlights.map(h => ({ id: h.id, text: h.text, url: h.url, title: section })),
+              length: 'medium',
+            })}
+            disabled={summary.status === 'streaming'}
+            style={{
+              font: 'var(--sans)', fontSize: 'var(--step--1)',
+              padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
+              border: '1px solid var(--rule)', cursor: summary.status === 'streaming' ? 'wait' : 'pointer',
+            }}
+          >
+            Summarize this section
+          </button>
+        </div>
+      )}
+
+      {summary.chunks && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            padding: '8px 16px', whiteSpace: 'pre-wrap',
+            font: 'var(--sans)', fontSize: 'var(--step--1)', color: 'var(--ink)',
+            borderTop: '1px solid var(--rule)', maxHeight: '120px', overflowY: 'auto',
+          }}
+        >
+          {summary.chunks}
+        </div>
+      )}
 
       <div className="list-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {isLoading ? (
