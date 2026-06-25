@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import { AIMode } from '../ai-mode';
+
 import type { ILLMService } from '@/shared/interfaces/i-llm-service';
 import type { HighlightData } from '@/shared/schemas/highlight-schema';
 

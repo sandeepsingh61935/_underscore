@@ -36,7 +36,7 @@ export class PageContentCache {
   constructor(
     private readonly send: (msg: { type: string; payload: PushPayload; timestamp: number }) => void,
     private readonly opts: PageContentCacheOptions = {},
-    private readonly meta: DocumentMetadata = { title: document.title, url: location.href },
+    private readonly meta: DocumentMetadata = { title: document.title, url: window.location.href },
   ) {}
 
   start(): void {

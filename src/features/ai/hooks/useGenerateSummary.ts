@@ -1,10 +1,15 @@
 import { useCallback } from 'react';
 
 import { useLLMStream } from './useLLMStream';
+
 import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
 import type { PromptContext } from '@/shared/llm/prompts';
 
-export function useGenerateSummary() {
+type StreamAPI = ReturnType<typeof useLLMStream>;
+
+export function useGenerateSummary(): Omit<StreamAPI, 'start'> & {
+  start: (ctx: PromptContext) => void;
+} {
   const stream = useLLMStream();
 
   const start = useCallback((ctx: PromptContext) => {

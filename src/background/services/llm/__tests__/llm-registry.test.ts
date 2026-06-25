@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { LLMRegistry } from '../llm-registry';
+
 import type { ILLMService } from '@/shared/interfaces/i-llm-service';
 
 function makeMockProvider(name: 'anthropic' | 'ollama'): ILLMService {

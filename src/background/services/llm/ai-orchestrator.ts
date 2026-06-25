@@ -1,8 +1,9 @@
+import { registerAiHandlers } from './ipc-handlers';
+import type { LLMKeyStore } from './llm-key-store';
+import type { LLMRegistry } from './llm-registry';
+
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import type { LLMRegistry } from './llm-registry';
-import type { LLMKeyStore } from './llm-key-store';
-import { registerAiHandlers } from './ipc-handlers';
 
 /**
  * Boots the AI IPC handlers. Constructor-injected dependencies (the
@@ -18,7 +19,7 @@ export class AiOrchestrator {
   ) {}
 
   initialize(): void {
-    registerAiHandlers({ bus: this.messageBus as any, registry: this.registry, keyStore: this.keyStore });
+    registerAiHandlers({ bus: this.messageBus, registry: this.registry, keyStore: this.keyStore });
     this.logger.info('[ai] handlers registered');
   }
 }

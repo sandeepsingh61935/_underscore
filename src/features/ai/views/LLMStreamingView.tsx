@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { useGenerateSummary } from '../hooks/useGenerateSummary';
+
 import type { PromptContext } from '@/shared/llm/prompts';
 
 interface LLMStreamingViewProps {
@@ -8,7 +9,7 @@ interface LLMStreamingViewProps {
   onClose: () => void;
 }
 
-export function LLMStreamingView({ ctx, onClose }: LLMStreamingViewProps) {
+export function LLMStreamingView({ ctx, onClose }: LLMStreamingViewProps): React.ReactElement {
   const { chunks, status, error, start, abort } = useGenerateSummary();
 
   useEffect(() => { start(ctx); return () => abort(); }, [ctx, start, abort]);
@@ -32,7 +33,7 @@ export function LLMStreamingView({ ctx, onClose }: LLMStreamingViewProps) {
       >
         {chunks || (status === 'streaming' ? '…' : '')}
       </div>
-      {error && <div style={{ color: 'var(--accent)', font: 'var(--sans)' }}>Error: {error}</div>}
+      {error && <div style={{ color: 'var(--ink)', font: 'var(--sans)' }}>Error: {error}</div>}
       <div style={{ display: 'flex', gap: 'var(--step-1)' }}>
         <button type="button" onClick={abort} disabled={status !== 'streaming'}>Stop</button>
         <button type="button" onClick={onClose}>Close</button>

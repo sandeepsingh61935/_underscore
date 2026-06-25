@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import { registerAiHandlers } from '../ipc-handlers';
+
 import type { ILLMService, LLMResult } from '@/shared/interfaces/i-llm-service';
 
 function makeMessageBus() {
@@ -8,9 +9,8 @@ function makeMessageBus() {
   return {
     handlers,
     send: vi.fn(),
-    subscribe: vi.fn(),
+    subscribe: (type: string, handler: (p: unknown) => unknown) => { handlers.set(type, handler); return () => {}; },
     unsubscribe: vi.fn(),
-    on: (type: string, handler: (p: unknown) => unknown) => handlers.set(type, handler),
   };
 }
 

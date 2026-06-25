@@ -1,6 +1,6 @@
+import type { IAIMode, MindmapData, Contradiction, EntityExtraction } from '@/content/modes/mode-interfaces';
 import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
 import type { HighlightData } from '@/shared/schemas/highlight-schema';
-import type { IAIMode, MindmapData, Contradiction, EntityExtraction } from '@/content/modes/mode-interfaces';
 
 interface AIModeDeps {
   provider: ILLMService;

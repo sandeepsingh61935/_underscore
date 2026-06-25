@@ -5,7 +5,12 @@ import { IPC_AI_GET_API_KEY_STATUS, IPC_AI_SET_API_KEY } from '@/shared/schemas/
 
 type ProviderName = 'anthropic' | 'ollama';
 
-export function useAPIKeyStatus(provider: ProviderName) {
+export function useAPIKeyStatus(provider: ProviderName): {
+  configured: boolean | null;
+  error: string | null;
+  refresh: () => Promise<void>;
+  save: (key: string) => Promise<void>;
+} {
   const getStatus = useIpcAction<{ provider: ProviderName }, { configured: boolean }>(IPC_AI_GET_API_KEY_STATUS);
   const setKey = useIpcAction<{ provider: ProviderName; key: string }, { ok: true }>(IPC_AI_SET_API_KEY);
 

@@ -12,14 +12,37 @@ interface StartArgs {
   provider?: 'anthropic' | 'ollama';
 }
 
+interface StreamChunkMessage {
+  type: 'CHUNK';
+  payload: { delta: string };
+}
+
+interface StreamDoneMessage {
+  type: 'DONE';
+  payload: unknown;
+}
+
+interface StreamErrorMessage {
+  type: 'ERROR';
+  payload: { message?: string };
+}
+
+type StreamMessage = StreamChunkMessage | StreamDoneMessage | StreamErrorMessage;
+
 interface StreamingPort {
   postMessage: (msg: unknown) => void;
-  onMessage: { addListener: (cb: (msg: any) => void) => void };
+  onMessage: { addListener: (cb: (msg: StreamMessage) => void) => void };
   onDisconnect: { addListener: (cb: () => void) => void };
   disconnect: () => void;
 }
 
-export function useLLMStream() {
+export function useLLMStream(): {
+  chunks: string;
+  status: StreamStatus;
+  error: string | null;
+  start: (args: StartArgs) => void;
+  abort: () => void;
+} {
   const portRef = useRef<StreamingPort | null>(null);
   const [chunks, setChunks] = useState('');
   const [status, setStatus] = useState<StreamStatus>('idle');
@@ -30,11 +53,11 @@ export function useLLMStream() {
     const port = chrome.runtime.connect({ name: 'llm-stream' }) as unknown as StreamingPort;
     portRef.current = port;
 
-    port.onMessage.addListener((msg: { type: string; payload?: { delta?: string; message?: string } }) => {
-      if (msg.type === 'CHUNK' && msg.payload?.delta) {
-        setChunks(c => c + msg.payload!.delta);
+    port.onMessage.addListener((msg: StreamMessage) => {
+      if (msg.type === 'CHUNK' && msg.payload.delta) {
+        setChunks(c => c + msg.payload.delta);
       } else if (msg.type === 'DONE') setStatus('done');
-      else if (msg.type === 'ERROR') { setStatus('error'); setError(msg.payload?.message ?? 'unknown'); }
+      else if (msg.type === 'ERROR') { setStatus('error'); setError(msg.payload.message ?? 'unknown'); }
     });
 
     port.postMessage({ type: 'STREAM_CHAT_REQUEST', payload: args });

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import { handleStreamChat } from '../stream-relay';
+
 import type { ILLMService, LLMRequest, LLMResult } from '@/shared/interfaces/i-llm-service';
 
 function makePort(): {

@@ -1,3 +1,7 @@
+import type { LLMKeyStore } from './llm-key-store';
+import type { LLMRegistry } from './llm-registry';
+
+import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
 import {
   IPC_AI_CHAT,
   IPC_AI_HEALTH_CHECK,
@@ -5,12 +9,9 @@ import {
   IPC_AI_GET_API_KEY_STATUS,
   IPC_AI_LIST_PROVIDERS,
 } from '@/shared/schemas/message-schemas';
-import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
-import type { LLMRegistry } from './llm-registry';
-import type { LLMKeyStore } from './llm-key-store';
 
 interface MessageBusLike {
-  on(type: string, handler: (payload: unknown) => unknown | Promise<unknown>): void;
+  subscribe(messageType: string, handler: (payload: unknown) => unknown | Promise<unknown>): () => void;
 }
 
 interface RegisterArgs {
@@ -22,22 +23,22 @@ interface RegisterArgs {
 type ProviderName = 'anthropic' | 'ollama';
 
 export function registerAiHandlers({ bus, registry, keyStore }: RegisterArgs): void {
-  bus.on(IPC_AI_LIST_PROVIDERS, () => registry.list());
+  bus.subscribe(IPC_AI_LIST_PROVIDERS, () => registry.list());
 
-  bus.on(IPC_AI_GET_API_KEY_STATUS, async (raw: unknown) => {
+  bus.subscribe(IPC_AI_GET_API_KEY_STATUS, async (raw: unknown) => {
     const { provider } = raw as { provider: ProviderName };
     const key = await keyStore.get(provider);
     return { configured: !!key };
   });
 
-  bus.on(IPC_AI_SET_API_KEY, async (raw: unknown) => {
+  bus.subscribe(IPC_AI_SET_API_KEY, async (raw: unknown) => {
     const { provider, key } = raw as { provider: ProviderName; key: string };
     await keyStore.set(provider, key);
     registry.setConfigured(provider, true);
     return { ok: true };
   });
 
-  bus.on(IPC_AI_HEALTH_CHECK, async (raw: unknown) => {
+  bus.subscribe(IPC_AI_HEALTH_CHECK, async (raw: unknown) => {
     const { provider, apiBase } = raw as { provider: ProviderName; apiBase?: string };
     // Prefer a registered provider instance (lets tests inject mocks).
     const registered = tryGetRegistered(registry, provider);
@@ -53,7 +54,7 @@ export function registerAiHandlers({ bus, registry, keyStore }: RegisterArgs): v
     return new AnthropicProvider({ apiKey: key }).healthCheck();
   });
 
-  bus.on(IPC_AI_CHAT, async (raw: unknown) => {
+  bus.subscribe(IPC_AI_CHAT, async (raw: unknown) => {
     const { provider, request } = raw as { provider: ProviderName; request: LLMRequest };
     // Prefer a registered provider instance (lets tests inject mocks).
     const registered = tryGetRegistered(registry, provider);

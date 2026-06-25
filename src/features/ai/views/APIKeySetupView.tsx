@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { useAPIKeyStatus } from '../hooks/useAPIKeyStatus';
 import { useLLMHealthCheck } from '../hooks/useLLMHealthCheck';
@@ -8,7 +8,7 @@ interface APIKeySetupViewProps {
   onClose: () => void;
 }
 
-export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIKeySetupViewProps) {
+export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIKeySetupViewProps): React.ReactElement {
   const [provider, setProvider] = useState<'anthropic' | 'ollama'>(initialProvider);
   const [key, setKey] = useState('');
   const [apiBase, setApiBase] = useState('http://localhost:11434');

@@ -50,6 +50,8 @@ js.configs.recommended, // TypeScript files
       MouseEvent: 'readonly',
       Range: 'readonly',
       Selection: 'readonly',
+      fetch: 'readonly',
+      location: 'readonly',
       // Node/JSDOM globals
       global: 'readonly',
       crypto: 'readonly',
