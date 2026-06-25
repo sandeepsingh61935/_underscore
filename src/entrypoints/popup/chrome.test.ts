@@ -8,6 +8,8 @@ const makeHandlers = (): ChromeHandlers => ({
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
   onBackFromSettings: vi.fn(),
+  onBackFromApiKeySetup: vi.fn(),
+  onBackFromLlmStreaming: vi.fn(),
   subDomainBackLabel: vi.fn(() => 'anthropic.com'),
   getModeId: vi.fn(() => 'local'),
 });
@@ -126,5 +128,25 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.SETTINGS.activeTab).toBe('settings');
     expect(map.SETTINGS.onBack).toBe(handlers.onBackFromSettings);
     expect(map.SETTINGS.backLabel).toBe('Library');
+  });
+
+  it('API_KEY_SETUP has title, ModeHeader, back button, no TabBar', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.API_KEY_SETUP.title).toBe('_underscore · AI provider');
+    expect(map.API_KEY_SETUP.showModeHeader).toBe(true);
+    expect(map.API_KEY_SETUP.showTabBar).toBe(false);
+    expect(map.API_KEY_SETUP.onBack).toBe(handlers.onBackFromApiKeySetup);
+    expect(map.API_KEY_SETUP.backLabel).toBe('Settings');
+  });
+
+  it('LLM_STREAMING has title, ModeHeader, back button, no TabBar', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.LLM_STREAMING.title).toBe('_underscore · summary');
+    expect(map.LLM_STREAMING.showModeHeader).toBe(true);
+    expect(map.LLM_STREAMING.showTabBar).toBe(false);
+    expect(map.LLM_STREAMING.onBack).toBe(handlers.onBackFromLlmStreaming);
+    expect(map.LLM_STREAMING.backLabel).toBe('Close');
   });
 });

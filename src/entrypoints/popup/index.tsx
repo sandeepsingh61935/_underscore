@@ -7,6 +7,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
+import { APIKeySetupView } from '../../features/ai/views/APIKeySetupView';
+import { LLMStreamingView } from '../../features/ai/views/LLMStreamingView';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
 import { useUnlockVault } from '../../features/auth/hooks/useUnlockVault';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
@@ -15,6 +17,7 @@ import { SubDomainView } from '../../features/collections/views/SubDomainView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
+import type { PromptContext } from '../../shared/llm/prompts';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
 import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
@@ -24,11 +27,11 @@ import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 import { UnlockVaultView } from './views/UnlockVaultView';
 
+import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
+import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
+import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
-import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
-import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
 import { springs } from '@/ui-system/motion/springs';
 import '../../ui-system/theme/global.css';
 import './base.css';
@@ -44,6 +47,8 @@ enum View {
   UNLOCK_VAULT = 'UNLOCK_VAULT',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
+  API_KEY_SETUP = 'API_KEY_SETUP',
+  LLM_STREAMING = 'LLM_STREAMING',
 }
 
 const screenVariants = {
@@ -107,6 +112,7 @@ function PopupApp(): React.ReactElement {
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
+  const [llmContext, setLlmContext] = useState<PromptContext | null>(null);
 
   // Authentication & Mode Notification / Swapping Effect
   useEffect(() => {
@@ -299,12 +305,29 @@ function PopupApp(): React.ReactElement {
     }
   };
 
+  const handleConfigureAIProviders = (): void => {
+    setPreviousView(currentView);
+    setCurrentView(View.API_KEY_SETUP);
+  };
+
+  const handleBackFromApiKeySetup = (): void => {
+    setCurrentView(View.SETTINGS);
+  };
+
+  const handleBackFromLlmStreaming = (): void => {
+    setLlmContext(null);
+    setCurrentView(previousView ?? View.COLLECTIONS);
+    setPreviousView(null);
+  };
+
   const chromeHandlers: ChromeHandlers = {
     onTabChange: handleTabChange,
     onSwitch: handleSettingsChangeMode,
     onBackToCollections: handleBackToCollections,
     onBackToDomain: handleBackToDomain,
     onBackFromSettings: handleBackFromSettings,
+    onBackFromApiKeySetup: handleBackFromApiKeySetup,
+    onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,
     getModeId: () => (typeof currentMode === 'string' ? currentMode : 'local'),
   };
@@ -452,6 +475,7 @@ function PopupApp(): React.ReactElement {
           <SettingsPage
             onBack={handleBackToCollections}
             onChangeMode={handleSettingsChangeMode}
+            onConfigureAIProviders={handleConfigureAIProviders}
           />
         </motion.div>
       )}
@@ -469,6 +493,32 @@ function PopupApp(): React.ReactElement {
             onLogout={handleLogout}
             onSectionClick={handleSectionClick}
           />
+        </motion.div>
+      )}
+      {currentView === View.API_KEY_SETUP && (
+        <motion.div
+          key="api-key-setup"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <APIKeySetupView onClose={handleBackFromApiKeySetup} />
+        </motion.div>
+      )}
+      {currentView === View.LLM_STREAMING && llmContext && (
+        <motion.div
+          key="llm-streaming"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <LLMStreamingView ctx={llmContext} onClose={handleBackFromLlmStreaming} />
         </motion.div>
       )}
     </PopupShell>

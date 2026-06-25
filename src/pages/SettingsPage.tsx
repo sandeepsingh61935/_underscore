@@ -31,13 +31,14 @@ type TypePresetId = keyof typeof TYPE_PRESETS;
 export interface SettingsPageProps {
   onBack?: () => void;
   onChangeMode?: () => void;
+  onConfigureAIProviders?: () => void;
 }
 
 /**
  * Settings Page
  * Implements exactly what the Settings component in ui_kits/extension/v2/screens-nav.jsx specifies.
  */
-export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProps): React.ReactElement {
+export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProviders }: SettingsPageProps): React.ReactElement {
   const { theme, setTheme, currentMode } = useApp();
   const { user, logout } = useCurrentUser();
   const [typeId, setTypeId] = useState<TypePresetId>('editorial');
@@ -137,9 +138,9 @@ export function SettingsPage({ onBack: _onBack, onChangeMode }: SettingsPageProp
         />
         <Row
           title="Configure AI providers"
-          sub="Opens web app"
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>↗</span>}
-          onClick={() => {}}
+          sub="Set API keys for Anthropic or Ollama"
+          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
+          onClick={onConfigureAIProviders}
         />
         <Row
           title="Export highlights"

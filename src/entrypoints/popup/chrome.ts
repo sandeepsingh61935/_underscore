@@ -11,7 +11,9 @@ export type ViewKey =
   | 'AUTH'
   | 'UNLOCK_VAULT'
   | 'SETTINGS'
-  | 'DASHBOARD';
+  | 'DASHBOARD'
+  | 'API_KEY_SETUP'
+  | 'LLM_STREAMING';
 
 export interface PopupChrome {
   title: string;
@@ -32,6 +34,8 @@ export interface ChromeHandlers {
   onBackToCollections: () => void;
   onBackToDomain: () => void;
   onBackFromSettings: () => void;
+  onBackFromApiKeySetup: () => void;
+  onBackFromLlmStreaming: () => void;
   subDomainBackLabel: () => string;
   getModeId: () => string;
 }
@@ -126,6 +130,26 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'home',
       onTabChange: handlers.onTabChange,
+      onSwitch: handlers.onSwitch,
+    },
+    API_KEY_SETUP: {
+      title: '_underscore · AI provider',
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: false,
+      modeId: handlers.getModeId(),
+      onBack: handlers.onBackFromApiKeySetup,
+      backLabel: 'Settings',
+      onSwitch: handlers.onSwitch,
+    },
+    LLM_STREAMING: {
+      title: '_underscore · summary',
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: false,
+      modeId: handlers.getModeId(),
+      onBack: handlers.onBackFromLlmStreaming,
+      backLabel: 'Close',
       onSwitch: handlers.onSwitch,
     },
   };
