@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { IPC_AI_GET_API_KEY_STATUS, IPC_AI_SET_API_KEY } from '@/shared/schemas/message-schemas';
-
-type ProviderName = 'anthropic' | 'ollama';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 
 export function useAPIKeyStatus(provider: ProviderName): {
   configured: boolean | null;

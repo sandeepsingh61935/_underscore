@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { LLMRegistry } from '../llm-registry';
 
-import type { ILLMService } from '@/shared/interfaces/i-llm-service';
+import type { ILLMService, ProviderName } from '@/shared/interfaces/i-llm-service';
 
-function makeMockProvider(name: 'anthropic' | 'ollama'): ILLMService {
+function makeMockProvider(name: ProviderName): ILLMService {
   return {
     providerName: name,
     capabilities: { contextWindow: 8192, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
@@ -43,5 +43,17 @@ describe('LLMRegistry', () => {
     registry.register(makeMockProvider('ollama'));
     registry.setConfigured('ollama', true);
     expect(registry.list()).toEqual([{ name: 'ollama', configured: true }]);
+  });
+
+  it('registers multiple providers from the wider union', () => {
+    registry.register(makeMockProvider('anthropic'));
+    registry.register(makeMockProvider('openai'));
+    registry.register(makeMockProvider('gemini'));
+    registry.register(makeMockProvider('openrouter'));
+    registry.register(makeMockProvider('minimax'));
+    registry.register(makeMockProvider('ollama'));
+    expect(registry.list()).toHaveLength(6);
+    expect(registry.get('openai').providerName).toBe('openai');
+    expect(registry.get('gemini').providerName).toBe('gemini');
   });
 });

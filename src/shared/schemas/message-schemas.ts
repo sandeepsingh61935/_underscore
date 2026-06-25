@@ -86,7 +86,7 @@ export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
  * - IPC_AI_STREAM_CHAT_REQUEST:  opens a Port; payload = { template, highlights, opts }
  *                               responses on the port: CHUNK, DONE, ERROR
  * - IPC_AI_CHAT:                 single-shot completion (non-streaming)
- * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic' | 'ollama' } -> { ok, model, error? }
+ * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic'|'ollama'|'gemini'|'openai'|'openrouter'|'minimax' } -> { ok, model, error? }
  * - IPC_AI_SET_API_KEY:          { provider, key } -> { ok: true } | error
  * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, mode: ModeName }
  * - IPC_AI_LIST_PROVIDERS:       -> [{ name, configured }]

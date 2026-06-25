@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { LLMRequest } from '@/shared/interfaces/i-llm-service';
+import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { PromptHighlight, PromptTemplateName } from '@/shared/llm/prompts';
 
 export type StreamStatus = 'idle' | 'streaming' | 'done' | 'error';
@@ -9,7 +9,7 @@ interface StartArgs {
   template: PromptTemplateName;
   highlights: PromptHighlight[];
   request: LLMRequest;
-  provider?: 'anthropic' | 'ollama';
+  provider?: ProviderName;
 }
 
 interface StreamChunkMessage {

@@ -91,4 +91,15 @@ describe('registerAiHandlers', () => {
     await handler({ provider: 'anthropic', key: 'sk-x' });
     expect(keyStore.set).toHaveBeenCalledWith('anthropic', 'sk-x');
   });
+
+  it('IPC_AI_GET_API_KEY_STATUS returns configured=true for ollama without a key', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any });
+
+    const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
+    const result = await handler({ provider: 'ollama' });
+    expect(result).toEqual({ configured: true });
+  });
 });

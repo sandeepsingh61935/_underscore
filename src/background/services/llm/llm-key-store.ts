@@ -14,7 +14,7 @@ export interface IVaultKeyManager {
   withMasterKey<T>(cb: (mk: CryptoKey) => Promise<T>): Promise<T>;
 }
 
-type ProviderName = 'anthropic' | 'ollama';
+type ProviderName = import('@/shared/interfaces/i-llm-service').ProviderName;
 
 const ALG = 'AES-GCM';
 const IV_BYTES = 12;

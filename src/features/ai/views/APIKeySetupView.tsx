@@ -2,20 +2,48 @@ import React, { useState } from 'react';
 
 import { useAPIKeyStatus } from '../hooks/useAPIKeyStatus';
 import { useLLMHealthCheck } from '../hooks/useLLMHealthCheck';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 
 interface APIKeySetupViewProps {
-  initialProvider?: 'anthropic' | 'ollama';
+  initialProvider?: ProviderName;
   onClose: () => void;
 }
 
+interface ProviderMeta {
+  label: string;
+  keyPlaceholder?: string;
+  /** Optional endpoint field (only used by Ollama). */
+  endpointPlaceholder?: string;
+  endpointHelp?: string;
+}
+
+const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
+  anthropic: { label: 'Anthropic (Claude)', keyPlaceholder: 'sk-ant-...' },
+  openai: { label: 'OpenAI (GPT)', keyPlaceholder: 'sk-...' },
+  gemini: { label: 'Google Gemini', keyPlaceholder: 'AIza...' },
+  openrouter: { label: 'OpenRouter', keyPlaceholder: 'sk-or-...' },
+  minimax: { label: 'MiniMax', keyPlaceholder: 'eyJ...' },
+  ollama: {
+    label: 'Ollama (local)',
+    endpointPlaceholder: 'http://localhost:11434',
+    endpointHelp: 'Ensure OLLAMA_ORIGINS=chrome-extension://* is set before connecting.',
+  },
+};
+
+/** Providers that need an API key; ollama uses an endpoint instead. */
+const KEY_PROVIDERS: ReadonlyArray<ProviderName> = ['anthropic', 'openai', 'gemini', 'openrouter', 'minimax'];
+
 export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIKeySetupViewProps): React.ReactElement {
-  const [provider, setProvider] = useState<'anthropic' | 'ollama'>(initialProvider);
+  const [provider, setProvider] = useState<ProviderName>(initialProvider);
   const [key, setKey] = useState('');
   const [apiBase, setApiBase] = useState('http://localhost:11434');
   const [health, setHealth] = useState<string | null>(null);
 
   const status = useAPIKeyStatus(provider);
   const { run: runHealth } = useLLMHealthCheck();
+
+  const meta = PROVIDER_META[provider];
+  const requiresKey = KEY_PROVIDERS.includes(provider);
 
   return (
     <div
@@ -27,19 +55,23 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
       <h2 className="u-serif" style={{ margin: 0 }}>AI provider setup</h2>
 
       <label className="u-kicker">Provider</label>
-      <select value={provider} onChange={e => setProvider(e.target.value as 'anthropic' | 'ollama')}>
-        <option value="anthropic">Anthropic (Claude)</option>
-        <option value="ollama">Ollama (local)</option>
+      <select
+        value={provider}
+        onChange={e => setProvider(e.target.value as ProviderName)}
+      >
+        {(Object.keys(PROVIDER_META) as ProviderName[]).map(p => (
+          <option key={p} value={p}>{PROVIDER_META[p].label}</option>
+        ))}
       </select>
 
-      {provider === 'anthropic' && (
+      {requiresKey && (
         <>
-          <label className="u-kicker">Anthropic API key</label>
+          <label className="u-kicker">{meta.label} API key</label>
           <input
             type="password"
             value={key}
             onChange={e => setKey(e.target.value)}
-            placeholder="sk-ant-..."
+            placeholder={meta.keyPlaceholder}
           />
         </>
       )}
@@ -51,17 +83,17 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
             type="text"
             value={apiBase}
             onChange={e => setApiBase(e.target.value)}
-            placeholder="http://localhost:11434"
+            placeholder={meta.endpointPlaceholder}
           />
           <p className="u-caps" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)' }}>
-            Ensure OLLAMA_ORIGINS=chrome-extension://* is set before connecting.
+            {meta.endpointHelp}
           </p>
         </>
       )}
 
       <div style={{ display: 'flex', gap: 'var(--step-1)' }}>
         <button type="button" onClick={async () => {
-          if (provider === 'anthropic' && key) await status.save(key);
+          if (requiresKey && key) await status.save(key);
           const result = await runHealth(provider, provider === 'ollama' ? apiBase : undefined);
           if (result.success) setHealth(`OK: ${result.data.model}`);
           else setHealth(`Failed: ${result.error}`);

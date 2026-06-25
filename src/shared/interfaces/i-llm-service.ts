@@ -53,8 +53,16 @@ export interface HealthCheckResult {
   error?: string;
 }
 
+export type ProviderName =
+  | 'anthropic'
+  | 'ollama'
+  | 'gemini'
+  | 'openai'
+  | 'openrouter'
+  | 'minimax';
+
 export interface ILLMService {
-  readonly providerName: 'anthropic' | 'ollama';
+  readonly providerName: ProviderName;
   readonly capabilities: LLMCapabilities;
 
   /**
