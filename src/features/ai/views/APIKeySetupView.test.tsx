@@ -15,10 +15,18 @@ describe('APIKeySetupView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseLLMHealthCheck.mockReturnValue({ run: vi.fn() });
+    global.browser = {
+      storage: {
+        local: {
+          get: vi.fn().mockResolvedValue({}),
+          set: vi.fn().mockResolvedValue(undefined),
+        }
+      }
+    } as any;
   });
 
   it('renders standard empty input when key is not set', () => {
-    mockUseAPIKeyStatus.mockReturnValue({ isSet: false, save: vi.fn() });
+    mockUseAPIKeyStatus.mockReturnValue({ configured: false, save: vi.fn() });
     render(<APIKeySetupView onClose={vi.fn()} />);
 
     expect(screen.queryByText(/✓ Configured/i)).not.toBeInTheDocument();
@@ -27,7 +35,7 @@ describe('APIKeySetupView', () => {
   });
 
   it('renders configured badge and updated placeholder when key is set', () => {
-    mockUseAPIKeyStatus.mockReturnValue({ isSet: true, save: vi.fn() });
+    mockUseAPIKeyStatus.mockReturnValue({ configured: true, save: vi.fn() });
     render(<APIKeySetupView onClose={vi.fn()} />);
 
     expect(screen.getByText(/✓ Configured/i)).toBeInTheDocument();

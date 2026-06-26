@@ -39,6 +39,20 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
   const [apiBase, setApiBase] = useState('http://localhost:11434');
   const [health, setHealth] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    browser.storage.local.get('underscore_last_ai_provider').then((res) => {
+      if (res.underscore_last_ai_provider) {
+        setProvider(res.underscore_last_ai_provider as ProviderName);
+      }
+    });
+  }, []);
+
+  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as ProviderName;
+    setProvider(val);
+    void browser.storage.local.set({ underscore_last_ai_provider: val });
+  };
+
   const status = useAPIKeyStatus(provider);
   const { run: runHealth } = useLLMHealthCheck();
 
@@ -57,7 +71,7 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
       <label className="u-kicker">Provider</label>
       <select
         value={provider}
-        onChange={e => setProvider(e.target.value as ProviderName)}
+        onChange={handleProviderChange}
       >
         {(Object.keys(PROVIDER_META) as ProviderName[]).map(p => (
           <option key={p} value={p}>{PROVIDER_META[p].label}</option>
@@ -68,7 +82,7 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <label className="u-kicker" style={{ margin: 0 }}>{meta.label} API key</label>
-            {status.isSet && (
+            {status.configured && (
               <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', background: 'var(--paper-2)', padding: '2px 6px', borderRadius: '4px' }}>✓ Configured</span>
             )}
           </div>
@@ -76,7 +90,7 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
             type="password"
             value={key}
             onChange={e => setKey(e.target.value)}
-            placeholder={status.isSet ? 'Key is saved. Enter new key to replace...' : meta.keyPlaceholder}
+            placeholder={status.configured ? 'Key is saved. Enter new key to replace...' : meta.keyPlaceholder}
           />
         </>
       )}
