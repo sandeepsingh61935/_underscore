@@ -66,12 +66,17 @@ export function APIKeySetupView({ initialProvider = 'anthropic', onClose }: APIK
 
       {requiresKey && (
         <>
-          <label className="u-kicker">{meta.label} API key</label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label className="u-kicker" style={{ margin: 0 }}>{meta.label} API key</label>
+            {status.isSet && (
+              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', background: 'var(--paper-2)', padding: '2px 6px', borderRadius: '4px' }}>✓ Configured</span>
+            )}
+          </div>
           <input
             type="password"
             value={key}
             onChange={e => setKey(e.target.value)}
-            placeholder={meta.keyPlaceholder}
+            placeholder={status.isSet ? 'Key is saved. Enter new key to replace...' : meta.keyPlaceholder}
           />
         </>
       )}

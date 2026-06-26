@@ -31,6 +31,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
 
   const [editingSection, setEditingSection] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');
+  const [activeTab, setActiveTab] = React.useState<'sections' | 'summaries'>('sections');
 
   const handleSaveEdit = (e: React.FormEvent, originalKey: string) => {
       e.preventDefault();
@@ -81,48 +82,30 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
         <div className="u-serif" style={{ fontSize: 22, fontStyle: 'italic', letterSpacing: '-0.015em' }}>
           {domain}
         </div>
-        <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: 4 }}>
-          Sections
-        </div>
-
-        {highlights.length > 0 && (
+        <div style={{ display: 'flex', gap: 16, marginTop: 12, borderBottom: '1px solid var(--rule-soft)', paddingBottom: 8 }}>
           <button
             type="button"
-            onClick={() => summary.start({
-              pageTitle: domain,
-              pageUrl: '',
-              pageContextWithMarks: '',
-              pageContext: '',
-              highlights: highlights.map(h => ({ id: h.id, text: h.text, url: h.url, title: domain })),
-              domain,
-              uniqueUrls: new Set(highlights.map(h => h.url)).size,
-              length: 'long',
-            })}
-            disabled={summary.status === 'streaming'}
+            onClick={() => setActiveTab('sections')}
+            className="u-mono"
             style={{
-              marginTop: 8,
-              font: 'var(--sans)', fontSize: 'var(--step--1)',
-              padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-              border: '1px solid var(--rule)', cursor: summary.status === 'streaming' ? 'wait' : 'pointer',
+              all: 'unset', cursor: 'pointer', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: activeTab === 'sections' ? 'var(--ink)' : 'var(--ink-3)'
             }}
           >
-            Synthesize this domain
+            Sections
           </button>
-        )}
-
-        {summary.chunks && (
-          <div
-            role="status"
-            aria-live="polite"
+          <button
+            type="button"
+            onClick={() => setActiveTab('summaries')}
+            className="u-mono"
             style={{
-              marginTop: 8, padding: 8, whiteSpace: 'pre-wrap',
-              font: 'var(--sans)', fontSize: 'var(--step--1)', color: 'var(--ink)',
-              border: '1px solid var(--rule)', maxHeight: '160px', overflowY: 'auto',
+              all: 'unset', cursor: 'pointer', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: activeTab === 'summaries' ? 'var(--ink)' : 'var(--ink-3)'
             }}
           >
-            {summary.chunks}
-          </div>
-        )}
+            Summaries
+          </button>
+        </div>
       </div>
 
       <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -130,7 +113,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
-        ) : (
+        ) : activeTab === 'sections' ? (
           sections.map((s) => (
             editingSection === s.path ? (
                <form key={s.path} onSubmit={(e) => handleSaveEdit(e, s.path)} style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
@@ -163,6 +146,48 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             />
             )
           ))
+        ) : (
+          <div style={{ padding: '16px' }}>
+            <button
+              type="button"
+              onClick={() => summary.start({
+                pageTitle: domain,
+                pageUrl: '',
+                pageContextWithMarks: '',
+                pageContext: '',
+                highlights: highlights.map(h => ({ id: h.id, text: h.text, url: h.url, title: domain })),
+                domain,
+                uniqueUrls: new Set(highlights.map(h => h.url)).size,
+                length: 'long',
+              })}
+              disabled={summary.status === 'streaming' || highlights.length === 0}
+              style={{
+                font: 'var(--sans)', fontSize: 'var(--step--1)',
+                padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
+                border: '1px solid var(--rule)', cursor: summary.status === 'streaming' ? 'wait' : 'pointer',
+                opacity: highlights.length === 0 ? 0.5 : 1,
+              }}
+            >
+              Generate AI Summary
+            </button>
+            <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 8 }}>
+              Creates a temporary summary of your highlights below.
+            </div>
+
+            {summary.chunks && (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  marginTop: 16, padding: 12, whiteSpace: 'pre-wrap',
+                  font: 'var(--sans)', fontSize: 'var(--step--1)', color: 'var(--ink)',
+                  border: '1px solid var(--rule)',
+                }}
+              >
+                {summary.chunks}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

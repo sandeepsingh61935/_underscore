@@ -151,10 +151,16 @@ function PopupApp(): React.ReactElement {
           return;
         }
 
+        const restoreDomainIfNeeded = (view: View) => {
+          if ((view === View.DOMAIN_DETAILS || view === View.SUB_DOMAIN) && lastDomain) {
+            setSelectedDomain(lastDomain);
+          }
+        };
+
         if (user) {
-          // If user is already logged in, skip mode selection and prefer collections/details/settings
-          if (lastView === View.DOMAIN_DETAILS || lastView === View.SETTINGS) {
-            if (lastView === View.DOMAIN_DETAILS && lastDomain) setSelectedDomain(lastDomain);
+          const invalidAuthViews = [View.LOADING, View.WELCOME, View.AUTH, View.UNLOCK_VAULT, View.MODE_SELECTION];
+          if (lastView && !invalidAuthViews.includes(lastView)) {
+            restoreDomainIfNeeded(lastView);
             setCurrentView(lastView);
           } else {
             setCurrentView(View.COLLECTIONS);
@@ -162,12 +168,11 @@ function PopupApp(): React.ReactElement {
         } else if (!hasSeenModeSelection) {
           setCurrentView(View.MODE_SELECTION);
         } else {
-          // Not logged in but already chose a mode — go to collections, not mode selection again
-          if (lastView === View.AUTH || lastView === View.SETTINGS) {
+          // Not logged in but already chose a mode
+          const invalidUnauthViews = [View.LOADING, View.WELCOME, View.UNLOCK_VAULT, View.MODE_SELECTION];
+          if (lastView && !invalidUnauthViews.includes(lastView)) {
+            restoreDomainIfNeeded(lastView);
             setCurrentView(lastView);
-          } else if (lastView === View.DOMAIN_DETAILS) {
-            if (lastDomain) setSelectedDomain(lastDomain);
-            setCurrentView(View.DOMAIN_DETAILS);
           } else {
             setCurrentView(View.COLLECTIONS);
           }
@@ -188,10 +193,9 @@ function PopupApp(): React.ReactElement {
     if (!isStorageReady) return;
 
     if (
-      currentView === View.COLLECTIONS ||
-      currentView === View.MODE_SELECTION ||
-      currentView === View.DOMAIN_DETAILS ||
-      currentView === View.SUB_DOMAIN
+      currentView !== View.LOADING &&
+      currentView !== View.WELCOME &&
+      currentView !== View.UNLOCK_VAULT
     ) {
       browser.storage.local
         .set({ underscore_last_popup_view: currentView })
