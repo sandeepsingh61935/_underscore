@@ -63,4 +63,38 @@ describe('DomainDetailsView', () => {
     // The sections list should not be visible
     expect(screen.queryByText('/path1')).not.toBeInTheDocument();
   });
+
+  it('renders progress steps when status is not idle', () => {
+    // 1. Connecting state
+    mockUseGenerateSummary.mockReturnValue({
+      start: vi.fn(),
+      status: 'streaming',
+      chunks: '', // no chunks yet means connecting
+    });
+    const { rerender } = render(<DomainDetailsView domain="example.com" />);
+    fireEvent.click(screen.getByRole('button', { name: /Summaries/i }));
+    
+    expect(screen.getByText(/Connecting to AI provider/i)).toBeInTheDocument();
+    
+    // 2. Generating state
+    mockUseGenerateSummary.mockReturnValue({
+      start: vi.fn(),
+      status: 'streaming',
+      chunks: 'Summary started...',
+    });
+    rerender(<DomainDetailsView domain="example.com" />);
+    
+    expect(screen.getByText(/Reading highlights and generating summary/i)).toBeInTheDocument();
+    
+    // 3. Done state
+    mockUseGenerateSummary.mockReturnValue({
+      start: vi.fn(),
+      status: 'done',
+      chunks: 'Final summary text.',
+    });
+    rerender(<DomainDetailsView domain="example.com" />);
+    
+    expect(screen.getByText(/Summary complete/i)).toBeInTheDocument();
+  });
+
 });

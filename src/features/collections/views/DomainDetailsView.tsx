@@ -174,6 +174,35 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               Creates a temporary summary of your highlights below.
             </div>
 
+            {summary.status !== 'idle' && (
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, padding: 12, background: 'var(--paper-2)', borderRadius: 4, border: '1px solid var(--rule-soft)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="u-mono" style={{ color: (summary.status === 'streaming' || summary.status === 'done') ? 'var(--accent)' : 'var(--ink-3)' }}>
+                    {summary.status === 'done' || summary.chunks ? '✓' : '◯'}
+                  </span>
+                  <span className="u-sans" style={{ fontSize: 'var(--step--1)', color: (summary.status === 'streaming' || summary.status === 'done') ? 'var(--ink)' : 'var(--ink-3)' }}>
+                    Connecting to AI provider...
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="u-mono" style={{ color: summary.chunks ? 'var(--accent)' : 'var(--ink-3)' }}>
+                    {summary.status === 'done' ? '✓' : summary.chunks ? '◯' : '·'}
+                  </span>
+                  <span className="u-sans" style={{ fontSize: 'var(--step--1)', color: summary.chunks ? 'var(--ink)' : 'var(--ink-3)' }}>
+                    Reading highlights and generating summary...
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="u-mono" style={{ color: summary.status === 'done' ? 'var(--accent)' : 'var(--ink-3)' }}>
+                    {summary.status === 'done' ? '✓' : '·'}
+                  </span>
+                  <span className="u-sans" style={{ fontSize: 'var(--step--1)', color: summary.status === 'done' ? 'var(--ink)' : 'var(--ink-3)' }}>
+                    Summary complete
+                  </span>
+                </div>
+              </div>
+            )}
+
             {summary.chunks && (
               <div
                 role="status"
