@@ -297,7 +297,7 @@ export class SupabaseClient implements IAPIClient {
                         color_role: data.colorRole,
                         selectors: data.ranges[0]?.selector,
                         content_hash: data.contentHash,
-                        created_at: data.createdAt.toISOString(),
+                        created_at: (data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt)).toISOString(),
                         updated_at: new Date().toISOString(),
                     })
             ) as any;

@@ -13,6 +13,7 @@ import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 
 const logger = LoggerFactory.getLogger('Background');
@@ -57,6 +58,14 @@ export default defineBackground({
       const backgroundHighlightOrchestrator = container.resolve<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator');
       backgroundHighlightOrchestrator.initialize();
       logger.info('[INIT] BackgroundHighlightOrchestrator initialized');
+
+      // Initialize the AI orchestrator (subscribes to IPC_AI_*). Must run
+      // before any popup IPC arrives, otherwise the popup's first
+      // IPC_AI_SET_API_KEY / IPC_AI_HEALTH_CHECK finds no handlers and the
+      // port closes before a response is received.
+      const aiOrchestrator = container.resolve<AiOrchestrator>('aiOrchestrator');
+      aiOrchestrator.initialize();
+      logger.info('[INIT] AiOrchestrator initialized');
 
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {

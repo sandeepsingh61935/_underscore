@@ -27,6 +27,7 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
 import { LLMRegistry } from '@/background/services/llm/llm-registry';
 import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 
@@ -165,5 +166,21 @@ export function registerBaseServices(container: Container): void {
         // the (currently nonexistent in this layer) mode state can be
         // injected without circular dependencies.
         return new LLMKeyStore('ephemeral');
+    });
+
+    /**
+     * AiOrchestrator - Singleton
+     * Wires the LLM IPC handlers (SET_API_KEY, HEALTH_CHECK, CHAT,
+     * LIST_PROVIDERS, GET_API_KEY_STATUS) onto the messageBus at boot.
+     * The background entrypoint must resolve this and call initialize()
+     * after the messageBus is ready; otherwise the popup's IPC_AI_*
+     * messages arrive at a bus with no handlers and the port closes.
+     */
+    container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        const registry = container.resolve<LLMRegistry>('llmRegistry');
+        const keyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+        const logger = container.resolve<ILogger>('logger');
+        return new AiOrchestrator(messageBus, registry, keyStore, logger);
     });
 }

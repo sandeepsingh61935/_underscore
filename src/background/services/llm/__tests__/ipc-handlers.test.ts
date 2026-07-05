@@ -39,7 +39,7 @@ describe('registerAiHandlers', () => {
     registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any });
     const handler = bus.handlers.get('IPC_AI_LIST_PROVIDERS')!;
     const result = await handler({});
-    expect(result).toEqual([{ name: 'anthropic', configured: true }]);
+    expect(result).toEqual({ success: true, data: [{ name: 'anthropic', configured: true }] });
   });
 
   it('IPC_AI_CHAT resolves the API key and calls provider.chat', async () => {
@@ -60,7 +60,7 @@ describe('registerAiHandlers', () => {
     // When the registry already has a provider, keyStore is bypassed — the
     // provider's own config is authoritative.
     expect(anthropic.chat).toHaveBeenCalled();
-    expect(result).toEqual(chatResult);
+    expect(result).toEqual({ success: true, data: chatResult });
   });
 
   it('IPC_AI_HEALTH_CHECK returns provider health', async () => {
@@ -78,7 +78,7 @@ describe('registerAiHandlers', () => {
     const handler = bus.handlers.get('IPC_AI_HEALTH_CHECK')!;
     const result = await handler({ provider: 'anthropic' });
     expect(anthropic.healthCheck).toHaveBeenCalled();
-    expect(result).toEqual({ ok: true, model: 'claude-sonnet-4-6' });
+    expect(result).toEqual({ success: true, data: { ok: true, model: 'claude-sonnet-4-6' } });
   });
 
   it('IPC_AI_SET_API_KEY persists to keyStore', async () => {
@@ -100,6 +100,19 @@ describe('registerAiHandlers', () => {
 
     const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
     const result = await handler({ provider: 'ollama' });
-    expect(result).toEqual({ configured: true });
+    expect(result).toEqual({ success: true, data: { configured: true } });
+  });
+
+  it('IPC_AI_HEALTH_CHECK returns error envelope when API key is missing', async () => {
+    const bus = makeMessageBus();
+    const keyStore = { get: vi.fn(async () => null), set: vi.fn(), clear: vi.fn() };
+    const registry = makeRegistry(new Map()); // no providers registered → buildProvider path
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any });
+
+    const handler = bus.handlers.get('IPC_AI_HEALTH_CHECK')!;
+    const result = await handler({ provider: 'gemini' });
+    // Handlers wrap thrown errors as { success: false, error } so the
+    // popup receives a structured failure rather than a closed port.
+    expect(result).toEqual({ success: false, error: 'API key not configured' });
   });
 });

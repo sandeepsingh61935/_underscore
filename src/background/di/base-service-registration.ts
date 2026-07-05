@@ -23,6 +23,9 @@ import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { CircuitBreakerMessageBus } from '@/shared/services/circuit-breaker-message-bus';
 import { RetryDecorator, DEFAULT_RETRY_POLICY } from '@/shared/services/retry-decorator';
 import { StorageService } from '@/background/services/storage-service';
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
+import { LLMRegistry } from '@/background/services/llm/llm-registry';
+import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
@@ -129,5 +132,43 @@ export function registerBaseServices(container: Container): void {
         );
 
         return resilientMessageBus;
+    });
+
+    // ============================================
+    // LLM LAYER (ADR-021)
+    // ============================================
+
+    /**
+     * LLMRegistry - Singleton
+     * Holds provider implementations (Anthropic, Gemini, OpenAI, OpenRouter,
+     * MiniMax, Ollama). Providers register themselves at boot.
+     */
+    container.registerSingleton<LLMRegistry>('llmRegistry', () => {
+        return new LLMRegistry();
+    });
+
+    /**
+     * LLMKeyStore - Singleton
+     * Three-tier (ephemeral/local-AES/cloud-vault) key persistence.
+     * Default to ephemeral mode; mode-aware wiring happens in AiOrchestrator.
+     */
+    container.registerSingleton<LLMKeyStore>('llmKeyStore', () => {
+        return new LLMKeyStore('ephemeral');
+    });
+
+    /**
+     * AiOrchestrator - Singleton
+     * Wires the LLM IPC handlers (SET_API_KEY, HEALTH_CHECK, CHAT,
+     * LIST_PROVIDERS, GET_API_KEY_STATUS) onto the messageBus at boot.
+     * The background entrypoint resolves this and calls initialize()
+     * after the messageBus is ready; otherwise the popup's IPC_AI_*
+     * messages arrive at a bus with no handlers and the port closes.
+     */
+    container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        const registry = container.resolve<LLMRegistry>('llmRegistry');
+        const keyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+        const logger = container.resolve<ILogger>('logger');
+        return new AiOrchestrator(messageBus, registry, keyStore, logger);
     });
 }
