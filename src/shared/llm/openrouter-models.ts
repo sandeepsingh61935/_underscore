@@ -6,12 +6,12 @@ const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 /** Used when the public models API is unreachable. */
 export const OPENROUTER_FALLBACK_MODELS: ProviderModelOption[] = [
-  { id: 'openrouter/free', label: 'Free Models Router', hint: 'free' },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Meta Llama 3.3 70B Instruct', hint: 'free' },
-  { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'NVIDIA Nemotron Nano 9B v2', hint: 'free' },
+  { id: 'openrouter/free', label: 'Free Models Router', hint: 'free', requiresKey: false },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Meta Llama 3.3 70B Instruct', hint: 'free', requiresKey: false },
+  { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'NVIDIA Nemotron Nano 9B v2', hint: 'free', requiresKey: false },
 ];
 
-interface OpenRouterModelRecord {
+export interface OpenRouterModelRecord {
   id: string;
   name: string;
   pricing?: { prompt?: string; completion?: string };
@@ -21,6 +21,11 @@ interface OpenRouterModelRecord {
 interface ModelsCacheEntry {
   fetchedAt: number;
   models: ProviderModelOption[];
+}
+
+export function isOpenRouterModelFree(modelId: string): boolean {
+  if (modelId.endsWith(':free') || modelId === 'openrouter/free') return true;
+  return false;
 }
 
 function isFreeModel(model: OpenRouterModelRecord): boolean {
@@ -35,16 +40,30 @@ function isTextModel(model: OpenRouterModelRecord): boolean {
   return !outputs || outputs.includes('text');
 }
 
-/** Map OpenRouter API records to setup UI options (free text models only). */
-export function mapOpenRouterFreeModels(records: OpenRouterModelRecord[]): ProviderModelOption[] {
+/** Map OpenRouter API records to setup UI options (all text models, tagged free/paid). */
+export function mapOpenRouterModels(records: OpenRouterModelRecord[]): ProviderModelOption[] {
   return records
-    .filter(m => isFreeModel(m) && isTextModel(m))
-    .map(m => ({
-      id: m.id,
-      label: m.name.replace(/\s*\(free\)\s*/gi, '').trim() || m.id,
-      hint: 'free',
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .filter(m => isTextModel(m))
+    .map(m => {
+      const free = isFreeModel(m);
+      return {
+        id: m.id,
+        label: m.name.replace(/\s*\(free\)\s*/gi, '').trim() || m.id,
+        hint: free ? 'free' : 'paid',
+        requiresKey: !free,
+      };
+    })
+    .sort((a, b) => {
+      const aFree = a.hint === 'free' ? 0 : 1;
+      const bFree = b.hint === 'free' ? 0 : 1;
+      if (aFree !== bFree) return aFree - bFree;
+      return a.label.localeCompare(b.label);
+    });
+}
+
+/** @deprecated Use mapOpenRouterModels — kept for existing tests. */
+export function mapOpenRouterFreeModels(records: OpenRouterModelRecord[]): ProviderModelOption[] {
+  return mapOpenRouterModels(records).filter(m => m.hint === 'free');
 }
 
 async function readCache(): Promise<ModelsCacheEntry | null> {
@@ -62,20 +81,17 @@ async function writeCache(models: ProviderModelOption[]): Promise<void> {
   });
 }
 
-/** Fetch free models from OpenRouter's public catalog (no API key). */
-export async function fetchOpenRouterFreeModels(): Promise<ProviderModelOption[]> {
+/** Fetch all text models from OpenRouter's public catalog (no API key). */
+export async function fetchOpenRouterModels(): Promise<ProviderModelOption[]> {
   const response = await fetch(MODELS_URL);
   if (!response.ok) throw new Error(`OpenRouter models HTTP ${response.status}`);
   const json = await response.json() as { data?: OpenRouterModelRecord[] };
-  const models = mapOpenRouterFreeModels(json.data ?? []);
-  if (models.length === 0) throw new Error('OpenRouter returned no free text models');
+  const models = mapOpenRouterModels(json.data ?? []);
+  if (models.length === 0) throw new Error('OpenRouter returned no text models');
   return models;
 }
 
-/**
- * Free OpenRouter models for the setup UI.
- * Caches in chrome.storage.local for 1 hour (same idea as OpenCode plugins).
- */
+/** OpenRouter models for the setup UI. Cached in chrome.storage.local for 1 hour. */
 export async function getOpenRouterModels(options: { refresh?: boolean } = {}): Promise<ProviderModelOption[]> {
   if (!options.refresh) {
     const cached = await readCache();
@@ -85,7 +101,7 @@ export async function getOpenRouterModels(options: { refresh?: boolean } = {}): 
   }
 
   try {
-    const models = await fetchOpenRouterFreeModels();
+    const models = await fetchOpenRouterModels();
     await writeCache(models);
     return models;
   } catch {
@@ -93,4 +109,16 @@ export async function getOpenRouterModels(options: { refresh?: boolean } = {}): 
     if (stale) return stale.models;
     return OPENROUTER_FALLBACK_MODELS;
   }
+}
+
+/** Whether the selected OpenRouter model needs an API key at runtime. */
+export function openRouterModelRequiresKey(
+  modelId: string,
+  catalog?: ProviderModelOption[],
+): boolean {
+  if (isOpenRouterModelFree(modelId)) return false;
+  const match = catalog?.find(m => m.id === modelId);
+  if (match?.requiresKey === false) return false;
+  if (match?.requiresKey === true) return true;
+  return true;
 }

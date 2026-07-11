@@ -35,6 +35,8 @@ function makeKeyStore() {
     setModel: vi.fn(),
     getActiveProvider: vi.fn(async () => null),
     setActiveProvider: vi.fn(),
+    getApiBase: vi.fn(async () => 'http://localhost:11434'),
+    setApiBase: vi.fn(),
   };
 }
 
@@ -170,7 +172,10 @@ describe('registerAiHandlers', () => {
 
     const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
     const result = await handler({ provider: 'ollama' });
-    expect(result).toEqual({ success: true, data: { configured: true, model: 'claude-sonnet-4-6' } });
+    expect(result).toEqual({
+      success: true,
+      data: { configured: true, model: 'claude-sonnet-4-6', apiBase: 'http://localhost:11434' },
+    });
   });
 
   it('IPC_AI_GET_PAGE_CONTEXT builds marked context from cache', async () => {

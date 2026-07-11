@@ -59,6 +59,7 @@ export type ProviderName =
   | 'gemini'
   | 'openai'
   | 'openrouter'
+  | 'cursor'
   | 'minimax';
 
 export interface ILLMService {

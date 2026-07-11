@@ -7,6 +7,8 @@ import type { LLMRegistry } from './llm-registry';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { buildMarkedPageContext } from '@/shared/llm/build-page-context';
 import { buildHighlightExcerpts } from '@/shared/llm/highlight-excerpts';
+import { fetchProviderModels } from '@/shared/llm/model-discovery';
+import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
 import {
   IPC_AI_CHAT,
   IPC_AI_HEALTH_CHECK,
@@ -14,6 +16,7 @@ import {
   IPC_AI_GET_API_KEY_STATUS,
   IPC_AI_GET_ACTIVE_PROVIDER,
   IPC_AI_LIST_PROVIDERS,
+  IPC_AI_LIST_PROVIDER_MODELS,
   IPC_AI_GET_PAGE_CONTEXT,
   createSuccessResponse,
   createErrorResponse,
@@ -67,6 +70,7 @@ interface SetKeyPayload {
   provider: ProviderName;
   key?: string;
   model?: string;
+  apiBase?: string;
 }
 
 interface StatusPayload {
@@ -77,8 +81,20 @@ interface PageContextPayload {
   highlights: Array<{ id?: string; url: string; text: string }>;
 }
 
-/** Providers that don't require an API key. */
-const KEYLESS_PROVIDERS: ReadonlyArray<ProviderName> = ['ollama'];
+interface ListModelsPayload {
+  provider: ProviderName;
+  apiBase?: string;
+}
+
+async function isProviderConfigured(store: LLMKeyStore, provider: ProviderName): Promise<boolean> {
+  if (provider === 'ollama') return true;
+  if (provider === 'openrouter') {
+    const model = await store.getModel(provider);
+    if (!openRouterModelRequiresKey(model)) return true;
+  }
+  const key = await store.get(provider);
+  return !!key;
+}
 
 export function registerAiHandlers(args: RegisterArgs): void {
   const { bus, registry, pageContentCache } = args;
@@ -102,12 +118,11 @@ export function registerAiHandlers(args: RegisterArgs): void {
     if (denied) return denied;
     try {
       const { provider } = raw as StatusPayload;
-      const model = await keyStore().getModel(provider);
-      if (KEYLESS_PROVIDERS.includes(provider)) {
-        return createSuccessResponse({ configured: true, model });
-      }
-      const key = await keyStore().get(provider);
-      return createSuccessResponse({ configured: !!key, model });
+      const store = keyStore();
+      const model = await store.getModel(provider);
+      const configured = await isProviderConfigured(store, provider);
+      const apiBase = provider === 'ollama' ? await store.getApiBase('ollama') : undefined;
+      return createSuccessResponse({ configured, model, apiBase });
     } catch (err) {
       return createErrorResponse((err as Error).message);
     }
@@ -117,17 +132,45 @@ export function registerAiHandlers(args: RegisterArgs): void {
     const denied = await denyIfAiGated(args);
     if (denied) return denied;
     try {
-      const { provider, key, model } = raw as SetKeyPayload;
+      const { provider, key, model, apiBase } = raw as SetKeyPayload;
       const trimmedKey = key?.trim();
       const trimmedModel = model?.trim();
-      if (!trimmedKey && !trimmedModel) {
-        return createErrorResponse('Provide an API key and/or model to save');
+      const trimmedBase = apiBase?.trim();
+      if (!trimmedKey && !trimmedModel && !trimmedBase) {
+        return createErrorResponse('Provide a model, API key, or endpoint to save');
       }
-      if (trimmedKey) await keyStore().set(provider, trimmedKey);
-      if (trimmedModel) await keyStore().setModel(provider, trimmedModel);
-      await keyStore().setActiveProvider(provider);
-      if (trimmedKey) registry.setConfigured(provider, true);
+      const store = keyStore();
+      if (trimmedKey) await store.set(provider, trimmedKey);
+      if (trimmedModel) await store.setModel(provider, trimmedModel);
+      if (provider === 'ollama' && trimmedBase) await store.setApiBase('ollama', trimmedBase);
+      await store.setActiveProvider(provider);
+      if (trimmedKey || provider === 'ollama' || provider === 'openrouter') {
+        registry.setConfigured(provider, true);
+      }
       return createSuccessResponse({ ok: true as const });
+    } catch (err) {
+      return createErrorResponse((err as Error).message);
+    }
+  });
+
+  bus.subscribe(IPC_AI_LIST_PROVIDER_MODELS, async (raw: unknown) => {
+    const denied = await denyIfAiGated(args);
+    if (denied) return denied;
+    try {
+      const { provider, apiBase } = raw as ListModelsPayload;
+      const store = keyStore();
+      const resolvedBase = provider === 'ollama'
+        ? (apiBase?.trim() || await store.getApiBase('ollama'))
+        : apiBase;
+      const storedKey = await store.get(provider);
+      const result = await fetchProviderModels(provider, {
+        apiKey: storedKey ?? undefined,
+        apiBase: resolvedBase,
+      });
+      if (result.error && result.models.length === 0) {
+        return createErrorResponse(result.error);
+      }
+      return createSuccessResponse({ models: result.models });
     } catch (err) {
       return createErrorResponse((err as Error).message);
     }

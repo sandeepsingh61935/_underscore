@@ -133,7 +133,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onSwitch: handlers.onSwitch,
     },
     API_KEY_SETUP: {
-      title: '_underscore · AI provider',
+      title: '_underscore · models',
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: false,

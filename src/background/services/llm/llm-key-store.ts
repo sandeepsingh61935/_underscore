@@ -23,6 +23,8 @@ const ALG = 'AES-GCM';
 const IV_BYTES = 12;
 const INSTALL_KEY_ID = 'llm.installKey';
 const ACTIVE_PROVIDER_KEY = 'llm.activeProvider';
+const OLLAMA_API_BASE_KEY = 'llm.ollama.apiBase';
+const DEFAULT_OLLAMA_BASE = 'http://localhost:11434';
 
 function modelStorageKey(provider: ProviderName): string {
   return `llm.${provider}.model`;
@@ -196,6 +198,20 @@ export class LLMKeyStore {
 
   async setActiveProvider(provider: ProviderName): Promise<void> {
     await chrome.storage.local.set({ [ACTIVE_PROVIDER_KEY]: provider });
+  }
+
+  /** Ollama server URL (persisted for runtime). */
+  async getApiBase(provider: 'ollama'): Promise<string> {
+    if (provider !== 'ollama') return DEFAULT_OLLAMA_BASE;
+    const r = await chrome.storage.local.get(OLLAMA_API_BASE_KEY);
+    const stored = r[OLLAMA_API_BASE_KEY] as string | undefined;
+    return stored?.trim() || DEFAULT_OLLAMA_BASE;
+  }
+
+  async setApiBase(_provider: 'ollama', apiBase: string): Promise<void> {
+    const trimmed = apiBase.trim();
+    if (!trimmed) throw new Error('LLMKeyStore: apiBase cannot be empty');
+    await chrome.storage.local.set({ [OLLAMA_API_BASE_KEY]: trimmed.replace(/\/$/, '') });
   }
 
   private async encrypt(plaintext: string): Promise<string> {
