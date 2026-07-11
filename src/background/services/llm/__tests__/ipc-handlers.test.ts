@@ -27,7 +27,23 @@ function makeRegistry(providers: Map<string, ILLMService>) {
 }
 
 function makeKeyStore() {
-  return { get: vi.fn(async () => 'sk-test'), set: vi.fn(), clear: vi.fn() };
+  return {
+    get: vi.fn(async () => 'sk-test'),
+    set: vi.fn(),
+    clear: vi.fn(),
+    getModel: vi.fn(async () => 'claude-sonnet-4-6'),
+    setModel: vi.fn(),
+    getActiveProvider: vi.fn(async () => null),
+    setActiveProvider: vi.fn(),
+  };
+}
+
+function makePageContentCache() {
+  return {
+    getByUrl: vi.fn(() => null),
+    set: vi.fn(),
+    deleteTab: vi.fn(),
+  };
 }
 
 describe('registerAiHandlers', () => {
@@ -36,10 +52,10 @@ describe('registerAiHandlers', () => {
     const registry = makeRegistry(new Map([
       ['anthropic', { providerName: 'anthropic' } as unknown as ILLMService],
     ]));
-    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any });
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any, pageContentCache: makePageContentCache() as any });
     const handler = bus.handlers.get('IPC_AI_LIST_PROVIDERS')!;
     const result = await handler({});
-    expect(result).toEqual([{ name: 'anthropic', configured: true }]);
+    expect(result).toEqual({ success: true, data: [{ name: 'anthropic', configured: true }] });
   });
 
   it('IPC_AI_CHAT resolves the API key and calls provider.chat', async () => {
@@ -53,14 +69,31 @@ describe('registerAiHandlers', () => {
       healthCheck: async () => ({ ok: true, model: 'x' }),
     };
     const registry = makeRegistry(new Map([['anthropic', anthropic]]));
-    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any });
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any, pageContentCache: makePageContentCache() as any });
 
     const handler = bus.handlers.get('IPC_AI_CHAT')!;
     const result = await handler({ provider: 'anthropic', request: { systemPrompt: 's', messages: [{ role: 'user', content: 'm' }], maxTokens: 10 } });
     // When the registry already has a provider, keyStore is bypassed — the
     // provider's own config is authoritative.
     expect(anthropic.chat).toHaveBeenCalled();
-    expect(result).toEqual(chatResult);
+    expect(result).toEqual({ success: true, data: chatResult });
+  });
+
+  it('IPC_AI_HEALTH_CHECK returns error when provider health fails', async () => {
+    const bus = makeMessageBus();
+    const anthropic: ILLMService = {
+      providerName: 'anthropic',
+      capabilities: { contextWindow: 1, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
+      streamChat: async () => ({ text: '', inputTokens: 0, outputTokens: 0, durationMs: 0 }),
+      chat: async () => ({ text: '', inputTokens: 0, outputTokens: 0, durationMs: 0 }),
+      healthCheck: vi.fn(async () => ({ ok: false, model: 'claude-sonnet-4-6', error: 'HTTP 401' })),
+    };
+    const registry = makeRegistry(new Map([['anthropic', anthropic]]));
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_HEALTH_CHECK')!;
+    const result = await handler({ provider: 'anthropic' });
+    expect(result).toEqual({ success: false, error: 'HTTP 401' });
   });
 
   it('IPC_AI_HEALTH_CHECK returns provider health', async () => {
@@ -73,33 +106,101 @@ describe('registerAiHandlers', () => {
       healthCheck: vi.fn(async () => ({ ok: true, model: 'claude-sonnet-4-6' })),
     };
     const registry = makeRegistry(new Map([['anthropic', anthropic]]));
-    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any });
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: makeKeyStore() as any, pageContentCache: makePageContentCache() as any });
 
     const handler = bus.handlers.get('IPC_AI_HEALTH_CHECK')!;
     const result = await handler({ provider: 'anthropic' });
     expect(anthropic.healthCheck).toHaveBeenCalled();
-    expect(result).toEqual({ ok: true, model: 'claude-sonnet-4-6' });
+    expect(result).toEqual({ success: true, data: { ok: true, model: 'claude-sonnet-4-6' } });
   });
 
   it('IPC_AI_SET_API_KEY persists to keyStore', async () => {
     const bus = makeMessageBus();
     const keyStore = makeKeyStore();
     const registry = makeRegistry(new Map());
-    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any });
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
 
     const handler = bus.handlers.get('IPC_AI_SET_API_KEY')!;
-    await handler({ provider: 'anthropic', key: 'sk-x' });
+    const result = await handler({ provider: 'anthropic', key: 'sk-x' });
     expect(keyStore.set).toHaveBeenCalledWith('anthropic', 'sk-x');
+    expect(keyStore.setActiveProvider).toHaveBeenCalledWith('anthropic');
+    expect(result).toEqual({ success: true, data: { ok: true } });
+  });
+
+  it('IPC_AI_SET_API_KEY persists model without changing key', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_SET_API_KEY')!;
+    const result = await handler({
+      provider: 'openrouter',
+      model: 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    });
+    expect(keyStore.set).not.toHaveBeenCalled();
+    expect(keyStore.setModel).toHaveBeenCalledWith(
+      'openrouter',
+      'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    );
+    expect(keyStore.setActiveProvider).toHaveBeenCalledWith('openrouter');
+    expect(result).toEqual({ success: true, data: { ok: true } });
+  });
+
+  it('IPC_AI_GET_API_KEY_STATUS returns configured model', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    (keyStore.getModel as ReturnType<typeof vi.fn>).mockResolvedValue('meta-llama/llama-3.3-70b-instruct:free');
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
+    const result = await handler({ provider: 'openrouter' });
+    expect(result).toEqual({
+      success: true,
+      data: { configured: true, model: 'meta-llama/llama-3.3-70b-instruct:free' },
+    });
   });
 
   it('IPC_AI_GET_API_KEY_STATUS returns configured=true for ollama without a key', async () => {
     const bus = makeMessageBus();
     const keyStore = makeKeyStore();
     const registry = makeRegistry(new Map());
-    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any });
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
 
     const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
     const result = await handler({ provider: 'ollama' });
-    expect(result).toEqual({ configured: true });
+    expect(result).toEqual({ success: true, data: { configured: true, model: 'claude-sonnet-4-6' } });
+  });
+
+  it('IPC_AI_GET_PAGE_CONTEXT builds marked context from cache', async () => {
+    const bus = makeMessageBus();
+    const pageContentCache = makePageContentCache();
+    (pageContentCache.getByUrl as ReturnType<typeof vi.fn>).mockReturnValue({
+      url: 'https://example.com',
+      title: 'Example',
+      text: 'Hello highlighted world',
+      truncated: false,
+      originalLength: 23,
+      pushedAt: Date.now(),
+    });
+
+    registerAiHandlers({
+      bus: bus as any,
+      registry: makeRegistry(new Map()) as any,
+      keyStore: makeKeyStore() as any,
+      pageContentCache: pageContentCache as any,
+    });
+
+    const handler = bus.handlers.get('IPC_AI_GET_PAGE_CONTEXT')!;
+    const result = await handler({
+      highlights: [{ id: 'h1', url: 'https://example.com', text: 'highlighted' }],
+    }) as { success: true; data: { pageContextWithMarks: string; cacheMissUrls: string[]; highlightExcerpts: Array<{ excerpt: string }> } };
+
+    expect(result.success).toBe(true);
+    expect(result.data.pageContextWithMarks).toContain('<mark>highlighted</mark>');
+    expect(result.data.cacheMissUrls).toEqual([]);
+    expect(result.data.highlightExcerpts).toHaveLength(1);
+    expect(result.data.highlightExcerpts[0]?.excerpt).toContain('<mark>highlighted</mark>');
   });
 });

@@ -139,10 +139,17 @@ export class GeminiProvider implements ILLMService {
   async healthCheck(): Promise<HealthCheckResult> {
     try {
       const url = `${this.apiBase}/models/${this.model}?key=${encodeURIComponent(this.apiKey)}`;
-      const response = await fetch(url, { method: 'GET' });
-      return response.ok
-        ? { ok: true, model: this.model }
-        : { ok: false, model: this.model, error: `HTTP ${response.status}` };
+      const fetchFn = globalThis.fetch;
+      if (typeof fetchFn !== 'function') {
+        return { ok: false, model: this.model, error: 'Fetch is unavailable in this context' };
+      }
+      const response = await fetchFn(url, { method: 'GET' });
+      if (response.ok) {
+        return { ok: true, model: this.model };
+      }
+      const errorText = await response.text().catch(() => '');
+      const detail = errorText ? `: ${errorText.slice(0, 200)}` : '';
+      return { ok: false, model: this.model, error: `HTTP ${response.status}${detail}` };
     } catch (err) {
       return { ok: false, model: this.model, error: (err as Error).message };
     }

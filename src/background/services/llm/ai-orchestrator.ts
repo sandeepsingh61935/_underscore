@@ -1,9 +1,29 @@
 import { registerAiHandlers } from './ipc-handlers';
 import type { LLMKeyStore } from './llm-key-store';
+import { resolveConfiguredProvider } from './llm-provider-factory';
+import type { BackgroundPageContentCache, PageContent } from './page-content-cache';
 import type { LLMRegistry } from './llm-registry';
+import { handleStreamChat } from './stream-relay';
 
+import type { ILLMService, LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { PAGE_CONTENT_CACHED } from '@/shared/schemas/message-schemas';
 import type { ILogger } from '@/shared/utils/logger';
+
+interface StreamChatRequestMessage {
+  type: 'STREAM_CHAT_REQUEST';
+  payload: {
+    request: LLMRequest;
+    provider?: ProviderName;
+  };
+}
+
+interface StreamingPort {
+  name: string;
+  postMessage: (msg: { type: string; payload?: unknown }) => void;
+  onMessage: { addListener: (cb: (msg: StreamChatRequestMessage) => void) => void };
+  onDisconnect: { addListener: (cb: () => void) => void };
+}
 
 /**
  * Boots the AI IPC handlers. Constructor-injected dependencies (the
@@ -15,11 +35,63 @@ export class AiOrchestrator {
     private readonly messageBus: IMessageBus,
     private readonly registry: LLMRegistry,
     private readonly keyStore: LLMKeyStore,
+    private readonly pageContentCache: BackgroundPageContentCache,
     private readonly logger: ILogger,
   ) {}
 
   initialize(): void {
-    registerAiHandlers({ bus: this.messageBus, registry: this.registry, keyStore: this.keyStore });
+    registerAiHandlers({
+      bus: this.messageBus,
+      registry: this.registry,
+      keyStore: this.keyStore,
+      pageContentCache: this.pageContentCache,
+    });
+    this.registerPageContentIngest();
+    this.registerStreamPort();
     this.logger.info('[ai] handlers registered');
+  }
+
+  private registerPageContentIngest(): void {
+    this.messageBus.subscribe(PAGE_CONTENT_CACHED, (payload: unknown, sender) => {
+      const tabId = sender.tab?.id;
+      if (!tabId || !payload || typeof payload !== 'object') return;
+      this.pageContentCache.set(tabId, payload as PageContent);
+    });
+
+    chrome.tabs.onRemoved.addListener((tabId) => {
+      this.pageContentCache.deleteTab(tabId);
+    });
+  }
+
+  private registerStreamPort(): void {
+    chrome.runtime.onConnect.addListener((port) => {
+      if (port.name !== 'llm-stream') return;
+
+      const streamPort = port as unknown as StreamingPort;
+      streamPort.onMessage.addListener((msg) => {
+        void this.handleStreamRequest(streamPort, msg);
+      });
+    });
+  }
+
+  private async handleStreamRequest(port: StreamingPort, msg: StreamChatRequestMessage): Promise<void> {
+    if (msg.type !== 'STREAM_CHAT_REQUEST') return;
+
+    try {
+      const { request, provider } = msg.payload;
+      const providerInstance: ILLMService = await resolveConfiguredProvider(
+        this.registry,
+        this.keyStore,
+        provider,
+      );
+      await handleStreamChat(port, providerInstance, request);
+    } catch (err) {
+      this.logger.error('[ai] stream request failed', err as Error);
+      try {
+        port.postMessage({ type: 'ERROR', payload: { message: (err as Error).message } });
+      } catch {
+        // Port may already be closed.
+      }
+    }
   }
 }

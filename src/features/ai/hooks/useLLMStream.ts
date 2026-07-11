@@ -60,6 +60,16 @@ export function useLLMStream(): {
       else if (msg.type === 'ERROR') { setStatus('error'); setError(msg.payload.message ?? 'unknown'); }
     });
 
+    port.onDisconnect.addListener(() => {
+      setStatus(prev => {
+        if (prev === 'streaming') {
+          setError(current => current ?? 'Stream disconnected before completion');
+          return 'error';
+        }
+        return prev;
+      });
+    });
+
     port.postMessage({ type: 'STREAM_CHAT_REQUEST', payload: args });
   }, []);
 

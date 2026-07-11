@@ -2,12 +2,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/PopupAppProvider';
+import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { TTLMeter } from '@/ui-system/components/primitives/TTLMeter';
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomain';
+import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
+import { formatRemainingTtl } from '@/shared/utils/format-remaining-ttl';
 
 export interface DashboardViewProps {
   onLogout?: () => void;
@@ -18,23 +22,30 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick }: Dashboard
   const { currentMode, user } = useApp();
   const tabContext = useCurrentTabContext();
   const navigate = useNavigate();
-  const { data: dashboardData } = useDashboardData(currentMode || 'ephemeral');
+  const { data: dashboardData } = useDashboardData(currentMode || DEFAULT_MODE);
   const { highlights: currentDomainHighlights } = useHighlightsByDomain(tabContext.domain || undefined);
+  const { ttlMs: basicTtlMs } = useBasicTtlOption();
 
   const currentPageHighlightsCount = currentDomainHighlights.filter(h => h.path === tabContext.path).length;
   const currentDomainDisplay = tabContext.domain || 'Current page';
   const currentPathDisplay = tabContext.path && tabContext.path !== '/' ? tabContext.path.split('/')[1] : 'Home';
 
-  if (currentMode === 'ephemeral') {
-    const ttlMs = 3.5 * 3600_000 + 22 * 60_000;
-    const ttlH = Math.floor(ttlMs / 3600_000);
-    const ttlM = Math.floor((ttlMs % 3600_000) / 60_000);
-    const ttlLabel = `${ttlH}h ${ttlM}m`;
+  if (currentMode === 'basic') {
+    // basicTtlMs is null when the user has set the TTL to "forever" — no
+    // countdown to show in that case.
+    const getRemainingMs = (createdAtIso: string): number | null =>
+      basicTtlMs !== null
+        ? Math.max(0, new Date(createdAtIso).getTime() + basicTtlMs - Date.now())
+        : null;
+
+    const mostRecentCreatedAt = dashboardData?.recentHighlights?.[0]?.createdAt;
+    const remainingMs = mostRecentCreatedAt ? getRemainingMs(mostRecentCreatedAt) : basicTtlMs;
+    const ttlLabel = remainingMs !== null ? formatRemainingTtl(remainingMs) : 'Never';
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
         <div style={{ padding: '14px 16px 4px' }}>
-          <div className="u-kicker">Ephemeral · expires in</div>
+          <div className="u-kicker">Basic · expires in</div>
           <div
             className="u-mono"
             style={{
@@ -49,9 +60,11 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick }: Dashboard
           >
             {ttlLabel}
           </div>
-          <div style={{ marginTop: 8 }}>
-            <TTLMeter ms={ttlMs} />
-          </div>
+          {remainingMs !== null && (
+            <div style={{ marginTop: 8 }}>
+              <TTLMeter ms={remainingMs} />
+            </div>
+          )}
         </div>
         <div style={{ padding: '10px 16px 6px' }}>
           <div className="u-kicker">Current page</div>
@@ -73,7 +86,8 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick }: Dashboard
                 quote={hl.text}
                 domain={hl.domain}
                 section={!hl.path || hl.path === '/' ? undefined : hl.path}
-                ttlMs={ttlMs}
+                ttlMs={getRemainingMs(hl.createdAt) ?? undefined}
+                onCopy={hl.text ? () => { void copyHighlightPlainText(hl.text); } : undefined}
                 onSectionClick={
                   onSectionClick
                     ? () => onSectionClick(hl.domain, hl.path || '/')
@@ -125,6 +139,7 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick }: Dashboard
               quote={hl.text}
               domain={hl.domain}
               section={!hl.path || hl.path === '/' ? undefined : hl.path}
+              onCopy={hl.text ? () => { void copyHighlightPlainText(hl.text); } : undefined}
               onSectionClick={
                 onSectionClick
                   ? () => onSectionClick(hl.domain, hl.path || '/')
@@ -148,4 +163,3 @@ function Stat({ label, value, mono }: { label: string; value: string; mono?: boo
     </div>
   );
 }
-

@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useGenerateSummary } from '../hooks/useGenerateSummary';
 
 import type { PromptContext } from '@/shared/llm/prompts';
+import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 
 interface LLMStreamingViewProps {
   ctx: PromptContext;
@@ -12,7 +13,11 @@ interface LLMStreamingViewProps {
 export function LLMStreamingView({ ctx, onClose }: LLMStreamingViewProps): React.ReactElement {
   const { chunks, status, error, start, abort } = useGenerateSummary();
 
-  useEffect(() => { start(ctx); return () => abort(); }, [ctx, start, abort]);
+  useEffect(() => {
+    const { excerpts } = buildFallbackExcerpts(ctx.highlights);
+    start(ctx, excerpts);
+    return () => abort();
+  }, [ctx, start, abort]);
 
   return (
     <div

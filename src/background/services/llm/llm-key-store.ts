@@ -1,14 +1,17 @@
 /**
- * Three-tier API key store (ADR-021).
+ * Two-tier API key store (ADR-021).
  *
- *  - ephemeral mode: chrome.storage.session (cleared on browser restart)
- *  - local mode:     chrome.storage.local + AES-GCM with per-install random key
- *  - cloud mode:     chrome.storage.local + AES-GCM with vault master key (ADR-013)
+ *  - basic mode:          chrome.storage.session (cleared on browser restart)
+ *  - pro / pro_xai mode:  chrome.storage.local + AES-GCM with vault master key (ADR-013)
  *
- * Per-install key is generated once and stored alongside the encrypted blobs.
+ * Per-install key is generated once and stored alongside the encrypted blobs
+ * (used as a fallback when a pro/pro_xai key is set before the vault is
+ * available, e.g. mid-onboarding).
  */
 
 import type { ModeName } from '@/content/modes/mode-constants';
+import { resolveProviderModel } from '@/shared/llm/provider-models';
+import { base64ToBytes, bytesToBase64 } from '@/shared/utils/base64';
 
 export interface IVaultKeyManager {
   withMasterKey<T>(cb: (mk: CryptoKey) => Promise<T>): Promise<T>;
@@ -19,17 +22,42 @@ type ProviderName = import('@/shared/interfaces/i-llm-service').ProviderName;
 const ALG = 'AES-GCM';
 const IV_BYTES = 12;
 const INSTALL_KEY_ID = 'llm.installKey';
+const ACTIVE_PROVIDER_KEY = 'llm.activeProvider';
 
-function toBase64(bytes: Uint8Array): string {
-  let s = '';
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s);
+function modelStorageKey(provider: ProviderName): string {
+  return `llm.${provider}.model`;
 }
-function fromBase64(s: string): Uint8Array {
-  const bin = atob(s);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
+
+interface BasicBackend {
+  area: chrome.storage.StorageArea;
+  storageKey: (provider: ProviderName) => string;
+}
+
+function basicLocalBackend(): BasicBackend {
+  return {
+    area: chrome.storage.local,
+    storageKey: (provider) => `llm.basic.${provider}.key`,
+  };
+}
+
+function resolveBasicBackend(): BasicBackend {
+  // Service workers have no `window`. Avoid chrome.storage.session here — on some
+  // platforms it throws ReferenceError: window is not defined.
+  if (typeof window === 'undefined') {
+    return basicLocalBackend();
+  }
+  try {
+    const session = chrome.storage?.session;
+    if (session && typeof session.get === 'function' && typeof session.set === 'function') {
+      return {
+        area: session,
+        storageKey: (provider) => `llm.${provider}.key`,
+      };
+    }
+  } catch {
+    // Fall through to local storage.
+  }
+  return basicLocalBackend();
 }
 
 async function deriveKey(secret: string): Promise<CryptoKey> {
@@ -54,7 +82,7 @@ async function getOrCreateInstallKey(): Promise<string> {
   const existing = await chrome.storage.local.get(INSTALL_KEY_ID);
   if (existing[INSTALL_KEY_ID]) return existing[INSTALL_KEY_ID] as string;
   const random = crypto.getRandomValues(new Uint8Array(32));
-  const secret = toBase64(random);
+  const secret = bytesToBase64(random);
   await chrome.storage.local.set({ [INSTALL_KEY_ID]: secret });
   return secret;
 }
@@ -66,47 +94,69 @@ async function encryptWithKey(key: CryptoKey, plaintext: string): Promise<string
     key,
     new TextEncoder().encode(plaintext),
   );
-  return `${toBase64(iv)}.${toBase64(new Uint8Array(ciphertext))}`;
+  return `${bytesToBase64(iv)}.${bytesToBase64(new Uint8Array(ciphertext))}`;
 }
 
 async function decryptWithKey(key: CryptoKey, blob: string): Promise<string> {
   const [ivB64, ctB64] = blob.split('.');
   if (!ivB64 || !ctB64) throw new Error('LLMKeyStore: malformed ciphertext blob');
   const plaintext = await crypto.subtle.decrypt(
-    { name: ALG, iv: fromBase64(ivB64) as BufferSource },
+    { name: ALG, iv: base64ToBytes(ivB64) as BufferSource },
     key,
-    fromBase64(ctB64) as BufferSource,
+    base64ToBytes(ctB64) as BufferSource,
   );
   return new TextDecoder().decode(plaintext);
 }
 
 export class LLMKeyStore {
+  private basicBackend: BasicBackend = resolveBasicBackend();
+
   constructor(
     private readonly mode: ModeName,
     private readonly vault?: IVaultKeyManager,
   ) {}
 
-  async get(provider: ProviderName): Promise<string | null> {
-    if (this.mode === 'ephemeral') {
-      const r = await chrome.storage.session.get(`llm.${provider}.key`);
-      return (r[`llm.${provider}.key`] as string | undefined) ?? null;
+  private async withEphemeralBackend<T>(
+    run: (backend: BasicBackend) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await run(this.basicBackend);
+    } catch (err) {
+      if (this.basicBackend.area !== chrome.storage.local) {
+        this.basicBackend = basicLocalBackend();
+        return run(this.basicBackend);
+      }
+      throw err;
     }
+  }
+
+  async get(provider: ProviderName): Promise<string | null> {
+    if (this.mode === 'basic') {
+      return this.withEphemeralBackend(async (backend) => {
+        const key = backend.storageKey(provider);
+        const r = await backend.area.get(key);
+        return (r[key] as string | undefined) ?? null;
+      });
+    }
+    // pro / pro_xai
     const r = await chrome.storage.local.get(`llm.${provider}.encrypted`);
     const blob = r[`llm.${provider}.encrypted`] as string | undefined;
     if (!blob) return null;
-    if (this.mode === 'cloud') {
-      if (!this.vault) throw new Error('LLMKeyStore: cloud mode requires a vault.');
+    if (this.vault) {
       return this.vault.withMasterKey(mk => decryptWithKey(mk, blob));
     }
-    // local mode
+    // Fallback: install-key AES (e.g. key set before the vault was available)
     const installSecret = await getOrCreateInstallKey();
     const mk = await deriveKey(installSecret);
     return decryptWithKey(mk, blob);
   }
 
   async set(provider: ProviderName, key: string): Promise<void> {
-    if (this.mode === 'ephemeral') {
-      await chrome.storage.session.set({ [`llm.${provider}.key`]: key });
+    if (this.mode === 'basic') {
+      await this.withEphemeralBackend(async (backend) => {
+        const storageKey = backend.storageKey(provider);
+        await backend.area.set({ [storageKey]: key });
+      });
       return;
     }
     const blob = await this.encrypt(key);
@@ -114,18 +164,45 @@ export class LLMKeyStore {
   }
 
   async clear(provider: ProviderName): Promise<void> {
-    if (this.mode === 'ephemeral') {
-      await chrome.storage.session.remove(`llm.${provider}.key`);
+    if (this.mode === 'basic') {
+      await this.withEphemeralBackend(async (backend) => {
+        const storageKey = backend.storageKey(provider);
+        await backend.area.remove(storageKey);
+      });
       return;
     }
     await chrome.storage.local.remove(`llm.${provider}.encrypted`);
   }
 
+  /** Selected model id for a provider (not encrypted — stored in local). */
+  async getModel(provider: ProviderName): Promise<string> {
+    const r = await chrome.storage.local.get(modelStorageKey(provider));
+    const stored = r[modelStorageKey(provider)] as string | undefined;
+    return resolveProviderModel(provider, stored);
+  }
+
+  async setModel(provider: ProviderName, model: string): Promise<void> {
+    const trimmed = model.trim();
+    if (!trimmed) throw new Error('LLMKeyStore: model id cannot be empty');
+    await chrome.storage.local.set({ [modelStorageKey(provider)]: trimmed });
+  }
+
+  /** Provider used for summarize/synthesize when none is specified in the request. */
+  async getActiveProvider(): Promise<ProviderName | null> {
+    const r = await chrome.storage.local.get(ACTIVE_PROVIDER_KEY);
+    const stored = r[ACTIVE_PROVIDER_KEY] as ProviderName | undefined;
+    return stored ?? null;
+  }
+
+  async setActiveProvider(provider: ProviderName): Promise<void> {
+    await chrome.storage.local.set({ [ACTIVE_PROVIDER_KEY]: provider });
+  }
+
   private async encrypt(plaintext: string): Promise<string> {
-    if (this.mode === 'cloud') {
-      if (!this.vault) throw new Error('LLMKeyStore: cloud mode requires a vault.');
+    if (this.vault) {
       return this.vault.withMasterKey(mk => encryptWithKey(mk, plaintext));
     }
+    // Fallback: install-key AES (e.g. key set before the vault was available)
     const installSecret = await getOrCreateInstallKey();
     const mk = await deriveKey(installSecret);
     return encryptWithKey(mk, plaintext);

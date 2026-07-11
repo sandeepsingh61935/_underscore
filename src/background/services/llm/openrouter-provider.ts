@@ -1,5 +1,6 @@
 import { OpenAIProvider } from './openai-provider';
 import type { HealthCheckResult, ILLMService, LLMCapabilities } from '@/shared/interfaces/i-llm-service';
+import { getDefaultModelId } from '@/shared/llm/provider-models';
 
 interface OpenRouterProviderConfig {
   apiKey: string;
@@ -11,7 +12,6 @@ interface OpenRouterProviderConfig {
   appName?: string;
 }
 
-const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 
 /**
@@ -26,20 +26,25 @@ export class OpenRouterProvider implements ILLMService {
     supportsSystemPrompt: true,
     supportsStreaming: true,
     supportsToolUse: true,
-    // Cost varies per routed model; left undefined.
   };
 
   private readonly delegate: ILLMService;
+  private readonly model: string;
+  private readonly apiKey: string;
+  private readonly extraHeaders: Record<string, string>;
 
   constructor(config: OpenRouterProviderConfig) {
-    const extraHeaders: Record<string, string> = {};
-    if (config.siteUrl) extraHeaders['HTTP-Referer'] = config.siteUrl;
-    if (config.appName) extraHeaders['X-Title'] = config.appName;
+    this.model = config.model ?? getDefaultModelId('openrouter');
+    this.apiKey = config.apiKey;
+    this.extraHeaders = {};
+    if (config.siteUrl) this.extraHeaders['HTTP-Referer'] = config.siteUrl;
+    if (config.appName) this.extraHeaders['X-Title'] = config.appName;
+
     this.delegate = new OpenAIProvider({
       apiKey: config.apiKey,
       apiBase: OPENROUTER_BASE,
-      model: config.model ?? DEFAULT_MODEL,
-      extraHeaders,
+      model: this.model,
+      extraHeaders: this.extraHeaders,
     });
   }
 
@@ -51,7 +56,27 @@ export class OpenRouterProvider implements ILLMService {
     return this.delegate.chat(req);
   }
 
-  healthCheck(): Promise<HealthCheckResult> {
-    return this.delegate.healthCheck();
+  async healthCheck(): Promise<HealthCheckResult> {
+    try {
+      const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${this.apiKey}`,
+          ...this.extraHeaders,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'ping' }],
+        }),
+      });
+      if (response.ok) return { ok: true, model: this.model };
+      const errorText = await response.text().catch(() => '');
+      const detail = errorText ? `: ${errorText.slice(0, 200)}` : '';
+      return { ok: false, model: this.model, error: `HTTP ${response.status}${detail}` };
+    } catch (err) {
+      return { ok: false, model: this.model, error: (err as Error).message };
+    }
   }
 }

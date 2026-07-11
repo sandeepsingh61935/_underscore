@@ -25,12 +25,12 @@ function makeChromeStorage(initial: Record<string, unknown> = {}) {
   };
 }
 
-describe('LLMKeyStore (ephemeral mode)', () => {
+describe('LLMKeyStore (basic mode)', () => {
   it('stores keys in chrome.storage.session', async () => {
     const storage = makeChromeStorage();
     vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
 
-    const store = new LLMKeyStore('ephemeral');
+    const store = new LLMKeyStore('basic');
     await store.set('anthropic', 'sk-test-123');
 
     expect(storage.session.set).toHaveBeenCalledWith({ 'llm.anthropic.key': 'sk-test-123' });
@@ -40,17 +40,30 @@ describe('LLMKeyStore (ephemeral mode)', () => {
     const storage = makeChromeStorage({ 'llm.anthropic.key': 'sk-test-123' });
     vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
 
-    const store = new LLMKeyStore('ephemeral');
+    const store = new LLMKeyStore('basic');
     expect(await store.get('anthropic')).toBe('sk-test-123');
+  });
+
+  it('falls back to chrome.storage.local when session writes fail', async () => {
+    const storage = makeChromeStorage();
+    storage.session.set = vi.fn(async () => {
+      throw new ReferenceError('window is not defined');
+    });
+    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
+
+    const store = new LLMKeyStore('basic');
+    await store.set('gemini', 'AIza-test');
+    expect(storage.local.set).toHaveBeenCalledWith({ 'llm.basic.gemini.key': 'AIza-test' });
+    expect(await store.get('gemini')).toBe('AIza-test');
   });
 });
 
-describe('LLMKeyStore (local mode)', () => {
+describe('LLMKeyStore (pro mode, no vault - install-key fallback)', () => {
   it('encrypts keys with a per-install key before persisting', async () => {
     const storage = makeChromeStorage();
     vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
 
-    const store = new LLMKeyStore('local');
+    const store = new LLMKeyStore('pro');
     await store.set('ollama', 'local-key');
 
     const stored = await storage.local.get('llm.ollama.encrypted');
@@ -62,13 +75,13 @@ describe('LLMKeyStore (local mode)', () => {
     const storage = makeChromeStorage();
     vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
 
-    const store = new LLMKeyStore('local');
+    const store = new LLMKeyStore('pro');
     await store.set('ollama', 'local-key');
     expect(await store.get('ollama')).toBe('local-key');
   });
 });
 
-describe('LLMKeyStore (cloud mode)', () => {
+describe('LLMKeyStore (pro mode with vault)', () => {
   it('uses the vault master key for encryption', async () => {
     const storage = makeChromeStorage();
     // Derive a real CryptoKey for the test so encryptWithKey works end-to-end.
@@ -93,7 +106,7 @@ describe('LLMKeyStore (cloud mode)', () => {
     };
     vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
 
-    const store = new LLMKeyStore('cloud', vault as any);
+    const store = new LLMKeyStore('pro', vault as any);
     await store.set('anthropic', 'sk-cloud');
 
     expect(vault.withMasterKey).toHaveBeenCalled();
@@ -109,14 +122,31 @@ describe('LLMKeyStore (general)', () => {
   });
 
   it('clear() removes the key', async () => {
-    const store = new LLMKeyStore('ephemeral');
+    const store = new LLMKeyStore('basic');
     await store.set('anthropic', 'sk');
     await store.clear('anthropic');
     expect(await store.get('anthropic')).toBeNull();
   });
 
   it('get() returns null when no key is set', async () => {
-    const store = new LLMKeyStore('ephemeral');
+    const store = new LLMKeyStore('basic');
     expect(await store.get('anthropic')).toBeNull();
+  });
+
+  it('setModel/getModel round-trip in chrome.storage.local', async () => {
+    const store = new LLMKeyStore('basic');
+    await store.setModel('openrouter', 'nvidia/nemotron-nano-9b-v2:free');
+    expect(await store.getModel('openrouter')).toBe('nvidia/nemotron-nano-9b-v2:free');
+  });
+
+  it('getModel returns provider default when unset', async () => {
+    const store = new LLMKeyStore('basic');
+    expect(await store.getModel('openrouter')).toBe('openrouter/free');
+  });
+
+  it('setActiveProvider/getActiveProvider round-trip', async () => {
+    const store = new LLMKeyStore('basic');
+    await store.setActiveProvider('openrouter');
+    expect(await store.getActiveProvider()).toBe('openrouter');
   });
 });
