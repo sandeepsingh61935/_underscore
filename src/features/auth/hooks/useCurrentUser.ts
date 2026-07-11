@@ -1,31 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 
-import type { OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
-
+import type { User, OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
+import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
+import { AUTH_SESSION_CLEARED, AUTH_STATE_CHANGED } from '@/shared/auth/constants';
 import { useIpcAction, type ActionResult } from '@/shared/hooks/useIpcAction';
 
-export interface User {
-    id: string;
-    email: string;
-    name?: string;
-    displayName?: string;
-    avatarUrl?: string;
-    photoUrl?: string;
-    provider?: OAuthProviderType;
-}
+export type { User };
 
-interface AuthResponse {
-    user?: User;
-    verificationStatus?: 'idle' | 'awaiting' | 'failed';
-    verificationExpiresAt?: number | null;
-}
+interface AuthResponse extends AuthStatePayload {}
 
 interface AuthStateChangedMessage {
     type?: string;
-    payload?: AuthResponse;
-    user?: User;
-    verificationStatus?: 'idle' | 'awaiting' | 'failed';
-    verificationExpiresAt?: number | null;
+    payload?: AuthStatePayload;
 }
 
 interface UseCurrentUserResult {
@@ -62,8 +48,26 @@ export function useCurrentUser(): UseCurrentUserResult {
     const loginAction = useIpcAction<{ provider?: OAuthProviderType }, AuthResponse>('LOGIN');
     const loginEmailAction = useIpcAction<{ email: string; password: string }, AuthResponse>('LOGIN_EMAIL');
     const registerEmailAction = useIpcAction<{ email: string; password: string }, AuthResponse>('REGISTER_EMAIL');
-    const logoutAction = useIpcAction<void, void>('LOGOUT');
+    const logoutAction = useIpcAction<void, AuthResponse>('LOGOUT');
     const getAuthStateAction = useIpcAction<Record<string, never>, AuthResponse>('GET_AUTH_STATE');
+
+    const clearAuthState = (): void => {
+        setUser(null);
+        setVerificationStatus('idle');
+        setVerificationExpiresAt(null);
+    };
+
+    const applyAuthPayload = (data: Partial<AuthResponse>): void => {
+        if ('user' in data) {
+            setUser(data.user ?? null);
+        }
+        if ('verificationStatus' in data && data.verificationStatus) {
+            setVerificationStatus(data.verificationStatus);
+        }
+        if ('verificationExpiresAt' in data) {
+            setVerificationExpiresAt(data.verificationExpiresAt ?? null);
+        }
+    };
 
     // Fetch initial auth state from background
     useEffect(() => {
@@ -85,9 +89,7 @@ export function useCurrentUser(): UseCurrentUserResult {
             if (!mounted) return;
 
             if (result.success) {
-                setUser(result.data.user ?? null);
-                setVerificationStatus(result.data.verificationStatus ?? 'idle');
-                setVerificationExpiresAt(result.data.verificationExpiresAt ?? null);
+                applyAuthPayload(result.data);
             } else {
                 setUser(null);
                 setVerificationStatus('idle');
@@ -99,11 +101,12 @@ export function useCurrentUser(): UseCurrentUserResult {
         void fetchAuthState();
 
         const handleMessage = (message: AuthStateChangedMessage): void => {
-            if (message?.type === 'AUTH_STATE_CHANGED') {
-                const payload = message.payload || message;
-                setUser(payload.user ?? null);
-                setVerificationStatus(payload.verificationStatus ?? 'idle');
-                setVerificationExpiresAt(payload.verificationExpiresAt ?? null);
+            if (message?.type === AUTH_STATE_CHANGED && message.payload) {
+                applyAuthPayload(message.payload);
+                return;
+            }
+            if (message?.type === AUTH_SESSION_CLEARED) {
+                clearAuthState();
             }
         };
 
@@ -125,7 +128,7 @@ export function useCurrentUser(): UseCurrentUserResult {
             setIsLoading(false);
             return { success: false, error: result.error };
         }
-        if (result.data.user) setUser(result.data.user);
+        applyAuthPayload(result.data);
         setIsLoading(false);
         return { success: true };
     }, [loginAction]);
@@ -139,9 +142,9 @@ export function useCurrentUser(): UseCurrentUserResult {
             setIsLoading(false);
             return { success: false, error: result.error };
         }
-        if (result.data.user) setUser(result.data.user);
-        setVerificationStatus(result.data.verificationStatus ?? 'idle');
-        setVerificationExpiresAt(result.data.verificationExpiresAt ?? null);
+        if (result.success) {
+            applyAuthPayload(result.data);
+        }
         setIsLoading(false);
         return { success: true };
     }, [loginEmailAction]);
@@ -155,9 +158,9 @@ export function useCurrentUser(): UseCurrentUserResult {
             setIsLoading(false);
             return { success: false, error: result.error };
         }
-        if (result.data.user) setUser(result.data.user);
-        setVerificationStatus(result.data.verificationStatus ?? 'idle');
-        setVerificationExpiresAt(result.data.verificationExpiresAt ?? null);
+        if (result.success) {
+            applyAuthPayload(result.data);
+        }
         setIsLoading(false);
         return { success: true };
     }, [registerEmailAction]);
@@ -165,10 +168,13 @@ export function useCurrentUser(): UseCurrentUserResult {
     const logout = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        await logoutAction(undefined);
-        setUser(null);
-        setVerificationStatus('idle');
-        setVerificationExpiresAt(null);
+        const result = await logoutAction(undefined);
+        if (!result.success) {
+            setError(result.error);
+            setIsLoading(false);
+            return;
+        }
+        applyAuthPayload(result.data);
         setIsLoading(false);
     }, [logoutAction]);
 

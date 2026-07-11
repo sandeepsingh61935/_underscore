@@ -33,6 +33,11 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Returns auth context when wrapped in AuthProvider; null otherwise (tests). */
+export function useAuthOptional(): AuthContextValue | null {
+    return useContext(AuthContext);
+}
+
 /**
  * Hook to access auth context.
  *

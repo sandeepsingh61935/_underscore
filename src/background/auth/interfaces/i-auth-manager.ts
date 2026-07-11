@@ -155,4 +155,9 @@ export interface IAuthManager {
      * Clear the email verification state (e.g., when the UI timer expires)
      */
     clearVerificationState(): Promise<void>;
+
+    /**
+     * Apply an existing Supabase session (web → extension bridge).
+     */
+    setSession(accessToken: string, refreshToken: string): Promise<AuthResult>;
 }

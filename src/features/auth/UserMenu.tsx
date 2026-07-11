@@ -29,7 +29,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={`Open user menu for ${user.name}`}
+        aria-label={`Open user menu for ${user.displayName}`}
         className="u-avatar-btn"
         style={{
           display: 'flex',
@@ -54,15 +54,15 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
           justifyContent: 'center',
           color: 'var(--accent)',
         }}>
-          {user.avatarUrl ? (
+          {user.photoUrl ? (
             <img
-              src={user.avatarUrl}
-              alt={user.name}
+              src={user.photoUrl}
+              alt={user.displayName}
               style={{ width: '100%', height: '100%', borderRadius: 9999 }}
             />
           ) : (
             <span className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
-              {user.name?.[0] || 'U'}
+              {user.displayName?.[0] || 'U'}
             </span>
           )}
         </div>
@@ -92,7 +92,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
         }}>
           <div style={{ padding: '8px 12px 12px', borderBottom: '1px solid var(--rule-soft)', marginBottom: 8 }}>
             <Text variant="small" style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.name}
+              {user.displayName}
             </Text>
             <Text variant="tiny" muted style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.email}

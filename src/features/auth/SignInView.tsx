@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 
 import { useApp } from '@/core/context/AppProvider';
+import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { syncSessionToExtension } from '@/shared/auth/session-bridge';
+import { resolveAuthRedirectTarget, stashPendingAuthorizationId } from '@/shared/oauth/oauth-consent-path';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Logo } from '@/ui-system/components/primitives/Logo';
@@ -11,6 +13,14 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
  * SignInView — Registration-first auth page
  * V2 Editorial redesign: uses var(--paper), var(--ink), var(--accent), var(--rule)
  */
+function stashPendingAuthorizationIdFromReturnTo(returnTo: string): void {
+    const parsed = new URL(returnTo, 'https://placeholder.local');
+    const authorizationId = parsed.searchParams.get('authorization_id');
+    if (authorizationId) {
+        stashPendingAuthorizationId(authorizationId);
+    }
+}
+
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
     const { login, setIsLoading, isLoading } = useApp();
@@ -18,78 +28,87 @@ export function SignInView(): React.ReactElement {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSignIn, setIsSignIn] = useState(false);
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const [authError, setAuthError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
+        setAuthError(null);
         setIsLoading(true);
         try {
-            let userResult;
+            const supabase = getWebSupabaseClient();
+            let session;
             if (isSignIn) {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                userResult = data?.user;
+                session = data.session;
             } else {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
-                userResult = data?.user;
-            }
-            
-            if (userResult) {
-                login({
-                    id: userResult.id,
-                    email: userResult.email || '',
-                    displayName: userResult.email?.split('@')[0] || '',
-                    provider: 'email',
-                });
+                session = data.session;
             }
 
-            // Email/password doesn't redirect, so manually handle intent or fallback
+            if (session?.user) {
+                login({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    displayName: session.user.email?.split('@')[0] || '',
+                    provider: 'email',
+                });
+                await syncSessionToExtension(session);
+            }
+
             const params = new URLSearchParams(window.location.search);
+            const returnTo = params.get('returnTo');
             const intendedMode = params.get('intendedMode');
-            if (intendedMode === 'cloud' || intendedMode === 'ai') {
+            if (returnTo) {
+                stashPendingAuthorizationIdFromReturnTo(returnTo);
+                navigate(resolveAuthRedirectTarget(returnTo));
+            } else if (intendedMode === 'pro' || intendedMode === 'pro_xai') {
                 window.location.href = `/?intendedMode=${intendedMode}`;
             } else {
                 navigate('/mode');
             }
         } catch (err) {
-            console.error('Auth error:', err);
+            const message = err instanceof Error ? err.message : 'Authentication failed';
+            setAuthError(message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleSocialAuth = async (provider: 'google' | 'apple'): Promise<void> => {
+    const handleSocialAuth = async (): Promise<void> => {
+        setAuthError(null);
         setIsLoading(true);
         try {
+            const supabase = getWebSupabaseClient();
             const params = new URLSearchParams(window.location.search);
             const intendedMode = params.get('intendedMode');
-            const redirectUrl = new URL(window.location.href);
-            redirectUrl.pathname = '/'; // Base URL
-            if (intendedMode) {
-                redirectUrl.searchParams.set('intendedMode', intendedMode);
+            const returnTo = params.get('returnTo');
+            const redirectUrl = new URL(window.location.origin);
+
+            if (returnTo) {
+                stashPendingAuthorizationIdFromReturnTo(returnTo);
+                const target = resolveAuthRedirectTarget(returnTo, '/mode');
+                const parsed = new URL(target, window.location.origin);
+                redirectUrl.pathname = parsed.pathname;
+                redirectUrl.search = parsed.search;
+            } else {
+                redirectUrl.pathname = '/';
+                if (intendedMode) {
+                    redirectUrl.searchParams.set('intendedMode', intendedMode);
+                }
             }
-            
+
             const { error } = await supabase.auth.signInWithOAuth({
-                provider,
+                provider: 'google',
                 options: {
                     redirectTo: redirectUrl.toString(),
-                }
+                },
             });
             if (error) throw error;
-
-            login({
-                id: `google-${Date.now()}`,
-                email: 'user@google.com',
-                displayName: 'Demo User',
-                provider: 'google',
-            });
         } catch (err) {
-            console.error('Auth error:', err);
-        } finally {
+            const message = err instanceof Error ? err.message : 'OAuth failed';
+            setAuthError(message);
             setIsLoading(false);
         }
     };
@@ -105,7 +124,6 @@ export function SignInView(): React.ReactElement {
             color: 'var(--ink)'
         }}>
             <div style={{ width: '100%', maxWidth: 400, padding: '48px 24px' }}>
-                {/* Back to mode selection */}
                 <Link
                     to="/mode"
                     className="u-sans"
@@ -127,12 +145,10 @@ export function SignInView(): React.ReactElement {
                     Back
                 </Link>
 
-                {/* Logo */}
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
                     <Logo size="md" />
                 </div>
 
-                {/* Heading */}
                 <h1 className="u-serif" style={{ fontSize: 'var(--step-3)', fontWeight: 500, marginBottom: 8, textAlign: 'center' }}>
                     {isSignIn ? 'Welcome back' : 'Create your account'}
                 </h1>
@@ -142,14 +158,27 @@ export function SignInView(): React.ReactElement {
                         : 'Unlock your full knowledge workspace'}
                 </p>
 
-                {/* Email/password form */}
+                {authError ? (
+                    <div
+                        className="u-sans"
+                        role="alert"
+                        style={{
+                            marginBottom: 16,
+                            padding: '12px 14px',
+                            borderRadius: 'var(--radius)',
+                            border: '1px solid var(--rule)',
+                            background: 'var(--accent-tint-08)',
+                            color: 'var(--ink)',
+                            fontSize: 'var(--step--1)',
+                        }}
+                    >
+                        {authError}
+                    </div>
+                ) : null}
+
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label
-                            htmlFor="email"
-                            className="u-kicker"
-                            style={{ color: 'var(--ink-3)' }}
-                        >
+                        <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
                             Email
                         </label>
                         <Input
@@ -163,11 +192,7 @@ export function SignInView(): React.ReactElement {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label
-                            htmlFor="password"
-                            className="u-kicker"
-                            style={{ color: 'var(--ink-3)' }}
-                        >
+                        <label htmlFor="password" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
                             Password
                         </label>
                         <Input
@@ -180,17 +205,11 @@ export function SignInView(): React.ReactElement {
                         />
                     </div>
 
-                    <Button
-                        type="submit"
-                        variant="accent"
-                        isLoading={isLoading}
-                        className="w-full"
-                    >
+                    <Button type="submit" variant="accent" isLoading={isLoading} style={{ width: '100%' }}>
                         {isSignIn ? 'Sign in' : 'Create account'}
                     </Button>
                 </form>
 
-                {/* Divider */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
                     <span className="u-kicker" style={{ color: 'var(--ink-3)' }}>
@@ -199,66 +218,30 @@ export function SignInView(): React.ReactElement {
                     <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
                 </div>
 
-                {/* Single V2 terracotta CTA */}
                 <div style={{ marginBottom: 32 }}>
                     <Button
                         type="button"
                         variant="accent"
-                        onClick={() => handleSocialAuth('google')}
+                        onClick={() => void handleSocialAuth()}
                         disabled={isLoading}
-                        className="w-full"
+                        style={{ width: '100%' }}
                     >
                         Continue with Google
                     </Button>
                 </div>
 
-                {/* Toggle sign-in / register */}
                 <div className="u-sans" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
                     <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
-                    <Button
-                        variant="ghost"
-                        type="button"
-                        onClick={() => setIsSignIn(!isSignIn)}
-                        className="px-2 font-medium underline"
-                    >
+                    <Button variant="ghost" type="button" onClick={() => setIsSignIn(!isSignIn)} style={{ padding: '0 8px', fontWeight: 500, textDecoration: 'underline' }}>
                         {isSignIn ? 'Create one' : 'Sign in'}
                     </Button>
                 </div>
 
-                {/* Footer */}
                 <p className="u-sans" style={{ textAlign: 'center', fontSize: 'var(--step--2)', marginTop: 32, lineHeight: 1.5, color: 'var(--ink-3)' }}>
                     By continuing, you agree to our{' '}
-                    <a
-                        href="#terms"
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: '44px',
-                            alignItems: 'center',
-                            borderRadius: 'var(--radius)',
-                            padding: '0 8px',
-                            margin: '0 -8px',
-                            textDecoration: 'underline',
-                            color: 'var(--ink-3)'
-                        }}
-                    >
-                        Terms of Service
-                    </a>
+                    <a href="#terms" style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}>Terms of Service</a>
                     {' '}and{' '}
-                    <Link
-                        to="/privacy"
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: '44px',
-                            alignItems: 'center',
-                            borderRadius: 'var(--radius)',
-                            padding: '0 8px',
-                            margin: '0 -8px',
-                            textDecoration: 'underline',
-                            color: 'var(--ink-3)'
-                        }}
-                    >
-                        Privacy Policy
-                    </Link>
+                    <Link to="/privacy" style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}>Privacy Policy</Link>
                 </p>
             </div>
         </div>

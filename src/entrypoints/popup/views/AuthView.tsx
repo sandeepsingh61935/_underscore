@@ -170,7 +170,7 @@ export function AuthView({
                     Sign in or create an account to continue
                 </p>
 
-                {/* OAuth providers — Google (terracotta) + Apple (paper) */}
+                {/* OAuth — Google */}
                 <div
                     style={{
                         width: '100%',
@@ -188,14 +188,6 @@ export function AuthView({
                         disabled={isLoading || activeProvider !== null}
                     >
                         {activeProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="default"
-                        onClick={() => handleProviderClick('apple')}
-                        disabled={isLoading || activeProvider !== null}
-                    >
-                        {activeProvider === 'apple' ? 'Signing in...' : 'Continue with Apple'}
                     </Button>
                 </div>
 
