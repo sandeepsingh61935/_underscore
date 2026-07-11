@@ -38,6 +38,15 @@ playwright/.cache/
 .env.development
 .env.production
 .env.test
+.dev.vars
+dist-web/
+
+# MCP server package artifacts
+packages/mcp-server/node_modules/
+packages/mcp-server/dist/
+packages/mcp-server/.wrangler/
+packages/mcp-server/.dev.vars
+packages/mcp-server/package-lock.json
 
 # Logs
 logs/
