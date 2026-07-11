@@ -79,42 +79,33 @@ interface HighlightDataV2 {
 }
 ```
 
-### `highlights` table (Supabase — materialized view of events)
+### `highlights` table (Supabase — Pro cloud sync)
+
+Canonical schema: [docs/06-security/highlights-schema.md](../../../docs/06-security/highlights-schema.md).
 
 ```sql
-CREATE TABLE highlights (
+CREATE TABLE public.highlights (
   id            UUID PRIMARY KEY,
   user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  device_id     TEXT NOT NULL,
-  url           TEXT NOT NULL,
-  domain        TEXT NOT NULL,
-  title         TEXT NOT NULL,
-  text          TEXT NOT NULL,              -- Encrypted
-  context       TEXT,
-  color         TEXT NOT NULL DEFAULT 'yellow',
-  note          TEXT,                       -- Encrypted
-  tags          TEXT[] DEFAULT '{}',
-  collection_id UUID REFERENCES collections(id) ON DELETE SET NULL,
-  mode          TEXT NOT NULL,
-  position      JSONB NOT NULL,
-  created_at    BIGINT NOT NULL,
-  updated_at    BIGINT NOT NULL,
-  deleted_at    BIGINT,
-  version       INTEGER NOT NULL DEFAULT 1
+  url           TEXT NOT NULL DEFAULT '',
+  text          TEXT NOT NULL DEFAULT '',       -- plaintext or [ADR013:...] envelope
+  color_role    TEXT NOT NULL DEFAULT 'yellow',
+  selectors     JSONB,                          -- TextQuoteSelector
+  content_hash  TEXT,                           -- SHA-256 hex (64 chars)
+  metadata      JSONB,                          -- {"notes":"...", "tags":["..."]}
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at    TIMESTAMPTZ                       -- soft delete; NULL = active
 );
 
--- Row Level Security
-ALTER TABLE highlights ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users own their highlights"
-  ON highlights FOR ALL
-  USING (auth.uid() = user_id);
+ALTER TABLE public.highlights ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX highlights_user_url ON highlights(user_id, url);
-CREATE INDEX highlights_user_domain ON highlights(user_id, domain);
-CREATE INDEX highlights_user_created ON highlights(user_id, created_at DESC);
-CREATE INDEX highlights_collection ON highlights(collection_id) WHERE collection_id IS NOT NULL;
-CREATE INDEX highlights_deleted ON highlights(deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX highlights_user_active_idx
+  ON public.highlights (user_id, created_at DESC)
+  WHERE deleted_at IS NULL;
 ```
+
+Migrations: [`supabase/migrations/`](../../../supabase/migrations/).
 
 ---
 

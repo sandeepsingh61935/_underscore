@@ -2,8 +2,8 @@
 
 **Status**: Required (production deployment)
 **Owner**: Backend
-**Last Updated**: 2026-06-18
-**Related**: [ADR-016](../04-adrs/016-rls-verification-strategy.md), [security-architecture.md](security-architecture.md)
+**Last Updated**: 2026-07-11
+**Related**: [ADR-016](../04-adrs/016-rls-verification-strategy.md), [security-architecture.md](security-architecture.md), [highlights-schema.md](highlights-schema.md)
 
 ---
 
@@ -30,13 +30,15 @@ This document is the source of truth for the RLS policies that must exist in Sup
 
 **Application access pattern** (`src/background/api/supabase-client.ts`):
 
-| Method | Verbs | Filters |
+| Method | Verbs | Columns / filters |
 | --- | --- | --- |
-| `createHighlight` | INSERT | `id`, `user_id`, `url`, `text`, `color_role`, `selectors`, `content_hash`, `created_at`, `updated_at` |
-| `updateHighlight` | UPDATE | `id = ?`, `user_id = ?` |
-| `deleteHighlight` | UPDATE (soft) | sets `deleted_at`, `id = ?`, `user_id = ?` |
-| `softDeleteAllHighlights` | UPDATE | sets `deleted_at`, `user_id = ?`, `deleted_at is null` |
-| `getHighlights` | SELECT | `user_id = ?`, `deleted_at is null`, optional `url = ?` |
+| `createHighlight` | INSERT | `id`, `user_id`, `url`, `text`, `color_role`, `selectors`, `content_hash`, `metadata`, `created_at`, `updated_at` |
+| `updateHighlight` | UPDATE | `text`, `color_role`, `content_hash`, `metadata`, `updated_at`; filter `id`, `user_id` |
+| `deleteHighlight` | UPDATE (soft) | sets `deleted_at`, `updated_at`; filter `id`, `user_id` |
+| `softDeleteAllHighlights` | UPDATE | sets `deleted_at`; filter `user_id`, `deleted_at is null` |
+| `getHighlights` | SELECT | `*`; filter `user_id`, `deleted_at is null`, optional `url` |
+
+Notes and tags are stored in **`metadata` JSONB** (`{"notes":"...","tags":["..."]}`), not separate columns. See [highlights-schema.md](highlights-schema.md).
 
 ### Required schema setup
 
