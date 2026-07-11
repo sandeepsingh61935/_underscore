@@ -22,4 +22,8 @@ describe('ui-system/hooks barrel', () => {
   it('re-exports usePersistedMode', () => {
     expect(typeof hooksBarrel.usePersistedMode).toBe('function');
   });
+
+  it('re-exports useModeFeature', () => {
+    expect(typeof hooksBarrel.useModeFeature).toBe('function');
+  });
 });
