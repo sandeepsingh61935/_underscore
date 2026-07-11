@@ -1,0 +1,6 @@
+name = "underscore-web"
+pages_build_output_dir = "dist-web"
+compatibility_date = "2024-12-01"
+
+# Deploy: npm run web:deploy (from repo root)
+# Requires: .env.development with VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY

@@ -1,0 +1,7 @@
+# Deploy from packages/mcp-server instead (canonical wrangler.toml lives there).
+# This file is kept for reference; run:
+#   cd packages/mcp-server && npm run worker:deploy
+
+name = "underscore-mcp"
+main = "../../packages/mcp-server/src/cloud/worker-entry.ts"
+compatibility_date = "2024-12-01"

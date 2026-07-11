@@ -3,15 +3,16 @@ import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 export interface AppContextType {
-    // Authentication
+    // Authentication (web: from WebAuthProvider)
     isAuthenticated: boolean;
     user: User | null;
     login: (user: User) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
 
     // Mode Management
     currentMode: Mode;
@@ -33,26 +34,16 @@ export interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: IDataProvider }> = ({ children, dataProvider }) => {
-    // Authentication state - initialize synchronously from localStorage
-    const getInitialUser = () => {
-        try {
-            const saved = localStorage.getItem('underscore-user');
-            return saved ? JSON.parse(saved) as User : null;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const initialUser = getInitialUser();
-    const [isAuthenticated, setIsAuthenticated] = useState(!!initialUser);
-    const [user, setUser] = useState<User | null>(initialUser);
-
-    // Mode state - bridge to Chrome Storage via usePersistedMode
+function AppProviderInner({
+    children,
+    dataProvider,
+}: {
+    children: React.ReactNode;
+    dataProvider: IDataProvider;
+}): React.ReactElement {
+    const { user, isAuthenticated, isLoading: authLoading, login, logout } = useWebAuth();
     const { currentMode, persistMode } = usePersistedMode(isAuthenticated);
     const [isLoading, setIsLoading] = useState(false);
-
-    // Theme state - get from chrome.storage or system preference
     const [theme, setThemeState] = useState<Theme>('system');
 
     useEffect(() => {
@@ -65,12 +56,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
         }
     }, []);
 
-    // Available modes depends on auth state
     const availableModes: Mode[] = isAuthenticated
-        ? ['ephemeral', 'local', 'cloud', 'ai']
-        : ['ephemeral', 'local'];
+        ? ['basic', 'pro', 'pro_xai']
+        : ['basic'];
 
-    // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
         root.classList.remove('light', 'dark');
@@ -82,36 +71,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             root.classList.add(prefersDark ? 'dark' : 'light');
         }
-        
+
         if (window.chrome && chrome.storage) {
             chrome.storage.local.set({ 'underscore-theme': theme });
         }
     }, [theme]);
 
-    const login = useCallback((newUser: User) => {
-        setUser(newUser);
-        setIsAuthenticated(true);
-        // Dispatch Auth sync intent instead of using localStorage directly
-        if (window.chrome && chrome.runtime) {
-            chrome.runtime.sendMessage({
-                type: 'SYNC_AUTH_SESSION',
-                session: newUser // Simplification for now
-            });
-        }
-    }, []);
-
-    const logout = useCallback(() => {
-        setUser(null);
-        setIsAuthenticated(false);
-        persistMode('ephemeral'); // Reset to ephemeral mode on logout
-        if (window.chrome && chrome.runtime) {
-            chrome.runtime.sendMessage({ type: 'SYNC_AUTH_SESSION', session: null });
-        }
-    }, [persistMode]);
-
     const setMode = useCallback((mode: Mode) => {
-        // Cloud and ai require authentication
-        if ((mode === 'cloud' || mode === 'ai') && !isAuthenticated) {
+        if ((mode === 'pro' || mode === 'pro_xai') && !isAuthenticated) {
             return;
         }
         persistMode(mode);
@@ -127,17 +94,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: ID
         login,
         logout,
         currentMode,
-        modeReady: true,
+        modeReady: !authLoading,
         setMode,
         availableModes,
         theme,
         setTheme,
-        isLoading,
+        isLoading: isLoading || authLoading,
         setIsLoading,
         dataProvider,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: IDataProvider }> = ({ children, dataProvider }) => {
+    return (
+        <AppProviderInner dataProvider={dataProvider}>
+            {children}
+        </AppProviderInner>
+    );
 };
 
 export const useApp = () => {
