@@ -7,22 +7,26 @@
 
 import type { DeletionConfig } from '@/content/modes/highlight-mode.interface';
 import type { ModeManager } from '@/content/modes/mode-manager';
+import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
+import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import { EventName } from '@/shared/types/events';
-import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class DeleteIconOverlay {
     private activeIcons = new Map<string, HTMLElement>();
     private selectedHighlights = new Set<string>();
+    private readonly deleteClient: ContentHighlightDeleteClient;
 
     constructor(
         private modeManager: ModeManager,
         private repositoryFacade: RepositoryFacade,
-        private eventBus: EventBus,
-        private logger: ILogger
-    ) { }
+        private logger: ILogger,
+        messageBus: IMessageBus,
+    ) {
+        this.deleteClient = new ContentHighlightDeleteClient(messageBus);
+    }
 
     /**
      * Show delete icon for a highlight
@@ -190,23 +194,10 @@ export class DeleteIconOverlay {
      */
     private async batchDelete(config: DeletionConfig): Promise<void> {
         const count = this.selectedHighlights.size;
-
-        // Confirmation
-        if (config.requireConfirmation) {
-            const message = `Delete ${count} selected highlights?${config.allowUndo ? ' (Undo available with Ctrl+Z)' : ' This cannot be undone.'}`;
-            if (!window.confirm(message)) {
-                return;
-            }
-        }
-
-        // Delete each highlight
         const ids = Array.from(this.selectedHighlights);
+
         for (const id of ids) {
-            this.eventBus.emit(EventName.HIGHLIGHT_CLICKED, {
-                type: EventName.HIGHLIGHT_CLICKED,
-                highlightId: id,
-                timestamp: Date.now(),
-            });
+            await this.handleDelete(id, { ...config, requireConfirmation: false });
         }
 
         this.logger.info('Batch delete completed', { count });
@@ -218,7 +209,6 @@ export class DeleteIconOverlay {
      */
     private async handleDelete(id: string, config: DeletionConfig): Promise<void> {
         try {
-            // 1. Run beforeDelete hook (mode-specific logic)
             if (config.beforeDelete) {
                 const proceed = await config.beforeDelete(id);
                 if (!proceed) {
@@ -227,27 +217,23 @@ export class DeleteIconOverlay {
                 }
             }
 
-            // 2. Confirmation dialog (if required)
             if (config.requireConfirmation) {
-                const message = config.confirmationMessage || 'Delete this highlight?';
-                const confirmed = window.confirm(message);
-                if (!confirmed) {
-                    this.logger.info('Deletion cancelled by user', { id });
-                    return;
-                }
+                this.logger.info('Deletion requires confirmation but window.confirm is disabled', { id });
+                return;
             }
 
-            // 3. Remove the highlight from the mode
-            // This triggers visual removal (CSS.highlights.delete), repository update,
-            // and emits HIGHLIGHT_REMOVED event internally
-            // NOTE: Do NOT emit HIGHLIGHT_REMOVED here - it creates infinite recursion
-            // The mode's removeHighlight() will emit it after successful removal
-            await this.modeManager.removeHighlight(id);
+            const outcome = await performContentHighlightDelete(id, {
+                deleteClient: this.deleteClient,
+                modeManager: this.modeManager,
+                getSnapshot: (highlightId) => this.modeManager.getHighlight(highlightId),
+                allowUndo: config.allowUndo,
+            });
 
-            // 4. Hide icon
-            this.hideIcon(id);
+            if (outcome === 'deleted') {
+                this.hideIcon(id);
+            }
 
-            this.logger.info('Highlight deleted via icon', { id, allowUndo: config.allowUndo });
+            this.logger.info('Highlight deleted via icon', { id, allowUndo: config.allowUndo, outcome });
         } catch (error) {
             this.logger.error('Delete icon handler failed', error as Error);
         }

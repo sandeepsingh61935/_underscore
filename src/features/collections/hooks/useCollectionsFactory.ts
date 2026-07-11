@@ -58,18 +58,8 @@ export function useCollections(): CollectionsResult {
 
                     setResult({ collections, isLoading: false, error: null });
                 } else {
-                    // Web context - use Supabase directly
-                    const { createClient } = await import('@supabase/supabase-js');
-
-                    const url = import.meta.env.VITE_SUPABASE_URL;
-                    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-                    if (!url || !anonKey) {
-                        setResult({ collections: [], isLoading: false, error: null });
-                        return;
-                    }
-
-                    const supabase = createClient(url, anonKey);
+                    const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
+                    const supabase = getWebSupabaseClient();
                     const { data: { session } } = await supabase.auth.getSession();
 
                     if (cancelled) return;

@@ -1,131 +1,203 @@
 /**
- * V2 Dialog Component
- * Surface: --paper (clean editorial surface, not MD3 surface-container-highest).
- * Border instead of shadow. X close button is 48x48 (V2 spec accepts up to 48px
- * on icon-only close affordances; the standard 44px touch target is the floor).
+ * V2 Dialog — modal overlay for popup + web.
+ * Pure inline styles (no Tailwind). Portals to document.body so it covers PopupShell.
  */
 
 import { X } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
-
-import { cn } from '../../utils/cn';
+import { createPortal } from 'react-dom';
 
 export interface DialogProps {
-    open: boolean;
-    onClose: () => void;
-    title?: string;
-    children: React.ReactNode;
-    actions?: React.ReactNode;
-    hideCloseButton?: boolean;
-    className?: string;
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+  hideCloseButton?: boolean;
+  className?: string;
 }
 
-export function Dialog({ open, onClose, title, children, actions, hideCloseButton, className }: DialogProps): React.ReactNode {
-    const dialogRef = useRef<HTMLDivElement>(null);
+const overlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 9998,
+  background: 'color-mix(in srgb, var(--ink) 32%, transparent)',
+};
 
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent): void => { if (e.key === 'Escape' && open) onClose(); };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [open, onClose]);
+const centerStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 9999,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+  boxSizing: 'border-box',
+  pointerEvents: 'none',
+};
 
-    useEffect(() => {
-        document.body.style.overflow = open ? 'hidden' : '';
-        return () => { document.body.style.overflow = ''; };
-    }, [open]);
+const panelStyle: React.CSSProperties = {
+  pointerEvents: 'auto',
+  width: '100%',
+  maxWidth: 340,
+  maxHeight: 'min(520px, 88vh)',
+  display: 'flex',
+  flexDirection: 'column',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  border: '1px solid var(--rule)',
+  boxSizing: 'border-box',
+};
 
-    useEffect(() => {
-        if (!open || !dialogRef.current) return;
-        const focusable = dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const first = focusable[0] as HTMLElement;
-        const last = focusable[focusable.length - 1] as HTMLElement;
-        const handleTab = (e: KeyboardEvent): void => {
-            if (e.key !== 'Tab') return;
-            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
-            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
-        };
-        document.addEventListener('keydown', handleTab);
-        first?.focus();
-        return () => document.removeEventListener('keydown', handleTab);
-    }, [open]);
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  actions,
+  hideCloseButton = false,
+}: DialogProps): React.ReactNode {
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-    if (!open) return null;
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && open) onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open, onClose]);
 
-    return (
-        <>
-            <div
-                className="fixed inset-0 z-50 animate-in fade-in backdrop-blur-sm"
-                style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-                onClick={onClose}
-                aria-hidden="true"
-            />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div
-                    ref={dialogRef}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby={title ? 'dialog-title' : undefined}
-                    className={cn(
-                        'rounded w-full max-w-md max-h-[90vh]',
-                        'flex flex-col',
-                        'animate-in zoom-in-95 fade-in',
-                        className
-                    )}
-                    style={{
-                        backgroundColor: 'var(--paper)',
-                        color: 'var(--ink)',
-                        border: '1px solid var( --rule )',
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {(title || !hideCloseButton) && (
-                        <div className="flex items-center justify-between p-6 pb-4">
-                            {title && (
-                                <h2
-                                    id="dialog-title"
-                                    className="font-serif"
-                                    style={{ color: 'var(--ink)', fontSize: 'var(--step-3)' }}
-                                >
-                                    {title}
-                                </h2>
-                            )}
-                            {!hideCloseButton && (
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className={cn(
-                                        'w-[44px] h-[44px] flex items-center justify-center',
-                                        'rounded-full border-0 cursor-pointer',
-                                        'transition-colors',
-                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
-                                        title ? 'ml-auto' : ''
-                                    )}
-                                    style={{ color: 'var(--ink-2)' }}
-                                    aria-label="Close dialog"
-                                >
-                                    <X className="w-[24px] h-[24px]" />
-                                </button>
-                            )}
-                        </div>
-                    )}
-                    <div
-                        className="flex-1 overflow-y-auto px-6 py-4"
-                        style={{ color: 'var(--ink-2)', fontSize: 'var(--step-0)' }}
-                    >
-                        {children}
-                    </div>
-                    {actions && (
-                        <div
-                            className="flex items-center justify-end gap-2 p-6 pt-4"
-                            style={{ borderTop: '1px solid var(--rule-soft)' }}
-                        >
-                            {actions}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </>
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    const focusable = dialogRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
+    const first = focusable[0] as HTMLElement | undefined;
+    const last = focusable[focusable.length - 1] as HTMLElement | undefined;
+    const handleTab = (e: KeyboardEvent): void => {
+      if (e.key !== 'Tab' || !first || !last) return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleTab);
+    first?.focus();
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [open]);
+
+  if (!open || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <>
+      <div
+        style={overlayStyle}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div style={centerStyle}>
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? 'dialog-title' : undefined}
+          style={panelStyle}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {(title || !hideCloseButton) && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '16px 16px 0',
+                flexShrink: 0,
+              }}
+            >
+              {title && (
+                <h2
+                  id="dialog-title"
+                  className="u-serif"
+                  style={{
+                    margin: 0,
+                    flex: 1,
+                    fontSize: 'var(--step-1)',
+                    lineHeight: 1.3,
+                    letterSpacing: '-0.01em',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  {title}
+                </h2>
+              )}
+              {!hideCloseButton && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close dialog"
+                  style={{
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--ink-3)',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  <X size={20} strokeWidth={1.75} />
+                </button>
+              )}
+            </div>
+          )}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '12px 16px 16px',
+              color: 'var(--ink-2)',
+              fontSize: 'var(--step-0)',
+              minHeight: 0,
+            }}
+          >
+            {children}
+          </div>
+          {actions && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                gap: 8,
+                padding: '12px 16px 16px',
+                borderTop: '1px solid var(--rule-soft)',
+                flexShrink: 0,
+              }}
+            >
+              {actions}
+            </div>
+          )}
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
 }
 
 Dialog.displayName = 'Dialog';

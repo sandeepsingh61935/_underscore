@@ -1,5 +1,6 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
+
+import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 
 export interface Highlight {
     id: string;
@@ -9,20 +10,7 @@ export interface Highlight {
     createdAt: Date;
 }
 
-/** Create Supabase client for web app */
-function createSupabaseClient(): SupabaseClient | null {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) {
-        console.warn('[useHighlightsByDomainWeb] Supabase env vars not configured');
-        return null;
-    }
-
-    return createClient(url, anonKey);
-}
-
-/** Hook for web app - fetches highlights by domain from Supabase */
+/** Fetch highlights by domain from Supabase for the web app. */
 export function useHighlightsByDomainWeb(domain: string | undefined) {
     const [highlights, setHighlights] = useState<Highlight[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -37,15 +25,8 @@ export function useHighlightsByDomainWeb(domain: string | undefined) {
 
         const fetchHighlights = async () => {
             try {
-                const supabase = createSupabaseClient();
+                const supabase = getWebSupabaseClient();
 
-                if (!supabase) {
-                    setHighlights([]);
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Get current session
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError || !session?.user) {

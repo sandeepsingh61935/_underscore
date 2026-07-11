@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useCollections } from '@/features/collections/hooks/useCollections';
+import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { Row } from '@/ui-system/components/primitives/Row';
-
-const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
 
 export interface CollectionsViewProps {
   onCollectionClick?: (domain: string) => void;
@@ -18,7 +17,7 @@ export function CollectionsView({ onCollectionClick, isAuthenticated: propIsAuth
   const appContext = useApp();
 
   const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
-  const mode = (appContext.currentMode ?? 'ephemeral') as ModeType;
+  const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
 

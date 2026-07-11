@@ -27,9 +27,9 @@ export interface CollectionsViewProps {
   onCollectionClick: (collection: Collection) => void;
   onAddNew?: () => void;
   /** Current active mode */
-  mode?: 'ephemeral' | 'local' | 'cloud' | 'ai';
+  mode?: 'basic' | 'pro' | 'pro_xai';
   /** Callback to change mode */
-  onModeChange?: (mode: 'ephemeral' | 'local' | 'cloud' | 'ai') => void;
+  onModeChange?: (mode: 'basic' | 'pro' | 'pro_xai') => void;
   className?: string;
 }
 
@@ -73,7 +73,7 @@ export function CollectionsView({
         {/* Mode Switcher (New Navigation Fix) */}
         {mode && onModeChange && (
           <button
-            onClick={() => onModeChange('local')} // Simplest way to go back to selection or just use a dedicated back handler?
+            onClick={() => onModeChange('basic')} // Simplest way to go back to selection or just use a dedicated back handler?
             // Actually, the user wants "Change Mode".
             // In PopupRouter, we might want to go back to ModeSelectionView
             // But here we just have onModeChange.

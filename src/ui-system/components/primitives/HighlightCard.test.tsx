@@ -88,4 +88,27 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     fireEvent.click(btn);
     expect(handler).toHaveBeenCalledOnce();
   });
+
+  it('hides domain/path meta when showLocationMeta is false', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        section="/notes"
+        showLocationMeta={false}
+        onCopy={vi.fn()}
+      />
+    );
+    expect(screen.queryByText('example.com/notes')).toBeNull();
+    expect(screen.getByRole('button', { name: /Copy highlight text/ })).toBeTruthy();
+  });
+
+  it('calls onDelete when delete action is clicked', () => {
+    const handler = vi.fn();
+    render(
+      <HighlightCard quote="Apple" domain="example.com" onDelete={handler} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
+    expect(handler).toHaveBeenCalledOnce();
+  });
 });

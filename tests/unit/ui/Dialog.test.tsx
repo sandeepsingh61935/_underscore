@@ -35,29 +35,29 @@ describe('V2 Dialog', () => {
     });
 
     it('uses V2 --paper surface (not MD3 bg-surface-container-highest)', () => {
-        const { container } = render(<Dialog open onClose={() => {}}>x</Dialog>);
-        const dlg = container.querySelector('[role="dialog"]') as HTMLElement;
+        render(<Dialog open onClose={() => {}}>x</Dialog>);
+        const dlg = screen.getByRole('dialog');
         const style = dlg.getAttribute('style') ?? '';
         expect(style).toContain('var(--paper)');
     });
 
     it('uses V2 --ink for text (not MD3 text-on-surface)', () => {
-        const { container } = render(<Dialog open onClose={() => {}}>x</Dialog>);
-        const dlg = container.querySelector('[role="dialog"]') as HTMLElement;
+        render(<Dialog open onClose={() => {}}>x</Dialog>);
+        const dlg = screen.getByRole('dialog');
         const style = dlg.getAttribute('style') ?? '';
         expect(style).toContain('var(--ink)');
     });
 
-    it('renders a title with --step-3 font size (not MD3 text-headline-small)', () => {
+    it('renders a title with V2 step scale (not MD3 text-headline-small)', () => {
         render(<Dialog open onClose={() => {}} title="My Dialog">body</Dialog>);
         const title = screen.getByText('My Dialog');
         const style = title.getAttribute('style') ?? '';
-        expect(style).toContain('var(--step-3)');
+        expect(style).toContain('var(--step-1)');
     });
 
     it('does not use MD3 utility classes', () => {
-        const { container } = render(<Dialog open onClose={() => {}} title="x">body</Dialog>);
-        const html = container.innerHTML;
+        render(<Dialog open onClose={() => {}} title="x">body</Dialog>);
+        const html = document.body.innerHTML;
         expect(html).not.toMatch(/text-on-surface-variant/);
         expect(html).not.toMatch(/text-on-surface\b/);
         expect(html).not.toMatch(/text-body-medium/);
@@ -65,14 +65,21 @@ describe('V2 Dialog', () => {
         expect(html).not.toMatch(/bg-surface-container-highest/);
     });
 
+    it('portals the dialog to document.body with fixed positioning', () => {
+        render(<Dialog open onClose={() => {}} title="Test">body</Dialog>);
+        const dlg = screen.getByRole('dialog');
+        expect(dlg.parentElement?.parentElement).toBe(document.body);
+        const style = dlg.getAttribute('style') ?? '';
+        expect(style).toContain('flex');
+        expect(style).toContain('var(--paper)');
+    });
+
     it('does not leak keydown listeners when toggled open then closed', () => {
         const onClose = vi.fn();
         const { rerender } = render(<Dialog open onClose={onClose}>body</Dialog>);
-        // Spy on document.addEventListener to count keydown handlers.
         const addSpy = vi.spyOn(document, 'addEventListener');
         const removeSpy = vi.spyOn(document, 'removeEventListener');
 
-        // Close the dialog; expect a removeEventListener for the escape handler.
         rerender(<Dialog open={false} onClose={onClose}>body</Dialog>);
 
         const removeCalls = removeSpy.mock.calls.filter((c) => c[0] === 'keydown');

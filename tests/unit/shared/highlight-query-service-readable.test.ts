@@ -72,4 +72,66 @@ describe('HighlightQueryService (readable contract)', () => {
         expect(result).toHaveLength(1);
         expect(result[0]?.id).toBe('h-1');
     });
+
+    it('includes notes and tags from highlight metadata', async () => {
+        const readable = makeReadable([
+            hl({
+                id: 'h-meta',
+                url: 'https://example.com/a',
+                metadata: { source: 'user', notes: 'Key point', tags: ['research'] },
+            }),
+        ]);
+
+        const svc = new HighlightQueryService(readable);
+        const result = await svc.getHighlightsByDomain('example.com');
+
+        expect(result[0]?.notes).toBe('Key point');
+        expect(result[0]?.tags).toEqual(['research']);
+    });
+
+    it('groups file URLs under Local files', async () => {
+        const readable = makeReadable([
+            hl({ id: 'h-file', url: 'file:///tmp/page.html' }),
+            hl({ id: 'h-web', url: 'https://example.com/a' }),
+        ]);
+
+        const svc = new HighlightQueryService(readable);
+        const collections = await svc.getCollections('cloud');
+
+        expect(collections).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ domain: 'Local files', highlightCount: 1 }),
+                expect.objectContaining({ domain: 'example.com', highlightCount: 1 }),
+            ])
+        );
+
+        const localHighlights = await svc.getHighlightsByDomain('Local files');
+        expect(localHighlights).toHaveLength(1);
+        expect(localHighlights[0]?.id).toBe('h-file');
+    });
+
+    it('findAllForExport filters by scope', async () => {
+        const readable = makeReadable([
+            hl({ id: 'h-1', url: 'https://example.com/docs/a' }),
+            hl({ id: 'h-2', url: 'https://example.com/docs/b' }),
+            hl({ id: 'h-3', url: 'https://other.com/page' }),
+        ]);
+
+        const svc = new HighlightQueryService(readable);
+
+        const domainScope = await svc.findAllForExport({ kind: 'domain', domain: 'example.com' });
+        expect(domainScope).toHaveLength(2);
+
+        const sectionScope = await svc.findAllForExport({
+            kind: 'section',
+            domain: 'example.com',
+            sectionKey: '/docs/a',
+        });
+        expect(sectionScope).toHaveLength(1);
+        expect(sectionScope[0]?.id).toBe('h-1');
+
+        const highlightScope = await svc.findAllForExport({ kind: 'highlight', highlightId: 'h-3' });
+        expect(highlightScope).toHaveLength(1);
+        expect(highlightScope[0]?.id).toBe('h-3');
+    });
 });

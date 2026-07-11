@@ -1,5 +1,6 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
+
+import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 
 export interface DomainCollection {
     id: string;
@@ -8,20 +9,7 @@ export interface DomainCollection {
     lastActive: Date;
 }
 
-/** Create Supabase client for web app */
-function createSupabaseClient(): SupabaseClient | null {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) {
-        console.warn('[useCollectionsWeb] Supabase env vars not configured');
-        return null;
-    }
-
-    return createClient(url, anonKey);
-}
-
-/** Hook for web app - fetches collections from Supabase directly */
+/** Fetch collections from Supabase for the web app. */
 export function useCollectionsWeb() {
     const [collections, setCollections] = useState<DomainCollection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,16 +18,8 @@ export function useCollectionsWeb() {
     useEffect(() => {
         const fetchCollections = async () => {
             try {
-                const supabase = createSupabaseClient();
+                const supabase = getWebSupabaseClient();
 
-                if (!supabase) {
-                    // No Supabase config - return empty (user not authenticated or not configured)
-                    setCollections([]);
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Get current session
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError || !session?.user) {
