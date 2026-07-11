@@ -1,14 +1,20 @@
 /**
- * Ephemeral Mode
+ * Basic Mode
  *
- * Philosophy: "Light footprint" - Persist for 24 hours, then auto-clear.
+ * Philosophy: "On this device" — persist locally with a user-configurable
+ * TTL (see @/shared/constants/basic-ttl). Replaces the former EphemeralMode
+ * (fixed 24h TTL) and LocalMode (fixed forever/no-TTL) — TTL is now a
+ * setting, not a separate mode.
  *
  * Features:
- * - 24-hour TTL (auto-delete after 24 hours)
  * - Local storage with per-domain encryption
- * - Restores highlights on page reload within TTL window
+ * - TTL is configurable (24h / 2d / 7d / 30d / forever); default 24h
+ * - Restores highlights on page reload within the TTL window
  * - Collections view enabled
  * - No account required
+ * - Deletion requires confirmation only when TTL is set to "forever"
+ *   (mirrors the previous Local Mode's confirm-before-delete behavior for
+ *   highlights the user expects to keep indefinitely)
  *
  * Architectural Compliance:
  * - Implements IBasicMode only (Interface Segregation Principle)
@@ -21,8 +27,15 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
-
 import { serializeRange } from '@/content/utils/range-converter';
+import {
+  BASIC_TTL_DEFAULT,
+  BASIC_TTL_STORAGE_KEY,
+  basicTtlConfigToMs,
+  getBasicTtlConfig,
+  isBasicTtlConfig,
+  type BasicTtlConfig,
+} from '@/shared/constants/basic-ttl';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
@@ -31,9 +44,22 @@ import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
-  get name(): 'ephemeral' {
-    return 'ephemeral' as const;
+export class BasicMode extends BaseHighlightMode implements IBasicMode {
+  private ttlConfig: BasicTtlConfig = BASIC_TTL_DEFAULT;
+  private readonly onStorageChanged = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string
+  ): void => {
+    if (area !== 'local' || !changes[BASIC_TTL_STORAGE_KEY]) return;
+    const next = changes[BASIC_TTL_STORAGE_KEY].newValue;
+    if (isBasicTtlConfig(next)) {
+      this.ttlConfig = next;
+      this.storage?.setTtlDuration?.(basicTtlConfigToMs(next));
+    }
+  };
+
+  get name(): 'basic' {
+    return 'basic' as const;
   }
 
   constructor(
@@ -58,6 +84,32 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     multiSelector: false,
   };
 
+  override async onActivate(): Promise<void> {
+    await super.onActivate();
+    await this.refreshTtlOption();
+
+    if (chrome.storage?.onChanged?.addListener) {
+      chrome.storage.onChanged.addListener(this.onStorageChanged);
+    }
+  }
+
+  override async onDeactivate(): Promise<void> {
+    await super.onDeactivate();
+
+    if (chrome.storage?.onChanged?.removeListener) {
+      chrome.storage.onChanged.removeListener(this.onStorageChanged);
+    }
+  }
+
+  private async refreshTtlOption(): Promise<void> {
+    try {
+      this.ttlConfig = await getBasicTtlConfig();
+    } catch (e) {
+      this.logger.warn('[BASIC] Failed to read TTL preference, using default', e as Error);
+    }
+    this.storage?.setTtlDuration?.(basicTtlConfigToMs(this.ttlConfig));
+  }
+
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
@@ -74,7 +126,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     const existing = this.facade.findByContentHash(contentHash);
 
     if (existing && existing.id) {
-      this.logger.info('Duplicate content detected (Ephemeral Mode)', {
+      this.logger.info('Duplicate content detected - returning existing highlight (Basic Mode)', {
         existingId: existing.id,
       });
       return existing.id;
@@ -120,7 +172,7 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
       },
     });
 
-    this.logger.info('Created highlight in Ephemeral Mode', { id });
+    this.logger.info('Created highlight in Basic Mode', { id });
 
     return id;
   }
@@ -139,11 +191,23 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
     });
 
     this.facade.add(storageData);
+
+    this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
+      type: EventName.HIGHLIGHT_CREATED,
+      highlight: {
+        id: data.id,
+        text: data.text,
+        colorRole: data.colorRole,
+        ranges: data.ranges,
+      },
+    });
   }
 
   async updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void> {
     const existing = this.data.get(id);
-    if (!existing) return;
+    if (!existing) {
+      throw new Error(`Highlight ${id} not found`);
+    }
 
     const updated = { ...existing, ...updates };
 
@@ -159,15 +223,18 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
   }
 
   override async removeHighlight(id: string): Promise<void> {
+    this.logger.info('Removing highlight (Basic Mode)', { id });
+
     await super.removeHighlight(id);
 
     this.facade.remove(id);
 
-    this.logger.info('Removed highlight (Ephemeral Mode)', { id });
+    this.logger.info('Highlight removed completely (Basic Mode)', { id });
   }
 
   async clearAll(): Promise<void> {
     const count = this.data.size;
+    this.logger.info('Clearing all highlights in Basic Mode', { count });
 
     CSS.highlights.clear();
     this.highlights.clear();
@@ -183,11 +250,11 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
       });
     }
 
-    this.logger.info('Cleared all highlights (Ephemeral Mode)', { count });
+    this.logger.info('All highlights cleared (Basic Mode, with storage event)', { count });
   }
 
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {
-    this.logger.debug('[EPHEMERAL] onHighlightCreated called', {
+    this.logger.debug('[BASIC] onHighlightCreated called', {
       highlightId: event.highlight.id,
       hasStorage: !!this.storage,
     });
@@ -210,6 +277,8 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
   }
 
   override async onHighlightRemoved(event: HighlightRemovedEvent): Promise<void> {
+    this.logger.debug('[BASIC] Persisting removal event');
+
     if (this.storage) {
       await this.storage.saveEvent({
         type: 'highlight.removed',
@@ -221,6 +290,8 @@ export class EphemeralMode extends BaseHighlightMode implements IBasicMode {
   }
 
   override shouldRestore(): boolean {
+    // Basic Mode always restores highlights (fixes the previous
+    // Ephemeral Mode behavior of clearing on switch-to).
     return true;
   }
 

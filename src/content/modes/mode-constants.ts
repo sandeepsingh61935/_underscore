@@ -13,20 +13,20 @@
  * Use these instead of string literals
  */
 export const MODE_NAMES = {
-    EPHEMERAL: 'ephemeral',
-    LOCAL: 'local',
-    CLOUD: 'cloud',
-    AI: 'ai',
+    BASIC: 'basic',
+    PRO: 'pro',
+    PRO_XAI: 'pro_xai',
 } as const;
 
 /**
  * Display names for modes (Business/User facing)
+ * @deprecated Prefer MODE_BRANDING (@/shared/constants/mode-branding) which
+ * decouples marketing copy from internal IDs. Kept for backward compatibility.
  */
 export const MODE_DISPLAY_NAMES = {
-    [MODE_NAMES.EPHEMERAL]: 'Ephemeral',
-    [MODE_NAMES.LOCAL]: 'Local',
-    [MODE_NAMES.CLOUD]: 'Cloud',
-    [MODE_NAMES.AI]: 'AI',
+    [MODE_NAMES.BASIC]: 'Basic',
+    [MODE_NAMES.PRO]: 'Pro',
+    [MODE_NAMES.PRO_XAI]: '10x-Pro',
 } as const;
 
 /**

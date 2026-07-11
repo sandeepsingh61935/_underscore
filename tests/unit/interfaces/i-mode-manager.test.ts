@@ -25,7 +25,7 @@ describe('IModeManager Interface (4 tests)', () => {
   it('1. can registerMode() and activateMode()', async () => {
     // Arrange: Create a minimal test mode
     const testMode: IHighlightMode = {
-      name: 'ephemeral', // ✅ Valid mode name
+      name: 'basic', // ✅ Valid mode name
       capabilities: {
         persistence: 'none',
         undo: false,
@@ -54,7 +54,7 @@ describe('IModeManager Interface (4 tests)', () => {
 
     // Act
     modeManager.registerMode(testMode);
-    await modeManager.activateMode('ephemeral');
+    await modeManager.activateMode('basic');
 
     // Assert
     expect(testMode.onActivate).toHaveBeenCalledOnce();
@@ -64,11 +64,11 @@ describe('IModeManager Interface (4 tests)', () => {
   it('2. getCurrentMode() returns correct mode', async () => {
     // Arrange
     const mode1: IHighlightMode = {
-      name: 'local', // ✅ Valid mode name
+      name: 'pro', // ✅ Valid mode name
       capabilities: {
-        persistence: 'local',
+        persistence: 'indexeddb',
         undo: true,
-        sync: false,
+        sync: true,
         collections: false,
         tags: false,
         export: false,
@@ -92,13 +92,13 @@ describe('IModeManager Interface (4 tests)', () => {
     };
 
     modeManager.registerMode(mode1);
-    await modeManager.activateMode('local');
+    await modeManager.activateMode('pro');
 
     // Act
     const currentMode = modeManager.getCurrentMode();
 
     // Assert
-    expect(currentMode.name).toBe('local');
+    expect(currentMode.name).toBe('pro');
     expect(currentMode).toBe(mode1); // Same instance
   });
 
@@ -106,7 +106,7 @@ describe('IModeManager Interface (4 tests)', () => {
     // Arrange
     const mockCreateHighlight = vi.fn().mockResolvedValue('test-id-123');
     const testMode: IHighlightMode = {
-      name: 'ephemeral', // ✅ Valid mode name
+      name: 'basic', // ✅ Valid mode name
       capabilities: {
         persistence: 'none',
         undo: false,
@@ -134,7 +134,7 @@ describe('IModeManager Interface (4 tests)', () => {
     };
 
     modeManager.registerMode(testMode);
-    await modeManager.activateMode('ephemeral');
+    await modeManager.activateMode('basic');
 
     const mockSelection = {} as Selection;
 

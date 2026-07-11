@@ -5,20 +5,28 @@
  */
 
 import { migrateV1ToV2 } from './migrations/v1-to-v2';
+import { migrateV2ToV3, needsV2ToV3Migration } from './migrations/v2-to-v3';
 import type { ModeManager } from './mode-manager';
 import { ModeStateMachine } from './mode-state-machine';
 import { MigrationEngine } from './state-migration';
 
+import { setBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import {
   StatePersistenceError,
   StateValidationError,
   StateTransitionError,
 } from '@/shared/errors/state-errors';
 import {
+  DEFAULT_MODE,
+  LEGACY_MODE_STORAGE_KEY,
+  MODE_STORAGE_KEY,
+} from '@/shared/constants/mode-storage';
+import {
   ModeTypeSchema,
   type ModeType,
   type StateMetadata,
 } from '@/shared/schemas/mode-state-schemas';
+import { normalizeMode } from '@/shared/utils/normalize-mode';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -26,7 +34,7 @@ import type { ILogger } from '@/shared/utils/logger';
 export type { ModeType };
 
 export class ModeStateManager {
-  private currentMode: ModeType = 'ephemeral';
+  private currentMode: ModeType = DEFAULT_MODE;
   private metadata: StateMetadata = {
     version: 2,
     lastModified: Date.now(),
@@ -66,13 +74,59 @@ export class ModeStateManager {
     });
 
     try {
-      const data = await chrome.storage.local.get('underscore_mode');
-      const storedMode = data['underscore_mode'];
-      if (storedMode) {
-         this.currentMode = storedMode as ModeType;
+      const data = await chrome.storage.local.get([
+        MODE_STORAGE_KEY,
+        LEGACY_MODE_STORAGE_KEY,
+      ]);
+      const canonicalRaw = data[MODE_STORAGE_KEY] as unknown;
+      const legacyRaw = data[LEGACY_MODE_STORAGE_KEY] as unknown;
+      const storedRaw = canonicalRaw ?? legacyRaw;
+
+      if (storedRaw !== undefined) {
+        // storedRaw may be a v1/v2 legacy mode name (ephemeral/walk/local/
+        // sprint/cloud/vault/ai/neural) from before the v3 consolidation.
+        // migrateV2ToV3() translates any of those to basic/pro/pro_xai and
+        // also derives the Basic TTL default implied by the legacy mode
+        // (ephemeral/walk -> 24h, local/sprint -> forever).
+        if (needsV2ToV3Migration(storedRaw)) {
+          const { mode, ttlConfig } = migrateV2ToV3(storedRaw);
+          this.currentMode = mode;
+          try {
+            await setBasicTtlConfig(ttlConfig);
+          } catch (e) {
+            this.logger.warn('[ModeState] Failed to persist migrated Basic TTL', e as Error);
+          }
+          this.logger.info('[ModeState] Migrated legacy mode name (v1/v2 -> v3)', {
+            from: storedRaw,
+            to: mode,
+            ttlConfig,
+          });
+        } else {
+          this.currentMode = normalizeMode(storedRaw);
+        }
+      }
+
+      // Migrate legacy content-script key to the canonical popup key
+      // (writes the normalized v3 value, not the raw legacy string)
+      if (!canonicalRaw && legacyRaw !== undefined) {
+        await chrome.storage.local.set({ [MODE_STORAGE_KEY]: this.currentMode });
+        await chrome.storage.local.remove(LEGACY_MODE_STORAGE_KEY);
       }
     } catch (e) {
       this.logger.warn('[ModeState] Failed to load mode preference', e as Error);
+    }
+
+    if (chrome.storage?.onChanged?.addListener) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local' || !changes[MODE_STORAGE_KEY]) return;
+        const newValue = changes[MODE_STORAGE_KEY].newValue as unknown;
+        if (newValue === undefined) return;
+        const newMode = normalizeMode(newValue);
+        if (newMode === this.currentMode) return;
+        void this.setMode(newMode).catch((err) => {
+          this.logger.warn('[ModeState] Failed to apply storage mode change', err as Error);
+        });
+      });
     }
 
     await this.applyMode();
@@ -166,7 +220,7 @@ export class ModeStateManager {
 
       // Save user preference locally (direct, no circuit breaker)
       try {
-        await chrome.storage.local.set({ underscore_mode: validatedMode });
+        await chrome.storage.local.set({ [MODE_STORAGE_KEY]: validatedMode });
       } catch (e) {
         this.logger.warn('[ModeState] Failed to save mode preference', e as Error);
       }

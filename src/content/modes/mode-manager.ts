@@ -81,6 +81,13 @@ export class ModeManager implements IModeManager {
     return await this.getCurrentMode().removeHighlight(id);
   }
 
+  async detachHighlightFromPage(id: string): Promise<void> {
+    const mode = this.getCurrentMode();
+    if ('detachFromPage' in mode && typeof mode.detachFromPage === 'function') {
+      await mode.detachFromPage(id);
+    }
+  }
+
   async restore(url: string): Promise<void> {
     // Only call restore if mode implements it (IPersistentMode)
     const mode = this.getCurrentMode();

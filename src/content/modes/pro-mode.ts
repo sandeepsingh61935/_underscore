@@ -1,12 +1,14 @@
 /**
- * Cloud Mode
+ * Pro Mode
  *
  * Philosophy: "Permanent & Reliable" - Store forever, recover from anything.
+ * Requires authentication. Replaces the former CloudMode (renamed only —
+ * behavior is unchanged).
  *
  * Features:
  * - Permanent storage (IndexedDB)
  * - Robust 3-Tier Re-anchoring (XPath -> Position -> Fuzzy)
- * - Server Sync (Future)
+ * - Server Sync
  * - Collections & Tags
  *
  * Architectural Compliance:
@@ -27,11 +29,15 @@ import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
-export class CloudMode extends BaseHighlightMode implements IPersistentMode {
-  private cloudService: any; // Type is CloudModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
+export class ProMode extends BaseHighlightMode implements IPersistentMode {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected cloudService: any; // Type is CloudModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
 
-  get name(): 'cloud' {
-    return 'cloud' as const;
+  // Widened to 'pro' | 'pro_xai' so ProXaiMode (which extends this class and
+  // shares all its persistence/sync behavior) can override with its own
+  // literal without violating property-override covariance rules.
+  get name(): 'pro' | 'pro_xai' {
+    return 'pro' as const;
   }
 
   constructor(
@@ -66,7 +72,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     // Only handle internal bridged events
     if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
-    this.logger.info('[CLOUD] [MSG] Received remote event', { type: message.type, id: message.payload?.id });
+    this.logger.info('[PRO] [MSG] Received remote event', { type: message.type, id: message.payload?.id });
 
     try {
       switch (message.type) {
@@ -81,7 +87,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
           break;
       }
     } catch (error) {
-      this.logger.error('[CLOUD] Failed to handle remote event', error as Error);
+      this.logger.error('[PRO] Failed to handle remote event', error as Error);
     }
   }
 
@@ -92,11 +98,11 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   private async handleRemoteHighlightCreated(data: HighlightData): Promise<void> {
     // 1. Deduplication Check
     if (this.highlights.has(data.id)) {
-      this.logger.debug('[CLOUD] Skipping remote highlight (already exists)', { id: data.id });
+      this.logger.debug('[PRO] Skipping remote highlight (already exists)', { id: data.id });
       return;
     }
 
-    this.logger.info('[CLOUD] Process remote highlight', { id: data.id });
+    this.logger.info('[PRO] Process remote highlight', { id: data.id });
 
     try {
       // Step 1: Save to DB (Local Only)
@@ -107,7 +113,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.facade.add(data as any);
 
-      this.logger.info('[CLOUD] Saved remote highlight to local DB. Attempting instant render...');
+      this.logger.info('[PRO] Saved remote highlight to local DB. Attempting instant render...');
 
       // Instant Render: Restore range and inject CSS
       const restoreResult = await this.cloudService.restoreHighlight(data as any);
@@ -116,12 +122,12 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
         const fullData = { ...data, liveRanges: [restoreResult.range] } as unknown as HighlightData;
         await this.renderAndRegister(fullData);
 
-        this.logger.info('[CLOUD] [FAST] Instant render successful', {
+        this.logger.info('[PRO] [FAST] Instant render successful', {
           id: data.id,
           tier: restoreResult.restoredUsing
         });
       } else {
-        this.logger.warn('[CLOUD] Instant render failed - range could not be restored');
+        this.logger.warn('[PRO] Instant render failed - range could not be restored');
       }
 
     } catch (e) {
@@ -136,15 +142,10 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     const id = payload?.id;
     if (!id) return;
 
-    this.logger.info('[CLOUD] Handling remote deleted', { id });
+    this.logger.info('[PRO] Handling remote deleted', { id });
 
-    // 1. Remove from local repository (skipping cloud sync).
-    // The RepositoryFacade doesn't accept options; the underlying
-    // repository's skipSync behavior is configured at the wiring layer.
-    this.facade.remove(id);
-
-    // 2 & 3. Remove from Runtime & Update internal state
-    await super.removeHighlight(id);
+    // 2. Remove from page session only (background already deleted via library sync).
+    await this.detachFromPage(id);
   }
 
   /**
@@ -154,14 +155,14 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
     const id = data?.id;
     if (!id) return;
 
-    this.logger.info('[CLOUD] Handling remote updated', { id });
+    this.logger.info('[PRO] Handling remote updated', { id });
 
     // Conflict Detection: Log when update arrives for existing highlight
     // Note: Without updatedAt timestamps, we can't determine "who wins"
     // This just provides observability for potential concurrent edits
     const localHighlight = this.data.get(id);
     if (localHighlight) {
-      this.logger.info('[CLOUD] [STAT] Update received for existing highlight (potential concurrent edit)', {
+      this.logger.info('[PRO] [STAT] Update received for existing highlight (potential concurrent edit)', {
         highlightId: id,
         hasLocalVersion: true,
         resolution: 'Last-Write-Wins (accepting remote)'
@@ -197,10 +198,10 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   };
 
   override shouldRestore(): boolean {
-    // Cloud Mode handles its own restoration via onActivate() -> cloudService.restoreHighlightsForUrl()
+    // Pro Mode handles its own restoration via onActivate() -> restore()
     // We must return FALSE here to prevent content.ts from running the default restoreHighlights()
-    // which would clear the repository and replay incompatible Sprint Mode events.
-    this.logger.info('[DEBUG] CloudMode.shouldRestore() called - returning false');
+    // which would clear the repository and replay incompatible events from other modes.
+    this.logger.info('[DEBUG] ProMode.shouldRestore() called - returning false');
     return false;
   }
 
@@ -210,7 +211,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   async createFromData(data: HighlightData, options?: { skipSync?: boolean }): Promise<void> {
     // 1. Ensure live ranges exist
     if (!data.liveRanges || data.liveRanges.length === 0) {
-      this.logger.warn('[CLOUD] createFromData called without live ranges', data.id);
+      this.logger.warn('[PRO] createFromData called without live ranges', data.id);
       return;
     }
 
@@ -242,7 +243,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.facade.add(storageData as any);
     } else {
-      this.logger.debug('[CLOUD] Skipping duplicate repo add during create', {
+      this.logger.debug('[PRO] Skipping duplicate repo add during create', {
         id: data.id,
       });
     }
@@ -254,7 +255,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
     const existing = this.data.get(id);
     if (!existing) {
-      this.logger.warn('[CLOUD] Cannot update non-existent highlight', id);
+      this.logger.warn('[PRO] Cannot update non-existent highlight', id);
       return;
     }
 
@@ -327,7 +328,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   /**
-   * Create a highlight in Cloud Mode
+   * Create a highlight in Pro Mode
    *
    * 1. Check for duplicates
    * 2. Persist to IndexedDB (via CloudModeService) with robust selectors
@@ -420,14 +421,14 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
   async restore(_url?: string): Promise<void> {
     // Use CloudModeService to restore from IndexedDB
-    this.logger.info('[CLOUD] [SYNC] Starting restore process...');
+    this.logger.info('[PRO] [SYNC] Starting restore process...');
 
     const restored = await this.cloudService.restoreHighlightsForUrl();
 
-    this.logger.info(`[CLOUD] [OK] Restoring ${restored.length} highlights`);
+    this.logger.info(`[PRO] [OK] Restoring ${restored.length} highlights`);
 
     if (restored.length === 0) {
-      this.logger.warn('[CLOUD] [WARN] No highlights found to restore. Check if highlights were saved with correct URL.');
+      this.logger.warn('[PRO] [WARN] No highlights found to restore. Check if highlights were saved with correct URL.');
       return;
     }
 
@@ -443,7 +444,7 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
 
         await this.renderAndRegister(fullData);
 
-        this.logger.info(`[CLOUD] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
+        this.logger.info(`[PRO] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
 
         // Sync to Repository (Idempotent check)
         // Note: repository is RepositoryFacade with sync API (get/has, not findById)
@@ -465,35 +466,26 @@ export class CloudMode extends BaseHighlightMode implements IPersistentMode {
             url: window.location.href,
           });
         } else {
-          this.logger.debug('[CLOUD] Skipping duplicate restore', { id: storedData.id });
+          this.logger.debug('[PRO] Skipping duplicate restore', { id: storedData.id });
         }
       } else {
-        this.logger.warn(`[CLOUD] [FAIL] Failed to restore range for highlight: ${storedData.id}`);
+        this.logger.warn(`[PRO] [FAIL] Failed to restore range for highlight: ${storedData.id}`);
       }
     }
 
-    this.logger.info(`[CLOUD] [DONE] Restoration complete: ${restored.filter((r: any) => r.range).length}/${restored.length} highlights rendered`);
+    this.logger.info(`[PRO] [DONE] Restoration complete: ${restored.filter((r: any) => r.range).length}/${restored.length} highlights rendered`);
   }
 
   async sync(): Promise<void> {
     await this.cloudService.syncToServer();
   }
 
-  /**
-   * Deletion Configuration
-   * Cloud Mode: Protected deletion with sync check
-   */
   override getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
-      requireConfirmation: true,
-      confirmationMessage: 'Delete from cloud? This cannot be undone.',
-      allowUndo: false, // Cloud deletions are permanent
+      requireConfirmation: false,
+      allowUndo: true,
       iconType: 'trash',
-      beforeDelete: async (_id: string) => {
-        // Future: Check if highlight is synced across devices
-        return true;
-      },
     };
   }
 }

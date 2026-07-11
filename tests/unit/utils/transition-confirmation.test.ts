@@ -22,13 +22,13 @@ describe('Transition Confirmation', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       const result = await requestTransitionConfirmation(
-        'local',
-        'cloud',
-        'Switching to Vault mode will archive all highlights permanently.'
+        'basic',
+        'pro',
+        'Switching to Pro mode will sync all highlights permanently.'
       );
 
       expect(result).toBe(true);
-      expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('cloud'));
+      expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('pro'));
     });
 
     it('should return false for user denial', async () => {
@@ -36,9 +36,9 @@ describe('Transition Confirmation', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
 
       const result = await requestTransitionConfirmation(
-        'cloud',
-        'ephemeral',
-        'Switching to Walk mode may result in data loss.'
+        'pro',
+        'basic',
+        'Switching to Basic mode may result in data loss.'
       );
 
       expect(result).toBe(false);
@@ -48,7 +48,7 @@ describe('Transition Confirmation', () => {
     it('should include transition reason in confirmation message', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      await requestTransitionConfirmation('cloud', 'ephemeral', 'Data may be lost!');
+      await requestTransitionConfirmation('pro', 'basic', 'Data may be lost!');
 
       expect(window.confirm).toHaveBeenCalledWith(
         expect.stringContaining('Data may be lost')
@@ -60,7 +60,7 @@ describe('Transition Confirmation', () => {
     it('should be callable from guard functions', async () => {
       // Simulate guard calling confirmation
       const guardFunction = async () => {
-        return await requestTransitionConfirmation('local', 'cloud', 'Confirm archival');
+        return await requestTransitionConfirmation('basic', 'pro', 'Confirm sync');
       };
 
       vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -76,8 +76,8 @@ describe('Transition Confirmation', () => {
       });
 
       const result = await requestTransitionConfirmation(
-        'local',
-        'cloud',
+        'basic',
+        'pro',
         'Test message'
       );
 
@@ -90,7 +90,7 @@ describe('Transition Confirmation', () => {
     it('should handle empty reason string', async () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      const result = await requestTransitionConfirmation('ephemeral', 'local', '');
+      const result = await requestTransitionConfirmation('basic', 'pro', '');
 
       expect(result).toBe(true);
       expect(window.confirm).toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe('Transition Confirmation', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       const longReason = 'A'.repeat(500);
-      const result = await requestTransitionConfirmation('local', 'cloud', longReason);
+      const result = await requestTransitionConfirmation('basic', 'pro', longReason);
 
       expect(result).toBe(true);
     });

@@ -36,7 +36,7 @@ export abstract class BaseHighlightMode {
     this.facade = facade;
   }
 
-  abstract get name(): 'ephemeral' | 'local' | 'cloud' | 'ai';
+  abstract get name(): 'basic' | 'pro' | 'pro_xai';
 
   async onActivate(): Promise<void> {
     this.logger.info(`${this.name} mode activated`);
@@ -117,6 +117,15 @@ export abstract class BaseHighlightMode {
     this.data.delete(id);
 
     this.logger.info('Highlight removed', { id });
+  }
+
+  /**
+   * Remove highlight visuals and session state without persisting removal.
+   * Caller must have already deleted via background HighlightDeleteService.
+   */
+  async detachFromPage(id: string): Promise<void> {
+    await this.removeHighlight(id);
+    this.facade.evict(id);
   }
 
   getHighlight(id: string): HighlightData | null {

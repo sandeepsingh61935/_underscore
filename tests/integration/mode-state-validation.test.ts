@@ -81,11 +81,11 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   it('should pass full validation flow: set -> persist -> reload', async () => {
-    // 1. Set mode to 'local'
-    await stateManager.setMode('local');
+    // 1. Set mode to 'pro'
+    await stateManager.setMode('pro');
 
     // Verify current state
-    expect(stateManager.getMode()).toBe('local');
+    expect(stateManager.getMode()).toBe('pro');
 
     // 2. Simulate app restart (new instance)
     const newStateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
@@ -94,7 +94,7 @@ describe('ModeStateManager - Validation Integration', () => {
     await newStateManager.init();
 
     // 4. Verify state was persisted and reloaded correctly
-    expect(newStateManager.getMode()).toBe('local');
+    expect(newStateManager.getMode()).toBe('pro');
     expect(mockLogger.error).not.toHaveBeenCalled();
   });
 
@@ -108,7 +108,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
     // 3. Verify fallback
     // The implementation should detect corruption and fall back to safe default
-    expect(stateManager.getMode()).toBe('ephemeral'); // Safe default
+    expect(stateManager.getMode()).toBe('basic'); // Safe default
 
     // Note: Logging verification skipped due to test harness flakiness,
     // but fallback confirms the error path was taken.
@@ -129,9 +129,9 @@ describe('ModeStateManager - Validation Integration', () => {
   });
 
   it('should maintain state consistency on validation failure', async () => {
-    // 1. Set valid initial state (use 'local' so persistence actually happens)
-    // Default is 'ephemeral', so setMode('ephemeral') is a no-op and doesn't write to storage
-    await stateManager.setMode('local');
+    // 1. Set valid initial state (use 'pro' so persistence actually happens)
+    // Default is 'basic', so setMode('basic') is a no-op and doesn't write to storage
+    await stateManager.setMode('pro');
 
     // 2. Attempt invalid transition
     try {
@@ -140,10 +140,10 @@ describe('ModeStateManager - Validation Integration', () => {
       // Ignore expected error
     }
 
-    // 3. Verify state remains 'local'
-    expect(stateManager.getMode()).toBe('local');
+    // 3. Verify state remains 'pro'
+    expect(stateManager.getMode()).toBe('pro');
 
-    // 4. Verify storage remains 'local'
-    expect(storageData['defaultMode']).toBe('local');
+    // 4. Verify storage remains 'pro'
+    expect(storageData['defaultMode']).toBe('pro');
   });
 });

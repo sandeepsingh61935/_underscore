@@ -68,20 +68,22 @@ export async function migrateV1ToV2(
 }
 
 /**
- * V1 mode name → V2 mode name.
+ * V1 mode name → current (v3) ModeType.
  *
- * The keys of this map are intentionally V1 names — they are the
- * input vocabulary this migration translates FROM. Do not rename
- * the keys; rename the values if the V2 vocabulary shifts.
+ * The keys of this map are intentionally V1 motif names — they are the
+ * input vocabulary this migration translates FROM. The v2 intermediate
+ * vocabulary (ephemeral/local/cloud/ai) was retired by the v3 mode
+ * consolidation, so this maps straight to basic/pro/pro_xai (see also
+ * migrations/v2-to-v3.ts, which handles the v2-vocabulary equivalents).
  */
 const V1_TO_V2_MODE: Record<string, ModeType> = {
-  walk: 'ephemeral',
-  sprint: 'local',
-  vault: 'cloud',
-  neural: 'ai',
+  walk: 'basic',
+  sprint: 'basic',
+  vault: 'pro',
+  neural: 'pro_xai',
 };
 
-const V2_DEFAULT_MODE: ModeType = 'ephemeral';
+const V2_DEFAULT_MODE: ModeType = 'basic';
 
 /**
  * Validate and normalize mode value.

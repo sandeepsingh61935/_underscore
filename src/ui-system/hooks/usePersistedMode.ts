@@ -2,65 +2,107 @@
  * @file usePersistedMode.ts
  * @description App-wide hook for persisting and syncing the active mode.
  *
- * Single source of truth for mode state across all popup views.
+ * Single source of truth for mode state across popup and content scripts.
  * - Reads initial value from chrome.storage.local on mount
  * - Writes on every change (optimistic update first)
- * - Reacts to external changes from Settings page or other popup windows
- *   via chrome.storage.onChanged listener
+ * - Broadcasts SET_MODE to content scripts on each persist
+ * - Promotes basic → pro on login / session restore
+ * - Reacts to external changes via chrome.storage.onChanged listener
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import {
+    AUTH_REQUIRED_MODES,
+    DEFAULT_MODE,
+    MODE_STORAGE_KEY,
+    VALID_MODES,
+} from '@/shared/constants/mode-storage';
+import { normalizeMode } from '@/shared/utils/normalize-mode';
+import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 
-const STORAGE_KEY = 'underscore-current-mode';
-const DEFAULT_MODE: ModeType = 'ephemeral';
-const VALID_MODES: ModeType[] = ['ephemeral', 'local', 'cloud', 'ai'];
-const AUTH_REQUIRED_MODES: ModeType[] = ['cloud', 'ai'];
+function isChromeStorageAvailable(): boolean {
+    return typeof chrome !== 'undefined'
+        && typeof chrome.storage?.local?.get === 'function'
+        && typeof chrome.storage?.onChanged?.addListener === 'function';
+}
 
 export function usePersistedMode(isAuthenticated: boolean) {
     const [currentMode, setCurrentMode] = useState<ModeType>(DEFAULT_MODE);
     const [modeReady, setModeReady] = useState(false);
-    
-    // Use a ref for auth state so listeners and optimistic updates don't need to be recreated or cause re-runs
+
     const authRef = useRef(isAuthenticated);
+    const wasAuthenticatedRef = useRef(isAuthenticated);
+
     useEffect(() => {
         authRef.current = isAuthenticated;
     }, [isAuthenticated]);
 
-    // Handle initial read and external changes
+    const applyAndPersistMode = useCallback(async (mode: ModeType): Promise<void> => {
+        if (!VALID_MODES.includes(mode)) return;
+        if (!authRef.current && AUTH_REQUIRED_MODES.includes(mode)) return;
+        if (authRef.current && mode === 'basic') return;
+
+        setCurrentMode(mode);
+
+        if (!isChromeStorageAvailable()) {
+            return;
+        }
+
+        try {
+            await chrome.storage.local.set({ [MODE_STORAGE_KEY]: mode });
+            await broadcastModeToTabs(mode);
+        } catch (err) {
+            console.error('[usePersistedMode] Failed to persist mode:', err);
+        }
+    }, []);
+
+    // Initial read + external storage changes
     useEffect(() => {
         let mounted = true;
 
-        // 1. Read initial mode from chrome.storage.local exactly once on mount
-        chrome.storage.local.get(STORAGE_KEY).then(data => {
+        if (!isChromeStorageAvailable()) {
+            const resolved: ModeType = authRef.current ? 'pro' : DEFAULT_MODE;
+            setCurrentMode(resolved);
+            setModeReady(true);
+            return () => {
+                mounted = false;
+            };
+        }
+
+        chrome.storage.local.get(MODE_STORAGE_KEY).then((data) => {
             if (!mounted) return;
 
-            const saved = data[STORAGE_KEY] as ModeType | undefined;
-            if (saved && VALID_MODES.includes(saved)) {
-                // Auth guard: clamp auth-required modes if user is not logged in
-                const clamped = !authRef.current && AUTH_REQUIRED_MODES.includes(saved)
-                    ? DEFAULT_MODE
-                    : saved;
-                setCurrentMode(clamped);
+            // Raw value may be a legacy (pre-v3) mode name; normalizeMode()
+            // translates it to basic/pro/pro_xai (falls back to default).
+            const saved = normalizeMode(data[MODE_STORAGE_KEY]);
+            let resolved: ModeType = saved;
+
+            if (!authRef.current && AUTH_REQUIRED_MODES.includes(saved)) {
+                resolved = DEFAULT_MODE;
             }
+
+            // Session restore: signed-in users should not stay on default basic
+            if (authRef.current && resolved === 'basic') {
+                resolved = 'pro';
+                void applyAndPersistMode('pro');
+            }
+
+            setCurrentMode(resolved);
             setModeReady(true);
         }).catch(() => {
             if (mounted) setModeReady(true);
         });
 
-        // 2. React to external changes (Settings page, another popup window)
         const listener = (
             changes: Record<string, chrome.storage.StorageChange>,
             area: string
         ) => {
-            if (area !== 'local' || !changes[STORAGE_KEY]) return;
+            if (area !== 'local' || !changes[MODE_STORAGE_KEY]) return;
 
-            const newMode = changes[STORAGE_KEY].newValue as ModeType;
-            if (VALID_MODES.includes(newMode)) {
-                // Auth guard for incoming external changes
-                if (!authRef.current && AUTH_REQUIRED_MODES.includes(newMode)) return;
-                setCurrentMode(newMode);
-            }
+            const newMode = normalizeMode(changes[MODE_STORAGE_KEY].newValue);
+            if (!authRef.current && AUTH_REQUIRED_MODES.includes(newMode)) return;
+            setCurrentMode(newMode);
         };
 
         chrome.storage.onChanged.addListener(listener);
@@ -69,36 +111,31 @@ export function usePersistedMode(isAuthenticated: boolean) {
             mounted = false;
             chrome.storage.onChanged.removeListener(listener);
         };
-    }, []); // Empty dependency array — runs once on mount!
+    }, [applyAndPersistMode]);
 
-    // Handle authentication drops dynamically
+    // Logout: downgrade auth-required modes to basic
     useEffect(() => {
         if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(currentMode)) {
-            setCurrentMode(DEFAULT_MODE);
-            // Fire-and-forget persist (silent degradation on error)
-            chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_MODE }).catch(err => {
-                console.error('[usePersistedMode] Failed to reset mode on logout:', err);
-            });
+            void applyAndPersistMode(DEFAULT_MODE);
         }
-    }, [isAuthenticated, currentMode]);
+    }, [isAuthenticated, currentMode, applyAndPersistMode]);
 
-    /**
-     * Persist a mode change. Updates state optimistically, then writes to storage.
-     * Auth-required modes are silently blocked when user is not authenticated.
-     */
-    const persistMode = useCallback(async (mode: ModeType): Promise<void> => {
-        if (!VALID_MODES.includes(mode)) return;
-        if (!authRef.current && AUTH_REQUIRED_MODES.includes(mode)) return;
+    // Login: promote basic → pro
+    useEffect(() => {
+        const wasAuth = wasAuthenticatedRef.current;
+        wasAuthenticatedRef.current = isAuthenticated;
 
-        // Optimistic update
-        setCurrentMode(mode);
-
-        try {
-            await chrome.storage.local.set({ [STORAGE_KEY]: mode });
-        } catch (err) {
-            console.error('[usePersistedMode] Failed to persist mode:', err);
+        if (isAuthenticated && !wasAuth && currentMode === 'basic') {
+            void applyAndPersistMode('pro');
         }
-    }, []);
+    }, [isAuthenticated, currentMode, applyAndPersistMode]);
+
+    const persistMode = useCallback(
+        async (mode: ModeType): Promise<void> => {
+            await applyAndPersistMode(mode);
+        },
+        [applyAndPersistMode]
+    );
 
     return { currentMode, modeReady, persistMode };
 }

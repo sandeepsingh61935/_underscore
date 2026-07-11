@@ -1,4 +1,4 @@
-import { Archive, Brain, Circle, Zap } from 'lucide-react';
+import { Archive, Brain, Circle } from 'lucide-react';
 import React from 'react';
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
@@ -15,10 +15,9 @@ interface ModeCardProps {
 }
 
 const MODE_ICONS: Record<ModeType, React.ReactNode> = {
-    ephemeral: <Circle size={14} />,
-    local: <Zap size={14} />,
-    cloud: <Archive size={14} />,
-    ai: <Brain size={14} />,
+    basic: <Circle size={14} />,
+    pro: <Archive size={14} />,
+    pro_xai: <Brain size={14} />,
 };
 
 /**

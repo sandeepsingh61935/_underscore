@@ -8,19 +8,18 @@ import { render, screen } from '@testing-library/react';
 import { ModeSelector } from '../../../src/ui-system/components/composed/ModeSelector';
 
 describe('V2 ModeSelector', () => {
-    it('renders one card per V2 mode (ephemeral, local, cloud, ai)', () => {
+    it('renders one card per V3 mode (basic, pro, pro_xai)', () => {
         render(
-            <ModeSelector currentModeId="ephemeral" onSelect={vi.fn()} />
+            <ModeSelector currentModeId="basic" onSelect={vi.fn()} />
         );
-        expect(screen.getByText('Focus')).toBeInTheDocument();
-        expect(screen.getByText('Capture')).toBeInTheDocument();
-        expect(screen.getByText('Memory')).toBeInTheDocument();
-        expect(screen.getByText('Neural')).toBeInTheDocument();
+        expect(screen.getByText('Basic')).toBeInTheDocument();
+        expect(screen.getByText('Pro')).toBeInTheDocument();
+        expect(screen.getByText('10x-Pro')).toBeInTheDocument();
     });
 
     it('does not use Style C or MD3 utility classes', () => {
         const { baseElement } = render(
-            <ModeSelector currentModeId="local" onSelect={vi.fn()} />
+            <ModeSelector currentModeId="basic" onSelect={vi.fn()} />
         );
         const html = baseElement.innerHTML;
         expect(html).not.toMatch(/bg-card/);
@@ -35,32 +34,32 @@ describe('V2 ModeSelector', () => {
 
     it('forwards currentModeId as active card', () => {
         render(
-            <ModeSelector currentModeId="cloud" onSelect={vi.fn()} />
+            <ModeSelector currentModeId="pro" onSelect={vi.fn()} />
         );
-        const memoryCard = screen.getByText('Memory').closest('button');
-        expect(memoryCard).toHaveAttribute('aria-pressed', 'true');
+        const proCard = screen.getByText('Pro').closest('button');
+        expect(proCard).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('invokes onSelect with the mode id when a card is clicked', () => {
         const onSelect = vi.fn();
         render(
-            <ModeSelector currentModeId="ephemeral" onSelect={onSelect} />
+            <ModeSelector currentModeId="pro" onSelect={onSelect} />
         );
-        screen.getByText('Capture').closest('button')!.click();
-        expect(onSelect).toHaveBeenCalledWith('local');
+        screen.getByText('Basic').closest('button')!.click();
+        expect(onSelect).toHaveBeenCalledWith('basic');
     });
 
-    it('marks cloud and ai as locked when unauthenticated', () => {
+    it('marks pro and pro_xai as locked when unauthenticated', () => {
         render(
             <ModeSelector
-                currentModeId="ephemeral"
+                currentModeId="basic"
                 onSelect={vi.fn()}
                 isAuthenticated={false}
             />
         );
-        const memoryCard = screen.getByText('Memory').closest('button');
-        const neuralCard = screen.getByText('Neural').closest('button');
-        expect(memoryCard).toHaveAttribute('aria-disabled', 'true');
-        expect(neuralCard).toHaveAttribute('aria-disabled', 'true');
+        const proCard = screen.getByText('Pro').closest('button');
+        const proXaiCard = screen.getByText('10x-Pro').closest('button');
+        expect(proCard).toHaveAttribute('aria-disabled', 'true');
+        expect(proXaiCard).toHaveAttribute('aria-disabled', 'true');
     });
 });

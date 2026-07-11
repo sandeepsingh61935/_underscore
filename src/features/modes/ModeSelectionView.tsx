@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-syntax */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import type { ModeDefinition } from '@/features/modes/registry';
 import { modeRegistry } from '@/features/modes/registry';
@@ -22,17 +22,22 @@ export function ModeSelectionView({
   initialMode,
   isAuthenticated = false,
 }: ModeSelectionViewProps = {}): React.ReactElement {
-  const [sel, setSel] = useState<ModeType>(initialMode ?? 'local');
+  const [sel, setSel] = useState<ModeType>(initialMode ?? 'basic');
+
+  useEffect(() => {
+    if (isAuthenticated && sel === 'basic') {
+      setSel('pro');
+    }
+  }, [isAuthenticated, sel]);
 
   const allModes = [
-    modeRegistry.get('ephemeral'),
-    modeRegistry.get('local'),
-    modeRegistry.get('cloud'),
-    modeRegistry.get('ai'),
+    modeRegistry.get('basic'),
+    modeRegistry.get('pro'),
+    modeRegistry.get('pro_xai'),
   ].filter((m): m is ModeDefinition => m !== undefined);
 
-  const localModes = allModes.filter((m) => m.id === 'ephemeral' || m.id === 'local');
-  const cloudModes = allModes.filter((m) => m.id === 'cloud' || m.id === 'ai');
+  const localModes = isAuthenticated ? [] : allModes.filter((m) => m.family === 'device');
+  const cloudModes = allModes.filter((m) => m.family === 'cloud');
 
   const handleContinue = (): void => {
     const selectedMode = modeRegistry.get(sel);
@@ -63,15 +68,19 @@ export function ModeSelectionView({
           Choose how <em>_underscore</em> remembers.
         </div>
         <div className="u-serif" style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6, fontStyle: "italic" }}>
-          Two families. Four modes. Switchable anytime.
+          Two families. Three modes. Switchable anytime.
         </div>
       </div>
       <div className="u-rule" style={{ margin: "12px 18px 0" }} />
 
       <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>On this device</div>
-      {localModes.map((m) => (
+      {localModes.length > 0 ? localModes.map((m) => (
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
-      ))}
+      )) : (
+        <div className="u-mono" style={{ padding: '6px 18px 10px', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+          Signed in — switch between Pro and 10x-Pro below.
+        </div>
+      )}
       <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>In the cloud</div>
       {cloudModes.map((m) => (
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
@@ -98,7 +107,7 @@ function ModeRow({ m, active, onClick }: { m: ModeDefinition; active: boolean; o
           <span style={{ color: m.accent, fontSize: 14, lineHeight: 1 }}>{m.motif}</span>
           <div className="u-serif" style={{ fontSize: 17 }}>{m.name}</div>
           {m.signin && <span className="u-mono" style={{ fontSize: 9, color: "var(--ink-3)", letterSpacing: "0.14em", textTransform: "uppercase" }}>sign-in</span>}
-          {m.ttl && <span className="u-mono" style={{ fontSize: 9, color: "var(--accent)", letterSpacing: "0.14em", textTransform: "uppercase" }}>24h ttl</span>}
+          {m.ttlConfigurable && <span className="u-mono" style={{ fontSize: 9, color: "var(--accent)", letterSpacing: "0.14em", textTransform: "uppercase" }}>configurable ttl</span>}
         </div>
         <span className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>
           {active ? "●" : "○"}

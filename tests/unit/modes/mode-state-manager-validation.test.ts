@@ -67,7 +67,7 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('setMode() validation', () => {
     it('should accept valid mode names', async () => {
       // Arrange
-      const validModes = ['ephemeral', 'local', 'cloud'] as const;
+      const validModes = ['basic', 'pro', 'pro_xai'] as const;
 
       // Act & Assert
       for (const mode of validModes) {
@@ -216,9 +216,9 @@ describe('ModeStateManager - Validation Integration', () => {
         // Assert
         const validationError = error as StateValidationError;
         const contextStr = JSON.stringify(validationError.context);
-        expect(contextStr).toContain('ephemeral');
-        expect(contextStr).toContain('local');
-        expect(contextStr).toContain('cloud');
+        expect(contextStr).toContain('basic');
+        expect(contextStr).toContain('pro');
+        expect(contextStr).toContain('pro_xai');
       }
     });
   });
@@ -226,23 +226,23 @@ describe('ModeStateManager - Validation Integration', () => {
   describe('Edge cases and boundary conditions', () => {
     it('should handle rapid mode switches', async () => {
       // Arrange
-      const modes = ['ephemeral', 'local', 'cloud', 'ephemeral', 'local'] as const;
+      const modes = ['basic', 'pro', 'pro_xai', 'basic', 'pro'] as const;
 
       // Act
       const promises = modes.map((mode) => stateManager.setMode(mode));
       await Promise.all(promises);
 
-      // Assert - Last one should win (sprint) or at least be valid
-      expect(['ephemeral', 'local', 'cloud']).toContain(stateManager.getMode());
+      // Assert - Last one should win (pro) or at least be valid
+      expect(['basic', 'pro', 'pro_xai']).toContain(stateManager.getMode());
     });
 
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
-      await stateManager.setMode('cloud');
+      await stateManager.setMode('pro_xai');
       mockEventBus.emit.mockClear();
 
       // Act
-      await stateManager.setMode('cloud');
+      await stateManager.setMode('pro_xai');
 
       // Assert - No intent should be sent
       expect(mockEventBus.emit).not.toHaveBeenCalled();

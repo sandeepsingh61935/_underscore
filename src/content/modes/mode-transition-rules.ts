@@ -3,10 +3,9 @@
  * @description Defines valid mode transitions and their rules
  *
  * State machine rules for mode switching:
- * - Ephemeral (Focus):   Ephemeral highlighting (default)
- * - Local (Capture): Persistent highlighting
- * - Cloud (Memory):  Archived/permanent highlighting
- * - AI:         AI-powered connections across highlights
+ * - Basic:   On-device highlighting, configurable TTL (default 24h)
+ * - Pro:     Signed-in, synced highlighting (permanent, no expiry)
+ * - Pro-XAI: Everything in Pro, plus AI summaries/synthesis/Q&A
  *
  * Transition matrix enforces business rules and user experience.
  */
@@ -32,158 +31,98 @@ export interface TransitionRule {
 }
 
 /**
- * Complete transition matrix (4x4 = 16 transitions)
+ * Complete transition matrix (3x3 = 9 transitions)
  *
  * Design decisions:
  * - All transitions are allowed (UX flexibility)
- * - Destructive transitions require confirmation
+ * - Destructive/auth-gated transitions require confirmation
  * - Same-mode transitions are no-ops
+ * - Basic -> Pro / Pro-XAI requires authentication (enforced by guard +
+ *   AUTH_REQUIRED_MODES elsewhere; login always lands on Pro)
  */
 export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule>> = {
-  ephemeral: {
-    ephemeral: {
-      from: 'ephemeral',
-      to: 'ephemeral',
+  basic: {
+    basic: {
+      from: 'basic',
+      to: 'basic',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Focus mode (session-only highlighting)',
+      reason: 'Already in Basic mode (on-device highlighting)',
     },
-    local: {
-      from: 'ephemeral',
-      to: 'local',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Your Focus highlights will be saved to Capture',
-    },
-    cloud: {
-      from: 'ephemeral',
-      to: 'cloud',
+    pro: {
+      from: 'basic',
+      to: 'pro',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Focus highlights will be saved to Memory for long-term recall',
+      reason: 'Your Basic highlights will be synced to Pro. Requires sign-in.',
       guard: async () => {
-        // Future: Check if user has unsaved highlights
+        // Future: Check authentication status
         return true;
       },
     },
-    ai: {
-      from: 'ephemeral',
-      to: 'ai',
+    pro_xai: {
+      from: 'basic',
+      to: 'pro_xai',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to AI mode enables AI-powered organization. Requires authentication.',
+      reason: 'Switching to 10x-Pro enables AI-powered organization. Requires sign-in.',
       guard: async () => {
         // Future: Check authentication status
         return true;
       },
     },
   },
-  local: {
-    ephemeral: {
-      from: 'local',
-      to: 'ephemeral',
+  pro: {
+    basic: {
+      from: 'pro',
+      to: 'basic',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Capture collections will be copied into this Focus session',
+      reason: 'Your Pro highlights will be copied into Basic (on-device) mode',
       guard: async () => {
-        // Future: Warn about pending highlights
+        // Future: Warn about losing sync
         return true;
       },
     },
-    local: {
-      from: 'local',
-      to: 'local',
+    pro: {
+      from: 'pro',
+      to: 'pro',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Already in Capture mode (persistent highlighting)',
+      reason: 'Already in Pro mode (synced highlighting)',
     },
-    cloud: {
-      from: 'local',
-      to: 'cloud',
+    pro_xai: {
+      from: 'pro',
+      to: 'pro_xai',
       allowed: true,
-      requiresConfirmation: true,
-      reason: 'Your Capture highlights will be saved to Memory for long-term recall',
-      guard: async () => {
-        // Future: Confirm cloud archival
-        return true;
-      },
-    },
-    ai: {
-      from: 'local',
-      to: 'ai',
-      allowed: true,
-      requiresConfirmation: true,
-      reason: 'Switching to AI mode enables AI-powered organization.',
-      guard: async () => {
-        return true;
-      },
+      requiresConfirmation: false,
+      reason: 'Switching to 10x-Pro adds AI summaries, synthesis, and Q&A',
     },
   },
-  cloud: {
-    ephemeral: {
-      from: 'cloud',
-      to: 'ephemeral',
+  pro_xai: {
+    basic: {
+      from: 'pro_xai',
+      to: 'basic',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Your Memory highlights will be copied into this Focus session',
-      guard: async () => {
-        // Future: Warn about data loss
-        return true;
-      },
-    },
-    local: {
-      from: 'cloud',
-      to: 'local',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Your Memory highlights will be copied into Capture mode',
-    },
-    cloud: {
-      from: 'cloud',
-      to: 'cloud',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Already in Memory mode (long-term knowledge base)',
-    },
-    ai: {
-      from: 'cloud',
-      to: 'ai',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Switching to AI will connect your Memory highlights with AI-powered insights',
-    },
-  },
-  ai: {
-    ephemeral: {
-      from: 'ai',
-      to: 'ephemeral',
-      allowed: true,
-      requiresConfirmation: true,
-      reason: 'Switching to Ephemeral mode will disable AI features. Data will be preserved.',
+      reason: 'Switching to Basic mode will disable sync and AI features. Data will be preserved.',
       guard: async () => {
         return true;
       },
     },
-    local: {
-      from: 'ai',
-      to: 'local',
+    pro: {
+      from: 'pro_xai',
+      to: 'pro',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Local mode for persistent highlighting',
+      reason: 'Switching to Pro mode will disable AI features. Sync is preserved.',
     },
-    cloud: {
-      from: 'ai',
-      to: 'cloud',
+    pro_xai: {
+      from: 'pro_xai',
+      to: 'pro_xai',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Cloud mode for archived storage',
-    },
-    ai: {
-      from: 'ai',
-      to: 'ai',
-      allowed: true,
-      requiresConfirmation: false,
-      reason: 'Already in AI mode (AI-powered organization)',
+      reason: 'Already in 10x-Pro mode (synced + AI-powered organization)',
     },
   },
 };

@@ -13,6 +13,7 @@
  */
 import React from 'react';
 
+import { formatRemainingTtlCompact } from '@/shared/utils/format-remaining-ttl';
 import { TTL_STATE_STYLES, ttlState } from '../../utils/ttlState';
 
 export interface TTLBadgeProps {
@@ -22,9 +23,7 @@ export interface TTLBadgeProps {
 
 export function TTLBadge({ ms, total = 24 * 60 * 60 * 1000 }: TTLBadgeProps): React.ReactElement {
     const pct = Math.max(0, Math.min(1, ms / total));
-    const h = Math.floor(ms / 3_600_000);
-    const mn = Math.floor((ms % 3_600_000) / 60_000);
-    const label = h >= 1 ? `${h}h ${mn}m` : `${mn}m`;
+    const label = formatRemainingTtlCompact(ms);
     const s = TTL_STATE_STYLES[ttlState(ms)];
     const state = ttlState(ms);
     return (

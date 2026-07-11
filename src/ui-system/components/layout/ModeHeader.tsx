@@ -11,8 +11,8 @@ export interface ModeHeaderProps {
   onBack?: () => void;
 }
 
-export function ModeHeader({ modeId = MODE_NAMES.LOCAL, compact = false, onSwitch, backLabel, onBack }: ModeHeaderProps): React.ReactElement {
-  const m = modeRegistry.get(modeId) || modeRegistry.get(MODE_NAMES.LOCAL)!;
+export function ModeHeader({ modeId = MODE_NAMES.BASIC, compact = false, onSwitch, backLabel, onBack }: ModeHeaderProps): React.ReactElement {
+  const m = modeRegistry.get(modeId) || modeRegistry.get(MODE_NAMES.BASIC)!;
   
   return (
     <div style={{
@@ -34,7 +34,7 @@ export function ModeHeader({ modeId = MODE_NAMES.LOCAL, compact = false, onSwitc
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: 99, background: m.accent }} />
           <span className="u-mono" style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-2)" }}>
-            {m.name} · {m.family === "local" ? "on this device" : "cloud"}
+            {m.name} · {m.family === "device" ? "on this device" : "cloud"}
           </span>
         </div>
       )}

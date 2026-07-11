@@ -19,7 +19,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 describe('Mode Transition Rules', () => {
   describe('Transition Matrix Completeness', () => {
     it('should include all 9 combinations (3x3 matrix)', () => {
-      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
+      const modes: ModeType[] = ['basic', 'pro', 'pro_xai'];
       const expectedTransitions = modes.length * modes.length; // 3x3 = 9
 
       let actualTransitions = 0;
@@ -35,7 +35,7 @@ describe('Mode Transition Rules', () => {
     });
 
     it('should have no undefined transitions', () => {
-      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
+      const modes: ModeType[] = ['basic', 'pro', 'pro_xai'];
 
       for (const from of modes) {
         for (const to of modes) {
@@ -49,32 +49,32 @@ describe('Mode Transition Rules', () => {
   });
 
   describe('Specific Transition Rules', () => {
-    it('should allow walk → sprint without confirmation', () => {
-      const rule = getTransitionRule('ephemeral', 'local');
+    it('should allow basic → pro with confirmation warning', () => {
+      const rule = getTransitionRule('basic', 'pro');
+
+      expect(rule.allowed).toBe(true);
+      expect(rule.requiresConfirmation).toBe(true);
+      expect(rule.reason.toLowerCase()).toContain('sync');
+    });
+
+    it('should allow pro → pro_xai without confirmation', () => {
+      const rule = getTransitionRule('pro', 'pro_xai');
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(false);
-      expect(rule.reason.toLowerCase()).toContain('focus');
+      expect(rule.reason).toContain('AI');
     });
 
-    it('should allow sprint → vault with confirmation warning', () => {
-      const rule = getTransitionRule('local', 'cloud');
+    it('should allow pro_xai → basic with data preservation warning', () => {
+      const rule = getTransitionRule('pro_xai', 'basic');
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(true);
-      expect(rule.reason).toContain('Capture');
-    });
-
-    it('should allow vault → walk with data loss warning', () => {
-      const rule = getTransitionRule('cloud', 'ephemeral');
-
-      expect(rule.allowed).toBe(true);
-      expect(rule.requiresConfirmation).toBe(true);
-      expect(rule.reason).toContain('Memory');
+      expect(rule.reason).toContain('preserved');
     });
 
     it('should handle same mode transition as no-op', () => {
-      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
+      const modes: ModeType[] = ['basic', 'pro', 'pro_xai'];
 
       for (const mode of modes) {
         const rule = getTransitionRule(mode, mode);
@@ -88,18 +88,18 @@ describe('Mode Transition Rules', () => {
   describe('Transition Helpers', () => {
     it('should correctly determine if transition is allowed via canTransition', () => {
       // Allowed transitions
-      expect(canTransition('ephemeral', 'local')).toBe(true);
-      expect(canTransition('local', 'cloud')).toBe(true);
-      expect(canTransition('cloud', 'ephemeral')).toBe(true);
+      expect(canTransition('basic', 'pro')).toBe(true);
+      expect(canTransition('pro', 'pro_xai')).toBe(true);
+      expect(canTransition('pro_xai', 'basic')).toBe(true);
 
       // Same mode (no-op, but allowed)
-      expect(canTransition('ephemeral', 'ephemeral')).toBe(true);
+      expect(canTransition('basic', 'basic')).toBe(true);
     });
 
     it('should return detailed reason for blocked transitions', () => {
       // If we ever block a transition (future requirement), the reason should be clear
       // For now, all transitions are allowed, so we verify reason strings are meaningful
-      const modes: ModeType[] = ['ephemeral', 'local', 'cloud'];
+      const modes: ModeType[] = ['basic', 'pro', 'pro_xai'];
 
       for (const from of modes) {
         for (const to of modes) {
@@ -113,7 +113,7 @@ describe('Mode Transition Rules', () => {
 
   describe('Guard Execution (Future)', () => {
     it('should define guard functions for transitions requiring confirmation', () => {
-      const rule = getTransitionRule('local', 'cloud');
+      const rule = getTransitionRule('basic', 'pro');
 
       // Guard should exist for confirmation-required transitions
       if (rule.requiresConfirmation) {

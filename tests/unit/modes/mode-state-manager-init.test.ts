@@ -2,15 +2,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ModeStateManager } from '@/content/modes/mode-state-manager';
 import { ModeManager } from '@/content/modes/mode-manager';
 import { EventBus } from '@/shared/utils/event-bus';
+import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type { ILogger } from '@/shared/utils/logger';
 
 describe('ModeStateManager - Init', () => {
   it('should activate a mode on init', async () => {
+    global.chrome = {
+      storage: {
+        local: { get: vi.fn().mockResolvedValue({}), set: vi.fn() },
+        onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+      },
+    } as any;
+
     const eventBus = new EventBus();
     const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() };
     const modeManager = new ModeManager(eventBus, logger as any);
     modeManager.registerMode({
-      name: 'ephemeral',
+      name: 'basic',
       onActivate: vi.fn(),
       onDeactivate: vi.fn(),
       createHighlight: vi.fn(),
@@ -40,7 +48,7 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
       set: vi.fn().mockResolvedValue(undefined),
     };
     global.chrome = {
-      storage: { local: mockStorage },
+      storage: { local: mockStorage, onChanged: { addListener: vi.fn(), removeListener: vi.fn() } },
       runtime: { id: 'test-id', sendMessage: vi.fn().mockResolvedValue(undefined) },
     } as any;
   });
@@ -60,11 +68,11 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
     } as any;
 
     const manager = new ModeStateManager(eventBus as any, modeManager, logger);
-    await manager.setMode('local');
+    await manager.setMode('pro');
 
     // Direct call — one storage.set per setMode, no circuit-breaker gating
     expect(mockStorage.set).toHaveBeenCalledTimes(1);
-    expect(mockStorage.set).toHaveBeenCalledWith({ underscore_mode: 'local' });
+    expect(mockStorage.set).toHaveBeenCalledWith({ [MODE_STORAGE_KEY]: 'pro' });
   });
 
   it('should still call storage.set even after a prior failure (no circuit-breaker open state)', async () => {
@@ -85,10 +93,10 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
 
     // First call fails
     mockStorage.set.mockRejectedValueOnce(new Error('QuotaExceededError'));
-    await manager.setMode('local');
+    await manager.setMode('pro');
 
     // Second call should still hit storage (no circuit-breaker short-circuit)
-    await manager.setMode('cloud');
+    await manager.setMode('pro_xai');
 
     expect(mockStorage.set).toHaveBeenCalledTimes(2);
   });

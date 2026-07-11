@@ -3,7 +3,7 @@
  * @description Zod validation schemas for mode state management
  *
  * Provides type-safe validation for:
- * - Mode types (ephemeral, local, cloud, ai)
+ * - Mode types (basic, pro, pro_xai)
  * - Persisted state structure
  * - Mode transitions
  */
@@ -14,16 +14,22 @@ import { z } from 'zod';
  * Mode Type Schema
  *
  * Validates mode names. Currently supports:
- * - ephemeral: No persistence
- * - local: Session-based highlighting (tab-scoped)
- * - cloud: Persistent highlighting (IndexedDB + sync)
- * - ai: AI-driven highlighting (future)
+ * - basic: Local-only highlighting with a configurable TTL (see basic-ttl.ts).
+ *   Replaces the former `ephemeral` + `local` modes.
+ * - pro: Persistent, synced highlighting (IndexedDB + cloud sync). Replaces `cloud`.
+ * - pro_xai: Pro capabilities plus AI-powered features. Replaces `ai`.
+ *
+ * Legacy string values (`ephemeral`, `local`, `cloud`, `ai`, and the older
+ * `walk`/`sprint`/`vault`/`neural` motif names) are translated forward via
+ * `normalizeMode()` (@/shared/utils/normalize-mode) at storage/IPC read
+ * boundaries — they are intentionally NOT accepted by this schema so that
+ * new code always operates on the current vocabulary.
  *
  * @example
- * ModeTypeSchema.parse('ephemeral'); // Valid
+ * ModeTypeSchema.parse('basic'); // Valid
  * ModeTypeSchema.parse('invalid'); // Throws ZodError
  */
-export const ModeTypeSchema = z.enum(['ephemeral', 'local', 'cloud', 'ai']);
+export const ModeTypeSchema = z.enum(['basic', 'pro', 'pro_xai']);
 
 /**
  * Inferred TypeScript type from schema

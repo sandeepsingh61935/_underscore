@@ -9,6 +9,7 @@
  */
 import React from 'react';
 
+import { formatRemainingTtl } from '@/shared/utils/format-remaining-ttl';
 import { TTL_STATE_STYLES, ttlState } from '../../utils/ttlState';
 
 export interface TTLMeterProps {
@@ -18,9 +19,7 @@ export interface TTLMeterProps {
 
 export function TTLMeter({ ms, total = 24 * 60 * 60 * 1000 }: TTLMeterProps): React.ReactElement {
     const pct = Math.max(0, Math.min(1, ms / total));
-    const h = Math.floor(ms / 3_600_000);
-    const mn = Math.floor((ms % 3_600_000) / 60_000);
-    const s = Math.floor((ms % 60_000) / 1000);
+    const timeLabel = formatRemainingTtl(ms);
     const state = ttlState(ms);
     const tok = TTL_STATE_STYLES[state];
     return (
@@ -56,7 +55,7 @@ export function TTLMeter({ ms, total = 24 * 60 * 60 * 1000 }: TTLMeterProps): Re
                         textDecorationColor: 'var(--rule-soft)',
                     }}
                 >
-                    {String(h).padStart(2, '0')}:{String(mn).padStart(2, '0')}:{String(s).padStart(2, '0')}
+                    {timeLabel}
                 </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gap: 2, height: 6 }}>

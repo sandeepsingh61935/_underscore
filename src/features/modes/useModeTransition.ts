@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getTransitionRule, executeTransitionGuard } from '@/content/modes/mode-transition-rules';
-import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 
 interface ModeTransitionState {
     isPending: boolean;
@@ -27,7 +26,6 @@ export interface UseModeTransitionOptions {
 export function useModeTransition({ navigateAfterTransition }: UseModeTransitionOptions = {}) {
     const navigate = useNavigate();
     const { currentMode, setMode, isAuthenticated } = useApp();
-    const { logout } = useCurrentUser();
     const [state, setState] = useState<ModeTransitionState>({
         isPending: false,
         targetMode: null,
@@ -43,8 +41,13 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
             }
 
             // Auth-gated modes — redirect to sign-in
-            if ((targetMode === 'cloud' || targetMode === 'ai') && !isAuthenticated) {
+            if ((targetMode === 'pro' || targetMode === 'pro_xai') && !isAuthenticated) {
                 navigate(`/sign-in?intendedMode=${targetMode}`);
+                return;
+            }
+
+            // Signed-in users cannot switch to Basic
+            if (targetMode === 'basic' && isAuthenticated) {
                 return;
             }
 
@@ -83,16 +86,6 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
 
                 // Simulate transfer time
                 await new Promise(r => setTimeout(r, 1800));
-
-                // Check for downgrade from auth-required mode to local mode
-                const isDowngrade =
-                    (currentMode === 'ai' || currentMode === 'cloud') &&
-                    (targetMode === 'ephemeral' || targetMode === 'local');
-
-                if (isDowngrade) {
-                    console.log('[useModeTransition] Downgrading local mode. Triggering sync and auto sign-out...');
-                    await logout();
-                }
 
                 setMode(targetMode);
                 navigateAfterTransition?.();

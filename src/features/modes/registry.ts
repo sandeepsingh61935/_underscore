@@ -1,4 +1,5 @@
 import { MODE_NAMES } from '@/content/modes/mode-constants';
+import { MODE_BRANDING } from '@/shared/constants/mode-branding';
 
 export interface ModeDefinition {
     id: string;
@@ -11,7 +12,8 @@ export interface ModeDefinition {
     accent: string;
     persistence: string;
     signin: boolean;
-    ttl: boolean;
+    /** Basic mode's TTL is user-configurable (see @/shared/constants/basic-ttl). */
+    ttlConfigurable: boolean;
     enabled: boolean;
     order: number;
     badge?: string;
@@ -49,67 +51,51 @@ export class ModeRegistry {
 
     private registerDefaults() {
         this.register({
-            id: MODE_NAMES.EPHEMERAL,
-            name: 'Ephemeral',
-            altName: 'Non-persistent',
-            family: 'local',
-            tag: '24-hour memory',
-            blurb: 'Highlights live on this device and fade after 24 hours.',
+            id: MODE_NAMES.BASIC,
+            name: MODE_BRANDING.basic.displayName,
+            altName: 'On this device',
+            family: 'device',
+            tag: MODE_BRANDING.basic.tagline,
+            blurb: MODE_BRANDING.basic.description,
             motif: '◷',
-            accent: 'var(--mode-ephemeral)',
-            persistence: 'auto-expires · 24h',
+            accent: 'var(--mode-basic)',
+            persistence: 'configurable TTL · this device',
             signin: false,
-            ttl: true,
+            ttlConfigurable: true,
             enabled: true,
             order: 1,
         });
 
         this.register({
-            id: MODE_NAMES.LOCAL,
-            name: 'Local',
-            altName: 'Persistent local',
-            family: 'local',
-            tag: 'This device',
-            blurb: 'Saved to this browser indefinitely. You delete them.',
-            motif: '▣',
-            accent: 'var(--mode-local)',
-            persistence: 'kept until deleted',
-            signin: false,
-            ttl: false,
+            id: MODE_NAMES.PRO,
+            name: MODE_BRANDING.pro.displayName,
+            altName: 'Synced',
+            family: 'cloud',
+            tag: MODE_BRANDING.pro.tagline,
+            blurb: MODE_BRANDING.pro.description,
+            motif: '◇',
+            accent: 'var(--mode-pro)',
+            persistence: 'synced · always',
+            signin: true,
+            ttlConfigurable: false,
             enabled: true,
             order: 2,
         });
 
         this.register({
-            id: MODE_NAMES.CLOUD,
-            name: 'Cloud',
-            altName: 'Persistent cloud',
+            id: MODE_NAMES.PRO_XAI,
+            name: MODE_BRANDING.pro_xai.displayName,
+            altName: 'Synced + AI',
             family: 'cloud',
-            tag: 'Synced',
-            blurb: 'Signed in. Synced across every device you use.',
-            motif: '◇',
-            accent: 'var(--mode-cloud)',
-            persistence: 'synced · always',
-            signin: true,
-            ttl: false,
-            enabled: true,
-            order: 3,
-        });
-
-        this.register({
-            id: MODE_NAMES.AI,
-            name: 'AI',
-            altName: 'AI-enabled',
-            family: 'cloud',
-            tag: 'Readable by models',
-            blurb: 'Summarize pages, synthesize domains, and ask questions about what you have highlighted.',
+            tag: MODE_BRANDING.pro_xai.tagline,
+            blurb: MODE_BRANDING.pro_xai.description,
             motif: '+',
-            accent: 'var(--mode-ai)',
+            accent: 'var(--mode-pro-xai)',
             persistence: 'synced · readable by AI',
             signin: true,
-            ttl: false,
+            ttlConfigurable: false,
             enabled: true,
-            order: 4,
+            order: 3,
         });
     }
 }

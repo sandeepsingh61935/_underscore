@@ -1,6 +1,6 @@
 import React from 'react';
 import { ModeCard } from './ModeCard';
-import { Footprints, Zap, Archive, Brain } from 'lucide-react';
+import { Circle, Archive, Brain } from 'lucide-react';
 
 export interface ModeOption {
     id: string;
@@ -28,30 +28,23 @@ export function ModeSelector({
     // In a real app, these might come from a config or prop, but standardizing them here for the UI system is fine for now.
     const modes: ModeOption[] = [
         {
-            id: 'ephemeral',
-            label: 'Focus',
-            description: 'Capture content without distractions.',
-            icon: <Footprints className="w-5 h-5" />,
+            id: 'basic',
+            label: 'Basic',
+            description: 'Highlights live on this device, with a configurable TTL.',
+            icon: <Circle className="w-5 h-5" />,
             isLocked: false
         },
         {
-            id: 'local',
-            label: 'Capture',
-            description: 'High-speed capture session.',
-            icon: <Zap className="w-5 h-5" />,
-            isLocked: false
-        },
-        {
-            id: 'cloud',
-            label: 'Memory',
-            description: 'Secure storage for sensitive clips.',
+            id: 'pro',
+            label: 'Pro',
+            description: 'Signed in. Synced across every device you use.',
             icon: <Archive className="w-5 h-5" />,
             isLocked: !isAuthenticated
         },
         {
-            id: 'ai',
-            label: 'Neural',
-            description: 'AI-powered organization.',
+            id: 'pro_xai',
+            label: '10x-Pro',
+            description: 'Everything in Pro, plus AI-powered organization.',
             icon: <Brain className="w-5 h-5" />,
             isLocked: !isAuthenticated
         }

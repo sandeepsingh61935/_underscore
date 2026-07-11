@@ -45,7 +45,7 @@ export interface HighlightData {
  */
 export interface IHighlightMode extends IBasicMode {
   /** Mode identifier */
-  readonly name: 'ephemeral' | 'local' | 'cloud' | 'ai';
+  readonly name: 'basic' | 'pro' | 'pro_xai';
 
   /** Mode capabilities */
   readonly capabilities: ModeCapabilities;

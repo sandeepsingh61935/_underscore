@@ -9,20 +9,20 @@ describe('ModeSelectionView', () => {
     render(
       <ModeSelectionView
         onModeSelect={onModeSelect}
-        initialMode="cloud"
+        initialMode="pro"
         isAuthenticated={true}
       />
     );
 
-    expect(screen.getByRole('button', { name: /Continue as Cloud/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Continue as Pro/i })).toBeInTheDocument();
   });
 
-  it('defaults to local when initialMode is not provided', () => {
+  it('defaults to basic when initialMode is not provided', () => {
     render(<ModeSelectionView />);
-    expect(screen.getByRole('button', { name: /Continue as Local/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Continue as Basic/i })).toBeInTheDocument();
   });
 
-  it('calls onModeSelect (not onSignInClick) when cloud is selected and user is authenticated', () => {
+  it('calls onModeSelect (not onSignInClick) when pro is selected and user is authenticated', () => {
     const onModeSelect = vi.fn();
     const onSignInClick = vi.fn();
 
@@ -30,17 +30,17 @@ describe('ModeSelectionView', () => {
       <ModeSelectionView
         onModeSelect={onModeSelect}
         onSignInClick={onSignInClick}
-        initialMode="cloud"
+        initialMode="pro"
         isAuthenticated={true}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Continue as Cloud/i }));
-    expect(onModeSelect).toHaveBeenCalledWith('cloud');
+    fireEvent.click(screen.getByRole('button', { name: /Continue as Pro/i }));
+    expect(onModeSelect).toHaveBeenCalledWith('pro');
     expect(onSignInClick).not.toHaveBeenCalled();
   });
 
-  it('calls onSignInClick with mode id when cloud is selected and user is not authenticated', () => {
+  it('calls onSignInClick with mode id when pro is selected and user is not authenticated', () => {
     const onModeSelect = vi.fn();
     const onSignInClick = vi.fn();
 
@@ -48,17 +48,17 @@ describe('ModeSelectionView', () => {
       <ModeSelectionView
         onModeSelect={onModeSelect}
         onSignInClick={onSignInClick}
-        initialMode="cloud"
+        initialMode="pro"
         isAuthenticated={false}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Continue as Cloud/i }));
-    expect(onSignInClick).toHaveBeenCalledWith('cloud');
+    fireEvent.click(screen.getByRole('button', { name: /Continue as Pro/i }));
+    expect(onSignInClick).toHaveBeenCalledWith('pro');
     expect(onModeSelect).not.toHaveBeenCalled();
   });
 
-  it('calls onModeSelect for local mode regardless of auth state', () => {
+  it('calls onModeSelect for basic mode regardless of auth state', () => {
     const onModeSelect = vi.fn();
     const onSignInClick = vi.fn();
 
@@ -66,13 +66,13 @@ describe('ModeSelectionView', () => {
       <ModeSelectionView
         onModeSelect={onModeSelect}
         onSignInClick={onSignInClick}
-        initialMode="local"
+        initialMode="basic"
         isAuthenticated={false}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Continue as Local/i }));
-    expect(onModeSelect).toHaveBeenCalledWith('local');
+    fireEvent.click(screen.getByRole('button', { name: /Continue as Basic/i }));
+    expect(onModeSelect).toHaveBeenCalledWith('basic');
     expect(onSignInClick).not.toHaveBeenCalled();
   });
 });

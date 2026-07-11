@@ -6,32 +6,32 @@ import type { ModeDefinition } from '../registry';
 
 const mockModes: ModeDefinition[] = [
     {
-        id: 'ephemeral',
-        name: 'Ephemeral',
-        altName: 'Non-persistent',
-        family: 'local',
-        tag: '24-hour memory',
+        id: 'basic',
+        name: 'Basic',
+        altName: 'On this device',
+        family: 'device',
+        tag: 'Configurable TTL',
         blurb: 'Test blurb 1',
         motif: '◷',
-        accent: 'var(--mode-ephemeral)',
+        accent: 'var(--mode-basic)',
         persistence: 'auto-expires',
         signin: false,
-        ttl: true,
+        ttlConfigurable: true,
         enabled: true,
         order: 1,
     },
     {
-        id: 'cloud',
-        name: 'Cloud',
+        id: 'pro',
+        name: 'Pro',
         altName: 'Persistent cloud',
         family: 'cloud',
         tag: 'Synced',
         blurb: 'Test blurb 2',
         motif: '◇',
-        accent: 'var(--mode-cloud)',
+        accent: 'var(--mode-pro)',
         persistence: 'synced',
         signin: true,
-        ttl: false,
+        ttlConfigurable: false,
         enabled: true,
         order: 2,
         badge: 'New',
@@ -43,17 +43,17 @@ describe('ModeSelector', () => {
         render(
             <ModeSelector
                 modes={mockModes}
-                currentModeId="ephemeral"
+                currentModeId="basic"
                 onSelect={() => {}}
             />
         );
 
         // Check first mode
-        expect(screen.getByText('Ephemeral')).toBeInTheDocument();
+        expect(screen.getByText('Basic')).toBeInTheDocument();
         expect(screen.getByText('Test blurb 1')).toBeInTheDocument();
 
         // Check second mode with badge
-        expect(screen.getByText('Cloud')).toBeInTheDocument();
+        expect(screen.getByText('Pro')).toBeInTheDocument();
         expect(screen.getByText('Test blurb 2')).toBeInTheDocument();
         expect(screen.getByText('New')).toBeInTheDocument();
     });
@@ -63,13 +63,13 @@ describe('ModeSelector', () => {
         render(
             <ModeSelector
                 modes={mockModes}
-                currentModeId="ephemeral"
+                currentModeId="basic"
                 onSelect={onSelect}
             />
         );
 
-        fireEvent.click(screen.getByText('Cloud'));
-        expect(onSelect).toHaveBeenCalledWith('cloud');
+        fireEvent.click(screen.getByText('Pro'));
+        expect(onSelect).toHaveBeenCalledWith('pro');
     });
 
     it('respects disabled prop', () => {
@@ -77,13 +77,13 @@ describe('ModeSelector', () => {
         render(
             <ModeSelector
                 modes={mockModes}
-                currentModeId="ephemeral"
+                currentModeId="basic"
                 onSelect={onSelect}
                 disabled={true}
             />
         );
 
-        const button = screen.getByText('Cloud').closest('button');
+        const button = screen.getByText('Pro').closest('button');
         expect(button).toBeDisabled();
         
         if (button) fireEvent.click(button);

@@ -18,9 +18,9 @@ import {
 } from '@/shared/schemas/mode-state-schemas';
 
 describe('ModeTypeSchema', () => {
-  it('should validate walk mode', () => {
+  it('should validate basic mode', () => {
     // Arrange
-    const mode = 'ephemeral';
+    const mode = 'basic';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -28,13 +28,13 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('ephemeral');
+      expect(result.data).toBe('basic');
     }
   });
 
-  it('should validate sprint mode', () => {
+  it('should validate pro mode', () => {
     // Arrange
-    const mode = 'local';
+    const mode = 'pro';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -42,13 +42,13 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('local');
+      expect(result.data).toBe('pro');
     }
   });
 
-  it('should validate vault mode', () => {
+  it('should validate pro_xai mode', () => {
     // Arrange
-    const mode = 'cloud';
+    const mode = 'pro_xai';
 
     // Act
     const result = ModeTypeSchema.safeParse(mode);
@@ -56,7 +56,7 @@ describe('ModeTypeSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toBe('cloud');
+      expect(result.data).toBe('pro_xai');
     }
   });
 
@@ -141,7 +141,7 @@ describe('ModeStateSchema', () => {
   it('should validate complete mode state', () => {
     // Arrange
     const state: ModeState = {
-      currentMode: 'cloud',
+      currentMode: 'pro',
       version: 2,
       metadata: {
         version: 2,
@@ -155,7 +155,7 @@ describe('ModeStateSchema', () => {
     // Assert
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.currentMode).toBe('cloud');
+      expect(result.data.currentMode).toBe('pro');
       expect(result.data.version).toBe(2);
     }
   });
@@ -163,7 +163,7 @@ describe('ModeStateSchema', () => {
   it('should apply default version if not provided', () => {
     // Arrange
     const state = {
-      currentMode: 'ephemeral',
+      currentMode: 'basic',
     };
 
     // Act
@@ -195,8 +195,8 @@ describe('ModeTransitionSchema', () => {
   it('should validate allowed transition', () => {
     // Arrange
     const transition = {
-      from: 'ephemeral',
-      to: 'local',
+      from: 'basic',
+      to: 'pro',
       allowed: true,
     };
 
@@ -213,11 +213,11 @@ describe('ModeTransitionSchema', () => {
   it('should validate blocked transition with reason', () => {
     // Arrange
     const transition = {
-      from: 'cloud',
-      to: 'ephemeral',
+      from: 'pro_xai',
+      to: 'basic',
       allowed: false,
       requiresConfirmation: true,
-      reason: 'Switching from Vault to Walk will lose unsaved highlights',
+      reason: 'Switching from 10x-Pro to Basic will lose unsaved highlights',
     };
 
     // Act
@@ -234,8 +234,8 @@ describe('ModeTransitionSchema', () => {
   it('should validate transition without optional fields', () => {
     // Arrange
     const transition = {
-      from: 'local',
-      to: 'cloud',
+      from: 'pro',
+      to: 'pro_xai',
       allowed: true,
     };
 
@@ -250,14 +250,14 @@ describe('ModeTransitionSchema', () => {
 describe('Type Inference', () => {
   it('should infer correct TypeScript types', () => {
     // Arrange & Act
-    const mode: ModeType = 'ephemeral';
+    const mode: ModeType = 'basic';
     const state: ModeState = {
-      currentMode: 'cloud',
+      currentMode: 'pro',
       version: 2,
     };
 
     // Assert - TypeScript compilation is the test
-    expect(mode).toBe('ephemeral');
-    expect(state.currentMode).toBe('cloud');
+    expect(mode).toBe('basic');
+    expect(state.currentMode).toBe('pro');
   });
 });

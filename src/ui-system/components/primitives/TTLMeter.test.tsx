@@ -26,7 +26,12 @@ describe('TTLMeter (V2 wireframe contract)', () => {
     expect(segments.length).toBe(24);
   });
 
-  it('time is zero-padded HH:MM:SS', () => {
+  it('shows long-form time at or above one day', () => {
+    const { container } = render(<TTLMeter ms={5 * 24 * ONE_HOUR} total={30 * 24 * ONE_HOUR} />);
+    expect(container.textContent).toContain('5 days');
+  });
+
+  it('time is zero-padded HH:MM:SS under one day', () => {
     const { container } = render(<TTLMeter ms={2 * ONE_HOUR + 5 * 60 * 1000 + 3 * 1000} total={TOTAL} />);
     expect(container.textContent).toMatch(/02:05:03/);
   });
