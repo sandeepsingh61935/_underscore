@@ -40,7 +40,7 @@ describe('Validation Schemas', () => {
 
   describe('ModeConfigSchema', () => {
     it('accepts valid mode names', () => {
-      const modes = ['ephemeral', 'local', 'cloud'];
+      const modes = ['basic', 'pro', 'pro_xai'];
       modes.forEach((mode) => {
         const result = ModeConfigSchema.safeParse({ modeName: mode });
         expect(result.success).toBe(true);
@@ -54,7 +54,7 @@ describe('Validation Schemas', () => {
     });
 
     it('accepts optional settings', () => {
-      const valid = { modeName: 'ephemeral', settings: { verbose: true } };
+      const valid = { modeName: 'basic', settings: { verbose: true } };
       const result = ModeConfigSchema.safeParse(valid);
       expect(result.success).toBe(true);
     });

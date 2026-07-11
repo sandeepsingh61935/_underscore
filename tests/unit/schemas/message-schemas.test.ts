@@ -127,6 +127,16 @@ describe('Message Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should reject message with missing payload', () => {
+      const message = {
+        type: 'LOGOUT',
+        timestamp: Date.now(),
+      };
+
+      const result = MessageSchema.safeParse(message);
+      expect(result.success).toBe(false);
+    });
+
     it('should accept any payload type (unknown)', () => {
       const messages = [
         { type: 'A', payload: 'string', timestamp: 1 },

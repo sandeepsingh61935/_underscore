@@ -18,8 +18,8 @@ import type { ILogger } from '@/shared/utils/logger';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 
 class TestMode extends BaseHighlightMode {
-    get name(): 'ephemeral' {
-        return 'ephemeral';
+    get name(): 'basic' {
+        return 'basic';
     }
     async createHighlight(): Promise<string> {
         return '';

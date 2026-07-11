@@ -108,6 +108,10 @@ describe('AuthManager Unit Tests', () => {
                 signOut: vi.fn().mockResolvedValue({ error: null }),
                 getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
                 setSession: vi.fn().mockResolvedValue({ data: { session: mockSession }, error: null }),
+                exchangeCodeForSession: vi.fn().mockResolvedValue({
+                    data: { user: mockUser, session: mockSession },
+                    error: null,
+                }),
                 refreshSession: vi.fn().mockResolvedValue({ data: { session: mockSession }, error: null }),
                 onAuthStateChange: vi.fn((callback) => {
                     authStateCallback = callback;
@@ -186,6 +190,33 @@ describe('AuthManager Unit Tests', () => {
 
         expect(result.success).toBe(true);
         expect(authManager.isAuthenticated).toBe(true);
+        expect(authManager.currentUser?.email).toBe('user@example.com');
+    });
+
+    it('should complete Google OAuth via PKCE code exchange', async () => {
+        mockSupabase.auth.signInWithOAuth = vi.fn().mockResolvedValue({
+            data: { url: 'https://mock.supabase.co/auth/v1/authorize' },
+            error: null,
+        });
+
+        chrome.identity.launchWebAuthFlow = vi.fn().mockResolvedValue(
+            'https://extension-id.chromiumapp.org/?code=pkce-auth-code',
+        );
+
+        mockSupabase.auth.exchangeCodeForSession = vi.fn().mockResolvedValue({
+            data: { user: mockUser, session: mockSession },
+            error: null,
+        });
+
+        const result = await authManager.signIn(OAuthProvider.GOOGLE);
+
+        if (authStateCallback) {
+            authStateCallback('SIGNED_IN', mockSession);
+        }
+
+        expect(mockSupabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('pkce-auth-code');
+        expect(mockSupabase.auth.setSession).not.toHaveBeenCalled();
+        expect(result.success).toBe(true);
         expect(authManager.currentUser?.email).toBe('user@example.com');
     });
 
@@ -354,7 +385,7 @@ describe('AuthManager Unit Tests', () => {
             'https://ext.chromiumapp.org/#error=access_denied&error_description=User+cancelled'
         );
 
-        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow('Missing authentication tokens');
+        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow('User cancelled');
     });
 
     /**

@@ -45,10 +45,10 @@ describe('Command Flow Integration', () => {
     logger = container.resolve<ILogger>('logger');
 
     // Register Modes (Integration: Use REAL modes)
-    const walkMode = container.resolve('walkMode');
-    const sprintMode = container.resolve('sprintMode');
-    modeManager.registerMode(walkMode as any);
-    modeManager.registerMode(sprintMode as any);
+    const basicMode = container.resolve('basicMode');
+    const proMode = container.resolve('proMode');
+    modeManager.registerMode(basicMode as any);
+    modeManager.registerMode(proMode as any);
 
     // Initialize RepositoryFacade (required for modes to function)
     const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
@@ -68,6 +68,12 @@ describe('Command Flow Integration', () => {
     // Mock CSS Highlight API
     global.Highlight = class MockHighlight {
       constructor(..._ranges: Range[]) {}
+      add(_range: Range): void {}
+      has(_range: Range): boolean {
+        return true;
+      }
+      delete(_range: Range): void {}
+      clear(): void {}
     } as any;
 
     (global as any).CSS = {
@@ -105,12 +111,12 @@ describe('Command Flow Integration', () => {
     return selection;
   }
 
-  describe('Walk Mode (Ephemeral)', () => {
+  describe('Basic Mode', () => {
     it('should create, undo, and redo highlights without persistence', async () => {
-      // 1. Activate Walk Mode
-      await modeManager.activateMode('ephemeral');
-      const walkMode = modeManager.getCurrentMode();
-      expect(walkMode.name).toBe('ephemeral');
+      // 1. Activate Basic Mode
+      await modeManager.activateMode('basic');
+      const basicMode = modeManager.getCurrentMode();
+      expect(basicMode.name).toBe('basic');
 
       // 2. Execute Create Command
       const selection = createSelection();
@@ -124,26 +130,26 @@ describe('Command Flow Integration', () => {
       await commandStack.execute(createCmd);
 
       // Verify creation
-      expect(walkMode.getAllHighlights()).toHaveLength(1);
-      const hlId = walkMode.getAllHighlights()[0]?.id;
+      expect(basicMode.getAllHighlights()).toHaveLength(1);
+      const hlId = basicMode.getAllHighlights()[0]?.id;
       if (!hlId) throw new Error('Highlight not created');
 
       // 3. Undo
       await commandStack.undo();
-      expect(walkMode.getAllHighlights()).toHaveLength(0);
+      expect(basicMode.getAllHighlights()).toHaveLength(0);
 
       // 4. Redo
       await commandStack.redo();
-      expect(walkMode.getAllHighlights()).toHaveLength(1);
-      expect(walkMode.getHighlight(hlId)).toBeDefined();
+      expect(basicMode.getAllHighlights()).toHaveLength(1);
+      expect(basicMode.getHighlight(hlId)).toBeDefined();
     });
   });
 
-  describe('Sprint Mode (Local Persistence)', () => {
+  describe('Pro Mode (Persistent)', () => {
     it('should create and store highlights locally', async () => {
-      // 1. Activate Sprint Mode
-      await modeManager.activateMode('local');
-      const sprintMode = modeManager.getCurrentMode();
+      // 1. Activate Pro Mode
+      await modeManager.activateMode('pro');
+      const proMode = modeManager.getCurrentMode();
 
       // 2. Execute Create
       const selection = createSelection();
@@ -155,7 +161,7 @@ describe('Command Flow Integration', () => {
       );
 
       await commandStack.execute(createCmd);
-      const highlights = sprintMode.getAllHighlights();
+      const highlights = proMode.getAllHighlights();
       expect(highlights).toHaveLength(1);
       const hlId = highlights[0]?.id;
       if (!hlId) throw new Error('Highlight not created');
@@ -163,19 +169,19 @@ describe('Command Flow Integration', () => {
       // 3. Execute Remove
       const removeCmd = new RemoveHighlightCommand(hlId, modeManager, logger);
       await commandStack.execute(removeCmd);
-      expect(sprintMode.getAllHighlights()).toHaveLength(0);
+      expect(proMode.getAllHighlights()).toHaveLength(0);
 
       // 4. Undo Remove (Restore)
       await commandStack.undo();
-      expect(sprintMode.getAllHighlights()).toHaveLength(1);
-      expect(sprintMode.getHighlight(hlId)?.colorRole).toBe('green');
+      expect(proMode.getAllHighlights()).toHaveLength(1);
+      expect(proMode.getHighlight(hlId)?.colorRole).toBe('green');
     });
   });
 
   describe('Command Stack Behavior', () => {
     it('should limit stack size and drop oldest commands', async () => {
       const smallStack = new CommandStack(2);
-      await modeManager.activateMode('ephemeral');
+      await modeManager.activateMode('basic');
 
       // Excecute 3 commands
       for (let i = 0; i < 3; i++) {
@@ -204,7 +210,7 @@ describe('Command Flow Integration', () => {
     });
 
     it('should clear redo stack on new execution', async () => {
-      await modeManager.activateMode('ephemeral');
+      await modeManager.activateMode('basic');
       const cmd1 = new CreateHighlightCommand(
         createSelection(),
         'red',
@@ -230,11 +236,11 @@ describe('Command Flow Integration', () => {
   });
 
   it('should handle mode errors gracefully without crashing stack', async () => {
-    await modeManager.activateMode('ephemeral');
+    await modeManager.activateMode('basic');
 
     // Spy on mode to throw error
-    const walkMode = modeManager.getCurrentMode();
-    vi.spyOn(walkMode, 'createHighlight').mockRejectedValue(
+    const basicMode = modeManager.getCurrentMode();
+    vi.spyOn(basicMode, 'createHighlight').mockRejectedValue(
       new Error('Simulated Failure')
     );
 

@@ -36,7 +36,7 @@ function createMockModeManager() {
   };
 
   const mockMode: IHighlightMode = {
-    name: 'local',
+    name: 'basic',
     capabilities: {
       persistence: 'local',
       undo: false,

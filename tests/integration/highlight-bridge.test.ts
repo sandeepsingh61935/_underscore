@@ -57,12 +57,19 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
       decrypt: async (e: EncryptedText) => e.ciphertext,
     } as unknown as HighlightEncryptor;
     // SW side: orchestrator owns the wiring.
-    new BackgroundHighlightOrchestrator(facade, noopEncryptor, swBus as any, logger).initialize();
+    new BackgroundHighlightOrchestrator(
+      facade,
+      noopEncryptor,
+      { isUnlocked: true } as any,
+      swBus as any,
+      logger,
+    ).initialize();
 
     // The content side sends via chrome.runtime.sendMessage, which dispatches to
     // the SW's message bus. Simulate that hop.
     (globalThis as any).chrome = {
       runtime: {
+        onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
         // IpcHighlightRepository uses the callback form of sendMessage, so the
         // mock must invoke the callback to deliver the response.
         sendMessage: vi.fn((msg: unknown, callback: (response: unknown) => void) => {

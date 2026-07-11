@@ -1,0 +1,302 @@
+[
+  {
+    "id": "c1",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Supervised learning learns a mapping from inputs to outputs using labeled training examples."
+  },
+  {
+    "id": "c2",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Regression predicts continuous values; classification predicts discrete categories."
+  },
+  {
+    "id": "c3",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "The cost function measures how wrong our hypotheses are across the training set."
+  },
+  {
+    "id": "c4",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Gradient descent iteratively updates parameters to reduce cost."
+  },
+  {
+    "id": "c5",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Learning rate alpha controls step size; too large causes divergence."
+  },
+  {
+    "id": "c6",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Vectorization lets us implement linear algebra efficiently in Octave/Matlab."
+  },
+  {
+    "id": "c7",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Feature scaling can speed convergence when features have different ranges."
+  },
+  {
+    "id": "c8",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "The normal equation provides a closed-form solution for linear regression."
+  },
+  {
+    "id": "c9",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Logistic regression models probability using the sigmoid function."
+  },
+  {
+    "id": "c10",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Decision boundary separates positive and negative classes in feature space."
+  },
+  {
+    "id": "c11",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Overfitting: high variance when the model fits noise in training data."
+  },
+  {
+    "id": "c12",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Underfitting: high bias when the model is too simple."
+  },
+  {
+    "id": "c13",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Regularization penalizes large parameters to reduce overfitting."
+  },
+  {
+    "id": "c14",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Cross-validation helps choose model complexity and hyperparameters."
+  },
+  {
+    "id": "c15",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Neural networks stack nonlinear units to learn complex functions."
+  },
+  {
+    "id": "c16",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Backpropagation efficiently computes gradients layer by layer."
+  },
+  {
+    "id": "c17",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Unrolling parameters into one vector simplifies optimization code."
+  },
+  {
+    "id": "c18",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Random initialization breaks symmetry so units learn different features."
+  },
+  {
+    "id": "c19",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Choosing network architecture: input units, hidden layers, output units."
+  },
+  {
+    "id": "c20",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Debugging learning: plot cost vs iterations to spot implementation bugs."
+  },
+  {
+    "id": "c21",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Bias vs variance diagnosis uses train and validation error curves."
+  },
+  {
+    "id": "c22",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Learning curves show whether more data will help."
+  },
+  {
+    "id": "c23",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Precision and recall trade off for skewed classification problems."
+  },
+  {
+    "id": "c24",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "F1 score combines precision and recall into a single metric."
+  },
+  {
+    "id": "c25",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Anomaly detection models P(x) for rare event detection."
+  },
+  {
+    "id": "c26",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Collaborative filtering learns user and item feature vectors from ratings."
+  },
+  {
+    "id": "c27",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Low-rank matrix factorization captures latent taste dimensions."
+  },
+  {
+    "id": "c28",
+    "url": "https://www.coursera.org/learn/machine-learning/lecture/intro",
+    "path": "/learn/machine-learning/lecture/intro",
+    "text": "Machine learning is programming computers to learn from experience."
+  },
+  {
+    "id": "c29",
+    "url": "https://www.coursera.org/learn/machine-learning/lecture/intro",
+    "path": "/learn/machine-learning/lecture/intro",
+    "text": "Applications include web search, photo tagging, and medical diagnosis."
+  },
+  {
+    "id": "c30",
+    "url": "https://www.coursera.org/learn/machine-learning/lecture/intro",
+    "path": "/learn/machine-learning/lecture/intro",
+    "text": "The course uses Octave for assignments to focus on ideas not language syntax."
+  },
+  {
+    "id": "c31",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/linear-regression",
+    "path": "/learn/machine-learning/quiz/linear-regression",
+    "text": "MSE cost for linear regression is convex with a single global minimum."
+  },
+  {
+    "id": "c32",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/linear-regression",
+    "path": "/learn/machine-learning/quiz/linear-regression",
+    "text": "Batch gradient descent uses the full training set each iteration."
+  },
+  {
+    "id": "c33",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/linear-regression",
+    "path": "/learn/machine-learning/quiz/linear-regression",
+    "text": "Stochastic gradient descent updates per training example."
+  },
+  {
+    "id": "c34",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/logistic",
+    "path": "/learn/machine-learning/quiz/logistic",
+    "text": "Log loss is the appropriate cost for logistic regression."
+  },
+  {
+    "id": "c35",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/logistic",
+    "path": "/learn/machine-learning/quiz/logistic",
+    "text": "Multiclass classification uses one-vs-all strategy."
+  },
+  {
+    "id": "c36",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/neural-nets",
+    "path": "/learn/machine-learning/quiz/neural-nets",
+    "text": "Number of parameters grows quickly with hidden layer size."
+  },
+  {
+    "id": "c37",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/neural-nets",
+    "path": "/learn/machine-learning/quiz/neural-nets",
+    "text": "Forward propagation computes activations layer by layer."
+  },
+  {
+    "id": "c38",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/neural-nets",
+    "path": "/learn/machine-learning/quiz/neural-nets",
+    "text": "Backpropagation applies the chain rule to compute partial derivatives."
+  },
+  {
+    "id": "c39",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Hypothesis h maps input features to predicted output."
+  },
+  {
+    "id": "c40",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "Polynomial features can model nonlinear relationships."
+  },
+  {
+    "id": "c41",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Softmax generalizes logistic regression to multiple classes."
+  },
+  {
+    "id": "c42",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Principal component analysis reduces dimensionality while preserving variance."
+  },
+  {
+    "id": "c43",
+    "url": "https://www.coursera.org/learn/machine-learning/lecture/intro",
+    "path": "/learn/machine-learning/lecture/intro",
+    "text": "Unsupervised learning finds structure in unlabeled data."
+  },
+  {
+    "id": "c44",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/linear-regression",
+    "path": "/learn/machine-learning/quiz/linear-regression",
+    "text": "Feature normalization: mean subtraction and scaling to similar ranges."
+  },
+  {
+    "id": "c45",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/logistic",
+    "path": "/learn/machine-learning/quiz/logistic",
+    "text": "Regularized logistic regression adds lambda times sum of squared weights."
+  },
+  {
+    "id": "c46",
+    "url": "https://www.coursera.org/learn/machine-learning/quiz/neural-nets",
+    "path": "/learn/machine-learning/quiz/neural-nets",
+    "text": "Gradient checking numerically verifies backprop implementation."
+  },
+  {
+    "id": "c47",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/1",
+    "path": "/learn/machine-learning/home/week/1",
+    "text": "Training set, validation set, and test set serve different evaluation roles."
+  },
+  {
+    "id": "c48",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/2",
+    "path": "/learn/machine-learning/home/week/2",
+    "text": "High bias: training error and validation error both high."
+  },
+  {
+    "id": "c49",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/3",
+    "path": "/learn/machine-learning/home/week/3",
+    "text": "Dropout is not covered in this classic course but regularization is."
+  },
+  {
+    "id": "c50",
+    "url": "https://www.coursera.org/learn/machine-learning/home/week/4",
+    "path": "/learn/machine-learning/home/week/4",
+    "text": "Large-scale learning: online learning and map-reduce style batching."
+  }
+]

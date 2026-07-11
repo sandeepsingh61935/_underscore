@@ -1,0 +1,51 @@
+{
+  "source": {
+    "idbDir": "/home/sandy/.config/google-chrome/Default/IndexedDB/chrome-extension_hecejpjekcgpifnemddfmkjmphmgljlm_0.indexeddb.leveldb",
+    "courseraHighlights": 8,
+    "courseraUrlsInDb": 4,
+    "courseraUrlOccurrences": 7,
+    "selectorExactFields": 8,
+    "plaintextTextFields": 40,
+    "encryptedMarkers": 0
+  },
+  "highlightStats": {
+    "uniqueUrls": 4,
+    "sections": [
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/supplement/rMnQH/welcome-to-the-course",
+        "count": 2
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/BGmaC/understand-career-identity-statements",
+        "count": 2
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/r8JDe/launch-R-",
+        "count": 2
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/k9miA/unlock-the-power-of-a-job-search-plan",
+        "count": 2
+      }
+    ],
+    "avgTextChars": 68,
+    "maxTextChars": 329,
+    "totalTextChars": 541
+  },
+  "sectionSummarize": {
+    "busiestSection": "/learn/accelerate-your-job-search-with-ai/supplement/rMnQH/welcome-to-the-course",
+    "highlights": 2,
+    "estimatedInputTokens": 617,
+    "maxOutputTokens": 440,
+    "tokensPerHighlight": 220,
+    "issues": []
+  },
+  "domainSynthesize": {
+    "highlights": 8,
+    "uniqueUrls": 4,
+    "estimatedInputTokens": 319,
+    "maxOutputTokens": 1560,
+    "tokensPerHighlight": 195,
+    "issues": []
+  }
+}

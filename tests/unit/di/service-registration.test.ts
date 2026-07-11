@@ -41,9 +41,9 @@ describe('Service Registration (8 tests)', () => {
       'repository',
       'messageBus',
       'modeManager',
-      'walkMode',
-      'sprintMode',
-      'vaultMode',
+      'basicMode',
+      'proMode',
+      'proXaiMode',
     ];
 
     expectedServices.forEach((service) => {
@@ -59,9 +59,9 @@ describe('Service Registration (8 tests)', () => {
     expect(() => container.resolve<IHighlightRepository>('repository')).not.toThrow();
     expect(() => container.resolve<IMessageBus>('messageBus')).not.toThrow();
     expect(() => container.resolve<IModeManager>('modeManager')).not.toThrow();
-    expect(() => container.resolve<IHighlightMode>('walkMode')).not.toThrow();
-    expect(() => container.resolve<IHighlightMode>('sprintMode')).not.toThrow();
-    expect(() => container.resolve<IHighlightMode>('vaultMode')).not.toThrow();
+    expect(() => container.resolve<IHighlightMode>('basicMode')).not.toThrow();
+    expect(() => container.resolve<IHighlightMode>('proMode')).not.toThrow();
+    expect(() => container.resolve<IHighlightMode>('proXaiMode')).not.toThrow();
   });
 
   // ============================================
@@ -77,9 +77,9 @@ describe('Service Registration (8 tests)', () => {
       container.resolve('repository');
       container.resolve('messageBus');
       container.resolve('modeManager');
-      container.resolve('walkMode');
-      container.resolve('sprintMode');
-      container.resolve('vaultMode');
+      container.resolve('basicMode');
+      container.resolve('proMode');
+      container.resolve('proXaiMode');
     }).not.toThrow(/Circular dependency/);
   });
 
@@ -91,10 +91,10 @@ describe('Service Registration (8 tests)', () => {
     expect(graph.get('logger')).toEqual([]);
     expect(graph.get('eventBus')).toEqual([]);
     expect(graph.get('modeManager')).toEqual(['eventBus', 'logger']);
-    expect(graph.get('walkMode')).toContain('repository');
-    expect(graph.get('walkMode')).toContain('eventBus');
-    expect(graph.get('sprintMode')).toContain('repository');
-    expect(graph.get('sprintMode')).toContain('storage');
+    expect(graph.get('basicMode')).toContain('repository');
+    expect(graph.get('basicMode')).toContain('eventBus');
+    expect(graph.get('proMode')).toContain('repository');
+    expect(graph.get('proMode')).toContain('eventBus');
   });
 
   // ============================================
@@ -128,15 +128,15 @@ describe('Service Registration (8 tests)', () => {
 
   it('6. transient services create new instances', () => {
     // Act: Resolve modes twice
-    const walkMode1 = container.resolve<IHighlightMode>('walkMode');
-    const walkMode2 = container.resolve<IHighlightMode>('walkMode');
+    const basicMode1 = container.resolve<IHighlightMode>('basicMode');
+    const basicMode2 = container.resolve<IHighlightMode>('basicMode');
 
-    const sprintMode1 = container.resolve<IHighlightMode>('sprintMode');
-    const sprintMode2 = container.resolve<IHighlightMode>('sprintMode');
+    const proMode1 = container.resolve<IHighlightMode>('proMode');
+    const proMode2 = container.resolve<IHighlightMode>('proMode');
 
     // Assert: Different instances
-    expect(walkMode1).not.toBe(walkMode2);
-    expect(sprintMode1).not.toBe(sprintMode2);
+    expect(basicMode1).not.toBe(basicMode2);
+    expect(proMode1).not.toBe(proMode2);
   });
 
   // ============================================
@@ -146,14 +146,14 @@ describe('Service Registration (8 tests)', () => {
   it('7. resolved services are functional (integration test)', () => {
     // Act: Resolve modeManager and interact with it
     const modeManager = container.resolve<IModeManager>('modeManager');
-    const walkMode = container.resolve<IHighlightMode>('walkMode');
+    const basicMode = container.resolve<IHighlightMode>('basicMode');
 
     // Register and activate mode
-    modeManager.registerMode(walkMode);
+    modeManager.registerMode(basicMode);
 
     // Assert: Should not throw
-    expect(() => modeManager.activateMode('ephemeral')).not.toThrow();
-    expect(modeManager.getCurrentMode()).toBe(walkMode);
+    expect(() => modeManager.activateMode('basic')).not.toThrow();
+    expect(modeManager.getCurrentMode()).toBe(basicMode);
   });
 
   it('8. can swap implementations for testing', () => {
