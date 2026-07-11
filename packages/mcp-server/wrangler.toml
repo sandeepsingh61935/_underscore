@@ -1,0 +1,8 @@
+name = "underscore-mcp"
+main = "src/cloud/worker-entry.ts"
+compatibility_date = "2024-12-01"
+
+# Secrets (set via wrangler secret put, not here):
+#   SUPABASE_URL
+#   SUPABASE_ANON_KEY
+#   MCP_RESOURCE_URL  (optional; stable OAuth resource identifier)

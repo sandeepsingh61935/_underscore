@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "underscore": {
+      "command": "node",
+      "args": ["ABSOLUTE_PATH_TO/packages/mcp-server/dist/index.js", "--adapter=bridge"],
+      "env": {
+        "UNDERSCORE_MCP_TOKEN": "paste-token-here"
+      }
+    }
+  }
+}
