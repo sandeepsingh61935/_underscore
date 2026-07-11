@@ -15,6 +15,7 @@ import type { SupabaseHighlightRepository } from './supabase-highlight-repositor
 import type { IAuthManager } from '../auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/utils/logger';
 import type { OfflineQueueService } from '@/background/services/offline-queue-service';
+import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 
 /**
  * Dual-write repository for local-first, cloud-synced storage
@@ -33,6 +34,7 @@ export class DualWriteRepository implements IHighlightRepository {
         private readonly cloudRepo: SupabaseHighlightRepository,
         private readonly authManager: IAuthManager,
         private readonly offlineQueue: OfflineQueueService,
+        private readonly echoTracker: LocalWriteEchoTracker,
         private readonly logger: ILogger
     ) { }
 
@@ -253,6 +255,8 @@ export class DualWriteRepository implements IHighlightRepository {
             });
             return;
         }
+
+        this.echoTracker.record(identifier, operationName);
 
         // Fire-and-forget cloud write
         operation()

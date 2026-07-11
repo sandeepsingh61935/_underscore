@@ -12,12 +12,25 @@ import type { IHighlightRepository } from '@/shared/repositories/i-highlight-rep
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
+import { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import {
+  BASIC_HIGHLIGHT_DB_NAME,
+  PRO_HIGHLIGHT_DB_NAME,
+} from '@/shared/constants/highlight-storage-scope';
 import { OfflineQueueService } from '@/background/services/offline-queue-service';
 import { SupabaseClient } from '@/background/api/supabase-client';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { HighlightEncryptor } from '@/background/services/highlight-encryptor';
+import { CloudHydrationService } from '@/background/services/cloud-hydration-service';
+import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
+import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
+import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 
 /**
  * Register repository components in DI container
@@ -52,12 +65,35 @@ export function registerRepositoryComponents(container: Container): void {
     // ==================== Local Repository ====================
 
     /**
-     * InMemoryHighlightRepository - Singleton
-     * Fast, in-memory storage for local-first architecture
+     * Basic local highlight store — guest / logged-out persistence.
+     */
+    container.registerSingleton<IHighlightRepository>('basicHighlightRepository', () => {
+        const logger = container.resolve<ILogger>('logger');
+        return new IndexedDBHighlightRepository(logger, BASIC_HIGHLIGHT_DB_NAME);
+    });
+
+    /**
+     * Pro local highlight store — account offline cache while signed in.
+     */
+    container.registerSingleton<IHighlightRepository>('proHighlightRepository', () => {
+        const logger = container.resolve<ILogger>('logger');
+        return new IndexedDBHighlightRepository(logger, PRO_HIGHLIGHT_DB_NAME);
+    });
+
+    /**
+     * Auth-scoped router over Basic + Pro local stores.
+     */
+    container.registerSingleton<ScopedHighlightRepository>('scopedHighlightRepository', () => {
+        const basic = container.resolve<IHighlightRepository>('basicHighlightRepository' as any);
+        const pro = container.resolve<IHighlightRepository>('proHighlightRepository' as any);
+        return new ScopedHighlightRepository(basic, pro, 'basic');
+    });
+
+    /**
+     * @deprecated Use scopedHighlightRepository. Kept for container key compatibility.
      */
     container.registerSingleton<IHighlightRepository>('localRepository', () => {
-        const logger = container.resolve<ILogger>('logger');
-        return new IndexedDBHighlightRepository(logger);
+        return container.resolve<ScopedHighlightRepository>('scopedHighlightRepository' as any);
     });
 
     // ==================== Cloud Repository ====================
@@ -87,6 +123,10 @@ export function registerRepositoryComponents(container: Container): void {
         return new OfflineQueueService(cloudRepo, authManager, logger);
     });
 
+    container.registerSingleton('localWriteEchoTracker', () => new LocalWriteEchoTracker());
+
+    container.registerSingleton('librarySyncCursor', () => new LibrarySyncCursor());
+
     // ==================== Dual-Write Repository (Primary) ====================
 
     /**
@@ -105,9 +145,10 @@ export function registerRepositoryComponents(container: Container): void {
         const cloudRepo = container.resolve<SupabaseHighlightRepository>('supabaseHighlightRepository' as any);
         const authManager = container.resolve<IAuthManager>('authManager');
         const offlineQueue = container.resolve<any>('offlineQueueService');
+        const echoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker' as any);
         const logger = container.resolve<ILogger>('logger');
 
-        return new DualWriteRepository(localRepo, cloudRepo, authManager, offlineQueue, logger);
+        return new DualWriteRepository(localRepo, cloudRepo, authManager, offlineQueue, echoTracker, logger);
     });
 
     // ============================================
@@ -116,6 +157,50 @@ export function registerRepositoryComponents(container: Container): void {
     container.registerSingleton<RepositoryFacade>('repositoryFacade', () => {
         const repository = container.resolve<IHighlightRepository>('highlightRepository');
         return new RepositoryFacade(repository);
+    });
+
+    // ==================== Cloud Hydration ====================
+
+    container.registerSingleton<ICloudHydrationService>('cloudHydrationService', () => {
+        const authManager = container.resolve<IAuthManager>('authManager');
+        const highlightRepository = container.resolve<IHighlightRepository>('highlightRepository');
+        const cloudRepository = container.resolve<SupabaseHighlightRepository>('supabaseHighlightRepository' as any);
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const syncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor' as any);
+        const logger = container.resolve<ILogger>('logger');
+
+        return new CloudHydrationService(
+            authManager,
+            highlightRepository,
+            cloudRepository,
+            repositoryFacade,
+            syncCursor,
+            logger
+        );
+    });
+
+    container.registerSingleton('realtimeHighlightIngestService', () => {
+        const eventBus = container.resolve<IEventBus>('eventBus');
+        const highlightRepository = container.resolve<IHighlightRepository>('highlightRepository');
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const echoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker' as any);
+        const logger = container.resolve<ILogger>('logger');
+
+        let encryptionService;
+        try {
+            encryptionService = container.resolve<any>('encryptionService');
+        } catch {
+            encryptionService = undefined;
+        }
+
+        return new RealtimeHighlightIngestService(
+            eventBus,
+            highlightRepository,
+            repositoryFacade,
+            echoTracker,
+            logger,
+            encryptionService
+        );
     });
 
     // ============================================
@@ -137,9 +222,17 @@ export function registerRepositoryComponents(container: Container): void {
     container.registerSingleton<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
         const encryptor = container.resolve<HighlightEncryptor>('highlightEncryptor');
+        const keyManager = container.resolve<IKeyManager>('keyManager');
         const messageBus = container.resolve<IMessageBus>('messageBus');
         const logger = container.resolve<ILogger>('logger');
-        return new BackgroundHighlightOrchestrator(repositoryFacade, encryptor, messageBus, logger);
+        return new BackgroundHighlightOrchestrator(repositoryFacade, encryptor, keyManager, messageBus, logger);
+    });
+
+    container.registerSingleton<HighlightDeleteService>('highlightDeleteService', () => {
+        const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+        const supabaseClient = container.resolve<SupabaseClient>('_supabaseClient');
+        const cloud = new HighlightCloudDeleteAdapter(supabaseClient);
+        return new HighlightDeleteService(repositoryFacade, cloud);
     });
 }
 

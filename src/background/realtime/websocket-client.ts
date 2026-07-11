@@ -3,9 +3,12 @@ import { RealtimeChannel, RealtimePostgresChangesPayload, SupabaseClient as Supa
 import { IWebSocketClient } from './interfaces/i-websocket-client';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { ILogger } from '@/shared/interfaces/i-logger';
-import { IEncryptionService } from '../auth/interfaces/i-encryption-service';
 import { EventName } from '@/shared/types/events';
-import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import {
+  isHighlightRowSoftDeleted,
+  transformHighlightRow,
+  type SupabaseHighlightRow,
+} from '@/shared/utils/supabase-highlight-row';
 
 /**
  * WebSocket client for real-time synchronization
@@ -18,8 +21,7 @@ export class WebSocketClient implements IWebSocketClient {
     constructor(
         private readonly supabase: SupabaseSDKClient,
         private readonly eventBus: IEventBus,
-        private readonly logger: ILogger,
-        private readonly encryptionService?: IEncryptionService
+        private readonly logger: ILogger
     ) { }
 
     /**
@@ -81,7 +83,7 @@ export class WebSocketClient implements IWebSocketClient {
                         table: 'highlights',
                         filter: `user_id=eq.${userId}`,
                     },
-                    (payload: RealtimePostgresChangesPayload<HighlightDataV2>) => this.handleChange(payload)
+                    (payload: RealtimePostgresChangesPayload<SupabaseHighlightRow>) => this.handleChange(payload)
                 )
                 .subscribe((status: string, err?: Error) => {
                     this.logger.info(`Realtime subscription status: ${status}`, {
@@ -124,82 +126,44 @@ export class WebSocketClient implements IWebSocketClient {
     /**
      * Handle incoming change events from Supabase
      */
-    private async handleChange(payload: RealtimePostgresChangesPayload<HighlightDataV2>): Promise<void> {
-        const anyPayload = payload as any;
-        const eventType = anyPayload.eventType;
+    private handleChange(payload: RealtimePostgresChangesPayload<SupabaseHighlightRow>): void {
+        const eventType = payload.eventType;
         this.logger.info('[WebSocketClient] [MSG] Received realtime event', {
             event: eventType,
-            table: anyPayload.table,
-            hasNew: !!anyPayload.new,
-            hasOld: !!anyPayload.old
+            table: payload.table,
+            hasNew: !!payload.new,
+            hasOld: !!payload.old
         });
 
-        // 1. Process payload to decrypt if needed
-        let data = anyPayload.new;
-        if (this.encryptionService && data && data.text && data.text.startsWith('[ENCRYPTED:')) {
-            try {
-                data = await this.decryptHighlight(data);
-            } catch (error) {
-                this.logger.error('Failed to decrypt realtime highlight', error as Error, { id: data.id });
-                // Continue with encrypted data or handle failure?
-            }
-        }
-
-        // 2. Emit events
         switch (eventType) {
-            case 'INSERT':
-                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_CREATED', { id: data?.id });
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, data);
+            case 'INSERT': {
+                const row = payload.new;
+                if (!row) return;
+                const highlight = transformHighlightRow(row);
+                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_CREATED', { id: highlight.id });
+                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_CREATED, row);
                 break;
-            case 'UPDATE':
-                // Check for Soft Delete (deleted_at is set)
-                if (data?.deleted_at) {
-                    this.logger.info('[WebSocketClient] Detected Soft Delete via UPDATE -> Emitting REMOTE_HIGHLIGHT_DELETED', { id: data?.id });
-                    // DELETED event expects { id: ... } payload
-                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, { id: data.id });
+            }
+            case 'UPDATE': {
+                const row = payload.new;
+                if (!row) return;
+                if (isHighlightRowSoftDeleted(row)) {
+                    this.logger.info('[WebSocketClient] Detected Soft Delete via UPDATE', { id: row.id });
+                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, { id: row.id });
                 } else {
-                    this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_UPDATED', { id: data?.id });
-                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, data);
+                    this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_UPDATED', { id: row.id });
+                    this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_UPDATED, row);
                 }
                 break;
-            case 'DELETE':
-                // payload.old contains the ID for DELETE events
-                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_DELETED', { id: anyPayload.old?.id });
-                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, anyPayload.old);
+            }
+            case 'DELETE': {
+                const id = payload.old?.id;
+                this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_DELETED', { id });
+                this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, { id });
                 break;
+            }
             default:
                 this.logger.warn('Unknown realtime event type', { type: eventType });
-        }
-    }
-
-    /**
-     * Decrypt highlight data from realtime payload
-     */
-    private async decryptHighlight(data: HighlightDataV2): Promise<HighlightDataV2> {
-        if (!this.encryptionService) return data;
-
-        try {
-            // Extract encrypted payload (matching EncryptedAPIClient logic)
-            const encryptedJson = data.text.substring(11, data.text.length - 1);
-            const encryptedPayload = JSON.parse(encryptedJson);
-
-            // Decrypt
-            const decrypted = await this.encryptionService.decrypt(encryptedPayload);
-
-            // Restore original data
-            return {
-                ...data,
-                text: decrypted.text,
-                url: decrypted.url,
-                ranges: JSON.parse(decrypted.selector),
-            } as HighlightDataV2;
-        } catch (error) {
-            this.logger.warn('Realtime decryption failed', error as Error);
-            return {
-                ...data,
-                text: '[DECRYPTION FAILED]',
-                ranges: [],
-            } as HighlightDataV2;
         }
     }
 }

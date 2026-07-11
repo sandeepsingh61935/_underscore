@@ -12,15 +12,24 @@
  */
 
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import { getBasicTtlMs } from '@/shared/constants/basic-ttl';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
+import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import type { HighlightEncryptor } from './highlight-encryptor';
+
+export type HighlightDecryptionStatus = 'vault_locked' | 'failed';
+
+export type EnrichedHighlightSummary<T extends { id: string; text: string }> = T & {
+  decryptionStatus?: HighlightDecryptionStatus;
+};
 
 export class BackgroundHighlightOrchestrator {
   constructor(
     private readonly facade: RepositoryFacade,
     private readonly encryptor: HighlightEncryptor,
+    private readonly keyManager: IKeyManager,
     private readonly messageBus: IMessageBus,
     private readonly logger: ILogger
   ) {}
@@ -34,6 +43,42 @@ export class BackgroundHighlightOrchestrator {
     this.messageBus.subscribe('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH', this.onFindByContentHash.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHT_DECRYPT_TEXT', this.onDecryptText.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHT_GET', this.onGetHighlight.bind(this));
+  }
+
+  /**
+   * Replace empty summary text with decrypted plaintext when the stored
+   * highlight has an ADR-013 envelope. Used by Library read handlers.
+   */
+  async enrichWithPlaintext<T extends { id: string; text: string }>(
+    summaries: T[]
+  ): Promise<EnrichedHighlightSummary<T>[]> {
+    return Promise.all(
+      summaries.map(async (summary) => {
+        if (summary.text) {
+          return summary;
+        }
+
+        const stored = this.facade.get(summary.id);
+        if (!stored?.textEncrypted) {
+          return summary;
+        }
+
+        if (!this.keyManager.isUnlocked) {
+          return { ...summary, text: '', decryptionStatus: 'vault_locked' as const };
+        }
+
+        try {
+          const plaintext = await this.encryptor.decrypt(stored.textEncrypted);
+          return { ...summary, text: plaintext };
+        } catch (error) {
+          this.logger.warn('[bridge] enrichWithPlaintext failed', {
+            id: summary.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return { ...summary, text: '', decryptionStatus: 'failed' as const };
+        }
+      })
+    );
   }
 
   private async onAdd(highlight: HighlightDataV2) {
@@ -120,16 +165,17 @@ export class BackgroundHighlightOrchestrator {
     mode,
   }: {
     url: string;
-    mode?: 'ephemeral' | 'local' | 'cloud';
+    mode?: 'basic' | 'pro' | 'pro_xai';
   }) {
     this.logger.info('[bridge] findByUrl', { url, mode });
     try {
       const all = this.facade.getAll();
-      // Ephemeral mode: filter out highlights older than 24h. The IDB
-      // rows do not physically expire (cleanup sweep is out of scope);
+      // Basic mode: filter out highlights older than the configured Basic
+      // TTL preference (24h default; see @/shared/constants/basic-ttl). The
+      // IDB rows do not physically expire (cleanup sweep is out of scope);
       // we enforce TTL at the read seam so the user sees the right set.
-      const TTL_MS = 24 * 60 * 60 * 1000;
-      const cutoff = mode === 'ephemeral' ? Date.now() - TTL_MS : null;
+      const ttlMs = mode === 'basic' ? await getBasicTtlMs() : null;
+      const cutoff = ttlMs !== null ? Date.now() - ttlMs : null;
       const data = all.filter((h) => {
         if (h.url !== url) return false;
         if (cutoff !== null) {

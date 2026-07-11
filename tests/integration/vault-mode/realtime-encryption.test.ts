@@ -1,11 +1,12 @@
 /**
  * @file realtime-encryption.test.ts
  * @description Integration tests for Real-Time + Encryption
- * @testing-strategy Verify that real-time events are correctly decrypted before being emitted
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WebSocketClient } from '@/background/realtime/websocket-client';
+import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { E2EEncryptionService } from '@/background/auth/e2e-encryption-service';
 import { KeyManager } from '@/background/auth/key-manager';
 import { EventName } from '@/shared/types/events';
@@ -13,6 +14,10 @@ import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+
+vi.mock('@/background/services/library-change-notifier', () => ({
+  notifyLibraryDataChanged: vi.fn(),
+}));
 
 describe('Integration: Real-Time + Encryption', () => {
     let webSocketClient: WebSocketClient;
@@ -54,7 +59,6 @@ describe('Integration: Real-Time + Encryption', () => {
             clear: vi.fn(),
         } as any;
 
-        // Mock Supabase SDK
         const mockChannel = {
             on: vi.fn().mockImplementation((_event, _filter, callback) => {
                 realtimeCallback = callback;
@@ -84,91 +88,100 @@ describe('Integration: Real-Time + Encryption', () => {
             }
         } as any;
 
-        // Initialize encryption
         keyManager = new KeyManager(mockLogger, mockAuthManager);
         await keyManager.unlock(testUserId, 'test-passphrase');
         await keyManager.generateKeyPair(testUserId);
         encryptionService = new E2EEncryptionService(keyManager, mockLogger);
 
-        // Initialize WebSocketClient
-        webSocketClient = new WebSocketClient(mockSupabase, mockEventBus, mockLogger, encryptionService);
+        webSocketClient = new WebSocketClient(mockSupabase, mockEventBus, mockLogger);
     });
 
-    describe('Test 1.5: Real-Time + Encryption Integration', () => {
-        it('should emit decrypted highlight when receiving encrypted realtime update', async () => {
-            await webSocketClient.subscribe(testUserId);
+    it('emits raw supabase rows from websocket (decrypt happens in ingest)', async () => {
+        await webSocketClient.subscribe(testUserId);
 
-            // 1. Prepare encrypted payload
-            const rawHighlight = {
-                text: 'Real-time secret',
-                url: 'https://example.com',
-                selector: '[]',
-                createdAt: new Date(),
-                userId: testUserId,
-            };
-            const encrypted = await encryptionService.encrypt(rawHighlight);
+        const rawHighlight = {
+            text: 'Real-time secret',
+            url: 'https://example.com',
+            selector: '[]',
+            createdAt: new Date(),
+            userId: testUserId,
+        };
+        const encrypted = await encryptionService.encrypt(rawHighlight);
 
-            const encryptedHighlight: HighlightDataV2 = {
+        await (realtimeCallback as any)({
+            eventType: 'INSERT',
+            new: {
                 id: 'hl-rt-1',
-                text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
-                contentHash: 'hash-rt',
-                colorRole: 'purple',
-                type: 'underscore',
-                ranges: [],
-                createdAt: rawHighlight.createdAt,
-            };
-
-            // 2. Simulate incoming realtime event
-            await (realtimeCallback as any)({
-                eventType: 'INSERT',
-                new: encryptedHighlight,
-                table: 'highlights',
-                schema: 'public',
-            });
-
-            // 3. Verify emitted event
-            expect(mockEventBus.emit).toHaveBeenCalledWith(
-                EventName.REMOTE_HIGHLIGHT_CREATED,
-                expect.objectContaining({
-                    id: 'hl-rt-1',
-                    text: 'Real-time secret'
-                })
-            );
-        });
-
-        it('should handle updates the same way', async () => {
-            await webSocketClient.subscribe(testUserId);
-
-            const rawHighlight = {
-                text: 'Updated secret',
+                user_id: testUserId,
                 url: 'https://example.com',
-                selector: '[]',
-                createdAt: new Date(),
-                userId: testUserId,
-            };
-            const encrypted = await encryptionService.encrypt(rawHighlight);
-
-            const encryptedHighlight: HighlightDataV2 = {
-                id: 'hl-rt-update',
                 text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
-                contentHash: 'hash-upd',
-                colorRole: 'green',
-                type: 'underscore',
-                ranges: [],
-                createdAt: rawHighlight.createdAt,
-            };
-
-            await (realtimeCallback as any)({
-                eventType: 'UPDATE',
-                new: encryptedHighlight,
-            });
-
-            expect(mockEventBus.emit).toHaveBeenCalledWith(
-                EventName.REMOTE_HIGHLIGHT_UPDATED,
-                expect.objectContaining({
-                    text: 'Updated secret'
-                })
-            );
+                content_hash: 'a'.repeat(64),
+                color_role: 'purple',
+                created_at: rawHighlight.createdAt.toISOString(),
+                updated_at: rawHighlight.createdAt.toISOString(),
+            },
+            table: 'highlights',
+            schema: 'public',
         });
+
+        expect(mockEventBus.emit).toHaveBeenCalledWith(
+            EventName.REMOTE_HIGHLIGHT_CREATED,
+            expect.objectContaining({
+                id: 'hl-rt-1',
+                text: expect.stringContaining('[ENCRYPTED:'),
+            })
+        );
+    });
+
+    it('ingest decrypts legacy encrypted realtime rows before persisting', async () => {
+        const handlers = new Map<string, (payload: unknown) => void>();
+        const ingestBus = {
+            on: vi.fn((event: string, handler: (payload: unknown) => void) => {
+                handlers.set(event, handler);
+            }),
+        };
+
+        const stored: HighlightDataV2[] = [];
+        const repo = {
+            add: vi.fn(async (h: HighlightDataV2) => {
+                stored.push(h);
+            }),
+            update: vi.fn(),
+            remove: vi.fn(),
+            findById: vi.fn(async () => null),
+            exists: vi.fn(async () => false),
+        };
+
+        const ingest = new RealtimeHighlightIngestService(
+            ingestBus as never,
+            repo as never,
+            { reload: vi.fn().mockResolvedValue(undefined) } as never,
+            new LocalWriteEchoTracker(),
+            mockLogger,
+            encryptionService
+        );
+        ingest.initialize();
+
+        const rawHighlight = {
+            text: 'Updated secret',
+            url: 'https://example.com',
+            selector: '[]',
+            createdAt: new Date(),
+            userId: testUserId,
+        };
+        const encrypted = await encryptionService.encrypt(rawHighlight);
+
+        await handlers.get(EventName.REMOTE_HIGHLIGHT_CREATED)!({
+            id: 'hl-rt-update',
+            user_id: testUserId,
+            url: 'https://example.com',
+            text: `[ENCRYPTED:${JSON.stringify(encrypted)}]`,
+            content_hash: 'b'.repeat(64),
+            color_role: 'green',
+            created_at: rawHighlight.createdAt.toISOString(),
+            updated_at: rawHighlight.createdAt.toISOString(),
+        });
+
+        expect(stored[0]?.text).toBe('Updated secret');
     });
 });

@@ -8,8 +8,13 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { IHighlightRepository, RepositoryOptions } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
+import {
+  BASIC_HIGHLIGHT_DB_NAME,
+  LEGACY_HIGHLIGHT_DB_NAME,
+} from '@/shared/constants/highlight-storage-scope';
 
-export const DB_NAME = 'underscore_vault';
+export { BASIC_HIGHLIGHT_DB_NAME, LEGACY_HIGHLIGHT_DB_NAME };
+export const DB_NAME = LEGACY_HIGHLIGHT_DB_NAME;
 const DB_VERSION = 1;
 const STORE_NAME = 'highlights';
 
@@ -21,8 +26,11 @@ const STORE_NAME = 'highlights';
 export class IndexedDBHighlightRepository implements IHighlightRepository {
     private dbPromise: Promise<IDBPDatabase>;
 
-    constructor(private readonly logger: ILogger) {
-        this.dbPromise = openDB(DB_NAME, DB_VERSION, {
+    constructor(
+        private readonly logger: ILogger,
+        private readonly dbName: string = BASIC_HIGHLIGHT_DB_NAME,
+    ) {
+        this.dbPromise = openDB(this.dbName, DB_VERSION, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains(STORE_NAME)) {
                     const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });

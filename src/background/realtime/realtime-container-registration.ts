@@ -6,6 +6,7 @@ import type { IWebSocketClient } from '@/background/realtime/interfaces/i-websoc
 import { WebSocketClient } from '@/background/realtime/websocket-client';
 import { EventBridge } from '../services/event-bridge';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
+import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 
 /**
@@ -14,28 +15,21 @@ import { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 export function registerRealtimeComponents(container: Container): void {
     // ==================== WebSocket Client ====================
     container.registerSingleton<IWebSocketClient>('webSocketClient', () => {
-        const supabase = container.resolve<SupabaseSDKClient>('_supabaseSDK'); // Resolve raw SDK client
+        const supabase = container.resolve<SupabaseSDKClient>('_supabaseSDK');
         const eventBus = container.resolve<IEventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
 
-        // Optional encryption service for Vault Mode
-        let encryptionService;
-        try {
-            encryptionService = container.resolve<any>('encryptionService');
-        } catch (e) {
-            // Ignore if not registered (Sprint Mode)
-        }
-
-        return new WebSocketClient(supabase, eventBus, logger, encryptionService);
+        return new WebSocketClient(supabase, eventBus, logger);
     });
 
     // ==================== Connection Manager ====================
     container.registerSingleton<ConnectionManager>('connectionManager', () => {
         const wsClient = container.resolve<IWebSocketClient>('webSocketClient');
         const eventBus = container.resolve<IEventBus>('eventBus');
+        const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
         const logger = container.resolve<ILogger>('logger');
 
-        return new ConnectionManager(wsClient, eventBus, logger);
+        return new ConnectionManager(wsClient, eventBus, cloudHydrationService, logger);
     });
 
     // ==================== Event Bridge ====================

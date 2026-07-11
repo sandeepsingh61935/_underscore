@@ -27,6 +27,7 @@ function makeEnvelope(): EncryptedText {
 describe('BackgroundHighlightOrchestrator', () => {
   let facade: RepositoryFacade;
   let encryptor: HighlightEncryptor;
+  let keyManager: { isUnlocked: boolean };
   let subscriptions: Map<string, (payload: any) => Promise<any>>;
   let orchestrator: BackgroundHighlightOrchestrator;
 
@@ -54,6 +55,8 @@ describe('BackgroundHighlightOrchestrator', () => {
       decrypt: vi.fn(async (e: EncryptedText) => e.ciphertext + '-plaintext'),
     } as unknown as HighlightEncryptor;
 
+    keyManager = { isUnlocked: true };
+
     subscriptions = new Map();
     const messageBus = {
       subscribe: vi.fn((type: string, handler: any) => {
@@ -64,6 +67,7 @@ describe('BackgroundHighlightOrchestrator', () => {
     orchestrator = new BackgroundHighlightOrchestrator(
       facade,
       encryptor,
+      keyManager as any,
       messageBus as any,
       logger
     );
@@ -143,6 +147,20 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(persisted[1].colorRole).toBe('blue');
   });
 
+  it('onUpdate: passes metadata updates through without encryption', async () => {
+    await subscriptions.get('IPC_HIGHLIGHT_UPDATE')!({
+      id: 'h-3',
+      updates: { metadata: { source: 'user', notes: 'Key point', tags: ['research'] } },
+    });
+    expect(encryptor.encrypt).not.toHaveBeenCalled();
+    const persisted = (facade.update as any).mock.calls[0];
+    expect(persisted[1].metadata).toEqual({
+      source: 'user',
+      notes: 'Key point',
+      tags: ['research'],
+    });
+  });
+
   it('onUpdate: returns NOT_FOUND when the caller updates text on a missing highlight (no plaintext leak)', async () => {
     (facade.get as any) = vi.fn(() => undefined);
     const result = await subscriptions.get('IPC_HIGHLIGHT_UPDATE')!({ id: 'missing', updates: { text: 'secret' } });
@@ -163,7 +181,7 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(Array.isArray(result.data)).toBe(true);
   });
 
-  it('onFindByUrl: ephemeral mode filters out highlights older than 24h', async () => {
+  it('onFindByUrl: basic mode filters out highlights older than the configured TTL (default 24h)', async () => {
     const fresh = makeHighlight('h-fresh');
     const stale = {
       ...makeHighlight('h-stale'),
@@ -173,7 +191,7 @@ describe('BackgroundHighlightOrchestrator', () => {
 
     const result = await subscriptions.get('IPC_HIGHLIGHTS_FIND_BY_URL')!({
       url: 'https://example.com',
-      mode: 'ephemeral',
+      mode: 'basic',
     });
     expect(result.success).toBe(true);
     const ids = (result.data as HighlightDataV2[]).map((h) => h.id);
@@ -181,14 +199,14 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(ids).not.toContain('h-stale');
   });
 
-  it('onFindByUrl: local and cloud modes do NOT filter by TTL', async () => {
+  it('onFindByUrl: pro and pro_xai modes do NOT filter by TTL', async () => {
     const stale = {
       ...makeHighlight('h-stale'),
       createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
     };
     (facade.getAll as any) = vi.fn(() => [stale]);
 
-    for (const mode of ['local', 'cloud'] as const) {
+    for (const mode of ['pro', 'pro_xai'] as const) {
       const result = await subscriptions.get('IPC_HIGHLIGHTS_FIND_BY_URL')!({
         url: 'https://example.com',
         mode,
@@ -274,5 +292,48 @@ describe('BackgroundHighlightOrchestrator', () => {
     const result = await subscriptions.get('IPC_HIGHLIGHT_GET')!({ id: 'nope' });
     expect(result.success).toBe(false);
     expect(result.code).toBe('NOT_FOUND');
+  });
+
+  it('enrichWithPlaintext: decrypts summaries with empty text', async () => {
+    const envelope = makeEnvelope();
+    (facade.get as any) = vi.fn((id: string) => ({
+      ...makeHighlight(id),
+      text: '',
+      textEncrypted: envelope,
+    }));
+
+    const result = await orchestrator.enrichWithPlaintext([
+      { id: 'h-10', text: '' },
+    ]);
+
+    expect(result[0]?.text).toBe('AAAA-plaintext');
+    expect(encryptor.decrypt).toHaveBeenCalledWith(envelope);
+  });
+
+  it('enrichWithPlaintext: leaves summaries that already have text unchanged', async () => {
+    const result = await orchestrator.enrichWithPlaintext([
+      { id: 'h-11', text: 'already plain' },
+    ]);
+
+    expect(result[0]?.text).toBe('already plain');
+    expect(encryptor.decrypt).not.toHaveBeenCalled();
+  });
+
+  it('enrichWithPlaintext: returns vault_locked when vault is locked', async () => {
+    keyManager.isUnlocked = false;
+    const envelope = makeEnvelope();
+    (facade.get as any) = vi.fn((id: string) => ({
+      ...makeHighlight(id),
+      text: '',
+      textEncrypted: envelope,
+    }));
+
+    const result = await orchestrator.enrichWithPlaintext([
+      { id: 'h-12', text: '' },
+    ]);
+
+    expect(result[0]?.text).toBe('');
+    expect(result[0]?.decryptionStatus).toBe('vault_locked');
+    expect(encryptor.decrypt).not.toHaveBeenCalled();
   });
 });

@@ -141,9 +141,44 @@ describe('SupabaseClient', () => {
                 color_role: 'yellow',
                 selectors: highlightData.ranges[0]!.selector,
                 content_hash: 'a'.repeat(64),
+                metadata: null,
                 created_at: '2024-01-01T00:00:00.000Z',
                 updated_at: expect.any(String),
             });
+        });
+
+        it('should accept createdAt as ISO string from IndexedDB round-trip', async () => {
+            const highlightData = {
+                id: 'highlight-string-date',
+                text: 'IndexedDB serialized date',
+                contentHash: 'b'.repeat(64),
+                colorRole: 'yellow' as const,
+                type: 'underscore' as const,
+                ranges: [
+                    {
+                        xpath: '//p[1]',
+                        startOffset: 0,
+                        endOffset: 24,
+                        text: 'IndexedDB serialized date',
+                        textBefore: '',
+                        textAfter: '',
+                    },
+                ],
+                createdAt: '2024-06-15T12:00:00.000Z',
+            } as HighlightDataV2;
+
+            const mockInsert = vi.fn().mockResolvedValue({ error: null });
+            mockSupabaseClient.from.mockReturnValue({
+                insert: mockInsert,
+            });
+
+            await client.createHighlight(highlightData);
+
+            expect(mockInsert).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    created_at: '2024-06-15T12:00:00.000Z',
+                }),
+            );
         });
     });
 
@@ -175,6 +210,46 @@ describe('SupabaseClient', () => {
             const payload = mockUpdate.mock.calls[0]![0];
             expect(payload).not.toHaveProperty('text');
             expect(payload).not.toHaveProperty('content_hash');
+        });
+
+        it('should persist sanitized metadata when metadata is provided', async () => {
+            const updates: Partial<HighlightDataV2> = {
+                metadata: { source: 'user', notes: '  Key point  ', tags: [' Comedy ', 'comedy'] },
+            };
+
+            const mockUpdate = vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ error: null }),
+                }),
+            });
+            mockSupabaseClient.from.mockReturnValue({
+                update: mockUpdate,
+            });
+
+            await client.updateHighlight('highlight-123', updates);
+
+            expect(mockUpdate).toHaveBeenCalledWith({
+                metadata: { notes: 'Key point', tags: ['comedy'] },
+                updated_at: expect.any(String),
+            });
+        });
+
+        it('should clear metadata column when metadata is explicitly cleared', async () => {
+            const mockUpdate = vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ error: null }),
+                }),
+            });
+            mockSupabaseClient.from.mockReturnValue({
+                update: mockUpdate,
+            });
+
+            await client.updateHighlight('highlight-123', { metadata: undefined });
+
+            expect(mockUpdate).toHaveBeenCalledWith({
+                metadata: null,
+                updated_at: expect.any(String),
+            });
         });
     });
 
@@ -252,6 +327,37 @@ describe('SupabaseClient', () => {
 
             // Assert
             expect(result).toEqual([]);
+        });
+
+        it('should map url and userId from Supabase rows', async () => {
+            mockSupabaseClient.from.mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                        is: vi.fn().mockResolvedValue({
+                            data: [
+                                {
+                                    id: 'highlight-123',
+                                    user_id: 'user-123',
+                                    url: 'https://example.com/article',
+                                    text: 'Mapped highlight',
+                                    content_hash: 'b'.repeat(64),
+                                    color_role: 'yellow',
+                                    selectors: null,
+                                    created_at: '2024-01-01T00:00:00.000Z',
+                                    updated_at: '2024-01-02T00:00:00.000Z',
+                                },
+                            ],
+                            error: null,
+                        }),
+                    }),
+                }),
+            });
+
+            const result = await client.getHighlights();
+
+            expect(result).toHaveLength(1);
+            expect(result[0]?.url).toBe('https://example.com/article');
+            expect(result[0]?.userId).toBe('user-123');
         });
     });
 

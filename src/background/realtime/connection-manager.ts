@@ -3,6 +3,7 @@ import { ILogger } from '@/shared/interfaces/i-logger';
 import { IWebSocketClient } from './interfaces/i-websocket-client';
 import { IEventBus } from '@/shared/interfaces/i-event-bus';
 import { EventName } from '@/shared/types/events';
+import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 
 /**
  * Manages WebSocket connection lifecycle
@@ -17,6 +18,7 @@ export class ConnectionManager {
     constructor(
         private readonly wsClient: IWebSocketClient,
         private readonly eventBus: IEventBus,
+        private readonly cloudHydrationService: ICloudHydrationService,
         private readonly logger: ILogger
     ) {
         this.listenToNetworkChanges();
@@ -43,6 +45,9 @@ export class ConnectionManager {
             await this.wsClient.subscribe(userId);
             this.reconnectAttempts = 0;
             this.logger.info('Connected to realtime service');
+            void this.cloudHydrationService.hydrate().catch((error) => {
+                this.logger.error('Incremental hydration after realtime connect failed', error as Error);
+            });
         } catch (error) {
             this.logger.error('Failed to connect to realtime service', error as Error);
             void this.handleReconnect();

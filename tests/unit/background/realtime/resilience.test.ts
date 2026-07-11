@@ -79,6 +79,7 @@ describe('Realtime Resilience & Security', () => {
         connectionManager = new ConnectionManager(
             wsClient,
             mockEventBus as unknown as IEventBus,
+            { hydrate: vi.fn().mockResolvedValue({}) } as never,
             mockLogger as unknown as ILogger
         );
     });

@@ -32,9 +32,22 @@ describe('ConnectionManager', () => {
             debug: vi.fn()
         };
 
+        const mockHydration = {
+            hydrate: vi.fn().mockResolvedValue({
+                localCountBefore: 0,
+                cloudCount: 0,
+                backfilledCount: 0,
+                updatedCount: 0,
+                deletedCount: 0,
+                skippedCount: 0,
+                failedCount: 0,
+            }),
+        };
+
         manager = new ConnectionManager(
             mockWsClient as unknown as IWebSocketClient,
             mockEventBus as unknown as IEventBus,
+            mockHydration as never,
             mockLogger as unknown as ILogger
         );
     });

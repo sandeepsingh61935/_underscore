@@ -7,6 +7,12 @@
 import { createClient, SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 import type { IAPIClient, SyncEvent, PushResult, Collection } from './interfaces/i-api-client';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import {
+  serializeHighlightMetadataForCloud,
+  serializeHighlightTextForCloud,
+  serializeTimestampForCloud,
+  transformHighlightRow,
+} from '@/shared/utils/supabase-highlight-row';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import {
@@ -293,11 +299,12 @@ export class SupabaseClient implements IAPIClient {
                         id: data.id,
                         user_id: user.id,
                         url: data.url || '', // Use URL from highlight data, not background context
-                        text: data.text,
+                        text: serializeHighlightTextForCloud(data),
                         color_role: data.colorRole,
                         selectors: data.ranges[0]?.selector,
                         content_hash: data.contentHash,
-                        created_at: data.createdAt.toISOString(),
+                        metadata: serializeHighlightMetadataForCloud(data.metadata),
+                        created_at: serializeTimestampForCloud(data.createdAt),
                         updated_at: new Date().toISOString(),
                     })
             ) as any;
@@ -327,9 +334,19 @@ export class SupabaseClient implements IAPIClient {
                 updated_at: new Date().toISOString(),
             };
 
-            if (updates.text !== undefined) payload['text'] = updates.text;
+            if (updates.text !== undefined || updates.textEncrypted !== undefined) {
+                const merged = { ...updates } as HighlightDataV2;
+                if (updates.text === undefined && updates.textEncrypted) {
+                    merged.text = '';
+                    merged.textEncrypted = updates.textEncrypted;
+                }
+                payload['text'] = serializeHighlightTextForCloud(merged as HighlightDataV2);
+            }
             if (updates.colorRole !== undefined) payload['color_role'] = updates.colorRole;
             if (updates.contentHash !== undefined) payload['content_hash'] = updates.contentHash;
+            if ('metadata' in updates) {
+                payload['metadata'] = serializeHighlightMetadataForCloud(updates.metadata);
+            }
 
             const response = await this.withTimeout(
                 this.sdkClient
@@ -377,6 +394,32 @@ export class SupabaseClient implements IAPIClient {
             this.logger.debug('Highlight soft-deleted successfully', { id });
         } catch (error) {
             this.logger.error('Failed to delete highlight', error as Error, { id });
+            throw error;
+        }
+    }
+
+    async restoreHighlight(id: string): Promise<void> {
+        const user = this.authManager.currentUser;
+        if (!user) {
+            throw new AuthenticationError('User not authenticated');
+        }
+
+        this.logger.debug('Restoring soft-deleted highlight', { id });
+
+        try {
+            const response = await this.withTimeout(
+                this.sdkClient
+                    .from('highlights')
+                    .update({ deleted_at: null })
+                    .eq('id', id)
+                    .eq('user_id', user.id)
+            ) as { error?: { message: string } | null };
+
+            if (response.error) {
+                throw this.transformError(response.error);
+            }
+        } catch (error) {
+            this.logger.error('Failed to restore highlight', error as Error, { id });
             throw error;
         }
     }
@@ -437,12 +480,74 @@ export class SupabaseClient implements IAPIClient {
             }
 
             // Transform Supabase rows to HighlightDataV2
-            const highlights = (response.data || []).map((row: any) => this.transformHighlightRow(row));
+            const highlights = (response.data || []).map((row: any) => transformHighlightRow(row));
 
             this.logger.debug('Highlights fetched', { count: highlights.length });
             return highlights;
         } catch (error) {
             this.logger.error('Failed to fetch highlights', error as Error, { url });
+            throw error;
+        }
+    }
+
+    async getHighlightsChangedSince(since: Date | null): Promise<HighlightDataV2[]> {
+        const user = this.authManager.currentUser;
+        if (!user) {
+            throw new AuthenticationError('User not authenticated');
+        }
+
+        try {
+            let query = this.sdkClient
+                .from('highlights')
+                .select('*')
+                .eq('user_id', user.id)
+                .is('deleted_at', null);
+
+            if (since) {
+                query = query.gte('updated_at', since.toISOString());
+            }
+
+            const response = await this.withTimeout(query) as any;
+
+            if (response.error) {
+                throw this.transformError(response.error);
+            }
+
+            return (response.data || []).map((row: any) => transformHighlightRow(row));
+        } catch (error) {
+            this.logger.error('Failed to fetch changed highlights', error as Error);
+            throw error;
+        }
+    }
+
+    async getDeletedHighlightIdsSince(since: Date | null): Promise<string[]> {
+        const user = this.authManager.currentUser;
+        if (!user) {
+            throw new AuthenticationError('User not authenticated');
+        }
+
+        try {
+            let query = this.sdkClient
+                .from('highlights')
+                .select('id')
+                .eq('user_id', user.id)
+                .not('deleted_at', 'is', null);
+
+            if (since) {
+                query = query.gte('deleted_at', since.toISOString());
+            }
+
+            const response = await this.withTimeout(query) as any;
+
+            if (response.error) {
+                throw this.transformError(response.error);
+            }
+
+            return (response.data || [])
+                .map((row: { id?: string }) => row.id)
+                .filter((id: string | undefined): id is string => typeof id === 'string');
+        } catch (error) {
+            this.logger.error('Failed to fetch deleted highlight ids', error as Error);
             throw error;
         }
     }
@@ -628,33 +733,6 @@ export class SupabaseClient implements IAPIClient {
      */
     private transformError(error: any): APIError {
         return APIErrorHandler.handle(error);
-    }
-
-    /**
-     * Transform Supabase highlight row to HighlightDataV2
-     */
-    private transformHighlightRow(row: any): HighlightDataV2 {
-        return {
-            version: 2,
-            id: row.id,
-            text: row.text,
-            contentHash: row.content_hash,
-            colorRole: row.color_role,
-            type: 'underscore',
-            ranges: [
-                {
-                    xpath: '', // TODO: Extract from selectors
-                    startOffset: 0,
-                    endOffset: row.text.length,
-                    text: row.text,
-                    textBefore: '',
-                    textAfter: '',
-                    selector: row.selectors,
-                },
-            ],
-            createdAt: new Date(row.created_at),
-            updatedAt: new Date(row.updated_at),
-        } as HighlightDataV2;
     }
 
     /**

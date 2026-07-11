@@ -59,6 +59,20 @@ export class SupabaseHighlightRepository implements IHighlightRepository {
         return await this.supabaseClient.getHighlights();
     }
 
+    async findChangedSince(since: Date | null): Promise<HighlightDataV2[]> {
+        this.logger.debug('[SupabaseRepo] Finding highlights changed since', {
+            since: since?.toISOString() ?? 'beginning',
+        });
+        return await this.supabaseClient.getHighlightsChangedSince(since);
+    }
+
+    async findDeletedIdsSince(since: Date | null): Promise<string[]> {
+        this.logger.debug('[SupabaseRepo] Finding deleted highlight ids since', {
+            since: since?.toISOString() ?? 'beginning',
+        });
+        return await this.supabaseClient.getDeletedHighlightIdsSince(since);
+    }
+
     async clear(): Promise<void> {
         this.logger.warn('[SupabaseRepo] Clearing all highlights (Soft Delete)');
         await this.supabaseClient.softDeleteAllHighlights();
