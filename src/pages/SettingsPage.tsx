@@ -11,7 +11,9 @@ import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSetti
 import { ConnectedAppsSettings } from '@/features/settings/components/ConnectedAppsSettings';
 import { formatBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import { getModeBranding } from '@/shared/constants/mode-branding';
+import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
@@ -68,6 +70,10 @@ export function SettingsPage({
   const vaultLocked = useVaultLocked(Boolean(user));
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
+  const isAuthenticated = Boolean(user);
+  const exportGate = useModeFeature('export', isAuthenticated);
+  const syncGate = useModeFeature('sync', isAuthenticated);
+  const aiGate = useModeFeature('ai', isAuthenticated);
 
   // onBack is still required on the interface for callers passing it to the shell's ModeHeader
   // _onBack is intentionally unused in the body-only version
@@ -99,7 +105,8 @@ export function SettingsPage({
   };
 
   const syncSubtitle = (() => {
-    if (!user) return 'Sign in to sync with cloud';
+    if (!syncGate.allowed) return featureGateSubtitle(syncGate.reason);
+    if (!user) return featureGateSubtitle('AUTH_REQUIRED');
     if (isSyncing) return 'Pulling highlights from database…';
     if (syncError) return syncError;
     if (syncStatus === 'success' && lastResult) return formatSyncSubtitle(lastResult);
@@ -107,7 +114,7 @@ export function SettingsPage({
   })();
 
   const handleSyncLibrary = async (): Promise<void> => {
-    if (!user || isSyncing) return;
+    if (!syncGate.allowed || !user || isSyncing) return;
     await sync();
   };
 
@@ -205,19 +212,23 @@ export function SettingsPage({
                 className="u-mono"
                 style={{
                   fontSize: 'var(--step--2)',
-                  color: user ? 'var(--accent)' : 'var(--ink-3)',
+                  color: syncGate.allowed && user ? 'var(--accent)' : 'var(--ink-3)',
                 }}
               >
-                {user ? 'Sync' : '—'}
+                {syncGate.allowed && user ? 'Sync' : '—'}
               </span>
             )
           }
-          onClick={user && !isSyncing ? handleSyncLibrary : undefined}
+          onClick={syncGate.allowed && !isSyncing ? handleSyncLibrary : undefined}
         />
         <Row
           title="Export library"
-          sub={user ? 'Download all highlights as markdown or spreadsheet' : 'Sign in to export your library'}
-          right={<ExportActions scope={{ kind: 'library' }} disabled={!user} />}
+          sub={
+            exportGate.allowed && user
+              ? 'Download all highlights as markdown or spreadsheet'
+              : featureGateSubtitle(exportGate.reason)
+          }
+          right={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
         />
         <Row
           title="Delete library"
@@ -263,12 +274,14 @@ export function SettingsPage({
           }
           onClick={!isSigningOut ? handleAccountClick : undefined}
         />
-        <Row
-          title="Configure AI providers"
-          sub="Set API keys for Anthropic or Ollama"
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
-          onClick={onConfigureAIProviders}
-        />
+        {aiGate.allowed && (
+          <Row
+            title="Configure AI providers"
+            sub="Set API keys for Anthropic or Ollama"
+            right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
+            onClick={onConfigureAIProviders}
+          />
+        )}
       </div>
 
       <DeleteConfirmDialog
@@ -282,7 +295,7 @@ export function SettingsPage({
         }
         onConfirm={() => { void handleDeleteLibrary(); }}
         isConfirming={isDeletingLibrary}
-        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!user || vaultLocked} />}
+        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed || vaultLocked} />}
       />
     </div>
   );

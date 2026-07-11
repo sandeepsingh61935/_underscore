@@ -16,6 +16,7 @@ import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpt
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 export interface DomainDetailsViewProps {
@@ -48,6 +49,9 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   };
 
   const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain);
+  const exportGate = useModeFeature('export', isAuthenticated);
+  const aiGate = useModeFeature('ai', isAuthenticated);
+  const exportDisabled = vaultLocked || !exportGate.allowed;
   const synthesis = useSynthesizeDomain();
   const { provider } = useActiveLLMProvider();
   const artifactScope = useMemo(
@@ -183,7 +187,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             <ExportActions
               scope={{ kind: 'domain', domain }}
               highlightCount={highlights.length}
-              disabled={vaultLocked}
+              disabled={exportDisabled}
             />
           </div>
 
@@ -195,18 +199,20 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
 
           {highlights.length > 0 && !vaultLocked && (
             <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => { void handleSynthesize(); }}
-                disabled={synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing || highlights.some(h => !h.text)}
-                style={{
-                  font: 'var(--sans)', fontSize: 'var(--step--1)',
-                  padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-                  border: '1px solid var(--rule)', cursor: (synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing) ? 'wait' : 'pointer',
-                }}
-              >
-                Synthesize this domain
-              </button>
+              {aiGate.allowed && (
+                <button
+                  type="button"
+                  onClick={() => { void handleSynthesize(); }}
+                  disabled={synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing || highlights.some(h => !h.text)}
+                  style={{
+                    font: 'var(--sans)', fontSize: 'var(--step--1)',
+                    padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
+                    border: '1px solid var(--rule)', cursor: (synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing) ? 'wait' : 'pointer',
+                  }}
+                >
+                  Synthesize this domain
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setDeleteDomainOpen(true)}
@@ -221,7 +227,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             </div>
           )}
 
-          {highlights.length > 0 && vaultLocked && (
+          {aiGate.allowed && highlights.length > 0 && vaultLocked && (
             <button
               type="button"
               onClick={() => { void handleSynthesize(); }}
@@ -318,15 +324,17 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
         </div>
       </div>
 
-      <ScopeAskPanel
-        scopeLabel={domain}
-        scopeKind="domain"
-        artifactScope={artifactScope}
-        highlights={promptHighlights}
-        highlightCount={highlights.length}
-        disabled={vaultLocked || isPreparing}
-        placeholder="Ask about this domain…"
-      />
+      {aiGate.allowed && (
+        <ScopeAskPanel
+          scopeLabel={domain}
+          scopeKind="domain"
+          artifactScope={artifactScope}
+          highlights={promptHighlights}
+          highlightCount={highlights.length}
+          disabled={vaultLocked || isPreparing}
+          placeholder="Ask about this domain…"
+        />
+      )}
 
       <DeleteConfirmDialog
         open={deleteDomainOpen}
@@ -339,7 +347,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
           <ExportActions
             scope={{ kind: 'domain', domain }}
             highlightCount={highlights.length}
-            disabled={vaultLocked}
+            disabled={exportDisabled}
           />
         }
       />

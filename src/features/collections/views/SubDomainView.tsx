@@ -19,6 +19,7 @@ import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-stora
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 export interface SubDomainViewProps {
@@ -51,6 +52,10 @@ export function SubDomainView({
   }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain);
+  const exportGate = useModeFeature('export', isAuthenticated);
+  const tagsGate = useModeFeature('tags', isAuthenticated);
+  const aiGate = useModeFeature('ai', isAuthenticated);
+  const exportDisabled = vaultLocked || !exportGate.allowed;
   const summary = useGenerateSummary();
   const { provider } = useActiveLLMProvider();
   const artifactScope = useMemo(
@@ -204,7 +209,7 @@ export function SubDomainView({
             <ExportActions
               scope={{ kind: 'section', domain, sectionKey: section }}
               highlightCount={sectionHighlights.length}
-              disabled={vaultLocked}
+              disabled={exportDisabled}
             />
           </div>
         </div>
@@ -217,18 +222,20 @@ export function SubDomainView({
 
         {sectionHighlights.length > 0 && !vaultLocked && (
           <div style={{ padding: '4px 16px 8px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => { void handleSummarize(); }}
-              disabled={summarizeDisabled}
-              style={{
-                font: 'var(--sans)', fontSize: 'var(--step--1)',
-                padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-                border: '1px solid var(--rule)', cursor: summarizeDisabled ? 'wait' : 'pointer',
-              }}
-            >
-              Summarize this section
-            </button>
+            {aiGate.allowed && (
+              <button
+                type="button"
+                onClick={() => { void handleSummarize(); }}
+                disabled={summarizeDisabled}
+                style={{
+                  font: 'var(--sans)', fontSize: 'var(--step--1)',
+                  padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
+                  border: '1px solid var(--rule)', cursor: summarizeDisabled ? 'wait' : 'pointer',
+                }}
+              >
+                Summarize this section
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setDeleteSectionOpen(true)}
@@ -243,7 +250,7 @@ export function SubDomainView({
           </div>
         )}
 
-        {sectionHighlights.length > 0 && vaultLocked && (
+        {aiGate.allowed && sectionHighlights.length > 0 && vaultLocked && (
           <div style={{ padding: '4px 16px 8px' }}>
             <button
               type="button"
@@ -315,27 +322,31 @@ export function SubDomainView({
                 onDelete={vaultLocked ? undefined : () => { void deleteScope({ scope: 'highlight', id: h.id }); }}
               />
               <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
-                <HighlightMetadataEditor
-                  highlightId={h.id}
-                  notes={h.notes}
-                  tags={h.tags}
-                  disabled={vaultLocked}
-                />
+                {tagsGate.allowed && (
+                  <HighlightMetadataEditor
+                    highlightId={h.id}
+                    notes={h.notes}
+                    tags={h.tags}
+                    disabled={vaultLocked}
+                  />
+                )}
               </div>
             </div>
           ))
         )}
       </div>
 
-      <ScopeAskPanel
-        scopeLabel={section === '/' ? domain : section}
-        scopeKind="section"
-        artifactScope={artifactScope}
-        highlights={promptHighlights}
-        highlightCount={sectionHighlights.length}
-        disabled={vaultLocked || isPreparing}
-        placeholder="Ask about this section…"
-      />
+      {aiGate.allowed && (
+        <ScopeAskPanel
+          scopeLabel={section === '/' ? domain : section}
+          scopeKind="section"
+          artifactScope={artifactScope}
+          highlights={promptHighlights}
+          highlightCount={sectionHighlights.length}
+          disabled={vaultLocked || isPreparing}
+          placeholder="Ask about this section…"
+        />
+      )}
 
       <DeleteConfirmDialog
         open={deleteSectionOpen}
@@ -352,7 +363,7 @@ export function SubDomainView({
           <ExportActions
             scope={{ kind: 'section', domain, sectionKey: section }}
             highlightCount={sectionHighlights.length}
-            disabled={vaultLocked}
+            disabled={exportDisabled}
           />
         }
       />
