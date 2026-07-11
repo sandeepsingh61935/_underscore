@@ -133,7 +133,7 @@ describe('chrome-having screens with tab bar', () => {
   it('API_KEY_SETUP has title, ModeHeader, back button, no TabBar', () => {
     const handlers = makeHandlers();
     const map = buildChrome(handlers);
-    expect(map.API_KEY_SETUP.title).toBe('_underscore · AI provider');
+    expect(map.API_KEY_SETUP.title).toBe('_underscore · models');
     expect(map.API_KEY_SETUP.showModeHeader).toBe(true);
     expect(map.API_KEY_SETUP.showTabBar).toBe(false);
     expect(map.API_KEY_SETUP.onBack).toBe(handlers.onBackFromApiKeySetup);

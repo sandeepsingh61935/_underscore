@@ -1,23 +1,26 @@
 import { OpenAIProvider } from './openai-provider';
 import type { HealthCheckResult, ILLMService, LLMCapabilities } from '@/shared/interfaces/i-llm-service';
 import { getDefaultModelId } from '@/shared/llm/provider-models';
+import { isOpenRouterModelFree } from '@/shared/llm/openrouter-models';
 
 interface OpenRouterProviderConfig {
-  apiKey: string;
-  /** e.g. 'meta-llama/llama-3.3-70b-instruct:free'. */
+  /** Optional for free-tier models. */
+  apiKey?: string;
   model?: string;
-  /** OpenRouter's recommended HTTP-Referer attribution. */
   siteUrl?: string;
-  /** OpenRouter's recommended X-Title attribution. */
   appName?: string;
 }
 
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 
+const OPENROUTER_ATTRIBUTION = {
+  siteUrl: 'https://underscore.app',
+  appName: 'Underscore Highlighter',
+};
+
 /**
- * OpenRouter (OpenAI-compatible). Routes requests to many upstream providers
- * via a single API key + base URL. Sends the recommended HTTP-Referer and
- * X-Title attribution headers.
+ * OpenRouter (OpenAI-compatible). Free models work without an API key;
+ * paid models require one.
  */
 export class OpenRouterProvider implements ILLMService {
   readonly providerName = 'openrouter' as const;
@@ -30,21 +33,23 @@ export class OpenRouterProvider implements ILLMService {
 
   private readonly delegate: ILLMService;
   private readonly model: string;
-  private readonly apiKey: string;
+  private readonly apiKey?: string;
   private readonly extraHeaders: Record<string, string>;
 
   constructor(config: OpenRouterProviderConfig) {
     this.model = config.model ?? getDefaultModelId('openrouter');
-    this.apiKey = config.apiKey;
-    this.extraHeaders = {};
-    if (config.siteUrl) this.extraHeaders['HTTP-Referer'] = config.siteUrl;
-    if (config.appName) this.extraHeaders['X-Title'] = config.appName;
+    this.apiKey = config.apiKey?.trim() || undefined;
+    this.extraHeaders = {
+      'HTTP-Referer': config.siteUrl ?? OPENROUTER_ATTRIBUTION.siteUrl,
+      'X-Title': config.appName ?? OPENROUTER_ATTRIBUTION.appName,
+    };
 
     this.delegate = new OpenAIProvider({
-      apiKey: config.apiKey,
+      apiKey: this.apiKey ?? '',
       apiBase: OPENROUTER_BASE,
       model: this.model,
       extraHeaders: this.extraHeaders,
+      omitAuthWhenKeyless: !this.apiKey,
     });
   }
 
@@ -58,13 +63,15 @@ export class OpenRouterProvider implements ILLMService {
 
   async healthCheck(): Promise<HealthCheckResult> {
     try {
+      const headers: Record<string, string> = {
+        'content-type': 'application/json',
+        ...this.extraHeaders,
+      };
+      if (this.apiKey) headers['authorization'] = `Bearer ${this.apiKey}`;
+
       const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${this.apiKey}`,
-          ...this.extraHeaders,
-        },
+        headers,
         body: JSON.stringify({
           model: this.model,
           max_tokens: 1,
@@ -80,3 +87,5 @@ export class OpenRouterProvider implements ILLMService {
     }
   }
 }
+
+export { isOpenRouterModelFree };

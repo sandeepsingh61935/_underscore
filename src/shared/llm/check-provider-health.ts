@@ -1,5 +1,6 @@
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
+import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
 
 interface CheckOptions {
   apiKey?: string;
@@ -9,8 +10,6 @@ interface CheckOptions {
 
 /**
  * Run a provider health check in a browser context (popup / page).
- * Use this for API-key setup UI — the service worker must not call APIs that
- * depend on `window` (some fetch / storage polyfills throw there).
  */
 export async function checkProviderHealthInBrowser(
   provider: ProviderName,
@@ -63,17 +62,29 @@ export async function checkProviderHealthInBrowser(
         }),
       });
     }
-    case 'openrouter': {
+    case 'cursor': {
       const apiKey = options.apiKey?.trim();
       if (!apiKey) return { ok: false, model, error: 'API key required' };
+      const url = 'https://api.cursor.com/v1/models';
+      return fetchHealth(url, model, {
+        headers: { authorization: `Basic ${btoa(`${apiKey}:`)}` },
+      });
+    }
+    case 'openrouter': {
+      const needsKey = openRouterModelRequiresKey(model);
+      const apiKey = options.apiKey?.trim();
+      if (needsKey && !apiKey) return { ok: false, model, error: 'API key required for paid models' };
       const apiBase = options.apiBase ?? 'https://openrouter.ai/api/v1';
       const url = `${apiBase}/chat/completions`;
+      const headers: Record<string, string> = {
+        'content-type': 'application/json',
+        'HTTP-Referer': 'https://underscore.app',
+        'X-Title': 'Underscore Highlighter',
+      };
+      if (apiKey) headers['authorization'] = `Bearer ${apiKey}`;
       return fetchHealth(url, model, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`,
-        },
+        headers,
         body: JSON.stringify({
           model,
           max_tokens: 1,

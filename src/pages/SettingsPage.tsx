@@ -265,7 +265,7 @@ export function SettingsPage({
         />
         <Row
           title="Configure AI providers"
-          sub="Set API keys for Anthropic or Ollama"
+          sub="OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter"
           right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
           onClick={onConfigureAIProviders}
         />

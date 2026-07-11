@@ -1,4 +1,5 @@
 import { AnthropicProvider } from './anthropic-provider';
+import { CursorProvider } from './cursor-provider';
 import { GeminiProvider } from './gemini-provider';
 import type { LLMKeyStore } from './llm-key-store';
 import type { LLMRegistry } from './llm-registry';
@@ -8,12 +9,14 @@ import { OpenAIProvider } from './openai-provider';
 import { OpenRouterProvider } from './openrouter-provider';
 
 import type { ILLMService, ProviderName } from '@/shared/interfaces/i-llm-service';
+import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
 
 /** First provider with a configured key wins when none is specified. */
 const PROVIDER_TRY_ORDER: ReadonlyArray<ProviderName> = [
   'gemini',
   'anthropic',
   'openai',
+  'cursor',
   'openrouter',
   'minimax',
   'ollama',
@@ -34,10 +37,11 @@ export async function buildProvider(
   modelOverride?: string,
 ): Promise<ILLMService> {
   const model = modelOverride ?? await keyStore.getModel(provider);
+  const resolvedApiBase = apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
 
   switch (provider) {
     case 'ollama':
-      return new OllamaProvider({ apiBase, model });
+      return new OllamaProvider({ apiBase: resolvedApiBase, model });
     case 'anthropic': {
       const key = await keyStore.get(provider);
       if (!key) throw new Error('API key not configured');
@@ -53,10 +57,16 @@ export async function buildProvider(
       if (!key) throw new Error('API key not configured');
       return new OpenAIProvider({ apiKey: key, model });
     }
-    case 'openrouter': {
+    case 'cursor': {
       const key = await keyStore.get(provider);
       if (!key) throw new Error('API key not configured');
-      return new OpenRouterProvider({ apiKey: key, model });
+      return new CursorProvider({ apiKey: key, model });
+    }
+    case 'openrouter': {
+      const key = await keyStore.get(provider);
+      const needsKey = openRouterModelRequiresKey(model);
+      if (needsKey && !key) throw new Error('API key not configured');
+      return new OpenRouterProvider({ apiKey: key ?? undefined, model });
     }
     case 'minimax': {
       const key = await keyStore.get(provider);
@@ -85,6 +95,10 @@ export async function resolveConfiguredProvider(
   if (active) {
     try {
       if (active === 'ollama') return await buildProvider(active, keyStore);
+      if (active === 'openrouter') {
+        const model = await keyStore.getModel(active);
+        if (!openRouterModelRequiresKey(model)) return await buildProvider(active, keyStore);
+      }
       const key = await keyStore.get(active);
       if (key) return await buildProvider(active, keyStore);
     } catch {
@@ -95,6 +109,10 @@ export async function resolveConfiguredProvider(
   for (const name of PROVIDER_TRY_ORDER) {
     try {
       if (name === 'ollama') return await buildProvider(name, keyStore);
+      if (name === 'openrouter') {
+        const model = await keyStore.getModel(name);
+        if (!openRouterModelRequiresKey(model)) return await buildProvider(name, keyStore);
+      }
       const key = await keyStore.get(name);
       if (key) return await buildProvider(name, keyStore);
     } catch {
