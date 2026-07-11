@@ -21,3 +21,18 @@ export function featureGateSubtitle(reason?: FeatureDenyReason): string {
       return 'Unavailable in this mode';
   }
 }
+
+/** Machine-readable codes for MCP / bridge denials. */
+export function featureGateErrorCode(reason?: FeatureDenyReason): string {
+  switch (reason) {
+    case 'VAULT_LOCKED':
+      return 'VAULT_LOCKED';
+    case 'AUTH_REQUIRED':
+      return 'AUTH_REQUIRED';
+    case 'WRONG_MODE':
+    case 'CAPABILITY_DENIED':
+      return 'AI_NOT_ENABLED';
+    default:
+      return 'FEATURE_DENIED';
+  }
+}

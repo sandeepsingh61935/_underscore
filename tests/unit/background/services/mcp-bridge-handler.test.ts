@@ -107,4 +107,58 @@ describe('McpBridgeHandler', () => {
     expect(session.capabilities.sync).toBe(true);
     expect(session.capabilities.ai).toBe(false);
   });
+
+  it('get_session enables ai for signed-in 10x-Pro with vault unlocked', async () => {
+    const handler = createHandler({
+      authManager: {
+        isAuthenticated: true,
+        getAuthState: () => ({
+          isAuthenticated: true,
+          user: { id: 'u1', email: 'a@b.com' },
+        }),
+      } as McpBridgeHandlerDeps['authManager'],
+      scopedHighlightRepository: {
+        getActiveScope: () => 'pro',
+      } as McpBridgeHandlerDeps['scopedHighlightRepository'],
+      getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
+      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
+    });
+    const session = (await handler.getSession()) as {
+      capabilities: { ai: boolean };
+    };
+    expect(session.capabilities.ai).toBe(true);
+  });
+
+  it('ask_scope returns context_only payload on pro_xai without orchestrator', async () => {
+    const handler = createHandler({
+      authManager: {
+        isAuthenticated: true,
+        getAuthState: () => ({
+          isAuthenticated: true,
+          user: { id: 'u1', email: 'a@b.com' },
+        }),
+      } as McpBridgeHandlerDeps['authManager'],
+      scopedHighlightRepository: {
+        getActiveScope: () => 'pro',
+      } as McpBridgeHandlerDeps['scopedHighlightRepository'],
+      getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
+      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
+      highlightQueryService: {
+        getCollections: vi.fn(),
+        getHighlightsByDomain: vi.fn().mockResolvedValue([
+          { id: 'h1', text: 'quote', url: 'https://example.com/', path: '/' },
+        ]),
+        findAllForExport: vi.fn(),
+        getDashboardData: vi.fn(),
+      } as unknown as HighlightQueryService,
+    });
+
+    const result = (await handler.askScope({
+      domain: 'example.com',
+      sectionKey: '/',
+      question: 'What is this about?',
+    })) as { mode: string };
+
+    expect(result.mode).toBe('context_only');
+  });
 });

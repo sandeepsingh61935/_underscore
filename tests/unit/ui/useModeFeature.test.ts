@@ -59,7 +59,7 @@ describe('useModeFeature', () => {
     const { result } = renderHook(() => useModeFeature('ai', true));
 
     expect(result.current.allowed).toBe(false);
-    expect(result.current.reason).toBe('CAPABILITY_DENIED');
+    expect(result.current.reason).toBe('WRONG_MODE');
   });
 
   it('allows export in pro mode when signed in and vault unlocked', () => {

@@ -56,7 +56,16 @@ describe('mode-capabilities', () => {
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
       });
-      expect(result).toEqual({ allowed: false, reason: 'CAPABILITY_DENIED' });
+      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
+    });
+
+    it('denies AI in basic mode with WRONG_MODE', () => {
+      const result = canUseFeature('ai', {
+        mode: 'basic',
+        capabilities: getCapabilitiesForMode('basic'),
+        isAuthenticated: false,
+      });
+      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
     });
 
     it('allows AI in pro_xai when authenticated and vault unlocked', () => {

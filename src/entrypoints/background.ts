@@ -33,6 +33,9 @@ import { resolveConfiguredProvider } from '@/background/services/llm/llm-provide
 import type { LLMRegistry } from '@/background/services/llm/llm-registry';
 import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
+import { normalizeMode } from '@/shared/utils/normalize-mode';
+import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -84,6 +87,21 @@ export default defineBackground({
       logger.info('[INIT] BackgroundHighlightOrchestrator initialized');
 
       const aiOrchestrator = container.resolve<AiOrchestrator>('aiOrchestrator');
+      const scopedHighlightRepositoryForAi = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+      aiOrchestrator.configureFeatureGate(async () => {
+        const stored = await browser.storage.local.get(MODE_STORAGE_KEY);
+        const mode = normalizeMode(stored[MODE_STORAGE_KEY]);
+        const keyManager = container.has('keyManager')
+          ? container.resolve<IKeyManager>('keyManager')
+          : undefined;
+        return {
+          mode,
+          capabilities: getCapabilitiesForMode(mode),
+          isAuthenticated: authManager.isAuthenticated,
+          vaultLocked: keyManager ? !keyManager.isUnlocked : false,
+          storageScope: scopedHighlightRepositoryForAi.getActiveScope(),
+        };
+      });
       aiOrchestrator.initialize();
       logger.info('[INIT] AiOrchestrator initialized');
 

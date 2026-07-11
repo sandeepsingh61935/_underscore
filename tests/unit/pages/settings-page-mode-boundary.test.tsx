@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 
 import { useApp } from '@/core/context/AppProvider';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -93,5 +94,65 @@ describe('SettingsPage basic mode boundaries', () => {
     render(<SettingsPage />);
 
     expect(screen.getByText('Retention')).toBeTruthy();
+  });
+});
+
+describe('SettingsPage pro_xai mode boundaries', () => {
+  beforeEach(() => {
+    vi.mocked(usePersistedMode).mockReturnValue({
+      currentMode: 'pro_xai',
+      modeReady: true,
+      persistMode: vi.fn(),
+    });
+    vi.mocked(useApp).mockReturnValue({
+      theme: 'system',
+      setTheme: vi.fn(),
+      currentMode: 'pro_xai',
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
+      isAuthenticated: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+      modeReady: true,
+      setMode: vi.fn(),
+      availableModes: ['basic', 'pro', 'pro_xai'],
+      isLoading: false,
+      setIsLoading: vi.fn(),
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    } as ReturnType<typeof useApp>);
+  });
+
+  it('shows Configure AI providers for signed-in 10x-Pro', () => {
+    render(<SettingsPage />);
+    expect(screen.getByText('Configure AI providers')).toBeTruthy();
+  });
+});
+
+describe('SettingsPage Pro (non-AI) mode boundaries', () => {
+  beforeEach(() => {
+    vi.mocked(usePersistedMode).mockReturnValue({
+      currentMode: 'pro',
+      modeReady: true,
+      persistMode: vi.fn(),
+    });
+    vi.mocked(useApp).mockReturnValue({
+      theme: 'system',
+      setTheme: vi.fn(),
+      currentMode: 'pro',
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
+      isAuthenticated: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+      modeReady: true,
+      setMode: vi.fn(),
+      availableModes: ['basic', 'pro', 'pro_xai'],
+      isLoading: false,
+      setIsLoading: vi.fn(),
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    } as ReturnType<typeof useApp>);
+  });
+
+  it('hides Configure AI providers for signed-in Pro (not 10x-Pro)', () => {
+    render(<SettingsPage />);
+    expect(screen.queryByText('Configure AI providers')).toBeNull();
   });
 });

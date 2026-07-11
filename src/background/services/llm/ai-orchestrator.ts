@@ -9,6 +9,8 @@ import type { ILLMService, LLMRequest, ProviderName } from '@/shared/interfaces/
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { PAGE_CONTENT_CACHED } from '@/shared/schemas/message-schemas';
 import type { ILogger } from '@/shared/utils/logger';
+import { canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
+import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 
 interface StreamChatRequestMessage {
   type: 'STREAM_CHAT_REQUEST';
@@ -31,6 +33,8 @@ interface StreamingPort {
  * so that the SW boot script owns the wiring.
  */
 export class AiOrchestrator {
+  private resolveAiGateContext?: () => Promise<FeatureGateContext>;
+
   constructor(
     private readonly messageBus: IMessageBus,
     private readonly registry: LLMRegistry,
@@ -39,12 +43,17 @@ export class AiOrchestrator {
     private readonly logger: ILogger,
   ) {}
 
+  configureFeatureGate(resolver: () => Promise<FeatureGateContext>): void {
+    this.resolveAiGateContext = resolver;
+  }
+
   initialize(): void {
     registerAiHandlers({
       bus: this.messageBus,
       registry: this.registry,
       keyStoreHolder: this.keyStoreHolder,
       pageContentCache: this.pageContentCache,
+      resolveAiGateContext: this.resolveAiGateContext,
     });
     this.registerPageContentIngest();
     this.registerStreamPort();
@@ -78,6 +87,18 @@ export class AiOrchestrator {
     if (msg.type !== 'STREAM_CHAT_REQUEST') return;
 
     try {
+      if (this.resolveAiGateContext) {
+        const ctx = await this.resolveAiGateContext();
+        const gate = canUseFeature('ai', ctx);
+        if (!gate.allowed) {
+          port.postMessage({
+            type: 'ERROR',
+            payload: { message: featureGateSubtitle(gate.reason) },
+          });
+          return;
+        }
+      }
+
       const { request, provider } = msg.payload;
       const providerInstance: ILLMService = await resolveConfiguredProvider(
         this.registry,

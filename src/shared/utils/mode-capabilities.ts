@@ -83,6 +83,10 @@ export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
 ): FeatureGateResult {
+  if (feature === 'ai' && ctx.mode !== 'pro_xai') {
+    return { allowed: false, reason: 'WRONG_MODE' };
+  }
+
   const cap = ctx.capabilities[feature];
   if (typeof cap === 'boolean' && !cap) {
     return { allowed: false, reason: 'CAPABILITY_DENIED' };
@@ -94,10 +98,6 @@ export function canUseFeature(
 
   if (ctx.vaultLocked && requiresVaultUnlock(feature)) {
     return { allowed: false, reason: 'VAULT_LOCKED' };
-  }
-
-  if (feature === 'ai' && ctx.mode !== 'pro_xai') {
-    return { allowed: false, reason: 'WRONG_MODE' };
   }
 
   if (ctx.storageScope === 'basic' && proOnlyFeature(feature)) {

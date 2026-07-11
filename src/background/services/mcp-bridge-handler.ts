@@ -22,8 +22,10 @@ import { notifyLibraryDataChanged } from '@/background/services/library-change-n
 import { normalizeMode } from '@/shared/utils/normalize-mode';
 import {
   buildMcpCapabilities,
+  canUseFeature,
   getCapabilitiesForMode,
 } from '@/shared/utils/mode-capabilities';
+import { featureGateErrorCode, featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
@@ -379,9 +381,22 @@ export class McpBridgeHandler {
     return buildFallbackExcerpts(this.toPromptHighlights(filtered)).excerpts;
   }
 
-  private assertProXai(mode: ModeType): void {
-    if (mode !== 'pro_xai') {
-      throw Object.assign(new Error('AI tools require 10x-Pro (pro_xai) mode'), { code: 'AI_NOT_ENABLED' });
+  private async assertAiFeature(): Promise<void> {
+    const mode = await this.readMode();
+    const signedIn = this.deps.authManager.isAuthenticated;
+    const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
+    const vaultLocked = this.deps.keyManager ? !this.deps.keyManager.isUnlocked : false;
+    const gate = canUseFeature('ai', {
+      mode,
+      capabilities: getCapabilitiesForMode(mode),
+      isAuthenticated: signedIn,
+      vaultLocked,
+      storageScope,
+    });
+    if (!gate.allowed) {
+      throw Object.assign(new Error(featureGateSubtitle(gate.reason)), {
+        code: featureGateErrorCode(gate.reason),
+      });
     }
   }
 
@@ -392,8 +407,7 @@ export class McpBridgeHandler {
       question?: string;
       useOrchestrator?: boolean;
     };
-    const mode = await this.readMode();
-    this.assertProXai(mode);
+    await this.assertAiFeature();
 
     if (!input?.domain || !input?.sectionKey || !input?.question?.trim()) {
       throw Object.assign(new Error('domain, sectionKey, and question are required'), {
@@ -430,8 +444,7 @@ export class McpBridgeHandler {
 
   async summarizeSection(payload: unknown): Promise<unknown> {
     const input = payload as { domain?: string; sectionKey?: string; useOrchestrator?: boolean };
-    const mode = await this.readMode();
-    this.assertProXai(mode);
+    await this.assertAiFeature();
 
     if (!input?.domain || !input?.sectionKey) {
       throw Object.assign(new Error('domain and sectionKey are required'), { code: 'INVALID_ARGUMENT' });
@@ -467,8 +480,7 @@ export class McpBridgeHandler {
 
   async synthesizeDomain(payload: unknown): Promise<unknown> {
     const input = payload as { domain?: string; useOrchestrator?: boolean };
-    const mode = await this.readMode();
-    this.assertProXai(mode);
+    await this.assertAiFeature();
 
     if (!input?.domain) {
       throw Object.assign(new Error('domain is required'), { code: 'INVALID_ARGUMENT' });
