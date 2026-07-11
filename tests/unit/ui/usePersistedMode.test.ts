@@ -70,7 +70,7 @@ describe('usePersistedMode', () => {
 
     expect(result.current.currentMode).toBe('pro');
     expect(chrome.storage.local.set).toHaveBeenCalledWith({ [MODE_STORAGE_KEY]: 'pro' });
-    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro');
+    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro', true);
   });
 
   it('preserves basic mode when not authenticated on session restore', async () => {
@@ -104,7 +104,7 @@ describe('usePersistedMode', () => {
       expect(result.current.currentMode).toBe('pro');
     });
 
-    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro');
+    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro', true);
   });
 
   it('broadcasts SET_MODE when persistMode is called', async () => {
@@ -121,7 +121,7 @@ describe('usePersistedMode', () => {
     });
 
     expect(result.current.currentMode).toBe('pro_xai');
-    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro_xai');
+    expect(broadcastModeToTabs).toHaveBeenCalledWith('pro_xai', true);
   });
 
   it('downgrades pro to basic on logout and broadcasts', async () => {
@@ -144,7 +144,7 @@ describe('usePersistedMode', () => {
       expect(result.current.currentMode).toBe('basic');
     });
 
-    expect(broadcastModeToTabs).toHaveBeenCalledWith('basic');
+    expect(broadcastModeToTabs).toHaveBeenCalledWith('basic', false);
   });
 
   it('rejects basic mode while authenticated', async () => {

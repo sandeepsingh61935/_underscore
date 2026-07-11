@@ -8,7 +8,7 @@ import type { ModeType } from '@/content/modes/mode-state-manager';
 
 export type Message =
   | { type: 'GET_MODE' }
-  | { type: 'SET_MODE'; mode: ModeType }
+  | { type: 'SET_MODE'; mode: ModeType; isAuthenticated?: boolean }
   | { type: 'MODE_CHANGED'; mode: ModeType }
   | { type: 'GET_HIGHLIGHT_COUNT' }
   | { type: 'HIGHLIGHT_COUNT_UPDATE'; count: number };

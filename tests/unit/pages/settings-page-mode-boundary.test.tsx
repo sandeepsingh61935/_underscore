@@ -62,7 +62,15 @@ describe('SettingsPage basic mode boundaries', () => {
       setTheme: vi.fn(),
       currentMode: 'basic',
       user: null,
+      isAuthenticated: false,
+      login: vi.fn(),
       logout: vi.fn(),
+      modeReady: true,
+      setMode: vi.fn(),
+      availableModes: ['basic'],
+      isLoading: false,
+      setIsLoading: vi.fn(),
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
     } as ReturnType<typeof useApp>);
   });
 

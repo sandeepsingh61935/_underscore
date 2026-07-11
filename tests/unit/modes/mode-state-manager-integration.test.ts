@@ -13,6 +13,9 @@ import { ModeStateManager } from '@/content/modes/mode-state-manager';
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type { ILogger } from '@/shared/utils/logger';
 
+const AUTH = { isAuthenticated: true } as const;
+const GUEST = { isAuthenticated: false } as const;
+
 // Mock chrome.storage
 const mockChromeStorage = {
   local: {
@@ -59,7 +62,7 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('State machine validation', () => {
     it('should use state machine to validate transitions', async () => {
       // Act
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
 
       // Assert - Should call state machine validation internally
       // (We verify this by checking that transition succeeds, which means validation passed)
@@ -68,7 +71,7 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should log transition validation', async () => {
       // Act
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
 
       // Assert - State machine should log validation
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -81,29 +84,21 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('Guard execution', () => {
     it('should execute guards for transitions requiring confirmation', async () => {
       // Arrange - basic → pro requires confirmation
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
       vi.clearAllMocks();
 
       // Act
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', AUTH);
 
       // Assert - Guard should have been executed (currently returns true)
       expect(stateManager.getMode()).toBe('pro_xai');
     });
 
     it('should block transition if guard fails', async () => {
-      // Note: This test will be more realistic once we implement actual guard UI
-      // For now, we test that the infrastructure is in place
-
-      // Arrange
-      await stateManager.setMode('pro');
-
-      // Act - Try transition that would require confirmation
-      // (Currently guards auto-pass, so this will succeed)
-      await stateManager.setMode('pro_xai');
-
-      // Assert - Transition completed (guard passed)
-      expect(stateManager.getMode()).toBe('pro_xai');
+      await expect(stateManager.setMode('pro', GUEST)).rejects.toThrow(
+        /Transition guard failed/,
+      );
+      expect(stateManager.getMode()).toBe('basic');
     });
   });
 
@@ -118,11 +113,11 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should keep state unchanged if transition validation fails', async () => {
       // Arrange
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
 
       // Act - This will be more relevant when we add transition blocking
       // For now, verify that successful transitions work
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', AUTH);
 
       // Assert - State should have changed (valid transition)
       expect(stateManager.getMode()).toBe('pro_xai');
@@ -135,15 +130,15 @@ describe('ModeStateManager - State Machine Integration', () => {
       expect(stateManager.getMode()).toBe('basic');
 
       // Act Step 1: basic → pro (should validate + execute guard)
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
       expect(stateManager.getMode()).toBe('pro');
 
       // Act Step 2: pro → pro_xai (should validate)
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', AUTH);
       expect(stateManager.getMode()).toBe('pro_xai');
 
-      // Act Step 3: pro_xai → basic (should validate + execute guard with warning)
-      await stateManager.setMode('basic');
+      // Act Step 3: pro_xai → basic (signed-out downgrade)
+      await stateManager.setMode('basic', GUEST);
       expect(stateManager.getMode()).toBe('basic');
 
       // Assert - Full circular path completed
@@ -152,7 +147,7 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should dispatch INTENT_SET_MODE and persist locally', async () => {
       // Act
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', AUTH);
 
       // Assert - Intent was dispatched via eventBus and saved locally
       expect(mockEventBus.emit).toHaveBeenCalledWith('INTENT_SET_MODE', { mode: 'pro_xai' });
@@ -163,11 +158,11 @@ describe('ModeStateManager - State Machine Integration', () => {
   describe('Edge cases', () => {
     it('should handle same-mode transition as no-op', async () => {
       // Arrange
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
       vi.clearAllMocks();
 
       // Act - Try to set same mode
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
 
       // Assert - Should be handled as no-op (early return)
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -178,10 +173,10 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should handle rapid mode switches correctly', async () => {
       // Act - Simulate rapid user clicks
-      await stateManager.setMode('pro');
-      await stateManager.setMode('pro_xai');
-      await stateManager.setMode('basic');
-      await stateManager.setMode('pro');
+      await stateManager.setMode('pro', AUTH);
+      await stateManager.setMode('pro_xai', AUTH);
+      await stateManager.setMode('basic', GUEST);
+      await stateManager.setMode('pro', AUTH);
 
       // Assert - Final mode should be correct
       expect(stateManager.getMode()).toBe('pro');

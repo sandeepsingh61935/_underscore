@@ -165,7 +165,7 @@ describe('SupabaseClient', () => {
                     },
                 ],
                 createdAt: '2024-06-15T12:00:00.000Z',
-            } as HighlightDataV2;
+            } as unknown as HighlightDataV2;
 
             const mockInsert = vi.fn().mockResolvedValue({ error: null });
             mockSupabaseClient.from.mockReturnValue({

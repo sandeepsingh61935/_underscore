@@ -73,4 +73,38 @@ describe('McpBridgeHandler', () => {
       handler.askScope({ domain: 'example.com', sectionKey: '/', question: 'test' }),
     ).rejects.toMatchObject({ code: 'AI_NOT_ENABLED' });
   });
+
+  it('get_session denies export and sync for guest Basic', async () => {
+    const handler = createHandler({
+      getActiveMode: vi.fn().mockResolvedValue('basic'),
+    });
+    const session = (await handler.getSession()) as {
+      capabilities: { export: boolean; sync: boolean };
+    };
+    expect(session.capabilities.export).toBe(false);
+    expect(session.capabilities.sync).toBe(false);
+  });
+
+  it('get_session allows export and sync for signed-in Pro', async () => {
+    const handler = createHandler({
+      authManager: {
+        isAuthenticated: true,
+        getAuthState: () => ({
+          isAuthenticated: true,
+          user: { id: 'u1', email: 'a@b.com' },
+        }),
+      } as McpBridgeHandlerDeps['authManager'],
+      scopedHighlightRepository: {
+        getActiveScope: () => 'pro',
+      } as McpBridgeHandlerDeps['scopedHighlightRepository'],
+      getActiveMode: vi.fn().mockResolvedValue('pro'),
+      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
+    });
+    const session = (await handler.getSession()) as {
+      capabilities: { export: boolean; sync: boolean; ai: boolean };
+    };
+    expect(session.capabilities.export).toBe(true);
+    expect(session.capabilities.sync).toBe(true);
+    expect(session.capabilities.ai).toBe(false);
+  });
 });

@@ -51,7 +51,7 @@ export function usePersistedMode(isAuthenticated: boolean) {
 
         try {
             await chrome.storage.local.set({ [MODE_STORAGE_KEY]: mode });
-            await broadcastModeToTabs(mode);
+            await broadcastModeToTabs(mode, authRef.current);
         } catch (err) {
             console.error('[usePersistedMode] Failed to persist mode:', err);
         }

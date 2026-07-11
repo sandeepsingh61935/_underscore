@@ -13,6 +13,13 @@
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 /**
+ * Runtime context for transition guard evaluation.
+ */
+export interface TransitionGuardContext {
+  isAuthenticated: boolean;
+}
+
+/**
  * Represents a transition rule between two modes
  */
 export interface TransitionRule {
@@ -27,7 +34,7 @@ export interface TransitionRule {
   /** Human-readable reason/description */
   reason: string;
   /** Optional guard function to execute before transition */
-  guard?: () => Promise<boolean>;
+  guard?: (ctx: TransitionGuardContext) => Promise<boolean>;
 }
 
 /**
@@ -55,10 +62,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Basic highlights will be synced to Pro. Requires sign-in.',
-      guard: async () => {
-        // Future: Check authentication status
-        return true;
-      },
+      guard: async (ctx) => ctx.isAuthenticated,
     },
     pro_xai: {
       from: 'basic',
@@ -66,10 +70,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: true,
       reason: 'Switching to 10x-Pro enables AI-powered organization. Requires sign-in.',
-      guard: async () => {
-        // Future: Check authentication status
-        return true;
-      },
+      guard: async (ctx) => ctx.isAuthenticated,
     },
   },
   pro: {
@@ -79,10 +80,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: true,
       reason: 'Your Pro highlights will be copied into Basic (on-device) mode',
-      guard: async () => {
-        // Future: Warn about losing sync
-        return true;
-      },
+      guard: async (ctx) => !ctx.isAuthenticated,
     },
     pro: {
       from: 'pro',
@@ -106,9 +104,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: true,
       reason: 'Switching to Basic mode will disable sync and AI features. Data will be preserved.',
-      guard: async () => {
-        return true;
-      },
+      guard: async (ctx) => !ctx.isAuthenticated,
     },
     pro: {
       from: 'pro_xai',
@@ -168,7 +164,8 @@ export function getAllTransitions(from: ModeType): TransitionRule[] {
  */
 export async function executeTransitionGuard(
   from: ModeType,
-  to: ModeType
+  to: ModeType,
+  ctx: TransitionGuardContext,
 ): Promise<boolean> {
   const rule = getTransitionRule(from, to);
 
@@ -176,5 +173,5 @@ export async function executeTransitionGuard(
     return true; // No guard = pass by default
   }
 
-  return await rule.guard();
+  return await rule.guard(ctx);
 }

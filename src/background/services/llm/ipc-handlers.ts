@@ -1,4 +1,5 @@
 import type { LLMKeyStore } from './llm-key-store';
+import type { LlmKeyStoreHolder } from './llm-key-store-holder';
 import { buildProvider, resolveConfiguredProvider, tryGetRegistered } from './llm-provider-factory';
 import type { BackgroundPageContentCache } from './page-content-cache';
 import type { LLMRegistry } from './llm-registry';
@@ -25,12 +26,16 @@ interface MessageBusLike {
 interface RegisterArgs {
   bus: MessageBusLike;
   registry: LLMRegistry;
-  keyStore: LLMKeyStore;
+  keyStore?: LLMKeyStore;
+  keyStoreHolder?: LlmKeyStoreHolder;
   pageContentCache: BackgroundPageContentCache;
 }
 
-/** Providers that don't require an API key. */
-const KEYLESS_PROVIDERS: ReadonlyArray<ProviderName> = ['ollama'];
+function resolveKeyStore(args: RegisterArgs): LLMKeyStore {
+  if (args.keyStore) return args.keyStore;
+  if (args.keyStoreHolder) return args.keyStoreHolder.get();
+  throw new Error('registerAiHandlers requires keyStore or keyStoreHolder');
+}
 
 interface ChatPayload {
   provider?: ProviderName;
@@ -57,12 +62,18 @@ interface PageContextPayload {
   highlights: Array<{ id?: string; url: string; text: string }>;
 }
 
-export function registerAiHandlers({ bus, registry, keyStore, pageContentCache }: RegisterArgs): void {
+/** Providers that don't require an API key. */
+const KEYLESS_PROVIDERS: ReadonlyArray<ProviderName> = ['ollama'];
+
+export function registerAiHandlers(args: RegisterArgs): void {
+  const { bus, registry, pageContentCache } = args;
+  const keyStore = () => resolveKeyStore(args);
+
   bus.subscribe(IPC_AI_LIST_PROVIDERS, () => createSuccessResponse(registry.list()));
 
   bus.subscribe(IPC_AI_GET_ACTIVE_PROVIDER, async () => {
     try {
-      const provider = await keyStore.getActiveProvider();
+      const provider = await keyStore().getActiveProvider();
       return createSuccessResponse({ provider });
     } catch (err) {
       return createErrorResponse((err as Error).message);
@@ -72,11 +83,11 @@ export function registerAiHandlers({ bus, registry, keyStore, pageContentCache }
   bus.subscribe(IPC_AI_GET_API_KEY_STATUS, async (raw: unknown) => {
     try {
       const { provider } = raw as StatusPayload;
-      const model = await keyStore.getModel(provider);
+      const model = await keyStore().getModel(provider);
       if (KEYLESS_PROVIDERS.includes(provider)) {
         return createSuccessResponse({ configured: true, model });
       }
-      const key = await keyStore.get(provider);
+      const key = await keyStore().get(provider);
       return createSuccessResponse({ configured: !!key, model });
     } catch (err) {
       return createErrorResponse((err as Error).message);
@@ -91,9 +102,9 @@ export function registerAiHandlers({ bus, registry, keyStore, pageContentCache }
       if (!trimmedKey && !trimmedModel) {
         return createErrorResponse('Provide an API key and/or model to save');
       }
-      if (trimmedKey) await keyStore.set(provider, trimmedKey);
-      if (trimmedModel) await keyStore.setModel(provider, trimmedModel);
-      await keyStore.setActiveProvider(provider);
+      if (trimmedKey) await keyStore().set(provider, trimmedKey);
+      if (trimmedModel) await keyStore().setModel(provider, trimmedModel);
+      await keyStore().setActiveProvider(provider);
       if (trimmedKey) registry.setConfigured(provider, true);
       return createSuccessResponse({ ok: true as const });
     } catch (err) {
@@ -107,7 +118,7 @@ export function registerAiHandlers({ bus, registry, keyStore, pageContentCache }
       const registered = tryGetRegistered(registry, provider);
       const result = registered
         ? await registered.healthCheck()
-        : await (await buildProvider(provider, keyStore, apiBase, model)).healthCheck();
+        : await (await buildProvider(provider, keyStore(), apiBase, model)).healthCheck();
       if (!result.ok) {
         return createErrorResponse(result.error ?? 'Health check failed');
       }
@@ -120,7 +131,7 @@ export function registerAiHandlers({ bus, registry, keyStore, pageContentCache }
   bus.subscribe(IPC_AI_CHAT, async (raw: unknown) => {
     try {
       const { provider, request } = raw as ChatPayload;
-      const instance = await resolveConfiguredProvider(registry, keyStore, provider);
+      const instance = await resolveConfiguredProvider(registry, keyStore(), provider);
       const result = await instance.chat(request);
       return createSuccessResponse(result);
     } catch (err) {

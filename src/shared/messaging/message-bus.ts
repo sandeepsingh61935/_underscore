@@ -50,7 +50,9 @@ export class MessageBus {
           break;
 
         case 'SET_MODE':
-          await modeStateManager.setMode(msg.mode);
+          await modeStateManager.setMode(msg.mode, {
+            isAuthenticated: msg.isAuthenticated ?? false,
+          });
           sendResponse({ success: true });
           break;
 

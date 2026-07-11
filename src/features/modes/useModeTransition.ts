@@ -76,7 +76,8 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
                 // Run guard if exists
                 const guardResult = await executeTransitionGuard(
                     currentMode,
-                    targetMode
+                    targetMode,
+                    { isAuthenticated },
                 ).catch(() => true);
 
                 if (!guardResult) {
@@ -93,7 +94,7 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
                 setState({ isPending: false, targetMode: null, confirmMessage: null });
             }
         },
-        [currentMode, setMode, navigateAfterTransition]
+        [currentMode, setMode, navigateAfterTransition, isAuthenticated]
     );
 
     const confirmTransition = useCallback(() => {

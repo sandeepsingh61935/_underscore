@@ -9,6 +9,7 @@ import { migrateV2ToV3, needsV2ToV3Migration } from './migrations/v2-to-v3';
 import type { ModeManager } from './mode-manager';
 import { ModeStateMachine } from './mode-state-machine';
 import { MigrationEngine } from './state-migration';
+import type { TransitionGuardContext } from './mode-transition-rules';
 
 import { setBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import {
@@ -142,7 +143,10 @@ export class ModeStateManager {
   /**
    * Set mode (with persistence and broadcast)
    */
-  async setMode(mode: ModeType): Promise<void> {
+  async setMode(
+    mode: ModeType,
+    guardContext: TransitionGuardContext = { isAuthenticated: false },
+  ): Promise<void> {
     try {
       // 1. Validate mode with Zod schema
       const validation = ModeTypeSchema.safeParse(mode);
@@ -185,7 +189,8 @@ export class ModeStateManager {
       // 4. Execute guards before transition
       const guardPassed = await this.stateMachine.executeGuards(
         this.currentMode,
-        validatedMode
+        validatedMode,
+        guardContext,
       );
 
       if (!guardPassed) {

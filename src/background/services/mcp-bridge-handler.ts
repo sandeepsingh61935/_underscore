@@ -20,6 +20,10 @@ import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata'
 import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
+import {
+  buildMcpCapabilities,
+  getCapabilitiesForMode,
+} from '@/shared/utils/mode-capabilities';
 import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
@@ -97,17 +101,19 @@ export class McpBridgeHandler {
     return this.deps.scopedHighlightRepository.getActiveScope() === 'pro' ? 'pro_local' : 'basic_local';
   }
 
-  private capabilitiesForMode(mode: ModeType): McpSessionSnapshot['capabilities'] {
-    const signedIn = this.deps.authManager.isAuthenticated;
-    const isProXai = mode === 'pro_xai';
-    return {
-      sync: signedIn,
-      export: true,
-      ai: isProXai,
-      collections: true,
-      search: true,
-      metadataWrite: true,
-    };
+  private capabilitiesForMode(
+    mode: ModeType,
+    signedIn: boolean,
+    storageScope: 'basic' | 'pro',
+    vaultLocked: boolean,
+  ): McpSessionSnapshot['capabilities'] {
+    return buildMcpCapabilities({
+      mode,
+      capabilities: getCapabilitiesForMode(mode),
+      isAuthenticated: signedIn,
+      vaultLocked,
+      storageScope,
+    });
   }
 
   async getSession(): Promise<McpSessionSnapshot> {
@@ -137,7 +143,7 @@ export class McpBridgeHandler {
         userId: authState.user?.id,
         email: authState.user?.email,
       },
-      capabilities: this.capabilitiesForMode(mode),
+      capabilities: this.capabilitiesForMode(mode, authState.isAuthenticated, storageScope, vaultLocked),
       basicTtl,
       vault: { locked: vaultLocked },
       sync: cursor ? { lastHydratedAt: cursor.toISOString() } : undefined,

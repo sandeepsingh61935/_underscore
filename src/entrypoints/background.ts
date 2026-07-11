@@ -31,7 +31,7 @@ import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-hig
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
 import type { LLMRegistry } from '@/background/services/llm/llm-registry';
-import type { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 
 const logger = LoggerFactory.getLogger('Background');
@@ -257,7 +257,7 @@ export default defineBackground({
       const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
       const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
       const llmRegistry = container.resolve<LLMRegistry>('llmRegistry');
-      const llmKeyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+      const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
 
       const mcpBridgeHandler = new McpBridgeHandler({
         authManager,
@@ -271,7 +271,7 @@ export default defineBackground({
           ? container.resolve<IKeyManager>('keyManager')
           : undefined,
         llmChat: async (payload: { provider?: ProviderName; request: LLMRequest }) => {
-          const instance = await resolveConfiguredProvider(llmRegistry, llmKeyStore, payload.provider);
+          const instance = await resolveConfiguredProvider(llmRegistry, llmKeyStoreHolder.get(), payload.provider);
           const result = await instance.chat(payload.request);
           return { text: result.text };
         },

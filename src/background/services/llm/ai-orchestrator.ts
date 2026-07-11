@@ -1,5 +1,5 @@
 import { registerAiHandlers } from './ipc-handlers';
-import type { LLMKeyStore } from './llm-key-store';
+import type { LlmKeyStoreHolder } from './llm-key-store-holder';
 import { resolveConfiguredProvider } from './llm-provider-factory';
 import type { BackgroundPageContentCache, PageContent } from './page-content-cache';
 import type { LLMRegistry } from './llm-registry';
@@ -34,7 +34,7 @@ export class AiOrchestrator {
   constructor(
     private readonly messageBus: IMessageBus,
     private readonly registry: LLMRegistry,
-    private readonly keyStore: LLMKeyStore,
+    private readonly keyStoreHolder: LlmKeyStoreHolder,
     private readonly pageContentCache: BackgroundPageContentCache,
     private readonly logger: ILogger,
   ) {}
@@ -43,7 +43,7 @@ export class AiOrchestrator {
     registerAiHandlers({
       bus: this.messageBus,
       registry: this.registry,
-      keyStore: this.keyStore,
+      keyStoreHolder: this.keyStoreHolder,
       pageContentCache: this.pageContentCache,
     });
     this.registerPageContentIngest();
@@ -81,7 +81,7 @@ export class AiOrchestrator {
       const { request, provider } = msg.payload;
       const providerInstance: ILLMService = await resolveConfiguredProvider(
         this.registry,
-        this.keyStore,
+        this.keyStoreHolder.get(),
         provider,
       );
       await handleStreamChat(port, providerInstance, request);

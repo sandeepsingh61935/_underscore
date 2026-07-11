@@ -10,6 +10,7 @@ import {
   getTransitionRule,
   executeTransitionGuard,
   type TransitionRule,
+  type TransitionGuardContext,
 } from './mode-transition-rules';
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
@@ -78,7 +79,11 @@ export class ModeStateMachine {
    * @param to - Target mode
    * @returns Promise<boolean> - true if guard passes (or no guard exists)
    */
-  async executeGuards(from: ModeType, to: ModeType): Promise<boolean> {
+  async executeGuards(
+    from: ModeType,
+    to: ModeType,
+    ctx: TransitionGuardContext,
+  ): Promise<boolean> {
     const rule = getTransitionRule(from, to);
 
     if (!rule.guard) {
@@ -89,7 +94,7 @@ export class ModeStateMachine {
     this.logger.debug('Executing transition guard', { from, to });
 
     try {
-      const result = await executeTransitionGuard(from, to);
+      const result = await executeTransitionGuard(from, to, ctx);
 
       if (!result) {
         this.logger.warn('Transition guard failed', { from, to });

@@ -592,6 +592,10 @@ export default defineContentScript({
               return false; // Don't keep channel open
             }
 
+            const isAuthenticated = Boolean(
+              (msg as { isAuthenticated?: boolean }).isAuthenticated,
+            );
+
             logger.info(`[IPC] Handling SET_MODE: ${newMode}`);
 
             // Handle async mode switch with immediate response
@@ -599,7 +603,7 @@ export default defineContentScript({
               try {
                 // 1. Switch mode via State Manager (includes persistence + activation)
                 logger.info('[IPC] Calling modeStateManager.setMode');
-                await modeStateManager.setMode(newMode);
+                await modeStateManager.setMode(newMode, { isAuthenticated });
                 logger.info('[IPC] Mode state updated successfully');
 
                 // 2. Run restoration/clearing SYNCHRONOUSLY (before responding)

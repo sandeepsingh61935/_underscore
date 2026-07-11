@@ -116,3 +116,24 @@ function requiresVaultUnlock(feature: FeatureKey): boolean {
 function proOnlyFeature(feature: FeatureKey): boolean {
   return feature === 'sync' || feature === 'export' || feature === 'tags' || feature === 'search' || feature === 'ai';
 }
+
+export interface McpCapabilityFlags {
+  sync: boolean;
+  export: boolean;
+  ai: boolean;
+  collections: boolean;
+  search: boolean;
+  metadataWrite: boolean;
+}
+
+/** Build MCP session capability flags from the shared feature gate. */
+export function buildMcpCapabilities(ctx: FeatureGateContext): McpCapabilityFlags {
+  return {
+    sync: canUseFeature('sync', ctx).allowed,
+    export: canUseFeature('export', ctx).allowed,
+    ai: canUseFeature('ai', ctx).allowed,
+    collections: canUseFeature('collections', ctx).allowed,
+    search: canUseFeature('search', ctx).allowed,
+    metadataWrite: canUseFeature('tags', ctx).allowed,
+  };
+}

@@ -19,10 +19,12 @@ describe('broadcastModeToTabs', () => {
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, {
       type: 'SET_MODE',
       mode: 'pro',
+      isAuthenticated: false,
     });
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(2, {
       type: 'SET_MODE',
       mode: 'pro',
+      isAuthenticated: false,
     });
   });
 

@@ -225,24 +225,24 @@ describe('ModeStateManager - Validation Integration', () => {
 
   describe('Edge cases and boundary conditions', () => {
     it('should handle rapid mode switches', async () => {
-      // Arrange
-      const modes = ['basic', 'pro', 'pro_xai', 'basic', 'pro'] as const;
+      const auth = { isAuthenticated: true };
+      const guest = { isAuthenticated: false };
 
-      // Act
-      const promises = modes.map((mode) => stateManager.setMode(mode));
-      await Promise.all(promises);
+      await stateManager.setMode('pro', auth);
+      await stateManager.setMode('pro_xai', auth);
+      await stateManager.setMode('basic', guest);
+      await stateManager.setMode('pro', auth);
 
-      // Assert - Last one should win (pro) or at least be valid
-      expect(['basic', 'pro', 'pro_xai']).toContain(stateManager.getMode());
+      expect(stateManager.getMode()).toBe('pro');
     });
 
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', { isAuthenticated: true });
       mockEventBus.emit.mockClear();
 
       // Act
-      await stateManager.setMode('pro_xai');
+      await stateManager.setMode('pro_xai', { isAuthenticated: true });
 
       // Assert - No intent should be sent
       expect(mockEventBus.emit).not.toHaveBeenCalled();

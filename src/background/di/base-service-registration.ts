@@ -28,7 +28,7 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import { BackgroundPageContentCache } from '@/background/services/llm/page-content-cache';
 import { LLMRegistry } from '@/background/services/llm/llm-registry';
 
@@ -143,8 +143,8 @@ export function registerBaseServices(container: Container): void {
         return new LLMRegistry();
     });
 
-    container.registerSingleton<LLMKeyStore>('llmKeyStore', () => {
-        return new LLMKeyStore('basic');
+    container.registerSingleton<LlmKeyStoreHolder>('llmKeyStoreHolder', () => {
+        return new LlmKeyStoreHolder();
     });
 
     container.registerSingleton<BackgroundPageContentCache>('pageContentCache', () => {
@@ -154,9 +154,9 @@ export function registerBaseServices(container: Container): void {
     container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
         const messageBus = container.resolve<IMessageBus>('messageBus');
         const registry = container.resolve<LLMRegistry>('llmRegistry');
-        const keyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+        const keyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
         const pageContentCache = container.resolve<BackgroundPageContentCache>('pageContentCache');
         const logger = container.resolve<ILogger>('logger');
-        return new AiOrchestrator(messageBus, registry, keyStore, pageContentCache, logger);
+        return new AiOrchestrator(messageBus, registry, keyStoreHolder, pageContentCache, logger);
     });
 }

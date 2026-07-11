@@ -18,6 +18,8 @@ import { RealtimeHighlightIngestService } from '@/background/services/realtime-h
 import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
+import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
+import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import { migrateLegacyVaultToBasic } from '@/background/repositories/migrate-legacy-highlight-db';
 
@@ -73,6 +75,15 @@ export async function initializeBackground(): Promise<Container> {
     const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
     const localWriteEchoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker');
     const realtimeHighlightIngestService = container.resolve<RealtimeHighlightIngestService>('realtimeHighlightIngestService');
+    const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
+    const keyManager = container.has('keyManager')
+        ? container.resolve<IKeyManager>('keyManager')
+        : undefined;
+
+    const configureLlmKeyTier = (isAuthenticated: boolean): void => {
+        llmKeyStoreHolder.configureForAuth(isAuthenticated, keyManager);
+    };
+
     await migrateLegacyVaultToBasic(logger);
     await repositoryFacade.initialize();
 
@@ -116,9 +127,11 @@ export async function initializeBackground(): Promise<Container> {
         void handleAuthStorageEvent({ type: 'SIGNED_IN', userId: currentUser.id }, authStorageDeps).catch(err => {
             logger.error('[BOOTSTRAP] Auth storage sign-in failed on startup', err as Error);
         });
+        configureLlmKeyTier(true);
     } else {
         logger.warn('[BOOTSTRAP] No authenticated user on startup, using Basic storage');
         await scopedHighlightRepository.activateScope('basic');
+        configureLlmKeyTier(false);
     }
 
     // Wire auth state changes to connection manager
@@ -133,6 +146,7 @@ export async function initializeBackground(): Promise<Container> {
                     { type: 'SIGNED_IN', userId: state.user.id },
                     authStorageDeps,
                 );
+                configureLlmKeyTier(true);
             } catch (err) {
                 logger.error('[BOOTSTRAP] Auth storage sign-in failed on login', err as Error);
             }
@@ -141,6 +155,7 @@ export async function initializeBackground(): Promise<Container> {
             connectionManager.disconnect();
             try {
                 await handleAuthStorageEvent({ type: 'SIGNED_OUT' }, authStorageDeps);
+                configureLlmKeyTier(false);
             } catch (err) {
                 logger.error('[BOOTSTRAP] Auth storage sign-out failed', err as Error);
             }

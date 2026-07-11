@@ -68,7 +68,7 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
     } as any;
 
     const manager = new ModeStateManager(eventBus as any, modeManager, logger);
-    await manager.setMode('pro');
+    await manager.setMode('pro', { isAuthenticated: true });
 
     // Direct call — one storage.set per setMode, no circuit-breaker gating
     expect(mockStorage.set).toHaveBeenCalledTimes(1);
@@ -93,10 +93,10 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
 
     // First call fails
     mockStorage.set.mockRejectedValueOnce(new Error('QuotaExceededError'));
-    await manager.setMode('pro');
+    await manager.setMode('pro', { isAuthenticated: true });
 
     // Second call should still hit storage (no circuit-breaker short-circuit)
-    await manager.setMode('pro_xai');
+    await manager.setMode('pro_xai', { isAuthenticated: true });
 
     expect(mockStorage.set).toHaveBeenCalledTimes(2);
   });

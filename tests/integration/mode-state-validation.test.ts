@@ -82,7 +82,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
   it('should pass full validation flow: set -> persist -> reload', async () => {
     // 1. Set mode to 'pro'
-    await stateManager.setMode('pro');
+    await stateManager.setMode('pro', { isAuthenticated: true });
 
     // Verify current state
     expect(stateManager.getMode()).toBe('pro');
@@ -131,7 +131,7 @@ describe('ModeStateManager - Validation Integration', () => {
   it('should maintain state consistency on validation failure', async () => {
     // 1. Set valid initial state (use 'pro' so persistence actually happens)
     // Default is 'basic', so setMode('basic') is a no-op and doesn't write to storage
-    await stateManager.setMode('pro');
+    await stateManager.setMode('pro', { isAuthenticated: true });
 
     // 2. Attempt invalid transition
     try {

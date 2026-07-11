@@ -75,22 +75,22 @@ describe('ModeStateMachine', () => {
   });
 
   describe('executeGuards', () => {
+    const signedIn = { isAuthenticated: true };
+
     it('should return true for transitions without guards', async () => {
-      const result = await stateMachine.executeGuards('pro', 'pro_xai');
+      const result = await stateMachine.executeGuards('pro', 'pro_xai', signedIn);
 
       expect(result).toBe(true);
     });
 
     it('should execute guard function for transitions requiring confirmation', async () => {
-      // basic → pro requires confirmation (guarded)
-      const result = await stateMachine.executeGuards('basic', 'pro');
+      const result = await stateMachine.executeGuards('basic', 'pro', signedIn);
 
-      // Should execute guard (currently stub returns true)
       expect(result).toBe(true);
     });
 
     it('should log guard execution', async () => {
-      await stateMachine.executeGuards('basic', 'pro');
+      await stateMachine.executeGuards('basic', 'pro', signedIn);
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('guard'),
@@ -156,10 +156,12 @@ describe('ModeStateMachine', () => {
     });
 
     it('should handle full circular transition path', async () => {
-      // basic → pro → pro_xai → basic (full circle)
-      expect(await stateMachine.executeGuards('basic', 'pro')).toBe(true);
-      expect(await stateMachine.executeGuards('pro', 'pro_xai')).toBe(true);
-      expect(await stateMachine.executeGuards('pro_xai', 'basic')).toBe(true);
+      const signedIn = { isAuthenticated: true };
+      const signedOut = { isAuthenticated: false };
+      // basic → pro → pro_xai → basic (full circle when signed out at end)
+      expect(await stateMachine.executeGuards('basic', 'pro', signedIn)).toBe(true);
+      expect(await stateMachine.executeGuards('pro', 'pro_xai', signedIn)).toBe(true);
+      expect(await stateMachine.executeGuards('pro_xai', 'basic', signedOut)).toBe(true);
 
       // Should complete without errors
       expect(mockLogger.error).not.toHaveBeenCalled();
