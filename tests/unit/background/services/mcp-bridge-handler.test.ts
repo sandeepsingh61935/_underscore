@@ -1,0 +1,76 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+
+import { McpBridgeHandler, type McpBridgeHandlerDeps } from '@/background/services/mcp-bridge-handler';
+import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
+
+function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridgeHandler {
+  const highlightQueryService = {
+    getCollections: vi.fn().mockResolvedValue([{ domain: 'example.com', highlightCount: 2, mode: 'basic' }]),
+    getHighlightsByDomain: vi.fn().mockResolvedValue([]),
+    findAllForExport: vi.fn().mockResolvedValue([]),
+    getDashboardData: vi.fn().mockResolvedValue({
+      totalHighlights: 0,
+      totalDomains: 0,
+      thisWeekCount: 0,
+      recentHighlights: [],
+    }),
+  } as unknown as HighlightQueryService;
+
+  const deps: McpBridgeHandlerDeps = {
+    authManager: {
+      isAuthenticated: false,
+      getAuthState: () => ({ isAuthenticated: false, user: null }),
+    } as McpBridgeHandlerDeps['authManager'],
+    highlightQueryService,
+    backgroundHighlightOrchestrator: {
+      enrichWithPlaintext: vi.fn(async (items: unknown[]) => items),
+    } as unknown as McpBridgeHandlerDeps['backgroundHighlightOrchestrator'],
+    scopedHighlightRepository: {
+      getActiveScope: () => 'basic',
+    } as unknown as McpBridgeHandlerDeps['scopedHighlightRepository'],
+    repositoryFacade: { update: vi.fn() } as unknown as McpBridgeHandlerDeps['repositoryFacade'],
+    cloudHydrationService: { hydrate: vi.fn() } as unknown as McpBridgeHandlerDeps['cloudHydrationService'],
+    librarySyncCursor: {
+      get: vi.fn().mockResolvedValue(null),
+      clear: vi.fn(),
+      set: vi.fn(),
+    } as unknown as McpBridgeHandlerDeps['librarySyncCursor'],
+    getActiveMode: vi.fn().mockResolvedValue('basic'),
+    ...overrides,
+  };
+
+  return new McpBridgeHandler(deps);
+}
+
+describe('McpBridgeHandler', () => {
+  beforeEach(() => {
+    vi.stubGlobal('chrome', {
+      storage: {
+        local: {
+          get: vi.fn().mockResolvedValue({}),
+          set: vi.fn().mockResolvedValue(undefined),
+        },
+      },
+    });
+  });
+
+  it('get_session returns basic_local dataCoverage for guest', async () => {
+    const handler = createHandler();
+    const session = (await handler.getSession()) as { dataCoverage: string; mode: string };
+    expect(session.dataCoverage).toBe('basic_local');
+    expect(session.mode).toBe('basic');
+  });
+
+  it('list_collections returns collections', async () => {
+    const handler = createHandler();
+    const result = (await handler.listCollections({})) as { collections: unknown[] };
+    expect(result.collections).toHaveLength(1);
+  });
+
+  it('ask_scope rejects when not pro_xai', async () => {
+    const handler = createHandler();
+    await expect(
+      handler.askScope({ domain: 'example.com', sectionKey: '/', question: 'test' }),
+    ).rejects.toMatchObject({ code: 'AI_NOT_ENABLED' });
+  });
+});
