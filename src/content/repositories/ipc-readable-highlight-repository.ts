@@ -14,8 +14,8 @@
  * The background's `IPC_HIGHLIGHTS_FIND_BY_URL` handler (already wired
  * in BackgroundHighlightOrchestrator) reads from the facade cache which
  * was populated from IDB at startup. This adapter adds the current mode
- * to the payload so the handler can apply the 24h TTL filter in
- * ephemeral mode.
+ * to the payload so the handler can apply the configured Basic TTL
+ * (see @/shared/constants/basic-ttl) when mode === 'basic'.
  *
  * Mode is resolved per-call from the supplied mode-state getter, so a
  * mode switch takes effect on the next restore.
@@ -25,7 +25,6 @@ import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import type { StorageMode } from '@/shared/types/storage';
 
 export class IpcReadableHighlightRepository implements IReadableHighlightRepository {
     constructor(
@@ -34,7 +33,7 @@ export class IpcReadableHighlightRepository implements IReadableHighlightReposit
     ) {}
 
     async findByUrl(url: string): Promise<HighlightDataV2[]> {
-        const mode = this.getMode() as StorageMode;
+        const mode = this.getMode();
         const res = await this.messageBus.send<{
             success: boolean;
             data?: HighlightDataV2[];

@@ -60,7 +60,8 @@ export function useIpcAction<TPayload = void, TResponse = unknown>(
       try {
         const response = await messageBus.send<MessageResponse<TResponse>>('background', {
           type: messageType,
-          payload: payload as object,
+          // Chrome strips undefined fields; background MessageSchema requires payload.
+          payload: payload === undefined ? {} : (payload as object),
           timestamp: Date.now(),
         });
         if (response && response.success) {

@@ -11,9 +11,28 @@ import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import { initializeBackground } from '@/background/bootstrap';
 import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { authStateResponseData } from '@/shared/auth/auth-state-payload';
+import { broadcastAuthSessionCleared, broadcastAuthStateChange } from '@/shared/auth/broadcast-auth-state';
+import { CLEAR_VERIFICATION_STATE, SYNC_AUTH_SESSION } from '@/shared/auth/constants';
+import { SyncAuthSessionPayloadSchema } from '@/shared/schemas/auth-schemas';
+import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
 import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
+import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, GET_VAULT_LOCK_STATUS } from '@/shared/schemas/message-schemas';
+import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
+import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
+import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
+import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
+import type { LLMRegistry } from '@/background/services/llm/llm-registry';
+import type { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -46,6 +65,12 @@ export default defineBackground({
       authManager = container.resolve<IAuthManager>('authManager');
       logger.info('[INIT] AuthManager resolved');
 
+      const lockVaultOnSignOut = (): void => {
+        if (container.has('keyManager')) {
+          container.resolve<IKeyManager>('keyManager').lock();
+        }
+      };
+
       logger.info('[INIT] Resolving repositoryFacade from container...');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repositoryFacade = container.resolve<any>('repositoryFacade');
@@ -57,6 +82,10 @@ export default defineBackground({
       const backgroundHighlightOrchestrator = container.resolve<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator');
       backgroundHighlightOrchestrator.initialize();
       logger.info('[INIT] BackgroundHighlightOrchestrator initialized');
+
+      const aiOrchestrator = container.resolve<AiOrchestrator>('aiOrchestrator');
+      aiOrchestrator.initialize();
+      logger.info('[INIT] AiOrchestrator initialized');
 
       // Login Handler
       messageBus.subscribe('LOGIN', async (payload: { provider: OAuthProviderType }) => {
@@ -70,7 +99,7 @@ export default defineBackground({
             logger.error('Login failed explicitly', new Error(msg));
             throw new Error(msg);
           }
-          return { success: true, data: { user: result.user } };
+          return { success: true, data: authStateResponseData(authManager.getAuthState()) };
         } catch (error) {
           logger.error('Login handler caught error', error as Error);
           // Re-throw to let MessageBus handle it, but ensure message is preserved
@@ -94,7 +123,7 @@ export default defineBackground({
             logger.error('Email login failed explicitly', new Error(msg));
             throw new Error(msg);
           }
-          return { success: true, data: { user: result.user } };
+          return { success: true, data: authStateResponseData(authManager.getAuthState()) };
         } catch (error) {
           logger.error('Email login handler caught error', error as Error);
           throw error;
@@ -117,7 +146,7 @@ export default defineBackground({
             logger.error('Email registration failed explicitly', new Error(msg));
             throw new Error(msg);
           }
-          return { success: true, data: { user: result.user } };
+          return { success: true, data: authStateResponseData(authManager.getAuthState()) };
         } catch (error) {
           logger.error('Email registration handler caught error', error as Error);
           throw error;
@@ -126,8 +155,10 @@ export default defineBackground({
       // Logout Handler
       messageBus.subscribe('LOGOUT', async () => {
         logger.info('Handling LOGOUT request');
+        lockVaultOnSignOut();
         await authManager.signOut();
-        return { success: true, data: {} };
+        broadcastAuthSessionCleared();
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
 
       // Get Auth State Handler
@@ -135,11 +166,49 @@ export default defineBackground({
         const state = authManager.getAuthState();
         return {
           success: true,
-          data: {
-            isAuthenticated: state.isAuthenticated,
-            user: state.user,
-            provider: state.provider
-          }
+          data: authStateResponseData(state),
+        };
+      });
+
+      messageBus.subscribe(CLEAR_VERIFICATION_STATE, async () => {
+        logger.info('Handling CLEAR_VERIFICATION_STATE request');
+        await authManager.clearVerificationState();
+        return {
+          success: true,
+          data: authStateResponseData(authManager.getAuthState()),
+        };
+      });
+
+      messageBus.subscribe(SYNC_AUTH_SESSION, async (payload: unknown) => {
+        logger.info('Handling SYNC_AUTH_SESSION request');
+        const parsed = SyncAuthSessionPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'Invalid session payload', code: 'INVALID_PAYLOAD' };
+        }
+
+        if (parsed.data === null) {
+          lockVaultOnSignOut();
+          await authManager.signOut();
+          broadcastAuthSessionCleared();
+          return { success: true, data: {} };
+        }
+
+        const result = await authManager.setSession(
+          parsed.data.access_token,
+          parsed.data.refresh_token,
+        );
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error?.message ?? 'Failed to sync session',
+            code: result.error?.code,
+          };
+        }
+
+        return {
+          success: true,
+          data: authStateResponseData(authManager.getAuthState()),
         };
       });
 
@@ -170,25 +239,64 @@ export default defineBackground({
         }
       });
 
-      // Forward Auth State Changes to Popup (via broadcast)
+      // Forward Auth State Changes to popup, content scripts, and web tabs
       authManager.onAuthStateChanged((state: AuthState) => {
-        messageBus.publish('AUTH_STATE_CHANGED', {
-          isAuthenticated: state.isAuthenticated,
-          user: state.user
-        });
+        broadcastAuthStateChange(state);
       });
 
       // --- Collections API handlers ---
 
       // Per ADR-006: the HighlightQueryService owns domain aggregations.
-      // It holds the readable side of the repository, exposed via
-      // repositoryFacade.getReadable() — the facade wraps a single
-      // IHighlightRepository and surfaces the readable half for query
-      // services that need fresh data (the facade's own cache holds the
-      // write-through view; the query service iterates the full set).
+      // Use the facade cache so reads match recent writes (Basic IDB is async).
       const highlightQueryService = new HighlightQueryService(
-        repositoryFacade.getReadable()
+        repositoryFacade.asCacheReadable()
       );
+
+      const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
+
+      const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+      const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
+      const llmRegistry = container.resolve<LLMRegistry>('llmRegistry');
+      const llmKeyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+
+      const mcpBridgeHandler = new McpBridgeHandler({
+        authManager,
+        highlightQueryService,
+        backgroundHighlightOrchestrator,
+        scopedHighlightRepository,
+        repositoryFacade,
+        cloudHydrationService,
+        librarySyncCursor,
+        keyManager: container.has('keyManager')
+          ? container.resolve<IKeyManager>('keyManager')
+          : undefined,
+        llmChat: async (payload: { provider?: ProviderName; request: LLMRequest }) => {
+          const instance = await resolveConfiguredProvider(llmRegistry, llmKeyStore, payload.provider);
+          const result = await instance.chat(payload.request);
+          return { text: result.text };
+        },
+      });
+      const mcpBridgeClient = new McpBridgeClientService(mcpBridgeHandler, logger);
+      mcpBridgeClient.start();
+      logger.info('[INIT] McpBridgeClientService started');
+
+      // Manual library sync (Settings → Sync library)
+      messageBus.subscribe(SYNC_LIBRARY, async () => {
+        logger.info('Handling SYNC_LIBRARY request');
+        try {
+          if (!authManager.isAuthenticated) {
+            return { success: false, error: 'Sign in to sync library with cloud' };
+          }
+          const result = await cloudHydrationService.hydrate();
+          if (result.error) {
+            return { success: false, error: result.error };
+          }
+          return { success: true, data: result };
+        } catch (error) {
+          logger.error('SYNC_LIBRARY failed', error as Error);
+          throw error;
+        }
+      });
 
       // Get Collections (Grouped by Domain) Handler
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
@@ -207,11 +315,100 @@ export default defineBackground({
         logger.info('Handling GET_HIGHLIGHTS_BY_DOMAIN request', { domain: payload.domain });
         try {
           const highlights = await highlightQueryService.getHighlightsByDomain(payload.domain);
-          return { success: true, data: { highlights } };
+          const withPlaintext = await backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+          const vaultLocked = withPlaintext.some(h => h.decryptionStatus === 'vault_locked');
+          return { success: true, data: { highlights: withPlaintext, vaultLocked } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
           throw error;
         }
+      });
+
+      messageBus.subscribe(UPDATE_HIGHLIGHT_METADATA, async (payload: {
+        id: string;
+        notes?: string;
+        tags?: string[];
+      }) => {
+        logger.info('Handling UPDATE_HIGHLIGHT_METADATA request', { id: payload.id });
+        try {
+          const metadata = buildHighlightMetadataUpdate({
+            notes: payload.notes,
+            tags: payload.tags,
+          });
+          repositoryFacade.update(payload.id, { metadata });
+          notifyLibraryDataChanged({ source: 'metadata-update' });
+          return { success: true, data: undefined };
+        } catch (error) {
+          logger.error('UPDATE_HIGHLIGHT_METADATA failed', error as Error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      // Get exportable highlights for copy/export (scoped)
+      messageBus.subscribe(GET_EXPORTABLE_HIGHLIGHTS, async (payload: { scope: ExportScope }) => {
+        logger.info('Handling GET_EXPORTABLE_HIGHLIGHTS request', { scope: payload.scope });
+        try {
+          const raw = await highlightQueryService.findAllForExport(payload.scope);
+          const enriched = await backgroundHighlightOrchestrator.enrichWithPlaintext(
+            raw.map((hl) => ({ id: hl.id, text: hl.text })),
+          );
+          const byId = new Map(enriched.map((item) => [item.id, item]));
+          const highlights = raw
+            .map((hl) => {
+              const summary = byId.get(hl.id);
+              const text = summary?.text ?? hl.text;
+              return toExportableHighlight({ ...hl, text }, summary?.decryptionStatus);
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+          return { success: true, data: { highlights } };
+        } catch (error) {
+          logger.error('GET_EXPORTABLE_HIGHLIGHTS failed', error as Error);
+          throw error;
+        }
+      });
+
+      const highlightDeleteService = container.resolve<HighlightDeleteService>('highlightDeleteService');
+
+      const deleteContext = () => ({
+        isAuthenticated: authManager.isAuthenticated,
+        vaultUnlocked: container.has('keyManager')
+          ? container.resolve<IKeyManager>('keyManager').isUnlocked
+          : true,
+      });
+
+      messageBus.subscribe(IPC_HIGHLIGHT_DELETE_SCOPE, async (payload: DeleteRequest) => {
+        logger.info('Handling IPC_HIGHLIGHT_DELETE_SCOPE', { scope: payload.scope });
+        const result = await highlightDeleteService.executeDelete(payload, deleteContext());
+        if (result.success) {
+          notifyLibraryDataChanged({
+            source: 'delete',
+            deletedCount: result.deletedCount,
+            removedIds: result.removedIds,
+          });
+        }
+        return { success: result.success, data: result, error: result.success ? undefined : result.error, code: result.success ? undefined : result.code };
+      });
+
+      messageBus.subscribe(IPC_HIGHLIGHT_UNDO_DELETE, async () => {
+        logger.info('Handling IPC_HIGHLIGHT_UNDO_DELETE');
+        const result = await highlightDeleteService.undoPendingHighlight(deleteContext());
+        if (result.success) {
+          notifyLibraryDataChanged({ source: 'undo_delete', restoredIds: result.restoredIds });
+        }
+        return { success: result.success, data: result, error: result.success ? undefined : result.error, code: result.success ? undefined : result.code };
+      });
+
+      messageBus.subscribe(GET_VAULT_LOCK_STATUS, async () => {
+        if (!authManager.isAuthenticated) {
+          return { success: true, data: { vaultLocked: false } };
+        }
+        const vaultLocked = container.has('keyManager')
+          ? !container.resolve<IKeyManager>('keyManager').isUnlocked
+          : false;
+        return { success: true, data: { vaultLocked } };
       });
 
       // Get Dashboard Data Handler
@@ -219,7 +416,13 @@ export default defineBackground({
         logger.info('Handling GET_DASHBOARD_DATA request', { mode: payload?.mode });
         try {
           const data = await highlightQueryService.getDashboardData(payload?.mode);
-          return { success: true, data };
+          const recentHighlights = await backgroundHighlightOrchestrator.enrichWithPlaintext(
+            data.recentHighlights
+          );
+          return {
+            success: true,
+            data: { ...data, recentHighlights },
+          };
         } catch (error) {
           logger.error('GET_DASHBOARD_DATA failed', error as Error);
           throw error;

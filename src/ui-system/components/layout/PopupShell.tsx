@@ -85,7 +85,7 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
       >
         {chrome.showModeHeader && (
           <ModeHeader
-            modeId={chrome.modeId ?? 'local'}
+            modeId={chrome.modeId ?? 'basic'}
             onBack={chrome.onBack}
             backLabel={chrome.backLabel}
             onSwitch={chrome.onSwitch}
@@ -103,7 +103,7 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
               animate="animate"
               exit="exit"
               transition={{ type: 'spring', stiffness: 120, damping: 20, mass: 1.0 }}
-              style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
+              style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'auto' }}
             >
               {children}
             </motion.div>

@@ -7,7 +7,7 @@
  *  - Truncated to `maxBytes`
  */
 
-const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED';
+import { PAGE_CONTENT_CACHED } from '@/shared/schemas/message-schemas';
 
 interface PushPayload {
   url: string;

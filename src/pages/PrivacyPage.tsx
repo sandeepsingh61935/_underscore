@@ -101,7 +101,7 @@ export function PrivacyPage(): React.ReactElement {
           <p>We collect the minimum data necessary to provide the service:</p>
           <ul>
             <li>Account information (email, display name) when you create an account</li>
-            <li>Highlight data you explicitly save in ephemeral, local, or cloud modes</li>
+            <li>Highlight data you explicitly save in Basic, Pro, or 10x-Pro mode</li>
             <li>Basic usage analytics (page views, feature usage) — no personal data</li>
           </ul>
         </PolicySection>
@@ -110,7 +110,7 @@ export function PrivacyPage(): React.ReactElement {
           <ul>
             <li>Browsing history outside of your explicit highlights</li>
             <li>Personal information beyond what you provide at signup</li>
-            <li>Data from ephemeral mode — it lives only in your browser session</li>
+            <li>Data from Basic mode — it lives only on your device, and expires on the TTL you set</li>
           </ul>
         </PolicySection>
 
@@ -127,7 +127,7 @@ export function PrivacyPage(): React.ReactElement {
           <ul>
             <li>Export all your data at any time (Settings → Data)</li>
             <li>Delete your account and all associated data</li>
-            <li>Use ephemeral mode without creating an account</li>
+            <li>Use Basic mode without creating an account</li>
           </ul>
         </PolicySection>
 

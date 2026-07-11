@@ -67,6 +67,17 @@ export class StorageService implements IStorage {
   }
 
   /**
+   * Update the TTL duration used for subsequent saves.
+   *
+   * @remarks
+   * Used by BasicMode to apply the user's configured Basic TTL preference
+   * (24h/2d/7d/30d/forever) without needing a new StorageService instance.
+   */
+  setTtlDuration(ttlDurationMs: number | null): void {
+    this.config = { ...this.config, ttlDuration: ttlDurationMs };
+  }
+
+  /**
    * Save event to storage
    * Appends to event log, applies TTL, encrypts
    */

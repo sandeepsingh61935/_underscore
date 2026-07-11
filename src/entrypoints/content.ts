@@ -4,7 +4,7 @@
  * Architecture: DI + Event-Driven
  * - DI Container: Registers all services with clear dependencies
  * - Event Bus: Decouples highlight creation, mode switching, storage
- * - Mode Manager: Delegates behavior to current mode (Walk/Sprint/Vault)
+ * - Mode Manager: Delegates behavior to current mode (Basic/Pro/10x-Pro)
  */
 
 import '@/content/ui/delete-icon.css'; // Phase 4.3: Delete icon styles
@@ -17,8 +17,7 @@ import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
-import type { ModeManager, LocalMode, EphemeralMode } from '@/content/modes';
-import type { CloudMode } from '@/content/modes/cloud-mode';
+import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
@@ -32,9 +31,11 @@ import type {
   HighlightCreatedEvent,
   HighlightRemovedEvent,
   HighlightClickedEvent,
-  AuthStateChangedEvent,
 } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
+import { AUTH_STATE_CHANGED } from '@/shared/auth/constants';
+import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
+import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
 import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import {
@@ -58,7 +59,7 @@ export default defineContentScript({
 
   async main() {
     logger.info(
-      'Initializing Web Highlighter Extension (Strategy Pattern + Sprint Mode)...'
+      'Initializing Web Highlighter Extension (Strategy Pattern + Basic Mode)...'
     );
 
     try {
@@ -83,6 +84,7 @@ export default defineContentScript({
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const commandFactory = container.resolve<CommandFactory>('commandFactory');
       const ipcReadableHighlightRepository = container.resolve<IReadableHighlightRepository>('ipcReadableHighlightRepository');
+      const messageBus = container.resolve<import('@/shared/interfaces/i-message-bus').IMessageBus>('messageBus');
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
@@ -97,17 +99,17 @@ export default defineContentScript({
       // Register Modes (Done in container registration, but we need to ensure ModeManager knows about them)
       // Service registration lazy-loads them via factories, but ModeManager needs them registered to switch.
       // We can iterate container services or manually register.
-      // The container DI registers 'ephemeralMode', 'localMode', etc. as TRANSIENT.
+      // The container DI registers 'basicMode', 'proMode', 'proXaiMode' as TRANSIENT.
       // ModeManager expects INSTANCES.
 
       // Pre-instantiate and register modes
-      const ephemeralMode = container.resolve<EphemeralMode>('ephemeralMode');
-      const localMode = container.resolve<LocalMode>('localMode');
-      const cloudMode = container.resolve<CloudMode>('cloudMode');
+      const basicMode = container.resolve<BasicMode>('basicMode');
+      const proMode = container.resolve<ProMode>('proMode');
+      const proXaiMode = container.resolve<ProXaiMode>('proXaiMode');
 
-      modeManager.registerMode(ephemeralMode);
-      modeManager.registerMode(localMode);
-      modeManager.registerMode(cloudMode);
+      modeManager.registerMode(basicMode);
+      modeManager.registerMode(proMode);
+      modeManager.registerMode(proXaiMode);
 
       // Initialize State Management Pattern
       const { ModeStateManager } = await import('@/content/modes/mode-state-manager');
@@ -125,13 +127,13 @@ export default defineContentScript({
       // const { MessageBus } = await import('@/shared/messaging/message-bus');
       // MessageBus.setup(modeStateManager, repositoryFacade, logger);
 
-      // Initialize Vault Mode if enabled (Separate init removed - moved to CloudMode.onActivate)
+      // Initialize Pro Mode if enabled (Separate init removed - moved to ProMode.onActivate)
       // if (isCloudModeEnabled()) {
       //   try {
       //     // We call this to ensure DB migration/setup is done, even if mode deals with restore
       //     await initializeCloudMode();
       //   } catch(e) {
-      //     logger.error('[VAULT] Init failed', e as Error);
+      //     logger.error('[PRO] Init failed', e as Error);
       //   }
       // }
 
@@ -157,8 +159,8 @@ export default defineContentScript({
       const deleteIconOverlay = new DeleteIconOverlay(
         modeManager,
         repositoryFacade,
-        eventBus,
-        logger
+        logger,
+        messageBus,
       );
 
       const hoverDetector = new HighlightHoverDetector(
@@ -188,7 +190,7 @@ export default defineContentScript({
       // Observer Pattern: Modes listen to domain events and decide how to handle
 
       // [OK] HIGHLIGHT CREATED: Delegate to mode handler (SRP compliance)
-      // Mode decides if/how to persist (Walk: NO-OP, Sprint: Event Sourcing)
+      // Mode decides if/how to persist (Basic: Event Sourcing, Pro: IndexedDB)
       eventBus.on<HighlightCreatedEvent>(EventName.HIGHLIGHT_CREATED, async (event) => {
         try {
           await modeManager.getCurrentMode().onHighlightCreated(event);
@@ -198,7 +200,7 @@ export default defineContentScript({
       });
 
       // [OK] HIGHLIGHT REMOVED: Delegate to mode handler (SRP compliance)
-      // Mode decides if/how to persist removal (Walk: NO-OP, Sprint: Event Sourcing)
+      // Mode decides if/how to persist removal (Basic: Event Sourcing, Pro: IndexedDB)
       eventBus.on<HighlightRemovedEvent>(EventName.HIGHLIGHT_REMOVED, async (event) => {
         try {
           await modeManager.getCurrentMode().onHighlightRemoved(event);
@@ -216,8 +218,8 @@ export default defineContentScript({
       const currentMode = modeManager.getCurrentMode();
 
       // RESTORATION STRATEGY:
-      // - Sprint Mode: Returns true. Generic restoreHighlights() replays events.
-      // - Vault Mode: Returns false. Self-manages via onActivate() -> restore().
+      // - Basic Mode: Returns true. Generic restoreHighlights() replays events.
+      // - Pro / 10x-Pro Mode: Returns false. Self-manages via onActivate() -> restore().
       // - Future Modes: Implement IMode.shouldRestore() accordingly.
       const shouldRestore = currentMode.shouldRestore();
 
@@ -236,7 +238,7 @@ export default defineContentScript({
         });
       } else {
         logger.info(
-          `${modeManager.getCurrentMode().name} Mode: Skipping restoration (Ephemeral or Self-Managed)`
+          `${modeManager.getCurrentMode().name} Mode: Skipping restoration (Self-Managed)`
         );
       }
 
@@ -361,16 +363,29 @@ export default defineContentScript({
         }
       });
 
-      // ===== Handle highlight removal (click) =====
+      // ===== Handle highlight removal (Ctrl+Click) =====
+      const { ContentHighlightDeleteClient } = await import(
+        '@/content/services/content-highlight-delete'
+      );
+      const { performContentHighlightDelete } = await import(
+        '@/content/services/content-highlight-delete-flow'
+      );
+      const contentDeleteClient = new ContentHighlightDeleteClient(messageBus);
+
       eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
-        const highlight = repositoryFacade.get(event.highlightId);
-        if (highlight) {
-          // Use command for undo/redo support
-          const command = commandFactory.createRemoveHighlightCommand(event.highlightId);
+        const mode = modeManager.getCurrentMode();
+        const config = mode.getDeletionConfig();
+        if (!config?.showDeleteIcon) return;
 
-          await commandStack.execute(command);
+        const outcome = await performContentHighlightDelete(event.highlightId, {
+          deleteClient: contentDeleteClient,
+          modeManager,
+          getSnapshot: (id) => modeManager.getHighlight(id),
+          allowUndo: config.allowUndo,
+        });
 
-          logger.info('Highlight removed via command', { id: event.highlightId });
+        if (outcome === 'deleted') {
+          logger.info('Highlight removed via Ctrl+Click', { id: event.highlightId });
           broadcastCount();
         }
       });
@@ -459,6 +474,15 @@ export default defineContentScript({
       // Start detecting selections
       detector.init();
 
+      // Push page body text to background for LLM context (ADR-021 §4).
+      const { PageContentCache } = await import('@/content/page-content-cache');
+      const pageContentCache = new PageContentCache(
+        (msg) => { void browser.runtime.sendMessage(msg).catch(() => {}); },
+        { debounceMs: 2_000, maxBytes: 100 * 1024 },
+      );
+      pageContentCache.start();
+      window.addEventListener('pagehide', () => pageContentCache.stop(), { once: false });
+
       // Broadcast count updates to popup
       const broadcastCount = (): void => {
         browser.runtime
@@ -477,23 +501,62 @@ export default defineContentScript({
       eventBus.on(EventName.HIGHLIGHT_REMOVED, () => broadcastCount());
       eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
-      // Listen for Auth Changes (Fix: "db call doesnt go on login")
-      eventBus.on<AuthStateChangedEvent>(EventName.AUTH_STATE_CHANGED, async (event) => {
-        logger.info('[AUTH] Auth state changed', { isAuthenticated: event.isAuthenticated });
+      const handleAuthStateChanged = async (isAuthenticated: boolean): Promise<void> => {
+        logger.info('[AUTH] Auth state changed', { isAuthenticated });
 
-        // 1. Reload Repository Facade (invalidates cache, re-fetches from DualWriteRepository)
         await repositoryFacade.reload();
-
-        // 2. Broadcast new count
         broadcastCount();
 
-        // 3. If Vault Mode is active, re-restore to update UI
         const currentMode = modeManager.getCurrentMode();
-        if (currentMode.name === MODE_NAMES.CLOUD) {
-          logger.info('[AUTH] Vault Mode active - triggering re-restoration');
-          // Cast to CloudMode to access restore method
-          await (currentMode as CloudMode).restore();
+        if (currentMode.name === MODE_NAMES.PRO || currentMode.name === MODE_NAMES.PRO_XAI) {
+          logger.info('[AUTH] Pro Mode active - triggering re-restoration');
+          await (currentMode as ProMode).restore();
         }
+      };
+
+      // Auth changes arrive via background runtime broadcast (not local EventBus).
+      browser.runtime.onMessage.addListener((message: unknown) => {
+        const msg = message as {
+          type?: string;
+          payload?: AuthStatePayload & {
+            deletedCount?: number;
+            removedIds?: string[];
+            restoredIds?: string[];
+            source?: string;
+          };
+        };
+        if (msg?.type === AUTH_STATE_CHANGED && msg.payload) {
+          void handleAuthStateChanged(msg.payload.isAuthenticated);
+        }
+        if (msg?.type === LIBRARY_DATA_CHANGED && msg.payload?.source) {
+          void (async () => {
+            const { handleLibraryDataChanged } = await import(
+              '@/content/services/content-library-sync'
+            );
+            await handleLibraryDataChanged(
+              {
+                source: msg.payload!.source!,
+                deletedCount: msg.payload!.deletedCount,
+                removedIds: msg.payload!.removedIds,
+                restoredIds: msg.payload!.restoredIds,
+              },
+              {
+                modeManager,
+                repositoryFacade,
+                messageBus,
+                currentUrl: window.location.href,
+                deserializeRange,
+                logger,
+              },
+            );
+            broadcastCount();
+          })();
+        }
+      });
+
+      // Legacy local EventBus hook (kept for in-process tests).
+      eventBus.on(EventName.AUTH_STATE_CHANGED, async (event: { isAuthenticated: boolean }) => {
+        await handleAuthStateChanged(event.isAuthenticated);
       });
 
       // Listen for count/mode requests from popup
@@ -505,7 +568,7 @@ export default defineContentScript({
         ) => {
           const msg = message as {
             type: string;
-            mode?: 'ephemeral' | 'local';
+            mode?: 'basic' | 'pro' | 'pro_xai';
             payload?: unknown;
           };
 
@@ -521,7 +584,7 @@ export default defineContentScript({
             });
           } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
-            const payloadMode = (msg.payload as { mode?: 'ephemeral' | 'local' | 'cloud' })?.mode;
+            const payloadMode = (msg.payload as { mode?: 'basic' | 'pro' | 'pro_xai' })?.mode;
             const newMode = msg.mode || payloadMode;
 
             if (!newMode) {
@@ -542,8 +605,10 @@ export default defineContentScript({
                 // 2. Run restoration/clearing SYNCHRONOUSLY (before responding)
                 // This ensures popup receives correct count in response
                 logger.info('[IPC] Starting highlight processing for mode switch');
-                if (newMode === MODE_NAMES.LOCAL) {
-                  logger.info('[IPC] Restoring highlights for Sprint Mode...');
+                if (newMode === MODE_NAMES.BASIC) {
+                  // Basic Mode always restores highlights (never clears) on switch-to,
+                  // regardless of the configured TTL.
+                  logger.info('[IPC] Restoring highlights for Basic Mode...');
                   await restoreHighlights({
                     storage,
                     renderer,
@@ -554,15 +619,11 @@ export default defineContentScript({
                     ipcReadableHighlightRepository,
                   });
                   logger.info('[IPC] Restoration complete');
-                } else if (newMode === MODE_NAMES.CLOUD) {
-                  // Vault Mode handles its own restoration via onActivate() -> restore()
-                  // Do NOT clear here - it would wipe the highlights that were just loaded!
-                  logger.info('[IPC] Vault Mode - skipping clear (self-managed restoration)');
                 } else {
-                  // Walk Mode - clear everything
-                  logger.info('[IPC] Clearing highlights for Walk Mode...');
-                  await modeManager.getCurrentMode().clearAll();
-                  logger.info('[IPC] Clearing complete');
+                  // Pro / 10x-Pro Mode handles its own restoration via
+                  // onActivate() -> restore(). Do NOT clear here - it would
+                  // wipe the highlights that were just loaded!
+                  logger.info('[IPC] Pro Mode - skipping clear (self-managed restoration)');
                 }
 
                 // 3. Get final count after restoration/clearing
@@ -615,14 +676,14 @@ export default defineContentScript({
             return true; // Keep channel open for async response
           }
 
-          return true; // Keep channel open for async response
+          return false;
         }
       );
 
       logger.info('Web Highlighter Extension initialized successfully');
       logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
       logger.info(
-        'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (4h TTL)'
+        'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (configurable TTL)'
       );
       logger.info(`Restored ${repositoryFacade.count()} highlights from storage`);
     } catch (error) {
@@ -656,7 +717,8 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
     // facade. The facade is empty after a page reload (its DI container
     // is fresh); the background holds the persisted set (IDB / DualWrite
     // per mode). The adapter calls IPC_HIGHLIGHTS_FIND_BY_URL; the
-    // background's orchestrator applies per-mode TTL (ephemeral = 24h).
+    // background's orchestrator applies the Basic TTL preference
+    // (24h default; see @/shared/constants/basic-ttl) when mode === 'basic'.
     const activeHighlights = await ipcReadableHighlightRepository.findByUrl(currentUrl);
 
     // Hydrate the synchronous in-memory facade for UI operations (hover detection, etc)

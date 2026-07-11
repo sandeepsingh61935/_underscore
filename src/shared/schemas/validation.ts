@@ -42,7 +42,7 @@ export type Message = z.infer<typeof MessageSchema>;
  * (For switching modes or configuring them)
  */
 export const ModeConfigSchema = z.object({
-  modeName: z.enum(['ephemeral', 'local', 'cloud', 'ai']),
+  modeName: z.enum(['basic', 'pro', 'pro_xai']),
   settings: z.any().optional(),
 });
 

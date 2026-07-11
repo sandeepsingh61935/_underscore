@@ -114,10 +114,15 @@
 
   /* Mode palette — single accent across all modes.
      Modes are distinguished by glyph + label, NOT color. */
-  --mode-ephemeral: var(--accent);
-  --mode-local:     var(--accent);
-  --mode-cloud:     var(--accent);
-  --mode-ai:        var(--accent);
+  --mode-basic:   var(--accent);
+  --mode-pro:     var(--accent);
+  --mode-pro-xai: var(--accent);
+  /* Legacy aliases (pre-v3 mode consolidation) — kept briefly for any
+     stragglers; prefer --mode-basic/--mode-pro/--mode-pro-xai above. */
+  --mode-ephemeral: var(--mode-basic);
+  --mode-local:     var(--mode-basic);
+  --mode-cloud:     var(--mode-pro);
+  --mode-ai:        var(--mode-pro-xai);
 
   /* Type */
   --serif: "GT Alpina", "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
@@ -151,6 +156,7 @@
   --ink-2:     #cfc9bd;
   --ink-3:     #8a857c;
   --ink-4:     #5a564f;
+  --mode-basic: #f2eee6;
   --mode-local: #f2eee6;
 }
 

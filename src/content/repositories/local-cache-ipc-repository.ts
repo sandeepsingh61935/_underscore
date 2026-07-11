@@ -9,8 +9,8 @@
  *
  * Replaces the previous DI binding where the content-side facade wrapped
  * a pure InMemoryHighlightRepository and writes died in the tab's memory.
- * Now ephemeral/local mode highlights reach IndexedDB and appear in the
- * popup's home/library view.
+ * Now Basic mode highlights reach IndexedDB and appear in the popup's
+ * home/library view.
  */
 
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';

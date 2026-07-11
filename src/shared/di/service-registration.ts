@@ -11,9 +11,9 @@ import type { Container } from './container';
 import { CommandFactory } from '@/content/commands/command-factory';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
-import { LocalMode } from '@/content/modes/local-mode';
-import { CloudMode } from '@/content/modes/cloud-mode';
-import { EphemeralMode } from '@/content/modes/ephemeral-mode';
+import { BasicMode } from '@/content/modes/basic-mode';
+import { ProMode } from '@/content/modes/pro-mode';
+import { ProXaiMode } from '@/content/modes/pro-xai-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { IStorage } from '@/shared/interfaces/i-storage';
@@ -28,9 +28,7 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { TokenStore } from '@/background/auth/token-store';
 import { AuthManager } from '@/background/auth/auth-manager';
-import { AuthStateObserver } from '@/background/auth/auth-state-observer';
 
 /**
  * Register all application services
@@ -43,7 +41,7 @@ import { AuthStateObserver } from '@/background/auth/auth-state-observer';
  *   ↓
  * modeManager
  *   ↓
- * ephemeralMode, localMode, cloudMode
+ * basicMode, proMode, proXaiMode
  * ```
  *
  * @param container - IoC container to register services with
@@ -82,17 +80,18 @@ export function registerServices(container: Container): void {
   // ============================================
 
   /**
-   * Sprint storage — permanent (null TTL)
+   * Pro storage — permanent (null TTL, synced)
    */
   container.registerSingleton<IStorage>('storage', () => {
-    return new StorageService({ mode: 'local', ttlDuration: null });
+    return new StorageService({ mode: 'pro', ttlDuration: null });
   });
 
   /**
-   * Walk storage — 24h TTL
+   * Basic storage — TTL resolved dynamically from the Basic TTL preference
+   * (defaults to 24h; see @/shared/constants/basic-ttl)
    */
-  container.registerSingleton<IStorage>('ephemeralStorage', () => {
-    return new StorageService({ mode: 'ephemeral', ttlDuration: 24 * 60 * 60 * 1000 });
+  container.registerSingleton<IStorage>('basicStorage', () => {
+    return new StorageService({ mode: 'basic', ttlDuration: 24 * 60 * 60 * 1000 });
   });
 
   /**
@@ -198,38 +197,37 @@ export function registerServices(container: Container): void {
    */
   if (typeof document !== 'undefined') {
     /**
-     * Walk Mode - Transient
-     * 24h TTL local persistence
+     * Basic Mode - Transient
+     * Local persistence with a user-configurable TTL (24h default)
      */
-    container.registerTransient<IHighlightMode>('ephemeralMode', () => {
+    container.registerTransient<IHighlightMode>('basicMode', () => {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-      const ephemeralStorage = container.resolve<IStorage>('ephemeralStorage');
+      const basicStorage = container.resolve<IStorage>('basicStorage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      return new EphemeralMode(repositoryFacade, ephemeralStorage, eventBus, logger);
+      return new BasicMode(repositoryFacade, basicStorage, eventBus, logger);
     });
 
     /**
-     * Sprint Mode - Transient
-     * Session-based highlighting (TTL persistence)
+     * Pro Mode - Transient
+     * Persistent highlighting (IndexedDB) + server sync
      */
-    container.registerTransient<IHighlightMode>('localMode', () => {
+    container.registerTransient<IHighlightMode>('proMode', () => {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-      const storage = container.resolve<IStorage>('storage');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      return new LocalMode(repositoryFacade, storage, eventBus, logger);
+      return new ProMode(repositoryFacade, eventBus, logger);
     });
 
     /**
-     * Vault Mode - Transient
-     * Persistent highlighting (IndexedDB)
+     * 10x-Pro Mode - Transient
+     * Pro persistence + AI capability flags
      */
-    container.registerTransient<IHighlightMode>('cloudMode', () => {
+    container.registerTransient<IHighlightMode>('proXaiMode', () => {
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const eventBus = container.resolve<EventBus>('eventBus');
       const logger = container.resolve<ILogger>('logger');
-      return new CloudMode(repositoryFacade, eventBus, logger);
+      return new ProXaiMode(repositoryFacade, eventBus, logger);
     });
   }
 
@@ -237,34 +235,6 @@ export function registerServices(container: Container): void {
   // AUTHENTICATION LAYER (Phase 2: Vault Mode)
   // ============================================
 
-  /**
-   * Token Store - Singleton
-   * Encrypted OAuth token storage with circuit breaker protection
-   */
-  container.registerSingleton('tokenStore', () => {
-    const logger = container.resolve<ILogger>('logger');
-
-    // Create a persistent storage adapter (chrome.storage.local wrapper)
-    const persistentStorage = {
-      async save<T>(key: string, value: T): Promise<void> {
-        await chrome.storage.local.set({ [key]: value });
-      },
-      async load<T>(key: string): Promise<T | null> {
-        const result = await chrome.storage.local.get(key);
-        return (result[key] as T) ?? null;
-      },
-      async delete(key: string): Promise<void> {
-        await chrome.storage.local.remove(key);
-      },
-    };
-
-    return new TokenStore(persistentStorage, logger);
-  });
-
-  /**
-   * Auth Manager - Singleton
-   * OAuth authentication with automatic token refresh
-   */
   container.registerSingleton('authManager', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = container.resolve<any>('_supabaseSDK');
@@ -272,17 +242,6 @@ export function registerServices(container: Container): void {
     const logger = container.resolve<ILogger>('logger');
 
     return new AuthManager(supabase, eventBus, logger);
-  });
-
-  /**
-   * Auth State Observer - Singleton
-   * Notifies subscribers of authentication state changes
-   */
-  container.registerSingleton('authStateObserver', () => {
-    const eventBus = container.resolve<EventBus>('eventBus');
-    const logger = container.resolve<ILogger>('logger');
-
-    return new AuthStateObserver(eventBus, logger);
   });
 
   /**
@@ -304,14 +263,14 @@ export function getDependencyGraph(): Map<string, string[]> {
     ['logger', []],
     ['eventBus', []],
     ['storage', []],
-    ['ephemeralStorage', []],
+    ['basicStorage', []],
     ['repository', []],
     ['messagingCircuitBreaker', ['logger']],
     ['messageBus', ['logger', 'messagingCircuitBreaker']],
     ['modeManager', ['eventBus', 'logger']],
-    ['ephemeralMode', ['repository', 'ephemeralStorage', 'eventBus']],
-    ['localMode', ['repository', 'storage', 'eventBus']],
-    ['cloudMode', ['repository', 'eventBus']],
+    ['basicMode', ['repository', 'basicStorage', 'eventBus']],
+    ['proMode', ['repository', 'eventBus']],
+    ['proXaiMode', ['repository', 'eventBus']],
     ['commandFactory', ['container']],
   ]);
 }

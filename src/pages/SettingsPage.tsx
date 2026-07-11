@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 
 import { useApp } from '@/core/context/AppProvider';
-import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import { ExportActions } from '@/features/collections/components/ExportActions';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { useVaultLocked } from '@/features/collections/hooks/use-vault-locked';
+import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
+import { BasicTtlPicker } from '@/features/settings/components/BasicTtlPicker';
+import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSettings';
+import { ConnectedAppsSettings } from '@/features/settings/components/ConnectedAppsSettings';
+import { formatBasicTtlConfig } from '@/shared/constants/basic-ttl';
+import { getModeBranding } from '@/shared/constants/mode-branding';
+import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
@@ -32,17 +42,32 @@ export interface SettingsPageProps {
   onBack?: () => void;
   onChangeMode?: () => void;
   onConfigureAIProviders?: () => void;
+  onSignIn?: () => void;
+  onLogout?: () => Promise<void>;
 }
 
 /**
  * Settings Page
  * Implements exactly what the Settings component in ui_kits/extension/v2/screens-nav.jsx specifies.
  */
-export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProviders }: SettingsPageProps): React.ReactElement {
-  const { theme, setTheme, currentMode } = useApp();
-  const { user, logout } = useCurrentUser();
+export function SettingsPage({
+  onBack: _onBack,
+  onChangeMode,
+  onConfigureAIProviders,
+  onSignIn,
+  onLogout,
+}: SettingsPageProps): React.ReactElement {
+  const { theme, setTheme, currentMode, user, logout: appLogout } = useApp();
+  const logout = onLogout ?? appLogout;
+  const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
+  const { ttlConfig: basicTtlConfig } = useBasicTtlOption();
   const [typeId, setTypeId] = useState<TypePresetId>('editorial');
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [ttlExpanded, setTtlExpanded] = useState(false);
+  const { deleteScope } = useHighlightDelete();
+  const vaultLocked = useVaultLocked(Boolean(user));
+  const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
+  const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
 
   // onBack is still required on the interface for callers passing it to the shell's ModeHeader
   // _onBack is intentionally unused in the body-only version
@@ -56,12 +81,48 @@ export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProvi
     }
   };
 
+  const handleAccountClick = (): void => {
+    if (user && !isSigningOut) {
+      void handleSignOut();
+      return;
+    }
+    if (!user) {
+      onSignIn?.();
+    }
+  };
+
   const handleToggleTheme = (): void => {
     const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
     const currentIndex = themes.indexOf(theme as 'light' | 'dark' | 'system');
     const nextTheme = themes[(currentIndex + 1) % themes.length] || 'system';
     setTheme(nextTheme);
   };
+
+  const syncSubtitle = (() => {
+    if (!user) return 'Sign in to sync with cloud';
+    if (isSyncing) return 'Pulling highlights from database…';
+    if (syncError) return syncError;
+    if (syncStatus === 'success' && lastResult) return formatSyncSubtitle(lastResult);
+    return 'Pull latest highlights from cloud';
+  })();
+
+  const handleSyncLibrary = async (): Promise<void> => {
+    if (!user || isSyncing) return;
+    await sync();
+  };
+
+  const handleDeleteLibrary = async (): Promise<void> => {
+    setIsDeletingLibrary(true);
+    try {
+      await deleteScope({ scope: 'library' });
+      setDeleteLibraryOpen(false);
+    } finally {
+      setIsDeletingLibrary(false);
+    }
+  };
+
+  const basicTtlLabel = formatBasicTtlConfig(basicTtlConfig);
+  const modeBranding = getModeBranding(currentMode);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
@@ -115,16 +176,82 @@ export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProvi
         />
         <Row
           title="Mode"
-          sub={`${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} · synced`}
+          sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
           right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>}
           onClick={onChangeMode}
         />
+        {currentMode === 'basic' && (
+          <>
+            <Row
+              title="Retention"
+              sub="How long highlights stick around on this device"
+              right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>{basicTtlLabel}</span>}
+              onClick={() => setTtlExpanded((v) => !v)}
+            />
+            {ttlExpanded && <BasicTtlPicker value={basicTtlConfig} />}
+          </>
+        )}
         <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Edit</span>} />
+
+        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
+        <Row
+          title="Sync library"
+          sub={syncSubtitle}
+          right={
+            isSyncing ? (
+              <Spinner size="sm" />
+            ) : (
+              <span
+                className="u-mono"
+                style={{
+                  fontSize: 'var(--step--2)',
+                  color: user ? 'var(--accent)' : 'var(--ink-3)',
+                }}
+              >
+                {user ? 'Sync' : '—'}
+              </span>
+            )
+          }
+          onClick={user && !isSyncing ? handleSyncLibrary : undefined}
+        />
+        <Row
+          title="Export library"
+          sub={user ? 'Download all highlights as markdown or spreadsheet' : 'Sign in to export your library'}
+          right={<ExportActions scope={{ kind: 'library' }} disabled={!user} />}
+        />
+        <Row
+          title="Delete library"
+          sub={
+            vaultLocked
+              ? 'Unlock vault in Settings before deleting'
+              : 'Permanently remove all highlights on this device'
+          }
+          right={
+            <span
+              className="u-mono"
+              style={{
+                fontSize: 'var(--step--2)',
+                color: vaultLocked ? 'var(--ink-3)' : 'var(--accent)',
+              }}
+            >
+              {vaultLocked ? 'Locked' : 'Delete'}
+            </span>
+          }
+          onClick={vaultLocked ? undefined : () => setDeleteLibraryOpen(true)}
+        />
+
+        <McpBridgeSettings
+          isAuthenticated={Boolean(user)}
+          currentMode={currentMode}
+          onSignIn={onSignIn}
+        />
+
+        <ConnectedAppsSettings isAuthenticated={Boolean(user)} />
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
         <Row
           title={user?.email || 'Guest User'}
-          sub={user ? 'Signed in' : 'Local mode'}
+          sub={user ? 'Signed in' : 'Basic mode'}
           right={
             isSigningOut ? (
               <Spinner size="sm" />
@@ -134,7 +261,7 @@ export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProvi
               </span>
             )
           }
-          onClick={user && !isSigningOut ? handleSignOut : undefined}
+          onClick={!isSigningOut ? handleAccountClick : undefined}
         />
         <Row
           title="Configure AI providers"
@@ -142,12 +269,21 @@ export function SettingsPage({ onBack: _onBack, onChangeMode, onConfigureAIProvi
           right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
           onClick={onConfigureAIProviders}
         />
-        <Row
-          title="Export highlights"
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
-          onClick={() => {}}
-        />
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteLibraryOpen}
+        onClose={() => setDeleteLibraryOpen(false)}
+        title="Delete entire library?"
+        message={
+          user
+            ? 'This permanently removes all highlights from this device and marks them deleted in the cloud. This cannot be undone.'
+            : 'This permanently removes all highlights stored on this device in Basic mode. This cannot be undone.'
+        }
+        onConfirm={() => { void handleDeleteLibrary(); }}
+        isConfirming={isDeletingLibrary}
+        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!user || vaultLocked} />}
+      />
     </div>
   );
 }

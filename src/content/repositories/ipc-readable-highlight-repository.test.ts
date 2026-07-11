@@ -8,7 +8,7 @@
  * adapter. This file tests that adapter.
  *
  * Channel: IPC_HIGHLIGHT_GET_BY_URL
- * Payload: { url: string, mode: 'ephemeral' | 'local' | 'cloud' }
+ * Payload: { url: string, mode: 'basic' | 'pro' | 'pro_xai' }
  * Response: { success: true, data: HighlightDataV2[] }
  */
 
@@ -48,7 +48,7 @@ describe('IpcReadableHighlightRepository', () => {
     it('sends IPC_HIGHLIGHTS_FIND_BY_URL with url and mode on findByUrl', async () => {
         const bus = makeBus(async () => ({ success: true, data: [] as HighlightDataV2[] }));
         const sendSpy = vi.spyOn(bus, 'send');
-        const repo = new IpcReadableHighlightRepository(bus, modeOf('ephemeral'));
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('basic'));
 
         await repo.findByUrl('https://example.com/a');
 
@@ -56,7 +56,7 @@ describe('IpcReadableHighlightRepository', () => {
             'background',
             expect.objectContaining({
                 type: 'IPC_HIGHLIGHTS_FIND_BY_URL',
-                payload: { url: 'https://example.com/a', mode: 'ephemeral' },
+                payload: { url: 'https://example.com/a', mode: 'basic' },
                 timestamp: expect.any(Number),
             })
         );
@@ -65,7 +65,7 @@ describe('IpcReadableHighlightRepository', () => {
     it('returns the data array on a successful response', async () => {
         const items = [makeHighlight({ id: 'h-1' }), makeHighlight({ id: 'h-2' })];
         const bus = makeBus(async () => ({ success: true, data: items }));
-        const repo = new IpcReadableHighlightRepository(bus, modeOf('local'));
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('basic'));
 
         const result = await repo.findByUrl('https://example.com/a');
 
@@ -74,21 +74,21 @@ describe('IpcReadableHighlightRepository', () => {
 
     it('throws when the bus returns success: false', async () => {
         const bus = makeBus(async () => ({ success: false, error: 'boom' }));
-        const repo = new IpcReadableHighlightRepository(bus, modeOf('cloud'));
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('pro'));
 
         await expect(repo.findByUrl('https://example.com/a')).rejects.toThrow(/boom/);
     });
 
     it('findById throws (not supported via read IPC adapter; use facade)', async () => {
         const bus = makeBus(async () => ({ success: true, data: [] }));
-        const repo = new IpcReadableHighlightRepository(bus, modeOf('local'));
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('basic'));
 
         await expect(repo.findById('h-1')).rejects.toThrow();
     });
 
     it('findAll throws (not supported via read IPC adapter)', async () => {
         const bus = makeBus(async () => ({ success: true, data: [] }));
-        const repo = new IpcReadableHighlightRepository(bus, modeOf('local'));
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('basic'));
 
         await expect(repo.findAll()).rejects.toThrow();
     });

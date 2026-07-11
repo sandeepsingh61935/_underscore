@@ -9,7 +9,7 @@ import { Toaster, toast } from 'sonner';
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { APIKeySetupView } from '../../features/ai/views/APIKeySetupView';
 import { LLMStreamingView } from '../../features/ai/views/LLMStreamingView';
-import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser';
+import { AuthProvider, useAuth as useExtensionAuth } from '../../ui-system/providers/AuthProvider';
 import { useUnlockVault } from '../../features/auth/hooks/useUnlockVault';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
@@ -17,8 +17,22 @@ import { SubDomainView } from '../../features/collections/views/SubDomainView';
 import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
+import {
+  clearPopupDomainSection,
+  clearPendingAuthMode,
+  loadPopupNavigationSnapshot,
+  persistPopupDomain,
+  persistPopupSection,
+  persistPendingAuthMode,
+  persistPopupView,
+} from '../../shared/constants/popup-navigation-storage';
 import type { PromptContext } from '../../shared/llm/prompts';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
+import type { ProviderName } from '../../shared/interfaces/i-llm-service';
+import {
+  postLoginViewForMode,
+  resolvePopupInitialRoute,
+} from '../../shared/popup/resolve-popup-initial-route';
 import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
 
@@ -113,6 +127,7 @@ function PopupApp(): React.ReactElement {
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
   const [llmContext, setLlmContext] = useState<PromptContext | null>(null);
+  const [lastLlmSetupProvider, setLastLlmSetupProvider] = useState<ProviderName | undefined>();
 
   // Authentication & Mode Notification / Swapping Effect
   useEffect(() => {
@@ -123,11 +138,35 @@ function PopupApp(): React.ReactElement {
         const name = user.displayName || user.email || 'User';
         toast.success(`Welcome, ${name}!`);
       } else if (!user && prevUser) {
-        toast.success('Signed out · Switched to Ephemeral mode');
+        toast.success('Signed out · Switched to Basic mode');
       }
     }
     setPrevUser(user);
   }, [user, prevUser, isLoading, isStorageReady]);
+
+  // Auth gate: OAuth often completes in background while popup is closed.
+  // If we reopen on AUTH (or auth completes while still on AUTH), route forward.
+  useEffect(() => {
+    if (!isStorageReady || isLoading || !user || currentView !== View.AUTH) {
+      return;
+    }
+
+    const completeAuthNavigation = async (): Promise<void> => {
+      const nav = await loadPopupNavigationSnapshot();
+      const storedPending = nav.pendingAuthMode as ModeType | undefined;
+      const targetMode = pendingMode ?? storedPending ?? currentMode;
+
+      if (pendingMode || storedPending) {
+        setMode(targetMode);
+        setPendingMode(null);
+        await clearPendingAuthMode();
+      }
+
+      setCurrentView(postLoginViewForMode(targetMode) as View);
+    };
+
+    void completeAuthNavigation();
+  }, [user, currentView, isStorageReady, isLoading, pendingMode, currentMode, setMode]);
 
   // Initialization
   useEffect(() => {
@@ -135,43 +174,45 @@ function PopupApp(): React.ReactElement {
 
     async function initStorage(): Promise<void> {
       try {
-        const data = await browser.storage.local.get([
-          'underscore_seen_welcome',
-          'underscore_seen_mode_selection',
-          'underscore_last_popup_view',
-          'underscore_last_selected_domain',
+        const [onboarding, nav] = await Promise.all([
+          browser.storage.local.get([
+            'underscore_seen_welcome',
+            'underscore_seen_mode_selection',
+          ]),
+          loadPopupNavigationSnapshot(),
         ]);
-        const hasSeenWelcome = data['underscore_seen_welcome'] === 'true';
-        const hasSeenModeSelection = data['underscore_seen_mode_selection'] === 'true';
-        const lastView = data['underscore_last_popup_view'] as View;
-        const lastDomain = (data['underscore_last_selected_domain'] as string) || '';
+        const hasSeenWelcome = onboarding['underscore_seen_welcome'] === 'true';
+        const hasSeenModeSelection = onboarding['underscore_seen_mode_selection'] === 'true';
 
-        if (!hasSeenWelcome) {
-          setCurrentView(View.WELCOME);
-          return;
+        if (nav.lastLlmSetupProvider) {
+          setLastLlmSetupProvider(nav.lastLlmSetupProvider);
         }
 
-        if (user) {
-          // If user is already logged in, skip mode selection and prefer collections/details/settings
-          if (lastView === View.DOMAIN_DETAILS || lastView === View.SETTINGS) {
-            if (lastView === View.DOMAIN_DETAILS && lastDomain) setSelectedDomain(lastDomain);
-            setCurrentView(lastView);
-          } else {
-            setCurrentView(View.COLLECTIONS);
+        const resolved = resolvePopupInitialRoute({
+          isAuthenticated: Boolean(user),
+          onboarding: { hasSeenWelcome, hasSeenModeSelection },
+          nav,
+          currentMode,
+        });
+
+        if (resolved.applyMode) {
+          setMode(resolved.applyMode);
+          setPendingMode(null);
+          if (resolved.consumePendingAuthMode) {
+            await clearPendingAuthMode();
           }
-        } else if (!hasSeenModeSelection) {
-          setCurrentView(View.MODE_SELECTION);
-        } else {
-          // Not logged in but already chose a mode — go to collections, not mode selection again
-          if (lastView === View.AUTH || lastView === View.SETTINGS) {
-            setCurrentView(lastView);
-          } else if (lastView === View.DOMAIN_DETAILS) {
-            if (lastDomain) setSelectedDomain(lastDomain);
-            setCurrentView(View.DOMAIN_DETAILS);
-          } else {
-            setCurrentView(View.COLLECTIONS);
-          }
+        } else if (nav.pendingAuthMode) {
+          setPendingMode(nav.pendingAuthMode as ModeType);
         }
+
+        if (resolved.selectedDomain) {
+          setSelectedDomain(resolved.selectedDomain);
+        }
+        if (resolved.selectedSection) {
+          setSelectedSection(resolved.selectedSection);
+        }
+
+        setCurrentView(resolved.view as View);
       } catch (err) {
         console.error('Storage load failed', err);
         setCurrentView(View.WELCOME);
@@ -183,20 +224,10 @@ function PopupApp(): React.ReactElement {
     initStorage();
   }, [isLoading]);
 
-  // Persist View State
+  // Persist view state so reopening the popup restores the last screen (not auth gates).
   useEffect(() => {
     if (!isStorageReady) return;
-
-    if (
-      currentView === View.COLLECTIONS ||
-      currentView === View.MODE_SELECTION ||
-      currentView === View.DOMAIN_DETAILS ||
-      currentView === View.SUB_DOMAIN
-    ) {
-      browser.storage.local
-        .set({ underscore_last_popup_view: currentView })
-        .catch(console.error);
-    }
+    void persistPopupView(currentView).catch(console.error);
   }, [currentView, isStorageReady]);
 
   const handleStartWelcome = async (): Promise<void> => {
@@ -218,18 +249,16 @@ function PopupApp(): React.ReactElement {
   const handleSignInClick = async (modeId: ModeType): Promise<void> => {
     setPendingMode(modeId);
     await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
+    await persistPendingAuthMode(modeId);
     setCurrentView(View.AUTH);
   };
 
-  const handleLoginSuccess = (): void => {
-    const targetMode = pendingMode || 'cloud';
+  const handleLoginSuccess = async (): Promise<void> => {
+    const targetMode = pendingMode || 'pro';
     setMode(targetMode);
     setPendingMode(null);
-    if (targetMode === 'cloud' || targetMode === 'ai') {
-      setCurrentView(View.UNLOCK_VAULT);
-      return;
-    }
-    setCurrentView(View.COLLECTIONS);
+    await clearPendingAuthMode();
+    setCurrentView(postLoginViewForMode(targetMode) as View);
   };
 
   const handleUnlockSuccess = (): void => {
@@ -242,6 +271,8 @@ function PopupApp(): React.ReactElement {
 
   const handleLogout = async (): Promise<void> => {
     await logout();
+    await clearPendingAuthMode();
+    setPendingMode(null);
     setCurrentView(View.MODE_SELECTION);
   };
 
@@ -251,18 +282,20 @@ function PopupApp(): React.ReactElement {
 
   const handleCollectionClick = (domain: string): void => {
     setSelectedDomain(domain);
-    void browser.storage.local.set({ underscore_last_selected_domain: domain });
+    void persistPopupDomain(domain).catch(console.error);
     setCurrentView(View.DOMAIN_DETAILS);
   };
 
   const handleBackToCollections = (): void => {
-    void browser.storage.local.remove('underscore_last_selected_domain');
+    void clearPopupDomainSection().catch(console.error);
     setCurrentView(View.COLLECTIONS);
   };
 
   const handleSectionClick = (domain: string, section: string): void => {
     setSelectedDomain(domain);
     setSelectedSection(section);
+    void persistPopupDomain(domain).catch(console.error);
+    void persistPopupSection(section).catch(console.error);
     setCurrentView(View.SUB_DOMAIN);
   };
 
@@ -329,7 +362,7 @@ function PopupApp(): React.ReactElement {
     onBackFromApiKeySetup: handleBackFromApiKeySetup,
     onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,
-    getModeId: () => (typeof currentMode === 'string' ? currentMode : 'local'),
+    getModeId: () => (typeof currentMode === 'string' ? currentMode : 'basic'),
   };
   const chrome = buildChrome(chromeHandlers);
 
@@ -425,6 +458,7 @@ function PopupApp(): React.ReactElement {
             domain={selectedDomain}
             section={selectedSection}
             onBack={handleBackToDomain}
+            onDomainEmpty={handleBackToCollections}
           />
         </motion.div>
       )}
@@ -476,6 +510,8 @@ function PopupApp(): React.ReactElement {
             onBack={handleBackToCollections}
             onChangeMode={handleSettingsChangeMode}
             onConfigureAIProviders={handleConfigureAIProviders}
+            onSignIn={() => setCurrentView(View.AUTH)}
+            onLogout={handleLogout}
           />
         </motion.div>
       )}
@@ -505,7 +541,10 @@ function PopupApp(): React.ReactElement {
           transition={springs.gentle}
           style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
         >
-          <APIKeySetupView onClose={handleBackFromApiKeySetup} />
+          <APIKeySetupView
+            initialProvider={lastLlmSetupProvider}
+            onClose={handleBackFromApiKeySetup}
+          />
         </motion.div>
       )}
       {currentView === View.LLM_STREAMING && llmContext && (
@@ -526,7 +565,9 @@ function PopupApp(): React.ReactElement {
 }
 
 const popupEventBus = new EventBus(new ConsoleLogger('PopupData', LogLevel.WARN));
-const popupMessageBus = new ChromeMessageBus(new ConsoleLogger('PopupMessageBus', LogLevel.WARN));
+const popupMessageBus = new ChromeMessageBus(new ConsoleLogger('PopupMessageBus', LogLevel.WARN), {
+  timeoutMs: 120_000,
+});
 const popupDataProvider = new ExtensionDataProviderAdapter(popupEventBus, popupMessageBus);
 
 const container = document.getElementById('app');
@@ -548,7 +589,15 @@ if (container) {
 }
 
 function PopupAppWithProviders(): React.ReactElement {
-  const { user, isLoading, logout } = useCurrentUser();
+  return (
+    <AuthProvider>
+      <PopupAppAuthBridge />
+    </AuthProvider>
+  );
+}
+
+function PopupAppAuthBridge(): React.ReactElement {
+  const { user, isLoading, logout } = useExtensionAuth();
 
   if (isLoading) {
     return (
@@ -565,8 +614,8 @@ function PopupAppWithProviders(): React.ReactElement {
           ? {
               id: user.id,
               email: user.email,
-              displayName: user.displayName || user.name || 'User',
-              photoUrl: user.photoUrl || user.avatarUrl,
+              displayName: user.displayName || 'User',
+              photoUrl: user.photoUrl,
               // provider field removed as it does not exist on User interface
             }
           : null

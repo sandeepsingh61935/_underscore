@@ -54,8 +54,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
 
     // Available modes depends on auth state
     const availableModes: Mode[] = propIsAuthenticated
-        ? ['ephemeral', 'local', 'cloud', 'ai']
-        : ['ephemeral', 'local'];
+        ? ['pro', 'pro_xai']
+        : ['basic'];
 
     // Apply theme to document
     useEffect(() => {
@@ -78,9 +78,9 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     }, []);
 
     // Logout delegates to the prop handler
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
         if (onLogout) {
-            onLogout();
+            await onLogout();
         } else {
             console.warn('[PopupAppProvider] logout() called but no onLogout handler provided');
         }

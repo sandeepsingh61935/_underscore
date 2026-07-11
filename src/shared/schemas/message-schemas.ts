@@ -71,6 +71,26 @@ export function validateMessage(message: unknown): Message {
 export const IPC_HIGHLIGHT_DECRYPT_TEXT = 'IPC_HIGHLIGHT_DECRYPT_TEXT' as const;
 export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
 
+/** Scoped delete: highlight | section | domain | library */
+export const IPC_HIGHLIGHT_DELETE_SCOPE = 'IPC_HIGHLIGHT_DELETE_SCOPE' as const;
+/** Undo the most recent single-highlight delete (5s window). */
+export const IPC_HIGHLIGHT_UNDO_DELETE = 'IPC_HIGHLIGHT_UNDO_DELETE' as const;
+
+/** Whether the encryption vault blocks destructive operations for the signed-in user. */
+export const GET_VAULT_LOCK_STATUS = 'GET_VAULT_LOCK_STATUS' as const;
+
+/** Broadcast when cloud hydration backfills local highlight storage. */
+export const LIBRARY_DATA_CHANGED = 'LIBRARY_DATA_CHANGED' as const;
+
+/** Request a manual cloud → local library sync from Settings. */
+export const SYNC_LIBRARY = 'SYNC_LIBRARY' as const;
+
+/** Fetch highlights formatted for scoped copy/export (library, domain, section, highlight). */
+export const GET_EXPORTABLE_HIGHLIGHTS = 'GET_EXPORTABLE_HIGHLIGHTS' as const;
+
+/** Update user notes/tags on a highlight (popup and web app). */
+export const UPDATE_HIGHLIGHT_METADATA = 'UPDATE_HIGHLIGHT_METADATA' as const;
+
 /**
  * IPC channel for the user-facing vault unlock prompt (ADR-018).
  *
@@ -80,6 +100,17 @@ export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
  */
 export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
 
+/** Auth IPC channels */
+export const AUTH_STATE_CHANGED = 'AUTH_STATE_CHANGED' as const;
+export const AUTH_SESSION_CLEARED = 'AUTH_SESSION_CLEARED' as const;
+export const SYNC_AUTH_SESSION = 'SYNC_AUTH_SESSION' as const;
+export const CLEAR_VERIFICATION_STATE = 'CLEAR_VERIFICATION_STATE' as const;
+export const GET_AUTH_STATE = 'GET_AUTH_STATE' as const;
+export const LOGIN = 'LOGIN' as const;
+export const LOGIN_EMAIL = 'LOGIN_EMAIL' as const;
+export const REGISTER_EMAIL = 'REGISTER_EMAIL' as const;
+export const LOGOUT = 'LOGOUT' as const;
+
 /**
  * IPC channels for ADR-021 (LLM service architecture).
  *
@@ -87,16 +118,20 @@ export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
  *                               responses on the port: CHUNK, DONE, ERROR
  * - IPC_AI_CHAT:                 single-shot completion (non-streaming)
  * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic'|'ollama'|'gemini'|'openai'|'openrouter'|'minimax' } -> { ok, model, error? }
- * - IPC_AI_SET_API_KEY:          { provider, key } -> { ok: true } | error
- * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, mode: ModeName }
+ * - IPC_AI_SET_API_KEY:          { provider, key?, model? } -> { ok: true } | error
+ * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, model: string }
+ * - IPC_AI_GET_ACTIVE_PROVIDER:    -> { provider: ProviderName | null }
  * - IPC_AI_LIST_PROVIDERS:       -> [{ name, configured }]
+ * - IPC_AI_GET_PAGE_CONTEXT:     { highlights: [{ url, text }] } -> marked page context
  */
 export const IPC_AI_STREAM_CHAT_REQUEST = 'IPC_AI_STREAM_CHAT_REQUEST' as const;
 export const IPC_AI_CHAT = 'IPC_AI_CHAT' as const;
 export const IPC_AI_HEALTH_CHECK = 'IPC_AI_HEALTH_CHECK' as const;
 export const IPC_AI_SET_API_KEY = 'IPC_AI_SET_API_KEY' as const;
 export const IPC_AI_GET_API_KEY_STATUS = 'IPC_AI_GET_API_KEY_STATUS' as const;
+export const IPC_AI_GET_ACTIVE_PROVIDER = 'IPC_AI_GET_ACTIVE_PROVIDER' as const;
 export const IPC_AI_LIST_PROVIDERS = 'IPC_AI_LIST_PROVIDERS' as const;
+export const IPC_AI_GET_PAGE_CONTEXT = 'IPC_AI_GET_PAGE_CONTEXT' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
 /**

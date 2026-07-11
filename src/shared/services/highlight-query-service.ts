@@ -13,7 +13,11 @@
  * with the Supabase repository.
  */
 
+import type { ExportScope } from '@/shared/highlight-export';
+import { filterRawHighlightsByScope } from '@/shared/highlight-export';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
 
 export interface CollectionSummary {
   domain: string;
@@ -28,6 +32,8 @@ export interface DomainHighlightSummary {
   path: string;
   domain: string;
   createdAt: Date;
+  notes?: string;
+  tags?: string[];
 }
 
 export interface DashboardData {
@@ -54,18 +60,15 @@ export class HighlightQueryService {
 
     for (const hl of highlights) {
       if (!hl.url) continue;
-      try {
-        const domain = new URL(hl.url).hostname;
-        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
-      } catch {
-        continue;
-      }
+      const domain = getDomainFromUrl(hl.url);
+      if (!domain) continue;
+      domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
     }
 
     return Array.from(domainMap.entries()).map(([domain, highlightCount]) => ({
       domain,
       highlightCount,
-      mode: mode ?? 'local',
+      mode: mode ?? 'basic',
     }));
   }
 
@@ -76,14 +79,7 @@ export class HighlightQueryService {
 
     const highlights = await this.readable.findAll();
     return highlights
-      .filter((hl) => {
-        if (!hl.url) return false;
-        try {
-          return new URL(hl.url).hostname === domain;
-        } catch {
-          return false;
-        }
-      })
+      .filter((hl) => hl.url && urlMatchesDomain(hl.url, domain))
       .map((hl) => ({
         id: hl.id,
         text: hl.text,
@@ -91,8 +87,15 @@ export class HighlightQueryService {
         path: hl.url ? new URL(hl.url).pathname : '/',
         domain,
         createdAt: hl.createdAt,
+        notes: hl.metadata?.notes,
+        tags: hl.metadata?.tags,
       }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async findAllForExport(scope: ExportScope): Promise<HighlightDataV2[]> {
+    const highlights = await this.readable.findAll();
+    return filterRawHighlightsByScope(highlights, scope);
   }
 
   async getDashboardData(_mode?: string): Promise<DashboardData> {
@@ -105,15 +108,17 @@ export class HighlightQueryService {
 
     for (const hl of highlights) {
       if (!hl.url) continue;
+      const domain = getDomainFromUrl(hl.url);
+      if (!domain) continue;
+
+      domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+
+      const createdAt = new Date(hl.createdAt).getTime();
+      if (createdAt >= oneWeekAgo) {
+        thisWeekCount++;
+      }
+
       try {
-        const domain = new URL(hl.url).hostname;
-        domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
-
-        const createdAt = new Date(hl.createdAt).getTime();
-        if (createdAt >= oneWeekAgo) {
-          thisWeekCount++;
-        }
-
         recentHighlights.push({
           id: hl.id,
           text: hl.text,

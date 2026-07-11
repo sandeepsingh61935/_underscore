@@ -83,8 +83,12 @@ export interface EventLog {
 
 /**
  * Storage mode
+ *
+ * Only 'basic' and 'pro' are distinct storage backends — 'pro_xai'
+ * delegates highlight storage/restore behavior to the 'pro' backend
+ * (it is a capability overlay, not a separate persistence strategy).
  */
-export type StorageMode = 'ephemeral' | 'local' | 'cloud';
+export type StorageMode = 'basic' | 'pro';
 
 /**
  * Storage configuration
@@ -101,7 +105,7 @@ export interface StorageConfig {
  * Default storage configuration (local: permanent, no TTL)
  */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
-  mode: 'local',
+  mode: 'basic',
   ttlDuration: null,
   maxEventsPerDomain: 100,
   maxDomains: 100,

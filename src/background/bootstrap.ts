@@ -13,6 +13,13 @@ import { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import { ConnectionManager } from '@/background/realtime/connection-manager';
 import { EventBridge } from '@/background/services/event-bridge';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
+import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import { migrateLegacyVaultToBasic } from '@/background/repositories/migrate-legacy-highlight-db';
 
 const logger = LoggerFactory.getLogger('Bootstrap');
 
@@ -61,7 +68,23 @@ export async function initializeBackground(): Promise<Container> {
     //     reflects persisted data on startup (e.g. after a service-worker restart).
     //     Without this, reads after a cold start return 0 even when data exists in IDB.
     const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+    const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+    const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
+    const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
+    const localWriteEchoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker');
+    const realtimeHighlightIngestService = container.resolve<RealtimeHighlightIngestService>('realtimeHighlightIngestService');
+    await migrateLegacyVaultToBasic(logger);
     await repositoryFacade.initialize();
+
+    const authStorageDeps = {
+        scopedRepository: scopedHighlightRepository,
+        repositoryFacade,
+        cloudHydration: cloudHydrationService,
+        syncCursor: librarySyncCursor,
+        echoTracker: localWriteEchoTracker,
+    };
+
+    realtimeHighlightIngestService.initialize();
 
     // 3. Initialize & Wire Signals
     const authManager = container.resolve<IAuthManager>('authManager');
@@ -86,29 +109,42 @@ export async function initializeBackground(): Promise<Container> {
     // Auto-connect if already logged in
     const currentUser = authManager.currentUser;
     if (currentUser) {
-        logger.info('[BOOTSTRAP] User authenticated on startup, connecting realtime', { userId: currentUser.id });
-        // Don't await connection here to avoid blocking background script initialization
-        // which would delay MessageBus listener registration
+        logger.info('[BOOTSTRAP] User authenticated on startup, activating Pro storage', { userId: currentUser.id });
         void connectionManager.connect(currentUser.id).catch(err => {
             logger.error('[BOOTSTRAP] Failed to connect realtime on startup', err);
         });
+        void handleAuthStorageEvent({ type: 'SIGNED_IN', userId: currentUser.id }, authStorageDeps).catch(err => {
+            logger.error('[BOOTSTRAP] Auth storage sign-in failed on startup', err as Error);
+        });
     } else {
-        logger.warn('[BOOTSTRAP] No authenticated user on startup, skipping realtime connection');
+        logger.warn('[BOOTSTRAP] No authenticated user on startup, using Basic storage');
+        await scopedHighlightRepository.activateScope('basic');
     }
 
     // Wire auth state changes to connection manager
     authManager.onAuthStateChanged(async (state) => {
         if (state.isAuthenticated && state.user) {
             logger.info('User logged in, connecting realtime', { userId: state.user.id });
-            await connectionManager.connect(state.user.id);
+            void connectionManager.connect(state.user.id).catch(err => {
+                logger.error('[BOOTSTRAP] Failed to connect realtime on login', err);
+            });
+            try {
+                await handleAuthStorageEvent(
+                    { type: 'SIGNED_IN', userId: state.user.id },
+                    authStorageDeps,
+                );
+            } catch (err) {
+                logger.error('[BOOTSTRAP] Auth storage sign-in failed on login', err as Error);
+            }
         } else {
-            logger.info('User logged out, disconnecting realtime');
+            logger.info('User logged out, wiping Pro local storage');
             connectionManager.disconnect();
+            try {
+                await handleAuthStorageEvent({ type: 'SIGNED_OUT' }, authStorageDeps);
+            } catch (err) {
+                logger.error('[BOOTSTRAP] Auth storage sign-out failed', err as Error);
+            }
         }
-        // Reload facade cache so it reflects the (possibly new) authenticated
-        // user's data. RepositoryFacade.reload() clears the cache and re-reads
-        // from IndexedDB. Safe and fast for anonymous ephemeral users too.
-        await repositoryFacade.reload();
     });
 
     // Wiring handled by individual components via EventBus?

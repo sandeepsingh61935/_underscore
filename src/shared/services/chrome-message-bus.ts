@@ -2,10 +2,12 @@ import type { ILogger } from '../interfaces/i-logger';
 import type { IMessageBus } from '../interfaces/i-message-bus';
 import {
   validateMessage,
+  SYNC_AUTH_SESSION,
   type Message,
   type MessageTarget,
   type MessageHandler,
 } from '../schemas/message-schemas';
+import { isAllowedExternalAuthOrigin } from '../auth/external-origin';
 
 /**
  * ChromeMessageBus - Cross-context messaging for Chrome extensions
@@ -63,11 +65,23 @@ export class ChromeMessageBus implements IMessageBus {
    * the background's own internal publish path). Content scripts and the
    * popup both carry our extension ID on the sender.
    */
-  private isTrustedSender(sender: chrome.runtime.MessageSender | undefined | null): boolean {
-    if (!sender || typeof sender.id !== 'string') {
+  private isTrustedSender(
+    sender: chrome.runtime.MessageSender | undefined | null,
+    messageType?: string,
+  ): boolean {
+    if (!sender) {
       return false;
     }
-    return sender.id === chrome.runtime.id;
+
+    if (typeof sender.id === 'string' && sender.id === chrome.runtime.id) {
+      return true;
+    }
+
+    if (messageType === SYNC_AUTH_SESSION && isAllowedExternalAuthOrigin(sender.url)) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -93,7 +107,7 @@ export class ChromeMessageBus implements IMessageBus {
       // Sender-origin guard (ADR-014): reject any message whose sender is
       // not this extension. Runs after validation so a structurally invalid
       // message is still classified as "invalid" (not "untrusted").
-      if (!this.isTrustedSender(sender)) {
+      if (!this.isTrustedSender(sender, validatedMessage.type)) {
         this.logger.warn('Rejected IPC from untrusted sender', {
           messageType: validatedMessage.type,
           senderId: sender?.id,
@@ -116,22 +130,27 @@ export class ChromeMessageBus implements IMessageBus {
       // Note: We only support single-response for now (first handler wins/returns)
       // This is a limitation of Chrome's sendResponse
       void (async () => {
-        try {
-          // Execute all handlers but only capture the first non-void result if multiple
-          let responseSent = false;
+        let responseSent = false;
+        const safeSendResponse = (response: unknown): void => {
+          if (responseSent) return;
+          try {
+            sendResponse(response);
+            responseSent = true;
+          } catch (error) {
+            this.logger.warn('sendResponse failed (port may already be closed)', {
+              messageType: validatedMessage.type,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        };
 
+        try {
           for (const handler of messageHandlers) {
             try {
               const result = await handler(validatedMessage.payload, sender);
 
-              // If we haven't sent a response and we have a result, send it
-              // We assume strict REQ/REP pattern: one handler per message type for 'send'
               if (!responseSent && result !== undefined) {
-                // If the result is explicitly an object with success/data/error structure, pass it through.
-                // Otherwise wrap it? No, expected return type T implies raw data or specific structure.
-                // The caller expects T.
-                sendResponse(result);
-                responseSent = true;
+                safeSendResponse(result);
               }
             } catch (handlerError) {
               this.logger.error(
@@ -140,26 +159,29 @@ export class ChromeMessageBus implements IMessageBus {
                 { messageType: validatedMessage.type }
               );
 
-              // If it crashe during handling, try to send error response
               if (!responseSent) {
-                sendResponse({
+                safeSendResponse({
                   success: false,
-                  error: handlerError instanceof Error ? handlerError.message : 'Unknown handler error'
+                  error: handlerError instanceof Error ? handlerError.message : 'Unknown handler error',
                 });
-                responseSent = true;
               }
             }
           }
 
-          // If no handler returned a value (fire-and-forget), we might still need to close the port?
-          // Chrome closes it automatically if we don't call sendResponse, but we returned true.
-          // If we don't call sendResponse, the sender times out.
-          // So if it was a 'send' (expecting response), we should probably send something if nothing was returned?
-          // But we don't know if the sender used 'send' or if it was a 'publish'.
-          // Safest is to do nothing if no result, assuming fire-and-forget.
+          if (!responseSent) {
+            safeSendResponse({
+              success: false,
+              error: 'No response from message handler',
+            });
+          }
         } catch (error) {
-          // Global error block
           this.logger.error('Critical message bus error', error as Error);
+          if (!responseSent) {
+            safeSendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : 'Critical message bus error',
+            });
+          }
         }
       })();
 
@@ -198,6 +220,11 @@ export class ChromeMessageBus implements IMessageBus {
     const sendPromise = new Promise<T>((resolve, reject) => {
       try {
         const handleResponse = (response: T): void => {
+          // Prefer a defined response; lastError can be stale when nested IPC runs.
+          if (response !== undefined && response !== null) {
+            resolve(response);
+            return;
+          }
           if (chrome.runtime.lastError) {
             reject(
               new Error(

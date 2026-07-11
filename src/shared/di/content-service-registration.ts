@@ -4,7 +4,7 @@
  *
  * Registers services that are ONLY available in content script context:
  * - Mode Manager
- * - Highlight Modes (Walk, Sprint, Vault)
+ * - Highlight Modes (Basic, Pro, 10x-Pro)
  * - Command Factory
  *
  * These services use DOM APIs (document, CSS.highlights) which are NOT available
@@ -16,9 +16,9 @@ import { registerBaseServices } from './base-service-registration';
 import { CommandFactory } from '@/content/commands/command-factory';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
-import { LocalMode } from '@/content/modes/local-mode';
-import { CloudMode } from '@/content/modes/cloud-mode';
-import { EphemeralMode } from '@/content/modes/ephemeral-mode';
+import { BasicMode } from '@/content/modes/basic-mode';
+import { ProMode } from '@/content/modes/pro-mode';
+import { ProXaiMode } from '@/content/modes/pro-xai-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type {
     IWritableHighlightRepository,
@@ -75,39 +75,41 @@ export function registerContentServices(container: Container): void {
     // ============================================
 
     /**
-     * Walk Mode - Transient
-     * 24h TTL local persistence
+     * Basic Mode - Transient
+     * Local persistence with a user-configurable TTL (24h default; see
+     * @/shared/constants/basic-ttl). Replaces the former Walk (ephemeral,
+     * fixed 24h) and Sprint (local, permanent) modes.
      */
-    container.registerTransient<IHighlightMode>('ephemeralMode', () => {
+    container.registerTransient<IHighlightMode>('basicMode', () => {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
-        const ephemeralStorage = container.resolve<IStorage>('ephemeralStorage');
+        const basicStorage = container.resolve<IStorage>('basicStorage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new EphemeralMode(facade, ephemeralStorage, eventBus, logger);
+        return new BasicMode(facade, basicStorage, eventBus, logger);
     });
 
     /**
-     * Sprint Mode - Transient
-     * Permanent local persistence (manual delete only)
+     * Pro Mode - Transient
+     * Persistent highlighting (IndexedDB) + server sync.
+     * Created fresh when activated. Replaces the former Vault (cloud) mode.
      */
-    container.registerTransient<IHighlightMode>('localMode', () => {
+    container.registerTransient<IHighlightMode>('proMode', () => {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
-        const storage = container.resolve<IStorage>('storage');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new LocalMode(facade, storage, eventBus, logger);
+        return new ProMode(facade, eventBus, logger);
     });
 
     /**
-     * Vault Mode - Transient
-     * Persistent highlighting (IndexedDB)
-     * Created fresh when activated
+     * 10x-Pro Mode - Transient
+     * Everything in Pro, plus AI capability flags. Replaces the former Gen
+     * (ai) mode, which previously had no registered highlight mode class.
      */
-    container.registerTransient<IHighlightMode>('cloudMode', () => {
+    container.registerTransient<IHighlightMode>('proXaiMode', () => {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new CloudMode(facade, eventBus, logger);
+        return new ProXaiMode(facade, eventBus, logger);
     });
 
     // ============================================
@@ -130,7 +132,7 @@ export function registerContentServices(container: Container): void {
      * IpcHighlightRepository - Singleton
      * Sends highlight writes across the content-script to SW boundary.
      * Read-only is intentional: content-side reads go through RepositoryFacade.
-     * Used by Local / Ephemeral / Cloud modes for writes only.
+     * Used by Basic / Pro modes for writes only.
      */
     container.registerSingleton<IWritableHighlightRepository>('ipcHighlightRepository', () => {
         const messageBus = container.resolve<IMessageBus>('messageBus');

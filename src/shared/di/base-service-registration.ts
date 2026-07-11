@@ -28,7 +28,9 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import { LLMRegistry } from '@/background/services/llm/llm-registry';
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
 import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import { BackgroundPageContentCache } from '@/background/services/llm/page-content-cache';
 
 /**
  * Register base services available in all contexts
@@ -59,17 +61,20 @@ export function registerBaseServices(container: Container): void {
     // ============================================
 
     /**
-     * Sprint storage — permanent (null TTL)
+     * Pro storage — permanent (null TTL, synced)
      */
     container.registerSingleton<IStorage>('storage', () => {
-        return new StorageService({ mode: 'local', ttlDuration: null });
+        return new StorageService({ mode: 'pro', ttlDuration: null });
     });
 
     /**
-     * Walk storage — 24h TTL
+     * Basic storage — TTL resolved dynamically from the Basic TTL
+     * preference (see @/shared/constants/basic-ttl). Defaults to 24h until
+     * BasicMode.onActivate() reads the actual preference and calls
+     * setTtlDuration().
      */
-    container.registerSingleton<IStorage>('ephemeralStorage', () => {
-        return new StorageService({ mode: 'ephemeral', ttlDuration: 24 * 60 * 60 * 1000 });
+    container.registerSingleton<IStorage>('basicStorage', () => {
+        return new StorageService({ mode: 'basic', ttlDuration: 24 * 60 * 60 * 1000 });
     });
 
     /**
@@ -154,16 +159,33 @@ export function registerBaseServices(container: Container): void {
 
     /**
      * LLMKeyStore - Singleton
-     * Three-tier (ephemeral/local-AES/cloud-vault) key persistence.
-     * The vault dependency is optional; in cloud mode the AiOrchestrator
-     * provides the actual vault reference at construction. For tests,
-     * the LLMKeyStore is constructed directly with a known mode.
+     * Two-tier (basic-session / pro-and-pro_xai-vault) key persistence.
+     * The vault dependency is optional; in pro/pro_xai mode the
+     * AiOrchestrator provides the actual vault reference at construction.
+     * For tests, the LLMKeyStore is constructed directly with a known mode.
      */
     container.registerSingleton<LLMKeyStore>('llmKeyStore', () => {
-        // Default to ephemeral mode; AiOrchestrator reconstructs against
+        // Default to basic mode; AiOrchestrator reconstructs against
         // the active mode on initialize(). Constructed lazily so that
         // the (currently nonexistent in this layer) mode state can be
         // injected without circular dependencies.
-        return new LLMKeyStore('ephemeral');
+        return new LLMKeyStore('basic');
+    });
+
+    /**
+     * AiOrchestrator - Singleton
+     * Registers IPC_AI_* handlers for provider setup, health checks, and chat.
+     */
+    container.registerSingleton<BackgroundPageContentCache>('pageContentCache', () => {
+        return new BackgroundPageContentCache({ ttlMs: 30 * 60 * 1000 });
+    });
+
+    container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
+        const messageBus = container.resolve<IMessageBus>('messageBus');
+        const registry = container.resolve<LLMRegistry>('llmRegistry');
+        const keyStore = container.resolve<LLMKeyStore>('llmKeyStore');
+        const pageContentCache = container.resolve<BackgroundPageContentCache>('pageContentCache');
+        const logger = container.resolve<ILogger>('logger');
+        return new AiOrchestrator(messageBus, registry, keyStore, pageContentCache, logger);
     });
 }

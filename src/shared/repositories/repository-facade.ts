@@ -51,13 +51,28 @@ export class RepositoryFacade {
   }
 
   /**
-   * Expose the underlying readable for read-side aggregations
-   * (HighlightQueryService per ADR-006). The facade remains a
-   * write/cache seam — callers MUST go through the facade for writes
-   * and MUST consume the readable only for query-side operations.
+   * Underlying storage readable (IndexedDB / dual-write). Reads may lag
+   * behind the in-memory cache immediately after facade writes.
    */
   getReadable(): IReadableHighlightRepository {
     return this.repository;
+  }
+
+  /**
+   * Readable backed by the facade cache. Use in the background for Library
+   * queries so deletes/adds are visible before async IndexedDB persistence.
+   */
+  asCacheReadable(): IReadableHighlightRepository {
+    const facade = this;
+    return {
+      findAll: async () => facade.getAll(),
+      findById: async (id) => facade.get(id) ?? null,
+      findByUrl: async (url) => facade.findByUrl(url),
+      findByContentHash: async (hash) => facade.findByContentHash(hash) ?? null,
+      findOverlapping: async (range) => facade.findOverlapping(range),
+      count: async () => facade.count(),
+      exists: async (id) => facade.has(id),
+    };
   }
 
   /**
@@ -152,6 +167,51 @@ export class RepositoryFacade {
     this.repository.remove(id).catch((error) => {
       this.logger.error('Background removal failed', error);
     });
+  }
+
+  /**
+   * Remove from cache and await IndexedDB persistence (destructive deletes).
+   */
+  async removePersisted(id: string): Promise<void> {
+    this.ensureInitialized();
+
+    const highlight = this.cache.get(id);
+    if (!highlight) {
+      this.logger.debug('Highlight not in cache', { id });
+      return;
+    }
+
+    this.cache.delete(id);
+    this.contentHashIndex.delete(highlight.contentHash);
+    this.logger.debug('Removed from cache', { id });
+
+    await this.repository.remove(id);
+  }
+
+  /**
+   * Drop a highlight from the in-memory cache only (no repository write).
+   * Used after background-authoritative deletes so content does not re-send IPC_HIGHLIGHT_REMOVE.
+   */
+  evict(id: string): void {
+    this.ensureInitialized();
+
+    const highlight = this.cache.get(id);
+    if (!highlight) return;
+
+    this.cache.delete(id);
+    this.contentHashIndex.delete(highlight.contentHash);
+    this.logger.debug('Evicted from cache', { id });
+  }
+
+  /**
+   * Add a highlight to the in-memory cache only (no repository write).
+   * Used when background already persisted the row (e.g. undo restore).
+   */
+  rehydrate(highlight: HighlightDataV2): void {
+    this.ensureInitialized();
+    this.cache.set(highlight.id, highlight);
+    this.contentHashIndex.set(highlight.contentHash, highlight.id);
+    this.logger.debug('Rehydrated cache', { id: highlight.id });
   }
 
   /**
@@ -274,6 +334,19 @@ export class RepositoryFacade {
     this.repository.clear().catch((error) => {
       this.logger.error('Background clear failed', error);
     });
+  }
+
+  /**
+   * Clear cache and await IndexedDB persistence (library wipe).
+   */
+  async clearPersisted(): Promise<void> {
+    this.ensureInitialized();
+
+    this.cache.clear();
+    this.contentHashIndex.clear();
+    this.logger.warn('Cleared cache');
+
+    await this.repository.clear();
   }
 
   /**
