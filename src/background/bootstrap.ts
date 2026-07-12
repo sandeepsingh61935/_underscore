@@ -18,7 +18,6 @@ import { RealtimeHighlightIngestService } from '@/background/services/realtime-h
 import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
-import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import { migrateLegacyVaultToBasic } from '@/background/repositories/migrate-legacy-highlight-db';
@@ -59,7 +58,7 @@ export async function initializeBackground(): Promise<Container> {
 
     // 2. Register Services (Background-specific - no content script modules)
     registerBackgroundServices(container);  // Base services + Auth
-    registerAuthComponents(container);   // Auth & Security (KeyManager, E2EEncryptionService)
+    registerAuthComponents(container);   // Auth & Security
     registerAPIComponents(container);    // API Layer
     registerRepositoryComponents(container); // Repository Layer (NEW)
     registerEventComponents(container);  // Event Sourcing
@@ -76,12 +75,9 @@ export async function initializeBackground(): Promise<Container> {
     const localWriteEchoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker');
     const realtimeHighlightIngestService = container.resolve<RealtimeHighlightIngestService>('realtimeHighlightIngestService');
     const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
-    const keyManager = container.has('keyManager')
-        ? container.resolve<IKeyManager>('keyManager')
-        : undefined;
 
     const configureLlmKeyTier = (isAuthenticated: boolean): void => {
-        llmKeyStoreHolder.configureForAuth(isAuthenticated, keyManager);
+        llmKeyStoreHolder.configureForAuth(isAuthenticated);
     };
 
     await migrateLegacyVaultToBasic(logger);
