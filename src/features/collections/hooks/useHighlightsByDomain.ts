@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 
 export interface Highlight {
     id: string;
@@ -26,43 +27,53 @@ export function useHighlightsByDomain(domain: string | undefined) {
 
     const fetchAction = useIpcAction<{ domain: string }, GetHighlightsByDomainResponse>('GET_HIGHLIGHTS_BY_DOMAIN');
 
-    useEffect(() => {
+    const fetchHighlights = useCallback(async () => {
         if (!domain) {
             setHighlights([]);
+            setIsLoading(false);
+            setError(null);
+            return;
+        }
+
+        setIsLoading(true);
+        const result = await fetchAction({ domain });
+
+        if (!result.success) {
+            setError(new Error(result.error || 'Failed to fetch highlights'));
             setIsLoading(false);
             return;
         }
 
+        const parsedHighlights = (result.data.highlights || []).map((hl) => ({
+            id: hl.id,
+            url: hl.url,
+            text: hl.text,
+            path: hl.path || new URL(hl.url).pathname,
+            createdAt: new Date(hl.createdAt),
+        }));
+
+        setHighlights(parsedHighlights);
+        setIsLoading(false);
+    }, [domain, fetchAction]);
+
+    useEffect(() => {
         let cancelled = false;
 
-        const fetchHighlights = async () => {
-            const result = await fetchAction({ domain });
+        const load = async () => {
+            await fetchHighlights();
             if (cancelled) return;
-
-            if (!result.success) {
-                setError(new Error(result.error || 'Failed to fetch highlights'));
-                setIsLoading(false);
-                return;
-            }
-
-            const parsedHighlights = (result.data.highlights || []).map((hl) => ({
-                id: hl.id,
-                url: hl.url,
-                text: hl.text,
-                path: hl.path || new URL(hl.url).pathname,
-                createdAt: new Date(hl.createdAt),
-            }));
-
-            setHighlights(parsedHighlights);
-            setIsLoading(false);
         };
 
-        void fetchHighlights();
+        void load();
 
         return () => {
             cancelled = true;
         };
-    }, [domain, fetchAction]);
+    }, [fetchHighlights]);
+
+    useLibraryDataChanged(() => {
+        void fetchHighlights();
+    });
 
     return { highlights, isLoading, error };
 }

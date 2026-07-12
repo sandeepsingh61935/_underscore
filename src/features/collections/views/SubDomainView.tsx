@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { canAccessLibrary } from '@/shared/utils/mode-capabilities';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useGenerateSummary } from '@/features/ai/hooks/useGenerateSummary';
 import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
@@ -44,18 +45,25 @@ export function SubDomainView({
   const { isAuthenticated, currentMode } = useApp();
   const mode = (currentMode ?? DEFAULT_MODE) as ModeType;
   const { ttlMs: basicTtlMs } = useBasicTtlOption();
+  const libraryAccessible = canAccessLibrary(isAuthenticated);
 
   useEffect(() => {
-    if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-      navigate('/mode');
+    if (!libraryAccessible) {
+      if (_onBack) {
+        _onBack();
+        return;
+      }
+      if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
+        navigate('/mode');
+      }
     }
-  }, [isAuthenticated, mode, navigate]);
+  }, [libraryAccessible, isAuthenticated, mode, navigate, _onBack]);
 
-  const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain);
+  const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
-  const exportDisabled = vaultLocked || !exportGate.allowed;
+  const exportDisabled = !exportGate.allowed;
   const summary = useGenerateSummary();
   const { provider } = useActiveLLMProvider();
   const artifactScope = useMemo(
@@ -214,13 +222,7 @@ export function SubDomainView({
           </div>
         </div>
 
-        {vaultLocked && (
-          <p style={{ padding: '4px 16px', fontSize: 'var(--step--1)', color: 'var(--ink)' }}>
-            Vault is locked. Unlock in Settings to read encrypted highlight text.
-          </p>
-        )}
-
-        {sectionHighlights.length > 0 && !vaultLocked && (
+        {sectionHighlights.length > 0 && (
           <div style={{ padding: '4px 16px 8px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {aiGate.allowed && (
               <button
@@ -246,23 +248,6 @@ export function SubDomainView({
               }}
             >
               Delete section
-            </button>
-          </div>
-        )}
-
-        {aiGate.allowed && sectionHighlights.length > 0 && vaultLocked && (
-          <div style={{ padding: '4px 16px 8px' }}>
-            <button
-              type="button"
-              onClick={() => { void handleSummarize(); }}
-              disabled={summarizeDisabled}
-              style={{
-                font: 'var(--sans)', fontSize: 'var(--step--1)',
-                padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-                border: '1px solid var(--rule)', cursor: summarizeDisabled ? 'wait' : 'pointer',
-              }}
-            >
-              Summarize this section
             </button>
           </div>
         )}
@@ -313,13 +298,13 @@ export function SubDomainView({
           sectionHighlights.map((h) => (
             <div key={h.id}>
               <HighlightCard
-                quote={h.text || (h.decryptionStatus === 'vault_locked' ? '[Vault locked]' : '[Unavailable]')}
+                quote={h.text || '[Unavailable]'}
                 domain={domain}
                 section={section === '/' ? undefined : section}
                 showLocationMeta={false}
                 ttlMs={getTtlMs(h.createdAt)}
                 onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
-                onDelete={vaultLocked ? undefined : () => { void deleteScope({ scope: 'highlight', id: h.id }); }}
+                onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
               />
               <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
                 {tagsGate.allowed && (
@@ -327,7 +312,6 @@ export function SubDomainView({
                     highlightId={h.id}
                     notes={h.notes}
                     tags={h.tags}
-                    disabled={vaultLocked}
                   />
                 )}
               </div>
@@ -343,7 +327,7 @@ export function SubDomainView({
           artifactScope={artifactScope}
           highlights={promptHighlights}
           highlightCount={sectionHighlights.length}
-          disabled={vaultLocked || isPreparing}
+          disabled={isPreparing}
           placeholder="Ask about this section…"
         />
       )}

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { canAccessLibrary } from '@/shared/utils/mode-capabilities';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
 import { usePersistLlmArtifactOnDone } from '@/features/ai/hooks/usePersistLlmArtifactOnDone';
@@ -31,12 +32,19 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const navigate = useNavigate();
   const { isAuthenticated, currentMode } = useApp();
   const mode = (currentMode ?? DEFAULT_MODE) as ModeType;
+  const libraryAccessible = canAccessLibrary(isAuthenticated);
 
   useEffect(() => {
-    if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-      navigate('/mode');
+    if (!libraryAccessible) {
+      if (_onBack) {
+        _onBack();
+        return;
+      }
+      if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
+        navigate('/mode');
+      }
     }
-  }, [isAuthenticated, mode, navigate]);
+  }, [libraryAccessible, isAuthenticated, mode, navigate, _onBack]);
 
   const [editingSection, setEditingSection] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');
@@ -48,10 +56,10 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
       setEditingSection(null);
   };
 
-  const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain);
+  const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
-  const exportDisabled = vaultLocked || !exportGate.allowed;
+  const exportDisabled = !exportGate.allowed;
   const synthesis = useSynthesizeDomain();
   const { provider } = useActiveLLMProvider();
   const artifactScope = useMemo(
@@ -191,13 +199,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             />
           </div>
 
-          {vaultLocked && (
-            <p style={{ marginTop: 8, fontSize: 'var(--step--1)', color: 'var(--ink)' }}>
-              Vault is locked. Unlock in Settings to read encrypted highlight text.
-            </p>
-          )}
-
-          {highlights.length > 0 && !vaultLocked && (
+          {highlights.length > 0 && (
             <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {aiGate.allowed && (
                 <button
@@ -225,22 +227,6 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                 Delete domain
               </button>
             </div>
-          )}
-
-          {aiGate.allowed && highlights.length > 0 && vaultLocked && (
-            <button
-              type="button"
-              onClick={() => { void handleSynthesize(); }}
-              disabled={synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing || highlights.some(h => !h.text)}
-              style={{
-                marginTop: 8,
-                font: 'var(--sans)', fontSize: 'var(--step--1)',
-                padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-                border: '1px solid var(--rule)', cursor: (synthesis.phase === 'sections' || synthesis.phase === 'streaming' || isPreparing) ? 'wait' : 'pointer',
-              }}
-            >
-              Synthesize this domain
-            </button>
           )}
 
           {synthesis.phase === 'sections' && (
@@ -331,7 +317,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
           artifactScope={artifactScope}
           highlights={promptHighlights}
           highlightCount={highlights.length}
-          disabled={vaultLocked || isPreparing}
+          disabled={isPreparing}
           placeholder="Ask about this domain…"
         />
       )}

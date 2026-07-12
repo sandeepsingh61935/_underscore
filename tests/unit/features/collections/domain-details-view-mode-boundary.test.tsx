@@ -39,7 +39,6 @@ vi.mock('@/features/collections/hooks/useHighlightsByDomainFactory', () => ({
   useHighlightsByDomain: vi.fn(() => ({
     highlights: [sampleHighlight],
     isLoading: false,
-    vaultLocked: false,
   })),
 }));
 
