@@ -140,6 +140,16 @@
   --step-5:  36px;
   --step-6:  48px;
 
+  /* Typography tuning (overridable via type presets) */
+  --type-display-lh:     1.0;
+  --type-body-lh:        1.45;
+  --type-section-track:  0.16em;
+  --type-display-track:  -0.025em;
+  --type-row-height:     44px;
+  --type-section-gap:    12px;
+  --type-inset-padding:  16px;
+  --type-specimen-padding: 14px;
+
   /* Geometry */
   --pop-w: 400px;
   --pop-h: 600px;
