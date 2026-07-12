@@ -163,7 +163,7 @@ export function ScopeAskPanel({
         </div>
         <p className="u-mono" style={{ margin: 0, fontSize: 10, color: 'var(--ink-3)', letterSpacing: '0.08em' }}>
           {usableHighlights.length === 0
-            ? 'Unlock the vault or wait for highlight text to load before asking.'
+            ? 'Wait for highlight text to load before asking.'
             : `Grounded to this ${scopeKind} only · ${usableHighlights.length} highlights`}
         </p>
       </form>

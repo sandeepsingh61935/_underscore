@@ -12,6 +12,10 @@ export interface ModelPickerListProps {
   customPlaceholder?: string;
   loading?: boolean;
   emptyMessage?: string;
+  /** When true, custom model row cannot be selected. */
+  customDisabled?: boolean;
+  /** Return true when a catalog model cannot be selected yet. */
+  isModelDisabled?: (model: ProviderModelOption) => boolean;
 }
 
 export function ModelPickerList({
@@ -23,6 +27,8 @@ export function ModelPickerList({
   customPlaceholder,
   loading = false,
   emptyMessage = 'No models match your search',
+  customDisabled = false,
+  isModelDisabled,
 }: ModelPickerListProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const usingCustom = selectedId === CUSTOM_MODEL_ID;
@@ -58,14 +64,17 @@ export function ModelPickerList({
         ) : (
           filtered.map(m => {
             const selected = !usingCustom && m.id === selectedId;
+            const disabled = isModelDisabled?.(m) ?? false;
             return (
               <button
                 key={m.id}
                 type="button"
-                onClick={() => onSelect(m.id)}
+                disabled={disabled}
+                onClick={() => { if (!disabled) onSelect(m.id); }}
                 style={{
                   all: 'unset',
-                  cursor: 'pointer',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  opacity: disabled ? 0.45 : 1,
                   display: 'grid',
                   gridTemplateColumns: 'auto 1fr auto',
                   gap: 10,
@@ -101,10 +110,12 @@ export function ModelPickerList({
 
         <button
           type="button"
-          onClick={() => onSelect(CUSTOM_MODEL_ID)}
+          disabled={customDisabled}
+          onClick={() => { if (!customDisabled) onSelect(CUSTOM_MODEL_ID); }}
           style={{
             all: 'unset',
-            cursor: 'pointer',
+            cursor: customDisabled ? 'not-allowed' : 'pointer',
+            opacity: customDisabled ? 0.45 : 1,
             display: 'grid',
             gridTemplateColumns: 'auto 1fr',
             gap: 10,

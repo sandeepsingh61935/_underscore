@@ -50,7 +50,6 @@ function proContext(): FeatureGateContext {
     mode: 'pro',
     capabilities: getCapabilitiesForMode('pro'),
     isAuthenticated: true,
-    vaultLocked: false,
     storageScope: 'pro',
   };
 }
@@ -60,7 +59,6 @@ function proXaiContext(overrides: Partial<FeatureGateContext> = {}): FeatureGate
     mode: 'pro_xai',
     capabilities: getCapabilitiesForMode('pro_xai'),
     isAuthenticated: true,
-    vaultLocked: false,
     storageScope: 'pro',
     ...overrides,
   };
@@ -86,23 +84,23 @@ describe('registerAiHandlers AI feature gate', () => {
     expect(result).toEqual({ success: false, error: 'Available in 10x-Pro' });
   });
 
-  it('denies IPC_AI_SET_API_KEY when vault is locked on pro_xai', async () => {
+  it('allows IPC_AI_SET_API_KEY on pro_xai', async () => {
     const bus = makeMessageBus();
     registerAiHandlers({
       bus: bus as never,
       registry: makeRegistry(new Map()) as never,
       keyStore: makeKeyStore() as never,
       pageContentCache: makePageContentCache() as never,
-      resolveAiGateContext: async () => proXaiContext({ vaultLocked: true }),
+      resolveAiGateContext: async () => proXaiContext(),
     });
 
     const handler = bus.handlers.get(IPC_AI_SET_API_KEY)!;
     const result = await handler({ provider: 'anthropic', key: 'sk-x' });
 
-    expect(result).toEqual({ success: false, error: 'Unlock vault in Settings first' });
+    expect(result).toEqual({ success: true, data: { ok: true } });
   });
 
-  it('allows IPC_AI_CHAT when gate resolver reports pro_xai with vault unlocked', async () => {
+  it('allows IPC_AI_CHAT when gate resolver reports pro_xai', async () => {
     const bus = makeMessageBus();
     const chatResult: LLMResult = { text: 'ok', inputTokens: 1, outputTokens: 1, durationMs: 1 };
     const anthropic: ILLMService = {

@@ -21,7 +21,7 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '@/shared/schemas/message-schemas';
-import { canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
+import { canConfigureAiProviders, canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 
 interface MessageBusLike {
@@ -41,6 +41,18 @@ function resolveKeyStore(args: RegisterArgs): LLMKeyStore {
   if (args.keyStore) return args.keyStore;
   if (args.keyStoreHolder) return args.keyStoreHolder.get();
   throw new Error('registerAiHandlers requires keyStore or keyStoreHolder');
+}
+
+async function denyIfAiSetupGated(
+  args: RegisterArgs,
+): Promise<ReturnType<typeof createErrorResponse> | null> {
+  if (!args.resolveAiGateContext) return null;
+  const ctx = await args.resolveAiGateContext();
+  const gate = canConfigureAiProviders(ctx);
+  if (!gate.allowed) {
+    return createErrorResponse(featureGateSubtitle(gate.reason));
+  }
+  return null;
 }
 
 async function denyIfAiGated(
@@ -103,7 +115,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
   bus.subscribe(IPC_AI_LIST_PROVIDERS, () => createSuccessResponse(registry.list()));
 
   bus.subscribe(IPC_AI_GET_ACTIVE_PROVIDER, async () => {
-    const denied = await denyIfAiGated(args);
+    const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
       const provider = await keyStore().getActiveProvider();
@@ -114,7 +126,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
   });
 
   bus.subscribe(IPC_AI_GET_API_KEY_STATUS, async (raw: unknown) => {
-    const denied = await denyIfAiGated(args);
+    const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
       const { provider } = raw as StatusPayload;
@@ -129,7 +141,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
   });
 
   bus.subscribe(IPC_AI_SET_API_KEY, async (raw: unknown) => {
-    const denied = await denyIfAiGated(args);
+    const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
       const { provider, key, model, apiBase } = raw as SetKeyPayload;
@@ -154,7 +166,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
   });
 
   bus.subscribe(IPC_AI_LIST_PROVIDER_MODELS, async (raw: unknown) => {
-    const denied = await denyIfAiGated(args);
+    const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
       const { provider, apiBase } = raw as ListModelsPayload;
@@ -177,7 +189,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
   });
 
   bus.subscribe(IPC_AI_HEALTH_CHECK, async (raw: unknown) => {
-    const denied = await denyIfAiGated(args);
+    const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
       const { provider, apiBase, model } = raw as HealthPayload;

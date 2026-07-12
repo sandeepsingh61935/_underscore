@@ -107,10 +107,10 @@ export function ProviderDetailPanel({
   }, [provider, status.configured]);
 
   useEffect(() => {
-    if (status.apiBase && provider === 'ollama') {
-      setApiBase(status.apiBase);
+    if (provider === 'openrouter') {
+      void catalogQuery.refresh();
     }
-  }, [status.apiBase, provider]);
+  }, [provider, catalogQuery.refresh]);
 
   const catalogModels = useMemo(() => {
     if (provider === 'openrouter') {
@@ -122,18 +122,42 @@ export function ProviderDetailPanel({
   }, [provider, catalogQuery.models, orFilter]);
 
   const resolvedModelId = selectedId === CUSTOM_MODEL_ID
-    ? customModelId.trim() || getDefaultModelId(provider)
+    ? customModelId.trim()
     : selectedId || pickDefaultModel(provider, catalogModels);
 
-  const needsKey = modelRequiresKey(provider, resolvedModelId, catalogModels);
-  const modelsUnlocked = (() => {
-    if (provider === 'ollama') return verified;
+  const hasStoredOrVerifiedKey = verified || Boolean(status.configured) || Boolean(key.trim());
+
+  const needsKey = modelRequiresKey(
+    provider,
+    resolvedModelId || getDefaultModelId(provider),
+    catalogQuery.models.length > 0 ? catalogQuery.models : catalogModels,
+  );
+
+  const canShowModelPicker = provider === 'openrouter'
+    || provider === 'ollama'
+    || hasStoredOrVerifiedKey;
+
+  const isCatalogModelSelectable = (model: ProviderModelOption): boolean => {
     if (provider === 'openrouter') {
-      if (orFilter === 'free' && catalogModels.length > 0) return true;
-      return verified || Boolean(status.configured);
+      if (model.hint === 'free' || model.requiresKey === false) return true;
+      return hasStoredOrVerifiedKey;
     }
-    return verified || Boolean(status.configured);
-  })();
+    if (provider === 'ollama') return verified;
+    return hasStoredOrVerifiedKey;
+  };
+
+  const selectedModelSelectable = selectedId === CUSTOM_MODEL_ID
+    ? provider === 'openrouter' || hasStoredOrVerifiedKey
+    : catalogModels.some(m => m.id === resolvedModelId)
+      ? isCatalogModelSelectable(
+          catalogModels.find(m => m.id === resolvedModelId) ?? { id: resolvedModelId, label: resolvedModelId },
+        )
+      : hasStoredOrVerifiedKey;
+
+  const canSaveModel = Boolean(resolvedModelId)
+    && selectedModelSelectable
+    && (!needsKey || hasStoredOrVerifiedKey)
+    && (provider !== 'ollama' || verified);
 
   useEffect(() => {
     if (status.model === null || catalogQuery.loading) return;
@@ -194,19 +218,24 @@ export function ProviderDetailPanel({
   const handleSave = async (): Promise<void> => {
     setMessage(null);
     setSaving(true);
-    const modelToSave = resolveProviderModel(provider, resolvedModelId);
     const trimmedKey = key.trim();
 
     try {
-      if (needsKey && !trimmedKey && !status.configured) {
-        setMessage('API key required for this model');
+      if (selectedId === CUSTOM_MODEL_ID && !customModelId.trim()) {
+        setMessage('Enter a custom model ID');
         return;
       }
 
-      if (!modelsUnlocked && provider !== 'openrouter') {
-        setMessage('Verify connection before saving');
+      if (!canSaveModel) {
+        setMessage(
+          needsKey && !hasStoredOrVerifiedKey
+            ? 'Verify your API key to use this model'
+            : 'Verify connection before saving',
+        );
         return;
       }
+
+      const modelToSave = resolvedModelId || getDefaultModelId(provider);
 
       const saveResult = await status.save({
         ...(trimmedKey ? { key: trimmedKey } : {}),
@@ -329,7 +358,7 @@ export function ProviderDetailPanel({
           </p>
         ) : null}
 
-        {modelsUnlocked ? (
+        {canShowModelPicker ? (
           <ModelPickerList
             models={catalogModels}
             selectedId={selectedId || pickDefaultModel(provider, catalogModels)}
@@ -338,19 +367,25 @@ export function ProviderDetailPanel({
             onCustomModelIdChange={setCustomModelId}
             customPlaceholder={getDefaultModelId(provider)}
             loading={catalogQuery.loading}
+            isModelDisabled={m => !isCatalogModelSelectable(m)}
+            customDisabled={provider !== 'openrouter' && !hasStoredOrVerifiedKey}
             emptyMessage={
-              provider !== 'ollama' && !key.trim() && !status.configured && needsKey
+              provider !== 'ollama' && !hasStoredOrVerifiedKey && provider !== 'openrouter'
                 ? 'Verify your API key to load models'
                 : 'No models match your search'
             }
           />
         ) : (
           <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '8px 0' }}>
-            {provider === 'openrouter' && orFilter === 'free'
-              ? 'Select a free model below after catalog loads, or verify a key for paid models'
-              : 'Verify to load available models'}
+            Verify your API key to load available models
           </p>
         )}
+
+        {provider === 'openrouter' && orFilter === 'paid' && !hasStoredOrVerifiedKey ? (
+          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0 }}>
+            Paid models are listed above — verify your API key to select one
+          </p>
+        ) : null}
 
         {message ? (
           <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: message.startsWith('Set as') ? 'var(--accent)' : 'var(--ink)', margin: 0 }}>
@@ -362,7 +397,7 @@ export function ProviderDetailPanel({
       <div style={{ padding: '12px 16px', borderTop: '1px solid var(--rule-soft)' }}>
         <button
           type="button"
-          disabled={saving || !modelsUnlocked}
+          disabled={saving || !canSaveModel}
           onClick={() => { void handleSave(); }}
           style={{ width: '100%', minHeight: 44 }}
         >
