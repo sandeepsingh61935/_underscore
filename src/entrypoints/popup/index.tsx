@@ -134,11 +134,15 @@ function PopupApp(): React.ReactElement {
         const name = user.displayName || user.email || 'User';
         toast.success(`Welcome, ${name}!`);
       } else if (!user && prevUser) {
-        toast.success('Signed out · Switched to Basic mode');
+        toast.success('Signed out · Switched to Guest mode');
+        setMode('basic');
+        if (currentView === View.DOMAIN_DETAILS || currentView === View.SUB_DOMAIN) {
+          setCurrentView(View.DASHBOARD);
+        }
       }
     }
     setPrevUser(user);
-  }, [user, prevUser, isLoading, isStorageReady]);
+  }, [user, prevUser, isLoading, isStorageReady, setMode, currentView]);
 
   // Auth gate: OAuth often completes in background while popup is closed.
   // If we reopen on AUTH (or auth completes while still on AUTH), route forward.
@@ -503,6 +507,7 @@ function PopupApp(): React.ReactElement {
           <DashboardView
             onLogout={handleLogout}
             onSectionClick={handleSectionClick}
+            onSignIn={() => setCurrentView(View.AUTH)}
           />
         </motion.div>
       )}

@@ -15,11 +15,11 @@ export function BasicReset({ onSwitchMode, onStartCapturing }: BasicResetProps):
         A fresh start.
       </div>
       <div className="u-serif" style={{ fontSize: 14, color: "var(--ink-3)", fontStyle: "italic" }}>
-        Basic mode keeps your captures on this device for the TTL you set in Settings (24 hours by default). Nothing yet — whatever you save now will expire on that schedule.
+        Guest mode keeps your captures permanently on this device. Nothing yet — highlight text on any page to begin.
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-        <button className="btn sm" style={{ flex: 1 }} onClick={onSwitchMode}>Switch mode</button>
-        <button className="btn accent sm" style={{ flex: 1 }} onClick={onStartCapturing}>Start capturing</button>
+        <button type="button" className="btn sm" style={{ flex: 1 }} onClick={onSwitchMode}>Switch mode</button>
+        <button type="button" className="btn accent sm" style={{ flex: 1 }} onClick={onStartCapturing}>Start capturing</button>
       </div>
     </div>
   );

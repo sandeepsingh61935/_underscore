@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
-import { canAccessLibrary } from '@/shared/utils/mode-capabilities';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
 import { usePersistLlmArtifactOnDone } from '@/features/ai/hooks/usePersistLlmArtifactOnDone';
@@ -32,19 +31,12 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const navigate = useNavigate();
   const { isAuthenticated, currentMode } = useApp();
   const mode = (currentMode ?? DEFAULT_MODE) as ModeType;
-  const libraryAccessible = canAccessLibrary(isAuthenticated);
 
   useEffect(() => {
-    if (!libraryAccessible) {
-      if (_onBack) {
-        _onBack();
-        return;
-      }
-      if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-        navigate('/mode');
-      }
+    if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
+      navigate('/mode');
     }
-  }, [libraryAccessible, isAuthenticated, mode, navigate, _onBack]);
+  }, [isAuthenticated, mode, navigate]);
 
   const [editingSection, setEditingSection] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');

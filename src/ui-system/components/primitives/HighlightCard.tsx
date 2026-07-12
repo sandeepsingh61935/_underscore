@@ -5,12 +5,9 @@
  *   - Two densities: compact 10px / comfortable 14px vertical padding.
  *   - Quote: u-serif, 14px, --ink. qmark glyph 28px.
  *   - Meta: u-mono, 10px, --ink-3, "domain" or "domain/path".
- *   - Optional inline TTLBadge when ttlMs set.
  *   - Optional onSectionClick: makes meta line a tappable button (underline on hover).
  */
 import React, { useState } from 'react';
-
-import { TTLBadge } from './TTLBadge';
 
 export interface HighlightCardProps {
   quote: string;
@@ -19,6 +16,7 @@ export interface HighlightCardProps {
    *  Omit or pass undefined for root — shows domain only. */
   section?: string;
   url?: string;
+  /** @deprecated Guest storage is permanent; TTL badges removed. */
   ttlMs?: number;
   density?: 'compact' | 'comfortable';
   /** When provided, the meta line (domain/path) becomes a tappable button. */
@@ -35,7 +33,6 @@ export function HighlightCard({
   quote,
   domain,
   section,
-  ttlMs,
   density = 'comfortable',
   onSectionClick,
   onCopy,
@@ -97,7 +94,6 @@ export function HighlightCard({
               )
             )}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
-            {ttlMs !== undefined && ttlMs !== null && <TTLBadge ms={ttlMs} />}
             {onCopy && (
               <button
                 type="button"

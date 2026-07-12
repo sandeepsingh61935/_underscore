@@ -1,26 +1,8 @@
 /**
- * Basic Mode
+ * Basic Mode (Guest)
  *
- * Philosophy: "On this device" — persist locally with a user-configurable
- * TTL (see @/shared/constants/basic-ttl). Replaces the former EphemeralMode
- * (fixed 24h TTL) and LocalMode (fixed forever/no-TTL) — TTL is now a
- * setting, not a separate mode.
- *
- * Features:
- * - Local storage with per-domain namespacing
- * - TTL is configurable (24h / 2d / 7d / 30d / forever); default 24h
- * - Restores highlights on page reload within the TTL window
- * - Collections view enabled
- * - No account required
- * - Deletion requires confirmation only when TTL is set to "forever"
- *   (mirrors the previous Local Mode's confirm-before-delete behavior for
- *   highlights the user expects to keep indefinitely)
- *
- * Architectural Compliance:
- * - Implements IBasicMode only (Interface Segregation Principle)
- * - Encapsulates persistence logic (Single Responsibility Principle)
- *
- * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation
+ * Philosophy: permanent local storage on this device — no TTL, no expiry UI.
+ * Sign in to unlock Pro storage, sync, and gated features.
  */
 
 import { BaseHighlightMode } from './base-highlight-mode';
@@ -28,14 +10,6 @@ import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
-import {
-  BASIC_TTL_DEFAULT,
-  BASIC_TTL_STORAGE_KEY,
-  basicTtlConfigToMs,
-  getBasicTtlConfig,
-  isBasicTtlConfig,
-  type BasicTtlConfig,
-} from '@/shared/constants/basic-ttl';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
@@ -45,19 +19,6 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class BasicMode extends BaseHighlightMode implements IBasicMode {
-  private ttlConfig: BasicTtlConfig = BASIC_TTL_DEFAULT;
-  private readonly onStorageChanged = (
-    changes: Record<string, chrome.storage.StorageChange>,
-    area: string
-  ): void => {
-    if (area !== 'local' || !changes[BASIC_TTL_STORAGE_KEY]) return;
-    const next = changes[BASIC_TTL_STORAGE_KEY].newValue;
-    if (isBasicTtlConfig(next)) {
-      this.ttlConfig = next;
-      this.storage?.setTtlDuration?.(basicTtlConfigToMs(next));
-    }
-  };
-
   get name(): 'basic' {
     return 'basic' as const;
   }
@@ -86,28 +47,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
 
   override async onActivate(): Promise<void> {
     await super.onActivate();
-    await this.refreshTtlOption();
-
-    if (chrome.storage?.onChanged?.addListener) {
-      chrome.storage.onChanged.addListener(this.onStorageChanged);
-    }
-  }
-
-  override async onDeactivate(): Promise<void> {
-    await super.onDeactivate();
-
-    if (chrome.storage?.onChanged?.removeListener) {
-      chrome.storage.onChanged.removeListener(this.onStorageChanged);
-    }
-  }
-
-  private async refreshTtlOption(): Promise<void> {
-    try {
-      this.ttlConfig = await getBasicTtlConfig();
-    } catch (e) {
-      this.logger.warn('[BASIC] Failed to read TTL preference, using default', e as Error);
-    }
-    this.storage?.setTtlDuration?.(basicTtlConfigToMs(this.ttlConfig));
+    this.storage?.setTtlDuration?.(null);
   }
 
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
@@ -290,8 +230,6 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
   }
 
   override shouldRestore(): boolean {
-    // Basic Mode always restores highlights (fixes the previous
-    // Ephemeral Mode behavior of clearing on switch-to).
     return true;
   }
 

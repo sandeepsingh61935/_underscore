@@ -6,7 +6,7 @@ import { McpTierCallout, mcpTierLabel } from '@/features/settings/components/Mcp
 
 describe('mcpTierLabel', () => {
   it('shows local only for guests', () => {
-    expect(mcpTierLabel(false, 'basic')).toBe('Basic · Local only');
+    expect(mcpTierLabel(false, 'basic')).toBe('Guest · Local only');
   });
 
   it('shows pro branding when signed in', () => {

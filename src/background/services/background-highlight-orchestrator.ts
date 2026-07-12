@@ -10,7 +10,6 @@
  */
 
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import { getBasicTtlMs } from '@/shared/constants/basic-ttl';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
@@ -101,19 +100,7 @@ export class BackgroundHighlightOrchestrator {
   }) {
     this.logger.info('[bridge] findByUrl', { url, mode });
     try {
-      const all = this.facade.getAll();
-      const ttlMs = mode === 'basic' ? await getBasicTtlMs() : null;
-      const cutoff = ttlMs !== null ? Date.now() - ttlMs : null;
-      const data = all.filter((h) => {
-        if (h.url !== url) return false;
-        if (cutoff !== null) {
-          const created = h.createdAt instanceof Date
-            ? h.createdAt.getTime()
-            : new Date(h.createdAt).getTime();
-          if (created < cutoff) return false;
-        }
-        return true;
-      });
+      const data = this.facade.getAll().filter((h) => h.url === url);
       return { success: true, data };
     } catch (e) {
       const err = e as Error;

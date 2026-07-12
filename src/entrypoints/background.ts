@@ -15,7 +15,6 @@ import { broadcastAuthSessionCleared, broadcastAuthStateChange } from '@/shared/
 import { CLEAR_VERIFICATION_STATE, SYNC_AUTH_SESSION } from '@/shared/auth/constants';
 import { SyncAuthSessionPayloadSchema } from '@/shared/schemas/auth-schemas';
 import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
-import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
@@ -26,6 +25,7 @@ import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata'
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
+import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
@@ -225,22 +225,23 @@ export default defineBackground({
 
       // --- Collections API handlers ---
 
-      // Per ADR-006: the HighlightQueryService owns domain aggregations.
-      // Use the facade cache so reads match recent writes (Basic IDB is async).
-      const highlightQueryService = new HighlightQueryService(
-        repositoryFacade.asCacheReadable()
-      );
+      const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+
+      const getHighlightQueryService = () => createScopedHighlightQueryService({
+        isAuthenticated: authManager.isAuthenticated,
+        repositoryFacade,
+        scopedHighlightRepository,
+      });
 
       const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
 
-      const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
       const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
       const llmRegistry = container.resolve<LLMRegistry>('llmRegistry');
       const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
 
       const mcpBridgeHandler = new McpBridgeHandler({
         authManager,
-        highlightQueryService,
+        getHighlightQueryService,
         backgroundHighlightOrchestrator,
         scopedHighlightRepository,
         repositoryFacade,
@@ -278,10 +279,7 @@ export default defineBackground({
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
         logger.info('Handling GET_COLLECTIONS request', { mode: payload?.mode });
         try {
-          if (!authManager.isAuthenticated) {
-            return { success: true, data: { collections: [] } };
-          }
-          const collections = await highlightQueryService.getCollections(payload?.mode);
+          const collections = await getHighlightQueryService().getCollections(payload?.mode);
           return { success: true, data: { collections } };
         } catch (error) {
           logger.error('GET_COLLECTIONS failed', error as Error);
@@ -293,7 +291,7 @@ export default defineBackground({
       messageBus.subscribe('GET_HIGHLIGHTS_BY_DOMAIN', async (payload: { domain: string }) => {
         logger.info('Handling GET_HIGHLIGHTS_BY_DOMAIN request', { domain: payload.domain });
         try {
-          const highlights = await highlightQueryService.getHighlightsByDomain(payload.domain);
+          const highlights = await getHighlightQueryService().getHighlightsByDomain(payload.domain);
           const withPlaintext = await backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
           return { success: true, data: { highlights: withPlaintext } };
         } catch (error) {
@@ -348,7 +346,7 @@ export default defineBackground({
       messageBus.subscribe(GET_EXPORTABLE_HIGHLIGHTS, async (payload: { scope: ExportScope }) => {
         logger.info('Handling GET_EXPORTABLE_HIGHLIGHTS request', { scope: payload.scope });
         try {
-          const raw = await highlightQueryService.findAllForExport(payload.scope);
+          const raw = await getHighlightQueryService().findAllForExport(payload.scope);
           const highlights = raw
             .map((hl) => toExportableHighlight(hl))
             .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -391,7 +389,7 @@ export default defineBackground({
       messageBus.subscribe('GET_DASHBOARD_DATA', async (payload: { mode?: string }) => {
         logger.info('Handling GET_DASHBOARD_DATA request', { mode: payload?.mode });
         try {
-          const data = await highlightQueryService.getDashboardData(payload?.mode);
+          const data = await getHighlightQueryService().getDashboardData(payload?.mode);
           const recentHighlights = await backgroundHighlightOrchestrator.enrichWithPlaintext(
             data.recentHighlights
           );
@@ -445,26 +443,13 @@ export default defineBackground({
       return; // Stop processing but keep SW alive with fallback listener
     }
 
-    // Set up TTL cleanup alarm (every 5 minutes)
-    // Legacy/Sprint 1.5 logic - keep for now if needed, or replace with DI-managed job?
-    // Keeping it for backward compatibility as per instruction "Migration Service" not done yet.
-    browser.alarms.create('ttl-cleanup', { periodInMinutes: 5 });
-
-    // Listen for alarm
-    browser.alarms.onAlarm.addListener(async (alarm: unknown) => {
-      if ((alarm as { name: string }).name === 'ttl-cleanup') {
-        await cleanupExpiredDomains();
-      }
-    });
-
-    // Also cleanup on browser startup
+    // One-time legacy TTL key cleanup on startup; no recurring expiry for guest storage.
     browser.runtime.onStartup.addListener(async () => {
-      logger.info('Browser startup detected, running cleanup');
+      logger.info('Browser startup detected, running legacy TTL cleanup');
       await cleanupExpiredDomains();
     });
 
-    // Run initial cleanup on extension install/update
-    cleanupExpiredDomains();
+    void cleanupExpiredDomains();
   },
 });
 

@@ -50,7 +50,7 @@ export function McpTierCallout({
 
 export function mcpTierLabel(isAuthenticated: boolean, currentMode: ModeType): string {
   if (!isAuthenticated) {
-    return 'Basic · Local only';
+    return 'Guest · Local only';
   }
   return `${getModeBranding(currentMode).displayName} · Synced`;
 }

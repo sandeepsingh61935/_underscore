@@ -74,6 +74,28 @@ export function getCapabilitiesForMode(mode: ModeType): ModeCapabilities {
   return MODE_CAPABILITY_MATRIX[mode];
 }
 
+export interface LibraryAccessState {
+  storageScope: 'basic' | 'pro';
+  hasLocalHighlights: boolean;
+  showSignInPrompt: boolean;
+  canShowHighlightLists: boolean;
+}
+
+/** Resolve library UI access from auth state and local highlight count. */
+export function resolveLibraryAccess(
+  isAuthenticated: boolean,
+  highlightCount: number,
+): LibraryAccessState {
+  const storageScope = isAuthenticated ? 'pro' : 'basic';
+  const hasLocalHighlights = highlightCount > 0;
+  return {
+    storageScope,
+    hasLocalHighlights,
+    showSignInPrompt: !isAuthenticated && !hasLocalHighlights,
+    canShowHighlightLists: isAuthenticated || hasLocalHighlights,
+  };
+}
+
 /**
  * Check whether a feature is allowed given mode capabilities and runtime prerequisites.
  */

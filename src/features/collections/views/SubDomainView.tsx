@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
-import { canAccessLibrary } from '@/shared/utils/mode-capabilities';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useGenerateSummary } from '@/features/ai/hooks/useGenerateSummary';
 import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
@@ -19,9 +18,9 @@ import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpt
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
-import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
+import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
 
 export interface SubDomainViewProps {
   domain?: string;
@@ -44,20 +43,12 @@ export function SubDomainView({
   const navigate = useNavigate();
   const { isAuthenticated, currentMode } = useApp();
   const mode = (currentMode ?? DEFAULT_MODE) as ModeType;
-  const { ttlMs: basicTtlMs } = useBasicTtlOption();
-  const libraryAccessible = canAccessLibrary(isAuthenticated);
 
   useEffect(() => {
-    if (!libraryAccessible) {
-      if (_onBack) {
-        _onBack();
-        return;
-      }
-      if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-        navigate('/mode');
-      }
+    if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
+      navigate('/mode');
     }
-  }, [libraryAccessible, isAuthenticated, mode, navigate, _onBack]);
+  }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
@@ -92,35 +83,15 @@ export function SubDomainView({
       } else {
         navigate('/collections');
       }
+    }
+  }, [domain, highlights.length, isLoading, navigate, onDomainEmpty]);
+
+  const handleBackToDomain = (): void => {
+    if (_onBack) {
+      _onBack();
       return;
     }
-
-    if (sectionHighlights.length === 0) {
-      if (_onBack) {
-        _onBack();
-      } else {
-        navigate(`/domain/${encodeURIComponent(domain)}`);
-      }
-    }
-  }, [
-    domain,
-    highlights.length,
-    isLoading,
-    navigate,
-    onDomainEmpty,
-    sectionHighlights.length,
-    _onBack,
-  ]);
-
-  const getTtlMs = (createdAt: Date): number | undefined => {
-    // Basic mode's TTL is user-configurable (see @/shared/constants/basic-ttl);
-    // "forever" (basicTtlMs === null) means no expiry badge.
-    if (mode === 'basic' && basicTtlMs !== null) {
-      const expiry = createdAt.getTime() + basicTtlMs;
-      const ttl = expiry - Date.now();
-      return Math.max(0, ttl);
-    }
-    return undefined;
+    navigate(`/domain/${encodeURIComponent(domain)}`);
   };
 
   const [summarizeError, setSummarizeError] = useState<string | null>(null);
@@ -200,6 +171,14 @@ export function SubDomainView({
       setIsDeletingSection(false);
     }
   };
+
+  if (!isLoading && highlights.length > 0 && sectionHighlights.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
+        <EmptySubDomain domain={domain} section={section} onBack={handleBackToDomain} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
@@ -302,7 +281,6 @@ export function SubDomainView({
                 domain={domain}
                 section={section === '/' ? undefined : section}
                 showLocationMeta={false}
-                ttlMs={getTtlMs(h.createdAt)}
                 onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
                 onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
               />
@@ -338,8 +316,8 @@ export function SubDomainView({
         title={section === '/' ? 'Delete this section?' : 'Delete this section?'}
         message={
           section === '/'
-            ? `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in “${domain}”. This cannot be undone.`
-            : `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in “${section}”. This cannot be undone.`
+            ? `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in "${domain}". This cannot be undone.`
+            : `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in "${section}". This cannot be undone.`
         }
         onConfirm={() => { void handleDeleteSection(); }}
         isConfirming={isDeletingSection}

@@ -12,7 +12,6 @@ import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-hig
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { MODE_STORAGE_KEY, AUTH_REQUIRED_MODES, VALID_MODES } from '@/shared/constants/mode-storage';
-import { BASIC_TTL_STORAGE_KEY, type BasicTtlConfig, parseBasicTtlStorage } from '@/shared/constants/basic-ttl';
 import { buildMarkdownExport, toExportableHighlight } from '@/shared/highlight-export';
 import type { ExportScope } from '@/shared/highlight-export';
 import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
@@ -37,7 +36,7 @@ import { browser } from 'wxt/browser';
 
 export interface McpBridgeHandlerDeps {
   authManager: IAuthManager;
-  highlightQueryService: HighlightQueryService;
+  getHighlightQueryService: () => HighlightQueryService;
   backgroundHighlightOrchestrator: BackgroundHighlightOrchestrator;
   scopedHighlightRepository: ScopedHighlightRepository;
   repositoryFacade: RepositoryFacade;
@@ -74,10 +73,6 @@ export class McpBridgeHandler {
         return this.getMode();
       case 'set_mode':
         return this.setMode(payload);
-      case 'get_basic_ttl':
-        return this.getBasicTtl();
-      case 'set_basic_ttl':
-        return this.setBasicTtl(payload);
       case 'ask_scope':
         return this.askScope(payload);
       case 'summarize_section':
@@ -120,12 +115,6 @@ export class McpBridgeHandler {
     const authState = this.deps.authManager.getAuthState();
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
 
-    const ttlStored = await browser.storage.local.get(BASIC_TTL_STORAGE_KEY);
-    const basicTtl =
-      storageScope === 'basic'
-        ? parseBasicTtlStorage(ttlStored[BASIC_TTL_STORAGE_KEY])
-        : undefined;
-
     const cursor = await this.deps.librarySyncCursor.get();
 
     return {
@@ -138,7 +127,6 @@ export class McpBridgeHandler {
         email: authState.user?.email,
       },
       capabilities: this.capabilitiesForMode(mode, authState.isAuthenticated, storageScope),
-      basicTtl,
       sync: cursor ? { lastHydratedAt: cursor.toISOString() } : undefined,
       dataCoverage: this.dataCoverage(),
       bridgeConnected: true,
@@ -149,7 +137,7 @@ export class McpBridgeHandler {
     const mode = typeof (payload as { mode?: string })?.mode === 'string'
       ? normalizeMode((payload as { mode: string }).mode)
       : await this.readMode();
-    const collections = await this.deps.highlightQueryService.getCollections(mode);
+    const collections = await this.deps.getHighlightQueryService().getCollections(mode);
     return {
       collections,
       dataCoverage: this.dataCoverage(),
@@ -168,7 +156,7 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('Invalid cursor'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const highlights = await this.deps.highlightQueryService.getHighlightsByDomain(input.domain);
+    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const page = enriched.slice(offset, offset + limit);
     const nextOffset = offset + limit;
@@ -194,12 +182,12 @@ export class McpBridgeHandler {
 
     let candidates;
     if (input.domain) {
-      candidates = await this.deps.highlightQueryService.getHighlightsByDomain(input.domain);
+      candidates = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
     } else {
-      const collections = await this.deps.highlightQueryService.getCollections();
+      const collections = await this.deps.getHighlightQueryService().getCollections();
       const merged = [];
       for (const c of collections) {
-        const rows = await this.deps.highlightQueryService.getHighlightsByDomain(c.domain);
+        const rows = await this.deps.getHighlightQueryService().getHighlightsByDomain(c.domain);
         merged.push(...rows);
       }
       candidates = merged;
@@ -229,9 +217,9 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('id is required'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const collections = await this.deps.highlightQueryService.getCollections();
+    const collections = await this.deps.getHighlightQueryService().getCollections();
     for (const collection of collections) {
-      const rows = await this.deps.highlightQueryService.getHighlightsByDomain(collection.domain);
+      const rows = await this.deps.getHighlightQueryService().getHighlightsByDomain(collection.domain);
       const match = rows.find((hl) => hl.id === input.id);
       if (!match) continue;
 
@@ -243,7 +231,7 @@ export class McpBridgeHandler {
 
   async exportHighlights(payload: unknown): Promise<unknown> {
     const scope = (payload as { scope?: ExportScope })?.scope ?? { kind: 'library' };
-    const raw = await this.deps.highlightQueryService.findAllForExport(scope);
+    const raw = await this.deps.getHighlightQueryService().findAllForExport(scope);
     const exportable = raw
       .map((hl) => toExportableHighlight(hl))
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -310,25 +298,6 @@ export class McpBridgeHandler {
     return { mode, branding: getModeBranding(mode) };
   }
 
-  async getBasicTtl(): Promise<unknown> {
-    const stored = await browser.storage.local.get(BASIC_TTL_STORAGE_KEY);
-    return { ttl: parseBasicTtlStorage(stored[BASIC_TTL_STORAGE_KEY]) };
-  }
-
-  async setBasicTtl(payload: unknown): Promise<unknown> {
-    if (this.deps.scopedHighlightRepository.getActiveScope() !== 'basic') {
-      throw Object.assign(new Error('Basic TTL only applies in Basic storage scope'), {
-        code: 'SCOPE_NOT_BASIC',
-      });
-    }
-    const ttl = (payload as { ttl?: BasicTtlConfig })?.ttl;
-    if (!ttl) {
-      throw Object.assign(new Error('ttl is required'), { code: 'INVALID_ARGUMENT' });
-    }
-    await browser.storage.local.set({ [BASIC_TTL_STORAGE_KEY]: ttl });
-    return { ttl };
-  }
-
   private filterBySection<T extends { url: string; path: string }>(
     highlights: T[],
     _domain: string,
@@ -392,7 +361,7 @@ export class McpBridgeHandler {
       });
     }
 
-    const highlights = await this.deps.highlightQueryService.getHighlightsByDomain(input.domain);
+    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const excerpts = this.buildSectionExcerpts(enriched, input.domain, input.sectionKey);
     const scope = {
@@ -427,7 +396,7 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('domain and sectionKey are required'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const highlights = await this.deps.highlightQueryService.getHighlightsByDomain(input.domain);
+    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const sectionItems = this.filterBySection(enriched, input.domain, input.sectionKey);
     const promptHighlights = this.toPromptHighlights(sectionItems);
@@ -463,7 +432,7 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('domain is required'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const highlights = await this.deps.highlightQueryService.getHighlightsByDomain(input.domain);
+    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const bySection = new Map<string, typeof enriched>();
     for (const hl of enriched) {

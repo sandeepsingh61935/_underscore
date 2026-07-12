@@ -18,7 +18,14 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 
-export function useDashboardData(mode: ModeType) {
+const EMPTY_DASHBOARD: DashboardData = {
+  totalHighlights: 0,
+  totalDomains: 0,
+  thisWeekCount: 0,
+  recentHighlights: [],
+};
+
+export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -29,6 +36,11 @@ export function useDashboardData(mode: ModeType) {
     let cancelled = false;
 
     const fetchDashboardData = async () => {
+      if (!isAuthenticated) {
+        setData(EMPTY_DASHBOARD);
+        setError(null);
+      }
+
       setIsLoading(true);
       const result = await fetchAction({ mode });
       if (cancelled) return;
@@ -46,7 +58,23 @@ export function useDashboardData(mode: ModeType) {
     return () => {
       cancelled = true;
     };
-  }, [mode, fetchAction]);
+  }, [mode, isAuthenticated, fetchAction]);
+
+  useLibraryDataChanged(() => {
+    void (async () => {
+      if (!isAuthenticated) {
+        setData(EMPTY_DASHBOARD);
+        setError(null);
+      }
+      const result = await fetchAction({ mode });
+      if (!result.success) {
+        setError(new Error(result.error));
+        return;
+      }
+      setData(result.data);
+      setIsLoading(false);
+    })();
+  });
 
   useLibraryDataChanged(() => {
     void (async () => {

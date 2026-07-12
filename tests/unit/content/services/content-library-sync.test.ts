@@ -112,4 +112,15 @@ describe('handleLibraryDataChanged', () => {
     expect(repositoryFacade.rehydrate).toHaveBeenCalled();
     expect(modeManager.createFromData).not.toHaveBeenCalled();
   });
+
+  it('detaches highlights listed in auth_sign_out removedIds', async () => {
+    const { modeManager, deps } = makeDeps();
+
+    await handleLibraryDataChanged(
+      { source: 'auth_sign_out', removedIds: [HIGHLIGHT_ID] },
+      deps,
+    );
+
+    expect(modeManager.detachHighlightFromPage).toHaveBeenCalledWith(HIGHLIGHT_ID);
+  });
 });
