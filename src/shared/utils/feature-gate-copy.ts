@@ -11,8 +11,6 @@ export function featureGateSubtitle(reason?: FeatureDenyReason): string {
       return 'Available in Pro';
     case 'AUTH_REQUIRED':
       return 'Sign in to use Pro features';
-    case 'VAULT_LOCKED':
-      return 'Unlock vault in Settings first';
     case 'WRONG_MODE':
       return 'Available in 10x-Pro';
     case 'WRONG_SCOPE':
@@ -25,8 +23,6 @@ export function featureGateSubtitle(reason?: FeatureDenyReason): string {
 /** Machine-readable codes for MCP / bridge denials. */
 export function featureGateErrorCode(reason?: FeatureDenyReason): string {
   switch (reason) {
-    case 'VAULT_LOCKED':
-      return 'VAULT_LOCKED';
     case 'AUTH_REQUIRED':
       return 'AUTH_REQUIRED';
     case 'WRONG_MODE':

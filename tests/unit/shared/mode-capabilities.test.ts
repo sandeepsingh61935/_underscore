@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  canConfigureAiProviders,
   canUseFeature,
   getCapabilitiesForMode,
   MODE_CAPABILITY_MATRIX,
@@ -59,45 +60,46 @@ describe('mode-capabilities', () => {
       expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
     });
 
-    it('denies AI in basic mode with WRONG_MODE', () => {
-      const result = canUseFeature('ai', {
-        mode: 'basic',
-        capabilities: getCapabilitiesForMode('basic'),
-        isAuthenticated: false,
-      });
-      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
-    });
-
-    it('allows AI in pro_xai when authenticated and vault unlocked', () => {
+    it('allows AI in pro_xai when authenticated', () => {
       const result = canUseFeature('ai', {
         mode: 'pro_xai',
         capabilities: getCapabilitiesForMode('pro_xai'),
         isAuthenticated: true,
-        vaultLocked: false,
         storageScope: 'pro',
       });
       expect(result).toEqual({ allowed: true });
     });
 
-    it('denies export when vault is locked', () => {
+    it('allows export in pro when authenticated', () => {
       const result = canUseFeature('export', {
         mode: 'pro',
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
-        vaultLocked: true,
         storageScope: 'pro',
       });
-      expect(result).toEqual({ allowed: false, reason: 'VAULT_LOCKED' });
+      expect(result).toEqual({ allowed: true });
+    });
+  });
+
+  describe('canConfigureAiProviders', () => {
+    it('allows provider setup in pro_xai', () => {
+      const result = canConfigureAiProviders({
+        mode: 'pro_xai',
+        capabilities: getCapabilitiesForMode('pro_xai'),
+        isAuthenticated: true,
+        storageScope: 'pro',
+      });
+      expect(result).toEqual({ allowed: true });
     });
 
-    it('denies pro features in basic storage scope', () => {
-      const result = canUseFeature('sync', {
-        mode: 'basic',
-        capabilities: getCapabilitiesForMode('basic'),
-        isAuthenticated: false,
-        storageScope: 'basic',
+    it('denies provider setup in pro mode with WRONG_MODE', () => {
+      const result = canConfigureAiProviders({
+        mode: 'pro',
+        capabilities: getCapabilitiesForMode('pro'),
+        isAuthenticated: true,
+        storageScope: 'pro',
       });
-      expect(result).toEqual({ allowed: false, reason: 'CAPABILITY_DENIED' });
+      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
     });
   });
 });

@@ -18,10 +18,6 @@ vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   })),
 }));
 
-vi.mock('@/features/collections/hooks/use-vault-locked', () => ({
-  useVaultLocked: vi.fn(() => false),
-}));
-
 vi.mock('@/features/collections/hooks/use-sync-library', () => ({
   useSyncLibrary: vi.fn(() => ({
     sync: vi.fn(),
@@ -56,6 +52,14 @@ vi.mock('@/features/settings/components/ConnectedAppsSettings', () => ({
   ConnectedAppsSettings: () => null,
 }));
 
+vi.mock('@/features/settings/components/TypographySettings', () => ({
+  TypographySettings: ({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) => (
+    <button type="button" onClick={onToggle} aria-expanded={expanded}>
+      Typography
+    </button>
+  ),
+}));
+
 describe('SettingsPage basic mode boundaries', () => {
   beforeEach(() => {
     vi.mocked(useApp).mockReturnValue({
@@ -84,10 +88,12 @@ describe('SettingsPage basic mode boundaries', () => {
     expect(screen.getByLabelText('Export library highlights as XLSX')).toBeDisabled();
   });
 
-  it('hides Configure AI providers for a guest in Basic', () => {
+  it('shows Configure AI providers as gated for a guest in Basic', () => {
     render(<SettingsPage />);
 
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
+    expect(screen.getByText('Configure AI providers')).toBeTruthy();
+    const aiRow = screen.getByText('Configure AI providers').closest('button');
+    expect(aiRow?.textContent).toContain('Available in 10x-Pro');
   });
 
   it('keeps Retention settings visible in Basic', () => {
@@ -124,7 +130,10 @@ describe('SettingsPage pro_xai mode boundaries', () => {
   it('shows Configure AI providers for signed-in 10x-Pro', () => {
     render(<SettingsPage />);
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
+    const aiRow = screen.getByText('Configure AI providers').closest('button');
+    expect(aiRow?.textContent).toContain('OpenAI, Claude, Gemini');
   });
+
 });
 
 describe('SettingsPage Pro (non-AI) mode boundaries', () => {
@@ -151,8 +160,10 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('hides Configure AI providers for signed-in Pro (not 10x-Pro)', () => {
+  it('shows Configure AI providers as gated for signed-in Pro (not 10x-Pro)', () => {
     render(<SettingsPage />);
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
+    expect(screen.getByText('Configure AI providers')).toBeTruthy();
+    const aiRow = screen.getByText('Configure AI providers').closest('button');
+    expect(aiRow?.textContent).toContain('Available in 10x-Pro');
   });
 });

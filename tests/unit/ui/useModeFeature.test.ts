@@ -1,16 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { useModeFeature, useConfigureAiProvidersGate } from '@/ui-system/hooks/useModeFeature';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
-import { useVaultLocked } from '@/features/collections/hooks/use-vault-locked';
 
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   usePersistedMode: vi.fn(),
-}));
-
-vi.mock('@/features/collections/hooks/use-vault-locked', () => ({
-  useVaultLocked: vi.fn(() => false),
 }));
 
 function mockMode(mode: 'basic' | 'pro' | 'pro_xai'): void {
@@ -23,7 +18,6 @@ function mockMode(mode: 'basic' | 'pro' | 'pro_xai'): void {
 
 describe('useModeFeature', () => {
   beforeEach(() => {
-    vi.mocked(useVaultLocked).mockReturnValue(false);
     mockMode('basic');
   });
 
@@ -43,16 +37,6 @@ describe('useModeFeature', () => {
     expect(result.current.reason).toBe('AUTH_REQUIRED');
   });
 
-  it('denies export when vault is locked', () => {
-    mockMode('pro');
-    vi.mocked(useVaultLocked).mockReturnValue(true);
-
-    const { result } = renderHook(() => useModeFeature('export', true));
-
-    expect(result.current.allowed).toBe(false);
-    expect(result.current.reason).toBe('VAULT_LOCKED');
-  });
-
   it('denies AI in pro mode when signed in', () => {
     mockMode('pro');
 
@@ -62,7 +46,7 @@ describe('useModeFeature', () => {
     expect(result.current.reason).toBe('WRONG_MODE');
   });
 
-  it('allows export in pro mode when signed in and vault unlocked', () => {
+  it('allows export in pro mode when signed in', () => {
     mockMode('pro');
 
     const { result } = renderHook(() => useModeFeature('export', true));
@@ -70,10 +54,18 @@ describe('useModeFeature', () => {
     expect(result.current.allowed).toBe(true);
   });
 
-  it('allows AI in pro_xai when signed in and vault unlocked', () => {
+  it('allows AI in pro_xai when signed in', () => {
     mockMode('pro_xai');
 
     const { result } = renderHook(() => useModeFeature('ai', true));
+
+    expect(result.current.allowed).toBe(true);
+  });
+
+  it('allows provider setup in pro_xai', () => {
+    mockMode('pro_xai');
+
+    const { result } = renderHook(() => useConfigureAiProvidersGate(true));
 
     expect(result.current.allowed).toBe(true);
   });

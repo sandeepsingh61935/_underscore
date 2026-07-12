@@ -18,7 +18,6 @@ export type FeatureKey = {
 export type FeatureDenyReason =
   | 'AUTH_REQUIRED'
   | 'CAPABILITY_DENIED'
-  | 'VAULT_LOCKED'
   | 'WRONG_MODE'
   | 'WRONG_SCOPE';
 
@@ -26,7 +25,6 @@ export interface FeatureGateContext {
   mode: ModeType;
   capabilities: ModeCapabilities;
   isAuthenticated: boolean;
-  vaultLocked?: boolean;
   storageScope?: 'basic' | 'pro';
 }
 
@@ -79,6 +77,11 @@ export function getCapabilitiesForMode(mode: ModeType): ModeCapabilities {
 /**
  * Check whether a feature is allowed given mode capabilities and runtime prerequisites.
  */
+/** Library reads require a signed-in account (offline session is sufficient). */
+export function canAccessLibrary(isAuthenticated: boolean): boolean {
+  return isAuthenticated;
+}
+
 export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
@@ -92,12 +95,12 @@ export function canUseFeature(
     return { allowed: false, reason: 'CAPABILITY_DENIED' };
   }
 
-  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
+  if (feature === 'collections' && !ctx.isAuthenticated) {
     return { allowed: false, reason: 'AUTH_REQUIRED' };
   }
 
-  if (ctx.vaultLocked && requiresVaultUnlock(feature)) {
-    return { allowed: false, reason: 'VAULT_LOCKED' };
+  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
+    return { allowed: false, reason: 'AUTH_REQUIRED' };
   }
 
   if (ctx.storageScope === 'basic' && proOnlyFeature(feature)) {
@@ -107,12 +110,31 @@ export function canUseFeature(
   return { allowed: true };
 }
 
-/** Features that read/write encrypted vault plaintext. */
-function requiresVaultUnlock(feature: FeatureKey): boolean {
-  return feature === 'export' || feature === 'tags' || feature === 'search' || feature === 'ai';
+/**
+ * Provider setup (API keys, model pickers, health checks).
+ * Pro-family modes use persistent chrome.storage.local for API keys (plain text in extension sandbox).
+ */
+export function canConfigureAiProviders(ctx: FeatureGateContext): FeatureGateResult {
+  if (ctx.mode !== 'pro_xai') {
+    return { allowed: false, reason: 'WRONG_MODE' };
+  }
+
+  if (!ctx.capabilities.ai) {
+    return { allowed: false, reason: 'CAPABILITY_DENIED' };
+  }
+
+  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
+    return { allowed: false, reason: 'AUTH_REQUIRED' };
+  }
+
+  if (ctx.storageScope === 'basic' && proOnlyFeature('ai')) {
+    return { allowed: false, reason: 'WRONG_SCOPE' };
+  }
+
+  return { allowed: true };
 }
 
-/** Features that require pro storage scope (signed-in cloud vault). */
+/** Features that require pro storage scope (signed-in cloud sync). */
 function proOnlyFeature(feature: FeatureKey): boolean {
   return feature === 'sync' || feature === 'export' || feature === 'tags' || feature === 'search' || feature === 'ai';
 }

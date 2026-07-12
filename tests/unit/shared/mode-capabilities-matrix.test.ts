@@ -42,7 +42,6 @@ function happyContext(mode: ModeType) {
     mode,
     capabilities: getCapabilitiesForMode(mode),
     isAuthenticated: isProFamily,
-    vaultLocked: false,
     storageScope: isProFamily ? ('pro' as const) : ('basic' as const),
   };
 }
