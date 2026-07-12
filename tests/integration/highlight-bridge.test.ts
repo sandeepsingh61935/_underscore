@@ -8,8 +8,7 @@ import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { MessageSchema } from '@/shared/schemas/message-schemas';
-import type { EncryptedText, HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { HighlightEncryptor } from '@/background/services/highlight-encryptor';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 
 const logger = LoggerFactory.getLogger('IntegrationTest');
@@ -38,45 +37,14 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
     facade = new RepositoryFacade(idbRepo);
     await facade.initialize();
 
-    // The SW side subscribes to IPC_HIGHLIGHT_* via the message bus.
     swBus = new ChromeMessageBus(logger) as unknown as IMessageBus;
-    // Identity-style encryptor: clears plaintext and sets a no-op
-    // envelope. The bridge still exercises its end-to-end path without
-    // depending on KeyManager (which would need a real passphrase +
-    // chrome.storage setup in this integration test).
-    const noopEncryptor = {
-      encrypt: async (h: HighlightDataV2) => {
-        if (h.textEncrypted) return h;
-        const envelope: EncryptedText = {
-          ciphertext: h.text,
-          iv: 'AAAA',
-          keyId: h.userId ?? '',
-        };
-        return { ...h, text: '', textEncrypted: envelope };
-      },
-      decrypt: async (e: EncryptedText) => e.ciphertext,
-    } as unknown as HighlightEncryptor;
-    // SW side: orchestrator owns the wiring.
-    new BackgroundHighlightOrchestrator(
-      facade,
-      noopEncryptor,
-      { isUnlocked: true } as any,
-      swBus as any,
-      logger,
-    ).initialize();
+    new BackgroundHighlightOrchestrator(facade, swBus as never, logger).initialize();
 
-    // The content side sends via chrome.runtime.sendMessage, which dispatches to
-    // the SW's message bus. Simulate that hop.
     (globalThis as any).chrome = {
       runtime: {
         onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
-        // IpcHighlightRepository uses the callback form of sendMessage, so the
-        // mock must invoke the callback to deliver the response.
         sendMessage: vi.fn((msg: unknown, callback: (response: unknown) => void) => {
           const validated = MessageSchema.parse(msg);
-          // Mirror the dispatch shape used by ChromeMessageBus.setupMessageListener:
-          // it reads from the `handlers` map (Map<string, Set<MessageHandler>>) and
-          // runs every handler, sending the first non-undefined result back.
           const handlers: Set<(payload: unknown, sender: unknown) => unknown> | undefined = (
             swBus as any
           ).handlers?.get(validated.type);
@@ -88,8 +56,6 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
           Promise.resolve(handler(validated.payload, { id: 'extension' }))
             .then((result) => {
               if (result === undefined) {
-                // Fire-and-forget path: send a generic success so the IpcHighlightRepository
-                // doesn't hang waiting for a response.
                 callback({ success: true, data: undefined });
               } else {
                 callback(result);
@@ -105,12 +71,13 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
     contentRepo = new IpcHighlightRepository(contentBus);
   });
 
-  it('content.add reaches the SW facade and extension-origin IDB', async () => {
+  it('content.add reaches the SW facade and extension-origin IDB with plaintext', async () => {
     const h = makeHighlight('h-bridge-1');
     await contentRepo.add(h);
-    // Yield for the async add to land in the IDB put.
     await new Promise((r) => setTimeout(r, 10));
     expect(facade.has(h.id)).toBe(true);
-    expect(await idbRepo.findById(h.id)).not.toBeNull();
+    const stored = await idbRepo.findById(h.id);
+    expect(stored).not.toBeNull();
+    expect(stored?.text).toBe('sample');
   });
 });
