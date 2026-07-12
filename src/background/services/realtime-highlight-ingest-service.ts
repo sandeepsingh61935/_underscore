@@ -3,10 +3,8 @@
  * @description Applies Supabase Realtime highlight events to background IndexedDB.
  */
 
-import type { IEncryptionService } from '@/background/auth/interfaces/i-encryption-service';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { EventName } from '@/shared/types/events';
@@ -26,8 +24,7 @@ export class RealtimeHighlightIngestService {
     private readonly highlightRepository: IHighlightRepository,
     private readonly repositoryFacade: RepositoryFacade,
     private readonly echoTracker: LocalWriteEchoTracker,
-    private readonly logger: ILogger,
-    private readonly encryptionService?: IEncryptionService
+    private readonly logger: ILogger
   ) {}
 
   initialize(): void {
@@ -111,8 +108,7 @@ export class RealtimeHighlightIngestService {
         return;
       }
 
-      let highlight = transformHighlightRow(row);
-      highlight = await this.maybeDecryptLegacyHighlight(highlight);
+      const highlight = transformHighlightRow(row);
 
       const local = await this.highlightRepository.findById(id);
 
@@ -137,31 +133,6 @@ export class RealtimeHighlightIngestService {
         id: row?.id,
         source,
       });
-    }
-  }
-
-  private async maybeDecryptLegacyHighlight(highlight: HighlightDataV2): Promise<HighlightDataV2> {
-    if (!highlight.text.startsWith('[ENCRYPTED:') || !this.encryptionService) {
-      return highlight;
-    }
-
-    try {
-      const encryptedJson = highlight.text.substring(11, highlight.text.length - 1);
-      const encryptedPayload = JSON.parse(encryptedJson);
-      const decrypted = await this.encryptionService.decrypt(encryptedPayload);
-
-      return {
-        ...highlight,
-        text: decrypted.text,
-        url: decrypted.url || highlight.url,
-        ranges: decrypted.selector ? JSON.parse(decrypted.selector) : highlight.ranges,
-      };
-    } catch (error) {
-      this.logger.warn('[RealtimeIngest] Legacy decrypt failed', {
-        id: highlight.id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return highlight;
     }
   }
 }
