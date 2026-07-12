@@ -7,7 +7,6 @@
 import { browser } from 'wxt/browser';
 
 import type { IAuthManager, OAuthProviderType, AuthState } from '@/background/auth/interfaces/i-auth-manager';
-import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import { initializeBackground } from '@/background/bootstrap';
 import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
@@ -21,7 +20,7 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, GET_VAULT_LOCK_STATUS } from '@/shared/schemas/message-schemas';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA } from '@/shared/schemas/message-schemas';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
 import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
@@ -36,13 +35,14 @@ import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
+import { clearHighlightData } from '@/background/services/clear-highlight-data';
 
 const logger = LoggerFactory.getLogger('Background');
 
 export default defineBackground({
   type: 'module',
   async main() {
-    logger.info('Background service worker started (Phase 2: Vault Mode)');
+    logger.info('Background service worker started');
 
     let container: Container;
     let messageBus: IMessageBus;
@@ -68,12 +68,6 @@ export default defineBackground({
       authManager = container.resolve<IAuthManager>('authManager');
       logger.info('[INIT] AuthManager resolved');
 
-      const lockVaultOnSignOut = (): void => {
-        if (container.has('keyManager')) {
-          container.resolve<IKeyManager>('keyManager').lock();
-        }
-      };
-
       logger.info('[INIT] Resolving repositoryFacade from container...');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repositoryFacade = container.resolve<any>('repositoryFacade');
@@ -91,14 +85,10 @@ export default defineBackground({
       aiOrchestrator.configureFeatureGate(async () => {
         const stored = await browser.storage.local.get(MODE_STORAGE_KEY);
         const mode = normalizeMode(stored[MODE_STORAGE_KEY]);
-        const keyManager = container.has('keyManager')
-          ? container.resolve<IKeyManager>('keyManager')
-          : undefined;
         return {
           mode,
           capabilities: getCapabilitiesForMode(mode),
           isAuthenticated: authManager.isAuthenticated,
-          vaultLocked: keyManager ? !keyManager.isUnlocked : false,
           storageScope: scopedHighlightRepositoryForAi.getActiveScope(),
         };
       });
@@ -173,7 +163,6 @@ export default defineBackground({
       // Logout Handler
       messageBus.subscribe('LOGOUT', async () => {
         logger.info('Handling LOGOUT request');
-        lockVaultOnSignOut();
         await authManager.signOut();
         broadcastAuthSessionCleared();
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
@@ -205,7 +194,6 @@ export default defineBackground({
         }
 
         if (parsed.data === null) {
-          lockVaultOnSignOut();
           await authManager.signOut();
           broadcastAuthSessionCleared();
           return { success: true, data: {} };
@@ -228,33 +216,6 @@ export default defineBackground({
           success: true,
           data: authStateResponseData(authManager.getAuthState()),
         };
-      });
-
-      // Vault Unlock Handler (ADR-018)
-      messageBus.subscribe('IPC_VAULT_UNLOCK', async (payload: { passphrase: string }) => {
-        logger.info('Handling IPC_VAULT_UNLOCK request');
-        try {
-          if (!payload?.passphrase) {
-            throw new Error('Passphrase is required');
-          }
-          const user = authManager.getAuthState().user;
-          if (!user) {
-            return { success: false, error: 'Not authenticated', code: 'NOT_AUTHENTICATED' };
-          }
-          const keyManager = container.resolve<IKeyManager>('keyManager');
-          await keyManager.unlock(user.id, payload.passphrase);
-          return { success: true, data: { keyId: `${user.id}_unlocked` } };
-        } catch (e) {
-          const err = e as Error;
-          logger.error('IPC_VAULT_UNLOCK failed', err);
-          const code =
-            err.message.includes('deprecated')
-              ? 'DEPRECATED_FORMAT'
-              : err.message.includes('locked')
-                ? 'VAULT_LOCKED'
-                : 'INVALID_PASSPHRASE';
-          return { success: false, error: err.message, code };
-        }
       });
 
       // Forward Auth State Changes to popup, content scripts, and web tabs
@@ -285,9 +246,6 @@ export default defineBackground({
         repositoryFacade,
         cloudHydrationService,
         librarySyncCursor,
-        keyManager: container.has('keyManager')
-          ? container.resolve<IKeyManager>('keyManager')
-          : undefined,
         llmChat: async (payload: { provider?: ProviderName; request: LLMRequest }) => {
           const instance = await resolveConfiguredProvider(llmRegistry, llmKeyStoreHolder.get(), payload.provider);
           const result = await instance.chat(payload.request);
@@ -320,6 +278,9 @@ export default defineBackground({
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
         logger.info('Handling GET_COLLECTIONS request', { mode: payload?.mode });
         try {
+          if (!authManager.isAuthenticated) {
+            return { success: true, data: { collections: [] } };
+          }
           const collections = await highlightQueryService.getCollections(payload?.mode);
           return { success: true, data: { collections } };
         } catch (error) {
@@ -334,11 +295,29 @@ export default defineBackground({
         try {
           const highlights = await highlightQueryService.getHighlightsByDomain(payload.domain);
           const withPlaintext = await backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
-          const vaultLocked = withPlaintext.some(h => h.decryptionStatus === 'vault_locked');
-          return { success: true, data: { highlights: withPlaintext, vaultLocked } };
+          return { success: true, data: { highlights: withPlaintext } };
         } catch (error) {
           logger.error('GET_HIGHLIGHTS_BY_DOMAIN failed', error as Error);
           throw error;
+        }
+      });
+
+      messageBus.subscribe(CLEAR_HIGHLIGHT_DATA, async () => {
+        logger.info('Handling CLEAR_HIGHLIGHT_DATA request');
+        try {
+          const result = await clearHighlightData(
+            repositoryFacade,
+            scopedHighlightRepository,
+            logger,
+          );
+          notifyLibraryDataChanged({ source: 'clear-highlight-data' });
+          return { success: true, data: result };
+        } catch (error) {
+          logger.error('CLEAR_HIGHLIGHT_DATA failed', error as Error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
         }
       });
 
@@ -370,16 +349,8 @@ export default defineBackground({
         logger.info('Handling GET_EXPORTABLE_HIGHLIGHTS request', { scope: payload.scope });
         try {
           const raw = await highlightQueryService.findAllForExport(payload.scope);
-          const enriched = await backgroundHighlightOrchestrator.enrichWithPlaintext(
-            raw.map((hl) => ({ id: hl.id, text: hl.text })),
-          );
-          const byId = new Map(enriched.map((item) => [item.id, item]));
           const highlights = raw
-            .map((hl) => {
-              const summary = byId.get(hl.id);
-              const text = summary?.text ?? hl.text;
-              return toExportableHighlight({ ...hl, text }, summary?.decryptionStatus);
-            })
+            .map((hl) => toExportableHighlight(hl))
             .filter((item): item is NonNullable<typeof item> => item !== null);
           return { success: true, data: { highlights } };
         } catch (error) {
@@ -392,9 +363,6 @@ export default defineBackground({
 
       const deleteContext = () => ({
         isAuthenticated: authManager.isAuthenticated,
-        vaultUnlocked: container.has('keyManager')
-          ? container.resolve<IKeyManager>('keyManager').isUnlocked
-          : true,
       });
 
       messageBus.subscribe(IPC_HIGHLIGHT_DELETE_SCOPE, async (payload: DeleteRequest) => {
@@ -417,16 +385,6 @@ export default defineBackground({
           notifyLibraryDataChanged({ source: 'undo_delete', restoredIds: result.restoredIds });
         }
         return { success: result.success, data: result, error: result.success ? undefined : result.error, code: result.success ? undefined : result.code };
-      });
-
-      messageBus.subscribe(GET_VAULT_LOCK_STATUS, async () => {
-        if (!authManager.isAuthenticated) {
-          return { success: true, data: { vaultLocked: false } };
-        }
-        const vaultLocked = container.has('keyManager')
-          ? !container.resolve<IKeyManager>('keyManager').isUnlocked
-          : false;
-        return { success: true, data: { vaultLocked } };
       });
 
       // Get Dashboard Data Handler
