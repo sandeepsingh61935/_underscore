@@ -8,6 +8,12 @@ import {
   handleAuthStorageEvent,
 } from '@/background/services/auth-storage-lifecycle';
 
+vi.mock('@/background/services/library-change-notifier', () => ({
+  notifyLibraryDataChanged: vi.fn(),
+}));
+
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+
 function makeHighlight(id: string): HighlightDataV2 {
   return {
     id,
@@ -57,6 +63,11 @@ describe('handleAuthStorageEvent', () => {
     expect(facade.getAll()[0]?.id).toBe('basic-guest');
     expect(syncCursor.clear).toHaveBeenCalled();
     expect(echoTracker.clear).toHaveBeenCalled();
+    expect(notifyLibraryDataChanged).toHaveBeenCalledWith({
+      source: 'auth_sign_out',
+      deletedCount: 1,
+      removedIds: ['pro-account'],
+    });
   });
 
   it('on sign-in activates pro scope before hydration', async () => {

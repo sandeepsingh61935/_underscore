@@ -12,7 +12,6 @@ export interface ModeDefinition {
     accent: string;
     persistence: string;
     signin: boolean;
-    /** Basic mode's TTL is user-configurable (see @/shared/constants/basic-ttl). */
     ttlConfigurable: boolean;
     enabled: boolean;
     order: number;
@@ -53,15 +52,15 @@ export class ModeRegistry {
         this.register({
             id: MODE_NAMES.BASIC,
             name: MODE_BRANDING.basic.displayName,
-            altName: 'On this device',
+            altName: 'Guest',
             family: 'device',
             tag: MODE_BRANDING.basic.tagline,
             blurb: MODE_BRANDING.basic.description,
             motif: '◷',
-            accent: 'var(--mode-basic)',
-            persistence: 'configurable TTL · this device',
+            accent: 'var(--ink-3)',
+            persistence: 'permanent · this device',
             signin: false,
-            ttlConfigurable: true,
+            ttlConfigurable: false,
             enabled: true,
             order: 1,
         });

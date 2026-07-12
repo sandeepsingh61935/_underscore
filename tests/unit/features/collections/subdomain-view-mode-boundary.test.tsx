@@ -37,13 +37,6 @@ vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   })),
 }));
 
-vi.mock('@/ui-system/hooks/useBasicTtlOption', () => ({
-  useBasicTtlOption: vi.fn(() => ({
-    ttlConfig: { kind: 'preset', preset: '24h' },
-    ttlMs: 86_400_000,
-  })),
-}));
-
 vi.mock('@/features/collections/hooks/useHighlightsByDomainFactory', () => ({
   useHighlightsByDomain: vi.fn(() => ({
     highlights: [sampleHighlight],

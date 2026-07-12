@@ -73,7 +73,7 @@ export function ModeSelectionView({
       </div>
       <div className="u-rule" style={{ margin: "12px 18px 0" }} />
 
-      <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>On this device</div>
+      <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>Guest</div>
       {localModes.length > 0 ? localModes.map((m) => (
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
       )) : (
@@ -88,7 +88,11 @@ export function ModeSelectionView({
 
       <div style={{ marginTop: "auto", padding: 14, borderTop: "1px solid var(--rule)", display: "flex", gap: 8 }}>
         <button className="btn ghost sm" style={{ flex: 1 }} onClick={handleLater}>Later</button>
-        <button className="btn accent sm" style={{ flex: 2 }} onClick={handleContinue}>Continue as {activeModeDef.name} →</button>
+        <button className="btn accent sm" style={{ flex: 2 }} onClick={handleContinue}>
+          {activeModeDef.id === 'basic' && !isAuthenticated
+            ? 'Continue as guest →'
+            : `Continue as ${activeModeDef.name} →`}
+        </button>
       </div>
     </div>
   );
@@ -107,7 +111,6 @@ function ModeRow({ m, active, onClick }: { m: ModeDefinition; active: boolean; o
           <span style={{ color: m.accent, fontSize: 14, lineHeight: 1 }}>{m.motif}</span>
           <div className="u-serif" style={{ fontSize: 17 }}>{m.name}</div>
           {m.signin && <span className="u-mono" style={{ fontSize: 9, color: "var(--ink-3)", letterSpacing: "0.14em", textTransform: "uppercase" }}>sign-in</span>}
-          {m.ttlConfigurable && <span className="u-mono" style={{ fontSize: 9, color: "var(--accent)", letterSpacing: "0.14em", textTransform: "uppercase" }}>configurable ttl</span>}
         </div>
         <span className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>
           {active ? "●" : "○"}

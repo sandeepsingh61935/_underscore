@@ -87,11 +87,10 @@ export function registerServices(container: Container): void {
   });
 
   /**
-   * Basic storage — TTL resolved dynamically from the Basic TTL preference
-   * (defaults to 24h; see @/shared/constants/basic-ttl)
+   * Guest (Basic) storage — permanent local persistence (no TTL).
    */
   container.registerSingleton<IStorage>('basicStorage', () => {
-    return new StorageService({ mode: 'basic', ttlDuration: 24 * 60 * 60 * 1000 });
+    return new StorageService({ mode: 'basic', ttlDuration: null });
   });
 
   /**

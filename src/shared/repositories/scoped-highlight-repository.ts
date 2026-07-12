@@ -1,4 +1,4 @@
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IHighlightRepository, IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 
 export type HighlightStorageScope = 'basic' | 'pro';
 
@@ -27,6 +27,11 @@ export class ScopedHighlightRepository implements IHighlightRepository {
 
   async wipeProLocal(): Promise<void> {
     await this.proRepository.clear();
+  }
+
+  /** Read-only accessor for a specific storage partition (display queries). */
+  queryScope(scope: HighlightStorageScope): IReadableHighlightRepository {
+    return scope === 'pro' ? this.proRepository : this.basicRepository;
   }
 
   private activeRepository(): IHighlightRepository {

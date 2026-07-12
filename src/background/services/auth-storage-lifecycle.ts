@@ -36,10 +36,17 @@ export async function handleAuthStorageEvent(
     return;
   }
 
+  const proHighlights = await scopedRepository.queryScope('pro').findAll();
+  const removedIds = proHighlights.map((highlight) => highlight.id);
+
   await scopedRepository.wipeProLocal();
   await syncCursor?.clear();
   echoTracker?.clear();
   await scopedRepository.activateScope('basic');
   await repositoryFacade.reload();
-  notifyLibraryDataChanged({ source: 'auth_sign_out' });
+  notifyLibraryDataChanged({
+    source: 'auth_sign_out',
+    deletedCount: removedIds.length,
+    removedIds,
+  });
 }

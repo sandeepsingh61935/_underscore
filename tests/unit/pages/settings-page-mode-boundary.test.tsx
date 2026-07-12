@@ -33,13 +33,6 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
   formatSyncSubtitle: vi.fn(),
 }));
 
-vi.mock('@/ui-system/hooks/useBasicTtlOption', () => ({
-  useBasicTtlOption: vi.fn(() => ({
-    ttlConfig: { kind: 'preset', preset: '24h' },
-    ttlMs: 86_400_000,
-  })),
-}));
-
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
   useHighlightDelete: vi.fn(() => ({ deleteScope: vi.fn() })),
 }));
@@ -78,10 +71,17 @@ describe('SettingsPage basic mode boundaries', () => {
   it('disables library export for a guest in Basic with Pro upgrade copy', () => {
     render(<SettingsPage />);
 
-    const exportRow = screen.getByText('Export library').closest('button');
-    expect(exportRow?.textContent).toContain('Available in Pro');
-    expect(screen.getByLabelText('Export library highlights as MD')).toBeDisabled();
-    expect(screen.getByLabelText('Export library highlights as XLSX')).toBeDisabled();
+    expect(screen.queryByText('Export library')).toBeNull();
+    expect(screen.queryByText('Sync library')).toBeNull();
+    expect(screen.queryByText('Configure AI providers')).toBeNull();
+  });
+
+  it('shows guest account sign-in row with sync upsell', () => {
+    render(<SettingsPage onSignIn={vi.fn()} />);
+
+    expect(screen.getAllByText('Sign in').length).toBeGreaterThan(0);
+    expect(screen.getByText('Sync library across devices, search, export, AI')).toBeTruthy();
+    expect(screen.getByText('Guest')).toBeTruthy();
   });
 
   it('hides Configure AI providers for a guest in Basic', () => {
@@ -90,10 +90,26 @@ describe('SettingsPage basic mode boundaries', () => {
     expect(screen.queryByText('Configure AI providers')).toBeNull();
   });
 
-  it('keeps Retention settings visible in Basic', () => {
+  it('does not show Retention settings after TTL removal', () => {
+    vi.mocked(useApp).mockReturnValue({
+      theme: 'system',
+      setTheme: vi.fn(),
+      currentMode: 'basic',
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
+      isAuthenticated: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+      modeReady: true,
+      setMode: vi.fn(),
+      availableModes: ['basic'],
+      isLoading: false,
+      setIsLoading: vi.fn(),
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    } as ReturnType<typeof useApp>);
+
     render(<SettingsPage />);
 
-    expect(screen.getByText('Retention')).toBeTruthy();
+    expect(screen.queryByText('Retention')).toBeNull();
   });
 });
 

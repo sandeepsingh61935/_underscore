@@ -31,11 +31,21 @@ function isExtensionContext(): boolean {
     return typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined' && chrome.runtime.id !== undefined;
 }
 
+const EMPTY_HIGHLIGHTS_RESULT: HighlightsResult = {
+  highlights: [],
+  isLoading: false,
+  error: null,
+  vaultLocked: false,
+};
+
 /**
  * Unified hook for highlights by domain that works in both extension and web contexts.
  * Uses chrome.runtime for extension, Supabase directly for web.
  */
-export function useHighlightsByDomain(domain: string | undefined): HighlightsResult {
+export function useHighlightsByDomain(
+  domain: string | undefined,
+  isAuthenticated = true,
+): HighlightsResult {
     const [result, setResult] = useState<HighlightsResult>({
         highlights: [],
         isLoading: true,
@@ -64,7 +74,7 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
 
   const fetchHighlights = useCallback(async () => {
     if (!domain) {
-      setResult({ highlights: [], isLoading: false, error: null, vaultLocked: false });
+      setResult(EMPTY_HIGHLIGHTS_RESULT);
       return;
     }
 
@@ -101,7 +111,7 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          setResult({ highlights: [], isLoading: false, error: null, vaultLocked: false });
+          setResult(EMPTY_HIGHLIGHTS_RESULT);
           return;
         }
 
@@ -144,6 +154,10 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
     let cancelled = false;
 
     const load = async () => {
+      if (!isAuthenticated) {
+        setResult(EMPTY_HIGHLIGHTS_RESULT);
+      }
+
       await fetchHighlights();
       if (cancelled) return;
     };
@@ -153,10 +167,15 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
     return () => {
       cancelled = true;
     };
-  }, [fetchHighlights]);
+  }, [fetchHighlights, isAuthenticated]);
 
   useLibraryDataChanged(() => {
-    void fetchHighlights();
+    void (async () => {
+      if (!isAuthenticated) {
+        setResult(EMPTY_HIGHLIGHTS_RESULT);
+      }
+      await fetchHighlights();
+    })();
   });
 
     return result;

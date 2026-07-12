@@ -6,13 +6,10 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import { useVaultLocked } from '@/features/collections/hooks/use-vault-locked';
 import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
-import { BasicTtlPicker } from '@/features/settings/components/BasicTtlPicker';
 import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSettings';
 import { ConnectedAppsSettings } from '@/features/settings/components/ConnectedAppsSettings';
-import { formatBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
-import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
@@ -62,10 +59,8 @@ export function SettingsPage({
   const { theme, setTheme, currentMode, user, logout: appLogout } = useApp();
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
-  const { ttlConfig: basicTtlConfig } = useBasicTtlOption();
   const [typeId, setTypeId] = useState<TypePresetId>('editorial');
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [ttlExpanded, setTtlExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const vaultLocked = useVaultLocked(Boolean(user));
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
@@ -128,7 +123,6 @@ export function SettingsPage({
     }
   };
 
-  const basicTtlLabel = formatBasicTtlConfig(basicTtlConfig);
   const modeBranding = getModeBranding(currentMode);
 
   return (
@@ -183,23 +177,18 @@ export function SettingsPage({
         />
         <Row
           title="Mode"
-          sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>}
-          onClick={onChangeMode}
+          sub={isAuthenticated ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}` : 'Guest'}
+          right={
+            isAuthenticated ? (
+              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>
+            ) : undefined
+          }
+          onClick={isAuthenticated ? onChangeMode : undefined}
         />
-        {currentMode === 'basic' && (
-          <>
-            <Row
-              title="Retention"
-              sub="How long highlights stick around on this device"
-              right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>{basicTtlLabel}</span>}
-              onClick={() => setTtlExpanded((v) => !v)}
-            />
-            {ttlExpanded && <BasicTtlPicker value={basicTtlConfig} />}
-          </>
-        )}
         <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Edit</span>} />
 
+        {isAuthenticated && (
+          <>
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
         <Row
           title="Sync library"
@@ -258,23 +247,31 @@ export function SettingsPage({
         />
 
         <ConnectedAppsSettings isAuthenticated={Boolean(user)} />
+          </>
+        )}
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
         <Row
-          title={user?.email || 'Guest User'}
-          sub={user ? 'Signed in' : 'Basic mode'}
+          title={user?.email || 'Sign in'}
+          sub={user ? 'Signed in' : 'Sync library across devices, search, export, AI'}
           right={
             isSigningOut ? (
               <Spinner size="sm" />
             ) : (
-              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+              <span
+                className="u-mono"
+                style={{
+                  fontSize: 'var(--step--2)',
+                  color: user ? 'var(--ink-3)' : 'var(--accent)',
+                }}
+              >
                 {user ? 'Sign out' : 'Sign in'}
               </span>
             )
           }
           onClick={!isSigningOut ? handleAccountClick : undefined}
         />
-        {aiGate.allowed && (
+        {isAuthenticated && aiGate.allowed && (
           <Row
             title="Configure AI providers"
             sub="OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter"
@@ -291,7 +288,7 @@ export function SettingsPage({
         message={
           user
             ? 'This permanently removes all highlights from this device and marks them deleted in the cloud. This cannot be undone.'
-            : 'This permanently removes all highlights stored on this device in Basic mode. This cannot be undone.'
+            : 'This permanently removes all highlights stored on this device as a guest. This cannot be undone.'
         }
         onConfirm={() => { void handleDeleteLibrary(); }}
         isConfirming={isDeletingLibrary}

@@ -45,12 +45,11 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(screen.queryByText(/expired|left|fresh/i)).toBeNull();
   });
 
-  it('renders TTL badge when ttlMs set', () => {
+  it('does not render TTL badge when ttlMs is passed (guest storage is permanent)', () => {
     render(
       <HighlightCard quote="Apple" domain="example.com" ttlMs={60_000} />
     );
-    // TTLBadge renders a string like "1m" or "59s"
-    expect(screen.getByText(/^\d+(s|m|h)$/)).toBeTruthy();
+    expect(screen.queryByText(/^\d+(s|m|h)$/)).toBeNull();
   });
 
   it('compact density uses 10px vertical padding', () => {

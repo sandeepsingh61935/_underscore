@@ -21,7 +21,7 @@ function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridge
       isAuthenticated: false,
       getAuthState: () => ({ isAuthenticated: false, user: null }),
     } as McpBridgeHandlerDeps['authManager'],
-    highlightQueryService,
+    getHighlightQueryService: () => highlightQueryService,
     backgroundHighlightOrchestrator: {
       enrichWithPlaintext: vi.fn(async (items: unknown[]) => items),
     } as unknown as McpBridgeHandlerDeps['backgroundHighlightOrchestrator'],
@@ -143,14 +143,14 @@ describe('McpBridgeHandler', () => {
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
       keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
-      highlightQueryService: {
+      getHighlightQueryService: () => ({
         getCollections: vi.fn(),
         getHighlightsByDomain: vi.fn().mockResolvedValue([
           { id: 'h1', text: 'quote', url: 'https://example.com/', path: '/' },
         ]),
         findAllForExport: vi.fn(),
         getDashboardData: vi.fn(),
-      } as unknown as HighlightQueryService,
+      }) as unknown as HighlightQueryService,
     });
 
     const result = (await handler.askScope({

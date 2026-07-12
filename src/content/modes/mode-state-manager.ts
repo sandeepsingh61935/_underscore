@@ -11,7 +11,6 @@ import { ModeStateMachine } from './mode-state-machine';
 import { MigrationEngine } from './state-migration';
 import type { TransitionGuardContext } from './mode-transition-rules';
 
-import { setBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import {
   StatePersistenceError,
   StateValidationError,
@@ -86,21 +85,13 @@ export class ModeStateManager {
       if (storedRaw !== undefined) {
         // storedRaw may be a v1/v2 legacy mode name (ephemeral/walk/local/
         // sprint/cloud/vault/ai/neural) from before the v3 consolidation.
-        // migrateV2ToV3() translates any of those to basic/pro/pro_xai and
-        // also derives the Basic TTL default implied by the legacy mode
-        // (ephemeral/walk -> 24h, local/sprint -> forever).
+        // migrateV2ToV3() translates any of those to basic/pro/pro_xai.
         if (needsV2ToV3Migration(storedRaw)) {
-          const { mode, ttlConfig } = migrateV2ToV3(storedRaw);
+          const { mode } = migrateV2ToV3(storedRaw);
           this.currentMode = mode;
-          try {
-            await setBasicTtlConfig(ttlConfig);
-          } catch (e) {
-            this.logger.warn('[ModeState] Failed to persist migrated Basic TTL', e as Error);
-          }
           this.logger.info('[ModeState] Migrated legacy mode name (v1/v2 -> v3)', {
             from: storedRaw,
             to: mode,
-            ttlConfig,
           });
         } else {
           this.currentMode = normalizeMode(storedRaw);

@@ -4,6 +4,7 @@ import {
   canUseFeature,
   getCapabilitiesForMode,
   MODE_CAPABILITY_MATRIX,
+  resolveLibraryAccess,
 } from '@/shared/utils/mode-capabilities';
 
 describe('mode-capabilities', () => {
@@ -28,6 +29,35 @@ describe('mode-capabilities', () => {
       const xai = MODE_CAPABILITY_MATRIX.pro_xai;
       expect(xai.ai).toBe(true);
       expect(xai.sync).toBe(true);
+    });
+  });
+
+  describe('resolveLibraryAccess', () => {
+    it('shows sign-in prompt for unsigned users with empty library', () => {
+      expect(resolveLibraryAccess(false, 0)).toEqual({
+        storageScope: 'basic',
+        hasLocalHighlights: false,
+        showSignInPrompt: true,
+        canShowHighlightLists: false,
+      });
+    });
+
+    it('shows local lists for unsigned users with basic data', () => {
+      expect(resolveLibraryAccess(false, 3)).toEqual({
+        storageScope: 'basic',
+        hasLocalHighlights: true,
+        showSignInPrompt: false,
+        canShowHighlightLists: true,
+      });
+    });
+
+    it('shows pro lists for signed-in users', () => {
+      expect(resolveLibraryAccess(true, 0)).toEqual({
+        storageScope: 'pro',
+        hasLocalHighlights: false,
+        showSignInPrompt: false,
+        canShowHighlightLists: true,
+      });
     });
   });
 

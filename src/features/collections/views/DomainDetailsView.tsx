@@ -48,7 +48,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
       setEditingSection(null);
   };
 
-  const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain);
+  const { highlights, isLoading, vaultLocked } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
   const exportDisabled = vaultLocked || !exportGate.allowed;

@@ -11,7 +11,7 @@ export interface McpTierCalloutProps {
 }
 
 /**
- * Upsell callout for guest Basic users — standard "unlock with sign-in" pattern
+ * Upsell callout for guest users — standard "unlock with sign-in" pattern
  * (Notion/Linear-style bordered card with primary CTA).
  */
 export function McpTierCallout({
@@ -41,7 +41,7 @@ export function McpTierCallout({
       <Card elevated>
         <CardTitle>Sign in for full MCP</CardTitle>
         <CardDescription>
-          You can connect Cursor on this device to local Basic highlights. Sign in to Pro to sync
+          You can connect Cursor on this device to local guest highlights. Sign in to Pro to sync
           your library, use ChatGPT with cloud MCP, and access highlights from any device.
         </CardDescription>
         <CardFooter>
@@ -71,7 +71,7 @@ export function McpTierCallout({
 
 export function mcpTierLabel(isAuthenticated: boolean, currentMode: ModeType): string {
   if (!isAuthenticated) {
-    return 'Basic · Local only';
+    return 'Guest · Local only';
   }
   return `${getModeBranding(currentMode).displayName} · Synced`;
 }

@@ -26,11 +26,11 @@ export interface ModeBranding {
 
 export const MODE_BRANDING: Record<ModeType, ModeBranding> = {
   basic: {
-    displayName: 'Basic',
+    displayName: 'Guest',
     planName: 'underscore-basic',
     family: 'device',
-    tagline: 'On this device',
-    description: 'Highlights live on this device. Choose how long they stick around in Settings.',
+    tagline: 'Local only',
+    description: 'Highlights live permanently on this device. Sign in to sync across devices.',
   },
   pro: {
     displayName: 'Pro',

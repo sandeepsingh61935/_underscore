@@ -502,16 +502,16 @@ export default defineContentScript({
       eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
       const handleAuthStateChanged = async (isAuthenticated: boolean): Promise<void> => {
-        logger.info('[AUTH] Auth state changed', { isAuthenticated });
-
-        await repositoryFacade.reload();
-        broadcastCount();
-
-        const currentMode = modeManager.getCurrentMode();
-        if (currentMode.name === MODE_NAMES.PRO || currentMode.name === MODE_NAMES.PRO_XAI) {
-          logger.info('[AUTH] Pro Mode active - triggering re-restoration');
-          await (currentMode as ProMode).restore();
-        }
+        const { handleContentAuthStateChanged } = await import(
+          '@/content/services/content-auth-sync'
+        );
+        await handleContentAuthStateChanged(isAuthenticated, {
+          modeStateManager,
+          modeManager,
+          repositoryFacade,
+          logger,
+          broadcastCount,
+        });
       };
 
       // Auth changes arrive via background runtime broadcast (not local EventBus).

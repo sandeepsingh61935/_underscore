@@ -1,6 +1,5 @@
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { HighlightStorageScope } from '@/shared/constants/highlight-storage-scope';
-import type { BasicTtlConfig } from '@/shared/constants/basic-ttl';
 
 export type McpDataCoverage = 'basic_local' | 'pro_local' | 'pro_cloud';
 
@@ -23,7 +22,6 @@ export interface McpSessionSnapshot {
     email?: string;
   };
   capabilities: McpSessionCapabilities;
-  basicTtl?: BasicTtlConfig;
   vault: { locked: boolean };
   sync?: {
     lastHydratedAt?: string;
