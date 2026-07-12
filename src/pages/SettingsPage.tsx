@@ -4,7 +4,6 @@ import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { useVaultLocked } from '@/features/collections/hooks/use-vault-locked';
 import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
 import { BasicTtlPicker } from '@/features/settings/components/BasicTtlPicker';
 import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSettings';
@@ -14,7 +13,7 @@ import { formatBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
-import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { useConfigureAiProvidersGate, useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
@@ -45,13 +44,12 @@ export function SettingsPage({
   const [ttlExpanded, setTtlExpanded] = useState(false);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
-  const vaultLocked = useVaultLocked(Boolean(user));
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
-  const aiGate = useModeFeature('ai', isAuthenticated);
+  const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated);
 
   // onBack is still required on the interface for callers passing it to the shell's ModeHeader
   // _onBack is intentionally unused in the body-only version
@@ -179,23 +177,19 @@ export function SettingsPage({
         />
         <Row
           title="Delete library"
-          sub={
-            vaultLocked
-              ? 'Unlock vault in Settings before deleting'
-              : 'Permanently remove all highlights on this device'
-          }
+          sub="Permanently remove all highlights on this device"
           right={
             <span
               className="u-mono"
               style={{
                 fontSize: 'var(--step--2)',
-                color: vaultLocked ? 'var(--ink-3)' : 'var(--accent)',
+                color: 'var(--accent)',
               }}
             >
-              {vaultLocked ? 'Locked' : 'Delete'}
+              Delete
             </span>
           }
-          onClick={vaultLocked ? undefined : () => setDeleteLibraryOpen(true)}
+          onClick={() => setDeleteLibraryOpen(true)}
         />
 
         <McpBridgeSettings
@@ -205,6 +199,28 @@ export function SettingsPage({
         />
 
         <ConnectedAppsSettings isAuthenticated={Boolean(user)} />
+
+        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>AI</div>
+        <Row
+          title="Configure AI providers"
+          sub={
+            aiSetupGate.allowed
+              ? 'OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter'
+              : featureGateSubtitle(aiSetupGate.reason)
+          }
+          right={
+            <span
+              className="u-mono"
+              style={{
+                fontSize: 'var(--step--2)',
+                color: aiSetupGate.allowed ? 'var(--accent)' : 'var(--ink-3)',
+              }}
+            >
+              {aiSetupGate.allowed ? '→' : '—'}
+            </span>
+          }
+          onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
+        />
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
         <Row
@@ -221,14 +237,6 @@ export function SettingsPage({
           }
           onClick={!isSigningOut ? handleAccountClick : undefined}
         />
-        {aiGate.allowed && (
-          <Row
-            title="Configure AI providers"
-            sub="OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter"
-            right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
-            onClick={onConfigureAIProviders}
-          />
-        )}
       </div>
 
       <DeleteConfirmDialog
@@ -242,7 +250,7 @@ export function SettingsPage({
         }
         onConfirm={() => { void handleDeleteLibrary(); }}
         isConfirming={isDeletingLibrary}
-        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed || vaultLocked} />}
+        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
       />
     </div>
   );

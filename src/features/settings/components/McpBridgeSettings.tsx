@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useId, useState } from 'react';
 
 import {
   MCP_BRIDGE_STORAGE_KEYS,
@@ -7,8 +7,22 @@ import {
 } from '@/shared/constants/mcp-bridge';
 import type { BridgeConnectionState } from '@/shared/mcp/bridge-protocol';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { McpBridgeSetupGuide } from '@/features/settings/components/McpBridgeSetupGuide';
 import { McpTierCallout, mcpTierLabel } from '@/features/settings/components/McpTierCallout';
 import { Row } from '@/ui-system/components/primitives/Row';
+import { Spinner } from '@/ui-system/components/primitives/Spinner';
+
+const srOnlyStyle: React.CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
 
 export interface McpBridgeSettingsProps {
   isAuthenticated: boolean;
@@ -41,6 +55,27 @@ async function readBridgeSettings(): Promise<{
   };
 }
 
+function connectionLabel(state: BridgeConnectionState, enabled: boolean): string {
+  if (!enabled) return 'disabled';
+  switch (state) {
+    case 'connected':
+      return 'connected';
+    case 'connecting':
+      return 'connecting';
+    case 'error':
+      return 'error';
+    default:
+      return 'disconnected';
+  }
+}
+
+function connectionColor(state: BridgeConnectionState, enabled: boolean): string {
+  if (!enabled) return 'var(--ink-3)';
+  if (state === 'connected') return 'var(--accent)';
+  if (state === 'error') return 'var(--ink)';
+  return 'var(--ink-3)';
+}
+
 export function McpBridgeSettings({
   isAuthenticated,
   currentMode,
@@ -53,8 +88,13 @@ export function McpBridgeSettings({
 
   const tierLabel = mcpTierLabel(isAuthenticated, currentMode);
   const bridgeSub = isAuthenticated
-    ? 'Cursor / Claude Desktop via extension bridge'
+    ? 'Cursor or Claude Desktop via extension bridge'
     : 'This device only — Cursor or Claude Desktop';
+  const tokenFieldId = useId();
+  const tokenHelpId = useId();
+  const statusLiveId = useId();
+  const endpoint = `${MCP_BRIDGE_HOST}:${MCP_BRIDGE_PORT}`;
+  const statusText = connectionLabel(connectionState, enabled);
 
   useEffect(() => {
     void readBridgeSettings().then((s) => {
@@ -93,7 +133,11 @@ export function McpBridgeSettings({
     });
   }, []);
 
-  const endpoint = `${MCP_BRIDGE_HOST}:${MCP_BRIDGE_PORT}`;
+  const toggleBridge = useCallback((): void => {
+    const next = !enabled;
+    setEnabled(next);
+    void persist(next, token);
+  }, [enabled, persist, token]);
 
   return (
     <>
@@ -107,7 +151,7 @@ export function McpBridgeSettings({
           alignItems: 'center',
         }}
       >
-        <span>MCP Bridge</span>
+        <span id="mcp-bridge-heading">MCP Bridge</span>
         <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
           {tierLabel}
         </span>
@@ -123,45 +167,79 @@ export function McpBridgeSettings({
         title="Allow MCP bridge"
         sub={bridgeSub}
         right={
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
+          <span
+            className="u-mono"
+            style={{ fontSize: 'var(--step--2)', color: enabled ? 'var(--accent)' : 'var(--ink-3)' }}
+            aria-hidden="true"
+          >
             {enabled ? 'On' : 'Off'}
           </span>
         }
-        onClick={() => {
-          const next = !enabled;
-          setEnabled(next);
-          void persist(next, token);
-        }}
+        onClick={toggleBridge}
+        aria-checked={enabled}
+        role="switch"
       />
+
       <Row
         title="Endpoint"
         sub={endpoint}
         right={
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-            {enabled ? connectionState : 'disabled'}
-          </span>
+          enabled && connectionState === 'connecting' ? (
+            <Spinner size="sm" />
+          ) : (
+            <span
+              className="u-mono"
+              style={{ fontSize: 'var(--step--2)', color: connectionColor(connectionState, enabled) }}
+              aria-hidden="true"
+            >
+              {statusText}
+            </span>
+          )
         }
       />
-      {isAuthenticated && (
+
+      <span id={statusLiveId} style={srOnlyStyle} aria-live="polite">
+        {enabled ? `Bridge ${statusText}` : 'Bridge disabled'}
+      </span>
+
+      <McpBridgeSetupGuide
+        enabled={enabled}
+        token={token}
+        connectionState={connectionState}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {isAuthenticated ? (
         <Row
           title="ChatGPT / cloud MCP"
-          sub="Deploy the cloud worker (see packages/mcp-server README). Pro library only."
+          sub="Deploy the cloud worker, then approve access under Connected apps"
           right={
             <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
               Pro
             </span>
           }
         />
-      )}
+      ) : null}
+
       <div style={{ padding: '8px 16px 12px', borderBottom: '1px solid var(--rule-soft)' }}>
-        <label className="u-sans" style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--step-1)' }}>
-          <span style={{ color: 'var(--ink-soft)' }}>Session token (UNDERSCORE_MCP_TOKEN in mcp.json)</span>
+        <label
+          htmlFor={tokenFieldId}
+          className="u-sans"
+          style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--step-1)' }}
+        >
+          <span style={{ color: 'var(--ink-soft)' }}>Session token</span>
+          <span id={tokenHelpId} className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+            Same value as UNDERSCORE_MCP_TOKEN in mcp.json
+          </span>
           <input
+            id={tokenFieldId}
             type="password"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             onBlur={() => void persist(enabled, token)}
             placeholder="Paste token from MCP server startup"
+            autoComplete="off"
+            aria-describedby={tokenHelpId}
             style={{
               padding: '8px',
               border: '1px solid var(--rule)',
@@ -171,13 +249,14 @@ export function McpBridgeSettings({
               fontSize: 'var(--step-1)',
               width: '100%',
               boxSizing: 'border-box',
+              minHeight: 44,
             }}
           />
         </label>
         <button
           type="button"
           className="u-caps"
-          style={{ marginTop: '8px', fontSize: 'var(--step--2)' }}
+          style={{ marginTop: '8px', fontSize: 'var(--step--2)', minHeight: 44 }}
           onClick={() => {
             if (!token) return;
             void navigator.clipboard.writeText(token).then(() => {
@@ -186,6 +265,7 @@ export function McpBridgeSettings({
             });
           }}
           disabled={!token}
+          aria-live="polite"
         >
           {copied ? 'Copied' : 'Copy token'}
         </button>
