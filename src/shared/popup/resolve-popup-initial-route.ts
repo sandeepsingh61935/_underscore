@@ -14,8 +14,7 @@ export type PopupInitialView =
   | 'SUB_DOMAIN'
   | 'SETTINGS'
   | 'DASHBOARD'
-  | 'API_KEY_SETUP'
-  | 'UNLOCK_VAULT';
+  | 'API_KEY_SETUP';
 
 export interface PopupOnboardingState {
   hasSeenWelcome: boolean;
@@ -37,12 +36,8 @@ export interface PopupRouteResult {
   consumePendingAuthMode?: boolean;
 }
 
-function isProMode(mode: ModeType): boolean {
-  return mode === 'pro' || mode === 'pro_xai';
-}
-
-export function postLoginViewForMode(mode: ModeType): PopupInitialView {
-  return isProMode(mode) ? 'UNLOCK_VAULT' : 'COLLECTIONS';
+export function postLoginViewForMode(_mode: ModeType): PopupInitialView {
+  return 'COLLECTIONS';
 }
 
 function drillDownContext(
@@ -60,6 +55,12 @@ function drillDownContext(
 
   return context;
 }
+
+const AUTH_GATED_LIBRARY_VIEWS = new Set<PopupInitialView>([
+  'COLLECTIONS',
+  'DOMAIN_DETAILS',
+  'SUB_DOMAIN',
+]);
 
 function restoredPersistedView(
   nav: PopupNavigationSnapshot,
@@ -108,9 +109,9 @@ export function resolvePopupInitialRoute(input: PopupRouteInput): PopupRouteResu
   }
 
   const restored = restoredPersistedView(nav);
-  if (restored && restored.view !== 'MODE_SELECTION') {
+  if (restored && restored.view !== 'MODE_SELECTION' && !AUTH_GATED_LIBRARY_VIEWS.has(restored.view)) {
     return restored;
   }
 
-  return { view: 'COLLECTIONS' };
+  return { view: 'MODE_SELECTION' };
 }

@@ -10,7 +10,6 @@ import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { APIKeySetupView } from '../../features/ai/views/APIKeySetupView';
 import { LLMStreamingView } from '../../features/ai/views/LLMStreamingView';
 import { AuthProvider, useAuth as useExtensionAuth } from '../../ui-system/providers/AuthProvider';
-import { useUnlockVault } from '../../features/auth/hooks/useUnlockVault';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
 import { SubDomainView } from '../../features/collections/views/SubDomainView';
@@ -39,7 +38,6 @@ import { Spinner } from '../../ui-system/components/primitives/Spinner';
 import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
-import { UnlockVaultView } from './views/UnlockVaultView';
 
 import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
 import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
@@ -58,7 +56,6 @@ enum View {
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
   SUB_DOMAIN = 'SUB_DOMAIN',
   AUTH = 'AUTH',
-  UNLOCK_VAULT = 'UNLOCK_VAULT',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
   API_KEY_SETUP = 'API_KEY_SETUP',
@@ -116,7 +113,6 @@ class ErrorBoundary extends Component<
 
 function PopupApp(): React.ReactElement {
   const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
-  const { unlock: unlockVault, isUnlocking: isUnlockingVault } = useUnlockVault();
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
@@ -258,20 +254,16 @@ function PopupApp(): React.ReactElement {
     setMode(targetMode);
     setPendingMode(null);
     await clearPendingAuthMode();
-    setCurrentView(postLoginViewForMode(targetMode) as View);
-  };
-
-  const handleUnlockSuccess = (): void => {
     setCurrentView(View.COLLECTIONS);
-  };
-
-  const handleUnlockCancel = (): void => {
-    setCurrentView(View.MODE_SELECTION);
   };
 
   const handleLogout = async (): Promise<void> => {
     await logout();
     await clearPendingAuthMode();
+    await clearPopupDomainSection();
+    await persistPopupView('MODE_SELECTION');
+    setSelectedDomain('');
+    setSelectedSection('');
     setPendingMode(null);
     setCurrentView(View.MODE_SELECTION);
   };
@@ -424,6 +416,7 @@ function PopupApp(): React.ReactElement {
           <CollectionsView
             onCollectionClick={handleCollectionClick}
             isAuthenticated={!!user}
+            onSignIn={() => setCurrentView(View.AUTH)}
           />
         </motion.div>
       )}
@@ -475,24 +468,6 @@ function PopupApp(): React.ReactElement {
           <AuthView
             onLoginSuccess={handleLoginSuccess}
             onBackToModeSelection={handleBackToModeSelection}
-          />
-        </motion.div>
-      )}
-      {currentView === View.UNLOCK_VAULT && (
-        <motion.div
-          key="unlock-vault"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <UnlockVaultView
-            onUnlock={unlockVault}
-            onUnlockSuccess={handleUnlockSuccess}
-            onCancel={handleUnlockCancel}
-            isUnlocking={isUnlockingVault}
           />
         </motion.div>
       )}

@@ -21,7 +21,7 @@ export const PERSISTED_POPUP_VIEWS = [
 ] as const;
 
 /** Transient views — never persisted or restored (auth gates, loaders). */
-export const TRANSIENT_POPUP_VIEWS = ['AUTH', 'UNLOCK_VAULT', 'LOADING', 'WELCOME', 'LLM_STREAMING'] as const;
+export const TRANSIENT_POPUP_VIEWS = ['AUTH', 'LOADING', 'WELCOME', 'LLM_STREAMING'] as const;
 
 export type PersistedPopupView = (typeof PERSISTED_POPUP_VIEWS)[number];
 

@@ -32,14 +32,14 @@ describe('resolvePopupInitialRoute', () => {
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
-  it('routes authenticated users with pending Pro mode to Unlock Vault', () => {
+  it('routes authenticated users with pending Pro mode to Collections', () => {
     expect(
       route({
         isAuthenticated: true,
         nav: { pendingAuthMode: 'pro' },
       }),
     ).toEqual({
-      view: 'UNLOCK_VAULT',
+      view: 'COLLECTIONS',
       applyMode: 'pro',
       consumePendingAuthMode: true,
     });
@@ -77,20 +77,31 @@ describe('resolvePopupInitialRoute', () => {
     ).toEqual({ view: 'MODE_SELECTION' });
   });
 
-  it('routes guests away from stale sign-in history to Collections', () => {
+  it('routes guests away from stale sign-in history to Mode Selection', () => {
     expect(
       route({
         nav: { lastView: 'AUTH' },
       }),
-    ).toEqual({ view: 'COLLECTIONS' });
+    ).toEqual({ view: 'MODE_SELECTION' });
   });
 
-  it('restores Collections for guests when that was the last real screen', () => {
+  it('does not restore Collections for signed-out guests', () => {
     expect(
       route({
         nav: { lastView: 'COLLECTIONS' },
       }),
-    ).toEqual({ view: 'COLLECTIONS' });
+    ).toEqual({ view: 'MODE_SELECTION' });
+  });
+
+  it('does not restore domain drill-down for signed-out guests', () => {
+    expect(
+      route({
+        nav: {
+          lastView: 'DOMAIN_DETAILS',
+          lastDomain: 'example.com',
+        },
+      }),
+    ).toEqual({ view: 'MODE_SELECTION' });
   });
 });
 
@@ -99,8 +110,8 @@ describe('postLoginViewForMode', () => {
     expect(postLoginViewForMode('basic')).toBe('COLLECTIONS');
   });
 
-  it('sends Pro users to Unlock Vault after sign-in', () => {
-    expect(postLoginViewForMode('pro')).toBe('UNLOCK_VAULT');
-    expect(postLoginViewForMode('pro_xai')).toBe('UNLOCK_VAULT');
+  it('sends Pro users to Collections after sign-in', () => {
+    expect(postLoginViewForMode('pro')).toBe('COLLECTIONS');
+    expect(postLoginViewForMode('pro_xai')).toBe('COLLECTIONS');
   });
 });
