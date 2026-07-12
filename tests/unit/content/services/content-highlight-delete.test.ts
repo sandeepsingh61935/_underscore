@@ -33,26 +33,6 @@ describe('ContentHighlightDeleteClient', () => {
     expect(result).toEqual({ ok: true, data: { success: true, deletedCount: 1 } });
   });
 
-  it('surfaces vault-locked failures from the background', async () => {
-    const bus = makeBus({
-      success: true,
-      data: {
-        success: false,
-        code: 'VAULT_LOCKED',
-        error: 'Unlock vault before deleting highlights',
-      },
-    });
-    const client = new ContentHighlightDeleteClient(bus);
-
-    const result = await client.deleteHighlight('abc-123');
-
-    expect(result).toEqual({
-      ok: false,
-      error: 'Unlock vault before deleting highlights',
-      code: 'VAULT_LOCKED',
-    });
-  });
-
   it('undoes the last delete through IPC_HIGHLIGHT_UNDO_DELETE', async () => {
     const bus = makeBus({ success: true, data: { success: true, deletedCount: 0 } });
     const client = new ContentHighlightDeleteClient(bus);

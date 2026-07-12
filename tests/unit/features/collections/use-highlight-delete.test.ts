@@ -70,27 +70,6 @@ describe('useHighlightDelete', () => {
     );
   });
 
-  it('surfaces vault-locked delete failures from the nested delete result', async () => {
-    const bus = makeBus(async () => ({
-      success: true,
-      data: {
-        success: false,
-        code: 'VAULT_LOCKED',
-        error: 'Unlock vault before deleting highlights',
-      },
-    }));
-
-    const { result } = renderHook(() => useHighlightDelete(), { wrapper: wrap(bus) });
-
-    await act(async () => {
-      const data = await result.current.deleteScope({ scope: 'highlight', id: 'h-1' });
-      expect(data?.success).toBe(false);
-    });
-
-    expect(toast.error).toHaveBeenCalledWith('Unlock vault before deleting highlights');
-    expect(toast.success).not.toHaveBeenCalled();
-  });
-
   it('sends undo IPC and shows success toast when undo succeeds', async () => {
     const bus = makeBus(async (type) => {
       if (type === IPC_HIGHLIGHT_UNDO_DELETE) {

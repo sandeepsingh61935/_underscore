@@ -44,11 +44,11 @@ function makeCloudPort(): HighlightCloudDeletePort {
 }
 
 function guestContext(): HighlightDeleteContext {
-  return { isAuthenticated: false, vaultUnlocked: true };
+  return { isAuthenticated: false };
 }
 
-function proContext(vaultUnlocked = true): HighlightDeleteContext {
-  return { isAuthenticated: true, vaultUnlocked };
+function proContext(): HighlightDeleteContext {
+  return { isAuthenticated: true };
 }
 
 async function makeService(
@@ -80,23 +80,6 @@ describe('HighlightDeleteService.executeDelete', () => {
 
     expect(result).toEqual({ success: true, deletedCount: 1, removedIds: [HIGHLIGHT_ID] });
     expect(await basic.count()).toBe(0);
-    expect(cloud.deleteHighlight).not.toHaveBeenCalled();
-  });
-
-  it('blocks delete when pro vault is locked', async () => {
-    const { service, pro, cloud } = await makeService([makeHighlight(HIGHLIGHT_ID)], 'pro');
-
-    const result = await service.executeDelete(
-      { scope: 'highlight', id: HIGHLIGHT_ID },
-      proContext(false),
-    );
-
-    expect(result).toEqual({
-      success: false,
-      code: 'VAULT_LOCKED',
-      error: 'Unlock vault before deleting highlights',
-    });
-    expect(await pro.count()).toBe(1);
     expect(cloud.deleteHighlight).not.toHaveBeenCalled();
   });
 

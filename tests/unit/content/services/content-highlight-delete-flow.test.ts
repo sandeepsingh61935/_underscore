@@ -86,18 +86,6 @@ describe('performContentHighlightDelete', () => {
     expect(modeManager.detachHighlightFromPage).toHaveBeenCalledWith(HIGHLIGHT_ID);
   });
 
-  it('returns blocked when vault is locked', async () => {
-    const { deps } = makeDeps({
-      deleteResult: {
-        ok: false,
-        error: 'Unlock vault before deleting highlights',
-        code: 'VAULT_LOCKED',
-      },
-    });
-
-    const outcome = await performContentHighlightDelete(HIGHLIGHT_ID, deps);
-    expect(outcome).toBe('blocked');
-  });
 });
 
 describe('undoContentHighlightDelete', () => {

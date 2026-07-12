@@ -19,14 +19,13 @@ export type DeleteSuccess = {
 };
 export type DeleteFailure = {
   success: false;
-  code: 'VAULT_LOCKED' | 'NOT_FOUND';
+  code: 'NOT_FOUND';
   error: string;
 };
 export type DeleteResult = DeleteSuccess | DeleteFailure;
 
 export interface HighlightDeleteContext {
   isAuthenticated: boolean;
-  vaultUnlocked: boolean;
 }
 
 export interface HighlightCloudDeletePort {
@@ -82,14 +81,6 @@ export class HighlightDeleteService {
     request: DeleteRequest,
     context: HighlightDeleteContext,
   ): Promise<DeleteResult> {
-    if (context.isAuthenticated && !context.vaultUnlocked) {
-      return {
-        success: false,
-        code: 'VAULT_LOCKED',
-        error: 'Unlock vault before deleting highlights',
-      };
-    }
-
     switch (request.scope) {
       case 'highlight':
         return this.deleteHighlight(request.id, context);
@@ -109,15 +100,7 @@ export class HighlightDeleteService {
     }
   }
 
-  async undoPendingHighlight(context: HighlightDeleteContext): Promise<DeleteResult> {
-    if (context.isAuthenticated && !context.vaultUnlocked) {
-      return {
-        success: false,
-        code: 'VAULT_LOCKED',
-        error: 'Unlock vault before restoring highlights',
-      };
-    }
-
+  async undoPendingHighlight(_context: HighlightDeleteContext): Promise<DeleteResult> {
     const pending = this.pendingUndo;
     if (!pending) {
       return { success: false, code: 'NOT_FOUND', error: 'Nothing to undo' };

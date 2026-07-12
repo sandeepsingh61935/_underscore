@@ -7,7 +7,7 @@ import {
   showDeleteUndoToast,
 } from '@/content/ui/content-delete-toast';
 
-export type ContentDeleteOutcome = 'deleted' | 'blocked' | 'failed' | 'cancelled';
+export type ContentDeleteOutcome = 'deleted' | 'failed' | 'cancelled';
 
 export interface ContentHighlightDeleteFlowDeps {
   deleteClient: ContentHighlightDeleteClient;
@@ -38,7 +38,7 @@ export async function performContentHighlightDelete(
   const result = await deps.deleteClient.deleteHighlight(id);
   if (!result.ok) {
     showDeleteErrorToast(result.error);
-    return result.code === 'VAULT_LOCKED' ? 'blocked' : 'failed';
+    return 'failed';
   }
 
   await deps.modeManager.detachHighlightFromPage(id);

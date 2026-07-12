@@ -47,7 +47,7 @@ function makeHighlight(id: string, url: string): HighlightDataV2 {
   };
 }
 
-const guestContext: HighlightDeleteContext = { isAuthenticated: false, vaultUnlocked: true };
+const guestContext: HighlightDeleteContext = { isAuthenticated: false };
 
 const cloudPort: HighlightCloudDeletePort = {
   deleteHighlight: async () => undefined,
