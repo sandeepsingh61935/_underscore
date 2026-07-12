@@ -334,13 +334,8 @@ export class SupabaseClient implements IAPIClient {
                 updated_at: new Date().toISOString(),
             };
 
-            if (updates.text !== undefined || updates.textEncrypted !== undefined) {
-                const merged = { ...updates } as HighlightDataV2;
-                if (updates.text === undefined && updates.textEncrypted) {
-                    merged.text = '';
-                    merged.textEncrypted = updates.textEncrypted;
-                }
-                payload['text'] = serializeHighlightTextForCloud(merged as HighlightDataV2);
+            if (updates.text !== undefined) {
+                payload['text'] = serializeHighlightTextForCloud({ ...updates, text: updates.text } as HighlightDataV2);
             }
             if (updates.colorRole !== undefined) payload['color_role'] = updates.colorRole;
             if (updates.contentHash !== undefined) payload['content_hash'] = updates.contentHash;

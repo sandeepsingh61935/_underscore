@@ -7,7 +7,6 @@
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/utils/logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
-import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
@@ -22,7 +21,6 @@ import { SupabaseClient } from '@/background/api/supabase-client';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
-import { HighlightEncryptor } from '@/background/services/highlight-encryptor';
 import { CloudHydrationService } from '@/background/services/cloud-hydration-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
@@ -186,46 +184,20 @@ export function registerRepositoryComponents(container: Container): void {
         const echoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker' as any);
         const logger = container.resolve<ILogger>('logger');
 
-        let encryptionService;
-        try {
-            encryptionService = container.resolve<any>('encryptionService');
-        } catch {
-            encryptionService = undefined;
-        }
-
         return new RealtimeHighlightIngestService(
             eventBus,
             highlightRepository,
             repositoryFacade,
             echoTracker,
-            logger,
-            encryptionService
+            logger
         );
     });
 
-    // ============================================
-    // HIGHLIGHT ENCRYPTOR (ADR-013)
-    // ============================================
-    //
-    // The encryptor is constructed once and shared by the orchestrator.
-    // It depends on the keyManager so that the master key never leaves
-    // the KeyManager's memory; the encryptor accesses it through
-    // `withMasterKey` (see IKeyManager).
-    container.registerSingleton<HighlightEncryptor>('highlightEncryptor', () => {
-        const keyManager = container.resolve<IKeyManager>('keyManager');
-        return new HighlightEncryptor(keyManager);
-    });
-
-    // ============================================
-    // BACKGROUND HIGHLIGHT ORCHESTRATOR
-    // ============================================
     container.registerSingleton<BackgroundHighlightOrchestrator>('backgroundHighlightOrchestrator', () => {
         const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
-        const encryptor = container.resolve<HighlightEncryptor>('highlightEncryptor');
-        const keyManager = container.resolve<IKeyManager>('keyManager');
         const messageBus = container.resolve<IMessageBus>('messageBus');
         const logger = container.resolve<ILogger>('logger');
-        return new BackgroundHighlightOrchestrator(repositoryFacade, encryptor, keyManager, messageBus, logger);
+        return new BackgroundHighlightOrchestrator(repositoryFacade, messageBus, logger);
     });
 
     container.registerSingleton<HighlightDeleteService>('highlightDeleteService', () => {

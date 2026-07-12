@@ -9,12 +9,10 @@ import {
 } from '@/shared/utils/supabase-highlight-row';
 
 describe('supabase-highlight-row', () => {
-  it('serializes ADR-013 envelopes for cloud storage', () => {
-    const envelope = { ciphertext: 'abc', iv: 'def', keyId: 'user-1' };
+  it('serializes plaintext highlight text for cloud storage', () => {
     const serialized = serializeHighlightTextForCloud({
       id: '11111111-1111-4111-8111-111111111111',
-      text: '',
-      textEncrypted: envelope,
+      text: 'hello world',
       contentHash: 'a'.repeat(64),
       colorRole: 'yellow',
       type: 'underscore',
@@ -22,10 +20,9 @@ describe('supabase-highlight-row', () => {
       createdAt: new Date(),
     });
 
-    expect(serialized.startsWith('[ADR013:')).toBe(true);
+    expect(serialized).toBe('hello world');
     const parsed = parseHighlightTextFromCloud(serialized);
-    expect(parsed.text).toBe('');
-    expect(parsed.textEncrypted).toEqual(envelope);
+    expect(parsed.text).toBe('hello world');
   });
 
   it('transforms supabase rows into HighlightDataV2', () => {

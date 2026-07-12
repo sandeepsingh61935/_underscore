@@ -3,14 +3,11 @@
  * @description Map Supabase `highlights` rows to HighlightDataV2.
  */
 
-import type { EncryptedText, HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import {
   normalizeHighlightTags,
   sanitizeHighlightNote,
 } from '@/shared/utils/highlight-metadata';
-
-const ADR013_PREFIX = '[ADR013:';
-const ENCRYPTED_PREFIX = '[ENCRYPTED:';
 
 export interface SupabaseHighlightMetadata {
   notes?: string;
@@ -50,9 +47,6 @@ export function serializeHighlightMetadataForCloud(
 }
 
 export function serializeHighlightTextForCloud(data: HighlightDataV2): string {
-  if (data.textEncrypted && !data.text) {
-    return `${ADR013_PREFIX}${JSON.stringify(data.textEncrypted)}]`;
-  }
   return data.text;
 }
 
@@ -72,28 +66,12 @@ export function serializeTimestampForCloud(value: Date | string | number | undef
 
 export function parseHighlightTextFromCloud(rawText: string | undefined | null): {
   text: string;
-  textEncrypted?: EncryptedText;
 } {
-  const value = rawText ?? '';
-
-  if (value.startsWith(ADR013_PREFIX) && value.endsWith(']')) {
-    try {
-      const envelope = JSON.parse(value.slice(ADR013_PREFIX.length, -1)) as EncryptedText;
-      return { text: '', textEncrypted: envelope };
-    } catch {
-      return { text: value };
-    }
-  }
-
-  if (value.startsWith(ENCRYPTED_PREFIX)) {
-    return { text: value };
-  }
-
-  return { text: value || '' };
+  return { text: rawText ?? '' };
 }
 
 export function transformHighlightRow(row: SupabaseHighlightRow): HighlightDataV2 {
-  const { text, textEncrypted } = parseHighlightTextFromCloud(row.text);
+  const { text } = parseHighlightTextFromCloud(row.text);
   const selector = row.selectors as HighlightDataV2['ranges'][number]['selector'] | null | undefined;
   const cloudMetadata = serializeHighlightMetadataForCloud(row.metadata ?? undefined);
 
@@ -102,7 +80,6 @@ export function transformHighlightRow(row: SupabaseHighlightRow): HighlightDataV
     userId: row.user_id,
     url: row.url ?? '',
     text,
-    textEncrypted,
     contentHash: row.content_hash ?? '',
     colorRole: (row.color_role ?? 'yellow') as HighlightDataV2['colorRole'],
     type: 'underscore',
