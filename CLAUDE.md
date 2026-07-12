@@ -105,7 +105,7 @@ When working on ANY UI code (components, views, styles), you MUST:
 - Event sourcing: append-only, never mutate events
 - API responses: consistent envelope `{ data, error, meta }`
 - Auth: always validate JWT in Workers, never trust client
-- Encryption: AES-256-GCM for sensitive local data
+- API keys stored locally in extension sandbox (`chrome.storage.local`)
 - Never call `chrome.runtime.sendMessage` directly in views — use hooks
 - Message format: `{ type: 'MESSAGE_TYPE', payload: {}, timestamp: Date.now() }`
 - Hooks shared between extension and web contexts must guard `chrome.runtime` availability before IPC; unguarded access can blank SPA pages.
