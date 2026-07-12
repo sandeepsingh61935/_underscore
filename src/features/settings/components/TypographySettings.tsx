@@ -356,7 +356,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                 }}
               />
               {isCustom ? (
-                <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 8 }}>
+                <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 8 }}>
                   Custom — fonts or scale edited manually
                 </div>
               ) : null}
@@ -414,7 +414,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                           display: 'block',
                           marginTop: 3,
                           fontSize: 10,
-                          color: 'var(--ink-4)',
+                          color: active ? 'var(--ink-2)' : 'var(--ink-3)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -512,7 +512,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   padding: '10px 14px',
                   border: '1px solid var(--accent)',
                   background: 'var(--accent)',
-                  color: 'var(--paper)',
+                  color: 'var(--accent-ink)',
                   fontSize: 'var(--step--1)',
                   minHeight: 44,
                 }}

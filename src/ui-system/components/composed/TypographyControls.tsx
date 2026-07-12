@@ -70,7 +70,7 @@ export function EditableControlRow({
       </span>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         {hint ? (
-          <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-4)' }}>
+          <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
             {hint}
           </span>
         ) : null}
