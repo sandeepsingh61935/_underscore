@@ -5,3 +5,4 @@ export { useTheme } from './useTheme';
 export { usePersistedMode } from './usePersistedMode';
 export { useModeFeature } from './useModeFeature';
 export type { ModeFeatureResult } from './useModeFeature';
+export { useTypePreset, TypePresetBootstrap } from './useTypePreset';
