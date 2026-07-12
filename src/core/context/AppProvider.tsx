@@ -3,6 +3,7 @@ import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
 import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
@@ -104,7 +105,12 @@ function AppProviderInner({
         dataProvider,
     };
 
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    return (
+        <AppContext.Provider value={value}>
+            <TypePresetBootstrap />
+            {children}
+        </AppContext.Provider>
+    );
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode, dataProvider: IDataProvider }> = ({ children, dataProvider }) => {

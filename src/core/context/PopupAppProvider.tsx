@@ -7,6 +7,7 @@ import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 
@@ -116,7 +117,12 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         dataProvider,
     };
 
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    return (
+        <AppContext.Provider value={value}>
+            <TypePresetBootstrap />
+            {children}
+        </AppContext.Provider>
+    );
 };
 
 export const usePopupApp = () => {
