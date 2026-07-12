@@ -55,7 +55,7 @@ async function restoreHighlightOnPage(
 
   const response = await deps.messageBus.send<MessageResponse<HighlightDataV2>>('background', {
     type: IPC_HIGHLIGHT_GET,
-    payload: { id, includePlaintext: true },
+    payload: { id },
     timestamp: Date.now(),
   });
 

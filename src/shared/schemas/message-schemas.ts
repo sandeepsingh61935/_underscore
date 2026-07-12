@@ -62,22 +62,22 @@ export function validateMessage(message: unknown): Message {
 }
 
 /**
- * IPC channel identifiers for the highlight bridge (ADR-013).
+ * IPC channel identifiers for the highlight bridge.
  *
  * These are owned by the background-side `BackgroundHighlightOrchestrator`
  * and the content-side `IpcHighlightRepository`. Defining them in one
  * place prevents typo-driven channel mismatches.
  */
-export const IPC_HIGHLIGHT_DECRYPT_TEXT = 'IPC_HIGHLIGHT_DECRYPT_TEXT' as const;
 export const IPC_HIGHLIGHT_GET = 'IPC_HIGHLIGHT_GET' as const;
+
+/** One-shot wipe of all highlight data after export (crypto-removal migration). */
+export const CLEAR_HIGHLIGHT_DATA = 'CLEAR_HIGHLIGHT_DATA' as const;
 
 /** Scoped delete: highlight | section | domain | library */
 export const IPC_HIGHLIGHT_DELETE_SCOPE = 'IPC_HIGHLIGHT_DELETE_SCOPE' as const;
 /** Undo the most recent single-highlight delete (5s window). */
 export const IPC_HIGHLIGHT_UNDO_DELETE = 'IPC_HIGHLIGHT_UNDO_DELETE' as const;
 
-/** Whether the encryption vault blocks destructive operations for the signed-in user. */
-export const GET_VAULT_LOCK_STATUS = 'GET_VAULT_LOCK_STATUS' as const;
 
 /** Broadcast when cloud hydration backfills local highlight storage. */
 export const LIBRARY_DATA_CHANGED = 'LIBRARY_DATA_CHANGED' as const;
@@ -90,15 +90,6 @@ export const GET_EXPORTABLE_HIGHLIGHTS = 'GET_EXPORTABLE_HIGHLIGHTS' as const;
 
 /** Update user notes/tags on a highlight (popup and web app). */
 export const UPDATE_HIGHLIGHT_METADATA = 'UPDATE_HIGHLIGHT_METADATA' as const;
-
-/**
- * IPC channel for the user-facing vault unlock prompt (ADR-018).
- *
- * Payload: { passphrase: string }
- * Success: { success: true, data: { keyId: string } }
- * Failure: { success: false, error: string, code: 'VAULT_LOCKED' | 'INVALID_PASSPHRASE' | 'DEPRECATED_FORMAT' | 'NOT_AUTHENTICATED' }
- */
-export const IPC_VAULT_UNLOCK = 'IPC_VAULT_UNLOCK' as const;
 
 /** Auth IPC channels */
 export const AUTH_STATE_CHANGED = 'AUTH_STATE_CHANGED' as const;

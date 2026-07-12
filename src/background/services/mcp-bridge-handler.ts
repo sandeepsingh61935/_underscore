@@ -6,7 +6,6 @@
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
-import type { IKeyManager } from '@/background/auth/interfaces/i-key-manager';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
@@ -44,7 +43,6 @@ export interface McpBridgeHandlerDeps {
   repositoryFacade: RepositoryFacade;
   cloudHydrationService: ICloudHydrationService;
   librarySyncCursor: LibrarySyncCursor;
-  keyManager?: IKeyManager;
   llmChat?: (payload: { provider?: ProviderName; request: LLMRequest }) => Promise<{ text: string }>;
   getActiveMode?: () => Promise<ModeType>;
 }
@@ -107,13 +105,11 @@ export class McpBridgeHandler {
     mode: ModeType,
     signedIn: boolean,
     storageScope: 'basic' | 'pro',
-    vaultLocked: boolean,
   ): McpSessionSnapshot['capabilities'] {
     return buildMcpCapabilities({
       mode,
       capabilities: getCapabilitiesForMode(mode),
       isAuthenticated: signedIn,
-      vaultLocked,
       storageScope,
     });
   }
@@ -123,10 +119,6 @@ export class McpBridgeHandler {
     const branding = getModeBranding(mode);
     const authState = this.deps.authManager.getAuthState();
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    const vaultLocked =
-      authState.isAuthenticated && this.deps.keyManager
-        ? !this.deps.keyManager.isUnlocked
-        : false;
 
     const ttlStored = await browser.storage.local.get(BASIC_TTL_STORAGE_KEY);
     const basicTtl =
@@ -145,9 +137,8 @@ export class McpBridgeHandler {
         userId: authState.user?.id,
         email: authState.user?.email,
       },
-      capabilities: this.capabilitiesForMode(mode, authState.isAuthenticated, storageScope, vaultLocked),
+      capabilities: this.capabilitiesForMode(mode, authState.isAuthenticated, storageScope),
       basicTtl,
-      vault: { locked: vaultLocked },
       sync: cursor ? { lastHydratedAt: cursor.toISOString() } : undefined,
       dataCoverage: this.dataCoverage(),
       bridgeConnected: true,
@@ -244,12 +235,7 @@ export class McpBridgeHandler {
       const match = rows.find((hl) => hl.id === input.id);
       if (!match) continue;
 
-      const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext([match]);
-      const highlight = enriched[0];
-      if (!highlight) {
-        throw Object.assign(new Error(`Highlight not found: ${input.id}`), { code: 'NOT_FOUND' });
-      }
-      return highlight;
+      return match;
     }
 
     throw Object.assign(new Error(`Highlight not found: ${input.id}`), { code: 'NOT_FOUND' });
@@ -258,15 +244,8 @@ export class McpBridgeHandler {
   async exportHighlights(payload: unknown): Promise<unknown> {
     const scope = (payload as { scope?: ExportScope })?.scope ?? { kind: 'library' };
     const raw = await this.deps.highlightQueryService.findAllForExport(scope);
-    const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(
-      raw.map((hl) => ({ id: hl.id, text: hl.text })),
-    );
-    const byId = new Map(enriched.map((item) => [item.id, item]));
     const exportable = raw
-      .map((hl) => {
-        const summary = byId.get(hl.id);
-        return toExportableHighlight({ ...hl, text: summary?.text ?? hl.text }, summary?.decryptionStatus);
-      })
+      .map((hl) => toExportableHighlight(hl))
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     const result = buildMarkdownExport(exportable, scope);
@@ -385,12 +364,10 @@ export class McpBridgeHandler {
     const mode = await this.readMode();
     const signedIn = this.deps.authManager.isAuthenticated;
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    const vaultLocked = this.deps.keyManager ? !this.deps.keyManager.isUnlocked : false;
     const gate = canUseFeature('ai', {
       mode,
       capabilities: getCapabilitiesForMode(mode),
       isAuthenticated: signedIn,
-      vaultLocked,
       storageScope,
     });
     if (!gate.allowed) {

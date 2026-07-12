@@ -5,19 +5,9 @@ export {
   REQUIRED_HIGHLIGHTS_MIGRATION_COLUMNS,
 } from './highlights-schema-contract.js';
 
-/** Parse highlight `text` column from Supabase (plaintext or ADR013 envelope). */
+/** Parse highlight `text` column from Supabase (plaintext). */
 export function displayTextFromCloudRow(raw: unknown): string {
-  const value = String(raw ?? '');
-
-  if (value.startsWith('[ADR013:') && value.endsWith(']')) {
-    return '[encrypted highlight — view in _underscore extension]';
-  }
-
-  if (value.startsWith('[ENCRYPTED:')) {
-    return '[encrypted highlight — view in _underscore extension]';
-  }
-
-  return value;
+  return String(raw ?? '');
 }
 
 /** Columns aligned with docs/06-security/highlights-schema.md */

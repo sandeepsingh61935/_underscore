@@ -25,12 +25,11 @@ describe('buildMcpCapabilities', () => {
     });
   });
 
-  it('allows sync and export for signed-in Pro with vault unlocked', () => {
+  it('allows sync and export for signed-in Pro', () => {
     const caps = buildMcpCapabilities({
       mode: 'pro',
       capabilities: getCapabilitiesForMode('pro'),
       isAuthenticated: true,
-      vaultLocked: false,
       storageScope: 'pro',
     });
 

@@ -98,7 +98,6 @@ describe('McpBridgeHandler', () => {
         getActiveScope: () => 'pro',
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro'),
-      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
     });
     const session = (await handler.getSession()) as {
       capabilities: { export: boolean; sync: boolean; ai: boolean };
@@ -108,7 +107,7 @@ describe('McpBridgeHandler', () => {
     expect(session.capabilities.ai).toBe(false);
   });
 
-  it('get_session enables ai for signed-in 10x-Pro with vault unlocked', async () => {
+  it('get_session enables ai for signed-in 10x-Pro', async () => {
     const handler = createHandler({
       authManager: {
         isAuthenticated: true,
@@ -121,7 +120,6 @@ describe('McpBridgeHandler', () => {
         getActiveScope: () => 'pro',
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
-      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
     });
     const session = (await handler.getSession()) as {
       capabilities: { ai: boolean };
@@ -142,7 +140,6 @@ describe('McpBridgeHandler', () => {
         getActiveScope: () => 'pro',
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
-      keyManager: { isUnlocked: true } as unknown as McpBridgeHandlerDeps['keyManager'],
       highlightQueryService: {
         getCollections: vi.fn(),
         getHighlightsByDomain: vi.fn().mockResolvedValue([

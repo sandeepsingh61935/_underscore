@@ -24,7 +24,6 @@ export interface McpSessionSnapshot {
   };
   capabilities: McpSessionCapabilities;
   basicTtl?: BasicTtlConfig;
-  vault: { locked: boolean };
   sync?: {
     lastHydratedAt?: string;
     error?: string;

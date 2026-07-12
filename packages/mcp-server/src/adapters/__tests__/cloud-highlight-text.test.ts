@@ -26,11 +26,6 @@ describe('cloud-highlight-text', () => {
 
   it('returns plaintext as-is', () => {
     expect(displayTextFromCloudRow('Hello world')).toBe('Hello world');
-  });
-
-  it('labels ADR013 encrypted envelopes', () => {
-    expect(
-      displayTextFromCloudRow('[ADR013:{"ciphertext":"abc","iv":"def","keyId":"k1"}]'),
-    ).toContain('encrypted highlight');
+    expect(displayTextFromCloudRow('')).toBe('');
   });
 });
