@@ -6,7 +6,7 @@
 import { browser } from 'wxt/browser';
 
 import { ValidationError } from '@/background/errors/app-error';
-import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
+import { hashDomain } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import type { IStorage } from '@/shared/interfaces/i-storage';
@@ -180,8 +180,7 @@ export class StorageService implements IStorage {
       }
 
       // Decrypt
-      const decrypted = await decryptData(domainStorage.data, this.currentDomain);
-      const eventLog: EventLog = JSON.parse(decrypted);
+      const eventLog: EventLog = JSON.parse(domainStorage.data);
 
       // Validate events
       const validEvents = eventLog.events.filter(isValidHighlightEvent);
@@ -258,7 +257,7 @@ export class StorageService implements IStorage {
     const eventLog: EventLog = { events };
 
     // Encrypt
-    const encrypted = await encryptData(JSON.stringify(eventLog), this.currentDomain);
+    const serialized = JSON.stringify(eventLog);
 
     // Calculate TTL — null means permanent
     const now = Date.now();
@@ -273,7 +272,7 @@ export class StorageService implements IStorage {
 
     // Create storage object
     const domainStorage: DomainStorage = {
-      data: encrypted,
+      data: serialized,
       ttl,
       lastAccessed: now,
       version: 1,

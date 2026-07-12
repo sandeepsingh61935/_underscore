@@ -20,7 +20,7 @@ import type {
   EventLog,
   StorageConfig,
 } from '@/shared/types/storage';
-import { hashDomain, encryptData, decryptData } from '@/shared/utils/crypto-utils';
+import { hashDomain } from '@/shared/utils/crypto-utils';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -181,9 +181,8 @@ export class StorageService implements IStorage {
         this.logger.info('[LOAD] TTL check skipped (permanent storage)');
       }
 
-      // Decrypt
-      const decrypted = await decryptData(domainStorage.data, this.currentDomain);
-      const eventLog: EventLog = JSON.parse(decrypted);
+      // Parse stored event log
+      const eventLog: EventLog = JSON.parse(domainStorage.data);
 
       // Validate events
       const validEvents = eventLog.events.filter(isValidHighlightEvent);
@@ -268,8 +267,8 @@ export class StorageService implements IStorage {
     // Create event log
     const eventLog: EventLog = { events };
 
-    // Encrypt
-    const encrypted = await encryptData(JSON.stringify(eventLog), this.currentDomain);
+    // Serialize event log
+    const serialized = JSON.stringify(eventLog);
 
     // Calculate TTL — null means permanent
     const now = Date.now();
@@ -284,7 +283,7 @@ export class StorageService implements IStorage {
 
     // Create storage object
     const domainStorage: DomainStorage = {
-      data: encrypted,
+      data: serialized,
       ttl,
       lastAccessed: now,
       version: 1,

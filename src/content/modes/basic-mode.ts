@@ -7,7 +7,7 @@
  * setting, not a separate mode.
  *
  * Features:
- * - Local storage with per-domain encryption
+ * - Local storage with per-domain namespacing
  * - TTL is configurable (24h / 2d / 7d / 30d / forever); default 24h
  * - Restores highlights on page reload within the TTL window
  * - Collections view enabled
