@@ -16,6 +16,7 @@ export interface DashboardData {
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 
 export function useDashboardData(mode: ModeType) {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -28,6 +29,7 @@ export function useDashboardData(mode: ModeType) {
     let cancelled = false;
 
     const fetchDashboardData = async () => {
+      setIsLoading(true);
       const result = await fetchAction({ mode });
       if (cancelled) return;
 
@@ -45,6 +47,18 @@ export function useDashboardData(mode: ModeType) {
       cancelled = true;
     };
   }, [mode, fetchAction]);
+
+  useLibraryDataChanged(() => {
+    void (async () => {
+      const result = await fetchAction({ mode });
+      if (!result.success) {
+        setError(new Error(result.error));
+        return;
+      }
+      setData(result.data);
+      setIsLoading(false);
+    })();
+  });
 
   return { data, isLoading, error };
 }

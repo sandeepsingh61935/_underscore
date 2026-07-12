@@ -10,7 +10,7 @@ interface CollectionsResult {
   error: Error | null;
 }
 
-export function useCollections(currentMode: ModeType): CollectionsResult {
+export function useCollections(currentMode: ModeType, isAuthenticated: boolean): CollectionsResult {
   const { dataProvider } = useApp();
   const [result, setResult] = useState<CollectionsResult>({
     collections: [],
@@ -19,6 +19,11 @@ export function useCollections(currentMode: ModeType): CollectionsResult {
   });
 
   const fetchCollections = useCallback(async () => {
+    if (!isAuthenticated) {
+      setResult({ collections: [], isLoading: false, error: null });
+      return;
+    }
+
     setResult(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -35,7 +40,7 @@ export function useCollections(currentMode: ModeType): CollectionsResult {
         error: err instanceof Error ? err : new Error('Failed to fetch collections'),
       });
     }
-  }, [currentMode, dataProvider]);
+  }, [currentMode, dataProvider, isAuthenticated]);
 
   useEffect(() => {
     void fetchCollections();
