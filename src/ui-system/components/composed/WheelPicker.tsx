@@ -14,6 +14,45 @@ export interface WheelPickerProps {
   'aria-label'?: string;
 }
 
+function opacityForDistance(distance: number): number {
+  if (distance === 0) return 1;
+  return Math.max(0.2, 0.55 - distance * 0.12);
+}
+
+interface LoopedWheelRow {
+  key: string;
+  label: string;
+  sourceIndex: number;
+}
+
+function buildLoopedRows(items: WheelPickerItem[]): LoopedWheelRow[] {
+  if (items.length <= 1) {
+    return items.map((item, index) => ({
+      key: item.id,
+      label: item.label,
+      sourceIndex: index,
+    }));
+  }
+
+  const last = items[items.length - 1]!;
+  const first = items[0]!;
+
+  return [
+    { key: `${last.id}__wrap-before`, label: last.label, sourceIndex: items.length - 1 },
+    ...items.map((item, index) => ({
+      key: item.id,
+      label: item.label,
+      sourceIndex: index,
+    })),
+    { key: `${first.id}__wrap-after`, label: first.label, sourceIndex: 0 },
+  ];
+}
+
+function isCircularWrap(prevIndex: number, nextIndex: number, len: number): boolean {
+  if (len <= 1) return false;
+  return (prevIndex === 0 && nextIndex === len - 1) || (prevIndex === len - 1 && nextIndex === 0);
+}
+
 export function WheelPicker({
   items,
   selectedIndex,
@@ -31,6 +70,7 @@ export function WheelPicker({
   const wheelLock = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedIndexRef = useRef(selectedIndex);
+  const prevSelectedIndexRef = useRef(selectedIndex);
   const onSelectIndexRef = useRef(onSelectIndex);
   const reduceMotionRef = useRef(false);
 
@@ -81,7 +121,12 @@ export function WheelPicker({
     return () => el.removeEventListener('wheel', handleWheel, { capture: true });
   }, [wheelArmed, len]);
 
-  const translateY = useMemo(() => rowHeight - selectedIndex * rowHeight, [rowHeight, selectedIndex]);
+  const loopedRows = useMemo(() => buildLoopedRows(items), [items]);
+  const listIndex = len <= 1 ? selectedIndex : selectedIndex + 1;
+  const translateY = useMemo(() => rowHeight - listIndex * rowHeight, [listIndex, rowHeight]);
+  const skipTransition =
+    reduceMotion || isCircularWrap(prevSelectedIndexRef.current, selectedIndex, len);
+  prevSelectedIndexRef.current = selectedIndex;
 
   const armWheel = (): void => {
     setWheelArmed(true);
@@ -90,18 +135,13 @@ export function WheelPicker({
   const defaultRender = (label: string, slot: 'prev' | 'current' | 'next'): ReactNode => (
     <span
       style={{
-        display: 'block',
-        height: rowHeight,
-        lineHeight: `${rowHeight}px`,
-        textAlign: 'center',
-        fontSize: slot === 'current' ? 'var(--step-0)' : 'var(--step--1)',
-        color: slot === 'current' ? 'var(--ink)' : 'var(--ink-3)',
-        fontWeight: slot === 'current' ? 500 : 400,
-        opacity: slot === 'current' ? 1 : 0.45,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
-        padding: '0 8px',
+        width: '100%',
+        fontSize: slot === 'current' ? 'var(--step-0)' : 'var(--step--1)',
+        color: slot === 'current' ? 'var(--ink)' : 'var(--ink-3)',
+        fontWeight: slot === 'current' ? 500 : 400,
       }}
     >
       {label}
@@ -125,9 +165,6 @@ export function WheelPicker({
       </div>
     );
   }
-
-  const prevIndex = (selectedIndex - 1 + len) % len;
-  const nextIndex = (selectedIndex + 1) % len;
 
   return (
     <div
@@ -155,26 +192,60 @@ export function WheelPicker({
       aria-label={ariaLabel}
     >
       <div
-        style={{
-          transform: reduceMotion ? undefined : `translateY(${translateY}px)`,
-          transition: reduceMotion ? undefined : 'transform 180ms ease',
-        }}
-      >
-        {render(items[prevIndex]?.label ?? '', 'prev')}
-        {render(items[selectedIndex]?.label ?? '', 'current')}
-        {render(items[nextIndex]?.label ?? '', 'next')}
-      </div>
-      <div
         aria-hidden
         style={{
           position: 'absolute',
-          inset: rowHeight,
+          top: rowHeight,
+          left: 0,
+          right: 0,
           height: rowHeight,
-          borderTop: '1px solid var(--rule-soft)',
-          borderBottom: '1px solid var(--rule-soft)',
+          border: '1px solid var(--accent)',
+          background: 'var(--paper-2)',
+          opacity: 0.55,
           pointerEvents: 'none',
+          zIndex: 1,
         }}
       />
+      <div
+        style={{
+          transform: reduceMotion ? undefined : `translateY(${translateY}px)`,
+          transition: skipTransition ? undefined : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: reduceMotion ? undefined : 'transform',
+        }}
+      >
+        {loopedRows.map((row, index) => {
+          const isSelected = row.sourceIndex === selectedIndex;
+          const distance = Math.abs(index - listIndex);
+          const slot: 'prev' | 'current' | 'next' = isSelected ? 'current' : 'prev';
+          return (
+            <button
+              key={row.key}
+              type="button"
+              onClick={() => {
+                armWheel();
+                onSelectIndex(row.sourceIndex);
+              }}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: rowHeight,
+                boxSizing: 'border-box',
+                padding: '0 10px',
+                opacity: opacityForDistance(distance),
+                textAlign: 'center',
+                minWidth: 0,
+                transition: reduceMotion ? undefined : 'opacity 180ms ease',
+              }}
+            >
+              {render(row.label, slot)}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

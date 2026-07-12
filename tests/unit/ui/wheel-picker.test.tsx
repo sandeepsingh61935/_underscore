@@ -45,4 +45,31 @@ describe('WheelPicker', () => {
     expect(prevented).toBe(true);
     expect(onSelect).toHaveBeenCalledWith(1);
   });
+
+  it('renders looped rows for circular wheel continuity', () => {
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      id: `preset-${i}`,
+      label: `Preset ${i + 1}`,
+    }));
+    const { getAllByRole } = render(
+      <WheelPicker items={items} selectedIndex={0} onSelectIndex={vi.fn()} />
+    );
+    // 20 items + 1 wrap-before + 1 wrap-after
+    expect(getAllByRole('button')).toHaveLength(22);
+  });
+
+  it('shows wrap neighbor at top when first item is selected', () => {
+    const items = [
+      { id: 'a', label: 'Alpha' },
+      { id: 'b', label: 'Beta' },
+      { id: 'c', label: 'Gamma' },
+    ];
+    const { getAllByRole } = render(
+      <WheelPicker items={items} selectedIndex={0} onSelectIndex={vi.fn()} />
+    );
+    const buttons = getAllByRole('button');
+    expect(buttons[0]?.textContent).toBe('Gamma');
+    expect(buttons[1]?.textContent).toBe('Alpha');
+    expect(buttons[2]?.textContent).toBe('Beta');
+  });
 });
