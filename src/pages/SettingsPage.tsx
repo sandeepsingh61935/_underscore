@@ -9,6 +9,7 @@ import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks
 import { BasicTtlPicker } from '@/features/settings/components/BasicTtlPicker';
 import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSettings';
 import { ConnectedAppsSettings } from '@/features/settings/components/ConnectedAppsSettings';
+import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { formatBasicTtlConfig } from '@/shared/constants/basic-ttl';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
@@ -16,29 +17,6 @@ import { useBasicTtlOption } from '@/ui-system/hooks/useBasicTtlOption';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
-
-const TYPE_PRESETS = {
-  editorial: {
-    name: 'Editorial',
-    note: 'Default · Serif display, serif body',
-    serif: 'var(--serif)',
-    sans: 'var(--sans)',
-  },
-  classic: {
-    name: 'Classic',
-    note: 'System fonts · No custom presets',
-    serif: 'serif',
-    sans: 'sans-serif',
-  },
-  modern: {
-    name: 'Modern',
-    note: 'Sans-only · Clean, utilitarian',
-    serif: 'var(--sans)',
-    sans: 'var(--sans)',
-  },
-} as const;
-
-type TypePresetId = keyof typeof TYPE_PRESETS;
 
 export interface SettingsPageProps {
   onBack?: () => void;
@@ -63,9 +41,9 @@ export function SettingsPage({
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const { ttlConfig: basicTtlConfig } = useBasicTtlOption();
-  const [typeId, setTypeId] = useState<TypePresetId>('editorial');
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [ttlExpanded, setTtlExpanded] = useState(false);
+  const [typographyExpanded, setTypographyExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const vaultLocked = useVaultLocked(Boolean(user));
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
@@ -138,41 +116,10 @@ export function SettingsPage({
       </div>
 
       <div className="list-scroll" style={{ flex: 1 }}>
-        <div className="u-caps" style={{ padding: '12px 16px 4px', color: 'var(--ink-3)' }}>Typography</div>
-        {(Object.keys(TYPE_PRESETS) as TypePresetId[]).map((id) => {
-          const p = TYPE_PRESETS[id];
-          const active = id === typeId;
-          return (
-            <button
-              key={id}
-              onClick={() => setTypeId(id)}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                display: 'block',
-                width: '100%',
-                padding: '12px 16px',
-                borderBottom: '1px solid var(--rule-soft)',
-                background: active ? 'var(--paper-2)' : 'transparent',
-                boxSizing: 'border-box'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <div>
-                  <div style={{ fontFamily: p.serif, fontSize: 'var(--step-1)', letterSpacing: '-0.01em' }}>{p.name}</div>
-                  <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 3, letterSpacing: '0.04em' }}>{p.note}</div>
-                </div>
-                {/* eslint-disable-next-line no-restricted-syntax */}
-                <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: active ? 'var(--accent)' : 'var(--ink-3)' }}>
-                  {active ? '● selected' : '○'}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-        <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-4)', padding: '6px 16px 10px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-          Applied uniformly across the app
-        </div>
+        <TypographySettings
+          expanded={typographyExpanded}
+          onToggle={() => setTypographyExpanded((v) => !v)}
+        />
 
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
         <Row
