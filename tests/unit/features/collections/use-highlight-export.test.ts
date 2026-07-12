@@ -75,7 +75,7 @@ describe('executeHighlightExport', () => {
 
   it('shows an error when no exportable highlights exist', async () => {
     const fetchHighlights: FetchExportableHighlights = vi.fn(async () => [
-      { ...sampleHighlight, text: '', decryptionStatus: 'vault_locked' as const },
+      { ...sampleHighlight, text: '' },
     ]);
 
     const ok = await executeHighlightExport({ kind: 'domain', domain: 'example.com' }, fetchHighlights);

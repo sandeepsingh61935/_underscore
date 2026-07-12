@@ -23,7 +23,6 @@ export interface ExportableHighlight {
   createdAt: Date;
   tags?: string[];
   note?: string;
-  decryptionStatus?: 'vault_locked' | 'failed';
 }
 
 export interface ExportStats {

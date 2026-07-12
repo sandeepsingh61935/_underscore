@@ -74,10 +74,10 @@ describe('highlight-export', () => {
   });
 
   describe('partitionExportable', () => {
-    it('omits vault-locked highlights', () => {
+    it('omits highlights with empty text', () => {
       const exportable = toExportableHighlight(hl())!;
-      const locked = { ...exportable, id: 'h-locked', decryptionStatus: 'vault_locked' as const, text: '' };
-      const { included, omitted } = partitionExportable([exportable, locked]);
+      const empty = { ...exportable, id: 'h-empty', text: '' };
+      const { included, omitted } = partitionExportable([exportable, empty]);
       expect(included).toHaveLength(1);
       expect(omitted).toBe(1);
     });

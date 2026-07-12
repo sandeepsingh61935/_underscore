@@ -16,14 +16,12 @@ export interface Highlight {
     createdAt: Date;
     notes?: string;
     tags?: string[];
-    decryptionStatus?: 'vault_locked' | 'failed';
 }
 
 interface HighlightsResult {
     highlights: Highlight[];
     isLoading: boolean;
     error: Error | null;
-    vaultLocked: boolean;
 }
 
 /** Check if running in Chrome extension context */
@@ -35,12 +33,11 @@ function isExtensionContext(): boolean {
  * Unified hook for highlights by domain that works in both extension and web contexts.
  * Uses chrome.runtime for extension, Supabase directly for web.
  */
-export function useHighlightsByDomain(domain: string | undefined): HighlightsResult {
+export function useHighlightsByDomain(domain: string | undefined, isAuthenticated = true): HighlightsResult {
     const [result, setResult] = useState<HighlightsResult>({
         highlights: [],
         isLoading: true,
         error: null,
-        vaultLocked: false,
     });
 
     const context = isExtensionContext() ? 'extension' : 'web';
@@ -56,15 +53,13 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
           createdAt: string;
           notes?: string;
           tags?: string[];
-          decryptionStatus?: 'vault_locked' | 'failed';
         }>;
-        vaultLocked?: boolean;
       }
     >('GET_HIGHLIGHTS_BY_DOMAIN');
 
   const fetchHighlights = useCallback(async () => {
-    if (!domain) {
-      setResult({ highlights: [], isLoading: false, error: null, vaultLocked: false });
+    if (!domain || !isAuthenticated) {
+      setResult({ highlights: [], isLoading: false, error: null });
       return;
     }
 
@@ -86,14 +81,12 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
           createdAt: new Date(hl.createdAt),
           notes: hl.notes,
           tags: hl.tags,
-          decryptionStatus: hl.decryptionStatus,
         }));
 
         setResult({
           highlights,
           isLoading: false,
           error: null,
-          vaultLocked: ipcResult.data.vaultLocked ?? false,
         });
       } else {
         const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
@@ -101,7 +94,7 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session?.user) {
-          setResult({ highlights: [], isLoading: false, error: null, vaultLocked: false });
+          setResult({ highlights: [], isLoading: false, error: null });
           return;
         }
 
@@ -128,17 +121,16 @@ export function useHighlightsByDomain(domain: string | undefined): HighlightsRes
           };
         }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-        setResult({ highlights, isLoading: false, error: null, vaultLocked: false });
+        setResult({ highlights, isLoading: false, error: null });
       }
     } catch (err) {
       setResult({
         highlights: [],
         isLoading: false,
         error: err instanceof Error ? err : new Error('Failed to fetch highlights'),
-        vaultLocked: false,
       });
     }
-  }, [domain, context, getHighlightsAction]);
+  }, [domain, context, getHighlightsAction, isAuthenticated]);
 
   useEffect(() => {
     let cancelled = false;

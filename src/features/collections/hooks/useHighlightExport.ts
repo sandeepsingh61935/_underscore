@@ -56,7 +56,6 @@ interface ExportableHighlightPayload {
   createdAt: string;
   tags?: string[];
   note?: string;
-  decryptionStatus?: 'vault_locked' | 'failed';
 }
 
 export type FetchExportableHighlights = (
@@ -74,7 +73,6 @@ function mapPayload(items: ExportableHighlightPayload[]): ExportableHighlight[] 
     createdAt: new Date(item.createdAt),
     tags: item.tags,
     note: item.note,
-    decryptionStatus: item.decryptionStatus,
   }));
 }
 

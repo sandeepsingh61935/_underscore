@@ -11,7 +11,6 @@ import type { ExportableHighlight, ExportScope } from './types';
 
 export function toExportableHighlight(
   hl: HighlightDataV2,
-  decryptionStatus?: ExportableHighlight['decryptionStatus'],
 ): ExportableHighlight | null {
   if (!hl.url) return null;
 
@@ -37,7 +36,6 @@ export function toExportableHighlight(
     createdAt: hl.createdAt,
     tags: hl.metadata?.tags,
     note: hl.metadata?.notes,
-    decryptionStatus,
   };
 }
 
@@ -88,11 +86,6 @@ export function partitionExportable(highlights: ExportableHighlight[]): {
   included: ExportableHighlight[];
   omitted: number;
 } {
-  const included = highlights.filter(
-    (h) =>
-      h.text.trim().length > 0
-      && h.decryptionStatus !== 'vault_locked'
-      && h.decryptionStatus !== 'failed',
-  );
+  const included = highlights.filter((h) => h.text.trim().length > 0);
   return { included, omitted: highlights.length - included.length };
 }
