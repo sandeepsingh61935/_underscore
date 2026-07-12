@@ -3,7 +3,7 @@
  * V2 contract:
  *   - Container: inline-flex, items center, gap 8.
  *   - Lock SVG: 12x12, viewBox 0 0 24 24, stroke var( --ink-3 ), strokeWidth 1.6.
- *   - Text: "Your data stays yours — encrypted and private", .u-sans, 11px, var( --ink-3 ), 0.02em tracking.
+ *   - Text: "Your highlights stay on your device", .u-sans, 11px, var( --ink-3 ), 0.02em tracking.
  */
 import React from 'react';
 import { render } from '@testing-library/react';
@@ -14,7 +14,7 @@ import { TrustSignal } from './TrustSignal';
 describe('TrustSignal (V2 wireframe contract)', () => {
     it('renders the trust copy', () => {
         const { container } = render(<TrustSignal />);
-        expect(container.textContent).toMatch(/Your data stays yours — encrypted and private/);
+        expect(container.textContent).toMatch(/Your highlights stay on your device/);
     });
 
     it('renders the lock icon SVG', () => {

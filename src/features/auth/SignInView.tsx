@@ -155,7 +155,7 @@ export function SignInView(): React.ReactElement {
                 <p className="u-sans" style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center' }}>
                     {isSignIn
                         ? 'Sign in to access your collections'
-                        : 'Unlock your full knowledge workspace'}
+                        : 'Sign in to sync your library'}
                 </p>
 
                 {authError ? (

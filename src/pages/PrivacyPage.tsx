@@ -117,8 +117,8 @@ export function PrivacyPage(): React.ReactElement {
         <PolicySection title="Data storage">
           <p>
             All data is stored locally in your browser using IndexedDB. When you enable
-            cloud sync, your data is encrypted end-to-end before leaving your device. We
-            use AES-256 encryption — even we can&apos;t read your highlights.
+            cloud sync, highlights are stored in your account and protected by login —
+            we do not encrypt highlight text before upload.
           </p>
         </PolicySection>
 

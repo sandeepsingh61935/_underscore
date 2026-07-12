@@ -3,7 +3,7 @@
  * V2 contract:
  *   - Container: inline-flex, items center, gap 8.
  *   - Lock SVG: 12x12, viewBox 0 0 24 24, stroke var( --ink-3 ), strokeWidth 1.6.
- *   - Text: "Your data stays yours — encrypted and private", .u-sans, 11px, var( --ink-3 ), 0.02em tracking.
+ *   - Text: "Your highlights stay on your device", .u-sans, 11px, var( --ink-3 ), 0.02em tracking.
  */
 import React from 'react';
 
@@ -35,7 +35,7 @@ export function TrustSignal({ className }: TrustSignalProps): React.ReactElement
                 className="u-sans"
                 style={{ fontSize: 11, color: 'var( --ink-3 )', letterSpacing: '0.02em' }}
             >
-                Your data stays yours — encrypted and private
+                Your highlights stay on your device
             </span>
         </div>
     );
