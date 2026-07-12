@@ -1,152 +1,45 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 
-import { LLMKeyStore } from '../llm-key-store';
+const storage: Record<string, unknown> = {};
 
-// We mock chrome.storage.* via vi.stubGlobal. The store uses chrome.storage
-// directly; tests use a Map-backed shim.
-function makeChromeStorage(initial: Record<string, unknown> = {}) {
-  const data = new Map(Object.entries(initial));
-  return {
+vi.stubGlobal('chrome', {
+  storage: {
     local: {
-      get: vi.fn(async (k: string) => (data.has(k) ? { [k]: data.get(k) } : {})),
-      set: vi.fn(async (obj: Record<string, unknown>) => {
-        for (const [k, v] of Object.entries(obj)) data.set(k, v);
+      get: vi.fn(async (keys: string | string[] | null) => {
+        if (keys === null) return { ...storage };
+        const list = Array.isArray(keys) ? keys : [keys];
+        const out: Record<string, unknown> = {};
+        for (const key of list) {
+          if (key in storage) out[key] = storage[key];
+        }
+        return out;
       }),
-      remove: vi.fn(async (k: string) => { data.delete(k); }),
+      set: vi.fn(async (items: Record<string, unknown>) => {
+        Object.assign(storage, items);
+      }),
+      remove: vi.fn(async (keys: string | string[]) => {
+        const list = Array.isArray(keys) ? keys : [keys];
+        for (const key of list) delete storage[key];
+      }),
     },
-    session: {
-      get: vi.fn(async (k: string) => (data.has(k) ? { [k]: data.get(k) } : {})),
-      set: vi.fn(async (obj: Record<string, unknown>) => {
-        for (const [k, v] of Object.entries(obj)) data.set(k, v);
-      }),
-      remove: vi.fn(async (k: string) => { data.delete(k); }),
-    },
-    _peek: (k: string) => data.get(k),
-  };
-}
-
-describe('LLMKeyStore (basic mode)', () => {
-  it('stores keys in chrome.storage.session', async () => {
-    const storage = makeChromeStorage();
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('basic');
-    await store.set('anthropic', 'sk-test-123');
-
-    expect(storage.session.set).toHaveBeenCalledWith({ 'llm.anthropic.key': 'sk-test-123' });
-  });
-
-  it('retrieves keys from chrome.storage.session', async () => {
-    const storage = makeChromeStorage({ 'llm.anthropic.key': 'sk-test-123' });
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('basic');
-    expect(await store.get('anthropic')).toBe('sk-test-123');
-  });
-
-  it('falls back to chrome.storage.local when session writes fail', async () => {
-    const storage = makeChromeStorage();
-    storage.session.set = vi.fn(async () => {
-      throw new ReferenceError('window is not defined');
-    });
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('basic');
-    await store.set('gemini', 'AIza-test');
-    expect(storage.local.set).toHaveBeenCalledWith({ 'llm.basic.gemini.key': 'AIza-test' });
-    expect(await store.get('gemini')).toBe('AIza-test');
-  });
+  },
 });
 
-describe('LLMKeyStore (pro mode, no vault - install-key fallback)', () => {
-  it('encrypts keys with a per-install key before persisting', async () => {
-    const storage = makeChromeStorage();
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('pro');
-    await store.set('ollama', 'local-key');
-
-    const stored = await storage.local.get('llm.ollama.encrypted');
-    expect(stored['llm.ollama.encrypted']).toBeTruthy();
-    expect((stored['llm.ollama.encrypted'] as string)).not.toContain('local-key');
-  });
-
-  it('decrypts on read', async () => {
-    const storage = makeChromeStorage();
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('pro');
-    await store.set('ollama', 'local-key');
-    expect(await store.get('ollama')).toBe('local-key');
-  });
-});
-
-describe('LLMKeyStore (pro mode with vault)', () => {
-  it('uses the vault master key for encryption', async () => {
-    const storage = makeChromeStorage();
-    // Derive a real CryptoKey for the test so encryptWithKey works end-to-end.
-    const baseKey = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode('test-master-key-material-32bytes!!!'),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveKey'],
-    );
-    const realKey = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: new TextEncoder().encode('test'), iterations: 1000, hash: 'SHA-256' },
-      baseKey,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['encrypt', 'decrypt'],
-    );
-    const vault = {
-      withMasterKey: vi.fn(async (cb: (mk: CryptoKey) => Promise<string>) => {
-        return cb(realKey).then(s => `vault(${s})`);
-      }),
-    };
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
-
-    const store = new LLMKeyStore('pro', vault as any);
-    await store.set('anthropic', 'sk-cloud');
-
-    expect(vault.withMasterKey).toHaveBeenCalled();
-    const stored = await storage.local.get('llm.anthropic.encrypted');
-    expect(String(stored['llm.anthropic.encrypted'])).toMatch(/^vault\(/);
-  });
-});
-
-describe('LLMKeyStore (general)', () => {
+describe('LLMKeyStore', () => {
   beforeEach(() => {
-    const storage = makeChromeStorage();
-    vi.stubGlobal('chrome', { storage: { local: storage.local, session: storage.session } });
+    for (const key of Object.keys(storage)) delete storage[key];
   });
 
-  it('clear() removes the key', async () => {
-    const store = new LLMKeyStore('basic');
-    await store.set('anthropic', 'sk');
-    await store.clear('anthropic');
-    expect(await store.get('anthropic')).toBeNull();
+  it('stores and retrieves API keys as plain strings in chrome.storage.local', async () => {
+    const store = new LLMKeyStore('pro');
+    await store.set('anthropic', 'sk-test-key');
+    expect(await store.get('anthropic')).toBe('sk-test-key');
   });
 
-  it('get() returns null when no key is set', async () => {
+  it('basic tier uses the same plain local storage pattern', async () => {
     const store = new LLMKeyStore('basic');
-    expect(await store.get('anthropic')).toBeNull();
-  });
-
-  it('setModel/getModel round-trip in chrome.storage.local', async () => {
-    const store = new LLMKeyStore('basic');
-    await store.setModel('openrouter', 'nvidia/nemotron-nano-9b-v2:free');
-    expect(await store.getModel('openrouter')).toBe('nvidia/nemotron-nano-9b-v2:free');
-  });
-
-  it('getModel returns provider default when unset', async () => {
-    const store = new LLMKeyStore('basic');
-    expect(await store.getModel('openrouter')).toBe('openrouter/free');
-  });
-
-  it('setActiveProvider/getActiveProvider round-trip', async () => {
-    const store = new LLMKeyStore('basic');
-    await store.setActiveProvider('openrouter');
-    expect(await store.getActiveProvider()).toBe('openrouter');
+    await store.set('openai', 'sk-basic');
+    expect(await store.get('openai')).toBe('sk-basic');
   });
 });

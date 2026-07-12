@@ -1,5 +1,5 @@
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { LLMKeyStore, type IVaultKeyManager } from '@/background/services/llm/llm-key-store';
+import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 
 type KeyStoreTier = 'basic' | 'pro';
 
@@ -22,14 +22,14 @@ export class LlmKeyStoreHolder {
     return this.tier;
   }
 
-  configureForAuth(isAuthenticated: boolean, vault?: IVaultKeyManager): void {
+  configureForAuth(isAuthenticated: boolean): void {
     const tier: KeyStoreTier = isAuthenticated ? 'pro' : 'basic';
     this.tier = tier;
-    this.store = new LLMKeyStore(tier, vault);
+    this.store = new LLMKeyStore(tier);
   }
 
-  configureForMode(mode: ModeType, vault?: IVaultKeyManager): void {
+  configureForMode(mode: ModeType): void {
     const isProFamily = mode === 'pro' || mode === 'pro_xai';
-    this.configureForAuth(isProFamily, vault);
+    this.configureForAuth(isProFamily);
   }
 }
