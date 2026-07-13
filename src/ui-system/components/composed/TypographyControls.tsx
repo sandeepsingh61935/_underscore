@@ -1,4 +1,12 @@
-import React, { useId, useState, type ReactNode } from 'react';
+import React, { useId, useMemo, useState, type ReactNode } from 'react';
+
+import {
+  buildTypographyWheelItems,
+  indexToTypographyValue,
+  typographyValueToIndex,
+  type TypographyValueKind,
+} from '@/shared/utils/typography-value-step';
+import { WheelPicker } from '@/ui-system/components/composed/WheelPicker';
 
 export interface SectionValueColumnsProps {
   values: string[];
@@ -45,6 +53,26 @@ export interface EditableControlRowProps {
   onChange: (value: string) => void;
   hint?: string;
   inputWidth?: number;
+  valueKind?: TypographyValueKind;
+}
+
+function monoWheelLabel(label: string, slot: 'prev' | 'current' | 'next'): ReactNode {
+  return (
+    <span
+      className="u-mono"
+      style={{
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        width: '100%',
+        fontSize: slot === 'current' ? 11 : 10,
+        color: slot === 'current' ? 'var(--ink)' : 'var(--ink-3)',
+        fontWeight: slot === 'current' ? 500 : 400,
+      }}
+    >
+      {label}
+    </span>
+  );
 }
 
 export function EditableControlRow({
@@ -53,42 +81,79 @@ export function EditableControlRow({
   onChange,
   hint,
   inputWidth = 72,
+  valueKind,
 }: EditableControlRowProps): React.ReactElement {
+  const wheelItems = useMemo(
+    () => (valueKind ? buildTypographyWheelItems(valueKind) : []),
+    [valueKind]
+  );
+  const selectedIndex = valueKind ? typographyValueToIndex(value, valueKind) : 0;
+
   return (
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr auto',
         gap: 12,
-        alignItems: 'center',
+        alignItems: valueKind ? 'start' : 'center',
         padding: '8px 0',
         borderBottom: '1px solid var(--rule-soft)',
       }}
     >
-      <span className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-2)' }}>
+      <span
+        className="u-sans"
+        style={{
+          fontSize: 'var(--step--1)',
+          color: 'var(--ink-2)',
+          paddingTop: valueKind ? 8 : 0,
+        }}
+      >
         {label}
       </span>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         {hint ? (
-          <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+          <span
+            className="u-mono"
+            style={{
+              fontSize: 10,
+              color: 'var(--ink-3)',
+              paddingTop: valueKind ? 10 : 0,
+              maxWidth: 88,
+              textAlign: 'right',
+            }}
+          >
             {hint}
           </span>
         ) : null}
-        <input
-          value={value}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-          className="u-mono"
-          style={{
-            width: inputWidth,
-            padding: '4px 8px',
-            border: '1px solid var(--rule)',
-            background: 'var(--paper)',
-            color: 'var(--ink)',
-            fontSize: 11,
-            boxSizing: 'border-box',
-            minHeight: 32,
-          }}
-        />
+        {valueKind ? (
+          <div style={{ width: inputWidth, flexShrink: 0 }}>
+            <WheelPicker
+              items={wheelItems}
+              selectedIndex={selectedIndex}
+              onSelectIndex={(index) => onChange(indexToTypographyValue(index, valueKind))}
+              renderItem={monoWheelLabel}
+              compact
+              aria-label={`${label} value. Click to arm, then scroll or use arrow keys.`}
+            />
+          </div>
+        ) : (
+          <input
+            value={value}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            className="u-mono"
+            aria-label={label}
+            style={{
+              width: inputWidth,
+              padding: '4px 8px',
+              border: '1px solid var(--rule)',
+              background: 'var(--paper)',
+              color: 'var(--ink)',
+              fontSize: 11,
+              boxSizing: 'border-box',
+              minHeight: 32,
+            }}
+          />
+        )}
       </div>
     </div>
   );

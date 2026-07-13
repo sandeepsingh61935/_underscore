@@ -445,6 +445,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   value={draft.scale[s.id]}
                   hint={s.hint}
                   inputWidth={64}
+                  valueKind="px-scale"
                   onChange={(v) =>
                     markCustom({
                       ...draft,
@@ -462,6 +463,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   label={s.label}
                   value={draft.spacing[s.key]}
                   inputWidth={80}
+                  valueKind={s.key === 'displayLh' || s.key === 'bodyLh' ? 'line-height' : 'em-tracking'}
                   onChange={(v) =>
                     markCustom({
                       ...draft,
@@ -479,6 +481,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   label={m.label}
                   value={draft.margins[m.key]}
                   inputWidth={64}
+                  valueKind={m.key === 'rowHeight' ? 'px-row' : 'px-margin'}
                   onChange={(v) =>
                     markCustom({
                       ...draft,
