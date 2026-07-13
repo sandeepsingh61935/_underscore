@@ -177,6 +177,20 @@ export function WheelPicker({
           setWheelArmed(false);
         }
       }}
+      onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (len === 0) return;
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          armWheel();
+          const next = (selectedIndex - 1 + len) % len;
+          onSelectIndex(next);
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          armWheel();
+          const next = (selectedIndex + 1) % len;
+          onSelectIndex(next);
+        }
+      }}
       style={{
         position: 'relative',
         height: viewportHeight,
