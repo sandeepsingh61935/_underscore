@@ -14,7 +14,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
-import { applyMarkdownShortcut } from '@/shared/utils/markdown-wrap';
+import { applyMarkdownShortcut, fenceWrapPretty } from '@/shared/utils/markdown-wrap';
 import { HIGHLIGHT_TEXT_MAX_LENGTH } from '@/shared/utils/highlight-text';
 
 export interface HighlightCardProps {
@@ -181,9 +181,44 @@ export function HighlightCard({
                   resize: 'vertical',
                 }}
               />
-              <p className="u-mono" style={{ margin: '6px 0 0', fontSize: 9, color: 'var(--ink-3)', letterSpacing: '0.04em' }}>
-                Ctrl/Cmd+B bold · I italic · E code · Shift+C fence+pretty
-              </p>
+              <div
+                style={{
+                  marginTop: 6,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <p className="u-mono" style={{ margin: 0, fontSize: 9, color: 'var(--ink-3)', letterSpacing: '0.04em' }}>
+                  Ctrl/Cmd+B bold · I italic · E code · Shift+K fence+pretty
+                </p>
+                <button
+                  type="button"
+                  className="u-mono"
+                  aria-label="Wrap selection as code fence with pretty-print"
+                  onClick={() => {
+                    const el = textareaRef.current;
+                    const start = el?.selectionStart ?? 0;
+                    const end = el?.selectionEnd ?? 0;
+                    const r = fenceWrapPretty(draft, start, end);
+                    applyWrapResult(r.text, r.selStart, r.selEnd);
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: 9,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--accent)',
+                    border: '1px solid var(--rule-soft)',
+                    padding: '3px 6px',
+                    lineHeight: 1,
+                  }}
+                >
+                  Code wrap
+                </button>
+              </div>
               <div
                 style={{
                   marginTop: 10,
