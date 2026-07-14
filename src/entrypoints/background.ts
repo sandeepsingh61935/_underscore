@@ -32,10 +32,11 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, UPDATE_HIGHLIGHT_TEXT, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
-import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
+import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
+import { validateHighlightText } from '@/shared/utils/highlight-text';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
@@ -119,15 +120,24 @@ export default defineBackground({
           logger.info('AuthManager returned result', { success: result.success });
 
           if (!result.success) {
-            const msg = result.error?.message || 'Login failed (Unknown reason)';
-            logger.error('Login failed explicitly', new Error(msg));
-            throw new Error(msg);
+            logger.error('Login failed explicitly', new Error(result.error?.message || 'Login failed'));
+            return {
+              success: false,
+              error: result.error?.message || 'Login failed. Please try again.',
+              code: result.error?.code,
+              retryAfterMs: result.error?.retryAfterMs,
+            };
           }
           return { success: true, data: authStateResponseData(authManager.getAuthState()) };
         } catch (error) {
           logger.error('Login handler caught error', error as Error);
-          // Re-throw to let MessageBus handle it, but ensure message is preserved
-          throw error;
+          // OAuth flow (unlike the direct AuthResult paths) still throws on
+          // failure; the message is already user-facing (mapAuthError in
+          // AuthManager), so surface it as-is rather than a raw Error.
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Login failed. Please try again.',
+          };
         }
       });
 
@@ -135,46 +145,42 @@ export default defineBackground({
       messageBus.subscribe('LOGIN_EMAIL', async (payload: { email?: string; password?: string }) => {
         logger.info('Handling LOGIN_EMAIL request', { email: payload.email });
         if (!payload.email || !payload.password) {
-          throw new Error('Email and password are required');
+          return { success: false, error: 'Email and password are required', code: 'INVALID_PAYLOAD' };
         }
 
-        try {
-          const result = await authManager.signInWithEmail(payload.email, payload.password);
-          logger.info('AuthManager returned email login result', { success: result.success });
+        const result = await authManager.signInWithEmail(payload.email, payload.password);
+        logger.info('AuthManager returned email login result', { success: result.success });
 
-          if (!result.success) {
-            const msg = result.error?.message || 'Email login failed (Unknown reason)';
-            logger.error('Email login failed explicitly', new Error(msg));
-            throw new Error(msg);
-          }
-          return { success: true, data: authStateResponseData(authManager.getAuthState()) };
-        } catch (error) {
-          logger.error('Email login handler caught error', error as Error);
-          throw error;
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error?.message || 'Email login failed. Please try again.',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
 
       // Register Email Handler
       messageBus.subscribe('REGISTER_EMAIL', async (payload: { email?: string; password?: string }) => {
         logger.info('Handling REGISTER_EMAIL request', { email: payload.email });
         if (!payload.email || !payload.password) {
-          throw new Error('Email and password are required');
+          return { success: false, error: 'Email and password are required', code: 'INVALID_PAYLOAD' };
         }
 
-        try {
-          const result = await authManager.signUpWithEmail(payload.email, payload.password);
-          logger.info('AuthManager returned email register result', { success: result.success });
+        const result = await authManager.signUpWithEmail(payload.email, payload.password);
+        logger.info('AuthManager returned email register result', { success: result.success });
 
-          if (!result.success) {
-            const msg = result.error?.message || 'Email registration failed (Unknown reason)';
-            logger.error('Email registration failed explicitly', new Error(msg));
-            throw new Error(msg);
-          }
-          return { success: true, data: authStateResponseData(authManager.getAuthState()) };
-        } catch (error) {
-          logger.error('Email registration handler caught error', error as Error);
-          throw error;
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error?.message || 'Email registration failed. Please try again.',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
       // Logout Handler
       messageBus.subscribe('LOGOUT', async () => {
@@ -244,7 +250,12 @@ export default defineBackground({
 
         const result = await authManager.verifyEmailOtp(parsed.data.email, parsed.data.token);
         if (!result.success) {
-          return { success: false, error: result.error?.message ?? 'Verification failed', code: result.error?.code };
+          return {
+            success: false,
+            error: result.error?.message ?? 'Verification failed',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
@@ -259,7 +270,12 @@ export default defineBackground({
 
         const result = await authManager.resendEmailOtp(parsed.data.email);
         if (!result.success) {
-          return { success: false, error: result.error?.message ?? 'Failed to resend code', code: result.error?.code };
+          return {
+            success: false,
+            error: result.error?.message ?? 'Failed to resend code',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
@@ -274,7 +290,12 @@ export default defineBackground({
 
         const result = await authManager.requestPasswordReset(parsed.data.email);
         if (!result.success) {
-          return { success: false, error: result.error?.message ?? 'Failed to request password reset', code: result.error?.code };
+          return {
+            success: false,
+            error: result.error?.message ?? 'Failed to request password reset',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
         return { success: true, data: {} };
       });
@@ -289,7 +310,12 @@ export default defineBackground({
 
         const result = await authManager.verifyRecoveryOtp(parsed.data.email, parsed.data.token);
         if (!result.success) {
-          return { success: false, error: result.error?.message ?? 'Verification failed', code: result.error?.code };
+          return {
+            success: false,
+            error: result.error?.message ?? 'Verification failed',
+            code: result.error?.code,
+            retryAfterMs: result.error?.retryAfterMs,
+          };
         }
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
@@ -309,7 +335,8 @@ export default defineBackground({
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
 
-      // Forward Auth State Changes after MCP client exists (revalidate bridge on logout)
+      // Forward Auth State Changes to popup, content scripts, and web tabs
+      // (MCP revalidation hooked after mcpBridgeClient is created below)
 
       // --- Collections API handlers ---
 
@@ -455,6 +482,10 @@ export default defineBackground({
       }) => {
         logger.info('Handling UPDATE_HIGHLIGHT_METADATA request', { id: payload.id });
         try {
+          if (payload.notes === undefined && payload.tags === undefined) {
+            return { success: false, error: 'No notes or tags to update' };
+          }
+
           if (payload.tags !== undefined) {
             const tagsGate = canUseFeature('tags', await getFeatureGateContext());
             if (!tagsGate.allowed) {
@@ -462,14 +493,18 @@ export default defineBackground({
             }
           }
 
-          if (payload.notes !== undefined) {
-            const existing = repositoryFacade.get(payload.id);
-            const metadata = buildHighlightMetadataUpdate({
-              notes: payload.notes,
-              tags: existing?.metadata?.tags,
-            });
-            repositoryFacade.update(payload.id, { metadata });
+          const existing = repositoryFacade.get(payload.id);
+          if (!existing) {
+            return { success: false, error: `Highlight not found: ${payload.id}` };
           }
+
+          // Dual-write: keep metadata.tags in sync with the junction table so
+          // list/read paths that only look at metadata still show tags after reload.
+          const metadata = mergeHighlightMetadataPatch(existing.metadata, {
+            notes: payload.notes,
+            tags: payload.tags,
+          });
+          repositoryFacade.update(payload.id, { metadata });
 
           if (payload.tags !== undefined) {
             await tagService.setHighlightLabels(payload.id, payload.tags);
@@ -479,6 +514,44 @@ export default defineBackground({
           return { success: true, data: undefined };
         } catch (error) {
           logger.error('UPDATE_HIGHLIGHT_METADATA failed', error as Error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      messageBus.subscribe(UPDATE_HIGHLIGHT_TEXT, async (payload: {
+        id: string;
+        text: string;
+      }) => {
+        logger.info('Handling UPDATE_HIGHLIGHT_TEXT request', { id: payload.id });
+        try {
+          const collectionsGate = canUseFeature('collections', await getFeatureGateContext());
+          if (!collectionsGate.allowed) {
+            return {
+              success: false,
+              error: collectionsGate.reason ?? 'Collections not available in this mode',
+              code: collectionsGate.reason,
+            };
+          }
+
+          const validated = validateHighlightText(payload.text);
+          if (!validated.ok) {
+            return { success: false, error: validated.error };
+          }
+
+          const existing = repositoryFacade.get(payload.id);
+          if (!existing) {
+            return { success: false, error: 'Highlight not found' };
+          }
+
+          // Update body text only — never rewrite ranges / TextQuote selectors.
+          repositoryFacade.update(payload.id, { text: validated.text });
+          notifyLibraryDataChanged({ source: 'text-update' });
+          return { success: true, data: undefined };
+        } catch (error) {
+          logger.error('UPDATE_HIGHLIGHT_TEXT failed', error as Error);
           return {
             success: false,
             error: error instanceof Error ? error.message : String(error),

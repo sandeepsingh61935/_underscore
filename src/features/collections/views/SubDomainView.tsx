@@ -12,14 +12,21 @@ import { ScopeAskPanel } from '@/features/ai/components/ScopeAskPanel';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { HighlightMetadataEditor } from '@/features/collections/components/HighlightMetadataEditor';
+import { HighlightWithMarginalia } from '@/features/collections/components/HighlightWithMarginalia';
+import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
+import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
+import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
+import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
+import type { SearchField } from '@/shared/utils/highlight-search';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
+import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
 
 export interface SubDomainViewProps {
@@ -28,6 +35,22 @@ export interface SubDomainViewProps {
   onBack?: () => void;
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
+}
+
+const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
+
+/**
+ * Small mono badge for results whose hit was only in the note or tag(s),
+ * not the visible quote — otherwise a matched card can look confusing.
+ */
+function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
+  if (matchedFields.includes('text')) return null;
+  const inNotes = matchedFields.includes('notes');
+  const inTags = matchedFields.includes('tags');
+  if (inNotes && inTags) return 'Matched in note & tag(s)';
+  if (inNotes) return 'Matched in note';
+  if (inTags) return 'Matched in tag(s)';
+  return null;
 }
 
 export function SubDomainView({
@@ -51,6 +74,7 @@ export function SubDomainView({
   }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
+  const { updateText } = useUpdateHighlightText();
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
@@ -69,10 +93,27 @@ export function SubDomainView({
   const { deleteScope } = useHighlightDelete();
   const [deleteSectionOpen, setDeleteSectionOpen] = useState(false);
   const [isDeletingSection, setIsDeletingSection] = useState(false);
+  const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
+  const { tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   const sectionHighlights = useMemo(() => {
     return highlights.filter((h) => getSectionKey({ url: h.url, path: h.path }) === section);
   }, [highlights, section]);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+
+  // Reset search when the domain/section itself changes (route param change without remount).
+  useEffect(() => {
+    setSearchQuery('');
+  }, [domain, section]);
+
+  const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
+    query: searchQuery,
+    scope: { kind: 'section', domain, section },
+    fields: searchFields,
+  });
+  const isSearching = searchQuery.trim().length > 0;
 
   useEffect(() => {
     if (isLoading) return;
@@ -269,31 +310,108 @@ export function SubDomainView({
           </div>
         )}
 
+        <div style={{ padding: '0 16px 8px' }}>
+          <HighlightSearchBar
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            fields={searchFields}
+            onFieldsChange={setSearchFields}
+            resultCount={searchQuery.trim() ? searchResults.length : undefined}
+          />
+        </div>
+
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
+        ) : isSearching ? (
+          isSearchLoading ? (
+            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <EmptyState variant="no-results" size="sm" />
+          ) : (
+            searchResults.map((r) => {
+              const badge = matchBadgeLabel(r.matchedFields);
+              return (
+                <div key={r.id}>
+                  {tagsGate.allowed ? (
+                    <HighlightWithMarginalia
+                      highlightId={r.id}
+                      quote={r.text || '[Unavailable]'}
+                      domain={r.domain}
+                      section={r.path === '/' ? undefined : r.path}
+                      notes={r.notes}
+                      labels={r.tags}
+                      isExpanded={expandedHighlightId === r.id}
+                      onToggleExpand={() => {
+                        setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                      }}
+                      showLocationMeta={false}
+                      suggestions={labelSuggestions}
+                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
+                      onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                      onSaveQuote={(text) => updateText(r.id, text)}
+                    />
+                  ) : (
+                    <HighlightCard
+                      quote={r.text || '[Unavailable]'}
+                      domain={r.domain}
+                      section={r.path === '/' ? undefined : r.path}
+                      showLocationMeta={false}
+                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
+                      onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                      onSaveQuote={(text) => updateText(r.id, text)}
+                    />
+                  )}
+                  {badge && (
+                    <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
+                      <span
+                        className="u-mono"
+                        style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                      >
+                        {badge}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )
         ) : (
           sectionHighlights.map((h) => (
-            <div key={h.id}>
+            tagsGate.allowed ? (
+              <HighlightWithMarginalia
+                key={h.id}
+                highlightId={h.id}
+                quote={h.text || '[Unavailable]'}
+                domain={domain}
+                section={section === '/' ? undefined : section}
+                notes={h.notes}
+                labels={h.tags}
+                isExpanded={expandedHighlightId === h.id}
+                onToggleExpand={() => {
+                  setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
+                }}
+                showLocationMeta={false}
+                suggestions={labelSuggestions}
+                onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
+                onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
+                onSaveQuote={(text) => updateText(h.id, text)}
+              />
+            ) : (
               <HighlightCard
+                key={h.id}
                 quote={h.text || '[Unavailable]'}
                 domain={domain}
                 section={section === '/' ? undefined : section}
                 showLocationMeta={false}
                 onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
                 onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
+                onSaveQuote={(text) => updateText(h.id, text)}
               />
-              <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
-                {tagsGate.allowed && (
-                  <HighlightMetadataEditor
-                    highlightId={h.id}
-                    notes={h.notes}
-                    tags={h.tags}
-                  />
-                )}
-              </div>
-            </div>
+            )
           ))
         )}
       </div>

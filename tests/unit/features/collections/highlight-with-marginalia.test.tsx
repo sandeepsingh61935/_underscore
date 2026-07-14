@@ -29,7 +29,7 @@ describe('HighlightWithMarginalia', () => {
     );
 
     const row = screen.getByTestId('highlight-action-row');
-    expect(row.textContent).toContain('+ Add note or label');
+    expect(row.textContent).toContain('+ Add note or tags');
     expect(row.textContent).toMatch(/Edit/i);
     expect(row.textContent).toMatch(/Copy/i);
     expect(row.textContent).toMatch(/Delete/i);

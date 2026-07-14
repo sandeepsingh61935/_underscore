@@ -1,7 +1,7 @@
 /**
  * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section)
  * V2 contract: single flex-wrap row (NOT the old Chip's stacked layout) —
- * committed label pills, a bare native input for the draft, then dashed
+ * committed tag pills, a bare native input for the draft, then dashed
  * ghost pills for matching suggestions, all in one line that wraps.
  *
  * `variant`:
@@ -11,9 +11,9 @@
  *
  * Contract for `draft`/`onAddLabel`: this component does NOT clear `draft`
  * itself after Enter/comma or a ghost-pill pick — `onAddLabel` is the
- * single source of truth for committing a label. The caller's `onAddLabel`
- * handler is responsible for appending the label and calling
- * `onDraftChange('')` once committed. This keeps "add a label" a single
+ * single source of truth for committing a tag. The caller's `onAddLabel`
+ * handler is responsible for appending the tag and calling
+ * `onDraftChange('')` once committed. This keeps "add a tag" a single
  * code path regardless of whether it was triggered by keyboard or by
  * picking a suggestion.
  */
@@ -50,7 +50,7 @@ export function LabelInputRow({
     .filter((name) => !labels.includes(name))
     .filter((name) => !trimmedDraft || name.toLowerCase().startsWith(trimmedDraft.toLowerCase()));
 
-  const resolvedPlaceholder = placeholder ?? (labels.length === 0 ? 'Add label…' : '');
+  const resolvedPlaceholder = placeholder ?? (labels.length === 0 ? 'Add tag…' : '');
   const embedded = variant === 'embedded';
 
   return (
@@ -96,7 +96,7 @@ export function LabelInputRow({
         }}
         disabled={disabled}
         placeholder={resolvedPlaceholder}
-        aria-label="Add label"
+        aria-label="Add tag"
         style={{
           flex: '1 1 56px',
           minWidth: 56,

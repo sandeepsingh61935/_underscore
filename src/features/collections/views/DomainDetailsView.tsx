@@ -12,17 +12,41 @@ import { ScopeAskPanel } from '@/features/ai/components/ScopeAskPanel';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
+import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
+import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
+import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
+import type { SearchField } from '@/shared/utils/highlight-search';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
+import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
+import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
 export interface DomainDetailsViewProps {
   domain?: string;
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
+}
+
+const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
+
+/**
+ * Small mono badge for results whose hit was only in the note or tag(s),
+ * not the visible quote — otherwise a matched card can look confusing.
+ */
+function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
+  if (matchedFields.includes('text')) return null;
+  const inNotes = matchedFields.includes('notes');
+  const inTags = matchedFields.includes('tags');
+  if (inNotes && inTags) return 'Matched in note & tag(s)';
+  if (inNotes) return 'Matched in note';
+  if (inTags) return 'Matched in tag(s)';
+  return null;
 }
 
 export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSectionClick }: DomainDetailsViewProps): React.ReactElement {
@@ -49,6 +73,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   };
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
+  const { updateText } = useUpdateHighlightText();
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
@@ -66,6 +91,21 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const { deleteScope } = useHighlightDelete();
   const [deleteDomainOpen, setDeleteDomainOpen] = useState(false);
   const [isDeletingDomain, setIsDeletingDomain] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+
+  // Reset search when the domain itself changes (route param change without remount).
+  useEffect(() => {
+    setSearchQuery('');
+  }, [domain]);
+
+  const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
+    query: searchQuery,
+    scope: { kind: 'domain', domain },
+    fields: searchFields,
+  });
+  const isSearching = searchQuery.trim().length > 0;
 
   const promptHighlights = useMemo(
     () => highlights.map(h => ({
@@ -258,6 +298,16 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               {synthesisText}
             </div>
           )}
+
+          <div style={{ marginTop: 10 }}>
+            <HighlightSearchBar
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              fields={searchFields}
+              onFieldsChange={setSearchFields}
+              resultCount={searchQuery.trim() ? searchResults.length : undefined}
+            />
+          </div>
         </div>
 
         <div style={{ marginTop: 10 }}>
@@ -265,6 +315,40 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
             </div>
+          ) : isSearching ? (
+            isSearchLoading ? (
+              <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <EmptyState variant="no-results" size="sm" />
+            ) : (
+              searchResults.map((r) => {
+                const badge = matchBadgeLabel(r.matchedFields);
+                return (
+                  <div key={r.id}>
+                    <HighlightCard
+                      quote={r.text || '[Unavailable]'}
+                      domain={r.domain}
+                      section={r.path === '/' ? undefined : r.path}
+                      onSectionClick={() => handleSectionClick(r.path)}
+                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
+                      onSaveQuote={(text) => updateText(r.id, text)}
+                    />
+                    {badge && (
+                      <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
+                        <span
+                          className="u-mono"
+                          style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                        >
+                          {badge}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )
           ) : (
             sections.map((s) => (
               editingSection === s.path ? (

@@ -16,7 +16,7 @@ import { MODE_STORAGE_KEY, AUTH_REQUIRED_MODES, VALID_MODES } from '@/shared/con
 import { buildMarkdownExport, toExportableHighlight } from '@/shared/highlight-export';
 import type { ExportScope } from '@/shared/highlight-export';
 import type { TagService } from '@/background/services/tag-service';
-import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
+import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import { searchHighlights } from '@/shared/utils/highlight-search';
 import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
@@ -256,14 +256,21 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('id is required'), { code: 'INVALID_ARGUMENT' });
     }
 
-    if (input.notes !== undefined) {
-      const existing = this.deps.repositoryFacade.get(input.id);
-      const metadata = buildHighlightMetadataUpdate({
-        notes: input.notes,
-        tags: existing?.metadata?.tags,
-      });
-      this.deps.repositoryFacade.update(input.id, { metadata });
+    if (input.notes === undefined && input.tags === undefined) {
+      throw Object.assign(new Error('No notes or tags to update'), { code: 'INVALID_ARGUMENT' });
     }
+
+    const existing = this.deps.repositoryFacade.get(input.id);
+    if (!existing) {
+      throw Object.assign(new Error(`Highlight not found: ${input.id}`), { code: 'NOT_FOUND' });
+    }
+
+    // Dual-write metadata.tags + junction table (same as popup UPDATE_HIGHLIGHT_METADATA).
+    const metadata = mergeHighlightMetadataPatch(existing.metadata, {
+      notes: input.notes,
+      tags: input.tags,
+    });
+    this.deps.repositoryFacade.update(input.id, { metadata });
 
     if (input.tags !== undefined) {
       await this.deps.tagService.setHighlightLabels(input.id, input.tags);

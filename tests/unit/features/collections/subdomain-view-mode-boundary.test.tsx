@@ -79,6 +79,10 @@ vi.mock('@/features/ai/hooks/usePersistLlmArtifactOnDone', () => ({
   usePersistLlmArtifactOnDone: vi.fn(),
 }));
 
+vi.mock('@/features/collections/hooks/useUserTags', () => ({
+  useUserTags: vi.fn(() => ({ tagNames: [], tags: [], isLoading: false, error: null, refetch: vi.fn() })),
+}));
+
 vi.mock('@/features/ai/hooks/usePageContext', () => ({
   usePageContext: vi.fn(() => ({ fetch: vi.fn() })),
 }));
@@ -101,7 +105,7 @@ describe('SubDomainView basic mode boundaries', () => {
     expect(screen.getByLabelText('Export section highlights as MD')).toBeDisabled();
   });
 
-  it('hides summarize, ask, and tag editor for a guest in Basic', () => {
+  it('hides summarize and ask (AI-gated) for a guest in Basic', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/" />
@@ -110,7 +114,15 @@ describe('SubDomainView basic mode boundaries', () => {
 
     expect(screen.queryByText('Summarize this section')).toBeNull();
     expect(screen.queryByPlaceholderText('Ask about this section…')).toBeNull();
-    expect(screen.queryByPlaceholderText('Add a note…')).toBeNull();
-    expect(screen.queryByLabelText('Add tag')).toBeNull();
+  });
+
+  it('shows the marginalia strip invite for a guest in Basic (local metadata is not gated)', () => {
+    render(
+      <MemoryRouter>
+        <SubDomainView domain="example.com" section="/" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
   });
 });

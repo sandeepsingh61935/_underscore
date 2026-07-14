@@ -11,9 +11,10 @@
  * When `embedInCard` is true, the strip has no outer margin/indent and is
  * meant for HighlightCard's unified action row (notes · tags · Edit · Delete).
  *
- * Dirty-guard (see HighlightMetadataEditor for the original bug): re-sync
- * local `noteDraft`/`labelsDraft` from props only when `highlightId`
- * changes OR when the note field is not focused AND we are not saving.
+ * Dirty-guard: re-sync from props when highlightId changes, or when collapsed
+ * and idle (not saving / not focused). While expanded, keep local draft so a
+ * slow library refresh cannot wipe tags the user just added.
+ * Persist only the fields being edited (notes-only vs tags-only).
  * Note saves debounce 500ms and flush on blur/Done. Inputs are NEVER
  * disabled while `isSaving` — only the chrome text swaps to "Saving…".
  * The `disabled` prop is a separate permission gate.
@@ -135,14 +136,13 @@ export function MarginaliaStrip({
     }
   }, []);
 
+  /** Persist only the fields in the patch (do not always send both notes + tags). */
   const persist = useCallback(
-    async (nextNotes?: string, nextLabels?: string[]) => {
+    async (patch: { notes?: string; tags?: string[] }): Promise<boolean> => {
+      if (patch.notes === undefined && patch.tags === undefined) return true;
       setIsSaving(true);
       try {
-        await updateMetadata(highlightId, {
-          notes: nextNotes ?? noteDraftRef.current,
-          tags: nextLabels ?? labelsDraftRef.current,
-        }, { silent: true });
+        return await updateMetadata(highlightId, patch, { silent: true });
       } finally {
         setIsSaving(false);
       }
@@ -161,12 +161,12 @@ export function MarginaliaStrip({
       return;
     }
 
-    if (!isNoteFocused && !isSaving) {
-      setNoteDraft(notes ?? '');
-      setLabelsDraft(labels ?? []);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, labels, highlightId]);
+    // While expanded or saving, keep optimistic local state (avoids wipe on refresh).
+    if (isExpanded || isSaving || isNoteFocused) return;
+
+    setNoteDraft(notes ?? '');
+    setLabelsDraft(labels ?? []);
+  }, [notes, labels, highlightId, isExpanded, isSaving, isNoteFocused]);
 
   useEffect(() => {
     return () => {
@@ -186,27 +186,29 @@ export function MarginaliaStrip({
       clearSaveTimer();
       saveTimerRef.current = setTimeout(() => {
         saveTimerRef.current = null;
-        void persist(value, undefined);
+        void persist({ notes: value });
       }, NOTE_SAVE_DEBOUNCE_MS);
     },
     [clearSaveTimer, persist],
   );
 
-  const flushNoteSave = useCallback(() => {
+  const flushNoteSave = useCallback(async (): Promise<void> => {
     if (saveTimerRef.current !== null) {
       clearSaveTimer();
-      void persist(noteDraftRef.current, undefined);
+      await persist({ notes: noteDraftRef.current });
     }
   }, [clearSaveTimer, persist]);
 
   const handleNoteBlur = useCallback(() => {
     setIsNoteFocused(false);
-    flushNoteSave();
+    void flushNoteSave();
   }, [flushNoteSave]);
 
   const handleDone = useCallback(() => {
-    flushNoteSave();
-    onToggleExpand();
+    void (async () => {
+      await flushNoteSave();
+      onToggleExpand();
+    })();
   }, [flushNoteSave, onToggleExpand]);
 
   const handleAddLabel = useCallback(
@@ -215,8 +217,9 @@ export function MarginaliaStrip({
       if (!trimmed || labelsDraft.includes(trimmed)) return;
       const next = [...labelsDraft, trimmed];
       setLabelsDraft(next);
+      labelsDraftRef.current = next;
       setTagInputDraft('');
-      void persist(undefined, next);
+      void persist({ tags: next });
     },
     [labelsDraft, persist],
   );
@@ -225,7 +228,8 @@ export function MarginaliaStrip({
     (index: number) => {
       const next = labelsDraft.filter((_, i) => i !== index);
       setLabelsDraft(next);
-      void persist(undefined, next);
+      labelsDraftRef.current = next;
+      void persist({ tags: next });
     },
     [labelsDraft, persist],
   );
@@ -238,7 +242,7 @@ export function MarginaliaStrip({
         type="button"
         onClick={onToggleExpand}
         disabled={disabled}
-        aria-label="+ Add note or label"
+        aria-label="+ Add note or tags"
         style={{
           display: embedInCard ? 'inline-flex' : 'block',
           width: embedInCard ? 'auto' : shellWidth,
@@ -254,7 +258,7 @@ export function MarginaliaStrip({
         }}
       >
         <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-          + Add note or label
+          + Add note or tags
         </span>
       </button>
     );
@@ -318,7 +322,7 @@ export function MarginaliaStrip({
           type="button"
           onClick={onToggleExpand}
           disabled={disabled}
-          aria-label="Edit note and labels"
+          aria-label="Edit note and tags"
           style={{
             display: 'flex',
             alignItems: 'center',

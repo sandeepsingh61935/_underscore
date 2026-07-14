@@ -250,7 +250,7 @@ function MarginaliaStrip({ state = "empty", note = "", tags = [], draft = "", on
         display: "block", width, margin, padding: "7px 10px", textAlign: "left",
         border: "1px dashed var(--rule-soft)", background: "transparent", cursor: "pointer",
       }}>
-        <span className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>+ Add note or label</span>
+        <span className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>+ Add note or tags</span>
       </button>
     );
   }
@@ -312,7 +312,7 @@ function MarginaliaStrip({ state = "empty", note = "", tags = [], draft = "", on
               value={draft}
               onChange={(e) => onDraftChange?.(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); onAddTag?.(); } }}
-              placeholder={tags.length === 0 ? "Add label…" : ""}
+              placeholder={tags.length === 0 ? "Add tag…" : ""}
               style={{
                 flex: "1 1 56px", minWidth: 56, border: "none", outline: "none", background: "transparent",
                 fontFamily: "var(--mono)", fontSize: 10, color: "var(--ink)", padding: "2px 0",

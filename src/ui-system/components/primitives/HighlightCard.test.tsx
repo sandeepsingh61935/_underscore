@@ -109,11 +109,11 @@ describe('HighlightCard (V2 wireframe contract)', () => {
         quote="Apple"
         domain="example.com"
         onSaveQuote={async () => true}
-        footerStart={<span>+ Add note or label</span>}
+        footerStart={<span>+ Add note or tags</span>}
       />
     );
     const row = screen.getByTestId('highlight-action-row');
-    expect(row.textContent).toContain('+ Add note or label');
+    expect(row.textContent).toContain('+ Add note or tags');
     expect(row.textContent).toMatch(/Edit/i);
   });
 

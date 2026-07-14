@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   buildHighlightMetadataUpdate,
+  mergeHighlightMetadataPatch,
   normalizeHighlightTags,
   sanitizeHighlightNote,
 } from '@/shared/utils/highlight-metadata';
@@ -59,6 +60,46 @@ describe('highlight-metadata', () => {
           tags: [],
         }),
       ).toBeUndefined();
+    });
+  });
+
+  describe('mergeHighlightMetadataPatch', () => {
+    it('adds tags without wiping existing notes', () => {
+      expect(
+        mergeHighlightMetadataPatch(
+          { notes: 'Keep me', tags: ['old'] },
+          { tags: ['bfs', 'cpp'] },
+        ),
+      ).toEqual({
+        source: 'user',
+        notes: 'Keep me',
+        tags: ['bfs', 'cpp'],
+      });
+    });
+
+    it('updates notes without wiping existing tags', () => {
+      expect(
+        mergeHighlightMetadataPatch(
+          { notes: 'Old', tags: ['bfs'] },
+          { notes: '  New note  ' },
+        ),
+      ).toEqual({
+        source: 'user',
+        notes: 'New note',
+        tags: ['bfs'],
+      });
+    });
+
+    it('clears tags when empty array is sent', () => {
+      expect(
+        mergeHighlightMetadataPatch(
+          { notes: 'Keep', tags: ['bfs'] },
+          { tags: [] },
+        ),
+      ).toEqual({
+        source: 'user',
+        notes: 'Keep',
+      });
     });
   });
 });

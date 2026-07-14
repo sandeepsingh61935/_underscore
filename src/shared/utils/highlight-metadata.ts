@@ -31,6 +31,15 @@ export interface HighlightMetadataInput {
   tags?: string[];
 }
 
+/** Union junction labels with legacy metadata.tags during migration cutover. */
+export function mergeHighlightLabels(
+  junctionLabels?: string[],
+  metadataTags?: string[],
+): string[] | undefined {
+  const merged = normalizeHighlightTags([...(junctionLabels ?? []), ...(metadataTags ?? [])]);
+  return merged.length > 0 ? merged : undefined;
+}
+
 export function buildHighlightMetadataUpdate(
   input: HighlightMetadataInput,
 ): { source: 'user'; notes?: string; tags?: string[] } | undefined {
@@ -45,5 +54,29 @@ export function buildHighlightMetadataUpdate(
     source: 'user',
     ...(notes ? { notes } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
+  };
+}
+
+/**
+ * Merge a partial notes/tags patch onto existing metadata without wiping
+ * the other field. Empty notes clear the notes key; empty tags clear tags.
+ */
+export function mergeHighlightMetadataPatch(
+  existing: { notes?: string; tags?: string[] } | null | undefined,
+  input: HighlightMetadataInput,
+): { source: 'user'; notes?: string; tags?: string[] } {
+  const notes =
+    input.notes !== undefined
+      ? sanitizeHighlightNote(input.notes)
+      : (existing?.notes ?? '');
+  const tags =
+    input.tags !== undefined
+      ? normalizeHighlightTags(input.tags)
+      : normalizeHighlightTags(existing?.tags ?? []);
+
+  return {
+    source: 'user',
+    ...(notes ? { notes } : {}),
+    ...(tags.length > 0 ? { tags } : {}),
   };
 }

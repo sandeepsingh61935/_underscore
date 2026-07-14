@@ -27,7 +27,7 @@ describe('LabelInputRow', () => {
       />,
     );
 
-    const input = screen.getByLabelText('Add label');
+    const input = screen.getByLabelText('Add tag');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(onAddLabel).toHaveBeenCalledWith('new-label');
 
@@ -58,7 +58,7 @@ describe('LabelInputRow', () => {
     expect(root.getAttribute('data-variant')).toBe('embedded');
     expect(root.style.borderWidth).toBe('0px');
     expect(root.style.background).toBe('transparent');
-    expect(screen.getByLabelText('Add label')).toBeTruthy();
+    expect(screen.getByLabelText('Add tag')).toBeTruthy();
   });
 
   it('tray variant keeps its own bordered chrome by default', () => {

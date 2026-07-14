@@ -1,23 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useCollections } from '@/features/collections/hooks/useCollections';
+import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
+import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
+import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
+import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
+import type { SearchField } from '@/shared/utils/highlight-search';
 import { Row } from '@/ui-system/components/primitives/Row';
+import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
+import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
 
 export interface CollectionsViewProps {
   onCollectionClick?: (domain: string) => void;
+  /** Drill into a specific result's domain/section (search results can span domains). */
+  onSectionClick?: (domain: string, section: string) => void;
   isAuthenticated?: boolean;
   onSignIn?: () => void;
 }
 
+const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
+
+/**
+ * Small mono badge for results whose hit was only in the note or tag(s),
+ * not the visible quote — otherwise a matched card can look confusing.
+ */
+function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
+  if (matchedFields.includes('text')) return null;
+  const inNotes = matchedFields.includes('notes');
+  const inTags = matchedFields.includes('tags');
+  if (inNotes && inTags) return 'Matched in note & tag(s)';
+  if (inNotes) return 'Matched in note';
+  if (inTags) return 'Matched in tag(s)';
+  return null;
+}
+
 export function CollectionsView({
   onCollectionClick,
+  onSectionClick,
   isAuthenticated: propIsAuthenticated,
   onSignIn,
 }: CollectionsViewProps): React.ReactElement {
@@ -28,6 +55,17 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
+  const { updateText } = useUpdateHighlightText();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+
+  const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
+    query: searchQuery,
+    scope: { kind: 'library' },
+    fields: searchFields,
+  });
+  const isSearching = searchQuery.trim().length > 0;
 
   const handleCollectionClick = (domain: string): void => {
     if (onCollectionClick) {
@@ -35,6 +73,14 @@ export function CollectionsView({
       return;
     }
     navigate(`/domain/${domain}`);
+  };
+
+  const handleResultSectionClick = (resultDomain: string, path: string): void => {
+    if (onSectionClick) {
+      onSectionClick(resultDomain, path);
+      return;
+    }
+    navigate(`/domain/${resultDomain}/section/${encodeURIComponent(path)}`);
   };
 
   const totalHighlights = collections.reduce((acc, c) => acc + c.highlightCount, 0);
@@ -81,15 +127,59 @@ export function CollectionsView({
             lineHeight: 1.45,
           }}
         >
-          Local only. Sign in to sync across devices and unlock search, export, and AI.
+          Local only. Sign in to sync across devices and unlock export and AI.
         </div>
       )}
+
+      <div style={{ padding: '10px 16px 0' }}>
+        <HighlightSearchBar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          fields={searchFields}
+          onFieldsChange={setSearchFields}
+          resultCount={searchQuery.trim() ? searchResults.length : undefined}
+        />
+      </div>
 
       <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
+        ) : isSearching ? (
+          isSearchLoading ? (
+            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <EmptyState variant="no-results" size="sm" />
+          ) : (
+            searchResults.map((r) => {
+              const badge = matchBadgeLabel(r.matchedFields);
+              return (
+                <div key={r.id}>
+                  <HighlightCard
+                    quote={r.text || '[Unavailable]'}
+                    domain={r.domain}
+                    section={r.path === '/' ? undefined : r.path}
+                    onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
+                    onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
+                    onSaveQuote={(text) => updateText(r.id, text)}
+                  />
+                  {badge && (
+                    <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
+                      <span
+                        className="u-mono"
+                        style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                      >
+                        {badge}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )
         ) : collections.length === 0 && isAuthenticated ? (
           <LibraryStarters />
         ) : (

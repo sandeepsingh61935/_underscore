@@ -30,7 +30,7 @@ describe('MarginaliaStrip', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '+ Add note or label' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
   });
 
   it('expanded: omits NOTE header and shows Done inside the shared notes|tags tray', () => {
@@ -42,11 +42,64 @@ describe('MarginaliaStrip', () => {
     expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
 
     const notes = screen.getByPlaceholderText('What stood out?');
-    const addLabel = screen.getByLabelText('Add label');
+    const addTag = screen.getByLabelText('Add tag');
     const tray = notes.closest('[data-testid="marginalia-tray"]');
     expect(tray).not.toBeNull();
-    expect(tray).toContainElement(addLabel);
+    expect(tray).toContainElement(addTag);
     expect(tray).toContainElement(screen.getByRole('button', { name: 'Done' }));
+  });
+
+  it('persists tags-only when a tag is added (does not send notes field)', async () => {
+    updateMetadata.mockResolvedValue(true);
+    render(
+      <MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />,
+    );
+
+    const input = screen.getByLabelText('Add tag');
+    fireEvent.change(input, { target: { value: 'bfs' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(updateMetadata).toHaveBeenCalledWith(
+      'hl-1',
+      { tags: ['bfs'] },
+      { silent: true },
+    );
+  });
+
+  it('does not wipe local tags when props refresh empty while expanded', async () => {
+    updateMetadata.mockResolvedValue(true);
+    const { rerender } = render(
+      <MarginaliaStrip
+        highlightId="hl-1"
+        isExpanded
+        onToggleExpand={vi.fn()}
+        labels={[]}
+      />,
+    );
+
+    const input = screen.getByLabelText('Add tag');
+    fireEvent.change(input, { target: { value: 'cpp' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Parent re-renders with stale empty tags while still expanded
+    rerender(
+      <MarginaliaStrip
+        highlightId="hl-1"
+        isExpanded
+        onToggleExpand={vi.fn()}
+        labels={[]}
+      />,
+    );
+
+    expect(screen.getByText('cpp')).toBeTruthy();
   });
 
   it('collapsed: mirrors Notes|Tags in one shared tray with Edit', () => {
