@@ -37,12 +37,8 @@ vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
   useHighlightExport: vi.fn(() => ({ exportFile: vi.fn(), isBusy: false })),
 }));
 
-vi.mock('@/features/settings/components/McpBridgeSettings', () => ({
-  McpBridgeSettings: () => null,
-}));
-
-vi.mock('@/features/settings/components/ConnectedAppsSettings', () => ({
-  ConnectedAppsSettings: () => null,
+vi.mock('@/features/settings/components/ConnectToAiFlow', () => ({
+  ConnectToAiFlow: () => <div data-testid="connect-to-ai-flow-mock" />,
 }));
 
 vi.mock('@/features/settings/components/TypographySettings', () => ({

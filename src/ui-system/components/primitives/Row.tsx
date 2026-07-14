@@ -7,7 +7,7 @@
  */
 import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-export interface RowProps extends Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'role' | 'aria-checked' | 'aria-labelledby' | 'aria-label'> {
+export interface RowProps extends Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'role' | 'aria-checked' | 'aria-labelledby' | 'aria-label' | 'aria-disabled'> {
   left?: ReactNode;
   title: string;
   meta?: ReactNode;
@@ -73,6 +73,7 @@ export function Row({
   'aria-checked': ariaChecked,
   'aria-labelledby': ariaLabelledby,
   'aria-label': ariaLabel,
+  'aria-disabled': ariaDisabled,
 }: RowProps): React.ReactElement {
   if (onClick) {
     return (
@@ -84,6 +85,7 @@ export function Row({
         aria-checked={ariaChecked}
         aria-labelledby={ariaLabelledby}
         aria-label={ariaLabel ?? title}
+        aria-disabled={ariaDisabled}
         style={{
           all: 'unset',
           cursor: 'pointer',

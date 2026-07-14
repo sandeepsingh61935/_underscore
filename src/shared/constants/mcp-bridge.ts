@@ -12,6 +12,8 @@ export const MCP_BRIDGE_STORAGE_KEYS = {
   enabled: 'underscore_mcp_bridge_enabled',
   token: 'underscore_mcp_bridge_token',
   connectionState: 'underscore_mcp_bridge_connection_state',
+  /** App ids marked Active after a successful Check connection. */
+  activeApps: 'underscore_mcp_bridge_active_apps',
 } as const;
 
 /** Env var read by MCP Node process for token validation. */

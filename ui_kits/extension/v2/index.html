@@ -74,6 +74,7 @@
 <script type="text/babel" src="screens-mode-select.jsx"></script>
 <script type="text/babel" src="screens-nav.jsx"></script>
 <script type="text/babel" src="screens-expression.jsx"></script>
+<script type="text/babel" src="screens-mcp-connections.jsx"></script>
 
 <div id="root"></div>
 
@@ -211,6 +212,24 @@ function App() {
             </DCArtboard>
             <DCArtboard id="settings" label="Settings + typography" width={440} height={680}>
               <Settings typeId={tweaks.typeface} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="mcp-connect" title="⑨ Connect to AI" subtitle="Option B status-first hub: locked Guest/Free, Paid Active list, flat picker of 8, shared setup checklist.">
+            <DCArtboard id="mcp-locked-guest" label="Hub · Guest locked" width={440} height={680}>
+              <McpHubLockedGuest />
+            </DCArtboard>
+            <DCArtboard id="mcp-locked-free" label="Hub · Free locked" width={440} height={680}>
+              <McpHubLockedFree />
+            </DCArtboard>
+            <DCArtboard id="mcp-paid" label="Hub · Paid + Active" width={440} height={680}>
+              <McpHubPaid />
+            </DCArtboard>
+            <DCArtboard id="mcp-picker" label="Add an AI app" width={440} height={680}>
+              <McpPicker />
+            </DCArtboard>
+            <DCArtboard id="mcp-setup" label="Setup · Cursor" width={440} height={680}>
+              <McpSetupCursor />
             </DCArtboard>
           </DCSection>
 

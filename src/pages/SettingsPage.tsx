@@ -5,8 +5,7 @@ import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
-import { McpBridgeSettings } from '@/features/settings/components/McpBridgeSettings';
-import { ConnectedAppsSettings } from '@/features/settings/components/ConnectedAppsSettings';
+import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
@@ -41,10 +40,12 @@ export function SettingsPage({
   const { deleteScope } = useHighlightDelete();
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
+  const [connectStackDepth, setConnectStackDepth] = useState(1);
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
   const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated);
+  const connectDrilling = connectStackDepth > 1;
 
   // onBack is still required on the interface for callers passing it to the shell's ModeHeader
   // _onBack is intentionally unused in the body-only version
@@ -103,160 +104,169 @@ export function SettingsPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <div style={{ padding: '12px 16px 6px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
-      </div>
+      {!connectDrilling ? (
+        <div style={{ padding: '12px 16px 6px' }}>
+          <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
+        </div>
+      ) : null}
 
-      <div className="list-scroll" style={{ flex: 1 }}>
-        <TypographySettings
-          expanded={typographyExpanded}
-          onToggle={() => setTypographyExpanded((v) => !v)}
-        />
-
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
-        <Row
-          title="Theme"
-          sub="Match system"
-          right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>}
-          onClick={handleToggleTheme}
-        />
-        <Row
-          title="Mode"
-          sub={isAuthenticated ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}` : 'Guest'}
-          right={
-            isAuthenticated ? (
-              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>
-            ) : undefined
-          }
-          onClick={isAuthenticated ? onChangeMode : undefined}
-        />
-        <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Edit</span>} />
-
-        {isAuthenticated && (
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
+        {!connectDrilling ? (
           <>
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
-        <Row
-          title="Sync library"
-          sub={syncSubtitle}
-          right={
-            isSyncing ? (
-              <Spinner size="sm" />
-            ) : (
-              <span
-                className="u-mono"
-                style={{
-                  fontSize: 'var(--step--2)',
-                  color: syncGate.allowed && user ? 'var(--accent)' : 'var(--ink-3)',
-                }}
-              >
-                {syncGate.allowed && user ? 'Sync' : '—'}
-              </span>
-            )
-          }
-          onClick={syncGate.allowed && !isSyncing ? handleSyncLibrary : undefined}
-        />
-        <Row
-          title="Export library"
-          sub={
-            exportGate.allowed && user
-              ? 'Download all highlights as markdown or spreadsheet'
-              : featureGateSubtitle(exportGate.reason)
-          }
-          right={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
-        />
-        <Row
-          title="Delete library"
-          sub="Permanently remove all highlights on this device"
-          right={
-            <span
-              className="u-mono"
-              style={{
-                fontSize: 'var(--step--2)',
-                color: 'var(--accent)',
-              }}
-            >
-              Delete
-            </span>
-          }
-          onClick={() => setDeleteLibraryOpen(true)}
-        />
+            <TypographySettings
+              expanded={typographyExpanded}
+              onToggle={() => setTypographyExpanded((v) => !v)}
+            />
 
-        <McpBridgeSettings
-          isAuthenticated={Boolean(user)}
-          currentMode={currentMode}
-          onSignIn={onSignIn}
-        />
+            <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
+            <Row
+              title="Theme"
+              sub="Match system"
+              right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', textTransform: 'capitalize' }}>{theme}</span>}
+              onClick={handleToggleTheme}
+            />
+            <Row
+              title="Mode"
+              sub={isAuthenticated ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}` : 'Guest'}
+              right={
+                isAuthenticated ? (
+                  <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Change</span>
+                ) : undefined
+              }
+              onClick={isAuthenticated ? onChangeMode : undefined}
+            />
+            <Row title="Density" sub="Comfortable" right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>Edit</span>} />
 
-        <ConnectedAppsSettings
-          isAuthenticated={Boolean(user)}
-          currentMode={currentMode}
-        />
+            {isAuthenticated ? (
+              <>
+                <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
+                <Row
+                  title="Sync library"
+                  sub={syncSubtitle}
+                  right={
+                    isSyncing ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <span
+                        className="u-mono"
+                        style={{
+                          fontSize: 'var(--step--2)',
+                          color: syncGate.allowed && user ? 'var(--accent)' : 'var(--ink-3)',
+                        }}
+                      >
+                        {syncGate.allowed && user ? 'Sync' : '—'}
+                      </span>
+                    )
+                  }
+                  onClick={syncGate.allowed && !isSyncing ? handleSyncLibrary : undefined}
+                />
+                <Row
+                  title="Export library"
+                  sub={
+                    exportGate.allowed && user
+                      ? 'Download all highlights as markdown or spreadsheet'
+                      : featureGateSubtitle(exportGate.reason)
+                  }
+                  right={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
+                />
+                <Row
+                  title="Delete library"
+                  sub="Permanently remove all highlights on this device"
+                  right={
+                    <span
+                      className="u-mono"
+                      style={{
+                        fontSize: 'var(--step--2)',
+                        color: 'var(--accent)',
+                      }}
+                    >
+                      Delete
+                    </span>
+                  }
+                  onClick={() => setDeleteLibraryOpen(true)}
+                />
+              </>
+            ) : null}
           </>
-        )}
+        ) : null}
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>AI</div>
-        <Row
-          title="Configure AI providers"
-          sub={
-            aiSetupGate.allowed
-              ? 'OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter'
-              : featureGateSubtitle(aiSetupGate.reason)
-          }
-          right={
-            <span
-              className="u-mono"
-              style={{
-                fontSize: 'var(--step--2)',
-                color: aiSetupGate.allowed ? 'var(--accent)' : 'var(--ink-3)',
-              }}
-            >
-              {aiSetupGate.allowed ? '→' : '—'}
-            </span>
-          }
-          onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
-        />
+        <div style={connectDrilling ? { height: '100%' } : undefined}>
+          <ConnectToAiFlow
+            isAuthenticated={isAuthenticated}
+            currentMode={currentMode}
+            onSignIn={onSignIn}
+            onConfigureAIProviders={onConfigureAIProviders}
+            onStackDepthChange={setConnectStackDepth}
+          />
+        </div>
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
-        <Row
-          title={user?.email || 'Sign in'}
-          sub={
-            user
-              ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`
-              : 'Sync library across devices, export, AI'
-          }
-          right={
-            isSigningOut ? (
-              <Spinner size="sm" />
-            ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {user && (currentMode === 'pro' || currentMode === 'pro_xai') ? (
-                  <span
-                    className="u-mono"
-                    data-testid="account-plan-pill"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      padding: '2px 8px',
-                      border: '1px solid var(--rule-soft)',
-                      color: currentMode === 'pro_xai' ? 'var(--accent)' : 'var(--ink-3)',
-                    }}
-                  >
-                    {currentMode === 'pro_xai' ? 'Paid' : 'Free'}
-                  </span>
-                ) : null}
+        {!connectDrilling ? (
+          <>
+            <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>AI</div>
+            <Row
+              title="Configure AI providers"
+              sub={
+                aiSetupGate.allowed
+                  ? 'OpenAI, Claude, Gemini, Cursor, Ollama, OpenRouter'
+                  : featureGateSubtitle(aiSetupGate.reason)
+              }
+              right={
                 <span
                   className="u-mono"
                   style={{
                     fontSize: 'var(--step--2)',
-                    color: user ? 'var(--ink-3)' : 'var(--accent)',
+                    color: aiSetupGate.allowed ? 'var(--accent)' : 'var(--ink-3)',
                   }}
                 >
-                  {user ? 'Sign out' : 'Sign in'}
+                  {aiSetupGate.allowed ? '→' : '—'}
                 </span>
-              </span>
-            )
-          }
-          onClick={!isSigningOut ? handleAccountClick : undefined}
-        />
+              }
+              onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
+            />
+
+            <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
+            <Row
+              title={user?.email || 'Sign in'}
+              sub={
+                user
+                  ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`
+                  : 'Sync library across devices, export, AI'
+              }
+              right={
+                isSigningOut ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {user && (currentMode === 'pro' || currentMode === 'pro_xai') ? (
+                      <span
+                        className="u-mono"
+                        data-testid="account-plan-pill"
+                        style={{
+                          fontSize: 'var(--step--2)',
+                          padding: '2px 8px',
+                          border: '1px solid var(--rule-soft)',
+                          color: currentMode === 'pro_xai' ? 'var(--accent)' : 'var(--ink-3)',
+                        }}
+                      >
+                        {currentMode === 'pro_xai' ? 'Paid' : 'Free'}
+                      </span>
+                    ) : null}
+                    <span
+                      className="u-mono"
+                      style={{
+                        fontSize: 'var(--step--2)',
+                        color: user ? 'var(--ink-3)' : 'var(--accent)',
+                      }}
+                    >
+                      {user ? 'Sign out' : 'Sign in'}
+                    </span>
+                  </span>
+                )
+              }
+              onClick={!isSigningOut ? handleAccountClick : undefined}
+            />
+          </>
+        ) : null}
       </div>
 
       <DeleteConfirmDialog
