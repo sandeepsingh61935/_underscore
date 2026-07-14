@@ -1,0 +1,399 @@
+/**
+ * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section)
+ * Spec: docs/superpowers/specs/2026-07-14-marginalia-inline-notes-tags-design.md
+ * Mockup: marginalia-inline-notes-tags.canvas.tsx
+ *
+ * Accordion strip with four design states: `empty` / `collapsed` /
+ * `expanded` / `saving`. Notes and tags share one bordered tray on a
+ * single band (Notes flex | Tags hug); tags wrap under notes when crowded.
+ * Done/Saving sit top-right of the tray (no NOTE header row).
+ *
+ * Dirty-guard (see HighlightMetadataEditor for the original bug): re-sync
+ * local `noteDraft`/`labelsDraft` from props only when `highlightId`
+ * changes OR when the note field is not focused AND we are not saving.
+ * Note saves debounce 500ms and flush on blur/Done. Inputs are NEVER
+ * disabled while `isSaving` — only the chrome text swaps to "Saving…".
+ * The `disabled` prop is a separate permission gate.
+ */
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { LabelInputRow } from '@/ui-system/components/composed/LabelInputRow';
+import { TagPill } from '@/ui-system/components/primitives/TagPill';
+
+/**
+ * Design states from the canvas/spec. `saving` is documented for API
+ * completeness — internally we stay in the `expanded` visual layout and
+ * swap the top-right chrome text based on `isSaving`.
+ */
+export type MarginaliaState = 'empty' | 'collapsed' | 'expanded' | 'saving';
+
+export interface MarginaliaStripProps {
+  highlightId: string;
+  notes?: string;
+  labels?: string[];
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  disabled?: boolean;
+  suggestions?: string[];
+}
+
+const NOTE_SAVE_DEBOUNCE_MS = 500;
+
+/** Horizontal margin: 16px right + 24px left indent (canvas). */
+const STRIP_MARGIN = '0 16px 8px 24px';
+const STRIP_WIDTH = 'calc(100% - 40px)';
+
+function autoGrowNoteField(el: HTMLTextAreaElement | null): void {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${Math.max(el.scrollHeight, 18)}px`;
+}
+
+function SharedTray({
+  children,
+  chrome,
+}: {
+  children: React.ReactNode;
+  chrome?: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <div
+      data-testid="marginalia-tray"
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        gap: 8,
+        padding: '6px 8px',
+        paddingRight: chrome ? 48 : 8,
+        border: '1px solid var(--rule-soft)',
+        borderRadius: 'var(--radius)',
+        background: 'var(--paper)',
+        minHeight: 28,
+        boxSizing: 'border-box',
+      }}
+    >
+      {children}
+      {chrome != null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 6,
+            right: 8,
+          }}
+        >
+          {chrome}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MarginaliaStrip({
+  highlightId,
+  notes,
+  labels,
+  isExpanded,
+  onToggleExpand,
+  disabled = false,
+  suggestions = [],
+}: MarginaliaStripProps): React.ReactElement {
+  const { updateMetadata } = useUpdateHighlightMetadata();
+
+  const [noteDraft, setNoteDraft] = useState(notes ?? '');
+  const [labelsDraft, setLabelsDraft] = useState<string[]>(labels ?? []);
+  const [tagInputDraft, setTagInputDraft] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isNoteFocused, setIsNoteFocused] = useState(false);
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteDraftRef = useRef(noteDraft);
+  const labelsDraftRef = useRef(labelsDraft);
+  const noteFieldRef = useRef<HTMLTextAreaElement | null>(null);
+  noteDraftRef.current = noteDraft;
+  labelsDraftRef.current = labelsDraft;
+
+  const clearSaveTimer = useCallback(() => {
+    if (saveTimerRef.current !== null) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+  }, []);
+
+  const persist = useCallback(
+    async (nextNotes?: string, nextLabels?: string[]) => {
+      setIsSaving(true);
+      try {
+        await updateMetadata(highlightId, {
+          notes: nextNotes ?? noteDraftRef.current,
+          tags: nextLabels ?? labelsDraftRef.current,
+        }, { silent: true });
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [highlightId, updateMetadata],
+  );
+
+  const prevHighlightIdRef = useRef(highlightId);
+  useEffect(() => {
+    const highlightChanged = prevHighlightIdRef.current !== highlightId;
+    prevHighlightIdRef.current = highlightId;
+
+    if (highlightChanged) {
+      setNoteDraft(notes ?? '');
+      setLabelsDraft(labels ?? []);
+      return;
+    }
+
+    if (!isNoteFocused && !isSaving) {
+      setNoteDraft(notes ?? '');
+      setLabelsDraft(labels ?? []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes, labels, highlightId]);
+
+  useEffect(() => {
+    return () => {
+      clearSaveTimer();
+    };
+  }, [clearSaveTimer]);
+
+  useLayoutEffect(() => {
+    if (isExpanded) {
+      autoGrowNoteField(noteFieldRef.current);
+    }
+  }, [isExpanded, noteDraft]);
+
+  const handleNoteChange = useCallback(
+    (value: string) => {
+      setNoteDraft(value);
+      clearSaveTimer();
+      saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        void persist(value, undefined);
+      }, NOTE_SAVE_DEBOUNCE_MS);
+    },
+    [clearSaveTimer, persist],
+  );
+
+  const flushNoteSave = useCallback(() => {
+    if (saveTimerRef.current !== null) {
+      clearSaveTimer();
+      void persist(noteDraftRef.current, undefined);
+    }
+  }, [clearSaveTimer, persist]);
+
+  const handleNoteBlur = useCallback(() => {
+    setIsNoteFocused(false);
+    flushNoteSave();
+  }, [flushNoteSave]);
+
+  const handleDone = useCallback(() => {
+    flushNoteSave();
+    onToggleExpand();
+  }, [flushNoteSave, onToggleExpand]);
+
+  const handleAddLabel = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed || labelsDraft.includes(trimmed)) return;
+      const next = [...labelsDraft, trimmed];
+      setLabelsDraft(next);
+      setTagInputDraft('');
+      void persist(undefined, next);
+    },
+    [labelsDraft, persist],
+  );
+
+  const handleRemoveLabel = useCallback(
+    (index: number) => {
+      const next = labelsDraft.filter((_, i) => i !== index);
+      setLabelsDraft(next);
+      void persist(undefined, next);
+    },
+    [labelsDraft, persist],
+  );
+
+  const hasContent = noteDraft.trim() !== '' || labelsDraft.length > 0;
+
+  if (!isExpanded && !hasContent) {
+    return (
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        disabled={disabled}
+        style={{
+          display: 'block',
+          width: STRIP_WIDTH,
+          margin: STRIP_MARGIN,
+          padding: '7px 10px',
+          textAlign: 'left',
+          border: '1px dashed var(--rule-soft)',
+          background: 'transparent',
+          cursor: disabled ? 'default' : 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+          + Add note or label
+        </span>
+      </button>
+    );
+  }
+
+  if (!isExpanded && hasContent) {
+    return (
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        disabled={disabled}
+        style={{
+          display: 'block',
+          width: STRIP_WIDTH,
+          margin: STRIP_MARGIN,
+          padding: '8px 10px',
+          textAlign: 'left',
+          border: 'none',
+          borderLeft: '2px solid var(--accent)',
+          background: 'var(--paper-2)',
+          cursor: disabled ? 'default' : 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        <SharedTray>
+          {noteDraft.trim() !== '' && (
+            <span
+              style={{
+                flex: '1 1 120px',
+                minWidth: 0,
+                fontFamily: 'var(--sans)',
+                fontSize: 11,
+                lineHeight: 1.4,
+                fontStyle: 'italic',
+                color: 'var(--ink-2)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {noteDraft}
+            </span>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 5,
+              flex: '0 1 auto',
+              maxWidth: '100%',
+            }}
+          >
+            {labelsDraft.map((label, index) => (
+              <TagPill key={`${label}-${index}`} label={label} readonly />
+            ))}
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontFamily: 'var(--mono)',
+                fontSize: 'var(--step--2)',
+                color: 'var(--ink-3)',
+              }}
+            >
+              Edit
+            </span>
+          </div>
+        </SharedTray>
+      </button>
+    );
+  }
+
+  const chrome = isSaving ? (
+    <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+      Saving…
+    </span>
+  ) : (
+    <button
+      type="button"
+      onClick={handleDone}
+      style={{
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+        padding: 0,
+        fontFamily: 'var(--mono)',
+        fontSize: 'var(--step--2)',
+        color: 'var(--ink-3)',
+      }}
+    >
+      Done
+    </button>
+  );
+
+  return (
+    <div
+      style={{
+        width: STRIP_WIDTH,
+        margin: STRIP_MARGIN,
+        padding: '8px 10px 8px 12px',
+        borderLeft: '2px solid var(--accent)',
+        background: 'var(--paper-2)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <SharedTray chrome={chrome}>
+        <textarea
+          ref={noteFieldRef}
+          value={noteDraft}
+          onChange={(event) => {
+            handleNoteChange(event.target.value);
+            autoGrowNoteField(event.target);
+          }}
+          onFocus={() => setIsNoteFocused(true)}
+          onBlur={handleNoteBlur}
+          disabled={disabled}
+          rows={1}
+          placeholder="What stood out?"
+          aria-label="Highlight note"
+          style={{
+            flex: '1 1 120px',
+            minWidth: 100,
+            boxSizing: 'border-box',
+            resize: 'none',
+            overflow: 'hidden',
+            fontFamily: 'var(--sans)',
+            fontSize: 12,
+            lineHeight: 1.4,
+            color: 'var(--ink)',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            padding: 0,
+            margin: 0,
+          }}
+        />
+        <div
+          style={{
+            flex: '0 1 auto',
+            maxWidth: '100%',
+            minWidth: 0,
+          }}
+        >
+          <LabelInputRow
+            labels={labelsDraft}
+            onRemoveLabel={handleRemoveLabel}
+            onAddLabel={handleAddLabel}
+            draft={tagInputDraft}
+            onDraftChange={setTagInputDraft}
+            suggestions={suggestions}
+            disabled={disabled}
+            variant="embedded"
+          />
+        </div>
+      </SharedTray>
+    </div>
+  );
+}
