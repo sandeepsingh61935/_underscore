@@ -1,12 +1,15 @@
 /**
  * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section)
  * Spec: docs/superpowers/specs/2026-07-14-marginalia-inline-notes-tags-design.md
- * Mockup: marginalia-inline-notes-tags.canvas.tsx
+ * Tile density: docs/superpowers/specs/2026-07-14-highlight-tile-editor-density-prd.md
  *
  * Accordion strip with four design states: `empty` / `collapsed` /
  * `expanded` / `saving`. Notes and tags share one bordered tray on a
  * single band (Notes flex | Tags hug); tags wrap under notes when crowded.
  * Done/Saving sit top-right of the tray (no NOTE header row).
+ *
+ * When `embedInCard` is true, the strip has no outer margin/indent and is
+ * meant for HighlightCard's unified action row (notes · tags · Edit · Delete).
  *
  * Dirty-guard (see HighlightMetadataEditor for the original bug): re-sync
  * local `noteDraft`/`labelsDraft` from props only when `highlightId`
@@ -36,13 +39,20 @@ export interface MarginaliaStripProps {
   onToggleExpand: () => void;
   disabled?: boolean;
   suggestions?: string[];
+  /**
+   * Embed into HighlightCard action row: no strip margin/indent, compact invite,
+   * hide secondary "Edit" label (tile owns Edit for quote body).
+   */
+  embedInCard?: boolean;
 }
 
 const NOTE_SAVE_DEBOUNCE_MS = 500;
 
-/** Horizontal margin: 16px right + 24px left indent (canvas). */
+/** Horizontal margin: 16px right + 24px left indent (standalone band). */
 const STRIP_MARGIN = '0 16px 8px 24px';
 const STRIP_WIDTH = 'calc(100% - 40px)';
+const EMBED_MARGIN = '0';
+const EMBED_WIDTH = '100%';
 
 function autoGrowNoteField(el: HTMLTextAreaElement | null): void {
   if (!el) return;
@@ -99,8 +109,11 @@ export function MarginaliaStrip({
   onToggleExpand,
   disabled = false,
   suggestions = [],
+  embedInCard = false,
 }: MarginaliaStripProps): React.ReactElement {
   const { updateMetadata } = useUpdateHighlightMetadata();
+  const shellWidth = embedInCard ? EMBED_WIDTH : STRIP_WIDTH;
+  const shellMargin = embedInCard ? EMBED_MARGIN : STRIP_MARGIN;
 
   const [noteDraft, setNoteDraft] = useState(notes ?? '');
   const [labelsDraft, setLabelsDraft] = useState<string[]>(labels ?? []);
@@ -225,16 +238,19 @@ export function MarginaliaStrip({
         type="button"
         onClick={onToggleExpand}
         disabled={disabled}
+        aria-label="+ Add note or label"
         style={{
-          display: 'block',
-          width: STRIP_WIDTH,
-          margin: STRIP_MARGIN,
-          padding: '7px 10px',
+          display: embedInCard ? 'inline-flex' : 'block',
+          width: embedInCard ? 'auto' : shellWidth,
+          maxWidth: '100%',
+          margin: shellMargin,
+          padding: embedInCard ? '3px 7px' : '7px 10px',
           textAlign: 'left',
           border: '1px dashed var(--rule-soft)',
           background: 'transparent',
           cursor: disabled ? 'default' : 'pointer',
           boxSizing: 'border-box',
+          whiteSpace: 'nowrap',
         }}
       >
         <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
@@ -245,56 +261,42 @@ export function MarginaliaStrip({
   }
 
   if (!isExpanded && hasContent) {
-    return (
-      <button
-        type="button"
-        onClick={onToggleExpand}
-        disabled={disabled}
-        style={{
-          display: 'block',
-          width: STRIP_WIDTH,
-          margin: STRIP_MARGIN,
-          padding: '8px 10px',
-          textAlign: 'left',
-          border: 'none',
-          borderLeft: '2px solid var(--accent)',
-          background: 'var(--paper-2)',
-          cursor: disabled ? 'default' : 'pointer',
-          boxSizing: 'border-box',
-        }}
-      >
-        <SharedTray>
-          {noteDraft.trim() !== '' && (
-            <span
-              style={{
-                flex: '1 1 120px',
-                minWidth: 0,
-                fontFamily: 'var(--sans)',
-                fontSize: 11,
-                lineHeight: 1.4,
-                fontStyle: 'italic',
-                color: 'var(--ink-2)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {noteDraft}
-            </span>
-          )}
-          <div
+    const collapsedBody = (
+      <>
+        {noteDraft.trim() !== '' && (
+          <span
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              gap: 5,
-              flex: '0 1 auto',
-              maxWidth: '100%',
+              flex: embedInCard ? '0 1 auto' : '1 1 120px',
+              minWidth: 0,
+              maxWidth: embedInCard ? 120 : undefined,
+              fontFamily: 'var(--sans)',
+              fontSize: 11,
+              lineHeight: 1.4,
+              fontStyle: 'italic',
+              color: 'var(--ink-2)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            {labelsDraft.map((label, index) => (
-              <TagPill key={`${label}-${index}`} label={label} readonly />
-            ))}
+            {noteDraft}
+          </span>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: embedInCard ? 'nowrap' : 'wrap',
+            alignItems: 'center',
+            gap: 5,
+            flex: '0 1 auto',
+            maxWidth: '100%',
+            overflow: embedInCard ? 'hidden' : undefined,
+          }}
+        >
+          {labelsDraft.map((label, index) => (
+            <TagPill key={`${label}-${index}`} label={label} readonly />
+          ))}
+          {!embedInCard && (
             <span
               style={{
                 marginLeft: 'auto',
@@ -305,8 +307,58 @@ export function MarginaliaStrip({
             >
               Edit
             </span>
-          </div>
-        </SharedTray>
+          )}
+        </div>
+      </>
+    );
+
+    if (embedInCard) {
+      return (
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          disabled={disabled}
+          aria-label="Edit note and labels"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            width: '100%',
+            margin: 0,
+            padding: 0,
+            border: 'none',
+            background: 'transparent',
+            cursor: disabled ? 'default' : 'pointer',
+            boxSizing: 'border-box',
+            textAlign: 'left',
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {collapsedBody}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        disabled={disabled}
+        style={{
+          display: 'block',
+          width: shellWidth,
+          margin: shellMargin,
+          padding: '8px 10px',
+          textAlign: 'left',
+          border: 'none',
+          borderLeft: '2px solid var(--accent)',
+          background: 'var(--paper-2)',
+          cursor: disabled ? 'default' : 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        <SharedTray>{collapsedBody}</SharedTray>
       </button>
     );
   }
@@ -333,67 +385,79 @@ export function MarginaliaStrip({
     </button>
   );
 
+  const editor = (
+    <SharedTray chrome={chrome}>
+      <textarea
+        ref={noteFieldRef}
+        value={noteDraft}
+        onChange={(event) => {
+          handleNoteChange(event.target.value);
+          autoGrowNoteField(event.target);
+        }}
+        onFocus={() => setIsNoteFocused(true)}
+        onBlur={handleNoteBlur}
+        disabled={disabled}
+        rows={1}
+        placeholder="What stood out?"
+        aria-label="Highlight note"
+        style={{
+          flex: '1 1 120px',
+          minWidth: embedInCard ? 72 : 100,
+          boxSizing: 'border-box',
+          resize: 'none',
+          overflow: 'hidden',
+          fontFamily: 'var(--sans)',
+          fontSize: 12,
+          lineHeight: 1.4,
+          color: 'var(--ink)',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          padding: 0,
+          margin: 0,
+        }}
+      />
+      <div
+        style={{
+          flex: '0 1 auto',
+          maxWidth: '100%',
+          minWidth: 0,
+        }}
+      >
+        <LabelInputRow
+          labels={labelsDraft}
+          onRemoveLabel={handleRemoveLabel}
+          onAddLabel={handleAddLabel}
+          draft={tagInputDraft}
+          onDraftChange={setTagInputDraft}
+          suggestions={suggestions}
+          disabled={disabled}
+          variant="embedded"
+        />
+      </div>
+    </SharedTray>
+  );
+
+  if (embedInCard) {
+    return (
+      <div style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+        {editor}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
-        width: STRIP_WIDTH,
-        margin: STRIP_MARGIN,
+        width: shellWidth,
+        margin: shellMargin,
         padding: '8px 10px 8px 12px',
         borderLeft: '2px solid var(--accent)',
         background: 'var(--paper-2)',
         boxSizing: 'border-box',
       }}
     >
-      <SharedTray chrome={chrome}>
-        <textarea
-          ref={noteFieldRef}
-          value={noteDraft}
-          onChange={(event) => {
-            handleNoteChange(event.target.value);
-            autoGrowNoteField(event.target);
-          }}
-          onFocus={() => setIsNoteFocused(true)}
-          onBlur={handleNoteBlur}
-          disabled={disabled}
-          rows={1}
-          placeholder="What stood out?"
-          aria-label="Highlight note"
-          style={{
-            flex: '1 1 120px',
-            minWidth: 100,
-            boxSizing: 'border-box',
-            resize: 'none',
-            overflow: 'hidden',
-            fontFamily: 'var(--sans)',
-            fontSize: 12,
-            lineHeight: 1.4,
-            color: 'var(--ink)',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            padding: 0,
-            margin: 0,
-          }}
-        />
-        <div
-          style={{
-            flex: '0 1 auto',
-            maxWidth: '100%',
-            minWidth: 0,
-          }}
-        >
-          <LabelInputRow
-            labels={labelsDraft}
-            onRemoveLabel={handleRemoveLabel}
-            onAddLabel={handleAddLabel}
-            draft={tagInputDraft}
-            onDraftChange={setTagInputDraft}
-            suggestions={suggestions}
-            disabled={disabled}
-            variant="embedded"
-          />
-        </div>
-      </SharedTray>
+      {editor}
     </div>
   );
 }

@@ -28,6 +28,38 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(quote.className).toContain('u-serif');
   });
 
+  it('shows Edit when onSaveQuote is provided', () => {
+    render(
+      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={async () => true} />
+    );
+    expect(screen.getByRole('button', { name: /Edit highlight text/ })).toBeTruthy();
+  });
+
+  it('enters edit mode and saves markdown via onSaveQuote', async () => {
+    const onSaveQuote = vi.fn(async () => true);
+    render(
+      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
+    const textarea = screen.getByLabelText(/Edit highlight markdown/);
+    fireEvent.change(textarea, { target: { value: '**Apple**' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save highlight text/ }));
+    await vi.waitFor(() => {
+      expect(onSaveQuote).toHaveBeenCalledWith('**Apple**');
+    });
+  });
+
+  it('cancels edit mode without calling onSaveQuote', () => {
+    const onSaveQuote = vi.fn(async () => true);
+    render(
+      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Cancel editing highlight/ }));
+    expect(onSaveQuote).not.toHaveBeenCalled();
+    expect(screen.getByText('Apple')).toBeTruthy();
+  });
+
   it('renders domain in u-mono', () => {
     render(<HighlightCard quote="Apple" domain="example.com" />);
     const meta = screen.getByText('example.com');
@@ -44,20 +76,45 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(screen.queryByText(/expired|left|fresh/i)).toBeNull();
   });
 
-  it('compact density uses 10px vertical padding', () => {
+  it('compact density uses asymmetric 10/8 vertical padding', () => {
     const { container } = render(
       <HighlightCard quote="Apple" domain="example.com" density="compact" />
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root.getAttribute('style') ?? '').toContain('10px 16px');
+    expect(root.getAttribute('style') ?? '').toContain('10px 16px 8px');
   });
 
-  it('comfortable density uses 14px vertical padding', () => {
+  it('comfortable density uses asymmetric 12/8 vertical padding', () => {
     const { container } = render(
       <HighlightCard quote="Apple" domain="example.com" density="comfortable" />
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root.getAttribute('style') ?? '').toContain('14px 16px');
+    expect(root.getAttribute('style') ?? '').toContain('12px 16px 8px');
+  });
+
+  it('applies Ctrl+B bold wrap on markdown selection', () => {
+    render(
+      <HighlightCard quote="Apple pie" domain="example.com" onSaveQuote={async () => true} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
+    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
+    textarea.setSelectionRange(0, 5);
+    fireEvent.keyDown(textarea, { key: 'b', ctrlKey: true });
+    expect(textarea.value).toBe('**Apple** pie');
+  });
+
+  it('places footerStart on the unified action row with Edit', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onSaveQuote={async () => true}
+        footerStart={<span>+ Add note or label</span>}
+      />
+    );
+    const row = screen.getByTestId('highlight-action-row');
+    expect(row.textContent).toContain('+ Add note or label');
+    expect(row.textContent).toMatch(/Edit/i);
   });
 
   it('renders domain only when section is absent', () => {
