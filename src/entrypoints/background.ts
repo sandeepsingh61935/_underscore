@@ -1,6 +1,6 @@
 /**
  * @file background.ts
- * @description Background service worker with TTL cleanup
+ * @description Background service worker entry point
  */
 
 // Polyfill environment removed
@@ -12,14 +12,28 @@ import type { Container } from '@/background/di/container';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { authStateResponseData } from '@/shared/auth/auth-state-payload';
 import { broadcastAuthSessionCleared, broadcastAuthStateChange } from '@/shared/auth/broadcast-auth-state';
-import { CLEAR_VERIFICATION_STATE, SYNC_AUTH_SESSION } from '@/shared/auth/constants';
-import { SyncAuthSessionPayloadSchema } from '@/shared/schemas/auth-schemas';
+import {
+  CLEAR_VERIFICATION_STATE,
+  SYNC_AUTH_SESSION,
+  VERIFY_EMAIL_OTP,
+  RESEND_EMAIL_OTP,
+  REQUEST_PASSWORD_RESET,
+  VERIFY_RECOVERY_OTP,
+  UPDATE_PASSWORD,
+} from '@/shared/auth/constants';
+import {
+  SyncAuthSessionPayloadSchema,
+  EmailOnlyPayloadSchema,
+  VerifyOtpPayloadSchema,
+  UpdatePasswordPayloadSchema,
+} from '@/shared/schemas/auth-schemas';
 import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA } from '@/shared/schemas/message-schemas';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
+import type { SearchField } from '@/shared/utils/highlight-search';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
 import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
@@ -35,7 +49,9 @@ import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
+import { canUseFeature } from '@/shared/utils/mode-capabilities';
 import { clearHighlightData } from '@/background/services/clear-highlight-data';
+import type { TagService } from '@/background/services/tag-service';
 
 const logger = LoggerFactory.getLogger('Background');
 
@@ -218,6 +234,81 @@ export default defineBackground({
         };
       });
 
+      // Verify email OTP Handler (signup confirmation)
+      messageBus.subscribe(VERIFY_EMAIL_OTP, async (payload: unknown) => {
+        logger.info('Handling VERIFY_EMAIL_OTP request');
+        const parsed = VerifyOtpPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'Enter a valid email and 6-digit code', code: 'INVALID_PAYLOAD' };
+        }
+
+        const result = await authManager.verifyEmailOtp(parsed.data.email, parsed.data.token);
+        if (!result.success) {
+          return { success: false, error: result.error?.message ?? 'Verification failed', code: result.error?.code };
+        }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
+      });
+
+      // Resend email OTP Handler
+      messageBus.subscribe(RESEND_EMAIL_OTP, async (payload: unknown) => {
+        logger.info('Handling RESEND_EMAIL_OTP request');
+        const parsed = EmailOnlyPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'A valid email is required', code: 'INVALID_PAYLOAD' };
+        }
+
+        const result = await authManager.resendEmailOtp(parsed.data.email);
+        if (!result.success) {
+          return { success: false, error: result.error?.message ?? 'Failed to resend code', code: result.error?.code };
+        }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
+      });
+
+      // Request password reset Handler
+      messageBus.subscribe(REQUEST_PASSWORD_RESET, async (payload: unknown) => {
+        logger.info('Handling REQUEST_PASSWORD_RESET request');
+        const parsed = EmailOnlyPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'A valid email is required', code: 'INVALID_PAYLOAD' };
+        }
+
+        const result = await authManager.requestPasswordReset(parsed.data.email);
+        if (!result.success) {
+          return { success: false, error: result.error?.message ?? 'Failed to request password reset', code: result.error?.code };
+        }
+        return { success: true, data: {} };
+      });
+
+      // Verify recovery OTP Handler (password reset)
+      messageBus.subscribe(VERIFY_RECOVERY_OTP, async (payload: unknown) => {
+        logger.info('Handling VERIFY_RECOVERY_OTP request');
+        const parsed = VerifyOtpPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'Enter a valid email and 6-digit code', code: 'INVALID_PAYLOAD' };
+        }
+
+        const result = await authManager.verifyRecoveryOtp(parsed.data.email, parsed.data.token);
+        if (!result.success) {
+          return { success: false, error: result.error?.message ?? 'Verification failed', code: result.error?.code };
+        }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
+      });
+
+      // Update password Handler
+      messageBus.subscribe(UPDATE_PASSWORD, async (payload: unknown) => {
+        logger.info('Handling UPDATE_PASSWORD request');
+        const parsed = UpdatePasswordPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return { success: false, error: 'Password does not meet requirements', code: 'INVALID_PAYLOAD' };
+        }
+
+        const result = await authManager.updatePassword(parsed.data.password);
+        if (!result.success) {
+          return { success: false, error: result.error?.message ?? 'Failed to update password', code: result.error?.code };
+        }
+        return { success: true, data: authStateResponseData(authManager.getAuthState()) };
+      });
+
       // Forward Auth State Changes to popup, content scripts, and web tabs
       authManager.onAuthStateChanged((state: AuthState) => {
         broadcastAuthStateChange(state);
@@ -226,11 +317,13 @@ export default defineBackground({
       // --- Collections API handlers ---
 
       const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+      const tagService = container.resolve<TagService>('tagService');
 
       const getHighlightQueryService = () => createScopedHighlightQueryService({
         isAuthenticated: authManager.isAuthenticated,
         repositoryFacade,
         scopedHighlightRepository,
+        tagResolver: tagService,
       });
 
       const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
@@ -245,6 +338,7 @@ export default defineBackground({
         backgroundHighlightOrchestrator,
         scopedHighlightRepository,
         repositoryFacade,
+        tagService,
         cloudHydrationService,
         librarySyncCursor,
         llmChat: async (payload: { provider?: ProviderName; request: LLMRequest }) => {
@@ -300,6 +394,28 @@ export default defineBackground({
         }
       });
 
+      // Search Highlights Handler (library-wide, or scoped to domain/section)
+      messageBus.subscribe(SEARCH_HIGHLIGHTS, async (payload: {
+        query: string;
+        domain?: string;
+        section?: string;
+        fields?: SearchField[];
+      }) => {
+        logger.info('Handling SEARCH_HIGHLIGHTS request', { domain: payload.domain, section: payload.section });
+        try {
+          const highlights = await getHighlightQueryService().search(payload.query, {
+            domain: payload.domain,
+            section: payload.section,
+            fields: payload.fields,
+          });
+          const withPlaintext = await backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+          return { success: true, data: { highlights: withPlaintext } };
+        } catch (error) {
+          logger.error('SEARCH_HIGHLIGHTS failed', error as Error);
+          throw error;
+        }
+      });
+
       messageBus.subscribe(CLEAR_HIGHLIGHT_DATA, async () => {
         logger.info('Handling CLEAR_HIGHLIGHT_DATA request');
         try {
@@ -319,6 +435,17 @@ export default defineBackground({
         }
       });
 
+      const getFeatureGateContext = async () => {
+        const stored = await browser.storage.local.get(MODE_STORAGE_KEY);
+        const mode = normalizeMode(stored[MODE_STORAGE_KEY]);
+        return {
+          mode,
+          capabilities: getCapabilitiesForMode(mode),
+          isAuthenticated: authManager.isAuthenticated,
+          storageScope: scopedHighlightRepository.getActiveScope(),
+        };
+      };
+
       messageBus.subscribe(UPDATE_HIGHLIGHT_METADATA, async (payload: {
         id: string;
         notes?: string;
@@ -326,15 +453,53 @@ export default defineBackground({
       }) => {
         logger.info('Handling UPDATE_HIGHLIGHT_METADATA request', { id: payload.id });
         try {
-          const metadata = buildHighlightMetadataUpdate({
-            notes: payload.notes,
-            tags: payload.tags,
-          });
-          repositoryFacade.update(payload.id, { metadata });
+          if (payload.tags !== undefined) {
+            const tagsGate = canUseFeature('tags', await getFeatureGateContext());
+            if (!tagsGate.allowed) {
+              return { success: false, error: tagsGate.reason ?? 'Tags not available in this mode', code: tagsGate.reason };
+            }
+          }
+
+          if (payload.notes !== undefined) {
+            const existing = repositoryFacade.get(payload.id);
+            const metadata = buildHighlightMetadataUpdate({
+              notes: payload.notes,
+              tags: existing?.metadata?.tags,
+            });
+            repositoryFacade.update(payload.id, { metadata });
+          }
+
+          if (payload.tags !== undefined) {
+            await tagService.setHighlightLabels(payload.id, payload.tags);
+          }
+
           notifyLibraryDataChanged({ source: 'metadata-update' });
           return { success: true, data: undefined };
         } catch (error) {
           logger.error('UPDATE_HIGHLIGHT_METADATA failed', error as Error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      messageBus.subscribe(GET_USER_TAGS, async () => {
+        logger.info('Handling GET_USER_TAGS request');
+        try {
+          const tags = await tagService.listByUser();
+          return {
+            success: true,
+            data: {
+              tags: tags.map((tag) => ({
+                id: tag.id,
+                name: tag.name,
+                createdAt: tag.createdAt.toISOString(),
+              })),
+            },
+          };
+        } catch (error) {
+          logger.error('GET_USER_TAGS failed', error as Error);
           return {
             success: false,
             error: error instanceof Error ? error.message : String(error),
@@ -442,45 +607,5 @@ export default defineBackground({
 
       return; // Stop processing but keep SW alive with fallback listener
     }
-
-    // One-time legacy TTL key cleanup on startup; no recurring expiry for guest storage.
-    browser.runtime.onStartup.addListener(async () => {
-      logger.info('Browser startup detected, running legacy TTL cleanup');
-      await cleanupExpiredDomains();
-    });
-
-    void cleanupExpiredDomains();
   },
 });
-
-/**
- * Cleanup expired domains from storage
- * Removes all domains where TTL has passed
- */
-async function cleanupExpiredDomains(): Promise<void> {
-  try {
-    const all = await browser.storage.local.get(null);
-    const now = Date.now();
-    const expired: string[] = [];
-
-    for (const [key, value] of Object.entries(all)) {
-      // Check if it's our storage format and has TTL
-      if (value && typeof value === 'object' && 'ttl' in value) {
-        const storage = value as { ttl: number | null };
-        // null means permanent (Sprint/Vault) — never expire these
-        if (storage.ttl !== null && now > storage.ttl) {
-          expired.push(key);
-        }
-      }
-    }
-
-    if (expired.length > 0) {
-      await browser.storage.local.remove(expired);
-      logger.info(`[Cleanup] Removed ${expired.length} expired domains`);
-    } else {
-      logger.debug('[Cleanup] No expired domains found');
-    }
-  } catch (error) {
-    logger.error('[Cleanup] Failed to cleanup expired domains', error as Error);
-  }
-}

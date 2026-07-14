@@ -64,10 +64,8 @@ export type AnyHighlightEvent =
  * Stored in chrome.storage.local with encrypted data
  */
 export interface DomainStorage {
-  /** Encrypted event log */
+  /** Serialized event log */
   data: string;
-  /** Time-to-live timestamp; null means no expiry (permanent) */
-  ttl: number | null;
   /** Last access timestamp */
   lastAccessed: number;
   /** Schema version for migrations */
@@ -95,18 +93,15 @@ export type StorageMode = 'basic' | 'pro';
  */
 export interface StorageConfig {
   mode: StorageMode;
-  /** TTL in milliseconds; null = permanent (no expiry) */
-  ttlDuration: number | null;
   maxEventsPerDomain: number;
   maxDomains: number;
 }
 
 /**
- * Default storage configuration (local: permanent, no TTL)
+ * Default storage configuration (permanent local persistence)
  */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
   mode: 'basic',
-  ttlDuration: null,
   maxEventsPerDomain: 100,
   maxDomains: 100,
 };
@@ -121,8 +116,6 @@ export interface CollectionsIndexEntry {
   mode: StorageMode;
   count: number;
   lastActive: number;
-  /** Absolute expiry in ms since epoch; null = permanent */
-  ttl: number | null;
   /** Vault-only sync metadata */
   synced?: boolean;
   syncedAt?: number;

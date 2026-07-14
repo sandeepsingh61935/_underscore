@@ -77,23 +77,23 @@ describe('resolvePopupInitialRoute', () => {
     ).toEqual({ view: 'MODE_SELECTION' });
   });
 
-  it('routes guests away from stale sign-in history to Mode Selection', () => {
+  it('routes guests with stale AUTH lastView to Collections (mode already chosen)', () => {
     expect(
       route({
         nav: { lastView: 'AUTH' },
       }),
-    ).toEqual({ view: 'MODE_SELECTION' });
+    ).toEqual({ view: 'COLLECTIONS' });
   });
 
-  it('does not restore Collections for signed-out guests', () => {
+  it('restores Collections for signed-out guests who already picked a mode', () => {
     expect(
       route({
         nav: { lastView: 'COLLECTIONS' },
       }),
-    ).toEqual({ view: 'MODE_SELECTION' });
+    ).toEqual({ view: 'COLLECTIONS' });
   });
 
-  it('does not restore domain drill-down for signed-out guests', () => {
+  it('restores domain drill-down for signed-out guests who already picked a mode', () => {
     expect(
       route({
         nav: {
@@ -101,7 +101,41 @@ describe('resolvePopupInitialRoute', () => {
           lastDomain: 'example.com',
         },
       }),
-    ).toEqual({ view: 'MODE_SELECTION' });
+    ).toEqual({
+      view: 'DOMAIN_DETAILS',
+      selectedDomain: 'example.com',
+    });
+  });
+
+  it('defaults guests who picked a mode to Collections when no last view', () => {
+    expect(route()).toEqual({ view: 'COLLECTIONS' });
+  });
+
+  it('routes unauthenticated users awaiting email verification to AUTH', () => {
+    expect(
+      route({
+        verificationStatus: 'awaiting',
+        nav: { lastView: 'COLLECTIONS' },
+      }),
+    ).toEqual({ view: 'AUTH' });
+  });
+
+  it('does not route authenticated users to AUTH even if verificationStatus lingers as awaiting', () => {
+    expect(
+      route({
+        isAuthenticated: true,
+        verificationStatus: 'awaiting',
+        nav: { lastView: 'SETTINGS' },
+      }),
+    ).toEqual({ view: 'SETTINGS' });
+  });
+
+  it('resumes an interrupted sign-in (pendingAuthMode set, not yet authenticated) on AUTH', () => {
+    expect(
+      route({
+        nav: { pendingAuthMode: 'pro' },
+      }),
+    ).toEqual({ view: 'AUTH' });
   });
 });
 

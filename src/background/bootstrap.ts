@@ -20,6 +20,7 @@ import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tr
 import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
 import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import type { ScopedTagRepository } from '@/shared/repositories/scoped-tag-repository';
 import { migrateLegacyVaultToBasic } from '@/background/repositories/migrate-legacy-highlight-db';
 
 const logger = LoggerFactory.getLogger('Bootstrap');
@@ -70,6 +71,7 @@ export async function initializeBackground(): Promise<Container> {
     //     Without this, reads after a cold start return 0 even when data exists in IDB.
     const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
     const scopedHighlightRepository = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+    const scopedTagRepository = container.resolve<ScopedTagRepository>('scopedTagRepository');
     const cloudHydrationService = container.resolve<ICloudHydrationService>('cloudHydrationService');
     const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
     const localWriteEchoTracker = container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker');
@@ -85,6 +87,7 @@ export async function initializeBackground(): Promise<Container> {
 
     const authStorageDeps = {
         scopedRepository: scopedHighlightRepository,
+        scopedTagRepository,
         repositoryFacade,
         cloudHydration: cloudHydrationService,
         syncCursor: librarySyncCursor,
@@ -127,6 +130,7 @@ export async function initializeBackground(): Promise<Container> {
     } else {
         logger.warn('[BOOTSTRAP] No authenticated user on startup, using Basic storage');
         await scopedHighlightRepository.activateScope('basic');
+        scopedTagRepository.activateScope('basic');
         configureLlmKeyTier(false);
     }
 

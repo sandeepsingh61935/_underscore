@@ -30,7 +30,7 @@ export function ModeSelector({
         {
             id: 'basic',
             label: 'Basic',
-            description: 'Highlights live on this device, with a configurable TTL.',
+            description: 'Highlights live on this device until you remove them.',
             icon: <Circle className="w-5 h-5" />,
             isLocked: false
         },

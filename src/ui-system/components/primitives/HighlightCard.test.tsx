@@ -5,7 +5,6 @@
  *   - Two densities: compact 10px / comfortable 14px vertical padding.
  *   - Quote: u-serif, 14px, --ink. qmark glyph 28px.
  *   - Meta: u-mono, 10px, --ink-3, "domain" or "domain / section".
- *   - Optional inline TTLBadge when ttlMs set.
  */
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -40,16 +39,9 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(screen.getByText('example.com/notes')).toBeTruthy();
   });
 
-  it('omits TTL badge when ttlMs absent', () => {
+  it('does not render expiry badges', () => {
     render(<HighlightCard quote="Apple" domain="example.com" />);
     expect(screen.queryByText(/expired|left|fresh/i)).toBeNull();
-  });
-
-  it('does not render TTL badge when ttlMs is passed (guest storage is permanent)', () => {
-    render(
-      <HighlightCard quote="Apple" domain="example.com" ttlMs={60_000} />
-    );
-    expect(screen.queryByText(/^\d+(s|m|h)$/)).toBeNull();
   });
 
   it('compact density uses 10px vertical padding', () => {

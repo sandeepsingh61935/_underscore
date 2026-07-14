@@ -47,8 +47,8 @@ export interface HighlightDeletedPayload {
     /** Highlight entity ID */
     readonly id: string;
 
-    /** Reason for deletion (user action, TTL expiry, etc.) */
-    readonly reason: 'user' | 'ttl' | 'sync';
+    /** Reason for deletion (user action, sync, etc.) */
+    readonly reason: 'user' | 'sync';
 
     /** Timestamp when deleted */
     readonly deletedAt: number;

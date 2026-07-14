@@ -14,7 +14,7 @@ import { z } from 'zod';
  * Mode Type Schema
  *
  * Validates mode names. Currently supports:
- * - basic: Local-only highlighting with a configurable TTL (see basic-ttl.ts).
+ * - basic: Local-only highlighting, permanent on-device storage.
  *   Replaces the former `ephemeral` + `local` modes.
  * - pro: Persistent, synced highlighting (IndexedDB + cloud sync). Replaces `cloud`.
  * - pro_xai: Pro capabilities plus AI-powered features. Replaces `ai`.

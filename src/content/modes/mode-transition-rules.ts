@@ -3,7 +3,7 @@
  * @description Defines valid mode transitions and their rules
  *
  * State machine rules for mode switching:
- * - Basic:   On-device highlighting, configurable TTL (default 24h)
+ * - Basic:   On-device highlighting, permanent local storage
  * - Pro:     Signed-in, synced highlighting (permanent, no expiry)
  * - Pro-XAI: Everything in Pro, plus AI summaries/synthesis/Q&A
  *

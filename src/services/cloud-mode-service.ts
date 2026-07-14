@@ -4,6 +4,7 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2, TextQuoteSelector } from '@/shared/schemas/highlight-schema';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { TextQuoteFinder } from '@/content/utils/text-quote-finder';
+import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
 
 /**
  * Discriminated union: a highlight range's selector is either the W3C
@@ -130,13 +131,15 @@ export class CloudModeService {
     }>
   > {
     try {
-      const url = window.location.href.split('#')[0] || '';
+      const url = normalizePageUrl(window.location.href);
       if (!url) return [];
 
       this.logger.info(`[VAULT] [QUERY] Querying highlights for URL: ${url}`);
 
       // Fetch from Repository (DualWriteRepo handles local + cloud merging)
-      const highlights = this.facade.findByUrl(url);
+      const highlights = this.facade
+        .getAll()
+        .filter((h) => h.url && normalizePageUrl(h.url) === url);
 
       this.logger.info(`[VAULT] [HIT] Found ${highlights.length} highlights from repository`);
 

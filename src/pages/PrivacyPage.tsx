@@ -110,7 +110,7 @@ export function PrivacyPage(): React.ReactElement {
           <ul>
             <li>Browsing history outside of your explicit highlights</li>
             <li>Personal information beyond what you provide at signup</li>
-            <li>Data from Basic mode — it lives only on your device, and expires on the TTL you set</li>
+            <li>Data from Basic mode — it lives only on your device until you delete it</li>
           </ul>
         </PolicySection>
 

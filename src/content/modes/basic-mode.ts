@@ -15,6 +15,7 @@ import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -38,16 +39,15 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     undo: true,
     sync: false,
     collections: true,
-    tags: false,
+    tags: true,
     export: false,
     ai: false,
-    search: false,
+    search: true,
     multiSelector: false,
   };
 
   override async onActivate(): Promise<void> {
     await super.onActivate();
-    this.storage?.setTtlDuration?.(null);
   }
 
   async createHighlight(selection: Selection, colorRole: string): Promise<string> {
@@ -99,7 +99,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
 
     this.facade.add({
       ...storageData,
-      url: window.location.href,
+      url: normalizePageUrl(window.location.href),
     });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
@@ -130,7 +130,12 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       ranges: data.ranges,
     });
 
-    this.facade.add(storageData);
+    const pageUrl = data.url ?? normalizePageUrl(window.location.href);
+
+    this.facade.add({
+      ...storageData,
+      url: pageUrl,
+    });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,

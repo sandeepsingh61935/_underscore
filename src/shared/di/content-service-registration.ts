@@ -60,8 +60,7 @@ export function registerContentServices(container: Container): void {
 
     /**
      * ModeStateManager - Singleton
-     * Source of truth for the current mode. Consumed by the read IPC
-     * adapter so restoreHighlights() can apply per-mode TTL.
+     * Source of truth for the current mode. Consumed by the read IPC adapter.
      */
     container.registerSingleton<ModeStateManager>('modeStateManager', () => {
         const eventBus = container.resolve<EventBus>('eventBus');
@@ -76,9 +75,7 @@ export function registerContentServices(container: Container): void {
 
     /**
      * Basic Mode - Transient
-     * Local persistence with a user-configurable TTL (24h default; see
-     * @/shared/constants/basic-ttl). Replaces the former Walk (ephemeral,
-     * fixed 24h) and Sprint (local, permanent) modes.
+     * Permanent local persistence on this device.
      */
     container.registerTransient<IHighlightMode>('basicMode', () => {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
@@ -97,7 +94,10 @@ export function registerContentServices(container: Container): void {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new ProMode(facade, eventBus, logger);
+        const highlightReader = container.resolve<IReadableHighlightRepository>(
+            'ipcReadableHighlightRepository'
+        );
+        return new ProMode(facade, eventBus, logger, { highlightReader });
     });
 
     /**
@@ -109,7 +109,10 @@ export function registerContentServices(container: Container): void {
         const facade = container.resolve<RepositoryFacade>('repositoryFacade');
         const eventBus = container.resolve<EventBus>('eventBus');
         const logger = container.resolve<ILogger>('logger');
-        return new ProXaiMode(facade, eventBus, logger);
+        const highlightReader = container.resolve<IReadableHighlightRepository>(
+            'ipcReadableHighlightRepository'
+        );
+        return new ProXaiMode(facade, eventBus, logger, { highlightReader });
     });
 
     // ============================================

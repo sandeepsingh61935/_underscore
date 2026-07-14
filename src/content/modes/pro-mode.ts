@@ -22,16 +22,24 @@ import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
 import { serializeRange } from '@/content/utils/range-converter';
 
-import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
+import { CloudModeService } from '@/services/cloud-mode-service';
+import { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
 import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
+export interface ProModeDeps {
+  /** IPC read path to hydrate the facade after page reload (empty local cache). */
+  highlightReader?: IReadableHighlightRepository;
+}
+
 export class ProMode extends BaseHighlightMode implements IPersistentMode {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected cloudService: any; // Type is CloudModeService, but import is tricky due to cyclic if not careful. Using any or proper type. Assuming import is ok.
+  protected cloudService: CloudModeService;
+  private readonly highlightReader?: IReadableHighlightRepository;
 
   // Widened to 'pro' | 'pro_xai' so ProXaiMode (which extends this class and
   // shares all its persistence/sync behavior) can override with its own
@@ -43,11 +51,13 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   constructor(
     facade: RepositoryFacade,
     eventBus: EventBus,
-    logger: ILogger
+    logger: ILogger,
+    deps: ProModeDeps = {}
   ) {
     super(eventBus, logger, facade);
-    // Initialize service here with eventBus
-    this.cloudService = createCloudModeServiceWithCloudSync();
+    this.highlightReader = deps.highlightReader;
+    // Same DI facade as modes — never a private empty InMemory store.
+    this.cloudService = new CloudModeService(facade, new MultiSelectorEngine(), logger);
   }
 
   override async onActivate(): Promise<void> {
@@ -208,7 +218,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   /**
    * Create highlight from existing data (e.g., Undo/Restore)
    */
-  async createFromData(data: HighlightData, options?: { skipSync?: boolean }): Promise<void> {
+  async createFromData(data: HighlightData, _options?: { skipSync?: boolean }): Promise<void> {
     // 1. Ensure live ranges exist
     if (!data.liveRanges || data.liveRanges.length === 0) {
       this.logger.warn('[PRO] createFromData called without live ranges', data.id);
@@ -220,7 +230,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     // Use saveHighlight to ensure persistence + selectors
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.cloudService.saveHighlight(data as any, range, { skipSync: options?.skipSync });
+    await this.cloudService.saveHighlight(data as any, range);
 
     // 3. Render
     await this.renderAndRegister(data);
@@ -240,8 +250,10 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
         createdAt: data.createdAt ?? new Date(),
         ranges: data.ranges,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.facade.add(storageData as any);
+      this.facade.add({
+        ...storageData,
+        url: data.url ?? normalizePageUrl(window.location.href),
+      });
     } else {
       this.logger.debug('[PRO] Skipping duplicate repo add during create', {
         id: data.id,
@@ -348,6 +360,14 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     const contentHash = await generateContentHash(text);
 
+    const existing = this.facade.findByContentHash(contentHash);
+    if (existing?.id) {
+      this.logger.info('Duplicate content detected - returning existing highlight (Pro Mode)', {
+        existingId: existing.id,
+      });
+      return existing.id;
+    }
+
     const id = this.generateId();
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
@@ -386,7 +406,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     });
     this.facade.add({
       ...storageData,
-      url: window.location.href.split('#')[0] || window.location.href,
+      url: normalizePageUrl(window.location.href),
     });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
@@ -420,8 +440,22 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   async restore(_url?: string): Promise<void> {
-    // Use CloudModeService to restore from IndexedDB
     this.logger.info('[PRO] [SYNC] Starting restore process...');
+
+    const pageUrl = normalizePageUrl(window.location.href);
+    if (this.highlightReader) {
+      try {
+        const stored = await this.highlightReader.findByUrl(pageUrl);
+        for (const highlight of stored) {
+          this.facade.rehydrate(highlight);
+        }
+        this.logger.info('[PRO] Hydrated facade from IPC', { count: stored.length, pageUrl });
+      } catch (error) {
+        this.logger.warn('[PRO] IPC hydrate failed; continuing with local cache', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     const restored = await this.cloudService.restoreHighlightsForUrl();
 
@@ -436,44 +470,23 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       const { highlight: storedData, range } = item;
 
       if (range) {
-        // Construct full HighlightData with live ranges
         const fullData = {
           ...storedData,
           liveRanges: [range],
         } as unknown as HighlightData;
 
         await this.renderAndRegister(fullData);
+        this.facade.rehydrate(storedData);
 
         this.logger.info(`[PRO] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
-
-        // Sync to Repository (Idempotent check)
-        // Note: repository is RepositoryFacade with sync API (get/has, not findById)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const exists = this.facade.get?.(storedData.id) || this.facade.has?.(storedData.id);
-        if (!exists) {
-          // Strip runtime-only fields (liveRanges) before persisting — Bug A.
-          const { toStorageFormat } = await import('@/content/highlight-type-bridge');
-          const { liveRanges: _lr, ...persisted } = fullData as HighlightData & { liveRanges?: Range[] };
-          const storageData = await toStorageFormat({
-            ...persisted,
-            color: storedData.colorRole,
-            type: 'underscore',
-            createdAt: storedData.createdAt ?? new Date(),
-            ranges: storedData.ranges,
-          });
-          this.facade.add({
-            ...storageData,
-            url: window.location.href,
-          });
-        } else {
-          this.logger.debug('[PRO] Skipping duplicate restore', { id: storedData.id });
-        }
       } else {
         this.logger.warn(`[PRO] [FAIL] Failed to restore range for highlight: ${storedData.id}`);
       }
     }
 
-    this.logger.info(`[PRO] [DONE] Restoration complete: ${restored.filter((r: any) => r.range).length}/${restored.length} highlights rendered`);
+    this.logger.info(
+      `[PRO] [DONE] Restoration complete: ${restored.filter((r) => r.range).length}/${restored.length} highlights rendered`
+    );
   }
 
   async sync(): Promise<void> {

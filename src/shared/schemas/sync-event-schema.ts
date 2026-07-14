@@ -50,7 +50,7 @@ export const HighlightUpdatedPayloadSchema = z.object({
  */
 export const HighlightDeletedPayloadSchema = z.object({
     id: z.string().uuid(),
-    reason: z.enum(['user', 'ttl', 'sync']),
+    reason: z.enum(['user', 'sync']),
     deletedAt: z.number().int().positive(),
 });
 

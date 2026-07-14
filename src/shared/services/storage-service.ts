@@ -1,6 +1,6 @@
 /**
  * @file storage-service.ts
- * @description Domain-scoped storage service with event sourcing and encryption
+ * @description Domain-scoped storage service with event sourcing
  */
 
 import { browser } from 'wxt/browser';
@@ -26,25 +26,7 @@ import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Storage service for domain-scoped highlight persistence.
- * Used by Walk mode (24h TTL) and Sprint mode (permanent / null TTL).
- * Vault mode will add Supabase sync on top of this local store.
- *
- * Features:
- * - Event sourcing (append-only event log)
- * - Per-domain encryption
- * - Optional TTL-based expiration (null = permanent)
- * - Domain isolation
- *
- * @example
- * ```typescript
- * const storage = new StorageService();
- * await storage.saveEvent({
- *   type: 'highlight.created',
- *   timestamp: Date.now(),
- *   eventId: crypto.randomUUID(),
- *   data: highlight
- * });
- * ```
+ * Highlights persist until the user removes them.
  */
 export class StorageService implements IStorage {
   private logger: ILogger;
@@ -54,11 +36,9 @@ export class StorageService implements IStorage {
   constructor(config: Partial<StorageConfig> = {}) {
     this.logger = LoggerFactory.getLogger('StorageService');
 
-    // Handle both Window (Browser) and Service Worker (Background) contexts
     if (typeof window !== 'undefined' && window.location) {
       this.currentDomain = window.location.hostname;
     } else {
-      // globalThis.location is available in ServiceWorker scope
       const swLocation = (globalThis as unknown as { location?: Location }).location;
       this.currentDomain = swLocation?.hostname || 'background-service';
     }
@@ -66,23 +46,7 @@ export class StorageService implements IStorage {
     this.config = { ...DEFAULT_STORAGE_CONFIG, ...config };
   }
 
-  /**
-   * Update the TTL duration used for subsequent saves.
-   *
-   * @remarks
-   * Used by BasicMode to apply the user's configured Basic TTL preference
-   * (24h/2d/7d/30d/forever) without needing a new StorageService instance.
-   */
-  setTtlDuration(ttlDurationMs: number | null): void {
-    this.config = { ...this.config, ttlDuration: ttlDurationMs };
-  }
-
-  /**
-   * Save event to storage
-   * Appends to event log, applies TTL, encrypts
-   */
   async saveEvent(event: AnyHighlightEvent): Promise<void> {
-    // Validate event structure
     if (!isValidHighlightEvent(event)) {
       throw new ValidationError('Invalid highlight event structure', {
         eventType: (event as { type?: string }).type,
@@ -91,21 +55,13 @@ export class StorageService implements IStorage {
     }
 
     try {
-      // Get existing events
       const events = await this.loadEvents();
-
-      // Append new event
       events.push(event);
-
-      // Trim to max size (keep recent events)
       const trimmed = events.slice(-this.config.maxEventsPerDomain);
-
-      // Save
       await this.saveEvents(trimmed);
 
       this.logger.debug('Event saved', { type: event.type, eventId: event.eventId });
     } catch (error) {
-      // Re-throw ValidationError as-is
       if (error instanceof ValidationError) {
         throw error;
       }
@@ -114,10 +70,6 @@ export class StorageService implements IStorage {
     }
   }
 
-  /**
-   * Load events from storage
-   * Returns empty array if expired or not found
-   */
   async loadEvents(): Promise<AnyHighlightEvent[]> {
     try {
       const hashedDomain = await hashDomain(this.currentDomain);
@@ -125,15 +77,6 @@ export class StorageService implements IStorage {
       this.logger.info('[LOAD] Starting load operation', {
         domain: this.currentDomain,
         hashedDomain,
-      });
-
-      // Debug: Dump all storage keys
-      const allKeys = await browser.storage.local.get(null);
-      this.logger.info('[LOAD] Storage dump', {
-        totalKeys: Object.keys(allKeys).length,
-        allKeys: Object.keys(allKeys),
-        ourKey: hashedDomain,
-        keyExists: hashedDomain in allKeys,
       });
 
       const result = await browser.storage.local.get(hashedDomain);
@@ -151,40 +94,9 @@ export class StorageService implements IStorage {
       this.logger.info('[LOAD] Found data', {
         domain: this.currentDomain,
         lastModified: new Date(domainStorage.lastAccessed).toISOString(),
-        ttl: domainStorage.ttl,
       });
 
-      // Check TTL — null means permanent, skip expiry check
-      const now = Date.now();
-      let hoursUntilExpiry = Infinity;
-
-      if (domainStorage.ttl !== null) {
-        const timeUntilExpiry = domainStorage.ttl - now;
-        hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
-
-        this.logger.info('[LOAD] TTL check', {
-          now,
-          ttl: domainStorage.ttl,
-          hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
-          isExpired: now > domainStorage.ttl,
-        });
-
-        if (now > domainStorage.ttl) {
-          this.logger.warn('⏰ [LOAD] Data EXPIRED - clearing', {
-            domain: this.currentDomain,
-            expiredAt: new Date(domainStorage.ttl).toISOString(),
-          });
-          await browser.storage.local.remove(hashedDomain);
-          return [];
-        }
-      } else {
-        this.logger.info('[LOAD] TTL check skipped (permanent storage)');
-      }
-
-      // Parse stored event log
       const eventLog: EventLog = JSON.parse(domainStorage.data);
-
-      // Validate events
       const validEvents = eventLog.events.filter(isValidHighlightEvent);
 
       if (validEvents.length !== eventLog.events.length) {
@@ -197,39 +109,30 @@ export class StorageService implements IStorage {
       this.logger.info('[OK] [LOAD] Events loaded successfully', {
         domain: this.currentDomain,
         count: validEvents.length,
-        hoursUntilExpiry: isFinite(hoursUntilExpiry) ? hoursUntilExpiry.toFixed(2) : 'permanent',
       });
 
       const sorted = validEvents.sort((a, b) => a.timestamp - b.timestamp);
-
-      // Lazy backfill: if this domain has no index entry yet, create one now.
-      // Covers highlights saved before __collections_index existed.
-      await this.backfillIndexIfMissing(hashedDomain, sorted, domainStorage.ttl);
+      await this.backfillIndexIfMissing(hashedDomain, sorted);
 
       return sorted;
     } catch (error) {
       this.logger.error('Failed to load events', error as Error);
-      return []; // Fail gracefully
+      return [];
     }
   }
 
-  /**
-   * Backfill __collections_index for domains that pre-date the index.
-   * Called lazily on first load of each domain after the migration.
-   */
   private async backfillIndexIfMissing(
     hashedDomain: string,
     events: AnyHighlightEvent[],
-    ttl: number | null
   ): Promise<void> {
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
       const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
 
-      if (hashedDomain in index) return; // Already indexed
+      if (hashedDomain in index) return;
 
       const count = computeHighlightCount(events);
-      if (count === 0) return; // Nothing to index
+      if (count === 0) return;
 
       const lastActive =
         events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : Date.now();
@@ -239,7 +142,6 @@ export class StorageService implements IStorage {
         mode: this.config.mode,
         count,
         lastActive,
-        ttl,
       };
 
       await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
@@ -252,9 +154,6 @@ export class StorageService implements IStorage {
     }
   }
 
-  /**
-   * Save events to storage
-   */
   private async saveEvents(events: AnyHighlightEvent[]): Promise<void> {
     const hashedDomain = await hashDomain(this.currentDomain);
 
@@ -264,49 +163,28 @@ export class StorageService implements IStorage {
       eventCount: events.length,
     });
 
-    // Create event log
     const eventLog: EventLog = { events };
-
-    // Serialize event log
     const serialized = JSON.stringify(eventLog);
-
-    // Calculate TTL — null means permanent
     const now = Date.now();
-    const ttl = this.config.ttlDuration !== null ? now + this.config.ttlDuration : null;
 
-    this.logger.info('[SAVE] TTL calculation', {
-      now,
-      ttlDuration: this.config.ttlDuration,
-      ttl,
-      permanent: ttl === null,
-    });
-
-    // Create storage object
     const domainStorage: DomainStorage = {
       data: serialized,
-      ttl,
       lastAccessed: now,
       version: 1,
     };
 
-    // Save
     await browser.storage.local.set({ [hashedDomain]: domainStorage });
-
-    // Update plain-domain collections index
-    await this.updateCollectionsIndex(hashedDomain, events, ttl, now);
+    await this.updateCollectionsIndex(hashedDomain, events, now);
 
     this.logger.info('[OK] [SAVE] Save completed', {
-      savedTtl: ttl !== null ? new Date(ttl).toISOString() : 'permanent',
       eventCount: events.length,
     });
   }
 
-  /** Update __collections_index entry for the current domain */
   private async updateCollectionsIndex(
     hashedDomain: string,
     events: AnyHighlightEvent[],
-    ttl: number | null,
-    now: number
+    now: number,
   ): Promise<void> {
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
@@ -320,7 +198,6 @@ export class StorageService implements IStorage {
         mode: this.config.mode,
         count,
         lastActive,
-        ttl,
       };
 
       await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
@@ -329,14 +206,10 @@ export class StorageService implements IStorage {
     }
   }
 
-  /**
-   * Clear all events for current domain
-   */
   async clear(): Promise<void> {
     const hashedDomain = await hashDomain(this.currentDomain);
     await browser.storage.local.remove(hashedDomain);
 
-    // Remove from collections index
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
       const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
@@ -351,23 +224,8 @@ export class StorageService implements IStorage {
     this.logger.info('Storage cleared', { domain: this.currentDomain });
   }
 
-  /**
-   * Get storage stats
-   */
-  async getStats(): Promise<{ eventCount: number; ttl: Date | null }> {
-    const hashedDomain = await hashDomain(this.currentDomain);
-    const result = await browser.storage.local.get(hashedDomain);
-
-    if (!result[hashedDomain]) {
-      return { eventCount: 0, ttl: null };
-    }
-
+  async getStats(): Promise<{ eventCount: number }> {
     const events = await this.loadEvents();
-    const domainStorage = result[hashedDomain] as DomainStorage;
-
-    return {
-      eventCount: events.length,
-      ttl: domainStorage.ttl !== null ? new Date(domainStorage.ttl) : null,
-    };
+    return { eventCount: events.length };
   }
 }

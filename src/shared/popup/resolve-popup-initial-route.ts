@@ -14,7 +14,8 @@ export type PopupInitialView =
   | 'SUB_DOMAIN'
   | 'SETTINGS'
   | 'DASHBOARD'
-  | 'API_KEY_SETUP';
+  | 'API_KEY_SETUP'
+  | 'AUTH';
 
 export interface PopupOnboardingState {
   hasSeenWelcome: boolean;
@@ -26,6 +27,8 @@ export interface PopupRouteInput {
   onboarding: PopupOnboardingState;
   nav: PopupNavigationSnapshot;
   currentMode: ModeType;
+  /** From AuthManager, via useCurrentUser/AuthProvider. */
+  verificationStatus?: 'idle' | 'awaiting' | 'failed';
 }
 
 export interface PopupRouteResult {
@@ -56,12 +59,6 @@ function drillDownContext(
   return context;
 }
 
-const AUTH_GATED_LIBRARY_VIEWS = new Set<PopupInitialView>([
-  'COLLECTIONS',
-  'DOMAIN_DETAILS',
-  'SUB_DOMAIN',
-]);
-
 function restoredPersistedView(
   nav: PopupNavigationSnapshot,
 ): PopupRouteResult | null {
@@ -80,10 +77,16 @@ function restoredPersistedView(
  * Auth gates are never restored; sign-in completion is handled via pending mode or home.
  */
 export function resolvePopupInitialRoute(input: PopupRouteInput): PopupRouteResult {
-  const { isAuthenticated, onboarding, nav } = input;
+  const { isAuthenticated, onboarding, nav, verificationStatus } = input;
 
   if (!onboarding.hasSeenWelcome) {
     return { view: 'WELCOME' };
+  }
+
+  // Awaiting email confirmation implies no session yet — resume on the
+  // verification screen instead of falling through to Mode Selection.
+  if (!isAuthenticated && verificationStatus === 'awaiting') {
+    return { view: 'AUTH' };
   }
 
   if (isAuthenticated) {
@@ -108,10 +111,19 @@ export function resolvePopupInitialRoute(input: PopupRouteInput): PopupRouteResu
     return { view: 'MODE_SELECTION' };
   }
 
+  // Interrupted sign-in: user picked Pro/10x and clicked Sign In but closed
+  // the popup before completing auth. Resume on AUTH rather than bouncing
+  // back to Mode Selection.
+  if (nav.pendingAuthMode) {
+    return { view: 'AUTH' };
+  }
+
+  // Guest home is Collections (Basic has library). Restore last library /
+  // settings view; never force Mode Selection again after first pick.
   const restored = restoredPersistedView(nav);
-  if (restored && restored.view !== 'MODE_SELECTION' && !AUTH_GATED_LIBRARY_VIEWS.has(restored.view)) {
+  if (restored && restored.view !== 'MODE_SELECTION') {
     return restored;
   }
 
-  return { view: 'MODE_SELECTION' };
+  return { view: 'COLLECTIONS' };
 }

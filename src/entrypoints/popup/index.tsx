@@ -113,6 +113,7 @@ class ErrorBoundary extends Component<
 
 function PopupApp(): React.ReactElement {
   const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
+  const { verificationStatus } = useExtensionAuth();
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
@@ -193,6 +194,7 @@ function PopupApp(): React.ReactElement {
           onboarding: { hasSeenWelcome, hasSeenModeSelection },
           nav,
           currentMode,
+          verificationStatus,
         });
 
         if (resolved.applyMode) {
@@ -419,6 +421,7 @@ function PopupApp(): React.ReactElement {
         >
           <CollectionsView
             onCollectionClick={handleCollectionClick}
+            onSectionClick={handleSectionClick}
             isAuthenticated={!!user}
             onSignIn={() => setCurrentView(View.AUTH)}
           />

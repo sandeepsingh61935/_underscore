@@ -61,17 +61,17 @@ export function registerBaseServices(container: Container): void {
     // ============================================
 
     /**
-     * Pro storage — permanent (null TTL, synced)
+     * Pro storage — permanent, synced
      */
     container.registerSingleton<IStorage>('storage', () => {
-        return new StorageService({ mode: 'pro', ttlDuration: null });
+        return new StorageService({ mode: 'pro' });
     });
 
     /**
-     * Guest (Basic) storage — permanent local persistence (no TTL).
+     * Guest (Basic) storage — permanent local persistence.
      */
     container.registerSingleton<IStorage>('basicStorage', () => {
-        return new StorageService({ mode: 'basic', ttlDuration: null });
+        return new StorageService({ mode: 'basic' });
     });
 
     /**

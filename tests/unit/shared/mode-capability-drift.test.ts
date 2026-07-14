@@ -35,9 +35,7 @@ function createModeFixtures() {
     initialize: vi.fn(),
     reload: vi.fn(),
   } as unknown as RepositoryFacade;
-  const storage = {
-    setTtlDuration: vi.fn(),
-  } as unknown as IStorage;
+  const storage = {} as unknown as IStorage;
 
   return {
     basic: new BasicMode(facade, storage, eventBus, logger),

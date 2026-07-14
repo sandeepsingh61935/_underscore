@@ -50,18 +50,6 @@ export interface IStorage {
    * Use with caution!
    */
   clear(): Promise<void>;
-
-  /**
-   * Update the TTL duration used for subsequent saves (optional).
-   *
-   * @remarks
-   * Basic Mode's TTL is a user-configurable preference (see
-   * @/shared/constants/basic-ttl), not a fixed per-mode constant. This lets
-   * the DI-registered 'basicStorage' singleton be re-tuned at runtime
-   * instead of requiring a new StorageService instance per TTL choice.
-   * `null` means no expiry (permanent/"forever").
-   */
-  setTtlDuration?(ttlDurationMs: number | null): void;
 }
 
 /**

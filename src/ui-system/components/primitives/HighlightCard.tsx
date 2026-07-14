@@ -16,8 +16,6 @@ export interface HighlightCardProps {
    *  Omit or pass undefined for root — shows domain only. */
   section?: string;
   url?: string;
-  /** @deprecated Guest storage is permanent; TTL badges removed. */
-  ttlMs?: number;
   density?: 'compact' | 'comfortable';
   /** When provided, the meta line (domain/path) becomes a tappable button. */
   onSectionClick?: () => void;

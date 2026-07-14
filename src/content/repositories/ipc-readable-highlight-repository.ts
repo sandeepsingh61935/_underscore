@@ -13,9 +13,7 @@
  *
  * The background's `IPC_HIGHLIGHTS_FIND_BY_URL` handler (already wired
  * in BackgroundHighlightOrchestrator) reads from the facade cache which
- * was populated from IDB at startup. This adapter adds the current mode
- * to the payload so the handler can apply the configured Basic TTL
- * (see @/shared/constants/basic-ttl) when mode === 'basic'.
+ * was populated from IDB at startup.
  *
  * Mode is resolved per-call from the supplied mode-state getter, so a
  * mode switch takes effect on the next restore.

@@ -16,10 +16,10 @@ import type { CommandFactory } from '@/content/commands/command-factory';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
-import type { HighlightDataV2WithRuntime } from '@/content/highlight-type-bridge';
 import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
+import { getHighlightsInRange } from '@/content/utils/get-highlights-in-range';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
@@ -250,7 +250,7 @@ export default defineContentScript({
           // RANGE SUBTRACTION: Check if selection overlaps existing highlights
           const overlappingHighlights = getHighlightsInRange(
             event.selection,
-            repositoryFacade
+            modeManager.getCurrentMode().getAllHighlights()
           );
 
           if (overlappingHighlights.length > 0) {
@@ -299,10 +299,12 @@ export default defineContentScript({
                   id: newId,
                   text,
                   contentHash,
-                  colorRole: (existingHighlight.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
+                  colorRole: (existingHighlight.colorRole || existingHighlight.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
                   type: 'underscore' as const,
-                  ranges: serializedRanges,
+                  ranges: serializedRanges.filter((r): r is NonNullable<typeof r> => r != null),
+                  liveRanges: mergedRanges,
                   createdAt: new Date(),
+                  url: existingHighlight.url,
                 };
 
                 // [OK] Use mode's unified creation path (fixes undo/redo!)
@@ -317,7 +319,7 @@ export default defineContentScript({
                   data: {
                     id: newId,
                     text,
-                    type: existingHighlight.type,
+                    type: existingHighlight.type || 'underscore',
                     ranges: serializedRanges,
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   } as any,
@@ -394,7 +396,7 @@ export default defineContentScript({
       eventBus.on<SelectionCreatedEvent>(EventName.CLEAR_SELECTION, async (event) => {
         const highlightsInSelection = getHighlightsInRange(
           event.selection,
-          repositoryFacade
+          modeManager.getCurrentMode().getAllHighlights()
         );
 
         if (highlightsInSelection.length > 0) {
@@ -610,8 +612,7 @@ export default defineContentScript({
                 // This ensures popup receives correct count in response
                 logger.info('[IPC] Starting highlight processing for mode switch');
                 if (newMode === MODE_NAMES.BASIC) {
-                  // Basic Mode always restores highlights (never clears) on switch-to,
-                  // regardless of the configured TTL.
+                  // Basic Mode always restores highlights on switch-to.
                   logger.info('[IPC] Restoring highlights for Basic Mode...');
                   await restoreHighlights({
                     storage,
@@ -687,7 +688,7 @@ export default defineContentScript({
       logger.info('Web Highlighter Extension initialized successfully');
       logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
       logger.info(
-        'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), Storage (configurable TTL)'
+        'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), permanent local storage'
       );
       logger.info(`Restored ${repositoryFacade.count()} highlights from storage`);
     } catch (error) {
@@ -720,9 +721,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
     // Reads go through the read-side IPC adapter, not the local in-memory
     // facade. The facade is empty after a page reload (its DI container
     // is fresh); the background holds the persisted set (IDB / DualWrite
-    // per mode). The adapter calls IPC_HIGHLIGHTS_FIND_BY_URL; the
-    // background's orchestrator applies the Basic TTL preference
-    // (24h default; see @/shared/constants/basic-ttl) when mode === 'basic'.
+    // per mode). The adapter calls IPC_HIGHLIGHTS_FIND_BY_URL.
     const activeHighlights = await ipcReadableHighlightRepository.findByUrl(currentUrl);
 
     // Hydrate the synchronous in-memory facade for UI operations (hover detection, etc)
@@ -779,6 +778,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             ranges: serializedRanges,
             liveRanges,
             createdAt: highlightData.createdAt,
+            url: highlightData.url,
           });
 
           // Mode's createFromData() already adds to repository - no duplication needed
@@ -827,46 +827,4 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
   } catch (error) {
     logger.error('Failed to restore highlights', error as Error);
   }
-}
-
-/**
- * Find highlights that overlap with a selection
- * (for range subtraction - find all highlights that need to be split)
- */
-function getHighlightsInRange(
-  selection: Selection,
-  repositoryFacade: RepositoryFacade
-): Array<HighlightDataV2WithRuntime> {
-  if (selection.rangeCount === 0) return [];
-
-  const userRange = selection.getRangeAt(0);
-  const highlights = repositoryFacade.getAll();
-
-  return (highlights as unknown as HighlightDataV2WithRuntime[]).filter((hl) => {
-    // Check all liveRanges in this highlight
-    const ranges = hl.liveRanges || [];
-    if (ranges.length === 0) return false;
-
-    // Check if ANY of the highlight's ranges overlap with selection
-    for (const liveRange of ranges) {
-      try {
-        // Check if ranges overlap
-        // Overlaps if: hl ends after selection starts AND hl starts before selection ends
-        const hlEndsAfterSelectionStarts =
-          liveRange.compareBoundaryPoints(Range.END_TO_START, userRange) > 0;
-
-        const hlStartsBeforeSelectionEnds =
-          liveRange.compareBoundaryPoints(Range.START_TO_END, userRange) < 0;
-
-        if (hlEndsAfterSelectionStarts && hlStartsBeforeSelectionEnds) {
-          return true; // This highlight overlaps
-        }
-      } catch (_e) {
-        // If comparison fails (different documents), skip this range
-        continue;
-      }
-    }
-
-    return false; // None of the ranges overlap
-  });
 }

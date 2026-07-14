@@ -32,10 +32,7 @@ export interface HighlightData {
   liveRanges?: Range[];
   createdAt?: Date;
 
-  /**
-   * Expiration timestamp for Sprint Mode TTL (4-hour auto-delete)
-   * Only used in Sprint Mode. Null/undefined for Walk and Vault modes.
-   */
+  /** Optional metadata; not used for automatic expiry. */
   expiresAt?: Date;
 }
 
