@@ -6,6 +6,9 @@ import { WebDataProviderAdapter } from '@/core/data/WebDataProviderAdapter';
 import { ProtectedRoute } from '@/core/routing/ProtectedRoute';
 import { WelcomePage } from '@/pages/WelcomePage';
 import { SignInView } from '@/features/auth/SignInView';
+import { VerifyEmailView } from '@/features/auth/VerifyEmailView';
+import { ForgotPasswordView } from '@/features/auth/ForgotPasswordView';
+import { ResetPasswordView } from '@/features/auth/ResetPasswordView';
 import { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { ModeSelectionView } from '@/features/modes/ModeSelectionView';
 import { CollectionsView } from '@/features/collections/views/CollectionsView';
@@ -13,6 +16,7 @@ import { DomainDetailsView } from '@/features/collections/views/DomainDetailsVie
 import { SubDomainView } from '@/features/collections/views/SubDomainView';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
+import { TermsPage } from '@/pages/TermsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
 import { useNavigate } from 'react-router-dom';
@@ -39,11 +43,17 @@ function ModeSelectionRoute(): React.JSX.Element {
     );
 }
 
+/** Routes mid-auth-flow — must never be interrupted by IntentCatcher's redirect. */
+const AUTH_PENDING_PATHS = ['/verify-email', '/forgot-password', '/reset-password'];
+
 function IntentCatcher({ children }: { children: React.ReactNode }) {
     const { setMode } = useApp();
     const navigate = useNavigate();
 
     React.useEffect(() => {
+        if (AUTH_PENDING_PATHS.includes(window.location.pathname)) {
+            return;
+        }
         const params = new URLSearchParams(window.location.search);
         const intendedMode = params.get('intendedMode');
         const returnTo = params.get('returnTo');
@@ -73,6 +83,9 @@ export function AppRoutes() {
                         <Routes>
                             <Route path="/" element={<WelcomePage />} />
                             <Route path="/sign-in" element={<SignInView />} />
+                            <Route path="/verify-email" element={<VerifyEmailView />} />
+                            <Route path="/forgot-password" element={<ForgotPasswordView />} />
+                            <Route path="/reset-password" element={<ResetPasswordView />} />
                             <Route path="/oauth/consent" element={<OAuthConsentPage />} />
                             <Route path="/mode" element={<ModeSelectionRoute />} />
                             <Route path="/collections" element={<ProtectedRoute><CollectionsView /></ProtectedRoute>} />
@@ -80,6 +93,7 @@ export function AppRoutes() {
                             <Route path="/domain/:domain/section/:section" element={<ProtectedRoute><SubDomainView /></ProtectedRoute>} />
                             <Route path="/settings" element={<SettingsRoute />} />
                             <Route path="/privacy" element={<PrivacyPage />} />
+                            <Route path="/terms" element={<TermsPage />} />
                             <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                     </IntentCatcher>

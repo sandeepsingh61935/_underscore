@@ -3,56 +3,71 @@ import React, { useState } from 'react';
 import type { OAuthProviderType } from '../../../background/auth/interfaces/i-auth-manager';
 import { useClearVerificationState } from '../../../features/auth/hooks/useClearVerificationState';
 import { useCurrentUser } from '../../../features/auth/hooks/useCurrentUser';
-import { Logo } from '../../../ui-system/components/primitives/Logo';
 
+import { ForgotPasswordView } from './ForgotPasswordView';
+import { ResetPasswordView } from './ResetPasswordView';
 import { VerificationView } from './VerificationView';
 
-
+import { EXISTING_ACCOUNT_CODE, mapAuthError } from '@/shared/auth/auth-error-messages';
+import { openLegalDoc, resolveLegalDocUrl } from '@/shared/auth/web-legal-urls';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
-import { Spinner } from '@/ui-system/components/primitives/Spinner';
+
+type AuthStep = 'auth' | 'forgot-password' | 'reset-password';
 
 interface AuthViewProps {
     onLoginSuccess: () => void;
     onBackToModeSelection?: () => void;
 }
 
+const textLinkStyle: React.CSSProperties = {
+    display: 'inline',
+    padding: 0,
+    margin: 0,
+    minHeight: 'auto',
+    border: 0,
+    background: 'transparent',
+    cursor: 'pointer',
+    fontFamily: 'var(--sans)',
+    fontSize: 'inherit',
+    fontWeight: 500,
+    color: 'var(--accent)',
+    textDecoration: 'underline',
+    textUnderlineOffset: 2,
+};
+
+const quietLinkStyle: React.CSSProperties = {
+    ...textLinkStyle,
+    color: 'var(--ink-3)',
+    fontWeight: 400,
+    fontSize: 'var(--step--1)',
+};
+
 /**
- * AuthView — V2 Editorial migration of the popup auth screen.
+ * AuthView — popup auth landing (body-only).
  *
- * Body-only root: `display: flex, flex-direction: column, height: 100%, width: 100%`.
- * PopupShell owns the 400x600 chrome; this view returns body content only.
- *
- * V2 token map applied:
- *   - bg-surface / text-on-surface       -> var(--paper) / var(--ink)
- *   - text-on-surface-variant / text-outline -> var(--ink-3)
- *   - text-primary                       -> var(--accent)
- *   - border-outline-variant            -> var(--rule-soft)
- *   - bg-primary-container (icon)        -> var(--accent-tint-08)
- *   - text-[Npx]                         -> var(--step-N)
- *   - min-h-[48px]                       -> minHeight: 44
- *   - font-display                       -> .u-serif
- *   - var(--ink-ease-spring)             -> var(--ease-standard)
- *   - error red color-mix                -> var(--accent-tint-08) with var(--rule) border
- *   - bg-on-surface (submit button)      -> var(--ink) (ink fill, paper text)
+ * Spec: docs/superpowers/specs/2026-07-14-auth-landing-redesign.md
+ * PopupShell owns brand chrome; body starts at Back + centered title.
+ * No rail / kicker / body wordmark on landing.
  */
 export function AuthView({
     onLoginSuccess,
     onBackToModeSelection,
 }: AuthViewProps): React.ReactElement {
-
     const {
         login, loginWithEmail, registerWithEmail, isLoading, error,
-        verificationStatus, verificationExpiresAt
+        verificationStatus, verificationExpiresAt, verificationEmail,
     } = useCurrentUser();
 
     const clearVerification = useClearVerificationState();
 
     const [loginError, setLoginError] = useState<string | null>(null);
-    const [isRegistering, setIsRegistering] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [activeProvider, setActiveProvider] = useState<OAuthProviderType | null>(null);
+    const [step, setStep] = useState<AuthStep>('auth');
+    const [resetEmail, setResetEmail] = useState('');
 
     const handleProviderClick = async (provider: OAuthProviderType): Promise<void> => {
         setLoginError(null);
@@ -62,34 +77,80 @@ export function AuthView({
         if (result.success) {
             onLoginSuccess();
         } else {
-            setLoginError(result.error || 'Login failed. Please try again.');
+            setLoginError(result.error || mapAuthError('oauth', null));
         }
     };
 
     const handleEmailSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setLoginError(null);
-        const action = isRegistering ? registerWithEmail : loginWithEmail;
-        const result = await action(email, password);
+
+        if (isRegistering) {
+            if (password.length < 8) {
+                setLoginError('Password must be at least 8 characters.');
+                return;
+            }
+
+            const result = await registerWithEmail(email, password);
+            if (!result.success) {
+                setLoginError(result.error || mapAuthError('sign-up', null));
+                if (result.code === EXISTING_ACCOUNT_CODE) {
+                    setIsRegistering(false);
+                }
+                return;
+            }
+            if (result.verificationStatus === 'awaiting') {
+                return;
+            }
+            onLoginSuccess();
+            return;
+        }
+
+        const result = await loginWithEmail(email, password);
         if (result.success) {
             onLoginSuccess();
         } else {
-            setLoginError(result.error || `${isRegistering ? 'Registration' : 'Login'} failed. Please try again.`);
+            setLoginError(result.error || mapAuthError('sign-in', null));
         }
     };
 
     if (verificationStatus === 'awaiting') {
         return (
             <VerificationView
-                email={email}
+                email={verificationEmail ?? email}
                 expiresAt={verificationExpiresAt}
-                onCheckVerification={onLoginSuccess}
+                onVerified={onLoginSuccess}
                 onCancel={() => {
                     void clearVerification(undefined);
                 }}
             />
         );
     }
+
+    if (step === 'forgot-password') {
+        return (
+            <ForgotPasswordView
+                onCodeSent={(sentEmail) => {
+                    setResetEmail(sentEmail);
+                    setStep('reset-password');
+                }}
+                onBack={() => setStep('auth')}
+            />
+        );
+    }
+
+    if (step === 'reset-password') {
+        return (
+            <ResetPasswordView
+                email={resetEmail}
+                onSuccess={onLoginSuccess}
+                onBack={() => setStep('auth')}
+            />
+        );
+    }
+
+    const showPasswordHelper = isRegistering && password.length < 8;
+    const displayError = loginError || error;
 
     return (
         <div
@@ -101,11 +162,6 @@ export function AuthView({
                 backgroundColor: 'var(--paper)',
                 color: 'var(--ink)',
                 overflowY: 'auto',
-                position: 'relative',
-                backgroundImage: [
-                    'radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 50%)',
-                    'radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 50%)',
-                ].join(', '),
             }}
         >
             <main
@@ -113,92 +169,104 @@ export function AuthView({
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '32px 24px',
+                    gap: 12,
+                    padding: '20px 22px 16px',
                     width: '100%',
-                    maxWidth: 380,
+                    maxWidth: 400,
                     margin: '0 auto',
+                    boxSizing: 'border-box',
                 }}
             >
-
-                {/* Logo row — left-aligned */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 9,
-                        marginBottom: 28,
-                        alignSelf: 'flex-start',
-                    }}
-                >
-                    <Logo size="sm" showText={false} />
-                    <span
-                        className="u-serif"
+                {onBackToModeSelection ? (
+                    <button
+                        type="button"
+                        onClick={onBackToModeSelection}
+                        className="u-sans"
+                        aria-label="Back to settings"
                         style={{
+                            ...quietLinkStyle,
+                            alignSelf: 'flex-start',
+                            minHeight: 44,
+                            display: 'inline-flex',
+                            alignItems: 'center',
                             fontSize: 'var(--step-1)',
-                            color: 'var(--ink)',
-                            letterSpacing: '-0.02em',
+                            textDecoration: 'none',
                         }}
                     >
-                        underscore
-                    </span>
-                </div>
+                        ←
+                    </button>
+                ) : null}
 
-                {/* Headline — Instrument Serif italic */}
-                <h1
-                    className="u-serif"
-                    style={{
-                        fontSize: 'var(--step-4)',
-                        fontWeight: 400,
-                        color: 'var(--ink)',
-                        textAlign: 'center',
-                        letterSpacing: '-0.025em',
-                        lineHeight: 1.25,
-                        margin: '0 0 8px',
-                    }}
-                >
-                    Your knowledge<br /><em>workspace awaits</em>
-                </h1>
-                <p
-                    className="u-sans"
-                    style={{
-                        fontSize: 'var(--step--1)',
-                        color: 'var(--ink-3)',
-                        textAlign: 'center',
-                        margin: '0 0 28px',
-                    }}
-                >
-                    Sign in or create an account to continue
-                </p>
-
-                {/* OAuth — Google */}
-                <div
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        marginBottom: 16,
-                        flexShrink: 0,
-                    }}
-                >
-                    <Button
-                        type="button"
-                        variant="accent"
-                        onClick={() => handleProviderClick('google')}
-                        disabled={isLoading || activeProvider !== null}
+                <div style={{ textAlign: 'center', width: '100%' }}>
+                    <h1
+                        className="u-serif"
+                        style={{
+                            fontSize: 'var(--step-3)',
+                            fontWeight: 500,
+                            color: 'var(--ink)',
+                            textAlign: 'center',
+                            margin: '0 0 6px',
+                            letterSpacing: '-0.025em',
+                            lineHeight: 1.2,
+                        }}
                     >
-                        {activeProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
-                    </Button>
+                        {isRegistering ? 'Create your account' : 'Welcome back'}
+                    </h1>
+                    <p
+                        className="u-sans"
+                        style={{
+                            fontSize: 'var(--step--1)',
+                            color: 'var(--ink-3)',
+                            textAlign: 'center',
+                            margin: 0,
+                            lineHeight: 1.45,
+                        }}
+                    >
+                        {isRegistering
+                            ? 'Save highlights to your library.'
+                            : 'Open your synced collections.'}
+                    </p>
                 </div>
 
-                {/* OR divider */}
+                <div
+                    aria-hidden
+                    style={{ height: 1, background: 'var(--rule-soft)', width: '100%' }}
+                />
+
+                {displayError ? (
+                    <div
+                        role="alert"
+                        className="u-sans"
+                        style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            borderRadius: 'var(--radius)',
+                            backgroundColor: 'var(--accent-tint-08)',
+                            border: '1px solid var(--rule)',
+                            color: 'var(--ink)',
+                            fontSize: 'var(--step--1)',
+                        }}
+                    >
+                        {displayError}
+                    </div>
+                ) : null}
+
+                <Button
+                    type="button"
+                    variant="accent"
+                    onClick={() => void handleProviderClick('google')}
+                    disabled={isLoading || activeProvider !== null}
+                    style={{ width: '100%' }}
+                >
+                    {activeProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
+                </Button>
+
                 <div
                     style={{
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
-                        margin: '16px 0',
                     }}
                 >
                     <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
@@ -206,202 +274,192 @@ export function AuthView({
                         className="u-mono"
                         style={{
                             fontSize: 'var(--step--2)',
-                            letterSpacing: '0.14em',
+                            letterSpacing: '0.12em',
                             textTransform: 'uppercase',
                             color: 'var(--ink-3)',
                         }}
                     >
-                        or
+                        or email
                     </span>
                     <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
                 </div>
 
-                {/* Email / password form */}
                 <form
-                    onSubmit={handleEmailSubmit}
+                    onSubmit={(e) => void handleEmailSubmit(e)}
                     style={{
                         width: '100%',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 8,
-                        marginBottom: 16,
+                        gap: 10,
                     }}
                 >
-                    <Input
-                        type="email"
-                        placeholder="Email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={isLoading}
-                        autoComplete="email"
-                    />
-                    <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                        autoComplete={isRegistering ? 'new-password' : 'current-password'}
-                    />
-                    <button
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label htmlFor="popup-email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                            Email
+                        </label>
+                        <Input
+                            id="popup-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            disabled={isLoading}
+                            autoComplete="email"
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'baseline',
+                            }}
+                        >
+                            <label
+                                htmlFor="popup-password"
+                                className="u-kicker"
+                                style={{ color: 'var(--ink-3)' }}
+                            >
+                                Password
+                            </label>
+                            {!isRegistering ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setStep('forgot-password')}
+                                    style={{
+                                        ...quietLinkStyle,
+                                        fontSize: 'var(--step--2)',
+                                        minHeight: 32,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    Forgot password?
+                                </button>
+                            ) : null}
+                        </div>
+                        <Input
+                            id="popup-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            disabled={isLoading}
+                            autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                        />
+                        {showPasswordHelper ? (
+                            <p
+                                className="u-sans"
+                                style={{
+                                    margin: 0,
+                                    fontSize: 'var(--step--2)',
+                                    color: 'var(--ink-3)',
+                                }}
+                            >
+                                At least 8 characters
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <Button
                         type="submit"
+                        variant="primary"
+                        isLoading={isLoading && activeProvider === null}
                         disabled={isLoading || !email || !password}
-                        style={{
-                            width: '100%',
-                            minHeight: 44,
-                            padding: '12px 0',
-                            marginTop: 4,
-                            borderRadius: 'var(--radius)',
-                            border: 'none',
-                            backgroundColor: 'var(--ink)',
-                            color: 'var(--paper)',
-                            fontFamily: 'var(--sans)',
-                            fontSize: 'var(--step--1)',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'opacity 0.2s var(--ease-standard)',
-                            opacity: 1,
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.88'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+                        style={{ width: '100%' }}
                     >
-                        {isLoading && activeProvider === null ? <Spinner size="sm" /> : (isRegistering ? 'Create account' : 'Sign in')}
-                    </button>
+                        {isRegistering ? 'Create account' : 'Sign in'}
+                    </Button>
                 </form>
 
-                {/* Toggle sign-in / register */}
                 <p
                     className="u-sans"
                     style={{
                         fontSize: 'var(--step--1)',
                         color: 'var(--ink-3)',
                         textAlign: 'center',
-                        margin: '16px 0 0',
+                        margin: 0,
                     }}
                 >
                     {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
                     <button
                         type="button"
-                        onClick={() => { setIsRegistering(!isRegistering); setLoginError(null); }}
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: 44,
-                            alignItems: 'center',
-                            padding: '0 8px',
-                            margin: '0 -8px',
-                            borderRadius: 'var(--radius)',
-                            background: 'transparent',
-                            border: 0,
-                            cursor: 'pointer',
-                            fontFamily: 'var(--sans)',
-                            fontSize: 'var(--step--1)',
-                            color: 'var(--accent)',
-                            fontWeight: 500,
+                        onClick={() => {
+                            setIsRegistering(!isRegistering);
+                            setLoginError(null);
                         }}
+                        style={textLinkStyle}
                     >
                         {isRegistering ? 'Sign in' : 'Create one'}
                     </button>
                 </p>
-
-                {/* Error state — V2 single-accent: error uses --accent */}
-                {(loginError || error) && (
-                    <div
-                        style={{
-                            width: '100%',
-                            marginTop: 12,
-                            padding: 12,
-                            borderRadius: 'var(--radius)',
-                            backgroundColor: 'var(--accent-tint-08)',
-                            border: '1px solid var(--rule)',
-                            color: 'var(--accent)',
-                            fontSize: 'var(--step--1)',
-                            textAlign: 'center',
-                        }}
-                    >
-                        {loginError || error}
-                    </div>
-                )}
-
-                {/* Back link */}
-                {onBackToModeSelection && (
-                    <button
-                        type="button"
-                        onClick={onBackToModeSelection}
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: 44,
-                            alignItems: 'center',
-                            gap: 6,
-                            borderRadius: 'var(--radius)',
-                            padding: '0 8px',
-                            marginTop: 8,
-                            background: 'transparent',
-                            border: 0,
-                            cursor: 'pointer',
-                            fontFamily: 'var(--sans)',
-                            fontSize: 'var(--step--1)',
-                            color: 'var(--ink-3)',
-                        }}
-                    >
-                        Back
-                    </button>
-                )}
-
             </main>
 
-            {/* Footer */}
             <footer
                 style={{
                     flexShrink: 0,
-                    padding: '0 24px 24px',
+                    padding: '0 22px 20px',
                     textAlign: 'center',
                 }}
             >
-                <p
-                    className="u-mono"
-                    style={{
-                        fontSize: 'var(--step--2)',
-                        color: 'var(--ink-3)',
-                        lineHeight: 1.5,
-                        margin: 0,
-                    }}
-                >
-                    By continuing, you agree to our{' '}
-                    <a
-                        href="#"
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: 44,
-                            alignItems: 'center',
-                            padding: '0 8px',
-                            margin: '0 -8px',
-                            color: 'var(--ink-3)',
-                            textDecoration: 'underline',
-                            textUnderlineOffset: 2,
+                <PopupLegalFooter />
+            </footer>
+        </div>
+    );
+}
+
+function PopupLegalFooter(): React.ReactElement {
+    const privacyUrl = resolveLegalDocUrl('/privacy');
+    const termsUrl = resolveLegalDocUrl('/terms');
+    const hasLegalLinks = Boolean(privacyUrl && termsUrl);
+
+    const linkStyle: React.CSSProperties = {
+        ...quietLinkStyle,
+        display: 'inline',
+        minHeight: 'auto',
+        fontSize: 'inherit',
+        color: 'var(--ink-3)',
+    };
+
+    return (
+        <p
+            className="u-sans"
+            style={{
+                fontSize: 'var(--step--2)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.5,
+                margin: 0,
+            }}
+        >
+            By continuing, you agree to our{' '}
+            {hasLegalLinks ? (
+                <>
+                    <button
+                        type="button"
+                        style={linkStyle}
+                        onClick={() => {
+                            openLegalDoc('/terms');
                         }}
                     >
                         Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a
-                        href="#"
-                        style={{
-                            display: 'inline-flex',
-                            minHeight: 44,
-                            alignItems: 'center',
-                            padding: '0 8px',
-                            margin: '0 -8px',
-                            color: 'var(--ink-3)',
-                            textDecoration: 'underline',
-                            textUnderlineOffset: 2,
+                    </button>
+                    {' '}and{' '}
+                    <button
+                        type="button"
+                        style={linkStyle}
+                        onClick={() => {
+                            openLegalDoc('/privacy');
                         }}
                     >
                         Privacy Policy
-                    </a>
-                </p>
-            </footer>
-        </div>
+                    </button>
+                </>
+            ) : (
+                'Terms of Service and Privacy Policy'
+            )}
+        </p>
     );
 }

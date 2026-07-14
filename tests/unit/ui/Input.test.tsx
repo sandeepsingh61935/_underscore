@@ -13,11 +13,13 @@ describe('V2 Input', () => {
         expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
     });
 
-    it('uses --rule for the border (not MD3 border-outline)', () => {
+    it('uses --rule-soft border and paper fill (not MD3 border-outline)', () => {
         render(<Input placeholder="Email" />);
         const input = screen.getByPlaceholderText('Email');
         const style = input.getAttribute('style') ?? '';
-        expect(style).toContain('var(--rule)');
+        expect(style).toContain('var(--rule-soft)');
+        expect(style).toContain('var(--paper)');
+        expect(style).toContain('var(--radius)');
     });
 
     it('uses --ink for text color (not MD3 text-on-surface)', () => {

@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+import { AuthLandingChrome } from '@/features/auth/components/AuthLandingChrome';
 import { useApp } from '@/core/context/AppProvider';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { syncSessionToExtension } from '@/shared/auth/session-bridge';
+import { stashIntendedMode } from '@/shared/auth/pending-intent';
+import { mapAuthError, isExistingAccountSignup } from '@/shared/auth/auth-error-messages';
+import { navigateAuthLandingBack } from '@/shared/auth/navigate-auth-landing-back';
 import { resolveAuthRedirectTarget, stashPendingAuthorizationId } from '@/shared/oauth/oauth-consent-path';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
-import { Logo } from '@/ui-system/components/primitives/Logo';
 
 /**
- * SignInView — Registration-first auth page
- * V2 Editorial redesign: uses var(--paper), var(--ink), var(--accent), var(--rule)
+ * SignInView — registration-first auth landing (web SPA).
+ *
+ * Spec: docs/superpowers/specs/2026-07-14-auth-landing-redesign.md
+ * After mock: chrome brand only · no rail/kicker · soft fields ·
+ * history-aware Back · text secondary links · centered title.
  */
 function stashPendingAuthorizationIdFromReturnTo(returnTo: string): void {
     const parsed = new URL(returnTo, 'https://placeholder.local');
@@ -20,6 +26,29 @@ function stashPendingAuthorizationIdFromReturnTo(returnTo: string): void {
         stashPendingAuthorizationId(authorizationId);
     }
 }
+
+const textLinkStyle: React.CSSProperties = {
+    display: 'inline',
+    padding: 0,
+    margin: 0,
+    minHeight: 'auto',
+    border: 0,
+    background: 'transparent',
+    cursor: 'pointer',
+    fontFamily: 'var(--sans)',
+    fontSize: 'inherit',
+    fontWeight: 500,
+    color: 'var(--accent)',
+    textDecoration: 'underline',
+    textUnderlineOffset: 2,
+};
+
+const quietLinkStyle: React.CSSProperties = {
+    ...textLinkStyle,
+    color: 'var(--ink-3)',
+    fontWeight: 400,
+    fontSize: 'var(--step--1)',
+};
 
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
@@ -30,9 +59,30 @@ export function SignInView(): React.ReactElement {
     const [isSignIn, setIsSignIn] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
 
+    const handleBack = (): void => {
+        const params = new URLSearchParams(window.location.search);
+        const returnTo = params.get('returnTo');
+        navigateAuthLandingBack({
+            returnTo,
+            resolveReturnTo: (value) => resolveAuthRedirectTarget(value),
+            navigate: (path) => {
+                if (returnTo && path !== '/mode') {
+                    stashPendingAuthorizationIdFromReturnTo(returnTo);
+                }
+                navigate(path);
+            },
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setAuthError(null);
+
+        if (!isSignIn && password.length < 8) {
+            setAuthError('Password must be at least 8 characters.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const supabase = getWebSupabaseClient();
@@ -45,6 +95,24 @@ export function SignInView(): React.ReactElement {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
                 session = data.session;
+
+                if (isExistingAccountSignup(data.user, session)) {
+                    setAuthError(mapAuthError('sign-up', { code: 'user_already_exists' }));
+                    setIsSignIn(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (!session) {
+                    const params = new URLSearchParams(window.location.search);
+                    const forward = new URLSearchParams({ email });
+                    const returnTo = params.get('returnTo');
+                    const intendedMode = params.get('intendedMode');
+                    if (returnTo) forward.set('returnTo', returnTo);
+                    if (intendedMode) stashIntendedMode(intendedMode);
+                    navigate(`/verify-email?${forward.toString()}`);
+                    return;
+                }
             }
 
             if (session?.user) {
@@ -69,8 +137,10 @@ export function SignInView(): React.ReactElement {
                 navigate('/mode');
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Authentication failed';
-            setAuthError(message);
+            const mappable = err instanceof Error
+                ? { message: err.message, code: (err as { code?: string }).code }
+                : String(err);
+            setAuthError(mapAuthError(isSignIn ? 'sign-in' : 'sign-up', mappable));
         } finally {
             setIsLoading(false);
         }
@@ -107,118 +177,120 @@ export function SignInView(): React.ReactElement {
             });
             if (error) throw error;
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'OAuth failed';
-            setAuthError(message);
+            const mappable = err instanceof Error
+                ? { message: err.message, code: (err as { code?: string }).code }
+                : String(err);
+            setAuthError(mapAuthError('oauth', mappable));
             setIsLoading(false);
         }
     };
 
+    const showPasswordHelper = !isSignIn && password.length < 8;
+    const modeStatus = isSignIn ? 'Welcome back' : 'Create account';
+
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--paper)',
-            color: 'var(--ink)'
-        }}>
-            <div style={{ width: '100%', maxWidth: 400, padding: '48px 24px' }}>
-                <Link
-                    to="/mode"
-                    className="u-sans"
+        <div
+            style={{
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+            }}
+        >
+            <AuthLandingChrome modeStatus={modeStatus} />
+
+            <div
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                }}
+            >
+                <div
                     style={{
-                        display: 'inline-flex',
-                        minHeight: '44px',
-                        alignItems: 'center',
-                        gap: 4,
-                        borderRadius: 'var(--radius)',
-                        padding: '0 8px',
-                        marginLeft: -8,
-                        fontSize: 'var(--step--1)',
-                        textDecoration: 'none',
-                        marginBottom: 32,
-                        color: 'var(--ink-3)',
-                        transition: 'color 0.15s ease'
+                        width: '100%',
+                        maxWidth: 400,
+                        padding: '28px 32px 36px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                        boxSizing: 'border-box',
                     }}
                 >
-                    Back
-                </Link>
-
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-                    <Logo size="md" />
-                </div>
-
-                <h1 className="u-serif" style={{ fontSize: 'var(--step-3)', fontWeight: 500, marginBottom: 8, textAlign: 'center' }}>
-                    {isSignIn ? 'Welcome back' : 'Create your account'}
-                </h1>
-                <p className="u-sans" style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center' }}>
-                    {isSignIn
-                        ? 'Sign in to access your collections'
-                        : 'Sign in to sync your library'}
-                </p>
-
-                {authError ? (
-                    <div
+                    <button
+                        type="button"
+                        onClick={handleBack}
                         className="u-sans"
-                        role="alert"
+                        aria-label="Back to settings"
                         style={{
-                            marginBottom: 16,
-                            padding: '12px 14px',
-                            borderRadius: 'var(--radius)',
-                            border: '1px solid var(--rule)',
-                            background: 'var(--accent-tint-08)',
-                            color: 'var(--ink)',
-                            fontSize: 'var(--step--1)',
+                            ...quietLinkStyle,
+                            alignSelf: 'flex-start',
+                            minHeight: 44,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            fontSize: 'var(--step-1)',
+                            textDecoration: 'none',
                         }}
                     >
-                        {authError}
+                        ←
+                    </button>
+
+                    <div style={{ textAlign: 'center', width: '100%' }}>
+                        <h1
+                            className="u-serif"
+                            style={{
+                                fontSize: 'var(--step-3)',
+                                fontWeight: 500,
+                                margin: '0 0 8px',
+                                textAlign: 'center',
+                                letterSpacing: '-0.025em',
+                                lineHeight: 1.2,
+                            }}
+                        >
+                            {isSignIn ? 'Welcome back' : 'Create your account'}
+                        </h1>
+                        <p
+                            className="u-sans"
+                            style={{
+                                fontSize: 'var(--step-0)',
+                                color: 'var(--ink-3)',
+                                margin: 0,
+                                textAlign: 'center',
+                                lineHeight: 1.45,
+                            }}
+                        >
+                            {isSignIn
+                                ? 'Open your synced collections.'
+                                : 'Save highlights to your library.'}
+                        </p>
                     </div>
-                ) : null}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                            Email
-                        </label>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                            placeholder="you@example.com"
-                        />
-                    </div>
+                    <div
+                        aria-hidden
+                        style={{ height: 1, background: 'var(--rule-soft)', width: '100%' }}
+                    />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor="password" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                            Password
-                        </label>
-                        <Input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                        />
-                    </div>
+                    {authError ? (
+                        <div
+                            className="u-sans"
+                            role="alert"
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: 'var(--radius)',
+                                border: '1px solid var(--rule)',
+                                background: 'var(--accent-tint-08)',
+                                color: 'var(--ink)',
+                                fontSize: 'var(--step--1)',
+                            }}
+                        >
+                            {authError}
+                        </div>
+                    ) : null}
 
-                    <Button type="submit" variant="accent" isLoading={isLoading} style={{ width: '100%' }}>
-                        {isSignIn ? 'Sign in' : 'Create account'}
-                    </Button>
-                </form>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                    <span className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                        or continue with
-                    </span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                </div>
-
-                <div style={{ marginBottom: 32 }}>
                     <Button
                         type="button"
                         variant="accent"
@@ -228,21 +300,159 @@ export function SignInView(): React.ReactElement {
                     >
                         Continue with Google
                     </Button>
-                </div>
 
-                <div className="u-sans" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
-                    <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
-                    <Button variant="ghost" type="button" onClick={() => setIsSignIn(!isSignIn)} style={{ padding: '0 8px', fontWeight: 500, textDecoration: 'underline' }}>
-                        {isSignIn ? 'Create one' : 'Sign in'}
-                    </Button>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
+                        <span
+                            className="u-mono"
+                            style={{
+                                color: 'var(--ink-3)',
+                                fontSize: 'var(--step--2)',
+                                letterSpacing: '0.12em',
+                                textTransform: 'uppercase',
+                            }}
+                        >
+                            or email
+                        </span>
+                        <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
+                    </div>
 
-                <p className="u-sans" style={{ textAlign: 'center', fontSize: 'var(--step--2)', marginTop: 32, lineHeight: 1.5, color: 'var(--ink-3)' }}>
-                    By continuing, you agree to our{' '}
-                    <a href="#terms" style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}>Terms of Service</a>
-                    {' '}and{' '}
-                    <Link to="/privacy" style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}>Privacy Policy</Link>
-                </p>
+                    <form
+                        onSubmit={(e) => void handleSubmit(e)}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                                Email
+                            </label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="you@example.com"
+                                autoComplete="email"
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'baseline',
+                                }}
+                            >
+                                <label
+                                    htmlFor="password"
+                                    className="u-kicker"
+                                    style={{ color: 'var(--ink-3)' }}
+                                >
+                                    Password
+                                </label>
+                                {isSignIn ? (
+                                    <Link
+                                        to="/forgot-password"
+                                        className="u-sans"
+                                        style={{
+                                            fontSize: 'var(--step--2)',
+                                            color: 'var(--ink-3)',
+                                            textDecoration: 'underline',
+                                            textUnderlineOffset: 2,
+                                        }}
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                ) : null}
+                            </div>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                                autoComplete={isSignIn ? 'current-password' : 'new-password'}
+                            />
+                            {showPasswordHelper ? (
+                                <p
+                                    className="u-sans"
+                                    style={{
+                                        margin: 0,
+                                        fontSize: 'var(--step--2)',
+                                        color: 'var(--ink-3)',
+                                    }}
+                                >
+                                    At least 8 characters
+                                </p>
+                            ) : null}
+                        </div>
+
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            isLoading={isLoading}
+                            style={{ width: '100%' }}
+                        >
+                            {isSignIn ? 'Sign in' : 'Create account'}
+                        </Button>
+                    </form>
+
+                    <div
+                        className="u-sans"
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            textAlign: 'center',
+                            fontSize: 'var(--step--1)',
+                            color: 'var(--ink-3)',
+                        }}
+                    >
+                        <span>
+                            {isSignIn ? "Don't have an account?" : 'Already have an account?'}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsSignIn(!isSignIn);
+                                setAuthError(null);
+                            }}
+                            style={textLinkStyle}
+                        >
+                            {isSignIn ? 'Create one' : 'Sign in'}
+                        </button>
+                    </div>
+
+                    <p
+                        className="u-sans"
+                        style={{
+                            textAlign: 'center',
+                            fontSize: 'var(--step--2)',
+                            margin: 0,
+                            lineHeight: 1.5,
+                            color: 'var(--ink-3)',
+                        }}
+                    >
+                        By continuing, you agree to our{' '}
+                        <Link
+                            to="/terms"
+                            style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}
+                        >
+                            Terms of Service
+                        </Link>{' '}
+                        and{' '}
+                        <Link
+                            to="/privacy"
+                            style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}
+                        >
+                            Privacy Policy
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );

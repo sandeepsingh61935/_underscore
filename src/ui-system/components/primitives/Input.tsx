@@ -1,8 +1,8 @@
 /**
  * Wireframe: ui_kits/extension/v2/primitives.jsx L827-850 (V2_Input)
  * V2 contract: 4 states (default/focus/error/disabled), 44px height,
- *   border 1px (var( --rule ) default | var( --accent ) focus/error),
- *   2px focus ring var( --accent ), background var(--paper).
+ *   border 1px (var(--rule-soft) default | var(--accent) focus/error),
+ *   paper fill, radius var(--radius), focus ring var(--accent).
  *   Error state uses --accent per V2 single-accent rule.
  */
 
@@ -22,19 +22,25 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         const inputStyle: CSSProperties = {
             color: 'var(--ink)',
             fontSize: 'var(--step-0)',
-            borderColor: error ? 'var(--accent)' : 'var(--rule)',
+            borderColor: error ? 'var(--accent)' : 'var(--rule-soft)',
+            backgroundColor: 'var(--paper)',
+            borderRadius: 'var(--radius)',
+            borderWidth: 1,
+            borderStyle: 'solid',
+            minHeight: 44,
+            padding: '10px 12px',
+            width: '100%',
+            boxSizing: 'border-box',
+            fontFamily: 'var(--sans)',
             ...style,
         };
         return (
-            <div className="w-full">
-                <div className="relative">
+            <div style={{ width: '100%' }}>
+                <div style={{ position: 'relative' }}>
                     <input
                         ref={ref}
                         placeholder={label || props.placeholder}
                         className={cn(
-                            'flex w-full rounded-md px-4 py-3',
-                            'border bg-transparent',
-                            'min-h-[44px]',
                             'placeholder:opacity-60',
                             'transition-colors',
                             'focus:outline-none focus:border-[var(--accent)]',
@@ -48,8 +54,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 </div>
                 {helperText && (
                     <p
-                        className="mt-1"
                         style={{
+                            marginTop: 4,
                             color: error ? 'var(--accent)' : 'var(--ink-3)',
                             fontSize: 'var(--step--1)',
                         }}

@@ -150,8 +150,8 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
         >
           Privacy
         </Link>
-        <a
-          href="#terms"
+        <Link
+          to="/terms"
           className="u-mono"
           style={{
             display: 'inline-flex',
@@ -164,7 +164,7 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
           }}
         >
           Terms
-        </a>
+        </Link>
         <a
           href="#help"
           className="u-mono"

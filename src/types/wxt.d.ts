@@ -13,6 +13,7 @@ interface ImportMeta {
     readonly VITE_SUPABASE_URL?: string;
     readonly VITE_SUPABASE_ANON_KEY?: string;
     readonly VITE_GOOGLE_CLIENT_ID?: string;
+    readonly VITE_WEB_APP_URL?: string;
     [key: string]: string | boolean | undefined;
   };
 }

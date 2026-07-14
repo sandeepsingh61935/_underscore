@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SignInView } from '../SignInView';
 import * as AppProvider from '../../../core/context/AppProvider';
+import { stashIntendedMode } from '@/shared/auth/pending-intent';
 
 vi.mock('../../../core/context/AppProvider', () => ({
     useApp: vi.fn(),
@@ -11,6 +12,10 @@ vi.mock('../../../core/context/AppProvider', () => ({
 
 vi.mock('@/shared/auth/session-bridge', () => ({
     syncSessionToExtension: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/shared/auth/pending-intent', () => ({
+    stashIntendedMode: vi.fn(),
 }));
 
 const mockSupabase = {
@@ -77,11 +82,57 @@ describe('SignInView', () => {
             </MemoryRouter>
         );
 
+        expect(screen.getByTestId('auth-landing-chrome')).toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Create your account' })).toBeInTheDocument();
+        expect(screen.getByText('Save highlights to your library.')).toBeInTheDocument();
         expect(screen.getByLabelText('Email')).toBeInTheDocument();
         expect(screen.getByLabelText('Password')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+        expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
+        // Landing: no body wordmark, no rail kicker; Back is arrow-only.
+        expect(screen.queryByText('Account')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Back to settings' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+        expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms');
+    });
+
+    it('navigates to /settings on Back when there is no same-origin history', () => {
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back to settings' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/settings');
+    });
+
+    it('puts Google before the email form and uses create subtitle (not sign-in copy)', () => {
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        const google = screen.getByRole('button', { name: 'Continue with Google' });
+        const submit = screen.getByRole('button', { name: 'Create account' });
+        expect(google.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(screen.queryByText(/Sign in to sync/i)).not.toBeInTheDocument();
+    });
+
+    it('shows welcome-back copy when toggled to sign-in', () => {
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+        expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+        expect(screen.getByText('Open your synced collections.')).toBeInTheDocument();
+        expect(screen.queryByText('At least 8 characters')).not.toBeInTheDocument();
     });
 
     it('submits form and calls login', async () => {
@@ -101,6 +152,77 @@ describe('SignInView', () => {
             expect(mockLogin).toHaveBeenCalled();
             expect(mockSetIsLoading).toHaveBeenCalledWith(false);
         });
+    });
+
+    it('navigates to /verify-email without logging in when signUp returns no session', async () => {
+        mockSupabase.auth.signUp.mockResolvedValueOnce({
+            data: { user: { id: 'test-user-id', email: 'new@example.com' }, session: null },
+            error: null,
+        });
+
+        window.history.pushState({}, '', '/sign-in?intendedMode=pro');
+
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith(
+                expect.stringContaining('/verify-email?email=new%40example.com')
+            );
+        });
+
+        expect(stashIntendedMode).toHaveBeenCalledWith('pro');
+        expect(mockLogin).not.toHaveBeenCalled();
+    });
+
+    it('shows a sign-in nudge and switches to sign-in mode when the account already exists', async () => {
+        mockSupabase.auth.signUp.mockResolvedValueOnce({
+            data: { user: { id: 'existing-id', email: 'existing@example.com', identities: [] }, session: null },
+            error: null,
+        });
+
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'existing@example.com' } });
+        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('An account with this email already exists. Sign in instead.')).toBeInTheDocument();
+        });
+
+        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockLogin).not.toHaveBeenCalled();
+        // Flipped to sign-in mode — heading changes and the submit button now reads "Sign in".
+        expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    });
+
+    it('rejects passwords under 8 characters before calling Supabase', async () => {
+        render(
+            <MemoryRouter>
+                <SignInView />
+            </MemoryRouter>
+        );
+
+        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'short1' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('Password must be at least 8 characters.')).toBeInTheDocument();
+        });
+        expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
     });
 
     it('does not call login before OAuth redirect completes', async () => {

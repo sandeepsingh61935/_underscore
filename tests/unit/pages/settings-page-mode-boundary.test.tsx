@@ -78,17 +78,23 @@ describe('SettingsPage basic mode boundaries', () => {
   it('shows guest account sign-in row with sync upsell', () => {
     render(<SettingsPage onSignIn={vi.fn()} />);
 
-    expect(screen.getAllByText('Sign in').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByText('Not signed in')).toBeTruthy();
     expect(screen.getByText('Sync library across devices, export, AI')).toBeTruthy();
     expect(screen.getByText('Guest')).toBeTruthy();
     expect(screen.queryByTestId('account-plan-pill')).toBeNull();
   });
 
-  it('shows Configure AI providers as gated for a guest in Basic', () => {
+  it('shows Connect then Configure with short subs and lock status for guest', () => {
     render(<SettingsPage />);
 
+    expect(screen.getByText('Connect to AI')).toBeTruthy();
+    expect(screen.getByText('External agents')).toBeTruthy();
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText('Available with Account (Paid)')).toBeTruthy();
+    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/OpenAI, Claude, Gemini/)).toBeNull();
+    expect(screen.queryByTestId('connect-to-ai-flow-mock')).toBeNull();
   });
 
   it('does not show Retention settings after TTL removal', () => {
@@ -138,10 +144,13 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('shows Configure AI providers for signed-in Account (Paid)', () => {
+  it('shows Connect then Configure open for signed-in Account (Paid)', () => {
     render(<SettingsPage />);
+    expect(screen.getByText('Connect to AI')).toBeTruthy();
+    expect(screen.getByText('External agents')).toBeTruthy();
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText(/OpenAI, Claude, Gemini/)).toBeTruthy();
+    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
   });
 
@@ -171,10 +180,12 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('shows Configure AI providers as gated for signed-in Account (Free)', () => {
+  it('shows Connect then Configure locked for signed-in Account (Free)', () => {
     render(<SettingsPage />);
+    expect(screen.getByText('Connect to AI')).toBeTruthy();
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText('Available with Account (Paid)')).toBeTruthy();
+    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
   });
 });
