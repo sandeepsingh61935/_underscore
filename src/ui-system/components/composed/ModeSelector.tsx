@@ -2,6 +2,9 @@ import React from 'react';
 import { ModeCard } from './ModeCard';
 import { Circle, Archive, Brain } from 'lucide-react';
 
+import { MODE_BRANDING } from '@/shared/constants/mode-branding';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+
 export interface ModeOption {
     id: string;
     label: string;
@@ -17,38 +20,28 @@ interface ModeSelectorProps {
     className?: string;
 }
 
+const MODE_ICONS: Record<ModeType, React.ReactNode> = {
+    basic: <Circle className="w-5 h-5" />,
+    pro: <Archive className="w-5 h-5" />,
+    pro_xai: <Brain className="w-5 h-5" />,
+};
+
 export function ModeSelector({
     currentModeId,
     onSelect,
     isAuthenticated = false,
     className
 }: ModeSelectorProps) {
-
-    // Mode Definitions
-    // In a real app, these might come from a config or prop, but standardizing them here for the UI system is fine for now.
-    const modes: ModeOption[] = [
-        {
-            id: 'basic',
-            label: 'Basic',
-            description: 'Highlights live on this device until you remove them.',
-            icon: <Circle className="w-5 h-5" />,
-            isLocked: false
-        },
-        {
-            id: 'pro',
-            label: 'Pro',
-            description: 'Signed in. Synced across every device you use.',
-            icon: <Archive className="w-5 h-5" />,
-            isLocked: !isAuthenticated
-        },
-        {
-            id: 'pro_xai',
-            label: '10x-Pro',
-            description: 'Everything in Pro, plus AI-powered organization.',
-            icon: <Brain className="w-5 h-5" />,
-            isLocked: !isAuthenticated
-        }
-    ];
+    const modes: ModeOption[] = (Object.keys(MODE_BRANDING) as ModeType[]).map((id) => {
+        const branding = MODE_BRANDING[id];
+        return {
+            id,
+            label: branding.displayName,
+            description: branding.description,
+            icon: MODE_ICONS[id],
+            isLocked: id !== 'basic' && !isAuthenticated,
+        };
+    });
 
     return (
         <div className={`flex flex-col gap-3 w-full ${className || ''}`}>

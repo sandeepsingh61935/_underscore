@@ -24,9 +24,9 @@ export const MODE_NAMES = {
  * decouples marketing copy from internal IDs. Kept for backward compatibility.
  */
 export const MODE_DISPLAY_NAMES = {
-    [MODE_NAMES.BASIC]: 'Basic',
-    [MODE_NAMES.PRO]: 'Pro',
-    [MODE_NAMES.PRO_XAI]: '10x-Pro',
+    [MODE_NAMES.BASIC]: 'Guest',
+    [MODE_NAMES.PRO]: 'Account (Free)',
+    [MODE_NAMES.PRO_XAI]: 'Account (Paid)',
 } as const;
 
 /**

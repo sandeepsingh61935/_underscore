@@ -78,7 +78,7 @@ export function ModeSelectionView({
         <ModeRow key={m.id} m={m} active={sel === m.id} onClick={() => setSel(m.id as ModeType)} />
       )) : (
         <div className="u-mono" style={{ padding: '6px 18px 10px', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-          Signed in — switch between Pro and 10x-Pro below.
+          Signed in — switch between Account (Free) and Account (Paid) below.
         </div>
       )}
       <div className="u-caps" style={{ padding: "10px 18px 4px", color: "var(--ink-3)" }}>In the cloud</div>

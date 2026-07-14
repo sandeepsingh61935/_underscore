@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import {
   canConfigureAiProviders,
   canUseFeature,
+  canUseMcp,
   getCapabilitiesForMode,
   type FeatureDenyReason,
   type FeatureGateContext,
@@ -74,6 +75,27 @@ export function useConfigureAiProvidersGate(isAuthenticated: boolean): ModeFeatu
     () => {
       const ctx = buildGateContext(currentMode, capabilities, isAuthenticated, storageScope);
       const gate = canConfigureAiProviders(ctx);
+
+      return {
+        allowed: gate.allowed,
+        reason: gate.reason,
+        capabilities,
+      };
+    },
+    [currentMode, capabilities, isAuthenticated, storageScope],
+  );
+}
+
+/** Gate for MCP bridge + cloud connectors (Account Paid only). */
+export function useMcpGate(isAuthenticated: boolean): ModeFeatureResult {
+  const { currentMode } = usePersistedMode(isAuthenticated);
+  const capabilities = getCapabilitiesForMode(currentMode);
+  const storageScope = isAuthenticated ? 'pro' : 'basic';
+
+  return useMemo(
+    () => {
+      const ctx = buildGateContext(currentMode, capabilities, isAuthenticated, storageScope);
+      const gate = canUseMcp(ctx);
 
       return {
         allowed: gate.allowed,

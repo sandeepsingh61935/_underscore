@@ -33,18 +33,19 @@ export const MODE_BRANDING: Record<ModeType, ModeBranding> = {
     description: 'Highlights live permanently on this device. Sign in to sync across devices.',
   },
   pro: {
-    displayName: 'Pro',
+    displayName: 'Account (Free)',
     planName: 'underscore_pro',
     family: 'cloud',
     tagline: 'Synced',
     description: 'Signed in. Synced across every device you use.',
   },
   pro_xai: {
-    displayName: '10x-Pro',
+    displayName: 'Account (Paid)',
     planName: 'pro-10x',
     family: 'cloud',
     tagline: 'Synced + AI',
-    description: 'Everything in Pro, plus AI summaries, synthesis, and Q&A over your highlights.',
+    description:
+      'Cloud sync plus Connect to AI and in-app chat. You bring your own model or agent — no token cost from _underscore.',
   },
 };
 

@@ -28,7 +28,13 @@ function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridge
     scopedHighlightRepository: {
       getActiveScope: () => 'basic',
     } as unknown as McpBridgeHandlerDeps['scopedHighlightRepository'],
-    repositoryFacade: { update: vi.fn() } as unknown as McpBridgeHandlerDeps['repositoryFacade'],
+    repositoryFacade: { update: vi.fn(), get: vi.fn() } as unknown as McpBridgeHandlerDeps['repositoryFacade'],
+    tagService: {
+      setHighlightLabels: vi.fn().mockResolvedValue(undefined),
+      listByUser: vi.fn().mockResolvedValue([]),
+      getLabelsForHighlights: vi.fn().mockResolvedValue(new Map()),
+      mergeWithMetadataFallback: vi.fn(),
+    } as unknown as McpBridgeHandlerDeps['tagService'],
     cloudHydrationService: { hydrate: vi.fn() } as unknown as McpBridgeHandlerDeps['cloudHydrationService'],
     librarySyncCursor: {
       get: vi.fn().mockResolvedValue(null),
@@ -85,7 +91,7 @@ describe('McpBridgeHandler', () => {
     expect(session.capabilities.sync).toBe(false);
   });
 
-  it('get_session allows export and sync for signed-in Pro', async () => {
+  it('get_session zeros MCP capabilities for signed-in Account Free (paid gate)', async () => {
     const handler = createHandler({
       authManager: {
         isAuthenticated: true,
@@ -102,12 +108,12 @@ describe('McpBridgeHandler', () => {
     const session = (await handler.getSession()) as {
       capabilities: { export: boolean; sync: boolean; ai: boolean };
     };
-    expect(session.capabilities.export).toBe(true);
-    expect(session.capabilities.sync).toBe(true);
+    expect(session.capabilities.export).toBe(false);
+    expect(session.capabilities.sync).toBe(false);
     expect(session.capabilities.ai).toBe(false);
   });
 
-  it('get_session enables ai for signed-in 10x-Pro', async () => {
+  it('get_session enables ai for signed-in Account (Paid)', async () => {
     const handler = createHandler({
       authManager: {
         isAuthenticated: true,
@@ -157,5 +163,34 @@ describe('McpBridgeHandler', () => {
     })) as { mode: string };
 
     expect(result.mode).toBe('context_only');
+  });
+
+  it('enforceBridgeEligibility clears enabled flag when not Paid', async () => {
+    const { MCP_BRIDGE_STORAGE_KEYS } = await import('@/shared/constants/mcp-bridge');
+    const set = vi.fn().mockResolvedValue(undefined);
+    const get = vi.fn().mockResolvedValue({
+      [MCP_BRIDGE_STORAGE_KEYS.enabled]: true,
+    });
+
+    const { browser } = await import('wxt/browser');
+    vi.spyOn(browser.storage.local, 'get').mockImplementation(get as never);
+    vi.spyOn(browser.storage.local, 'set').mockImplementation(set as never);
+
+    const handler = createHandler({
+      authManager: {
+        isAuthenticated: true,
+        getAuthState: () => ({
+          isAuthenticated: true,
+          user: { id: 'u1', email: 'a@b.com' },
+        }),
+      } as McpBridgeHandlerDeps['authManager'],
+      scopedHighlightRepository: {
+        getActiveScope: () => 'pro',
+      } as McpBridgeHandlerDeps['scopedHighlightRepository'],
+      getActiveMode: vi.fn().mockResolvedValue('pro'),
+    });
+
+    await expect(handler.enforceBridgeEligibility()).resolves.toBe(false);
+    expect(set).toHaveBeenCalledWith({ [MCP_BRIDGE_STORAGE_KEYS.enabled]: false });
   });
 });

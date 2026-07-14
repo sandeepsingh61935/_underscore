@@ -10,13 +10,13 @@ import {
 
 describe('mode-capabilities', () => {
   describe('MODE_CAPABILITY_MATRIX', () => {
-    it('basic denies pro and AI features', () => {
+    it('basic denies cloud/paid features but allows local search and tags', () => {
       const basic = MODE_CAPABILITY_MATRIX.basic;
       expect(basic.sync).toBe(false);
       expect(basic.export).toBe(false);
-      expect(basic.tags).toBe(false);
       expect(basic.ai).toBe(false);
-      expect(basic.search).toBe(false);
+      expect(basic.tags).toBe(true);
+      expect(basic.search).toBe(true);
     });
 
     it('pro allows sync/export/tags/search but not AI', () => {
@@ -26,10 +26,16 @@ describe('mode-capabilities', () => {
       expect(pro.ai).toBe(false);
     });
 
-    it('pro_xai enables AI overlay on pro', () => {
+    it('pro_xai enables AI and MCP overlay on pro', () => {
       const xai = MODE_CAPABILITY_MATRIX.pro_xai;
       expect(xai.ai).toBe(true);
+      expect(xai.mcp).toBe(true);
       expect(xai.sync).toBe(true);
+    });
+
+    it('pro and basic deny mcp', () => {
+      expect(MODE_CAPABILITY_MATRIX.pro.mcp).toBe(false);
+      expect(MODE_CAPABILITY_MATRIX.basic.mcp).toBe(false);
     });
   });
 
@@ -106,6 +112,26 @@ describe('mode-capabilities', () => {
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
         storageScope: 'pro',
+      });
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('allows search in basic mode with basic storage scope (local, no auth required)', () => {
+      const result = canUseFeature('search', {
+        mode: 'basic',
+        capabilities: getCapabilitiesForMode('basic'),
+        isAuthenticated: false,
+        storageScope: 'basic',
+      });
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('allows tags in basic mode with basic storage scope (local, no auth required)', () => {
+      const result = canUseFeature('tags', {
+        mode: 'basic',
+        capabilities: getCapabilitiesForMode('basic'),
+        isAuthenticated: false,
+        storageScope: 'basic',
       });
       expect(result).toEqual({ allowed: true });
     });

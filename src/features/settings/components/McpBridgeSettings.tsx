@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import {
   MCP_BRIDGE_STORAGE_KEYS,
@@ -7,6 +7,8 @@ import {
 } from '@/shared/constants/mcp-bridge';
 import type { BridgeConnectionState } from '@/shared/mcp/bridge-protocol';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { McpBridgeSetupGuide } from '@/features/settings/components/McpBridgeSetupGuide';
 import { McpTierCallout, mcpTierLabel } from '@/features/settings/components/McpTierCallout';
 import { Row } from '@/ui-system/components/primitives/Row';
@@ -86,10 +88,24 @@ export function McpBridgeSettings({
   const [connectionState, setConnectionState] = useState<BridgeConnectionState>('disconnected');
   const [copied, setCopied] = useState(false);
 
+  const mcpGate = useMemo(
+    () =>
+      canUseMcp({
+        mode: currentMode,
+        capabilities: getCapabilitiesForMode(currentMode),
+        isAuthenticated,
+        storageScope: isAuthenticated ? 'pro' : 'basic',
+      }),
+    [currentMode, isAuthenticated],
+  );
+  const mcpAllowed = mcpGate.allowed;
+
   const tierLabel = mcpTierLabel(isAuthenticated, currentMode);
-  const bridgeSub = isAuthenticated
-    ? 'Cursor or Claude Desktop via extension bridge'
-    : 'This device only — Cursor or Claude Desktop';
+  const bridgeSub = mcpAllowed
+    ? isAuthenticated
+      ? 'Cursor or Claude Desktop via extension bridge'
+      : 'This device only — Cursor or Claude Desktop'
+    : featureGateSubtitle(mcpGate.reason);
   const tokenFieldId = useId();
   const tokenHelpId = useId();
   const statusLiveId = useId();
@@ -97,10 +113,17 @@ export function McpBridgeSettings({
   const statusText = connectionLabel(connectionState, enabled);
 
   useEffect(() => {
-    void readBridgeSettings().then((s) => {
-      setEnabled(s.enabled);
+    void readBridgeSettings().then(async (s) => {
       setToken(s.token);
       setConnectionState(s.connectionState);
+
+      if (!mcpAllowed && s.enabled) {
+        await chrome.storage.local.set({ [MCP_BRIDGE_STORAGE_KEYS.enabled]: false });
+        setEnabled(false);
+        return;
+      }
+
+      setEnabled(s.enabled);
     });
 
     const onChanged = (
@@ -124,7 +147,7 @@ export function McpBridgeSettings({
     };
     chrome.storage.onChanged.addListener(onChanged);
     return () => chrome.storage.onChanged.removeListener(onChanged);
-  }, []);
+  }, [mcpAllowed]);
 
   const persist = useCallback(async (nextEnabled: boolean, nextToken: string): Promise<void> => {
     await chrome.storage.local.set({
@@ -134,10 +157,16 @@ export function McpBridgeSettings({
   }, []);
 
   const toggleBridge = useCallback((): void => {
+    if (!mcpAllowed) {
+      if (!isAuthenticated) {
+        onSignIn?.();
+      }
+      return;
+    }
     const next = !enabled;
     setEnabled(next);
     void persist(next, token);
-  }, [enabled, persist, token]);
+  }, [enabled, isAuthenticated, mcpAllowed, onSignIn, persist, token]);
 
   return (
     <>
@@ -169,14 +198,18 @@ export function McpBridgeSettings({
         right={
           <span
             className="u-mono"
-            style={{ fontSize: 'var(--step--2)', color: enabled ? 'var(--accent)' : 'var(--ink-3)' }}
+            style={{
+              fontSize: 'var(--step--2)',
+              color: mcpAllowed && enabled ? 'var(--accent)' : 'var(--ink-3)',
+            }}
             aria-hidden="true"
           >
-            {enabled ? 'On' : 'Off'}
+            {mcpAllowed ? (enabled ? 'On' : 'Off') : '—'}
           </span>
         }
         onClick={toggleBridge}
-        aria-checked={enabled}
+        aria-checked={mcpAllowed ? enabled : false}
+        aria-disabled={!mcpAllowed}
         role="switch"
       />
 
@@ -202,74 +235,78 @@ export function McpBridgeSettings({
         {enabled ? `Bridge ${statusText}` : 'Bridge disabled'}
       </span>
 
-      <McpBridgeSetupGuide
-        enabled={enabled}
-        token={token}
-        connectionState={connectionState}
-        isAuthenticated={isAuthenticated}
-      />
+      {mcpAllowed ? (
+        <McpBridgeSetupGuide
+          enabled={enabled}
+          token={token}
+          connectionState={connectionState}
+          isAuthenticated={isAuthenticated}
+        />
+      ) : null}
 
-      {isAuthenticated ? (
+      {mcpAllowed && isAuthenticated ? (
         <Row
           title="ChatGPT / cloud MCP"
           sub="Deploy the cloud worker, then approve access under Connected apps"
           right={
             <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-              Pro
+              Paid
             </span>
           }
         />
       ) : null}
 
-      <div style={{ padding: '8px 16px 12px', borderBottom: '1px solid var(--rule-soft)' }}>
-        <label
-          htmlFor={tokenFieldId}
-          className="u-sans"
-          style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--step-1)' }}
-        >
-          <span style={{ color: 'var(--ink-soft)' }}>Session token</span>
-          <span id={tokenHelpId} className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-            Same value as UNDERSCORE_MCP_TOKEN in mcp.json
-          </span>
-          <input
-            id={tokenFieldId}
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            onBlur={() => void persist(enabled, token)}
-            placeholder="Paste token from MCP server startup"
-            autoComplete="off"
-            aria-describedby={tokenHelpId}
-            style={{
-              padding: '8px',
-              border: '1px solid var(--rule)',
-              background: 'var(--paper)',
-              color: 'var(--ink)',
-              fontFamily: 'var(--mono)',
-              fontSize: 'var(--step-1)',
-              width: '100%',
-              boxSizing: 'border-box',
-              minHeight: 44,
+      {mcpAllowed ? (
+        <div style={{ padding: '8px 16px 12px', borderBottom: '1px solid var(--rule-soft)' }}>
+          <label
+            htmlFor={tokenFieldId}
+            className="u-sans"
+            style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--step-1)' }}
+          >
+            <span style={{ color: 'var(--ink-soft)' }}>Session token</span>
+            <span id={tokenHelpId} className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+              Same value as UNDERSCORE_MCP_TOKEN in mcp.json
+            </span>
+            <input
+              id={tokenFieldId}
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              onBlur={() => void persist(enabled, token)}
+              placeholder="Paste token from MCP server startup"
+              autoComplete="off"
+              aria-describedby={tokenHelpId}
+              style={{
+                padding: '8px',
+                border: '1px solid var(--rule)',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                fontFamily: 'var(--mono)',
+                fontSize: 'var(--step-1)',
+                width: '100%',
+                boxSizing: 'border-box',
+                minHeight: 44,
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="u-caps"
+            style={{ marginTop: '8px', fontSize: 'var(--step--2)', minHeight: 44 }}
+            onClick={() => {
+              if (!token) return;
+              void navigator.clipboard.writeText(token).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              });
             }}
-          />
-        </label>
-        <button
-          type="button"
-          className="u-caps"
-          style={{ marginTop: '8px', fontSize: 'var(--step--2)', minHeight: 44 }}
-          onClick={() => {
-            if (!token) return;
-            void navigator.clipboard.writeText(token).then(() => {
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            });
-          }}
-          disabled={!token}
-          aria-live="polite"
-        >
-          {copied ? 'Copied' : 'Copy token'}
-        </button>
-      </div>
+            disabled={!token}
+            aria-live="polite"
+          >
+            {copied ? 'Copied' : 'Copy token'}
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

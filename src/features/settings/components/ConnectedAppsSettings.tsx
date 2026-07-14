@@ -1,20 +1,53 @@
 import React from 'react';
 
 import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export interface ConnectedAppsSettingsProps {
   isAuthenticated: boolean;
+  currentMode: ModeType;
 }
 
 export function ConnectedAppsSettings({
   isAuthenticated,
+  currentMode,
 }: ConnectedAppsSettingsProps): React.ReactElement | null {
-  const { grants, isLoading, error, revoke, isRevoking } = useOAuthGrants(isAuthenticated);
+  const mcpAllowed = canUseMcp({
+    mode: currentMode,
+    capabilities: getCapabilitiesForMode(currentMode),
+    isAuthenticated,
+    storageScope: isAuthenticated ? 'pro' : 'basic',
+  }).allowed;
+
+  const { grants, isLoading, error, revoke, isRevoking } = useOAuthGrants(
+    isAuthenticated && mcpAllowed,
+  );
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (!mcpAllowed) {
+    return (
+      <>
+        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+          Connected apps
+        </div>
+        <Row
+          title="Connected apps"
+          sub={featureGateSubtitle('WRONG_MODE')}
+          right={
+            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+              —
+            </span>
+          }
+        />
+      </>
+    );
   }
 
   return (

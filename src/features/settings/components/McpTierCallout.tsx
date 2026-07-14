@@ -22,8 +22,8 @@ export function McpTierCallout({
   if (!isAuthenticated) {
     return (
       <Row
-        title="Pro sync and cloud MCP"
-        sub="Sign in to sync your library and connect ChatGPT"
+        title="Account sync and Connect to AI"
+        sub="Sign in to sync your library; Connect to AI needs Account (Paid)"
         right={
           <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
             Sign in
@@ -45,12 +45,19 @@ export function McpTierCallout({
     );
   }
 
-  return null;
+  return (
+    <Row
+      title="Connect to AI"
+      sub="Available with Account (Paid) — switch mode, or billing when it ships"
+      compact
+    />
+  );
 }
 
 export function mcpTierLabel(isAuthenticated: boolean, currentMode: ModeType): string {
   if (!isAuthenticated) {
     return 'Guest · Local only';
   }
-  return `${getModeBranding(currentMode).displayName} · Synced`;
+  const branding = getModeBranding(currentMode);
+  return `${branding.displayName} · ${branding.tagline}`;
 }

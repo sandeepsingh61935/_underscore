@@ -187,7 +187,10 @@ export function SettingsPage({
           onSignIn={onSignIn}
         />
 
-        <ConnectedAppsSettings isAuthenticated={Boolean(user)} />
+        <ConnectedAppsSettings
+          isAuthenticated={Boolean(user)}
+          currentMode={currentMode}
+        />
           </>
         )}
 
@@ -216,19 +219,39 @@ export function SettingsPage({
         <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
         <Row
           title={user?.email || 'Sign in'}
-          sub={user ? 'Signed in' : 'Sync library across devices, search, export, AI'}
+          sub={
+            user
+              ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`
+              : 'Sync library across devices, export, AI'
+          }
           right={
             isSigningOut ? (
               <Spinner size="sm" />
             ) : (
-              <span
-                className="u-mono"
-                style={{
-                  fontSize: 'var(--step--2)',
-                  color: user ? 'var(--ink-3)' : 'var(--accent)',
-                }}
-              >
-                {user ? 'Sign out' : 'Sign in'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {user && (currentMode === 'pro' || currentMode === 'pro_xai') ? (
+                  <span
+                    className="u-mono"
+                    data-testid="account-plan-pill"
+                    style={{
+                      fontSize: 'var(--step--2)',
+                      padding: '2px 8px',
+                      border: '1px solid var(--rule-soft)',
+                      color: currentMode === 'pro_xai' ? 'var(--accent)' : 'var(--ink-3)',
+                    }}
+                  >
+                    {currentMode === 'pro_xai' ? 'Paid' : 'Free'}
+                  </span>
+                ) : null}
+                <span
+                  className="u-mono"
+                  style={{
+                    fontSize: 'var(--step--2)',
+                    color: user ? 'var(--ink-3)' : 'var(--accent)',
+                  }}
+                >
+                  {user ? 'Sign out' : 'Sign in'}
+                </span>
               </span>
             )
           }

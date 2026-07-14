@@ -9,24 +9,26 @@ describe('mcpTierLabel', () => {
     expect(mcpTierLabel(false, 'basic')).toBe('Guest · Local only');
   });
 
-  it('shows pro branding when signed in', () => {
-    expect(mcpTierLabel(true, 'pro')).toBe('Pro · Synced');
+  it('shows account branding when signed in', () => {
+    expect(mcpTierLabel(true, 'pro')).toBe('Account (Free) · Synced');
+    expect(mcpTierLabel(true, 'pro_xai')).toBe('Account (Paid) · Synced + AI');
   });
 });
 
 describe('McpTierCallout', () => {
   it('shows compact sign-in row for guests', () => {
     render(<McpTierCallout isAuthenticated={false} currentMode="basic" onSignIn={vi.fn()} />);
-    expect(screen.getByText('Pro sync and cloud MCP')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Pro sync and cloud MCP/i })).toBeTruthy();
+    expect(screen.getByText('Account sync and Connect to AI')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Account sync and Connect to AI/i })).toBeTruthy();
   });
 
-  it('renders nothing extra for pro without xai', () => {
-    const { container } = render(<McpTierCallout isAuthenticated={true} currentMode="pro" />);
-    expect(container.firstChild).toBeNull();
+  it('shows Account (Paid) upsell for Free accounts', () => {
+    render(<McpTierCallout isAuthenticated={true} currentMode="pro" />);
+    expect(screen.getByText('Connect to AI')).toBeTruthy();
+    expect(screen.getByText(/Available with Account \(Paid\)/)).toBeTruthy();
   });
 
-  it('shows ai bridge hint for pro_xai', () => {
+  it('shows ai bridge hint for Account (Paid)', () => {
     render(<McpTierCallout isAuthenticated={true} currentMode="pro_xai" />);
     expect(screen.getByText('AI tools via bridge')).toBeTruthy();
   });

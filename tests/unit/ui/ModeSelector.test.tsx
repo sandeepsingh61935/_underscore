@@ -8,13 +8,13 @@ import { render, screen } from '@testing-library/react';
 import { ModeSelector } from '../../../src/ui-system/components/composed/ModeSelector';
 
 describe('V2 ModeSelector', () => {
-    it('renders one card per V3 mode (basic, pro, pro_xai)', () => {
+    it('renders one card per V3 mode from MODE_BRANDING', () => {
         render(
             <ModeSelector currentModeId="basic" onSelect={vi.fn()} />
         );
-        expect(screen.getByText('Basic')).toBeInTheDocument();
-        expect(screen.getByText('Pro')).toBeInTheDocument();
-        expect(screen.getByText('10x-Pro')).toBeInTheDocument();
+        expect(screen.getByText('Guest')).toBeInTheDocument();
+        expect(screen.getByText('Account (Free)')).toBeInTheDocument();
+        expect(screen.getByText('Account (Paid)')).toBeInTheDocument();
     });
 
     it('does not use Style C or MD3 utility classes', () => {
@@ -36,7 +36,7 @@ describe('V2 ModeSelector', () => {
         render(
             <ModeSelector currentModeId="pro" onSelect={vi.fn()} />
         );
-        const proCard = screen.getByText('Pro').closest('button');
+        const proCard = screen.getByText('Account (Free)').closest('button');
         expect(proCard).toHaveAttribute('aria-pressed', 'true');
     });
 
@@ -45,7 +45,7 @@ describe('V2 ModeSelector', () => {
         render(
             <ModeSelector currentModeId="pro" onSelect={onSelect} />
         );
-        screen.getByText('Basic').closest('button')!.click();
+        screen.getByText('Guest').closest('button')!.click();
         expect(onSelect).toHaveBeenCalledWith('basic');
     });
 
@@ -57,8 +57,8 @@ describe('V2 ModeSelector', () => {
                 isAuthenticated={false}
             />
         );
-        const proCard = screen.getByText('Pro').closest('button');
-        const proXaiCard = screen.getByText('10x-Pro').closest('button');
+        const proCard = screen.getByText('Account (Free)').closest('button');
+        const proXaiCard = screen.getByText('Account (Paid)').closest('button');
         expect(proCard).toHaveAttribute('aria-disabled', 'true');
         expect(proXaiCard).toHaveAttribute('aria-disabled', 'true');
     });

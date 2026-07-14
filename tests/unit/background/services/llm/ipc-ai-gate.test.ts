@@ -65,7 +65,7 @@ function proXaiContext(overrides: Partial<FeatureGateContext> = {}): FeatureGate
 }
 
 describe('registerAiHandlers AI feature gate', () => {
-  it('denies IPC_AI_CHAT when gate resolver reports Pro (not 10x-Pro)', async () => {
+  it('denies IPC_AI_CHAT when gate resolver reports Account Free (not Paid)', async () => {
     const bus = makeMessageBus();
     registerAiHandlers({
       bus: bus as never,
@@ -81,7 +81,7 @@ describe('registerAiHandlers AI feature gate', () => {
       request: { systemPrompt: 's', messages: [{ role: 'user', content: 'hi' }], maxTokens: 10 },
     });
 
-    expect(result).toEqual({ success: false, error: 'Available in 10x-Pro' });
+    expect(result).toEqual({ success: false, error: 'Available with Account (Paid)' });
   });
 
   it('allows IPC_AI_SET_API_KEY on pro_xai', async () => {

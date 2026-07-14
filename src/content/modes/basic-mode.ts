@@ -42,6 +42,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     tags: true,
     export: false,
     ai: false,
+    mcp: false,
     search: true,
     multiSelector: false,
   };

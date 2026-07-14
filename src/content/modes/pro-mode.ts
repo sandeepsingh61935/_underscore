@@ -203,6 +203,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     tags: true,
     export: true,
     ai: false,
+    mcp: false,
     search: true,
     multiSelector: true,
   };

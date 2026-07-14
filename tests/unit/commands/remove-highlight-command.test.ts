@@ -44,6 +44,7 @@ function createMockModeManager() {
       collections: false,
       tags: false,
       ai: false,
+      mcp: false,
       search: false,
       export: false,
       multiSelector: false,

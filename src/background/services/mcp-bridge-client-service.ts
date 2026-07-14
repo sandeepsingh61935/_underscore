@@ -7,6 +7,7 @@ import {
   MCP_BRIDGE_STORAGE_KEYS,
   MCP_BRIDGE_WS_URL,
 } from '@/shared/constants/mcp-bridge';
+import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type {
   BridgeAuthMessage,
   BridgeConnectionState,
@@ -56,7 +57,8 @@ export class McpBridgeClientService {
     this.storageListener = (changes) => {
       if (
         changes[MCP_BRIDGE_STORAGE_KEYS.enabled] ||
-        changes[MCP_BRIDGE_STORAGE_KEYS.token]
+        changes[MCP_BRIDGE_STORAGE_KEYS.token] ||
+        changes[MODE_STORAGE_KEY]
       ) {
         this.authFailed = false;
         this.reconnectAttempt = 0;
@@ -70,6 +72,13 @@ export class McpBridgeClientService {
       this.stop();
     };
     browser.runtime.onSuspend.addListener(this.suspendListener);
+  }
+
+  /** Re-check Paid gate after auth changes (logout / mode no longer eligible). */
+  revalidateEligibility(): void {
+    this.authFailed = false;
+    this.reconnectAttempt = 0;
+    void this.syncFromStorage();
   }
 
   stop(): void {
@@ -89,11 +98,12 @@ export class McpBridgeClientService {
   }
 
   private async syncFromStorage(): Promise<void> {
+    const allowed = await this.handler.enforceBridgeEligibility();
     const stored = await browser.storage.local.get([
       MCP_BRIDGE_STORAGE_KEYS.enabled,
       MCP_BRIDGE_STORAGE_KEYS.token,
     ]);
-    const enabled = stored[MCP_BRIDGE_STORAGE_KEYS.enabled] === true;
+    const enabled = allowed && stored[MCP_BRIDGE_STORAGE_KEYS.enabled] === true;
     const token = typeof stored[MCP_BRIDGE_STORAGE_KEYS.token] === 'string'
       ? (stored[MCP_BRIDGE_STORAGE_KEYS.token] as string).trim()
       : '';

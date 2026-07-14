@@ -309,10 +309,7 @@ export default defineBackground({
         return { success: true, data: authStateResponseData(authManager.getAuthState()) };
       });
 
-      // Forward Auth State Changes to popup, content scripts, and web tabs
-      authManager.onAuthStateChanged((state: AuthState) => {
-        broadcastAuthStateChange(state);
-      });
+      // Forward Auth State Changes after MCP client exists (revalidate bridge on logout)
 
       // --- Collections API handlers ---
 
@@ -350,6 +347,11 @@ export default defineBackground({
       const mcpBridgeClient = new McpBridgeClientService(mcpBridgeHandler, logger);
       mcpBridgeClient.start();
       logger.info('[INIT] McpBridgeClientService started');
+
+      authManager.onAuthStateChanged((state: AuthState) => {
+        broadcastAuthStateChange(state);
+        mcpBridgeClient.revalidateEligibility();
+      });
 
       // Manual library sync (Settings → Sync library)
       messageBus.subscribe(SYNC_LIBRARY, async () => {

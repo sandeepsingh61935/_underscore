@@ -8,13 +8,13 @@ import type { FeatureDenyReason } from '@/shared/utils/mode-capabilities';
 export function featureGateSubtitle(reason?: FeatureDenyReason): string {
   switch (reason) {
     case 'CAPABILITY_DENIED':
-      return 'Available in Pro';
+      return 'Available with Account (Free)';
     case 'AUTH_REQUIRED':
-      return 'Sign in to use Pro features';
+      return 'Sign in to use account features';
     case 'WRONG_MODE':
-      return 'Available in 10x-Pro';
+      return 'Available with Account (Paid)';
     case 'WRONG_SCOPE':
-      return 'Available in Pro';
+      return 'Available with Account (Free)';
     default:
       return 'Unavailable in this mode';
   }

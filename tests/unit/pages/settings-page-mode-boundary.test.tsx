@@ -72,28 +72,27 @@ describe('SettingsPage basic mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('disables library export for a guest in Basic with Pro upgrade copy', () => {
+  it('disables library export and sync for a guest (library section auth-gated)', () => {
     render(<SettingsPage />);
 
     expect(screen.queryByText('Export library')).toBeNull();
     expect(screen.queryByText('Sync library')).toBeNull();
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
   });
 
   it('shows guest account sign-in row with sync upsell', () => {
     render(<SettingsPage onSignIn={vi.fn()} />);
 
     expect(screen.getAllByText('Sign in').length).toBeGreaterThan(0);
-    expect(screen.getByText('Sync library across devices, search, export, AI')).toBeTruthy();
+    expect(screen.getByText('Sync library across devices, export, AI')).toBeTruthy();
     expect(screen.getByText('Guest')).toBeTruthy();
+    expect(screen.queryByTestId('account-plan-pill')).toBeNull();
   });
 
   it('shows Configure AI providers as gated for a guest in Basic', () => {
     render(<SettingsPage />);
 
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    const aiRow = screen.getByText('Configure AI providers').closest('button');
-    expect(aiRow?.textContent).toContain('Available in 10x-Pro');
+    expect(screen.getByText('Available with Account (Paid)')).toBeTruthy();
   });
 
   it('does not show Retention settings after TTL removal', () => {
@@ -143,11 +142,11 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('shows Configure AI providers for signed-in 10x-Pro', () => {
+  it('shows Configure AI providers for signed-in Account (Paid)', () => {
     render(<SettingsPage />);
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    const aiRow = screen.getByText('Configure AI providers').closest('button');
-    expect(aiRow?.textContent).toContain('OpenAI, Claude, Gemini');
+    expect(screen.getByText(/OpenAI, Claude, Gemini/)).toBeTruthy();
+    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
   });
 
 });
@@ -176,10 +175,10 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     } as ReturnType<typeof useApp>);
   });
 
-  it('shows Configure AI providers as gated for signed-in Pro (not 10x-Pro)', () => {
+  it('shows Configure AI providers as gated for signed-in Account (Free)', () => {
     render(<SettingsPage />);
     expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    const aiRow = screen.getByText('Configure AI providers').closest('button');
-    expect(aiRow?.textContent).toContain('Available in 10x-Pro');
+    expect(screen.getByText('Available with Account (Paid)')).toBeTruthy();
+    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
   });
 });

@@ -6,8 +6,8 @@
  * pro_xai is a capability overlay, not a separate persistence strategy —
  * highlight create/read/update/delete/restore all delegate to ProMode's
  * IndexedDB + sync implementation unchanged. The only difference is the
- * `name` identity and the `ai: true` capability flag, which the UI/feature
- * layer uses to gate AI affordances (summarize, synthesize, ask).
+ * `name` identity and the `ai` / `mcp` capability flags, which the UI/feature
+ * layer uses to gate AI affordances and Connect to AI.
  *
  * @see docs/04-adrs (Mode Consolidation ADR) — "ai has no registered
  * highlight mode" gap; pro_xai closes it by extending ProMode directly.
@@ -29,6 +29,7 @@ export class ProXaiMode extends ProMode {
     tags: true,
     export: true,
     ai: true,
+    mcp: true,
     search: true,
     multiSelector: true,
   };

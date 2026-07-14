@@ -40,10 +40,11 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     undo: true,
     sync: false,
     collections: true,
-    tags: false,
+    tags: true,
     export: false,
     ai: false,
-    search: false,
+    mcp: false,
+    search: true,
     multiSelector: false,
   },
   pro: {
@@ -54,6 +55,7 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     tags: true,
     export: true,
     ai: false,
+    mcp: false,
     search: true,
     multiSelector: true,
   },
@@ -65,6 +67,7 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     tags: true,
     export: true,
     ai: true,
+    mcp: true,
     search: true,
     multiSelector: true,
   },
@@ -108,7 +111,7 @@ export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
 ): FeatureGateResult {
-  if (feature === 'ai' && ctx.mode !== 'pro_xai') {
+  if ((feature === 'ai' || feature === 'mcp') && ctx.mode !== 'pro_xai') {
     return { allowed: false, reason: 'WRONG_MODE' };
   }
 
@@ -117,7 +120,7 @@ export function canUseFeature(
     return { allowed: false, reason: 'CAPABILITY_DENIED' };
   }
 
-  if (feature === 'collections' && !ctx.isAuthenticated) {
+  if (feature === 'collections' && !ctx.isAuthenticated && ctx.mode !== 'basic') {
     return { allowed: false, reason: 'AUTH_REQUIRED' };
   }
 
@@ -156,9 +159,32 @@ export function canConfigureAiProviders(ctx: FeatureGateContext): FeatureGateRes
   return { allowed: true };
 }
 
+/**
+ * MCP bridge + cloud connectors. Account (Paid) only — separate from in-app AI.
+ */
+export function canUseMcp(ctx: FeatureGateContext): FeatureGateResult {
+  if (ctx.mode !== 'pro_xai') {
+    return { allowed: false, reason: 'WRONG_MODE' };
+  }
+
+  if (!ctx.capabilities.mcp) {
+    return { allowed: false, reason: 'CAPABILITY_DENIED' };
+  }
+
+  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
+    return { allowed: false, reason: 'AUTH_REQUIRED' };
+  }
+
+  if (ctx.storageScope === 'basic' && proOnlyFeature('mcp')) {
+    return { allowed: false, reason: 'WRONG_SCOPE' };
+  }
+
+  return { allowed: true };
+}
+
 /** Features that require pro storage scope (signed-in cloud sync). */
 function proOnlyFeature(feature: FeatureKey): boolean {
-  return feature === 'sync' || feature === 'export' || feature === 'tags' || feature === 'search' || feature === 'ai';
+  return feature === 'sync' || feature === 'export' || feature === 'ai' || feature === 'mcp';
 }
 
 export interface McpCapabilityFlags {
@@ -172,6 +198,17 @@ export interface McpCapabilityFlags {
 
 /** Build MCP session capability flags from the shared feature gate. */
 export function buildMcpCapabilities(ctx: FeatureGateContext): McpCapabilityFlags {
+  if (!canUseMcp(ctx).allowed) {
+    return {
+      sync: false,
+      export: false,
+      ai: false,
+      collections: false,
+      search: false,
+      metadataWrite: false,
+    };
+  }
+
   return {
     sync: canUseFeature('sync', ctx).allowed,
     export: canUseFeature('export', ctx).allowed,

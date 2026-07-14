@@ -11,16 +11,20 @@ import type { HighlightQueryService } from '@/shared/services/highlight-query-se
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { getModeBranding } from '@/shared/constants/mode-branding';
+import { MCP_BRIDGE_STORAGE_KEYS } from '@/shared/constants/mcp-bridge';
 import { MODE_STORAGE_KEY, AUTH_REQUIRED_MODES, VALID_MODES } from '@/shared/constants/mode-storage';
 import { buildMarkdownExport, toExportableHighlight } from '@/shared/highlight-export';
 import type { ExportScope } from '@/shared/highlight-export';
+import type { TagService } from '@/background/services/tag-service';
 import { buildHighlightMetadataUpdate } from '@/shared/utils/highlight-metadata';
+import { searchHighlights } from '@/shared/utils/highlight-search';
 import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
 import {
   buildMcpCapabilities,
   canUseFeature,
+  canUseMcp,
   getCapabilitiesForMode,
 } from '@/shared/utils/mode-capabilities';
 import { featureGateErrorCode, featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
@@ -40,6 +44,7 @@ export interface McpBridgeHandlerDeps {
   backgroundHighlightOrchestrator: BackgroundHighlightOrchestrator;
   scopedHighlightRepository: ScopedHighlightRepository;
   repositoryFacade: RepositoryFacade;
+  tagService: TagService;
   cloudHydrationService: ICloudHydrationService;
   librarySyncCursor: LibrarySyncCursor;
   llmChat?: (payload: { provider?: ProviderName; request: LLMRequest }) => Promise<{ text: string }>;
@@ -50,6 +55,11 @@ export class McpBridgeHandler {
   constructor(private readonly deps: McpBridgeHandlerDeps) {}
 
   async dispatch(method: string, payload: unknown): Promise<unknown> {
+    const mcpExempt = method === 'get_session' || method === 'get_mode';
+    if (!mcpExempt) {
+      await this.assertMcpFeature();
+    }
+
     switch (method) {
       case 'get_session':
         return this.getSession();
@@ -193,10 +203,7 @@ export class McpBridgeHandler {
       candidates = merged;
     }
 
-    const matches = candidates.filter((hl) => {
-      const haystack = [hl.text, hl.notes, ...(hl.tags ?? []), hl.url].join(' ').toLowerCase();
-      return haystack.includes(query);
-    });
+    const matches = searchHighlights(candidates, query).map((match) => match.highlight);
 
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(
       matches.slice(offset, offset + limit),
@@ -248,8 +255,20 @@ export class McpBridgeHandler {
     if (!input?.id) {
       throw Object.assign(new Error('id is required'), { code: 'INVALID_ARGUMENT' });
     }
-    const metadata = buildHighlightMetadataUpdate({ notes: input.notes, tags: input.tags });
-    this.deps.repositoryFacade.update(input.id, { metadata });
+
+    if (input.notes !== undefined) {
+      const existing = this.deps.repositoryFacade.get(input.id);
+      const metadata = buildHighlightMetadataUpdate({
+        notes: input.notes,
+        tags: existing?.metadata?.tags,
+      });
+      this.deps.repositoryFacade.update(input.id, { metadata });
+    }
+
+    if (input.tags !== undefined) {
+      await this.deps.tagService.setHighlightLabels(input.id, input.tags);
+    }
+
     notifyLibraryDataChanged({ source: 'mcp_metadata_update' });
     return { ok: true };
   }
@@ -329,7 +348,53 @@ export class McpBridgeHandler {
     return buildFallbackExcerpts(this.toPromptHighlights(filtered)).excerpts;
   }
 
+  private async assertMcpFeature(): Promise<void> {
+    const mode = await this.readMode();
+    const signedIn = this.deps.authManager.isAuthenticated;
+    const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
+    const gate = canUseMcp({
+      mode,
+      capabilities: getCapabilitiesForMode(mode),
+      isAuthenticated: signedIn,
+      storageScope,
+    });
+    if (!gate.allowed) {
+      throw Object.assign(new Error(featureGateSubtitle(gate.reason)), {
+        code: featureGateErrorCode(gate.reason),
+      });
+    }
+  }
+
+  /** Whether MCP is allowed for the current mode + auth session. */
+  async isMcpAllowed(): Promise<boolean> {
+    const mode = await this.readMode();
+    const signedIn = this.deps.authManager.isAuthenticated;
+    const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
+    return canUseMcp({
+      mode,
+      capabilities: getCapabilitiesForMode(mode),
+      isAuthenticated: signedIn,
+      storageScope,
+    }).allowed;
+  }
+
+  /**
+   * Hard cutover: clear the bridge enabled flag when the session is not Paid.
+   * Returns whether MCP remains allowed after the check.
+   */
+  async enforceBridgeEligibility(): Promise<boolean> {
+    const allowed = await this.isMcpAllowed();
+    if (allowed) return true;
+
+    const stored = await browser.storage.local.get(MCP_BRIDGE_STORAGE_KEYS.enabled);
+    if (stored[MCP_BRIDGE_STORAGE_KEYS.enabled] === true) {
+      await browser.storage.local.set({ [MCP_BRIDGE_STORAGE_KEYS.enabled]: false });
+    }
+    return false;
+  }
+
   private async assertAiFeature(): Promise<void> {
+    await this.assertMcpFeature();
     const mode = await this.readMode();
     const signedIn = this.deps.authManager.isAuthenticated;
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();

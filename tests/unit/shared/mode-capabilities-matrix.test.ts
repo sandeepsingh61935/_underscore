@@ -14,6 +14,7 @@ const BOOLEAN_FEATURES: FeatureKey[] = [
   'tags',
   'export',
   'ai',
+  'mcp',
   'search',
   'multiSelector',
 ];
@@ -22,7 +23,7 @@ const MODES: ModeType[] = ['basic', 'pro', 'pro_xai'];
 
 /** Independent spec: which boolean features each mode advertises. */
 const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
-  basic: new Set(['undo', 'collections']),
+  basic: new Set(['undo', 'collections', 'tags', 'search']),
   pro: new Set(['undo', 'sync', 'collections', 'tags', 'export', 'search', 'multiSelector']),
   pro_xai: new Set([
     'undo',
@@ -33,6 +34,7 @@ const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
     'search',
     'multiSelector',
     'ai',
+    'mcp',
   ]),
 };
 
@@ -59,7 +61,9 @@ describe('canUseFeature capability matrix', () => {
 
       expect(result.allowed).toBe(shouldAllow);
       if (!shouldAllow) {
-        expect(result.reason).toBe('CAPABILITY_DENIED');
+        const expectedReason =
+          feature === 'ai' || feature === 'mcp' ? 'WRONG_MODE' : 'CAPABILITY_DENIED';
+        expect(result.reason).toBe(expectedReason);
       }
     },
   );

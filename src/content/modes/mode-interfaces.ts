@@ -47,6 +47,9 @@ export interface ModeCapabilities {
   /** AI-powered features */
   ai: boolean;
 
+  /** MCP bridge + cloud MCP connectors */
+  mcp: boolean;
+
   /** Full-text search */
   search: boolean;
 

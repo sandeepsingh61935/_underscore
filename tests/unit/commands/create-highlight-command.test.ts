@@ -50,6 +50,7 @@ function createMockModeManager() {
       tags: false,
       export: false,
       ai: false,
+      mcp: false,
       search: false,
       multiSelector: false,
     },
