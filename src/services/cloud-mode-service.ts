@@ -97,7 +97,21 @@ export class CloudModeService {
         };
       }
 
-      this.facade.add(payload);
+      // Library / restore-by-url require url; never persist without it.
+      if (!payload.url) {
+        payload.url = normalizePageUrl(
+          typeof window !== 'undefined' ? window.location.href : ''
+        );
+      }
+
+      // Activity sort (library Recent / sections) uses updatedAt when present.
+      if (!payload.updatedAt) {
+        payload.updatedAt = payload.createdAt ? new Date(payload.createdAt) : new Date();
+      }
+
+      // Await durable content→background write so createHighlight cannot return
+      // before IPC/IDB has been attempted (PRD L1).
+      await this.facade.addPersisted(payload);
 
       this.logger.info('[VAULT] Highlight saved', {
         id: payload.id,

@@ -130,6 +130,13 @@ export class RepositoryFacade {
   // SYNCHRONOUS API (from cache)
   // ============================================
 
+  /**
+   * Fire-and-forget add: cache immediately, persist async without awaiting.
+   *
+   * Prefer {@link addPersisted} for user-facing create/save paths where
+   * reload/library correctness depends on IndexedDB (or IPC) completing.
+   * Keep `add` for best-effort cache warm-ups where awaiting is impractical.
+   */
   add(highlight: HighlightDataV2): void {
     this.ensureInitialized();
 
@@ -143,6 +150,36 @@ export class RepositoryFacade {
     this.repository.add(highlight).catch((error) => {
       this.logger.error('Background persist failed', error);
     });
+  }
+
+  /**
+   * Add to cache and await durable repository persistence.
+   * Use for create/save (content → background IPC/IDB) and bridge handlers
+   * that must not return success until the row is stored.
+   */
+  async addPersisted(highlight: HighlightDataV2): Promise<void> {
+    this.ensureInitialized();
+
+    this.cache.set(highlight.id, highlight);
+    this.contentHashIndex.set(highlight.contentHash, highlight.id);
+    this.logger.debug('Added to cache (persisted)', { id: highlight.id });
+
+    await this.repository.add(highlight);
+  }
+
+  /**
+   * Batch add with awaited durable persistence.
+   */
+  async addManyPersisted(highlights: HighlightDataV2[]): Promise<void> {
+    this.ensureInitialized();
+
+    for (const highlight of highlights) {
+      this.cache.set(highlight.id, highlight);
+      this.contentHashIndex.set(highlight.contentHash, highlight.id);
+    }
+    this.logger.debug('Added many to cache (persisted)', { count: highlights.length });
+
+    await this.repository.addMany(highlights);
   }
 
   /**
@@ -215,7 +252,7 @@ export class RepositoryFacade {
   }
 
   /**
-   * Update highlight (sync)
+   * Fire-and-forget update. Prefer {@link updatePersisted} for bridge IPC.
    */
   update(id: string, updates: Partial<HighlightDataV2>): void {
     this.ensureInitialized();
@@ -246,6 +283,34 @@ export class RepositoryFacade {
     this.repository.update(id, updates).catch((error) => {
       this.logger.error('Background update failed', error);
     });
+  }
+
+  /**
+   * Update cache and await durable repository persistence.
+   */
+  async updatePersisted(id: string, updates: Partial<HighlightDataV2>): Promise<void> {
+    this.ensureInitialized();
+
+    const existing = this.cache.get(id);
+    if (!existing) {
+      throw new Error(`Highlight not found: ${id}`);
+    }
+
+    const updated: HighlightDataV2 = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    this.cache.set(id, updated);
+
+    if (updates.contentHash && updates.contentHash !== existing.contentHash) {
+      this.contentHashIndex.delete(existing.contentHash);
+      this.contentHashIndex.set(updates.contentHash, id);
+    }
+
+    this.logger.debug('Updated in cache (persisted)', { id });
+    await this.repository.update(id, updates);
   }
 
   /**

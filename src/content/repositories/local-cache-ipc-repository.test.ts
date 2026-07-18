@@ -140,4 +140,28 @@ describe('LocalCacheIpcRepository', () => {
     const all = await localRepo.findAll();
     expect(all).toHaveLength(1);
   });
+
+  it('retries IPC_HIGHLIGHT_ADD after a transient failure then succeeds', async () => {
+    let attempts = 0;
+    const flakyBus = {
+      send: vi.fn(async (target: string, message: unknown) => {
+        attempts += 1;
+        sentMessages.push({ target, message });
+        if (attempts === 1) {
+          throw new Error('Receiving end does not exist');
+        }
+        return { success: true };
+      }),
+      subscribe: vi.fn(() => () => {}),
+      publish: vi.fn(async () => {}),
+    } as unknown as IMessageBus;
+
+    const localRepo = new LocalCacheIpcRepository(flakyBus);
+    await localRepo.add(makeHighlight());
+
+    expect(attempts).toBeGreaterThanOrEqual(2);
+    expect(await localRepo.findAll()).toHaveLength(1);
+    const last = sentMessages[sentMessages.length - 1];
+    expect(MessageSchema.parse(last!.message).type).toBe('IPC_HIGHLIGHT_ADD');
+  });
 });

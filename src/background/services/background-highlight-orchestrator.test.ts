@@ -3,6 +3,10 @@ import { BackgroundHighlightOrchestrator } from './background-highlight-orchestr
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
+vi.mock('@/background/services/library-change-notifier', () => ({
+  notifyLibraryDataChanged: vi.fn(),
+}));
+
 function makeHighlight(id: string): HighlightDataV2 {
   return {
     id,
@@ -26,11 +30,24 @@ describe('BackgroundHighlightOrchestrator', () => {
     subscriptions.clear();
     facade = {
       add: vi.fn(),
+      addPersisted: vi.fn().mockResolvedValue(undefined),
       addMany: vi.fn(),
+      addManyPersisted: vi.fn().mockResolvedValue(undefined),
       update: vi.fn(),
+      updatePersisted: vi.fn().mockResolvedValue(undefined),
       remove: vi.fn(),
+      removePersisted: vi.fn().mockResolvedValue(undefined),
       get: vi.fn(),
       getAll: vi.fn(() => []),
+      getReadable: vi.fn(() => ({
+        findAll: vi.fn().mockResolvedValue([]),
+        findById: vi.fn(),
+        findByUrl: vi.fn().mockResolvedValue([]),
+        findByContentHash: vi.fn(),
+        findOverlapping: vi.fn(),
+        count: vi.fn(),
+        exists: vi.fn(),
+      })),
       findByContentHash: vi.fn(),
     } as unknown as RepositoryFacade;
 
@@ -54,11 +71,32 @@ describe('BackgroundHighlightOrchestrator', () => {
     expect(subscriptions.has('IPC_HIGHLIGHT_DECRYPT_TEXT')).toBe(false);
   });
 
-  it('onAdd: persists highlight plaintext as-is', async () => {
+  it('onAdd: awaits durable persist of highlight plaintext', async () => {
     const h = makeHighlight('h-1');
     const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(h);
     expect(result).toEqual({ success: true, data: undefined });
-    expect(facade.add).toHaveBeenCalledWith(h);
+    expect(facade.addPersisted).toHaveBeenCalledWith(h);
+  });
+
+  it('onFindByUrl: uses findByUrl and merges facade cache', async () => {
+    const durable = makeHighlight('from-idb');
+    const cached = makeHighlight('from-cache');
+    const findByUrl = vi.fn().mockResolvedValue([durable]);
+    (facade.getReadable as ReturnType<typeof vi.fn>).mockReturnValue({
+      findByUrl,
+      findAll: vi.fn(),
+    });
+    (facade.getAll as ReturnType<typeof vi.fn>).mockReturnValue([cached]);
+
+    const result = (await subscriptions.get('IPC_HIGHLIGHTS_FIND_BY_URL')!({
+      url: 'https://example.com/page',
+      mode: 'pro_xai',
+    })) as { success: boolean; data: HighlightDataV2[] };
+
+    expect(findByUrl).toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    const ids = result.data.map((h) => h.id).sort();
+    expect(ids).toEqual(['from-cache', 'from-idb']);
   });
 
   it('onGetHighlight: returns stored record with plaintext text', async () => {

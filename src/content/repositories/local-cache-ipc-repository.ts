@@ -4,13 +4,8 @@
  *
  * Writes go to a local InMemoryHighlightRepository cache (synchronous,
  * for UI reads via RepositoryFacade) AND are forwarded to the background
- * over IPC (fire-and-forget, for persistence). Reads come from the local
- * cache only — content-side reads do not hit the background.
- *
- * Replaces the previous DI binding where the content-side facade wrapped
- * a pure InMemoryHighlightRepository and writes died in the tab's memory.
- * Now Basic mode highlights reach IndexedDB and appear in the popup's
- * home/library view.
+ * over IPC (awaited with short retry for cold service-worker wake).
+ * Reads come from the local cache only.
  */
 
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
@@ -21,6 +16,7 @@ import type {
 } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { sendBackgroundIpcWithRetry } from '@/shared/messaging/send-background-ipc-with-retry';
 
 export class LocalCacheIpcRepository implements IHighlightRepository {
   private readonly cache = new InMemoryHighlightRepository();
@@ -28,16 +24,14 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
 
   constructor(private readonly messageBus: IMessageBus) {}
 
-  // ----- writes: cache + IPC fire-and-forget -----
-
   async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
     await this.cache.add(highlight);
-    this.sendIpc('IPC_HIGHLIGHT_ADD', highlight);
+    await this.sendIpc('IPC_HIGHLIGHT_ADD', highlight);
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {
     await this.cache.addMany(highlights);
-    this.sendIpc('IPC_HIGHLIGHT_ADD_MANY', { highlights });
+    await this.sendIpc('IPC_HIGHLIGHT_ADD_MANY', { highlights });
   }
 
   async update(
@@ -46,20 +40,18 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
     _options?: RepositoryOptions
   ): Promise<void> {
     await this.cache.update(id, updates);
-    this.sendIpc('IPC_HIGHLIGHT_UPDATE', { id, updates });
+    await this.sendIpc('IPC_HIGHLIGHT_UPDATE', { id, updates });
   }
 
   async remove(id: string, _options?: RepositoryOptions): Promise<void> {
     await this.cache.remove(id);
-    this.sendIpc('IPC_HIGHLIGHT_REMOVE', { id });
+    await this.sendIpc('IPC_HIGHLIGHT_REMOVE', { id });
   }
 
   async clear(): Promise<void> {
     await this.cache.clear();
-    this.sendIpc('IPC_HIGHLIGHT_CLEAR', {});
+    await this.sendIpc('IPC_HIGHLIGHT_CLEAR', {});
   }
-
-  // ----- reads: local cache only -----
 
   findById(id: string): Promise<HighlightDataV2 | null> {
     return this.cache.findById(id);
@@ -89,20 +81,22 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
     return this.cache.findOverlapping(range);
   }
 
-  // ----- internal -----
-
   /**
-   * Fire-and-forget IPC send. Failures are logged but never thrown —
-   * the local cache write already succeeded, so a transient IPC outage
-   * must not break the user's highlight workflow.
+   * Local cache already succeeded; IPC failure after retries is logged only.
    */
-  private sendIpc(type: string, payload: unknown): void {
-    this.messageBus
-      .send('background', { type, payload, timestamp: Date.now() })
-      .catch((err: unknown) => {
-        this.logger.warn(`IPC ${type} failed (cache write already succeeded)`, {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
+  private async sendIpc(type: string, payload: unknown): Promise<void> {
+    await sendBackgroundIpcWithRetry(
+      this.messageBus,
+      { type, payload, timestamp: Date.now() },
+      {
+        onExhausted: 'log',
+        onLogExhausted: (error, attempts) => {
+          this.logger.warn(`IPC ${type} failed after retries (cache write already succeeded)`, {
+            error: error instanceof Error ? error.message : String(error),
+            attempts,
+          });
+        },
+      }
+    );
   }
 }

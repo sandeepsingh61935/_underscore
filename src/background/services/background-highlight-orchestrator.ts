@@ -14,6 +14,7 @@ import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 
 export class BackgroundHighlightOrchestrator {
   constructor(
@@ -42,7 +43,9 @@ export class BackgroundHighlightOrchestrator {
   private async onAdd(highlight: HighlightDataV2) {
     this.logger.info('[bridge] add', { id: highlight.id, url: highlight.url });
     try {
-      this.facade.add(highlight);
+      // Await IndexedDB (active auth scope) so SW death after response does not drop the row.
+      await this.facade.addPersisted(highlight);
+      notifyLibraryDataChanged({ source: 'highlight-bridge-add' });
       this.logger.debug('[bridge] response', { id: highlight.id, ok: true });
       return { success: true, data: undefined as void };
     } catch (e) {
@@ -55,7 +58,8 @@ export class BackgroundHighlightOrchestrator {
   private async onAddMany({ highlights }: { highlights: HighlightDataV2[] }) {
     this.logger.info('[bridge] addMany', { count: highlights.length });
     try {
-      this.facade.addMany(highlights);
+      await this.facade.addManyPersisted(highlights);
+      notifyLibraryDataChanged({ source: 'highlight-bridge-add-many' });
       this.logger.debug('[bridge] response', { count: highlights.length, ok: true });
       return { success: true, data: undefined as void };
     } catch (e) {
@@ -71,7 +75,8 @@ export class BackgroundHighlightOrchestrator {
       if (typeof updates.text === 'string' && !this.facade.get(id)) {
         return { success: false, error: `Highlight not found: ${id}`, code: 'NOT_FOUND' };
       }
-      this.facade.update(id, updates);
+      await this.facade.updatePersisted(id, updates);
+      notifyLibraryDataChanged({ source: 'highlight-bridge-update' });
       return { success: true, data: undefined as void };
     } catch (e) {
       const err = e as Error;
@@ -83,7 +88,8 @@ export class BackgroundHighlightOrchestrator {
   private async onRemove({ id }: { id: string }) {
     this.logger.info('[bridge] remove', { id });
     try {
-      this.facade.remove(id);
+      await this.facade.removePersisted(id);
+      notifyLibraryDataChanged({ source: 'highlight-bridge-remove' });
       return { success: true, data: undefined as void };
     } catch (e) {
       const err = e as Error;
@@ -102,10 +108,15 @@ export class BackgroundHighlightOrchestrator {
     this.logger.info('[bridge] findByUrl', { url, mode });
     try {
       const normalized = normalizePageUrl(url);
-      const data = this.facade
-        .getAll()
-        .filter((h) => h.url && normalizePageUrl(h.url) === normalized);
-      return { success: true, data };
+      // Indexed path when available; merge facade cache for any in-flight rows.
+      const durable = await this.facade.getReadable().findByUrl(normalized);
+      const byId = new Map(durable.map((h) => [h.id, h]));
+      for (const h of this.facade.getAll()) {
+        if (h.url && normalizePageUrl(h.url) === normalized) {
+          byId.set(h.id, h);
+        }
+      }
+      return { success: true, data: Array.from(byId.values()) };
     } catch (e) {
       const err = e as Error;
       this.logger.error('[bridge] findByUrl failed', err, { url });

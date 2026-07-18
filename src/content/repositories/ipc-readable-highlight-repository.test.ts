@@ -72,11 +72,31 @@ describe('IpcReadableHighlightRepository', () => {
         expect(result).toEqual(items);
     });
 
-    it('throws when the bus returns success: false', async () => {
+    it('throws when the bus returns success: false after retries', async () => {
         const bus = makeBus(async () => ({ success: false, error: 'boom' }));
         const repo = new IpcReadableHighlightRepository(bus, modeOf('pro'));
 
-        await expect(repo.findByUrl('https://example.com/a')).rejects.toThrow(/boom/);
+        await expect(repo.findByUrl('https://example.com/a')).rejects.toThrow(
+            /success: false|boom/
+        );
+    });
+
+    it('retries findByUrl after a transient IPC failure then succeeds', async () => {
+        let attempts = 0;
+        const items = [makeHighlight({ id: 'h-restored' })];
+        const bus = makeBus(async () => {
+            attempts += 1;
+            if (attempts === 1) {
+                throw new Error('Receiving end does not exist');
+            }
+            return { success: true, data: items };
+        });
+        const repo = new IpcReadableHighlightRepository(bus, modeOf('pro_xai'));
+
+        const result = await repo.findByUrl('https://example.com/a');
+
+        expect(attempts).toBeGreaterThanOrEqual(2);
+        expect(result).toEqual(items);
     });
 
     it('findById throws (not supported via read IPC adapter; use facade)', async () => {

@@ -80,12 +80,14 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       throw new Error('Failed to serialize range');
     }
 
+    const now = new Date();
     const runtimeHighlight = {
       id,
       text,
       colorRole,
       type: 'underscore' as const,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       ranges: [serializedRange],
       liveRanges: [range],
     };
@@ -98,9 +100,10 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       color: colorRole,
     });
 
-    this.facade.add({
+    await this.facade.addPersisted({
       ...storageData,
       url: normalizePageUrl(window.location.href),
+      updatedAt: now,
     });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
@@ -132,10 +135,12 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     });
 
     const pageUrl = data.url ?? normalizePageUrl(window.location.href);
+    const now = new Date();
 
-    this.facade.add({
+    await this.facade.addPersisted({
       ...storageData,
       url: pageUrl,
+      updatedAt: (data as { updatedAt?: Date }).updatedAt ?? now,
     });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {

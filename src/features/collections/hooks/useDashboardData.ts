@@ -10,7 +10,8 @@ export interface DashboardData {
     url: string;
     path: string;
     domain: string;
-    createdAt: string;
+    createdAt: string | Date;
+    updatedAt?: string | Date;
   }>;
 }
 
@@ -25,6 +26,10 @@ const EMPTY_DASHBOARD: DashboardData = {
   recentHighlights: [],
 };
 
+/**
+ * Dashboard data from GET_DASHBOARD_DATA.
+ * Activity order is owned by HighlightQueryService — do not re-sort here (PRD L4).
+ */
 export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,19 +41,18 @@ export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
     let cancelled = false;
 
     const fetchDashboardData = async () => {
-      if (!isAuthenticated) {
-        setData(EMPTY_DASHBOARD);
-        setError(null);
-      }
-
       setIsLoading(true);
       const result = await fetchAction({ mode });
       if (cancelled) return;
 
       if (!result.success) {
         setError(new Error(result.error));
+        if (!isAuthenticated) {
+          setData((prev) => prev ?? EMPTY_DASHBOARD);
+        }
       } else {
         setData(result.data);
+        setError(null);
       }
       setIsLoading(false);
     };
@@ -62,10 +66,6 @@ export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
 
   useLibraryDataChanged(() => {
     void (async () => {
-      if (!isAuthenticated) {
-        setData(EMPTY_DASHBOARD);
-        setError(null);
-      }
       const result = await fetchAction({ mode });
       if (!result.success) {
         setError(new Error(result.error));
@@ -73,18 +73,7 @@ export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
       }
       setData(result.data);
       setIsLoading(false);
-    })();
-  });
-
-  useLibraryDataChanged(() => {
-    void (async () => {
-      const result = await fetchAction({ mode });
-      if (!result.success) {
-        setError(new Error(result.error));
-        return;
-      }
-      setData(result.data);
-      setIsLoading(false);
+      setError(null);
     })();
   });
 

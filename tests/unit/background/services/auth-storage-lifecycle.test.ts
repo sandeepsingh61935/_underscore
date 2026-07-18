@@ -100,4 +100,31 @@ describe('handleAuthStorageEvent', () => {
     expect(hydrate).toHaveBeenCalled();
     expect(await basic.count()).toBe(1);
   });
+
+  it('on sign-in reloads facade even when cloud hydrate fails', async () => {
+    const basic = new InMemoryHighlightRepository();
+    const pro = new InMemoryHighlightRepository();
+    await pro.add(makeHighlight('pro-local'));
+    const scoped = new ScopedHighlightRepository(basic, pro, 'basic');
+    const facade = new RepositoryFacade(scoped);
+    await facade.initialize(); // loads basic (empty) into cache
+
+    const hydrate = vi.fn().mockRejectedValue(new Error('network down'));
+    const reloadSpy = vi.spyOn(facade, 'reload');
+
+    await handleAuthStorageEvent(
+      { type: 'SIGNED_IN', userId: 'user-1' },
+      {
+        scopedRepository: scoped,
+        repositoryFacade: facade,
+        cloudHydration: { hydrate },
+      },
+    );
+
+    expect(scoped.getActiveScope()).toBe('pro');
+    expect(hydrate).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+    // After reload with pro scope, pro-local must be visible to library/restore
+    expect(facade.getAll().map((h) => h.id)).toContain('pro-local');
+  });
 });
