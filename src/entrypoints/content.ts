@@ -177,11 +177,24 @@ export default defineContentScript({
 
       logger.info('[DELETE-ICON] Hover detector initialized');
 
-      // Wire hover events to icon overlay
+      // Wire hover events to icon overlay (exterior first-line placement when available)
       eventBus.on(
         'highlight:hover:start',
-        (event: { highlightId: string; boundingRect: DOMRect }) => {
-          deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
+        (event: {
+          highlightId: string;
+          boundingRect: DOMRect;
+          firstLineStart?: DOMRect;
+          firstLineEnd?: DOMRect;
+        }) => {
+          if (event.firstLineStart && event.firstLineEnd) {
+            deleteIconOverlay.showIconWithFirstLine(
+              event.highlightId,
+              event.firstLineStart,
+              event.firstLineEnd
+            );
+          } else {
+            deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
+          }
         }
       );
 

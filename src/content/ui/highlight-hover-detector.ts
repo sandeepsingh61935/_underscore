@@ -2,7 +2,7 @@
  * Highlight Hover Detector
  *
  * Detects hover over painted highlights for delete-icon chrome.
- * Geometry comes from HighlightPainter (same truth as hit-test / paint).
+ * Geometry comes from HighlightPainter (first-line edges for exterior icon).
  */
 
 import type { RepositoryFacade } from '@/shared/repositories';
@@ -18,7 +18,7 @@ export class HighlightHoverDetector {
   private isEnabled = true;
 
   constructor(
-    private repositoryFacade: RepositoryFacade,
+    _repositoryFacade: RepositoryFacade,
     private eventBus: EventBus,
     private logger: ILogger,
     private hitTester: HighlightDOMHitTester,
@@ -63,16 +63,7 @@ export class HighlightHoverDetector {
 
   private handleScroll = (): void => {
     if (!this.currentHoveredId) return;
-    const highlight = this.repositoryFacade.get(this.currentHoveredId);
-    if (!highlight) return;
-    const boundingRect = this.painter.getBoundingClientRect(this.currentHoveredId);
-    if (boundingRect) {
-      this.eventBus.emit('highlight:hover:start', {
-        highlightId: this.currentHoveredId,
-        boundingRect,
-        timestamp: Date.now(),
-      });
-    }
+    this.emitHoverStart(this.currentHoveredId);
   };
 
   private detectHover(x: number, y: number): void {
@@ -87,17 +78,24 @@ export class HighlightHoverDetector {
       }
 
       if (highlight) {
-        const boundingRect = this.painter.getBoundingClientRect(highlight.id);
-        if (boundingRect) {
-          this.eventBus.emit('highlight:hover:start', {
-            highlightId: highlight.id,
-            boundingRect,
-            timestamp: Date.now(),
-          });
-        }
+        this.emitHoverStart(highlight.id);
       }
 
       this.currentHoveredId = highlight?.id || null;
     }
+  }
+
+  private emitHoverStart(highlightId: string): void {
+    const edges = this.painter.getFirstLineEdges(highlightId);
+    if (!edges) return;
+
+    // boundingRect = first-line end (icon anchor); startRect carried for exterior flip.
+    this.eventBus.emit('highlight:hover:start', {
+      highlightId,
+      boundingRect: edges.end,
+      firstLineStart: edges.start,
+      firstLineEnd: edges.end,
+      timestamp: Date.now(),
+    });
   }
 }

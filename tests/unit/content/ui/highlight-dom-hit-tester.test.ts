@@ -24,6 +24,7 @@ describe('HighlightDOMHitTester', () => {
       clear: vi.fn(),
       hitTest: vi.fn(),
       getBoundingClientRect: vi.fn(),
+      getFirstLineEdges: vi.fn(),
     };
   });
 

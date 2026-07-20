@@ -9,6 +9,7 @@ import type { DeletionConfig } from '@/content/modes/highlight-mode.interface';
 import type { ModeManager } from '@/content/modes/mode-manager';
 import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
 import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
+import { positionExteriorIcon } from '@/content/paint/first-line-geometry';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
@@ -240,15 +241,55 @@ export class DeleteIconOverlay {
     }
 
     /**
-     * Position icon at top-right of bounding box
+     * Position icon outside the first-line wash (prefer right; flip left if clipped).
+     * When only a single bounding rect is provided, treat it as both start and end.
      */
     private positionIcon(icon: HTMLElement, rect: DOMRect): void {
-        const scrollX = window.scrollX || window.pageXOffset;
-        const scrollY = window.scrollY || window.pageYOffset;
+        this.applyExteriorPosition(icon, rect, rect);
+    }
 
-        // Top-right corner of highlight, adjusted for scroll
-        icon.style.top = `${rect.top + scrollY + 4}px`;
-        icon.style.left = `${rect.right + scrollX - 24}px`; // 20px icon + 4px offset
+    /**
+     * Exterior placement using first-line start/end (preferred).
+     */
+    showIconWithFirstLine(
+        highlightId: string,
+        firstLineStart: DOMRect,
+        firstLineEnd: DOMRect
+    ): void {
+        const config = this.modeManager.getCurrentMode().getDeletionConfig();
+        if (!config?.showDeleteIcon) {
+            this.logger.debug('Delete icon disabled for current mode');
+            return;
+        }
+
+        this.hideIcon(highlightId);
+
+        const highlight = this.repositoryFacade.get(highlightId);
+        if (!highlight) {
+            this.logger.warn('Cannot show icon for non-existent highlight', { highlightId });
+            return;
+        }
+
+        const icon = this.createIconElement(highlightId, highlight, config);
+        this.applyExteriorPosition(icon, firstLineStart, firstLineEnd);
+        document.body.appendChild(icon);
+        this.activeIcons.set(highlightId, icon);
+    }
+
+    private applyExteriorPosition(
+        icon: HTMLElement,
+        firstLineStart: DOMRect,
+        firstLineEnd: DOMRect
+    ): void {
+        const pos = positionExteriorIcon(firstLineStart, firstLineEnd, {
+            iconSize: 20,
+            gap: 4,
+            scrollX: window.scrollX || window.pageXOffset || 0,
+            scrollY: window.scrollY || window.pageYOffset || 0,
+            viewportWidth: window.innerWidth,
+        });
+        icon.style.top = `${pos.top}px`;
+        icon.style.left = `${pos.left}px`;
     }
 
     /**

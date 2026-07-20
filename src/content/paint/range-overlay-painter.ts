@@ -2,11 +2,14 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Content-script paint that does not wrap text nodes (avoids cross-block DOM
- * breakage). Geometry is owned here so hit-test / hover share the same truth.
+ * Samples page background near the range and applies light/dark CSS packs.
+ * Geometry API feeds exterior delete-icon placement.
  */
 
-import type { HighlightPainter } from './highlight-painter';
+import type { FirstLineEdges, HighlightPainter } from './highlight-painter';
+import { resolveOverlaySurface, type SurfaceTone } from './highlight-contrast';
+import { getFirstLineEdgeRects } from './first-line-geometry';
+import { sampleBackgroundNearRange } from './sample-page-background';
 
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
 import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
@@ -16,6 +19,7 @@ const ROOT_ID = 'underscore-paint-root';
 interface OverlayEntry {
   id: string;
   colorRole: ColorRole;
+  surface: SurfaceTone;
   ranges: Range[];
   elements: HTMLElement[];
 }
@@ -35,7 +39,6 @@ export class RangeOverlayPainter implements HighlightPainter {
     return RangeOverlayPainter.instance;
   }
 
-  /** Test-only: reset singleton between tests. */
   static resetForTests(): void {
     if (RangeOverlayPainter.instance) {
       RangeOverlayPainter.instance.destroy();
@@ -54,13 +57,16 @@ export class RangeOverlayPainter implements HighlightPainter {
     const liveRanges = ranges.filter((r) => r && !r.collapsed);
     if (liveRanges.length === 0) return;
 
+    const bg = sampleBackgroundNearRange(liveRanges[0]!);
+    const { surface } = resolveOverlaySurface(role, bg);
+
     const elements: HTMLElement[] = [];
     for (const range of liveRanges) {
-      elements.push(...this.createRectsForRange(id, role, range));
+      elements.push(...this.createRectsForRange(id, role, surface, range));
     }
     if (elements.length === 0) return;
 
-    this.entries.set(id, { id, colorRole: role, ranges: liveRanges, elements });
+    this.entries.set(id, { id, colorRole: role, surface, ranges: liveRanges, elements });
   }
 
   unpaint(id: string): void {
@@ -90,7 +96,6 @@ export class RangeOverlayPainter implements HighlightPainter {
   }
 
   hitTest(x: number, y: number): string | null {
-    // Prefer shorter text (more specific) when overlapping.
     const hits: { id: string; textLen: number }[] = [];
 
     for (const entry of this.entries.values()) {
@@ -113,20 +118,14 @@ export class RangeOverlayPainter implements HighlightPainter {
   }
 
   getBoundingClientRect(id: string): DOMRect | null {
+    const edges = this.getFirstLineEdges(id);
+    return edges?.end ?? null;
+  }
+
+  getFirstLineEdges(id: string): FirstLineEdges | null {
     const entry = this.entries.get(id);
     if (!entry) return null;
-
-    for (const range of entry.ranges) {
-      try {
-        const rects = range.getClientRects();
-        if (rects.length > 0 && rects[0]) {
-          return rects[0];
-        }
-      } catch {
-        // continue
-      }
-    }
-    return null;
+    return getFirstLineEdgeRects(entry.ranges);
   }
 
   destroy(): void {
@@ -176,6 +175,7 @@ export class RangeOverlayPainter implements HighlightPainter {
   private createRectsForRange(
     id: string,
     colorRole: ColorRole,
+    surface: SurfaceTone,
     range: Range
   ): HTMLElement[] {
     const root = this.ensureRoot();
@@ -197,6 +197,7 @@ export class RangeOverlayPainter implements HighlightPainter {
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
       el.dataset['color'] = colorRole;
+      el.dataset['surface'] = surface;
       el.style.left = `${rect.left + scrollX}px`;
       el.style.top = `${rect.top + scrollY}px`;
       el.style.width = `${rect.width}px`;
@@ -233,17 +234,23 @@ export class RangeOverlayPainter implements HighlightPainter {
   private relayoutAll(): void {
     for (const entry of this.entries.values()) {
       for (const el of entry.elements) el.remove();
+
+      // Re-sample background on relayout (scroll/resize / theme may have changed).
+      const sampleRange = entry.ranges[0];
+      const bg = sampleRange ? sampleBackgroundNearRange(sampleRange) : 'rgb(255, 255, 255)';
+      const { surface } = resolveOverlaySurface(entry.colorRole, bg);
+      entry.surface = surface;
+
       const next: HTMLElement[] = [];
       for (const range of entry.ranges) {
         if (!range || range.collapsed) continue;
-        next.push(...this.createRectsForRange(entry.id, entry.colorRole, range));
+        next.push(...this.createRectsForRange(entry.id, entry.colorRole, surface, range));
       }
       entry.elements = next;
     }
   }
 }
 
-/** Content-script singleton — the only HighlightPainter in production. */
 export function getHighlightPainter(): HighlightPainter {
   return RangeOverlayPainter.getInstance();
 }

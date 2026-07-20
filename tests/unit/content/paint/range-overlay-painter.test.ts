@@ -64,6 +64,7 @@ describe('RangeOverlayPainter', () => {
     expect(rects.length).toBeGreaterThan(0);
     expect(rects[0]?.getAttribute('data-highlight-id')).toBe('hl-1');
     expect(rects[0]?.getAttribute('data-color')).toBe('yellow');
+    expect(rects[0]?.getAttribute('data-surface')).toMatch(/light|dark/);
     expect(painter.paintedCount).toBe(1);
   });
 
