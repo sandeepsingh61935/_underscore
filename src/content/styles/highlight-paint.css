@@ -1,7 +1,7 @@
 /**
- * Overlay paint styles (sole on-page highlight visibility path).
- * Light surface = page is light → darker/more saturated wash + stroke.
- * Dark surface = page is dark → brighter wash + stroke for visibility.
+ * Overlay paint styles — underscore only (no background wash).
+ * Light surface = page is light → darker stroke.
+ * Dark surface = page is dark → brighter stroke.
  */
 
 #underscore-paint-root {
@@ -18,106 +18,86 @@
 .underscore-paint-rect {
   position: absolute;
   pointer-events: none;
-  border-radius: 2px;
+  border-radius: 0;
   box-sizing: border-box;
+  background-color: transparent;
 }
 
 /* --- yellow --- */
 .underscore-paint-rect[data-color='yellow'][data-surface='light'] {
-  background-color: rgba(255, 213, 0, 0.5);
   box-shadow: inset 0 -2.5px 0 #c49000;
 }
 .underscore-paint-rect[data-color='yellow'][data-surface='dark'] {
-  background-color: rgba(255, 235, 59, 0.55);
   box-shadow: inset 0 -2.5px 0 #ffe082;
 }
 
 /* --- orange --- */
 .underscore-paint-rect[data-color='orange'][data-surface='light'] {
-  background-color: rgba(255, 145, 0, 0.45);
   box-shadow: inset 0 -2.5px 0 #e65100;
 }
 .underscore-paint-rect[data-color='orange'][data-surface='dark'] {
-  background-color: rgba(255, 183, 77, 0.5);
   box-shadow: inset 0 -2.5px 0 #ffcc80;
 }
 
 /* --- blue --- */
 .underscore-paint-rect[data-color='blue'][data-surface='light'] {
-  background-color: rgba(30, 136, 229, 0.4);
   box-shadow: inset 0 -2.5px 0 #0d47a1;
 }
 .underscore-paint-rect[data-color='blue'][data-surface='dark'] {
-  background-color: rgba(100, 181, 246, 0.5);
   box-shadow: inset 0 -2.5px 0 #90caf9;
 }
 
 /* --- green --- */
 .underscore-paint-rect[data-color='green'][data-surface='light'] {
-  background-color: rgba(67, 160, 71, 0.4);
   box-shadow: inset 0 -2.5px 0 #1b5e20;
 }
 .underscore-paint-rect[data-color='green'][data-surface='dark'] {
-  background-color: rgba(129, 199, 132, 0.5);
   box-shadow: inset 0 -2.5px 0 #a5d6a7;
 }
 
 /* --- purple --- */
 .underscore-paint-rect[data-color='purple'][data-surface='light'] {
-  background-color: rgba(142, 36, 170, 0.4);
   box-shadow: inset 0 -2.5px 0 #4a148c;
 }
 .underscore-paint-rect[data-color='purple'][data-surface='dark'] {
-  background-color: rgba(186, 104, 200, 0.5);
   box-shadow: inset 0 -2.5px 0 #ce93d8;
 }
 
 /* --- pink --- */
 .underscore-paint-rect[data-color='pink'][data-surface='light'] {
-  background-color: rgba(216, 27, 96, 0.4);
   box-shadow: inset 0 -2.5px 0 #880e4f;
 }
 .underscore-paint-rect[data-color='pink'][data-surface='dark'] {
-  background-color: rgba(240, 98, 146, 0.5);
   box-shadow: inset 0 -2.5px 0 #f48fb1;
 }
 
 /* --- teal --- */
 .underscore-paint-rect[data-color='teal'][data-surface='light'] {
-  background-color: rgba(0, 137, 123, 0.4);
   box-shadow: inset 0 -2.5px 0 #004d40;
 }
 .underscore-paint-rect[data-color='teal'][data-surface='dark'] {
-  background-color: rgba(77, 182, 172, 0.5);
   box-shadow: inset 0 -2.5px 0 #80cbc4;
 }
 
 /* Fallback when surface missing (treat as light page) */
 .underscore-paint-rect[data-color='yellow']:not([data-surface]) {
-  background-color: rgba(255, 213, 0, 0.5);
   box-shadow: inset 0 -2.5px 0 #c49000;
 }
 .underscore-paint-rect[data-color='orange']:not([data-surface]) {
-  background-color: rgba(255, 145, 0, 0.45);
   box-shadow: inset 0 -2.5px 0 #e65100;
 }
 .underscore-paint-rect[data-color='blue']:not([data-surface]) {
-  background-color: rgba(30, 136, 229, 0.4);
   box-shadow: inset 0 -2.5px 0 #0d47a1;
 }
 .underscore-paint-rect[data-color='green']:not([data-surface]) {
-  background-color: rgba(67, 160, 71, 0.4);
   box-shadow: inset 0 -2.5px 0 #1b5e20;
 }
 .underscore-paint-rect[data-color='purple']:not([data-surface]) {
-  background-color: rgba(142, 36, 170, 0.4);
   box-shadow: inset 0 -2.5px 0 #4a148c;
 }
 .underscore-paint-rect[data-color='pink']:not([data-surface]) {
-  background-color: rgba(216, 27, 96, 0.4);
   box-shadow: inset 0 -2.5px 0 #880e4f;
 }
 .underscore-paint-rect[data-color='teal']:not([data-surface]) {
-  background-color: rgba(0, 137, 123, 0.4);
   box-shadow: inset 0 -2.5px 0 #004d40;
 }
