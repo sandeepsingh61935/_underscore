@@ -15,7 +15,7 @@ import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-d
 import { HighlightWithMarginalia } from '@/features/collections/components/HighlightWithMarginalia';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
@@ -74,7 +74,7 @@ export function SubDomainView({
   }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
-  const { updateText } = useUpdateHighlightText();
+  const { updateMetadata } = useUpdateHighlightMetadata();
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
@@ -350,9 +350,14 @@ export function SubDomainView({
                       }}
                       showLocationMeta={false}
                       suggestions={labelSuggestions}
+                      sourceKind={r.sourceKind}
+                      language={r.language}
+                      presentation={r.presentation}
                       onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
                       onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
-                      onSaveQuote={(text) => updateText(r.id, text)}
+                      onPresentationChange={(presentation) =>
+                        updateMetadata(r.id, { presentation }, { silent: true })
+                      }
                     />
                   ) : (
                     <HighlightCard
@@ -360,9 +365,14 @@ export function SubDomainView({
                       domain={r.domain}
                       section={r.path === '/' ? undefined : r.path}
                       showLocationMeta={false}
+                      sourceKind={r.sourceKind}
+                      language={r.language}
+                      presentation={r.presentation}
                       onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
                       onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
-                      onSaveQuote={(text) => updateText(r.id, text)}
+                      onPresentationChange={(presentation) =>
+                        updateMetadata(r.id, { presentation }, { silent: true })
+                      }
                     />
                   )}
                   {badge && (
@@ -396,9 +406,14 @@ export function SubDomainView({
                 }}
                 showLocationMeta={false}
                 suggestions={labelSuggestions}
+                sourceKind={h.sourceKind}
+                language={h.language}
+                presentation={h.presentation}
                 onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
                 onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
-                onSaveQuote={(text) => updateText(h.id, text)}
+                onPresentationChange={(presentation) =>
+                  updateMetadata(h.id, { presentation }, { silent: true })
+                }
               />
             ) : (
               <HighlightCard
@@ -407,9 +422,14 @@ export function SubDomainView({
                 domain={domain}
                 section={section === '/' ? undefined : section}
                 showLocationMeta={false}
+                sourceKind={h.sourceKind}
+                language={h.language}
+                presentation={h.presentation}
                 onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
                 onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
-                onSaveQuote={(text) => updateText(h.id, text)}
+                onPresentationChange={(presentation) =>
+                  updateMetadata(h.id, { presentation }, { silent: true })
+                }
               />
             )
           ))

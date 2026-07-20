@@ -110,6 +110,22 @@ export const HighlightDataSchemaV2 = z.object({
       source: z.enum(['user', 'sync']).default('user'),
       tags: z.array(z.string()).optional(),
       notes: z.string().optional(),
+      /**
+       * Capture hint: selection was inside a page code block.
+       * Does not mutate quote `text`.
+       */
+      sourceKind: z.enum(['code']).optional(),
+      /** Optional language from capture or presentation (e.g. cpp, js). */
+      language: z.string().max(32).optional(),
+      /**
+       * User presentation in the app only. Quote `text` stays immutable.
+       */
+      presentation: z
+        .object({
+          format: z.enum(['as_captured', 'plain', 'code', 'bullets', 'numbered']),
+          language: z.string().max(32).optional(),
+        })
+        .optional(),
     })
     .optional(),
 });

@@ -67,7 +67,7 @@ describe('highlight-metadata', () => {
     it('adds tags without wiping existing notes', () => {
       expect(
         mergeHighlightMetadataPatch(
-          { notes: 'Keep me', tags: ['old'] },
+          { source: 'user', notes: 'Keep me', tags: ['old'] },
           { tags: ['bfs', 'cpp'] },
         ),
       ).toEqual({
@@ -80,7 +80,7 @@ describe('highlight-metadata', () => {
     it('updates notes without wiping existing tags', () => {
       expect(
         mergeHighlightMetadataPatch(
-          { notes: 'Old', tags: ['bfs'] },
+          { source: 'user', notes: 'Old', tags: ['bfs'] },
           { notes: '  New note  ' },
         ),
       ).toEqual({
@@ -93,8 +93,46 @@ describe('highlight-metadata', () => {
     it('clears tags when empty array is sent', () => {
       expect(
         mergeHighlightMetadataPatch(
-          { notes: 'Keep', tags: ['bfs'] },
+          { source: 'user', notes: 'Keep', tags: ['bfs'] },
           { tags: [] },
+        ),
+      ).toEqual({
+        source: 'user',
+        notes: 'Keep',
+      });
+    });
+
+    it('sets presentation without wiping notes/tags/sourceKind', () => {
+      expect(
+        mergeHighlightMetadataPatch(
+          {
+            source: 'user',
+            notes: 'Keep',
+            tags: ['bfs'],
+            sourceKind: 'code',
+            language: 'cpp',
+          },
+          { presentation: { format: 'bullets' } },
+        ),
+      ).toEqual({
+        source: 'user',
+        notes: 'Keep',
+        tags: ['bfs'],
+        sourceKind: 'code',
+        language: 'cpp',
+        presentation: { format: 'bullets' },
+      });
+    });
+
+    it('clears presentation when null is sent', () => {
+      expect(
+        mergeHighlightMetadataPatch(
+          {
+            source: 'user',
+            notes: 'Keep',
+            presentation: { format: 'code', language: 'js' },
+          },
+          { presentation: null },
         ),
       ).toEqual({
         source: 'user',

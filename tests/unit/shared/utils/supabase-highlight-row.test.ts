@@ -58,6 +58,26 @@ describe('supabase-highlight-row', () => {
     expect(highlight.metadata?.tags).toEqual(['research', 'comedy']);
   });
 
+  it('round-trips sourceKind language and presentation from metadata column', () => {
+    const highlight = transformHighlightRow({
+      id: '11111111-1111-4111-8111-111111111111',
+      url: 'https://example.com',
+      text: 'int x = 1;',
+      color_role: 'yellow',
+      content_hash: 'a'.repeat(64),
+      created_at: '2024-06-01T00:00:00.000Z',
+      metadata: {
+        sourceKind: 'code',
+        language: 'cpp',
+        presentation: { format: 'bullets' },
+      },
+    });
+
+    expect(highlight.metadata?.sourceKind).toBe('code');
+    expect(highlight.metadata?.language).toBe('cpp');
+    expect(highlight.metadata?.presentation).toEqual({ format: 'bullets' });
+  });
+
   it('serializes highlight metadata for cloud storage', () => {
     expect(
       serializeHighlightMetadataForCloud({
@@ -65,6 +85,18 @@ describe('supabase-highlight-row', () => {
         tags: ['research'],
       }),
     ).toEqual({ notes: 'Key definition', tags: ['research'] });
+
+    expect(
+      serializeHighlightMetadataForCloud({
+        sourceKind: 'code',
+        language: 'js',
+        presentation: { format: 'code', language: 'js' },
+      }),
+    ).toEqual({
+      sourceKind: 'code',
+      language: 'js',
+      presentation: { format: 'code', language: 'js' },
+    });
   });
 
   it('serializes timestamps from Date or ISO string', () => {

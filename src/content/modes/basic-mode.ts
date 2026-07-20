@@ -80,6 +80,11 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       throw new Error('Failed to serialize range');
     }
 
+    const { detectCodeSelectionMetadata } = await import(
+      '@/content/utils/code-selection-metadata'
+    );
+    const codeMeta = detectCodeSelectionMetadata(range);
+
     const now = new Date();
     const runtimeHighlight = {
       id,
@@ -90,6 +95,15 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       updatedAt: now,
       ranges: [serializedRange],
       liveRanges: [range],
+      ...(codeMeta
+        ? {
+            metadata: {
+              source: 'user' as const,
+              sourceKind: codeMeta.sourceKind,
+              ...(codeMeta.language ? { language: codeMeta.language } : {}),
+            },
+          }
+        : {}),
     };
 
     await this.renderAndRegister(runtimeHighlight as unknown as HighlightData);
@@ -104,6 +118,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       ...storageData,
       url: normalizePageUrl(window.location.href),
       updatedAt: now,
+      ...(runtimeHighlight.metadata ? { metadata: runtimeHighlight.metadata } : {}),
     });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {

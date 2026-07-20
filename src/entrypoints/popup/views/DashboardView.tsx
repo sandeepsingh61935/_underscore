@@ -1,5 +1,4 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo } from 'react';
 
 import { useApp } from '@/core/context/PopupAppProvider';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
@@ -10,10 +9,12 @@ import { useDashboardData } from '@/features/collections/hooks/useDashboardData'
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
+import { getSectionKey } from '@/shared/utils/section-key';
 import { FirstRunEmpty } from '@/ui-system/components/empty-states/FirstRunEmpty';
 
 export interface DashboardViewProps {
   onLogout?: () => void;
+  /** Open domain section (popup view state — not React Router). */
   onSectionClick?: (domain: string, section: string) => void;
   onSignIn?: () => void;
 }
@@ -21,7 +22,6 @@ export interface DashboardViewProps {
 export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }: DashboardViewProps): React.ReactElement {
   const { currentMode, user, isAuthenticated } = useApp();
   const tabContext = useCurrentTabContext();
-  const navigate = useNavigate();
   const mode = currentMode || DEFAULT_MODE;
   const { data: dashboardData } = useDashboardData(mode, isAuthenticated);
   const { highlights: currentDomainHighlights } = useHighlightsByDomain(
@@ -29,9 +29,28 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }:
     isAuthenticated,
   );
 
-  const currentPageHighlightsCount = currentDomainHighlights.filter(h => h.path === tabContext.path).length;
+  const currentSectionKey = useMemo(() => {
+    if (!tabContext.url && !tabContext.path) return '/';
+    return getSectionKey({
+      url: tabContext.url ?? `https://${tabContext.domain ?? 'local'}${tabContext.path ?? '/'}`,
+      path: tabContext.path ?? '/',
+    });
+  }, [tabContext.url, tabContext.path, tabContext.domain]);
+
+  const currentPageHighlightsCount = useMemo(() => {
+    return currentDomainHighlights.filter((h) => {
+      const key = getSectionKey({ url: h.url, path: h.path });
+      return key === currentSectionKey;
+    }).length;
+  }, [currentDomainHighlights, currentSectionKey]);
+
   const currentDomainDisplay = tabContext.domain || 'Current page';
   const currentPathDisplay = tabContext.path && tabContext.path !== '/' ? tabContext.path.split('/')[1] : 'Home';
+
+  const openCurrentPage = (): void => {
+    if (!tabContext.domain || !onSectionClick) return;
+    onSectionClick(tabContext.domain, currentSectionKey);
+  };
 
   const isGuestHome = !isAuthenticated || currentMode === 'basic';
   const libraryAccess = resolveLibraryAccess(
@@ -51,14 +70,20 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }:
           <div className="u-kicker" style={{ color: 'var(--ink-3)' }}>Guest</div>
         </div>
         {showCurrentPageBlock && (
-          <div style={{ padding: '10px 16px 6px' }}>
-            <div className="u-kicker">Current page</div>
-            <div className="u-serif" style={{ fontSize: 'var(--step-2)', lineHeight: 1.15, letterSpacing: '-0.01em', marginTop: 4 }}>
-              {currentDomainDisplay} / {currentPathDisplay}
+          <div style={{ padding: '6px 0 0' }}>
+            <div className="u-caps" style={{ padding: '4px 16px 4px', color: 'var(--ink-3)' }}>
+              Current page
             </div>
-            <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4 }}>
-              {currentPageHighlightsCount} highlights on this page
-            </div>
+            <Row
+              title={`${currentDomainDisplay} / ${currentPathDisplay}`}
+              sub={`${currentPageHighlightsCount} highlights on this page`}
+              right={
+                tabContext.domain && onSectionClick ? (
+                  <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>
+                ) : undefined
+              }
+              onClick={tabContext.domain && onSectionClick ? openCurrentPage : undefined}
+            />
           </div>
         )}
         {libraryAccess.showSignInPrompt ? (
@@ -87,10 +112,13 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }:
                     quote={hl.text}
                     domain={hl.domain}
                     section={!hl.path || hl.path === '/' ? undefined : hl.path}
+                    sourceKind={hl.sourceKind}
+                    language={hl.language}
+                    presentation={hl.presentation}
                     onCopy={hl.text ? () => { void copyHighlightPlainText(hl.text); } : undefined}
                     onSectionClick={
                       onSectionClick
-                        ? () => onSectionClick(hl.domain, hl.path || '/')
+                        ? () => onSectionClick(hl.domain, getSectionKey({ url: hl.url, path: hl.path || '/' }))
                         : undefined
                     }
                   />
@@ -124,7 +152,7 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }:
             title={`${currentDomainDisplay} / ${currentPathDisplay}`}
             sub={`${currentPageHighlightsCount} highlights on this page`}
             right={<span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>}
-            onClick={() => tabContext.domain && navigate(`/domain/${tabContext.domain}`)}
+            onClick={openCurrentPage}
           />
         </>
       )}
@@ -139,10 +167,13 @@ export function DashboardView({ onLogout: _onLogout, onSectionClick, onSignIn }:
               quote={hl.text}
               domain={hl.domain}
               section={!hl.path || hl.path === '/' ? undefined : hl.path}
+              sourceKind={hl.sourceKind}
+              language={hl.language}
+              presentation={hl.presentation}
               onCopy={hl.text ? () => { void copyHighlightPlainText(hl.text); } : undefined}
               onSectionClick={
                 onSectionClick
-                  ? () => onSectionClick(hl.domain, hl.path || '/')
+                  ? () => onSectionClick(hl.domain, getSectionKey({ url: hl.url, path: hl.path || '/' }))
                   : undefined
               }
             />

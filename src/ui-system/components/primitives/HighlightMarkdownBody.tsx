@@ -10,6 +10,12 @@ import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 
+import {
+  applyPresentationToDisplaySource,
+  resolveHighlightPresentation,
+  type HighlightPresentation,
+} from '@/shared/utils/highlight-presentation';
+
 export const HIGHLIGHT_MARKDOWN_ALLOWED_ELEMENTS = [
   'p',
   'br',
@@ -263,15 +269,32 @@ export interface HighlightMarkdownBodyProps {
   source: string;
   /** When true, collapse tall content behind Show more / Show less. */
   clamp?: boolean;
+  /**
+   * Capture hint: page code block. Prefer `presentation` when set.
+   */
+  sourceKind?: 'code';
+  language?: string;
+  /** User presentation (app only; does not mutate quote text). */
+  presentation?: HighlightPresentation | null;
 }
 
 export function HighlightMarkdownBody({
   source,
   clamp = false,
+  sourceKind,
+  language,
+  presentation,
 }: HighlightMarkdownBodyProps): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const measureRef = React.useRef<HTMLDivElement | null>(null);
+
+  const resolved = resolveHighlightPresentation({
+    sourceKind,
+    language,
+    presentation,
+  });
+  const displaySource = applyPresentationToDisplaySource(source, resolved);
 
   React.useLayoutEffect(() => {
     if (!clamp) {
@@ -285,9 +308,10 @@ export function HighlightMarkdownBody({
     }
     const measured = el.scrollHeight > HIGHLIGHT_QUOTE_CLAMP_PX + 1;
     // jsdom often ignores max-height (scrollHeight === clientHeight); fall back to content size.
-    const layoutUnreliable = el.scrollHeight <= el.clientHeight + 1 && estimateHighlightNeedsClamp(source);
+    const layoutUnreliable =
+      el.scrollHeight <= el.clientHeight + 1 && estimateHighlightNeedsClamp(displaySource);
     setOverflows(measured || layoutUnreliable);
-  }, [source, clamp, expanded]);
+  }, [displaySource, clamp, expanded]);
 
   const showToggle = clamp && overflows;
 
@@ -314,7 +338,7 @@ export function HighlightMarkdownBody({
           unwrapDisallowed
           components={markdownComponents}
         >
-          {source}
+          {displaySource}
         </ReactMarkdown>
       </div>
       {showToggle && (

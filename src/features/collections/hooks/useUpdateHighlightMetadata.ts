@@ -1,6 +1,7 @@
 /**
  * @file useUpdateHighlightMetadata.ts
- * @description Persist user notes and tags on a highlight via background IPC.
+ * @description Persist notes, tags, and presentation on a highlight via background IPC.
+ * Presentation never rewrites quote text.
  */
 
 import { useCallback } from 'react';
@@ -9,14 +10,14 @@ import { toast } from 'sonner';
 import { isExtensionContext } from '@/features/collections/hooks/useHighlightExport';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { UPDATE_HIGHLIGHT_METADATA } from '@/shared/schemas/message-schemas';
-import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
+import {
+  mergeHighlightMetadataPatch,
+  type HighlightMetadataInput,
+} from '@/shared/utils/highlight-metadata';
 import { serializeHighlightMetadataForCloud } from '@/shared/utils/supabase-highlight-row';
 import { setHighlightLabelsWeb } from '@/shared/services/tag-query-web';
 
-export interface HighlightMetadataInput {
-  notes?: string;
-  tags?: string[];
-}
+export type { HighlightMetadataInput };
 
 export type SendHighlightMetadataUpdate = (
   payload: { id: string } & HighlightMetadataInput,
@@ -56,8 +57,12 @@ export async function updateHighlightMetadataWeb(
   }
 
   try {
-    if (input.notes === undefined && input.tags === undefined) {
-      return { success: false, error: 'No notes or tags to update' };
+    if (
+      input.notes === undefined &&
+      input.tags === undefined &&
+      input.presentation === undefined
+    ) {
+      return { success: false, error: 'No notes, tags, or presentation to update' };
     }
 
     const { data: existing, error: fetchError } = await supabase
@@ -74,9 +79,8 @@ export async function updateHighlightMetadataWeb(
       return { success: false, error: `Highlight not found: ${id}` };
     }
 
-    // Dual-write: metadata.tags on the highlight row + junction table.
     const metadata = mergeHighlightMetadataPatch(
-      existing.metadata as { notes?: string; tags?: string[] } | null,
+      existing.metadata as Parameters<typeof mergeHighlightMetadataPatch>[0],
       input,
     );
 
@@ -107,24 +111,47 @@ export async function updateHighlightMetadataWeb(
 }
 
 export function useUpdateHighlightMetadata(): {
-  updateMetadata: (id: string, input: HighlightMetadataInput, options?: UpdateHighlightMetadataOptions) => Promise<boolean>;
+  updateMetadata: (
+    id: string,
+    input: HighlightMetadataInput,
+    options?: UpdateHighlightMetadataOptions,
+  ) => Promise<boolean>;
 } {
   const sendAction = useIpcAction<
-    { id: string; notes?: string; tags?: string[] },
+    {
+      id: string;
+      notes?: string;
+      tags?: string[];
+      presentation?: HighlightMetadataInput['presentation'];
+    },
     void
   >(UPDATE_HIGHLIGHT_METADATA);
 
   const updateMetadata = useCallback(
-    async (id: string, input: HighlightMetadataInput, options?: UpdateHighlightMetadataOptions): Promise<boolean> => {
+    async (
+      id: string,
+      input: HighlightMetadataInput,
+      options?: UpdateHighlightMetadataOptions,
+    ): Promise<boolean> => {
       if (!isExtensionContext()) {
-        return executeUpdateHighlightMetadata(id, input, (payload) => updateHighlightMetadataWeb(payload.id, payload), options);
+        return executeUpdateHighlightMetadata(
+          id,
+          input,
+          (payload) => updateHighlightMetadataWeb(payload.id, payload),
+          options,
+        );
       }
-      return executeUpdateHighlightMetadata(id, input, async (payload) => {
-        const result = await sendAction(payload);
-        return result.success
-          ? { success: true }
-          : { success: false, error: result.error };
-      }, options);
+      return executeUpdateHighlightMetadata(
+        id,
+        input,
+        async (payload) => {
+          const result = await sendAction(payload);
+          return result.success
+            ? { success: true }
+            : { success: false, error: result.error };
+        },
+        options,
+      );
     },
     [sendAction],
   );

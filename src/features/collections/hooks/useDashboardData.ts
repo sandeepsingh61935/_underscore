@@ -12,6 +12,12 @@ export interface DashboardData {
     domain: string;
     createdAt: string | Date;
     updatedAt?: string | Date;
+    sourceKind?: 'code';
+    language?: string;
+    presentation?: {
+      format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
+      language?: string;
+    };
   }>;
 }
 

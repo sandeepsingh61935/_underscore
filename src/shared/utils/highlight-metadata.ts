@@ -1,7 +1,10 @@
 /**
  * @file highlight-metadata.ts
- * @description Normalize user-authored highlight notes and tags before persistence.
+ * @description Normalize user-authored highlight notes, tags, and presentation.
  */
+
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { HIGHLIGHT_PRESENTATION_FORMATS } from '@/shared/utils/highlight-presentation';
 
 export const HIGHLIGHT_NOTE_MAX_LENGTH = 2000;
 export const HIGHLIGHT_TAG_MAX_LENGTH = 32;
@@ -29,6 +32,32 @@ export function sanitizeHighlightNote(note: string): string {
 export interface HighlightMetadataInput {
   notes?: string;
   tags?: string[];
+  /** Set presentation; pass null to clear user presentation. */
+  presentation?: HighlightPresentation | null;
+}
+
+export type HighlightStoredMetadata = {
+  source: 'user' | 'sync';
+  notes?: string;
+  tags?: string[];
+  sourceKind?: 'code';
+  language?: string;
+  presentation?: HighlightPresentation;
+};
+
+export function normalizePresentation(
+  input: HighlightPresentation | null | undefined,
+): HighlightPresentation | undefined {
+  if (input == null) return undefined;
+  if (!HIGHLIGHT_PRESENTATION_FORMATS.includes(input.format)) return undefined;
+  const language =
+    typeof input.language === 'string' && input.language.trim()
+      ? input.language.trim().slice(0, 32).toLowerCase()
+      : undefined;
+  return {
+    format: input.format,
+    ...(language ? { language } : {}),
+  };
 }
 
 /** Union junction labels with legacy metadata.tags during migration cutover. */
@@ -42,11 +71,18 @@ export function mergeHighlightLabels(
 
 export function buildHighlightMetadataUpdate(
   input: HighlightMetadataInput,
-): { source: 'user'; notes?: string; tags?: string[] } | undefined {
+): HighlightStoredMetadata | undefined {
   const notes = input.notes !== undefined ? sanitizeHighlightNote(input.notes) : undefined;
   const tags = input.tags !== undefined ? normalizeHighlightTags(input.tags) : undefined;
+  const presentation =
+    input.presentation !== undefined ? normalizePresentation(input.presentation) : undefined;
 
-  if (!notes && (!tags || tags.length === 0)) {
+  if (
+    !notes &&
+    (!tags || tags.length === 0) &&
+    presentation === undefined &&
+    input.presentation !== null
+  ) {
     return undefined;
   }
 
@@ -54,17 +90,19 @@ export function buildHighlightMetadataUpdate(
     source: 'user',
     ...(notes ? { notes } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
+    ...(presentation ? { presentation } : {}),
   };
 }
 
 /**
- * Merge a partial notes/tags patch onto existing metadata without wiping
- * the other field. Empty notes clear the notes key; empty tags clear tags.
+ * Merge a partial notes/tags/presentation patch onto existing metadata without
+ * wiping unrelated fields. Empty notes clear notes; empty tags clear tags;
+ * presentation null clears user presentation.
  */
 export function mergeHighlightMetadataPatch(
-  existing: { notes?: string; tags?: string[] } | null | undefined,
+  existing: HighlightStoredMetadata | null | undefined,
   input: HighlightMetadataInput,
-): { source: 'user'; notes?: string; tags?: string[] } {
+): HighlightStoredMetadata {
   const notes =
     input.notes !== undefined
       ? sanitizeHighlightNote(input.notes)
@@ -74,9 +112,17 @@ export function mergeHighlightMetadataPatch(
       ? normalizeHighlightTags(input.tags)
       : normalizeHighlightTags(existing?.tags ?? []);
 
+  let presentation = existing?.presentation;
+  if (input.presentation !== undefined) {
+    presentation = normalizePresentation(input.presentation);
+  }
+
   return {
     source: 'user',
     ...(notes ? { notes } : {}),
     ...(tags.length > 0 ? { tags } : {}),
+    ...(existing?.sourceKind === 'code' ? { sourceKind: 'code' as const } : {}),
+    ...(existing?.language ? { language: existing.language } : {}),
+    ...(presentation ? { presentation } : {}),
   };
 }

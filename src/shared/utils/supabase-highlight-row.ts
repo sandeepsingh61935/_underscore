@@ -12,6 +12,12 @@ import {
 export interface SupabaseHighlightMetadata {
   notes?: string;
   tags?: string[];
+  sourceKind?: 'code';
+  language?: string;
+  presentation?: {
+    format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
+    language?: string;
+  };
 }
 
 export interface SupabaseHighlightRow {
@@ -35,14 +41,35 @@ export function serializeHighlightMetadataForCloud(
 
   const notes = metadata.notes !== undefined ? sanitizeHighlightNote(metadata.notes) : undefined;
   const tags = metadata.tags !== undefined ? normalizeHighlightTags(metadata.tags) : undefined;
+  const sourceKind = metadata.sourceKind === 'code' ? 'code' : undefined;
+  const language =
+    typeof metadata.language === 'string' && metadata.language.trim()
+      ? metadata.language.trim().slice(0, 32).toLowerCase()
+      : undefined;
+  const presentation = metadata.presentation?.format
+    ? {
+        format: metadata.presentation.format,
+        ...(metadata.presentation.language
+          ? {
+              language: String(metadata.presentation.language)
+                .trim()
+                .slice(0, 32)
+                .toLowerCase(),
+            }
+          : {}),
+      }
+    : undefined;
 
-  if (!notes && (!tags || tags.length === 0)) {
+  if (!notes && (!tags || tags.length === 0) && !sourceKind && !presentation) {
     return null;
   }
 
   return {
     ...(notes ? { notes } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
+    ...(sourceKind ? { sourceKind } : {}),
+    ...(language ? { language } : {}),
+    ...(presentation ? { presentation } : {}),
   };
 }
 
@@ -98,9 +125,18 @@ export function transformHighlightRow(row: SupabaseHighlightRow): HighlightDataV
     updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
     metadata: cloudMetadata
       ? {
-          source: 'sync',
-          notes: cloudMetadata.notes,
-          tags: cloudMetadata.tags,
+          source: 'sync' as const,
+          ...(cloudMetadata.notes ? { notes: cloudMetadata.notes } : {}),
+          ...(cloudMetadata.tags && cloudMetadata.tags.length > 0
+            ? { tags: cloudMetadata.tags }
+            : {}),
+          ...(cloudMetadata.sourceKind === 'code'
+            ? { sourceKind: 'code' as const }
+            : {}),
+          ...(cloudMetadata.language ? { language: cloudMetadata.language } : {}),
+          ...(cloudMetadata.presentation
+            ? { presentation: cloudMetadata.presentation }
+            : {}),
         }
       : undefined,
   };

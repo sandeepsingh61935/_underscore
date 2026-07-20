@@ -1,11 +1,12 @@
 /**
  * Composes a `HighlightCard` with embedded `MarginaliaStrip` on one action row
- * (notes · tags · Edit · Copy · Delete). Density PRD:
+ * (notes · tags · format tools · Copy · Delete). Density PRD:
  * docs/superpowers/specs/2026-07-14-highlight-tile-editor-density-prd.md
  */
 import React from 'react';
 
 import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 export interface HighlightWithMarginaliaProps {
@@ -19,10 +20,15 @@ export interface HighlightWithMarginaliaProps {
   onToggleExpand: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
-  onSaveQuote?: (text: string) => Promise<boolean>;
   showLocationMeta?: boolean;
   disabled?: boolean;
   suggestions?: string[];
+  sourceKind?: 'code';
+  language?: string;
+  presentation?: HighlightPresentation | null;
+  onPresentationChange?: (
+    presentation: HighlightPresentation,
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 export function HighlightWithMarginalia({
@@ -36,10 +42,13 @@ export function HighlightWithMarginalia({
   onToggleExpand,
   onCopy,
   onDelete,
-  onSaveQuote,
   showLocationMeta,
   disabled,
   suggestions,
+  sourceKind,
+  language,
+  presentation,
+  onPresentationChange,
 }: HighlightWithMarginaliaProps): React.ReactElement {
   return (
     <HighlightCard
@@ -48,8 +57,12 @@ export function HighlightWithMarginalia({
       section={section}
       onCopy={onCopy}
       onDelete={onDelete}
-      onSaveQuote={onSaveQuote}
       showLocationMeta={showLocationMeta}
+      sourceKind={sourceKind}
+      language={language}
+      presentation={presentation}
+      onPresentationChange={onPresentationChange}
+      highlightId={highlightId}
       footerStart={(
         <MarginaliaStrip
           highlightId={highlightId}

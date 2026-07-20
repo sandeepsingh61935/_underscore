@@ -479,11 +479,19 @@ export default defineBackground({
         id: string;
         notes?: string;
         tags?: string[];
+        presentation?: {
+          format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
+          language?: string;
+        } | null;
       }) => {
         logger.info('Handling UPDATE_HIGHLIGHT_METADATA request', { id: payload.id });
         try {
-          if (payload.notes === undefined && payload.tags === undefined) {
-            return { success: false, error: 'No notes or tags to update' };
+          if (
+            payload.notes === undefined &&
+            payload.tags === undefined &&
+            payload.presentation === undefined
+          ) {
+            return { success: false, error: 'No notes, tags, or presentation to update' };
           }
 
           if (payload.tags !== undefined) {
@@ -500,9 +508,11 @@ export default defineBackground({
 
           // Dual-write: keep metadata.tags in sync with the junction table so
           // list/read paths that only look at metadata still show tags after reload.
+          // presentation updates never rewrite quote `text`.
           const metadata = mergeHighlightMetadataPatch(existing.metadata, {
             notes: payload.notes,
             tags: payload.tags,
+            presentation: payload.presentation,
           });
           repositoryFacade.update(payload.id, { metadata });
 

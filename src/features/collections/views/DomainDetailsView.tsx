@@ -16,11 +16,14 @@ import { HighlightSearchBar } from '@/features/collections/components/HighlightS
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
+import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { displaySectionTitle } from '@/shared/services/section-label-store';
 import { getSectionKey } from '@/shared/utils/section-key';
+import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
@@ -64,16 +67,69 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
 
   const [editingSection, setEditingSection] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');
+  /** Baseline display title when edit started — used for dirty check and Escape. */
+  const [editBaseline, setEditBaseline] = React.useState('');
+  const skipBlurSaveRef = React.useRef(false);
 
-  const handleSaveEdit = (e: React.FormEvent, originalKey: string) => {
+  const { labels, canEdit, saveLabel } = useSectionLabels(domain, mode);
+
+  const closeEdit = React.useCallback((): void => {
+    setEditingSection(null);
+    setEditValue('');
+    setEditBaseline('');
+  }, []);
+
+  const commitEdit = React.useCallback(
+    async (sectionKey: string, value: string, baseline: string): Promise<void> => {
+      if (value.trim() === baseline.trim()) {
+        closeEdit();
+        return;
+      }
+      await saveLabel(sectionKey, value);
+      closeEdit();
+    },
+    [closeEdit, saveLabel],
+  );
+
+  const handleSaveEdit = (e: React.FormEvent, sectionKey: string): void => {
+    e.preventDefault();
+    skipBlurSaveRef.current = true;
+    void commitEdit(sectionKey, editValue, editBaseline);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent, sectionKey: string): void => {
+    if (e.key === 'Escape') {
       e.preventDefault();
-      // NOTE: Storage integration will be done in the next task
-      console.log('Saved label for', originalKey, '->', editValue);
-      setEditingSection(null);
+      skipBlurSaveRef.current = true;
+      closeEdit();
+      return;
+    }
+    // Prevent default so blur-after-Enter does not race a second save path.
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      skipBlurSaveRef.current = true;
+      void commitEdit(sectionKey, editValue, editBaseline);
+    }
+  };
+
+  const handleEditBlur = (sectionKey: string): void => {
+    if (skipBlurSaveRef.current) {
+      skipBlurSaveRef.current = false;
+      return;
+    }
+    void commitEdit(sectionKey, editValue, editBaseline);
+  };
+
+  const startEdit = (sectionKey: string): void => {
+    const title = displaySectionTitle(sectionKey, labels);
+    skipBlurSaveRef.current = false;
+    setEditingSection(sectionKey);
+    setEditValue(title);
+    setEditBaseline(title);
   };
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
-  const { updateText } = useUpdateHighlightText();
+  const { updateMetadata } = useUpdateHighlightMetadata();
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
@@ -146,14 +202,23 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   };
 
   const sections = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { count: number; lastActivity: number }>();
     highlights.forEach((h) => {
       const sectionKey = getSectionKey({ url: h.url, path: h.path });
-      map.set(sectionKey, (map.get(sectionKey) || 0) + 1);
+      const activity = highlightActivityMs(h);
+      const prev = map.get(sectionKey);
+      if (!prev) {
+        map.set(sectionKey, { count: 1, lastActivity: activity });
+      } else {
+        map.set(sectionKey, {
+          count: prev.count + 1,
+          lastActivity: Math.max(prev.lastActivity, activity),
+        });
+      }
     });
     return Array.from(map.entries())
-      .map(([path, count]) => ({ path, count }))
-      .sort((a, b) => b.count - a.count);
+      .map(([path, { count, lastActivity }]) => ({ path, count, lastActivity }))
+      .sort((a, b) => b.lastActivity - a.lastActivity || b.count - a.count);
   }, [highlights]);
 
   useEffect(() => {
@@ -332,8 +397,13 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                       domain={r.domain}
                       section={r.path === '/' ? undefined : r.path}
                       onSectionClick={() => handleSectionClick(r.path)}
+                      sourceKind={r.sourceKind}
+                      language={r.language}
+                      presentation={r.presentation}
                       onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                      onSaveQuote={(text) => updateText(r.id, text)}
+                      onPresentationChange={(presentation) =>
+                        updateMetadata(r.id, { presentation }, { silent: true })
+                      }
                     />
                     {badge && (
                       <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
@@ -352,34 +422,53 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
           ) : (
             sections.map((s) => (
               editingSection === s.path ? (
-                 <form key={s.path} onSubmit={(e) => handleSaveEdit(e, s.path)} style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
-                     <input
-                        autoFocus
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={() => setEditingSection(null)}
-                        style={{ flex: 1, padding: '4px 8px', background: 'transparent', border: '1px solid var(--rule)', color: 'var(--ink)' }}
-                     />
-                 </form>
+                <form
+                  key={s.path}
+                  onSubmit={(e) => handleSaveEdit(e, s.path)}
+                  style={{ padding: '12px 16px', display: 'flex', gap: 8 }}
+                >
+                  <input
+                    autoFocus
+                    aria-label="Section display name"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => handleEditKeyDown(e, s.path)}
+                    onBlur={() => handleEditBlur(s.path)}
+                    style={{
+                      flex: 1,
+                      padding: '4px 8px',
+                      background: 'transparent',
+                      border: '1px solid var(--rule)',
+                      color: 'var(--ink)',
+                      font: 'var(--sans)',
+                    }}
+                  />
+                </form>
               ) : (
-              <Row
-                key={s.path}
-                title={s.path === '/' ? 'Home' : s.path}
-                right={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <button
-                       onClick={(e) => { e.stopPropagation(); setEditingSection(s.path); setEditValue(s.path); }}
-                       style={{ all: 'unset', cursor: 'pointer', fontSize: 12, color: 'var(--accent)' }}
-                    >
-                       [edit]
-                    </button>
-                    <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
-                      {s.count}
-                    </span>
-                  </div>
-                }
-                onClick={() => handleSectionClick(s.path)}
-              />
+                <Row
+                  key={s.path}
+                  title={displaySectionTitle(s.path, labels)}
+                  right={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(s.path);
+                          }}
+                          style={{ all: 'unset', cursor: 'pointer', fontSize: 12, color: 'var(--accent)' }}
+                        >
+                          [edit]
+                        </button>
+                      )}
+                      <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
+                        {s.count}
+                      </span>
+                    </div>
+                  }
+                  onClick={() => handleSectionClick(s.path)}
+                />
               )
             ))
           )}

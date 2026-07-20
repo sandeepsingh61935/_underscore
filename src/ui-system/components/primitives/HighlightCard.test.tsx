@@ -5,6 +5,7 @@
  *   - Two densities: compact 10px / comfortable 14px vertical padding.
  *   - Quote: u-serif, 14px, --ink. qmark glyph 28px.
  *   - Meta: u-mono, 10px, --ink-3, "domain" or "domain / section".
+ * Quote text is immutable; format tools style presentation only.
  */
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -28,36 +29,58 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(quote.className).toContain('u-serif');
   });
 
-  it('shows Edit when onSaveQuote is provided', () => {
-    render(
-      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={async () => true} />
-    );
-    expect(screen.getByRole('button', { name: /Edit highlight text/ })).toBeTruthy();
+  it('does not show free-edit Edit control', () => {
+    render(<HighlightCard quote="Apple" domain="example.com" onCopy={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Edit highlight text/ })).toBeNull();
   });
 
-  it('enters edit mode and saves markdown via onSaveQuote', async () => {
-    const onSaveQuote = vi.fn(async () => true);
+  it('shows format toolbar when onPresentationChange is provided', () => {
     render(
-      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onPresentationChange={vi.fn()}
+      />
     );
-    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/);
-    fireEvent.change(textarea, { target: { value: '**Apple**' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save highlight text/ }));
+    expect(screen.getByTestId('highlight-format-toolbar')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /As captured/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Code/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Bullets/i })).toBeTruthy();
+  });
+
+  it('calls onPresentationChange with selected format', async () => {
+    const onPresentationChange = vi.fn(async () => undefined);
+    render(
+      <HighlightCard
+        quote={"line one\nline two"}
+        domain="example.com"
+        onPresentationChange={onPresentationChange}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Bullets/i }));
     await vi.waitFor(() => {
-      expect(onSaveQuote).toHaveBeenCalledWith('**Apple**');
+      expect(onPresentationChange).toHaveBeenCalledWith({ format: 'bullets' });
     });
   });
 
-  it('cancels edit mode without calling onSaveQuote', () => {
-    const onSaveQuote = vi.fn(async () => true);
+  it('preserves language when switching to code format', async () => {
+    const onPresentationChange = vi.fn(async () => undefined);
     render(
-      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
+      <HighlightCard
+        quote="int x = 1;"
+        domain="example.com"
+        language="cpp"
+        sourceKind="code"
+        onPresentationChange={onPresentationChange}
+      />
     );
-    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Cancel editing highlight/ }));
-    expect(onSaveQuote).not.toHaveBeenCalled();
-    expect(screen.getByText('Apple')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Code$/i }));
+    await vi.waitFor(() => {
+      expect(onPresentationChange).toHaveBeenCalledWith({
+        format: 'code',
+        language: 'cpp',
+      });
+    });
   });
 
   it('renders domain in u-mono', () => {
@@ -92,29 +115,18 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(root.getAttribute('style') ?? '').toContain('12px 16px 8px');
   });
 
-  it('applies Ctrl+B bold wrap on markdown selection', () => {
-    render(
-      <HighlightCard quote="Apple pie" domain="example.com" onSaveQuote={async () => true} />
-    );
-    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
-    textarea.setSelectionRange(0, 5);
-    fireEvent.keyDown(textarea, { key: 'b', ctrlKey: true });
-    expect(textarea.value).toBe('**Apple** pie');
-  });
-
-  it('places footerStart on the unified action row with Edit', () => {
+  it('places footerStart on the unified action row with Copy', () => {
     render(
       <HighlightCard
         quote="Apple"
         domain="example.com"
-        onSaveQuote={async () => true}
+        onCopy={vi.fn()}
         footerStart={<span>+ Add note or tags</span>}
       />
     );
     const row = screen.getByTestId('highlight-action-row');
     expect(row.textContent).toContain('+ Add note or tags');
-    expect(row.textContent).toMatch(/Edit/i);
+    expect(row.textContent).toMatch(/Copy/i);
   });
 
   it('renders domain only when section is absent', () => {

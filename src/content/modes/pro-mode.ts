@@ -26,8 +26,13 @@ import { CloudModeService } from '@/services/cloud-mode-service';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import {
+  transformHighlightRow,
+  type SupabaseHighlightRow,
+} from '@/shared/utils/supabase-highlight-row';
 import { EventName } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
@@ -102,44 +107,74 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   /**
-   * Handle remote highlight creation
-   * CRITICAL: Must use { skipSync: true } to prevent infinite loops
+   * Normalize EventBridge payloads (raw Supabase rows) to HighlightDataV2.
+   * Already-transformed camelCase objects pass through transformHighlightRow
+   * fields when present as snake_case; plain V2-shaped objects are accepted.
    */
-  private async handleRemoteHighlightCreated(data: HighlightData): Promise<void> {
-    // 1. Deduplication Check
-    if (this.data.has(data.id)) {
-      this.logger.debug('[PRO] Skipping remote highlight (already exists)', { id: data.id });
+  private coerceRemoteHighlight(payload: unknown): HighlightDataV2 | null {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+    const row = payload as SupabaseHighlightRow & Partial<HighlightDataV2>;
+    if (typeof row.id !== 'string' || !row.id) {
+      return null;
+    }
+    // EventBridge forwards Supabase rows (snake_case). Transform when needed.
+    if ('user_id' in row || 'color_role' in row || 'content_hash' in row || 'created_at' in row) {
+      return transformHighlightRow(row);
+    }
+    // Already domain-shaped (tests / alternate bridges).
+    if (typeof row.text === 'string' && typeof row.contentHash === 'string') {
+      return row as HighlightDataV2;
+    }
+    return transformHighlightRow(row);
+  }
+
+  /**
+   * Handle remote highlight creation.
+   *
+   * CRITICAL: cache-only (rehydrate). Background RealtimeIngest already wrote
+   * IndexedDB with skipSync. Calling facade.add would IPC → DualWrite → cloud
+   * → realtime echo → infinite loop.
+   */
+  private async handleRemoteHighlightCreated(data: unknown): Promise<void> {
+    const highlight = this.coerceRemoteHighlight(data);
+    if (!highlight) {
+      this.logger.warn('[PRO] Ignoring remote create with invalid payload');
       return;
     }
 
-    this.logger.info('[PRO] Process remote highlight', { id: data.id });
+    // 1. Deduplication Check
+    if (this.data.has(highlight.id)) {
+      this.logger.debug('[PRO] Skipping remote highlight (already exists)', { id: highlight.id });
+      return;
+    }
+
+    this.logger.info('[PRO] Process remote highlight', { id: highlight.id });
 
     try {
-      // Step 1: Save to DB (Local Only)
-      // Precondition: `data` is a server-side highlight payload (HighlightDataV2) and
-      // does NOT carry `liveRanges`. The live DOM Range is only added below (line 107)
-      // for `renderAndRegister`. Persisting a Range object to IDB would throw
-      // DataCloneError — Bug A.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.facade.add(data as any);
+      // Cache-only: do not re-enter DualWrite / cloud.
+      this.facade.rehydrate(highlight);
 
-      this.logger.info('[PRO] Saved remote highlight to local DB. Attempting instant render...');
+      this.logger.info('[PRO] Rehydrated remote highlight into session cache. Attempting instant render...');
 
       // Instant Render: Restore range and inject CSS
-      const restoreResult = await this.cloudService.restoreHighlight(data as any);
+      const restoreResult = await this.cloudService.restoreHighlight(highlight as never);
 
       if (restoreResult.range) {
-        const fullData = { ...data, liveRanges: [restoreResult.range] } as unknown as HighlightData;
+        const fullData = {
+          ...highlight,
+          liveRanges: [restoreResult.range],
+        } as unknown as HighlightData;
         await this.renderAndRegister(fullData);
 
         this.logger.info('[PRO] [FAST] Instant render successful', {
-          id: data.id,
-          tier: restoreResult.restoredUsing
+          id: highlight.id,
+          tier: restoreResult.restoredUsing,
         });
       } else {
         this.logger.warn('[PRO] Instant render failed - range could not be restored');
       }
-
     } catch (e) {
       this.logger.error('Failed to handle remote highlight', e as Error);
     }
@@ -159,39 +194,48 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   }
 
   /**
-   * Handle remote highlight update
+   * Handle remote highlight update.
+   *
+   * Cache-only (rehydrate). Must not facade.update → IPC → DualWrite cloud:
+   * cloud always bumps updated_at, which re-fires realtime and loops.
    */
-  private async handleRemoteHighlightUpdated(data: HighlightData): Promise<void> {
-    const id = data?.id;
-    if (!id) return;
+  private async handleRemoteHighlightUpdated(data: unknown): Promise<void> {
+    const highlight = this.coerceRemoteHighlight(data);
+    if (!highlight) {
+      this.logger.warn('[PRO] Ignoring remote update with invalid payload');
+      return;
+    }
 
+    const id = highlight.id;
     this.logger.info('[PRO] Handling remote updated', { id });
 
-    // Conflict Detection: Log when update arrives for existing highlight
-    // Note: Without updatedAt timestamps, we can't determine "who wins"
-    // This just provides observability for potential concurrent edits
     const localHighlight = this.data.get(id);
     if (localHighlight) {
       this.logger.info('[PRO] [STAT] Update received for existing highlight (potential concurrent edit)', {
         highlightId: id,
         hasLocalVersion: true,
-        resolution: 'Last-Write-Wins (accepting remote)'
+        resolution: 'Last-Write-Wins (accepting remote)',
       });
     }
 
-    // 1. Update local repository (LWW resolution).
-    // The RepositoryFacade doesn't accept options; skipSync is wired at
-    // the DualWriteRepository layer if needed.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.facade.update(id, data as any);
+    // Session cache only — background already applied via RealtimeIngest.
+    this.facade.rehydrate(highlight);
 
-    // 2. Update properties if changed (e.g. Color)
-    if (data.colorRole && localHighlight && data.colorRole !== localHighlight.colorRole) {
+    if (
+      highlight.colorRole &&
+      localHighlight &&
+      highlight.colorRole !== localHighlight.colorRole
+    ) {
       await super.removeHighlight(id);
-      await this.renderAndRegister({ ...localHighlight, ...data });
+      await this.renderAndRegister({
+        ...localHighlight,
+        ...highlight,
+      } as unknown as HighlightData);
     } else {
-      // Update internal data
-      this.data.set(id, data as any);
+      this.data.set(id, {
+        ...(localHighlight ?? {}),
+        ...highlight,
+      } as unknown as HighlightData);
     }
   }
 
@@ -370,6 +414,11 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
 
+    const { detectCodeSelectionMetadata } = await import(
+      '@/content/utils/code-selection-metadata'
+    );
+    const codeMeta = detectCodeSelectionMetadata(range);
+
     const now = new Date();
     // Build the runtime highlight with the live Range for in-page rendering.
     const runtimeHighlight = {
@@ -383,6 +432,15 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       url: normalizePageUrl(window.location.href),
       ranges: [serializedRange],
       liveRanges: [range],
+      ...(codeMeta
+        ? {
+            metadata: {
+              source: 'user' as const,
+              sourceKind: codeMeta.sourceKind,
+              ...(codeMeta.language ? { language: codeMeta.language } : {}),
+            },
+          }
+        : {}),
     };
 
     if (!runtimeHighlight.liveRanges || !runtimeHighlight.liveRanges.length) {

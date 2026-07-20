@@ -18,11 +18,21 @@ import { filterRawHighlightsByScope } from '@/shared/highlight-export';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
+import { getSectionKey } from '@/shared/utils/section-key';
+import type { SearchField } from '@/shared/utils/highlight-search';
+import { searchHighlights } from '@/shared/utils/highlight-search';
+import {
+  compareByHighlightActivityDesc,
+  highlightActivityMs,
+} from '@/shared/utils/highlight-activity';
+import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
 
 export interface CollectionSummary {
   domain: string;
   highlightCount: number;
   mode: string;
+  /** ISO or Date of most recent highlight activity in this domain */
+  lastActive?: Date;
 }
 
 export interface DomainHighlightSummary {
@@ -32,8 +42,16 @@ export interface DomainHighlightSummary {
   path: string;
   domain: string;
   createdAt: Date;
+  updatedAt?: Date;
   notes?: string;
   tags?: string[];
+  /** Present when highlight was captured from a page code block. */
+  sourceKind?: 'code';
+  language?: string;
+  presentation?: {
+    format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
+    language?: string;
+  };
 }
 
 export interface DashboardData {
@@ -52,24 +70,53 @@ export interface DashboardData {
  * layer (callers can cache if needed).
  */
 export class HighlightQueryService {
-  constructor(private readonly readable: IReadableHighlightRepository) {}
+  constructor(
+    private readonly readable: IReadableHighlightRepository,
+    private readonly tagResolver?: ITagLabelResolver,
+  ) {}
+
+  private async resolveTags(
+    summaries: DomainHighlightSummary[],
+  ): Promise<DomainHighlightSummary[]> {
+    if (!this.tagResolver || summaries.length === 0) {
+      return summaries;
+    }
+
+    const labelMap = await this.tagResolver.getLabelsForHighlights(summaries.map((s) => s.id));
+    return summaries.map((summary) => ({
+      ...summary,
+      tags: this.tagResolver!.mergeWithMetadataFallback(labelMap.get(summary.id), summary.tags),
+    }));
+  }
 
   async getCollections(mode?: string): Promise<CollectionSummary[]> {
     const highlights = await this.readable.findAll();
-    const domainMap = new Map<string, number>();
+    const domainMap = new Map<string, { count: number; lastActive: number }>();
 
     for (const hl of highlights) {
       if (!hl.url) continue;
       const domain = getDomainFromUrl(hl.url);
       if (!domain) continue;
-      domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
+      const activity = highlightActivityMs(hl);
+      const prev = domainMap.get(domain);
+      if (!prev) {
+        domainMap.set(domain, { count: 1, lastActive: activity });
+      } else {
+        domainMap.set(domain, {
+          count: prev.count + 1,
+          lastActive: Math.max(prev.lastActive, activity),
+        });
+      }
     }
 
-    return Array.from(domainMap.entries()).map(([domain, highlightCount]) => ({
-      domain,
-      highlightCount,
-      mode: mode ?? 'basic',
-    }));
+    return Array.from(domainMap.entries())
+      .map(([domain, { count, lastActive }]) => ({
+        domain,
+        highlightCount: count,
+        mode: mode ?? 'basic',
+        lastActive: new Date(lastActive),
+      }))
+      .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
   }
 
   async getHighlightsByDomain(domain: string): Promise<DomainHighlightSummary[]> {
@@ -78,7 +125,7 @@ export class HighlightQueryService {
     }
 
     const highlights = await this.readable.findAll();
-    return highlights
+    const mapped = highlights
       .filter((hl) => hl.url && urlMatchesDomain(hl.url, domain))
       .map((hl) => ({
         id: hl.id,
@@ -87,10 +134,83 @@ export class HighlightQueryService {
         path: hl.url ? new URL(hl.url).pathname : '/',
         domain,
         createdAt: hl.createdAt,
+        updatedAt: hl.updatedAt,
         notes: hl.metadata?.notes,
         tags: hl.metadata?.tags,
+        sourceKind: hl.metadata?.sourceKind,
+        language: hl.metadata?.language,
+        presentation: hl.metadata?.presentation,
       }))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort(compareByHighlightActivityDesc);
+    return this.resolveTags(mapped);
+  }
+
+  /**
+   * Case-insensitive substring search over highlight summaries, optionally
+   * scoped to a domain (and, within that domain, a section). Delegates the
+   * actual matching to the shared `searchHighlights` util so semantics stay
+   * identical across the extension, web, and MCP surfaces.
+   *
+   * `options.section` only makes sense combined with `options.domain` (a
+   * section key is only unique within a domain) but is not validated here —
+   * callers are expected to pass a matching domain, per the plan contract.
+   */
+  async search(
+    query: string,
+    options?: { domain?: string; section?: string; fields?: SearchField[] }
+  ): Promise<Array<DomainHighlightSummary & { matchedFields: SearchField[] }>> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    const highlights = await this.readable.findAll();
+
+    const scoped = options?.domain
+      ? highlights.filter((hl) => hl.url && urlMatchesDomain(hl.url, options.domain!))
+      : highlights.filter((hl) => !!hl.url);
+
+    const mapped: DomainHighlightSummary[] = [];
+    for (const hl of scoped) {
+      const url = hl.url;
+      if (!url) continue;
+
+      const domain = options?.domain ?? getDomainFromUrl(url);
+      if (!domain) continue;
+
+      let path: string;
+      try {
+        path = new URL(url).pathname;
+      } catch {
+        continue;
+      }
+
+      if (options?.section && getSectionKey({ url, path }) !== options.section) {
+        continue;
+      }
+
+      mapped.push({
+        id: hl.id,
+        text: hl.text,
+        url,
+        path,
+        domain,
+        createdAt: hl.createdAt,
+        updatedAt: hl.updatedAt,
+        notes: hl.metadata?.notes,
+        tags: hl.metadata?.tags,
+        sourceKind: hl.metadata?.sourceKind,
+        language: hl.metadata?.language,
+        presentation: hl.metadata?.presentation,
+      });
+    }
+
+    const matches = searchHighlights(mapped, query, options?.fields);
+    const enriched = await this.resolveTags(matches.map((m) => m.highlight));
+    const enrichedById = new Map(enriched.map((summary) => [summary.id, summary]));
+    return matches.map((m) => ({
+      ...(enrichedById.get(m.highlight.id) ?? m.highlight),
+      matchedFields: m.matchedFields,
+    }));
   }
 
   async findAllForExport(scope: ExportScope): Promise<HighlightDataV2[]> {
@@ -113,8 +233,7 @@ export class HighlightQueryService {
 
       domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
 
-      const createdAt = new Date(hl.createdAt).getTime();
-      if (createdAt >= oneWeekAgo) {
+      if (highlightActivityMs(hl) >= oneWeekAgo) {
         thisWeekCount++;
       }
 
@@ -126,15 +245,17 @@ export class HighlightQueryService {
           path: new URL(hl.url).pathname,
           domain,
           createdAt: hl.createdAt,
+          updatedAt: hl.updatedAt,
+          sourceKind: hl.metadata?.sourceKind,
+          language: hl.metadata?.language,
+          presentation: hl.metadata?.presentation,
         });
       } catch {
         continue;
       }
     }
 
-    recentHighlights.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    recentHighlights.sort(compareByHighlightActivityDesc);
 
     return {
       totalHighlights: highlights.length,

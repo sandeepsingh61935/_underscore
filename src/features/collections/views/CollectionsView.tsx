@@ -7,7 +7,7 @@ import { HighlightSearchBar } from '@/features/collections/components/HighlightS
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
@@ -55,7 +55,7 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
-  const { updateText } = useUpdateHighlightText();
+  const { updateMetadata } = useUpdateHighlightMetadata();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
@@ -163,8 +163,13 @@ export function CollectionsView({
                     domain={r.domain}
                     section={r.path === '/' ? undefined : r.path}
                     onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
+                    sourceKind={r.sourceKind}
+                    language={r.language}
+                    presentation={r.presentation}
                     onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                    onSaveQuote={(text) => updateText(r.id, text)}
+                    onPresentationChange={(presentation) =>
+                      updateMetadata(r.id, { presentation }, { silent: true })
+                    }
                   />
                   {badge && (
                     <div style={{ padding: '0 16px 8px', marginTop: -4 }}>

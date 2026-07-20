@@ -7,6 +7,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
+import { fetchHighlightLabelsWeb, mergeLabelsForHighlight } from '@/shared/services/tag-query-web';
+import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
+
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
 export interface Highlight {
     id: string;
@@ -14,8 +18,12 @@ export interface Highlight {
     text: string;
     path: string;
     createdAt: Date;
+    updatedAt?: Date;
     notes?: string;
     tags?: string[];
+    sourceKind?: 'code';
+    language?: string;
+    presentation?: HighlightPresentation;
 }
 
 interface HighlightsResult {
@@ -60,8 +68,12 @@ export function useHighlightsByDomain(
           text: string;
           path?: string;
           createdAt: string;
+          updatedAt?: string;
           notes?: string;
           tags?: string[];
+          sourceKind?: 'code';
+          language?: string;
+          presentation?: HighlightPresentation;
         }>;
       }
     >('GET_HIGHLIGHTS_BY_DOMAIN');
@@ -82,15 +94,21 @@ export function useHighlightsByDomain(
           throw new Error(ipcResult.error || 'Failed to fetch highlights');
         }
 
-        const highlights: Highlight[] = (ipcResult.data.highlights || []).map((hl) => ({
-          id: hl.id,
-          url: hl.url,
-          text: hl.text,
-          path: hl.path || new URL(hl.url).pathname,
-          createdAt: new Date(hl.createdAt),
-          notes: hl.notes,
-          tags: hl.tags,
-        }));
+        const highlights: Highlight[] = (ipcResult.data.highlights || [])
+          .map((hl) => ({
+            id: hl.id,
+            url: hl.url,
+            text: hl.text,
+            path: hl.path || new URL(hl.url).pathname,
+            createdAt: new Date(hl.createdAt),
+            updatedAt: hl.updatedAt ? new Date(hl.updatedAt) : undefined,
+            notes: hl.notes,
+            tags: hl.tags,
+            sourceKind: hl.sourceKind,
+            language: hl.language,
+            presentation: hl.presentation,
+          }))
+          .sort(compareByHighlightActivityDesc);
 
         setResult({
           highlights,
@@ -116,19 +134,32 @@ export function useHighlightsByDomain(
 
         if (queryError) throw queryError;
 
+        const highlightIds = (data || []).map((hl) => hl.id);
+        const labelMap = await fetchHighlightLabelsWeb(supabase, session.user.id, highlightIds);
+
         const highlights: Highlight[] = (data || []).map((hl) => {
           const highlightUrl = new URL(hl.url);
-          const metadata = hl.metadata as { notes?: string; tags?: string[] } | null;
+          const metadata = hl.metadata as {
+            notes?: string;
+            tags?: string[];
+            sourceKind?: 'code';
+            language?: string;
+            presentation?: HighlightPresentation;
+          } | null;
           return {
             id: hl.id,
             url: hl.url,
             text: hl.text,
             path: highlightUrl.pathname,
             createdAt: new Date(hl.created_at),
+            updatedAt: hl.updated_at ? new Date(hl.updated_at) : undefined,
             notes: metadata?.notes,
-            tags: metadata?.tags,
+            tags: mergeLabelsForHighlight(labelMap.get(hl.id), metadata?.tags),
+            sourceKind: metadata?.sourceKind,
+            language: metadata?.language,
+            presentation: metadata?.presentation,
           };
-        }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        }).sort(compareByHighlightActivityDesc);
 
         setResult({ highlights, isLoading: false, error: null });
       }
