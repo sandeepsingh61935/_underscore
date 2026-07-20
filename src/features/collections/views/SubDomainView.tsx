@@ -12,10 +12,8 @@ import { ScopeAskPanel } from '@/features/ai/components/ScopeAskPanel';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { HighlightWithMarginalia } from '@/features/collections/components/HighlightWithMarginalia';
+import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
-import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
@@ -25,7 +23,6 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
-import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
 
@@ -74,7 +71,6 @@ export function SubDomainView({
   }, [isAuthenticated, mode, navigate]);
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
-  const { updateMetadata } = useUpdateHighlightMetadata();
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
@@ -336,45 +332,27 @@ export function SubDomainView({
               const badge = matchBadgeLabel(r.matchedFields);
               return (
                 <div key={r.id}>
-                  {tagsGate.allowed ? (
-                    <HighlightWithMarginalia
-                      highlightId={r.id}
-                      quote={r.text || '[Unavailable]'}
-                      domain={r.domain}
-                      section={r.path === '/' ? undefined : r.path}
-                      notes={r.notes}
-                      labels={r.tags}
-                      isExpanded={expandedHighlightId === r.id}
-                      onToggleExpand={() => {
-                        setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
-                      }}
-                      showLocationMeta={false}
-                      suggestions={labelSuggestions}
-                      sourceKind={r.sourceKind}
-                      language={r.language}
-                      presentation={r.presentation}
-                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                      onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
-                      onPresentationChange={(presentation) =>
-                        updateMetadata(r.id, { presentation }, { silent: true })
-                      }
-                    />
-                  ) : (
-                    <HighlightCard
-                      quote={r.text || '[Unavailable]'}
-                      domain={r.domain}
-                      section={r.path === '/' ? undefined : r.path}
-                      showLocationMeta={false}
-                      sourceKind={r.sourceKind}
-                      language={r.language}
-                      presentation={r.presentation}
-                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                      onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
-                      onPresentationChange={(presentation) =>
-                        updateMetadata(r.id, { presentation }, { silent: true })
-                      }
-                    />
-                  )}
+                  <LibraryHighlightTile
+                    highlight={{
+                      id: r.id,
+                      text: r.text,
+                      domain: r.domain,
+                      path: r.path,
+                      notes: r.notes,
+                      tags: r.tags,
+                      sourceKind: r.sourceKind,
+                      language: r.language,
+                      presentation: r.presentation,
+                    }}
+                    showLocationMeta={false}
+                    allowMarginalia={tagsGate.allowed}
+                    isExpanded={expandedHighlightId === r.id}
+                    onToggleExpand={() => {
+                      setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                    }}
+                    suggestions={labelSuggestions}
+                    onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                  />
                   {badge && (
                     <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
                       <span
@@ -391,47 +369,28 @@ export function SubDomainView({
           )
         ) : (
           sectionHighlights.map((h) => (
-            tagsGate.allowed ? (
-              <HighlightWithMarginalia
-                key={h.id}
-                highlightId={h.id}
-                quote={h.text || '[Unavailable]'}
-                domain={domain}
-                section={section === '/' ? undefined : section}
-                notes={h.notes}
-                labels={h.tags}
-                isExpanded={expandedHighlightId === h.id}
-                onToggleExpand={() => {
-                  setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
-                }}
-                showLocationMeta={false}
-                suggestions={labelSuggestions}
-                sourceKind={h.sourceKind}
-                language={h.language}
-                presentation={h.presentation}
-                onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
-                onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
-                onPresentationChange={(presentation) =>
-                  updateMetadata(h.id, { presentation }, { silent: true })
-                }
-              />
-            ) : (
-              <HighlightCard
-                key={h.id}
-                quote={h.text || '[Unavailable]'}
-                domain={domain}
-                section={section === '/' ? undefined : section}
-                showLocationMeta={false}
-                sourceKind={h.sourceKind}
-                language={h.language}
-                presentation={h.presentation}
-                onCopy={h.text ? () => { void copyHighlightPlainText(h.text); } : undefined}
-                onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
-                onPresentationChange={(presentation) =>
-                  updateMetadata(h.id, { presentation }, { silent: true })
-                }
-              />
-            )
+            <LibraryHighlightTile
+              key={h.id}
+              highlight={{
+                id: h.id,
+                text: h.text,
+                domain,
+                path: section,
+                notes: h.notes,
+                tags: h.tags,
+                sourceKind: h.sourceKind,
+                language: h.language,
+                presentation: h.presentation,
+              }}
+              showLocationMeta={false}
+              allowMarginalia={tagsGate.allowed}
+              isExpanded={expandedHighlightId === h.id}
+              onToggleExpand={() => {
+                setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
+              }}
+              suggestions={labelSuggestions}
+              onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
+            />
           ))
         )}
       </div>

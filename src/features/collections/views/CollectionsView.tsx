@@ -6,14 +6,12 @@ import { useCollections } from '@/features/collections/hooks/useCollections';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
-import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { Row } from '@/ui-system/components/primitives/Row';
-import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
@@ -55,7 +53,6 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
-  const { updateMetadata } = useUpdateHighlightMetadata();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
@@ -158,18 +155,17 @@ export function CollectionsView({
               const badge = matchBadgeLabel(r.matchedFields);
               return (
                 <div key={r.id}>
-                  <HighlightCard
-                    quote={r.text || '[Unavailable]'}
-                    domain={r.domain}
-                    section={r.path === '/' ? undefined : r.path}
+                  <LibraryHighlightTile
+                    highlight={{
+                      id: r.id,
+                      text: r.text,
+                      domain: r.domain,
+                      path: r.path,
+                      sourceKind: r.sourceKind,
+                      language: r.language,
+                      presentation: r.presentation,
+                    }}
                     onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
-                    sourceKind={r.sourceKind}
-                    language={r.language}
-                    presentation={r.presentation}
-                    onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                    onPresentationChange={(presentation) =>
-                      updateMetadata(r.id, { presentation }, { silent: true })
-                    }
                   />
                   {badge && (
                     <div style={{ padding: '0 16px 8px', marginTop: -4 }}>

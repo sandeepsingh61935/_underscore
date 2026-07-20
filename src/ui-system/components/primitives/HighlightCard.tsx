@@ -3,7 +3,7 @@
  * Quote text is immutable (website capture). Users style via presentation tools.
  * @see docs/superpowers/specs/2026-07-14-highlight-markdown-body-design.md
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
 import {
@@ -31,12 +31,8 @@ export interface HighlightCardProps {
   language?: string;
   /** User presentation in the app (does not mutate quote). */
   presentation?: HighlightPresentation | null;
-  /** Persist presentation only. */
-  onPresentationChange?: (
-    presentation: HighlightPresentation,
-  ) => void | boolean | Promise<void | boolean>;
-  /** Highlight id for format tools (optional label only). */
-  highlightId?: string;
+  /** Persist presentation only. Resolves when save finishes. */
+  onPresentationChange?: (presentation: HighlightPresentation) => Promise<void>;
 }
 
 const actionBtnStyle: React.CSSProperties = {
@@ -85,11 +81,20 @@ export function HighlightCard({
   const padBottom = 8;
   const [metaHover, setMetaHover] = useState(false);
   const [formatBusy, setFormatBusy] = useState(false);
+  /** Optimistic presentation until props catch up after save. */
+  const [pendingPresentation, setPendingPresentation] = useState<HighlightPresentation | null>(
+    null,
+  );
 
+  useEffect(() => {
+    setPendingPresentation(null);
+  }, [presentation?.format, presentation?.language, sourceKind, language]);
+
+  const effectivePresentation = pendingPresentation ?? presentation;
   const resolved = resolveHighlightPresentation({
     sourceKind,
     language,
-    presentation,
+    presentation: effectivePresentation,
   });
 
   const metaText = `${domain}${section ?? ''}`;
@@ -109,15 +114,19 @@ export function HighlightCard({
 
   const applyFormat = async (format: HighlightPresentationFormat): Promise<void> => {
     if (!onPresentationChange || formatBusy) return;
+    const next: HighlightPresentation = {
+      format,
+      language:
+        format === 'code'
+          ? (effectivePresentation?.language ?? language)
+          : effectivePresentation?.language,
+    };
+    setPendingPresentation(next);
     setFormatBusy(true);
     try {
-      await onPresentationChange({
-        format,
-        language:
-          format === 'code'
-            ? (presentation?.language ?? language)
-            : presentation?.language,
-      });
+      await onPresentationChange(next);
+    } catch {
+      setPendingPresentation(null);
     } finally {
       setFormatBusy(false);
     }
@@ -142,7 +151,7 @@ export function HighlightCard({
             clamp
             sourceKind={sourceKind}
             language={language}
-            presentation={presentation}
+            presentation={effectivePresentation}
           />
 
           {showLocationMeta && (

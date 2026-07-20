@@ -13,6 +13,11 @@ vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
   }),
 }));
 
+vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
+  copyHighlightPlainText: vi.fn(),
+  isExtensionContext: () => true,
+}));
+
 describe('HighlightWithMarginalia', () => {
   it('puts invite and Copy/Delete on one action row', () => {
     render(
@@ -22,7 +27,6 @@ describe('HighlightWithMarginalia', () => {
         domain="example.com"
         isExpanded={false}
         onToggleExpand={vi.fn()}
-        onPresentationChange={vi.fn()}
         onCopy={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -46,7 +50,6 @@ describe('HighlightWithMarginalia', () => {
         labels={['bfs']}
         isExpanded={false}
         onToggleExpand={vi.fn()}
-        onPresentationChange={vi.fn()}
       />,
     );
 

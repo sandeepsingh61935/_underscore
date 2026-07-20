@@ -1,10 +1,5 @@
 /**
  * Wireframe: ui_kits/extension/v2/primitives.jsx L767-795 (V2_HighlightCard)
- * V2 contract:
- *   - Background var(--paper), border-bottom 1px var(--rule-soft).
- *   - Two densities: compact 10px / comfortable 14px vertical padding.
- *   - Quote: u-serif, 14px, --ink. qmark glyph 28px.
- *   - Meta: u-mono, 10px, --ink-3, "domain" or "domain / section".
  * Quote text is immutable; format tools style presentation only.
  */
 import React from 'react';
@@ -34,22 +29,29 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(screen.queryByRole('button', { name: /Edit highlight text/ })).toBeNull();
   });
 
-  it('shows format toolbar when onPresentationChange is provided', () => {
+  it('shows format toolbar without Plain (no-op format removed)', () => {
     render(
       <HighlightCard
         quote="Apple"
         domain="example.com"
-        onPresentationChange={vi.fn()}
+        onPresentationChange={vi.fn(async () => undefined)}
       />
     );
     expect(screen.getByTestId('highlight-format-toolbar')).toBeTruthy();
     expect(screen.getByRole('button', { name: /As captured/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Code/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Bullets/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Plain$/i })).toBeNull();
   });
 
-  it('calls onPresentationChange with selected format', async () => {
-    const onPresentationChange = vi.fn(async () => undefined);
+  it('optimistically marks format pressed before save resolves', async () => {
+    let resolveSave!: () => void;
+    const onPresentationChange = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
     render(
       <HighlightCard
         quote={"line one\nline two"}
@@ -59,8 +61,12 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Bullets/i }));
     await vi.waitFor(() => {
-      expect(onPresentationChange).toHaveBeenCalledWith({ format: 'bullets' });
+      expect(screen.getByRole('button', { name: /Bullets/i }).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
     });
+    expect(onPresentationChange).toHaveBeenCalledWith({ format: 'bullets' });
+    resolveSave();
   });
 
   it('preserves language when switching to code format', async () => {

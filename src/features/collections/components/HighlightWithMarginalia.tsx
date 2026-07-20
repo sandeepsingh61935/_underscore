@@ -1,13 +1,11 @@
 /**
- * Composes a `HighlightCard` with embedded `MarginaliaStrip` on one action row
- * (notes · tags · format tools · Copy · Delete). Density PRD:
- * docs/superpowers/specs/2026-07-14-highlight-tile-editor-density-prd.md
+ * @deprecated Prefer LibraryHighlightTile with allowMarginalia.
+ * Thin wrapper kept for tests / gradual migration.
  */
 import React from 'react';
 
-import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
+import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
-import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 export interface HighlightWithMarginaliaProps {
   highlightId: string;
@@ -26,9 +24,8 @@ export interface HighlightWithMarginaliaProps {
   sourceKind?: 'code';
   language?: string;
   presentation?: HighlightPresentation | null;
-  onPresentationChange?: (
-    presentation: HighlightPresentation,
-  ) => void | boolean | Promise<void | boolean>;
+  /** Ignored — presentation is owned by LibraryHighlightTile. */
+  onPresentationChange?: (presentation: HighlightPresentation) => Promise<void>;
 }
 
 export function HighlightWithMarginalia({
@@ -40,41 +37,32 @@ export function HighlightWithMarginalia({
   labels,
   isExpanded,
   onToggleExpand,
-  onCopy,
   onDelete,
   showLocationMeta,
-  disabled,
   suggestions,
   sourceKind,
   language,
   presentation,
-  onPresentationChange,
 }: HighlightWithMarginaliaProps): React.ReactElement {
   return (
-    <HighlightCard
-      quote={quote}
-      domain={domain}
-      section={section}
-      onCopy={onCopy}
-      onDelete={onDelete}
+    <LibraryHighlightTile
+      highlight={{
+        id: highlightId,
+        text: quote,
+        domain,
+        path: section,
+        notes,
+        tags: labels,
+        sourceKind,
+        language,
+        presentation,
+      }}
       showLocationMeta={showLocationMeta}
-      sourceKind={sourceKind}
-      language={language}
-      presentation={presentation}
-      onPresentationChange={onPresentationChange}
-      highlightId={highlightId}
-      footerStart={(
-        <MarginaliaStrip
-          highlightId={highlightId}
-          notes={notes}
-          labels={labels}
-          isExpanded={isExpanded}
-          onToggleExpand={onToggleExpand}
-          disabled={disabled}
-          suggestions={suggestions}
-          embedInCard
-        />
-      )}
+      onDelete={onDelete}
+      allowMarginalia
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      suggestions={suggestions}
     />
   );
 }

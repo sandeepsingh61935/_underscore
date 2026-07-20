@@ -15,9 +15,8 @@ import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-d
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
-import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
+import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
-import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
@@ -27,7 +26,6 @@ import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { Row } from '@/ui-system/components/primitives/Row';
-import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
 export interface DomainDetailsViewProps {
@@ -129,7 +127,6 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   };
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
-  const { updateMetadata } = useUpdateHighlightMetadata();
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
@@ -392,18 +389,17 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                 const badge = matchBadgeLabel(r.matchedFields);
                 return (
                   <div key={r.id}>
-                    <HighlightCard
-                      quote={r.text || '[Unavailable]'}
-                      domain={r.domain}
-                      section={r.path === '/' ? undefined : r.path}
+                    <LibraryHighlightTile
+                      highlight={{
+                        id: r.id,
+                        text: r.text,
+                        domain: r.domain,
+                        path: r.path,
+                        sourceKind: r.sourceKind,
+                        language: r.language,
+                        presentation: r.presentation,
+                      }}
                       onSectionClick={() => handleSectionClick(r.path)}
-                      sourceKind={r.sourceKind}
-                      language={r.language}
-                      presentation={r.presentation}
-                      onCopy={r.text ? () => { void copyHighlightPlainText(r.text); } : undefined}
-                      onPresentationChange={(presentation) =>
-                        updateMetadata(r.id, { presentation }, { silent: true })
-                      }
                     />
                     {badge && (
                       <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
