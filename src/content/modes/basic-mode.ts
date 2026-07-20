@@ -187,9 +187,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     const count = this.data.size;
     this.logger.info('Clearing all highlights in Basic Mode', { count });
 
-    CSS.highlights.clear();
-    this.highlights.clear();
-    this.data.clear();
+    this.clearPaint();
     this.facade.clear();
 
     if (this.storage) {

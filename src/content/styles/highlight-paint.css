@@ -1,0 +1,52 @@
+/**
+ * Overlay paint styles (sole on-page highlight visibility path).
+ * Injected with the content script via WXT content.css.
+ * Literal colors only — host pages do not ship extension design tokens.
+ */
+
+#underscore-paint-root {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2147483645;
+}
+
+.underscore-paint-rect {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.underscore-paint-rect[data-color='yellow'] {
+  background-color: rgba(255, 235, 59, 0.45);
+  box-shadow: inset 0 -2px 0 #f9a825;
+}
+.underscore-paint-rect[data-color='orange'] {
+  background-color: rgba(255, 152, 0, 0.4);
+  box-shadow: inset 0 -2px 0 #fb8c00;
+}
+.underscore-paint-rect[data-color='blue'] {
+  background-color: rgba(33, 150, 243, 0.35);
+  box-shadow: inset 0 -2px 0 #1e88e5;
+}
+.underscore-paint-rect[data-color='green'] {
+  background-color: rgba(76, 175, 80, 0.35);
+  box-shadow: inset 0 -2px 0 #43a047;
+}
+.underscore-paint-rect[data-color='purple'] {
+  background-color: rgba(156, 39, 176, 0.35);
+  box-shadow: inset 0 -2px 0 #8e24aa;
+}
+.underscore-paint-rect[data-color='pink'] {
+  background-color: rgba(233, 30, 99, 0.35);
+  box-shadow: inset 0 -2px 0 #d81b60;
+}
+.underscore-paint-rect[data-color='teal'] {
+  background-color: rgba(0, 150, 136, 0.35);
+  box-shadow: inset 0 -2px 0 #00897b;
+}

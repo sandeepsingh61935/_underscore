@@ -2,9 +2,10 @@
  * ProMode.restore must hydrate via the highlight reader (IPC) into the shared
  * facade, then paint — not rely on an orphan empty CloudModeService store.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { ProMode } from '@/content/modes/pro-mode';
+import { RangeOverlayPainter } from '@/content/paint/range-overlay-painter';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -45,22 +46,7 @@ describe('ProMode.restore IPC hydrate + paint', () => {
   let mode: ProMode;
 
   beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).Highlight = class {
-      private ranges = new Set<Range>();
-      add(range: Range): void {
-        this.ranges.add(range);
-      }
-      has(range: Range): boolean {
-        return this.ranges.has(range);
-      }
-      delete(range: Range): boolean {
-        return this.ranges.delete(range);
-      }
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (CSS as any).highlights = new Map();
-
+    RangeOverlayPainter.resetForTests();
     document.body.innerHTML = '<p>restored phrase</p>';
     Object.defineProperty(window, 'location', {
       value: { href: 'https://example.com/article#section' },
@@ -68,10 +54,30 @@ describe('ProMode.restore IPC hydrate + paint', () => {
       configurable: true,
     });
 
+    // jsdom ranges need getClientRects for overlay paint
+    const originalCreateRange = document.createRange.bind(document);
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      const range = originalCreateRange();
+      range.getClientRects = () =>
+        [
+          {
+            left: 0,
+            top: 0,
+            width: 50,
+            height: 12,
+            right: 50,
+            bottom: 12,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          },
+        ] as unknown as DOMRectList;
+      return range;
+    });
+
     const repo = new InMemoryHighlightRepository();
     facade = new RepositoryFacade(repo);
     await facade.initialize();
-    // Facade starts empty (simulates content reload). Reader returns persisted row.
     expect(facade.count()).toBe(0);
 
     reader = {
@@ -97,14 +103,17 @@ describe('ProMode.restore IPC hydrate + paint', () => {
     mode = new ProMode(facade, eventBus, logger, { highlightReader: reader });
   });
 
-  it('hydrates from reader and paints the restored highlight', async () => {
+  afterEach(() => {
+    RangeOverlayPainter.resetForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('hydrates from reader and paints the restored highlight via HighlightPainter', async () => {
     await mode.restore();
 
     expect(reader.findByUrl).toHaveBeenCalled();
     expect(mode.getAllHighlights()).toHaveLength(1);
     expect(mode.getHighlight('hl-restore-1')?.text).toBe('restored phrase');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const painted = (CSS as any).highlights.size;
-    expect(painted).toBeGreaterThan(0);
+    expect(RangeOverlayPainter.getInstance().paintedCount).toBe(1);
   });
 });

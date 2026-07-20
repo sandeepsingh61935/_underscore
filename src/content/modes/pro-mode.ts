@@ -107,7 +107,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
    */
   private async handleRemoteHighlightCreated(data: HighlightData): Promise<void> {
     // 1. Deduplication Check
-    if (this.highlights.has(data.id)) {
+    if (this.data.has(data.id)) {
       this.logger.debug('[PRO] Skipping remote highlight (already exists)', { id: data.id });
       return;
     }
@@ -316,10 +316,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
   override async clearAll(): Promise<void> {
     await this.cloudService.clearAll();
-
-    for (const id of this.data.keys()) {
-      await super.removeHighlight(id);
-    }
+    this.clearPaint();
     this.facade.clear();
   }
 
@@ -373,6 +370,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
 
+    const now = new Date();
     // Build the runtime highlight with the live Range for in-page rendering.
     const runtimeHighlight = {
       id,
@@ -380,7 +378,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       contentHash,
       colorRole: colorRole || 'yellow',
       type: 'underscore' as const,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+      url: normalizePageUrl(window.location.href),
       ranges: [serializedRange],
       liveRanges: [range],
     };
@@ -390,25 +390,12 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     }
     const liveRange = runtimeHighlight.liveRanges[0]!;
 
-    // 1. Persist to Vault Storage (IndexedDB + Selectors)
-    // This handles the "Heavy Lifting" of creating selectors and saving to DB
+    // Single durable write (url + TextQuote selector + timestamps). A second
+    // facade.add without selector used to race and break page restore.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.cloudService.saveHighlight(runtimeHighlight as any, liveRange);
 
-    // 2 & 3. Update Runtime API & Internal State
     await this.renderAndRegister(runtimeHighlight as unknown as HighlightData);
-
-    // 4. Update In-Memory Repository (for UI consistency)
-    // Strip runtime-only fields (liveRanges) before persisting — Bug A.
-    const { toStorageFormat } = await import('@/content/highlight-type-bridge');
-    const storageData = await toStorageFormat({
-      ...runtimeHighlight,
-      color: runtimeHighlight.colorRole,
-    });
-    this.facade.add({
-      ...storageData,
-      url: normalizePageUrl(window.location.href),
-    });
 
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
@@ -485,8 +472,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       }
     }
 
+    const painted = restored.filter((r) => r.range).length;
     this.logger.info(
-      `[PRO] [DONE] Restoration complete: ${restored.filter((r) => r.range).length}/${restored.length} highlights rendered`
+      `[PRO] [DONE] Restoration complete: ${painted}/${restored.length} highlights rendered`
     );
   }
 

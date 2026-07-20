@@ -1,56 +1,48 @@
 /**
  * @file highlight-styles.ts
- * @description CSS styles for Custom Highlight API with CSS design tokens
+ * @description Paint helpers for highlight registry naming and color roles.
  *
- * Uses ::highlight() pseudo-element for zero-DOM rendering
- * Reactive theming via CSS variables
+ * Visual styles live only in `highlight-paint.css` (WXT content.css).
+ * No JS-injected ::highlight CSS — host-page paint is overlay-only.
  */
 
 import type { AnnotationType } from '@/shared/types/annotation';
+import type { ColorRole } from '@/shared/schemas/highlight-schema';
+import { ColorRoleSchema } from '@/shared/schemas/highlight-schema';
 
 export type HighlightType = AnnotationType;
 
 /**
- * Get the CSS highlight name for a given mode and color role
- * CRITICAL: Must be semantic per color/type to avoid DOM explosion
+ * Get the semantic name for a type + color role (overlay data-color / logs).
  */
 export function getHighlightName(type: HighlightType, colorRole: string): string {
   return `${type}-${colorRole}`;
 }
 
-const COLORS = ['yellow', 'blue', 'green', 'pink', 'purple'];
+/**
+ * Resolve a paint color role from storage fields.
+ * Prefers colorRole; accepts deprecated color only when it is a known role
+ * (legacy hex values map to yellow).
+ */
+export function resolveColorRoleForPaint(
+  colorRole?: string | null,
+  color?: string | null
+): ColorRole {
+  const candidates = [colorRole, color];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = ColorRoleSchema.safeParse(candidate);
+    if (parsed.success) return parsed.data;
+  }
+  return 'yellow';
+}
 
 /**
- * Inject global highlight CSS using semantic design tokens
- * Automatically reactive to theme changes via CSS variables
+ * Normalize annotation type for paint metadata.
  */
-export function injectGlobalHighlightStyles(): void {
-  const styleId = `underscore-global-highlight-styles`;
-  if (document.getElementById(styleId)) return;
-
-  const style = document.createElement('style');
-  style.id = styleId;
-
-  let css = '';
-  for (const color of COLORS) {
-    css += `
-      ::highlight(underscore-${color}) {
-        text-decoration: underline solid;
-        text-decoration-color: var(--highlight-${color});
-        text-underline-offset: 3px;
-        text-decoration-thickness: 2px;
-      }
-      ::highlight(highlight-${color}) {
-        background-color: var(--highlight-${color});
-        color: inherit;
-      }
-      ::highlight(box-${color}) {
-        outline: 2px solid var(--highlight-${color});
-        outline-offset: 2px;
-      }
-    `;
+export function resolveHighlightTypeForPaint(type?: string | null): HighlightType {
+  if (type === 'highlight' || type === 'box' || type === 'underscore') {
+    return type;
   }
-
-  style.textContent = css;
-  document.head.appendChild(style);
+  return 'underscore';
 }

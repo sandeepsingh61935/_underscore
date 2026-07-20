@@ -8,6 +8,8 @@
  */
 
 import '@/content/ui/delete-icon.css'; // Phase 4.3: Delete icon styles
+// Sole on-page paint styles (overlay rects). WXT injects as content.css.
+import '@/content/styles/highlight-paint.css';
 
 import { browser } from 'wxt/browser';
 
@@ -18,6 +20,7 @@ import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
 import { SelectionDetector } from '@/content/selection-detector';
+import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 import { getHighlightsInRange } from '@/content/utils/get-highlights-in-range';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
@@ -63,7 +66,7 @@ export default defineContentScript({
     );
 
     try {
-      // Check Custom Highlight API support
+      // Check Custom Highlight API support (legacy manager still used for feature flag)
       const useCustomHighlightAPI = HighlightManager.isSupported();
       logger.info('Custom Highlight API support:', { supported: useCustomHighlightAPI });
 
@@ -288,8 +291,9 @@ export default defineContentScript({
                 const text = mergedRanges.map((r) => r.toString()).join(' ... ');
                 const serializedRanges = mergedRanges.map((r) => serializeRange(r));
 
-                // Generate new ID for split highlight
-                const newId = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                // Generate new ID for split highlight (UUID for cloud highlights.id)
+                const { generateHighlightId } = await import('@/shared/utils/generate-highlight-id');
+                const newId = generateHighlightId();
 
                 const { generateContentHash } =
                   await import('@/shared/utils/content-hash');
@@ -773,7 +777,10 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             id: highlightData.id,
             text: highlightData.text,
             contentHash,
-            colorRole: (highlightData.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
+            colorRole: resolveColorRoleForPaint(
+              highlightData.colorRole,
+              highlightData.color
+            ),
             type: 'underscore' as const,
             ranges: serializedRanges,
             liveRanges,
@@ -794,7 +801,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
             const createCommand = commandFactory.createCreateHighlightCommand(
               selection,
-              highlightData.color || 'yellow'
+              resolveColorRoleForPaint(highlightData.colorRole, highlightData.color)
             );
 
             await createCommand.execute();

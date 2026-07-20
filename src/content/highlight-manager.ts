@@ -9,15 +9,13 @@
  * - Better performance
  */
 
-import {
-  getHighlightName,
-  injectGlobalHighlightStyles,
-} from './styles/highlight-styles';
+import { getHighlightName } from './styles/highlight-styles';
 
 import { serializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { EventName, createEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
+import { generateHighlightId } from '@/shared/utils/generate-highlight-id';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -31,6 +29,10 @@ export interface HighlightData {
   liveRanges?: Range[];
 }
 
+/**
+ * Legacy Custom Highlight API helper. Modes paint via HighlightPainter
+ * (overlay). This class remains for feature detection / compatibility paths.
+ */
 export class HighlightManager {
   private readonly logger: ILogger;
   private readonly eventBus: EventBus;
@@ -43,7 +45,6 @@ export class HighlightManager {
     this.eventBus = eventBus;
 
     this.logger.info('HighlightManager initialized (Custom Highlight API)');
-    injectGlobalHighlightStyles();
   }
 
   static isSupported(): boolean {
@@ -67,7 +68,7 @@ export class HighlightManager {
       return null;
     }
 
-    const id = `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateHighlightId();
     const highlightName = getHighlightName('underscore', color);
 
     const serializedRange = serializeRange(range);

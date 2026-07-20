@@ -1,32 +1,31 @@
 /**
  * Base Highlight Mode
  *
- * Provides common functionality for all modes
- * Note: Does NOT implement IHighlightMode (removed for ISP compliance)
- * Concrete modes implement IBasicMode (and optionally IPersistentMode, etc.)
+ * Common runtime tracking + paint via HighlightPainter.
+ * Concrete modes implement persistence (Basic / Pro / Pro-xAI).
  */
 
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 
-import { getHighlightName } from '@/content/styles/highlight-styles';
+import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
+import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import { generateHighlightId } from '@/shared/utils/generate-highlight-id';
 
 export abstract class BaseHighlightMode {
-  // Internal tracking (replaces HighlightManager.highlights)
-  protected highlights = new Map<string, Highlight>();
+  /** Session highlights with optional liveRanges for paint / undo. */
   protected data = new Map<string, HighlightData>();
   /**
    * The RepositoryFacade: synchronous read/write API over the in-memory
    * cache. Per ADR-006, the facade is the only seam between modes and
-   * storage. Reads and writes both go through it. Writes are fire-and-forget
-   * (the facade persists asynchronously in the background).
+   * storage.
    */
   protected readonly facade: RepositoryFacade;
-  protected storage?: IStorage; // Optional, strict DI for modes that need it
+  protected storage?: IStorage;
 
   constructor(
     protected readonly eventBus: EventBus,
@@ -40,57 +39,42 @@ export abstract class BaseHighlightMode {
 
   async onActivate(): Promise<void> {
     this.logger.info(`${this.name} mode activated`);
-
-    // CRITICAL FIX: Sync mode.data to repository cache
-    // This ensures hover detector can find highlights after mode activation/restore
-    // Sync with repository (FIXME: This causes infinite recursion if add() triggers events)
-    // Modes should trust the repository is the source of truth, or sync one-way only
-    /*
-    for (const [, highlight] of this.data.entries()) {
-      await this.repository.add({ ...highlight, version: 2 } as any);
-    }
-    */
   }
 
   async onDeactivate(): Promise<void> {
     this.logger.info(`${this.name} mode deactivated`);
-    // Clear all highlights
-    for (const id of this.highlights.keys()) {
+    for (const id of [...this.data.keys()]) {
       await this.removeHighlight(id);
     }
   }
 
   /**
-   * CRITICAL: Unified creation method
-   * This ensures EVERY highlight goes through same path → always registers!
+   * Unified paint + session track. Every create/restore path goes here.
    */
   protected async renderAndRegister(data: HighlightData): Promise<void> {
-    const highlightName = getHighlightName(data.type, data.colorRole);
+    const colorRole = resolveColorRoleForPaint(data.colorRole, data.color);
+    const normalized: HighlightData = {
+      ...data,
+      type: 'underscore',
+      colorRole,
+    };
 
-    // Add ranges to semantic highlight group, but only when liveRanges is present.
-    // `liveRanges` is optional because Range cannot survive structured clone — payloads
-    // round-tripped through IDB/Supabase omit it. In that case the caller is expected
-    // to restore the Range from serialized data and re-render; this method still
-    // tracks the data internally so removeHighlight can succeed.
-    if (data.liveRanges) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let semanticHighlight = (CSS as any).highlights.get(highlightName);
-      if (!semanticHighlight) {
-        semanticHighlight = new Highlight();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (CSS as any).highlights.set(highlightName, semanticHighlight);
+    if (normalized.liveRanges && normalized.liveRanges.length > 0) {
+      const live = normalized.liveRanges.filter((r) => r && !r.collapsed);
+      if (live.length > 0) {
+        getHighlightPainter().paint(normalized.id, live, colorRole);
+      } else {
+        this.logger.warn('Highlight has only collapsed ranges — no paint', {
+          id: normalized.id,
+        });
       }
-
-      for (const range of data.liveRanges) {
-        semanticHighlight.add(range);
-      }
+    } else {
+      this.logger.debug('Highlight registered without liveRanges — no page paint', {
+        id: normalized.id,
+      });
     }
 
-    // Track internally
-    // We don't store a Highlight object anymore, just keep the data for ranges
-    this.data.set(data.id, data);
-
-    this.logger.debug('Highlight rendered and registered', { id: data.id });
+    this.data.set(normalized.id, normalized);
   }
 
   async removeHighlight(id: string): Promise<void> {
@@ -100,32 +84,27 @@ export abstract class BaseHighlightMode {
       return;
     }
 
-    const highlightName = getHighlightName(data.type, data.colorRole);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const semanticHighlight = (CSS as any).highlights.get(highlightName);
-
-    if (semanticHighlight && data.liveRanges) {
-      for (const range of data.liveRanges) {
-        if (semanticHighlight.has(range)) {
-          semanticHighlight.delete(range);
-        }
-      }
-    }
-
-    // Remove from tracking
-    this.highlights.delete(id);
+    getHighlightPainter().unpaint(id);
     this.data.delete(id);
-
     this.logger.info('Highlight removed', { id });
   }
 
   /**
-   * Remove highlight visuals and session state without persisting removal.
+   * Remove paint + session state without persisting removal.
    * Caller must have already deleted via background HighlightDeleteService.
    */
   async detachFromPage(id: string): Promise<void> {
     await this.removeHighlight(id);
     this.facade.evict(id);
+  }
+
+  /**
+   * Clear all session paint (and optionally leave persistence to the mode).
+   * Modes should call this from clearAll after durable wipe.
+   */
+  protected clearPaint(): void {
+    getHighlightPainter().clear();
+    this.data.clear();
   }
 
   getHighlight(id: string): HighlightData | null {
@@ -137,43 +116,26 @@ export abstract class BaseHighlightMode {
   }
 
   protected generateId(): string {
-    return `hl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return generateHighlightId();
   }
 
-  // Abstract methods - mode-specific
   abstract createHighlight(selection: Selection, colorRole: string): Promise<string>;
   abstract createFromData(data: HighlightData): Promise<void>;
   abstract updateHighlight(id: string, updates: Partial<HighlightData>): Promise<void>;
   abstract clearAll(): Promise<void>;
 
-  // Note: restore() removed - only IPersistentMode needs it (Interface Segregation Principle)
-  // Modes use shouldRestore() to indicate if they want restoration
-
-  /**
-   * Default implementations for IBasicMode
-   * Modes can override these if they need to handle events or persistence
-   */
   async onHighlightCreated(_event: HighlightCreatedEvent): Promise<void> {
-    // Default: No-op. Override in IPersistentMode implementation (like Vault/Sprint)
-    // if you want to handle event-sourced creation.
     return Promise.resolve();
   }
 
   async onHighlightRemoved(_event: HighlightRemovedEvent): Promise<void> {
-    // Default: No-op.
     return Promise.resolve();
   }
 
   shouldRestore(): boolean {
-    // Default: false (Privacy-First / ephemeral).
-    // Override to return true in persistent modes.
     return false;
   }
 
-  /**
-   * Default deletion configuration
-   * Modes can override to customize deletion behavior
-   */
   getDeletionConfig(): DeletionConfig {
     return {
       showDeleteIcon: true,
