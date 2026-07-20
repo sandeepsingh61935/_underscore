@@ -147,17 +147,19 @@ export default defineContentScript({
       const renderer = new HighlightRenderer(eventBus);
       const detector = new SelectionDetector(eventBus);
 
-      // Initialize click detector for double-click deletion
+      // Click detector: plain click toggles delete-icon pin; Ctrl+Click deletes
       const { HighlightDOMHitTester } = await import('@/content/ui/highlight-dom-hit-tester');
       const hitTester = new HighlightDOMHitTester(repositoryFacade);
 
       const clickDetector = new HighlightClickDetector(eventBus, hitTester);
       clickDetector.init();
 
-      // Initialize delete icon overlay system (Phase 4.3)
+      // Delete icon: click-to-pin (not hover) so moving to the exterior icon keeps it
       const { DeleteIconOverlay } = await import('@/content/ui/delete-icon-overlay');
-      const { HighlightHoverDetector } =
-        await import('@/content/ui/highlight-hover-detector');
+      const {
+        HIGHLIGHT_DELETE_ICON_TOGGLE,
+        HIGHLIGHT_DELETE_ICON_DISMISS,
+      } = await import('@/content/highlight-click-detector');
 
       const deleteIconOverlay = new DeleteIconOverlay(
         modeManager,
@@ -166,41 +168,18 @@ export default defineContentScript({
         messageBus,
       );
 
-      const hoverDetector = new HighlightHoverDetector(
-        repositoryFacade,
-        eventBus,
-        logger,
-        hitTester
-      );
-
-      hoverDetector.init();
-
-      logger.info('[DELETE-ICON] Hover detector initialized');
-
-      // Wire hover events to icon overlay (exterior first-line placement when available)
       eventBus.on(
-        'highlight:hover:start',
-        (event: {
-          highlightId: string;
-          boundingRect: DOMRect;
-          firstLineStart?: DOMRect;
-          firstLineEnd?: DOMRect;
-        }) => {
-          if (event.firstLineStart && event.firstLineEnd) {
-            deleteIconOverlay.showIconWithFirstLine(
-              event.highlightId,
-              event.firstLineStart,
-              event.firstLineEnd
-            );
-          } else {
-            deleteIconOverlay.showIcon(event.highlightId, event.boundingRect);
-          }
+        HIGHLIGHT_DELETE_ICON_TOGGLE,
+        (event: { highlightId: string }) => {
+          deleteIconOverlay.togglePin(event.highlightId);
         }
       );
 
-      eventBus.on('highlight:hover:end', (event: { highlightId: string }) => {
-        deleteIconOverlay.hideIcon(event.highlightId);
+      eventBus.on(HIGHLIGHT_DELETE_ICON_DISMISS, () => {
+        deleteIconOverlay.dismissPin();
       });
+
+      logger.info('[DELETE-ICON] Click-to-pin delete icon wired');
 
       // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
       // Observer Pattern: Modes listen to domain events and decide how to handle
