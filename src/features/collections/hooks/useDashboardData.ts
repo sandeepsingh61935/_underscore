@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+
 export interface DashboardData {
   totalHighlights: number;
   totalDomains: number;
@@ -14,16 +19,9 @@ export interface DashboardData {
     updatedAt?: string | Date;
     sourceKind?: 'code';
     language?: string;
-    presentation?: {
-      format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
-      language?: string;
-    };
+    presentation?: HighlightPresentation;
   }>;
 }
-
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
-import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 
 const EMPTY_DASHBOARD: DashboardData = {
   totalHighlights: 0,

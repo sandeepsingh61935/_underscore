@@ -26,6 +26,7 @@ import {
   highlightActivityMs,
 } from '@/shared/utils/highlight-activity';
 import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
 export interface CollectionSummary {
   domain: string;
@@ -48,10 +49,7 @@ export interface DomainHighlightSummary {
   /** Present when highlight was captured from a page code block. */
   sourceKind?: 'code';
   language?: string;
-  presentation?: {
-    format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
-    language?: string;
-  };
+  presentation?: HighlightPresentation;
 }
 
 export interface DashboardData {

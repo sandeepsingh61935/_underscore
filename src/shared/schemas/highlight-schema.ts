@@ -119,10 +119,11 @@ export const HighlightDataSchemaV2 = z.object({
       language: z.string().max(32).optional(),
       /**
        * User presentation in the app only. Quote `text` stays immutable.
+       * Canonical shape: HighlightPresentationSchema.
        */
       presentation: z
         .object({
-          format: z.enum(['as_captured', 'plain', 'code', 'bullets', 'numbered']),
+          format: z.enum(['as_captured', 'code', 'bullets', 'numbered']),
           language: z.string().max(32).optional(),
         })
         .optional(),

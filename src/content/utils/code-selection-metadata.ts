@@ -1,6 +1,9 @@
 /**
  * Detect whether a DOM selection is primarily from a code block (pre/code)
  * so the library can render code chrome without mutating stored text with fences.
+ *
+ * Pure fence wrapping lives in `@/shared/utils/highlight-presentation` so shared
+ * code never depends on this content module.
  */
 
 export interface CodeSelectionMeta {
@@ -61,15 +64,4 @@ export function detectCodeSelectionMetadata(range: Range): CodeSelectionMeta | u
   } catch {
     return undefined;
   }
-}
-
-/**
- * Display helper: wrap plain code body in markdown fences for ReactMarkdown
- * only when not already fenced. Prefer for presentation; do not use as TextQuote exact.
- */
-export function wrapAsMarkdownCodeFence(source: string, language?: string): string {
-  const trimmed = source.replace(/^\n+|\n+$/g, '');
-  if (/^```/.test(trimmed)) return source;
-  const lang = language?.trim() ?? '';
-  return '```' + lang + '\n' + trimmed + '\n```';
 }

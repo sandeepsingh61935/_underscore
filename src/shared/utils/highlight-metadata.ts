@@ -4,7 +4,7 @@
  */
 
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
-import { HIGHLIGHT_PRESENTATION_FORMATS } from '@/shared/utils/highlight-presentation';
+import { normalizePresentation } from '@/shared/utils/highlight-presentation';
 
 export const HIGHLIGHT_NOTE_MAX_LENGTH = 2000;
 export const HIGHLIGHT_TAG_MAX_LENGTH = 32;
@@ -44,21 +44,6 @@ export type HighlightStoredMetadata = {
   language?: string;
   presentation?: HighlightPresentation;
 };
-
-export function normalizePresentation(
-  input: HighlightPresentation | null | undefined,
-): HighlightPresentation | undefined {
-  if (input == null) return undefined;
-  if (!HIGHLIGHT_PRESENTATION_FORMATS.includes(input.format)) return undefined;
-  const language =
-    typeof input.language === 'string' && input.language.trim()
-      ? input.language.trim().slice(0, 32).toLowerCase()
-      : undefined;
-  return {
-    format: input.format,
-    ...(language ? { language } : {}),
-  };
-}
 
 /** Union junction labels with legacy metadata.tags during migration cutover. */
 export function mergeHighlightLabels(

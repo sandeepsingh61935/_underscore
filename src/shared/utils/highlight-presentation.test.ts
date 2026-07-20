@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveHighlightPresentation,
   applyPresentationToDisplaySource,
+  wrapAsMarkdownCodeFence,
+  normalizePresentation,
 } from './highlight-presentation';
 
 describe('resolveHighlightPresentation', () => {
@@ -44,5 +46,26 @@ describe('applyPresentationToDisplaySource', () => {
 
   it('leaves as_captured unchanged', () => {
     expect(applyPresentationToDisplaySource('hello', { format: 'as_captured' })).toBe('hello');
+  });
+});
+
+describe('wrapAsMarkdownCodeFence', () => {
+  it('wraps plain code', () => {
+    expect(wrapAsMarkdownCodeFence('int x;', 'cpp')).toBe('```cpp\nint x;\n```');
+  });
+
+  it('does not double-fence', () => {
+    const already = '```js\nconst a = 1;\n```';
+    expect(wrapAsMarkdownCodeFence(already, 'js')).toBe(already);
+  });
+});
+
+describe('normalizePresentation', () => {
+  it('maps legacy plain to as_captured', () => {
+    expect(normalizePresentation({ format: 'plain' })).toEqual({ format: 'as_captured' });
+  });
+
+  it('drops unknown formats', () => {
+    expect(normalizePresentation({ format: 'nope' })).toBeUndefined();
   });
 });

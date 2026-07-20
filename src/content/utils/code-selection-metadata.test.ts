@@ -5,7 +5,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   detectCodeSelectionMetadata,
   extractCodeLanguage,
-  wrapAsMarkdownCodeFence,
 } from './code-selection-metadata';
 
 describe('extractCodeLanguage', () => {
@@ -48,16 +47,5 @@ describe('detectCodeSelectionMetadata', () => {
     const range = document.createRange();
     range.selectNodeContents(p);
     expect(detectCodeSelectionMetadata(range)).toBeUndefined();
-  });
-});
-
-describe('wrapAsMarkdownCodeFence', () => {
-  it('wraps plain code', () => {
-    expect(wrapAsMarkdownCodeFence('int x;', 'cpp')).toBe('```cpp\nint x;\n```');
-  });
-
-  it('does not double-fence', () => {
-    const already = '```js\nconst a = 1;\n```';
-    expect(wrapAsMarkdownCodeFence(already, 'js')).toBe(already);
   });
 });

@@ -8,16 +8,15 @@ import {
   normalizeHighlightTags,
   sanitizeHighlightNote,
 } from '@/shared/utils/highlight-metadata';
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { normalizePresentation } from '@/shared/utils/highlight-presentation';
 
 export interface SupabaseHighlightMetadata {
   notes?: string;
   tags?: string[];
   sourceKind?: 'code';
   language?: string;
-  presentation?: {
-    format: 'as_captured' | 'plain' | 'code' | 'bullets' | 'numbered';
-    language?: string;
-  };
+  presentation?: HighlightPresentation;
 }
 
 export interface SupabaseHighlightRow {
@@ -46,19 +45,7 @@ export function serializeHighlightMetadataForCloud(
     typeof metadata.language === 'string' && metadata.language.trim()
       ? metadata.language.trim().slice(0, 32).toLowerCase()
       : undefined;
-  const presentation = metadata.presentation?.format
-    ? {
-        format: metadata.presentation.format,
-        ...(metadata.presentation.language
-          ? {
-              language: String(metadata.presentation.language)
-                .trim()
-                .slice(0, 32)
-                .toLowerCase(),
-            }
-          : {}),
-      }
-    : undefined;
+  const presentation = normalizePresentation(metadata.presentation);
 
   if (!notes && (!tags || tags.length === 0) && !sourceKind && !presentation) {
     return null;
