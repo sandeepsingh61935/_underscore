@@ -38,11 +38,13 @@ export const MessageResponseSchema = z.discriminatedUnion('success', [
     success: z.literal(false),
     error: z.string(),
     code: z.string().optional(),
+    /** Milliseconds until the caller may retry, when the error is a rate limit. */
+    retryAfterMs: z.number().optional(),
   }),
 ]);
 export type MessageResponse<T = unknown> =
   | { success: true; data: T }
-  | { success: false; error: string; code?: string };
+  | { success: false; error: string; code?: string; retryAfterMs?: number };
 
 /**
  * Type-safe message handler function
@@ -88,8 +90,20 @@ export const SYNC_LIBRARY = 'SYNC_LIBRARY' as const;
 /** Fetch highlights formatted for scoped copy/export (library, domain, section, highlight). */
 export const GET_EXPORTABLE_HIGHLIGHTS = 'GET_EXPORTABLE_HIGHLIGHTS' as const;
 
-/** Update user notes/tags on a highlight (popup and web app). */
+/** Update user notes/tags/presentation on a highlight (popup and web app). Quote text is immutable. */
 export const UPDATE_HIGHLIGHT_METADATA = 'UPDATE_HIGHLIGHT_METADATA' as const;
+
+/** List normalized user labels for autocomplete (extension popup / web). */
+export const GET_USER_TAGS = 'GET_USER_TAGS' as const;
+
+/**
+ * Search highlights by text/notes/labels/url, scoped to the whole library,
+ * a domain, or a domain+section. Payload: { query, domain?, section?, fields? }.
+ * Response data: { highlights: Array<DomainHighlightSummary & { matchedFields }> }
+ * with `createdAt` serialized as an ISO string over IPC (mirrors
+ * GET_HIGHLIGHTS_BY_DOMAIN's date serialization).
+ */
+export const SEARCH_HIGHLIGHTS = 'SEARCH_HIGHLIGHTS' as const;
 
 /** Auth IPC channels */
 export const AUTH_STATE_CHANGED = 'AUTH_STATE_CHANGED' as const;
