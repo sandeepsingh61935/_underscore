@@ -1,7 +1,6 @@
 /**
- * Overlay paint styles — underscore only (no background wash).
- * Light surface = page is light → darker stroke.
- * Dark surface = page is dark → brighter stroke.
+ * Overlay paint shell — stroke color is set inline (invert of page bg).
+ * No background wash; no per-role color packs on the page.
  */
 
 #underscore-paint-root {
@@ -21,83 +20,6 @@
   border-radius: 0;
   box-sizing: border-box;
   background-color: transparent;
-}
-
-/* --- yellow --- */
-.underscore-paint-rect[data-color='yellow'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #c49000;
-}
-.underscore-paint-rect[data-color='yellow'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #ffe082;
-}
-
-/* --- orange --- */
-.underscore-paint-rect[data-color='orange'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #e65100;
-}
-.underscore-paint-rect[data-color='orange'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #ffcc80;
-}
-
-/* --- blue --- */
-.underscore-paint-rect[data-color='blue'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #0d47a1;
-}
-.underscore-paint-rect[data-color='blue'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #90caf9;
-}
-
-/* --- green --- */
-.underscore-paint-rect[data-color='green'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #1b5e20;
-}
-.underscore-paint-rect[data-color='green'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #a5d6a7;
-}
-
-/* --- purple --- */
-.underscore-paint-rect[data-color='purple'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #4a148c;
-}
-.underscore-paint-rect[data-color='purple'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #ce93d8;
-}
-
-/* --- pink --- */
-.underscore-paint-rect[data-color='pink'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #880e4f;
-}
-.underscore-paint-rect[data-color='pink'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #f48fb1;
-}
-
-/* --- teal --- */
-.underscore-paint-rect[data-color='teal'][data-surface='light'] {
-  box-shadow: inset 0 -2.5px 0 #004d40;
-}
-.underscore-paint-rect[data-color='teal'][data-surface='dark'] {
-  box-shadow: inset 0 -2.5px 0 #80cbc4;
-}
-
-/* Fallback when surface missing (treat as light page) */
-.underscore-paint-rect[data-color='yellow']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #c49000;
-}
-.underscore-paint-rect[data-color='orange']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #e65100;
-}
-.underscore-paint-rect[data-color='blue']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #0d47a1;
-}
-.underscore-paint-rect[data-color='green']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #1b5e20;
-}
-.underscore-paint-rect[data-color='purple']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #4a148c;
-}
-.underscore-paint-rect[data-color='pink']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #880e4f;
-}
-.underscore-paint-rect[data-color='teal']:not([data-surface]) {
-  box-shadow: inset 0 -2.5px 0 #004d40;
+  /* Fallback if inline box-shadow missing */
+  box-shadow: inset 0 -2.5px 0 #111111;
 }

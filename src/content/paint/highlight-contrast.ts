@@ -1,18 +1,19 @@
 /**
  * @file highlight-contrast.ts
- * @description Binary light/dark overlay packs from sampled page background.
+ * @description Underscore stroke from inverted page background (+ contrast floor).
  */
-
-import type { ColorRole } from '@/shared/schemas/highlight-schema';
-import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
-
-export type SurfaceTone = 'light' | 'dark';
 
 export interface Rgb {
   r: number;
   g: number;
   b: number;
 }
+
+const DEFAULT_BG: Rgb = { r: 255, g: 255, b: 255 };
+const STROKE_ON_LIGHT = '#111111';
+const STROKE_ON_DARK = '#f5f5f5';
+/** WCAG-ish floor; below this invert is treated as unusable (e.g. mid-gray). */
+const MIN_CONTRAST_RATIO = 3;
 
 /** Relative luminance (sRGB), 0–1. */
 export function relativeLuminance({ r, g, b }: Rgb): number {
@@ -67,27 +68,40 @@ export function parseCssColor(input: string): Rgb | null {
   return null;
 }
 
-/** True when background is light enough to need dark-tint wash. */
+export function formatRgb({ r, g, b }: Rgb): string {
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** Per-channel invert. */
+export function invertRgb({ r, g, b }: Rgb): Rgb {
+  return { r: 255 - r, g: 255 - g, b: 255 - b };
+}
+
+/** WCAG 2 contrast ratio between two sRGB colors. */
+export function contrastRatio(a: Rgb, b: Rgb): number {
+  const l1 = relativeLuminance(a);
+  const l2 = relativeLuminance(b);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 export function isLightBackground(rgb: Rgb, threshold = 0.55): boolean {
   return relativeLuminance(rgb) >= threshold;
 }
 
-export function surfaceToneFromBackground(cssColor: string | null | undefined): SurfaceTone {
-  const rgb = cssColor ? parseCssColor(cssColor) : null;
-  if (!rgb) return 'light';
-  return isLightBackground(rgb) ? 'light' : 'dark';
-}
-
 /**
- * Resolve data attributes for overlay CSS packs.
- * Packs live in highlight-paint.css as [data-color][data-surface].
+ * Underscore stroke color from sampled page background.
+ * 1) Per-channel invert of bg
+ * 2) If contrast vs bg is too low (mid-gray case), snap to near-black or near-white
  */
-export function resolveOverlaySurface(
-  colorRole: string,
-  backgroundCss: string | null | undefined
-): { color: ColorRole; surface: SurfaceTone } {
-  return {
-    color: resolveColorRoleForPaint(colorRole),
-    surface: surfaceToneFromBackground(backgroundCss),
-  };
+export function resolveUnderscoreStroke(backgroundCss: string | null | undefined): string {
+  const bg = (backgroundCss ? parseCssColor(backgroundCss) : null) ?? DEFAULT_BG;
+  const inverted = invertRgb(bg);
+
+  if (contrastRatio(inverted, bg) >= MIN_CONTRAST_RATIO) {
+    return formatRgb(inverted);
+  }
+
+  return isLightBackground(bg) ? STROKE_ON_LIGHT : STROKE_ON_DARK;
 }

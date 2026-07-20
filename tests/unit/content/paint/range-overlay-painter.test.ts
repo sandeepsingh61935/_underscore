@@ -63,8 +63,8 @@ describe('RangeOverlayPainter', () => {
     const rects = root!.querySelectorAll('.underscore-paint-rect');
     expect(rects.length).toBeGreaterThan(0);
     expect(rects[0]?.getAttribute('data-highlight-id')).toBe('hl-1');
-    expect(rects[0]?.getAttribute('data-color')).toBe('yellow');
-    expect(rects[0]?.getAttribute('data-surface')).toMatch(/light|dark/);
+    const shadow = (rects[0] as HTMLElement).style.boxShadow;
+    expect(shadow).toMatch(/inset 0 -2\.5px 0/);
     expect(painter.paintedCount).toBe(1);
   });
 

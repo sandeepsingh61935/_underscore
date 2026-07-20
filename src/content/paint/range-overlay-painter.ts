@@ -2,12 +2,12 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Samples page background near the range and applies light/dark CSS packs.
- * Geometry API feeds exterior delete-icon placement.
+ * Underscore stroke = invert of sampled page background (with contrast floor).
+ * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
 import type { FirstLineEdges, HighlightPainter } from './highlight-painter';
-import { resolveOverlaySurface, type SurfaceTone } from './highlight-contrast';
+import { resolveUnderscoreStroke } from './highlight-contrast';
 import { getFirstLineEdgeRects } from './first-line-geometry';
 import { sampleBackgroundNearRange } from './sample-page-background';
 
@@ -15,11 +15,11 @@ import type { ColorRole } from '@/shared/schemas/highlight-schema';
 import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 
 const ROOT_ID = 'underscore-paint-root';
+const STROKE_THICKNESS_PX = 2.5;
 
 interface OverlayEntry {
   id: string;
   colorRole: ColorRole;
-  surface: SurfaceTone;
   ranges: Range[];
   elements: HTMLElement[];
 }
@@ -57,16 +57,13 @@ export class RangeOverlayPainter implements HighlightPainter {
     const liveRanges = ranges.filter((r) => r && !r.collapsed);
     if (liveRanges.length === 0) return;
 
-    const bg = sampleBackgroundNearRange(liveRanges[0]!);
-    const { surface } = resolveOverlaySurface(role, bg);
-
     const elements: HTMLElement[] = [];
     for (const range of liveRanges) {
-      elements.push(...this.createRectsForRange(id, role, surface, range));
+      elements.push(...this.createRectsForRange(id, range));
     }
     if (elements.length === 0) return;
 
-    this.entries.set(id, { id, colorRole: role, surface, ranges: liveRanges, elements });
+    this.entries.set(id, { id, colorRole: role, ranges: liveRanges, elements });
   }
 
   unpaint(id: string): void {
@@ -172,12 +169,7 @@ export class RangeOverlayPainter implements HighlightPainter {
     return root;
   }
 
-  private createRectsForRange(
-    id: string,
-    colorRole: ColorRole,
-    surface: SurfaceTone,
-    range: Range
-  ): HTMLElement[] {
+  private createRectsForRange(id: string, range: Range): HTMLElement[] {
     const root = this.ensureRoot();
     let rects: DOMRectList | ArrayLike<DOMRect>;
     try {
@@ -185,6 +177,10 @@ export class RangeOverlayPainter implements HighlightPainter {
     } catch {
       return [];
     }
+
+    const bg = sampleBackgroundNearRange(range);
+    const stroke = resolveUnderscoreStroke(bg);
+
     const created: HTMLElement[] = [];
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
@@ -196,8 +192,7 @@ export class RangeOverlayPainter implements HighlightPainter {
       const el = document.createElement('div');
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
-      el.dataset['color'] = colorRole;
-      el.dataset['surface'] = surface;
+      el.style.boxShadow = `inset 0 -${STROKE_THICKNESS_PX}px 0 ${stroke}`;
       el.style.left = `${rect.left + scrollX}px`;
       el.style.top = `${rect.top + scrollY}px`;
       el.style.width = `${rect.width}px`;
@@ -235,16 +230,11 @@ export class RangeOverlayPainter implements HighlightPainter {
     for (const entry of this.entries.values()) {
       for (const el of entry.elements) el.remove();
 
-      // Re-sample background on relayout (scroll/resize / theme may have changed).
-      const sampleRange = entry.ranges[0];
-      const bg = sampleRange ? sampleBackgroundNearRange(sampleRange) : 'rgb(255, 255, 255)';
-      const { surface } = resolveOverlaySurface(entry.colorRole, bg);
-      entry.surface = surface;
-
       const next: HTMLElement[] = [];
       for (const range of entry.ranges) {
         if (!range || range.collapsed) continue;
-        next.push(...this.createRectsForRange(entry.id, entry.colorRole, surface, range));
+        // Re-sample + re-invert on relayout (bg may change with theme/scroll sections).
+        next.push(...this.createRectsForRange(entry.id, range));
       }
       entry.elements = next;
     }
