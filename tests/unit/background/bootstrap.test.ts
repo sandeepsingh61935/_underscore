@@ -10,8 +10,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { initializeBackground } from '@/background/bootstrap';
 import { Container } from '@/background/di/container';
-import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
+import { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 
 vi.stubEnv('VITE_SUPABASE_URL', 'https://mock.supabase.co');
 vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
@@ -36,10 +36,13 @@ describe('Background Bootstrap Initialization', () => {
 
     // Exercise the two factory paths that previously used require() in the
     // SW-init-scoped registration file.
-    const localRepo = container.resolve<IndexedDBHighlightRepository>('localRepository' as any);
-    expect(localRepo).toBeInstanceOf(IndexedDBHighlightRepository);
+    const localRepo = container.resolve<ScopedHighlightRepository>('localRepository' as never);
+    expect(localRepo).toBeInstanceOf(ScopedHighlightRepository);
 
     const highlightRepo = container.resolve<DualWriteRepository>('highlightRepository');
     expect(highlightRepo).toBeInstanceOf(DualWriteRepository);
+
+    // Auth storage path must leave a defined active scope (basic when logged out in tests)
+    expect(localRepo.getActiveScope()).toMatch(/^(basic|pro)$/);
   });
 });

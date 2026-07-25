@@ -83,7 +83,6 @@ export async function initializeBackground(): Promise<Container> {
     };
 
     await migrateLegacyVaultToBasic(logger);
-    await repositoryFacade.initialize();
 
     const authStorageDeps = {
         scopedRepository: scopedHighlightRepository,
@@ -116,21 +115,33 @@ export async function initializeBackground(): Promise<Container> {
         userId: authManager.currentUser?.id
     });
 
-    // Auto-connect if already logged in
+    // Scope + facade load MUST complete before IPC handlers are registered
+    // (background.ts continues after this returns). Fire-and-forget SIGNED_IN
+    // left Pro scope activation racing the first highlight write/restore.
     const currentUser = authManager.currentUser;
     if (currentUser) {
         logger.info('[BOOTSTRAP] User authenticated on startup, activating Pro storage', { userId: currentUser.id });
         void connectionManager.connect(currentUser.id).catch(err => {
             logger.error('[BOOTSTRAP] Failed to connect realtime on startup', err);
         });
-        void handleAuthStorageEvent({ type: 'SIGNED_IN', userId: currentUser.id }, authStorageDeps).catch(err => {
+        try {
+            await handleAuthStorageEvent(
+                { type: 'SIGNED_IN', userId: currentUser.id },
+                authStorageDeps,
+            );
+        } catch (err) {
             logger.error('[BOOTSTRAP] Auth storage sign-in failed on startup', err as Error);
-        });
+            // Fallback: still open pro scope + load local cache so restore works offline
+            await scopedHighlightRepository.activateScope('pro');
+            scopedTagRepository.activateScope('pro');
+            await repositoryFacade.initialize();
+        }
         configureLlmKeyTier(true);
     } else {
         logger.warn('[BOOTSTRAP] No authenticated user on startup, using Basic storage');
         await scopedHighlightRepository.activateScope('basic');
         scopedTagRepository.activateScope('basic');
+        await repositoryFacade.initialize();
         configureLlmKeyTier(false);
     }
 
