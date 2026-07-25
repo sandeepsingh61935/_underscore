@@ -43,6 +43,7 @@ export function ScopeAskPanel({
   const submitDisabled = inputDisabled || !question.trim() || usableHighlights.length === 0;
   const savedQueries = artifacts.getQueries();
   const answerText = query.chunks;
+  const noModelConfigured = provider === null;
 
   usePersistLlmArtifactOnDone({
     status: query.status,
@@ -164,7 +165,9 @@ export function ScopeAskPanel({
         <p className="u-mono" style={{ margin: 0, fontSize: 10, color: 'var(--ink-3)', letterSpacing: '0.08em' }}>
           {usableHighlights.length === 0
             ? 'Wait for highlight text to load before asking.'
-            : `Grounded to this ${scopeKind} only · ${usableHighlights.length} highlights`}
+            : noModelConfigured
+              ? 'Set a model in Settings → Configure AI providers first.'
+              : `Grounded to this ${scopeKind} only · ${usableHighlights.length} highlights`}
         </p>
       </form>
 

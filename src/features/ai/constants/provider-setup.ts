@@ -1,52 +1,50 @@
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
+import { IN_APP_LLM_PROVIDER_ORDER } from '@/shared/llm/in-app-providers';
 
 export interface ProviderMeta {
   label: string;
   shortLabel: string;
   keyPlaceholder?: string;
-  subscriptionNote?: string;
+  /** One-line context under the title — keep under ~50 chars. */
+  blurb?: string;
 }
 
-/** User-facing providers (MiniMax kept in type union for legacy configs only). */
-export const SETUP_PROVIDERS: ReadonlyArray<ProviderName> = [
-  'anthropic',
-  'openai',
-  'gemini',
-  'cursor',
-  'ollama',
-  'openrouter',
-];
+/**
+ * In-app model providers for Ask / Summarize (BYOK or local Ollama).
+ * Agent apps (Cursor, Claude Desktop, …) are Settings → Connect to AI only.
+ */
+export const SETUP_PROVIDERS: ReadonlyArray<ProviderName> = IN_APP_LLM_PROVIDER_ORDER;
 
 export const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
   anthropic: {
     label: 'Anthropic',
     shortLabel: 'Claude',
-    keyPlaceholder: 'sk-ant-...',
-    subscriptionNote: 'Claude Pro is separate from API billing. Use a key from console.anthropic.com.',
+    keyPlaceholder: 'sk-ant-…',
+    blurb: 'console.anthropic.com',
   },
   openai: {
     label: 'OpenAI',
     shortLabel: 'GPT',
-    keyPlaceholder: 'sk-...',
-    subscriptionNote: 'ChatGPT Plus is separate from API billing. Use a key from platform.openai.com.',
+    keyPlaceholder: 'sk-…',
+    blurb: 'platform.openai.com',
   },
   gemini: {
     label: 'Google',
     shortLabel: 'Gemini',
-    keyPlaceholder: 'AIza...',
-  },
-  cursor: {
-    label: 'Cursor',
-    shortLabel: 'Cursor',
-    keyPlaceholder: 'key_...',
+    keyPlaceholder: 'AIza…',
+    blurb: 'aistudio.google.com',
   },
   openrouter: {
     label: 'OpenRouter',
     shortLabel: 'OpenRouter',
-    keyPlaceholder: 'sk-or-...',
+    keyPlaceholder: 'sk-or-…',
+    blurb: 'Key required · free models use $0 credits',
   },
-  ollama: { label: 'Ollama', shortLabel: 'Local' },
-  minimax: { label: 'MiniMax', shortLabel: 'MiniMax', keyPlaceholder: 'eyJ...' },
+  ollama: {
+    label: 'Ollama',
+    shortLabel: 'Local',
+    blurb: 'Runs on this machine',
+  },
 };
 
 export const CUSTOM_MODEL_ID = '__custom__';
@@ -56,10 +54,9 @@ export function providerStatusLabel(
   configured: boolean | null,
 ): string {
   if (configured === null) return '…';
-  if (provider === 'ollama') return configured ? 'Local' : 'Offline';
-  if (provider === 'openrouter' && configured) return 'Ready';
-  if (configured) return 'Connected';
-  return 'Needs key';
+  if (provider === 'ollama') return configured ? 'On' : 'Off';
+  if (configured) return 'On';
+  return 'Off';
 }
 
 export function formatModelDisplayName(modelId: string): string {

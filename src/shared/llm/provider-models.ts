@@ -30,18 +30,9 @@ export const PROVIDER_MODEL_CATALOG: Record<ProviderName, ProviderModelCatalog> 
     models: [],
   },
   openrouter: {
-    defaultModelId: 'openrouter/free',
+    // Concrete free model — "openrouter/free" is not a reliable chat model id.
+    defaultModelId: 'meta-llama/llama-3.3-70b-instruct:free',
     models: [],
-  },
-  cursor: {
-    defaultModelId: 'composer-2',
-    models: [],
-  },
-  minimax: {
-    defaultModelId: 'MiniMax-Text-01',
-    models: [
-      { id: 'MiniMax-Text-01', label: 'MiniMax Text 01' },
-    ],
   },
   ollama: {
     defaultModelId: 'llama3.2',
@@ -54,9 +45,6 @@ export function getDefaultModelId(provider: ProviderName): string {
 }
 
 export function getProviderModels(provider: ProviderName): ProviderModelOption[] {
-  if (provider === 'openrouter') {
-    return PROVIDER_MODEL_CATALOG.openrouter.models;
-  }
   return PROVIDER_MODEL_CATALOG[provider].models;
 }
 

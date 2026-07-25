@@ -72,7 +72,7 @@ describe('Gemini health check (no window)', () => {
       key: 'AIza-test-key',
     });
     expect(setResult).toEqual({ success: true, data: { ok: true } });
-    expect(localStore['llm.basic.gemini.key']).toBe('AIza-test-key');
+    expect(localStore['llm.gemini.key']).toBe('AIza-test-key');
   });
 
   it('falls back to local storage when session writes fail in browser context', async () => {
@@ -127,7 +127,7 @@ describe('Gemini health check (no window)', () => {
       key: 'AIza-test-key',
     });
     expect(setResult).toEqual({ success: true, data: { ok: true } });
-    expect(localStore['llm.basic.gemini.key']).toBe('AIza-test-key');
+    expect(localStore['llm.gemini.key']).toBe('AIza-test-key');
 
     const healthResult = await bus.handlers.get('IPC_AI_HEALTH_CHECK')!({
       provider: 'gemini',
@@ -184,7 +184,7 @@ describe('Gemini health check (no window)', () => {
       key: 'AIza-test-key',
     });
     expect(setResult).toEqual({ success: true, data: { ok: true } });
-    expect(localStore['llm.basic.gemini.key']).toBe('AIza-test-key');
+    expect(localStore['llm.gemini.key']).toBe('AIza-test-key');
 
     const healthResult = await bus.handlers.get('IPC_AI_HEALTH_CHECK')!({
       provider: 'gemini',

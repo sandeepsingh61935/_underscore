@@ -4,8 +4,8 @@ import { getDefaultModelId } from '@/shared/llm/provider-models';
 import { isOpenRouterModelFree } from '@/shared/llm/openrouter-models';
 
 interface OpenRouterProviderConfig {
-  /** Optional for free-tier models. */
-  apiKey?: string;
+  /** Required for all models — free means $0 credits, not keyless auth. */
+  apiKey: string;
   model?: string;
   siteUrl?: string;
   appName?: string;
@@ -19,8 +19,9 @@ const OPENROUTER_ATTRIBUTION = {
 };
 
 /**
- * OpenRouter (OpenAI-compatible). Free models work without an API key;
- * paid models require one.
+ * OpenRouter (OpenAI-compatible).
+ * All chat calls need an API key (create free at openrouter.ai/keys).
+ * Models tagged `:free` do not consume credits once authenticated.
  */
 export class OpenRouterProvider implements ILLMService {
   readonly providerName = 'openrouter' as const;
@@ -33,23 +34,29 @@ export class OpenRouterProvider implements ILLMService {
 
   private readonly delegate: ILLMService;
   private readonly model: string;
-  private readonly apiKey?: string;
+  private readonly apiKey: string;
   private readonly extraHeaders: Record<string, string>;
 
   constructor(config: OpenRouterProviderConfig) {
+    const key = config.apiKey?.trim();
+    if (!key) {
+      throw new Error(
+        'OpenRouter API key required (free at openrouter.ai/keys). '
+        + 'Free models do not charge credits but still need a key.',
+      );
+    }
     this.model = config.model ?? getDefaultModelId('openrouter');
-    this.apiKey = config.apiKey?.trim() || undefined;
+    this.apiKey = key;
     this.extraHeaders = {
       'HTTP-Referer': config.siteUrl ?? OPENROUTER_ATTRIBUTION.siteUrl,
       'X-Title': config.appName ?? OPENROUTER_ATTRIBUTION.appName,
     };
 
     this.delegate = new OpenAIProvider({
-      apiKey: this.apiKey ?? '',
+      apiKey: this.apiKey,
       apiBase: OPENROUTER_BASE,
       model: this.model,
       extraHeaders: this.extraHeaders,
-      omitAuthWhenKeyless: !this.apiKey,
     });
   }
 

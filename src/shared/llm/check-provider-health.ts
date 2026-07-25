@@ -1,6 +1,5 @@
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
-import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
 
 interface CheckOptions {
   apiKey?: string;
@@ -62,29 +61,26 @@ export async function checkProviderHealthInBrowser(
         }),
       });
     }
-    case 'cursor': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      const url = 'https://api.cursor.com/v1/models';
-      return fetchHealth(url, model, {
-        headers: { authorization: `Basic ${btoa(`${apiKey}:`)}` },
-      });
-    }
     case 'openrouter': {
-      const needsKey = openRouterModelRequiresKey(model);
+      // Free models still need a key — OpenRouter API has no keyless chat path.
       const apiKey = options.apiKey?.trim();
-      if (needsKey && !apiKey) return { ok: false, model, error: 'API key required for paid models' };
+      if (!apiKey) {
+        return {
+          ok: false,
+          model,
+          error: 'OpenRouter API key required (free at openrouter.ai/keys). Free models do not charge credits.',
+        };
+      }
       const apiBase = options.apiBase ?? 'https://openrouter.ai/api/v1';
       const url = `${apiBase}/chat/completions`;
-      const headers: Record<string, string> = {
-        'content-type': 'application/json',
-        'HTTP-Referer': 'https://underscore.app',
-        'X-Title': 'Underscore Highlighter',
-      };
-      if (apiKey) headers['authorization'] = `Bearer ${apiKey}`;
       return fetchHealth(url, model, {
         method: 'POST',
-        headers,
+        headers: {
+          'content-type': 'application/json',
+          'HTTP-Referer': 'https://underscore.app',
+          'X-Title': 'Underscore Highlighter',
+          authorization: `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
           model,
           max_tokens: 1,
@@ -92,20 +88,34 @@ export async function checkProviderHealthInBrowser(
         }),
       });
     }
-    case 'minimax': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      return { ok: true, model };
-    }
     case 'ollama': {
       const apiBase = options.apiBase ?? 'http://localhost:11434';
       const url = `${apiBase.replace(/\/$/, '')}/api/tags`;
-      return fetchHealth(url, model);
+      return checkOllamaModelInstalled(url, model);
     }
     default: {
       const exhaustive: never = provider;
       return { ok: false, model: 'unknown', error: `Unknown provider: ${String(exhaustive)}` };
     }
+  }
+}
+
+/** Ollama has no auth failure mode — the real signal is whether the selected model is installed. */
+async function checkOllamaModelInstalled(tagsUrl: string, model: string): Promise<HealthCheckResult> {
+  try {
+    const response = await fetch(tagsUrl);
+    if (!response.ok) return { ok: false, model, error: `HTTP ${response.status}` };
+    const json = await response.json() as { models?: Array<{ name: string }> };
+    const names = (json.models ?? []).map(m => m.name);
+    if (names.length === 0) {
+      return { ok: false, model, error: 'No models installed — run ollama pull <model>' };
+    }
+    if (!names.includes(model)) {
+      return { ok: false, model, error: `Model not installed — run ollama pull ${model}` };
+    }
+    return { ok: true, model };
+  } catch (err) {
+    return { ok: false, model, error: (err as Error).message };
   }
 }
 

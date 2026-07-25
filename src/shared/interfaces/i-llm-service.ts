@@ -53,14 +53,13 @@ export interface HealthCheckResult {
   error?: string;
 }
 
+/** In-app chat backends only (BYOK + local). Agent hosts use MCP, not this union. */
 export type ProviderName =
   | 'anthropic'
   | 'ollama'
   | 'gemini'
   | 'openai'
-  | 'openrouter'
-  | 'cursor'
-  | 'minimax';
+  | 'openrouter';
 
 export interface ILLMService {
   readonly providerName: ProviderName;

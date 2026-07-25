@@ -37,6 +37,8 @@ function makeKeyStore() {
     setActiveProvider: vi.fn(),
     getApiBase: vi.fn(async () => 'http://localhost:11434'),
     setApiBase: vi.fn(),
+    getOllamaVerified: vi.fn(async () => false),
+    setOllamaVerified: vi.fn(),
   };
 }
 
@@ -164,9 +166,24 @@ describe('registerAiHandlers', () => {
     });
   });
 
-  it('IPC_AI_GET_API_KEY_STATUS returns configured=true for ollama without a key', async () => {
+  it('IPC_AI_GET_API_KEY_STATUS returns configured=false for ollama until it has been verified', async () => {
     const bus = makeMessageBus();
     const keyStore = makeKeyStore();
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_GET_API_KEY_STATUS')!;
+    const result = await handler({ provider: 'ollama' });
+    expect(result).toEqual({
+      success: true,
+      data: { configured: false, model: 'claude-sonnet-4-6', apiBase: 'http://localhost:11434' },
+    });
+  });
+
+  it('IPC_AI_GET_API_KEY_STATUS returns configured=true for ollama once verified', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    (keyStore.getOllamaVerified as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     const registry = makeRegistry(new Map());
     registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
 

@@ -3,12 +3,14 @@
  */
 
 import type { ModeName } from '@/content/modes/mode-constants';
+import { isInAppLlmProvider, parseInAppLlmProvider } from '@/shared/llm/in-app-providers';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
 
 type ProviderName = import('@/shared/interfaces/i-llm-service').ProviderName;
 
 const ACTIVE_PROVIDER_KEY = 'llm.activeProvider';
 const OLLAMA_API_BASE_KEY = 'llm.ollama.apiBase';
+const OLLAMA_VERIFIED_KEY = 'llm.ollama.verified';
 const DEFAULT_OLLAMA_BASE = 'http://localhost:11434';
 
 function keyStorageKey(provider: ProviderName): string {
@@ -48,12 +50,33 @@ export class LLMKeyStore {
   }
 
   async getActiveProvider(): Promise<ProviderName | null> {
+    await this.scrubLegacyAgentHostConfig();
     const r = await chrome.storage.local.get(ACTIVE_PROVIDER_KEY);
-    const stored = r[ACTIVE_PROVIDER_KEY] as ProviderName | undefined;
-    return stored ?? null;
+    const parsed = parseInAppLlmProvider(r[ACTIVE_PROVIDER_KEY]);
+    // Drop legacy agent-host ids (cursor, minimax, …) so Ask never targets them.
+    if (r[ACTIVE_PROVIDER_KEY] != null && parsed === null) {
+      await chrome.storage.local.remove(ACTIVE_PROVIDER_KEY);
+    }
+    return parsed;
+  }
+
+  /**
+   * Remove Cursor/MiniMax keys left from agent-host experiments so Ask cannot
+   * accidentally treat them as OpenAI-compatible backends.
+   */
+  async scrubLegacyAgentHostConfig(): Promise<void> {
+    await chrome.storage.local.remove([
+      'llm.cursor.key',
+      'llm.cursor.model',
+      'llm.minimax.key',
+      'llm.minimax.model',
+    ]);
   }
 
   async setActiveProvider(provider: ProviderName): Promise<void> {
+    if (!isInAppLlmProvider(provider)) {
+      throw new Error('LLMKeyStore: provider is not a valid in-app LLM backend');
+    }
     await chrome.storage.local.set({ [ACTIVE_PROVIDER_KEY]: provider });
   }
 
@@ -68,5 +91,15 @@ export class LLMKeyStore {
     const trimmed = apiBase.trim();
     if (!trimmed) throw new Error('LLMKeyStore: apiBase cannot be empty');
     await chrome.storage.local.set({ [OLLAMA_API_BASE_KEY]: trimmed.replace(/\/$/, '') });
+  }
+
+  /** True only once a save has followed a successful connection check — not just "reachable at some point". */
+  async getOllamaVerified(): Promise<boolean> {
+    const r = await chrome.storage.local.get(OLLAMA_VERIFIED_KEY);
+    return (r[OLLAMA_VERIFIED_KEY] as boolean | undefined) ?? false;
+  }
+
+  async setOllamaVerified(verified: boolean): Promise<void> {
+    await chrome.storage.local.set({ [OLLAMA_VERIFIED_KEY]: verified });
   }
 }

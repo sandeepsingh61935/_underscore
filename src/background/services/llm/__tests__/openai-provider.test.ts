@@ -82,4 +82,35 @@ describe('OpenAIProvider', () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect((init.headers as Record<string, string>)['HTTP-Referer']).toBe('https://example.com');
   });
+
+  it('lets extraHeaders override Authorization when needed', async () => {
+    fetchMock.mockResolvedValueOnce(makeSseResponse(OPENAI_SSE));
+
+    const customAuth = 'Bearer custom-token';
+    const provider = new OpenAIProvider({
+      apiKey: 'sk-ignored',
+      apiBase: 'https://example.com/v1',
+      extraHeaders: { authorization: customAuth },
+    });
+    await provider.streamChat(
+      { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 64 },
+      () => {},
+      new AbortController().signal,
+    );
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://example.com/v1/chat/completions');
+    expect((init.headers as Record<string, string>)['authorization']).toBe(customAuth);
+  });
+
+  it('surfaces HTTP failures with host and model for debugging', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('unauthorized', { status: 401 }));
+    const provider = new OpenAIProvider({ apiKey: 'sk-bad', model: 'gpt-4o-mini' });
+    await expect(
+      provider.streamChat(
+        { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 8 },
+        () => {},
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow(/LLM request failed \(401\) at api\.openai\.com model=gpt-4o-mini/);
+  });
 });

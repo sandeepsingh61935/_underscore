@@ -35,7 +35,12 @@ export async function handleStreamChat(
     );
     if (!disconnected) port.postMessage({ type: 'DONE', payload: result satisfies LLMResult });
   } catch (err) {
-    if (!disconnected) port.postMessage({ type: 'ERROR', payload: { message: (err as Error).message } });
+    if (!disconnected) {
+      const base = (err as Error).message || 'unknown error';
+      // Tag the in-app backend so 401s are not mistaken for agent-host (Cursor) setup.
+      const message = `[${provider.providerName}] ${base}`;
+      port.postMessage({ type: 'ERROR', payload: { message } });
+    }
     throw err;
   }
 }

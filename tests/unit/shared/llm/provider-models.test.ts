@@ -4,7 +4,7 @@ import { getDefaultModelId, resolveProviderModel } from '@/shared/llm/provider-m
 
 describe('provider-models', () => {
   it('returns catalog default per provider', () => {
-    expect(getDefaultModelId('openrouter')).toBe('openrouter/free');
+    expect(getDefaultModelId('openrouter')).toBe('meta-llama/llama-3.3-70b-instruct:free');
     expect(getDefaultModelId('anthropic')).toBe('claude-sonnet-4-6');
   });
 

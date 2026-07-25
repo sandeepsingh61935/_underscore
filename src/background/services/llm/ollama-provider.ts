@@ -21,7 +21,7 @@ interface OllamaChatChunk {
 }
 
 const DEFAULT_API_BASE = 'http://localhost:11434';
-const DEFAULT_MODEL = 'llama3.1';
+const DEFAULT_MODEL = 'llama3.2';
 
 export class OllamaProvider implements ILLMService {
   readonly providerName = 'ollama' as const;
@@ -110,9 +110,15 @@ export class OllamaProvider implements ILLMService {
   async healthCheck(): Promise<HealthCheckResult> {
     try {
       const response = await fetch(`${this.apiBase}/api/tags`, { method: 'GET' });
-      return response.ok
-        ? { ok: true, model: this.model }
-        : { ok: false, model: this.model, error: `HTTP ${response.status}` };
+      if (!response.ok) {
+        return { ok: false, model: this.model, error: `HTTP ${response.status}` };
+      }
+      const json = await response.json() as { models?: Array<{ name: string }> };
+      const names = (json.models ?? []).map(m => m.name);
+      if (!names.includes(this.model)) {
+        return { ok: false, model: this.model, error: `Model not installed — run ollama pull ${this.model}` };
+      }
+      return { ok: true, model: this.model };
     } catch (err) {
       return { ok: false, model: this.model, error: (err as Error).message };
     }

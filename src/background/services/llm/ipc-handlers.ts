@@ -8,7 +8,6 @@ import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service
 import { buildMarkedPageContext } from '@/shared/llm/build-page-context';
 import { buildHighlightExcerpts } from '@/shared/llm/highlight-excerpts';
 import { fetchProviderModels } from '@/shared/llm/model-discovery';
-import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
 import {
   IPC_AI_CHAT,
   IPC_AI_HEALTH_CHECK,
@@ -21,6 +20,7 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '@/shared/schemas/message-schemas';
+import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
 import { canConfigureAiProviders, canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 
@@ -99,11 +99,8 @@ interface ListModelsPayload {
 }
 
 async function isProviderConfigured(store: LLMKeyStore, provider: ProviderName): Promise<boolean> {
-  if (provider === 'ollama') return true;
-  if (provider === 'openrouter') {
-    const model = await store.getModel(provider);
-    if (!openRouterModelRequiresKey(model)) return true;
-  }
+  if (provider === 'ollama') return store.getOllamaVerified();
+  // OpenRouter free models still need an API key (auth ≠ billing).
   const key = await store.get(provider);
   return !!key;
 }
@@ -145,6 +142,9 @@ export function registerAiHandlers(args: RegisterArgs): void {
     if (denied) return denied;
     try {
       const { provider, key, model, apiBase } = raw as SetKeyPayload;
+      if (!isInAppLlmProvider(provider)) {
+        return createErrorResponse('Unknown in-app LLM provider');
+      }
       const trimmedKey = key?.trim();
       const trimmedModel = model?.trim();
       const trimmedBase = apiBase?.trim();
@@ -154,7 +154,11 @@ export function registerAiHandlers(args: RegisterArgs): void {
       const store = keyStore();
       if (trimmedKey) await store.set(provider, trimmedKey);
       if (trimmedModel) await store.setModel(provider, trimmedModel);
-      if (provider === 'ollama' && trimmedBase) await store.setApiBase('ollama', trimmedBase);
+      if (provider === 'ollama') {
+        if (trimmedBase) await store.setApiBase('ollama', trimmedBase);
+        // The UI only reaches save after a successful connect+model check, so this write is truthful.
+        await store.setOllamaVerified(true);
+      }
       await store.setActiveProvider(provider);
       if (trimmedKey || provider === 'ollama' || provider === 'openrouter') {
         registry.setConfigured(provider, true);
@@ -194,7 +198,10 @@ export function registerAiHandlers(args: RegisterArgs): void {
     try {
       const { provider, apiBase, model } = raw as HealthPayload;
       const registered = tryGetRegistered(registry, provider);
-      const result = registered
+      // A registered instance may hold a stale model/apiBase; when the UI
+      // passes a draft value, rebuild against it so verify tests what the
+      // user actually selected rather than the last-saved config.
+      const result = registered && apiBase === undefined && model === undefined
         ? await registered.healthCheck()
         : await (await buildProvider(provider, keyStore(), apiBase, model)).healthCheck();
       if (!result.ok) {

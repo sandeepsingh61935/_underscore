@@ -26,8 +26,7 @@ export default defineConfig({
       'https://api.anthropic.com/*',
       'https://api.openai.com/*',
       'https://openrouter.ai/*',
-      'https://api.cursor.com/*',
-      'https://api.minimax.chat/*',
+      // Local Ollama + MCP bridge only — agent hosts (Cursor, etc.) use MCP, not in-app LLM.
       'http://localhost:11434/*',
       'http://127.0.0.1:11434/*',
       'http://127.0.0.1:17342/*',

@@ -45,14 +45,13 @@ describe('LLMRegistry', () => {
     expect(registry.list()).toEqual([{ name: 'ollama', configured: true }]);
   });
 
-  it('registers multiple providers from the wider union', () => {
+  it('registers the standard in-app provider set', () => {
     registry.register(makeMockProvider('anthropic'));
     registry.register(makeMockProvider('openai'));
     registry.register(makeMockProvider('gemini'));
     registry.register(makeMockProvider('openrouter'));
-    registry.register(makeMockProvider('minimax'));
     registry.register(makeMockProvider('ollama'));
-    expect(registry.list()).toHaveLength(6);
+    expect(registry.list()).toHaveLength(5);
     expect(registry.get('openai').providerName).toBe('openai');
     expect(registry.get('gemini').providerName).toBe('gemini');
   });

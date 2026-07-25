@@ -26,7 +26,7 @@ describe('openrouter-models', () => {
     },
   ];
 
-  it('lists free and paid text models with hints', () => {
+  it('lists free and paid text models with hints; all require API auth', () => {
     const models = mapOpenRouterModels(sampleRecords);
     expect(models.map(m => m.id)).toEqual([
       'openrouter/free',
@@ -35,7 +35,7 @@ describe('openrouter-models', () => {
     ]);
     expect(models[0]?.hint).toBe('free');
     expect(models[2]?.hint).toBe('paid');
-    expect(models[2]?.requiresKey).toBe(true);
+    expect(models.every(m => m.requiresKey === true)).toBe(true);
   });
 
   it('mapOpenRouterFreeModels keeps only free models', () => {
@@ -46,9 +46,9 @@ describe('openrouter-models', () => {
     ]);
   });
 
-  it('openRouterModelRequiresKey is false for free ids', () => {
-    expect(openRouterModelRequiresKey('openrouter/free')).toBe(false);
-    expect(openRouterModelRequiresKey('meta-llama/llama-3.3-70b-instruct:free')).toBe(false);
+  it('openRouterModelRequiresKey is always true (auth ≠ billing)', () => {
+    expect(openRouterModelRequiresKey('openrouter/free')).toBe(true);
+    expect(openRouterModelRequiresKey('meta-llama/llama-3.3-70b-instruct:free')).toBe(true);
     expect(openRouterModelRequiresKey('openai/gpt-4o')).toBe(true);
   });
 });

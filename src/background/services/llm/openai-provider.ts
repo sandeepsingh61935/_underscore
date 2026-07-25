@@ -33,8 +33,7 @@ const DEFAULT_BASE = 'https://api.openai.com/v1';
 
 /**
  * OpenAI Chat Completions (SSE with `data: [DONE]` sentinel).
- * Also serves as the OpenAI-compatible adapter shape for OpenRouter,
- * MiniMax, and other vendors that follow the same schema.
+ * Also serves as the OpenAI-compatible adapter for OpenRouter and similar APIs.
  */
 export class OpenAIProvider implements ILLMService {
   readonly providerName = 'openai' as const;
@@ -62,14 +61,15 @@ export class OpenAIProvider implements ILLMService {
   }
 
   private buildHeaders(): Record<string, string> {
+    // Bearer by default; extraHeaders last so OpenRouter attribution (and similar)
+    // can add fields without forking streamChat.
     const headers: Record<string, string> = {
       'content-type': 'application/json',
-      ...this.extraHeaders,
     };
     if (this.apiKey || !this.omitAuthWhenKeyless) {
       headers['authorization'] = `Bearer ${this.apiKey}`;
     }
-    return headers;
+    return { ...headers, ...this.extraHeaders };
   }
 
   async streamChat(
@@ -99,7 +99,11 @@ export class OpenAIProvider implements ILLMService {
 
     if (!response.ok || !response.body) {
       const errorText = await response.text().catch(() => '');
-      throw new Error(`OpenAI request failed (${response.status}): ${errorText}`);
+      let host = this.apiBase;
+      try { host = new URL(this.apiBase).host; } catch { /* keep raw */ }
+      throw new Error(
+        `LLM request failed (${response.status}) at ${host} model=${this.model}: ${errorText}`,
+      );
     }
 
     let inputTokens = 0;

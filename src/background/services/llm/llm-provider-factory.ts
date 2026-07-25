@@ -1,26 +1,20 @@
 import { AnthropicProvider } from './anthropic-provider';
-import { CursorProvider } from './cursor-provider';
 import { GeminiProvider } from './gemini-provider';
 import type { LLMKeyStore } from './llm-key-store';
 import type { LLMRegistry } from './llm-registry';
-import { MiniMaxProvider } from './minimax-provider';
 import { OllamaProvider } from './ollama-provider';
 import { OpenAIProvider } from './openai-provider';
 import { OpenRouterProvider } from './openrouter-provider';
 
 import type { ILLMService, ProviderName } from '@/shared/interfaces/i-llm-service';
-import { openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
+import {
+  IN_APP_LLM_PROVIDER_ORDER,
+  isInAppLlmProvider,
+  parseInAppLlmProvider,
+} from '@/shared/llm/in-app-providers';
 
-/** First provider with a configured key wins when none is specified. */
-const PROVIDER_TRY_ORDER: ReadonlyArray<ProviderName> = [
-  'gemini',
-  'anthropic',
-  'openai',
-  'cursor',
-  'openrouter',
-  'minimax',
-  'ollama',
-];
+const NO_PROVIDER_MESSAGE =
+  'No model configured. Open Settings → Configure AI providers and add OpenAI, Anthropic, Gemini, OpenRouter, or Ollama.';
 
 export function tryGetRegistered(registry: LLMRegistry, name: ProviderName): ILLMService | null {
   try {
@@ -36,6 +30,10 @@ export async function buildProvider(
   apiBase?: string,
   modelOverride?: string,
 ): Promise<ILLMService> {
+  if (!isInAppLlmProvider(provider)) {
+    throw new Error(NO_PROVIDER_MESSAGE);
+  }
+
   const model = modelOverride ?? await keyStore.getModel(provider);
   const resolvedApiBase = apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
 
@@ -55,23 +53,25 @@ export async function buildProvider(
     case 'openai': {
       const key = await keyStore.get(provider);
       if (!key) throw new Error('API key not configured');
+      // Cursor agent keys look like key_… — they are not OpenAI platform keys.
+      if (/^key_/i.test(key.trim())) {
+        throw new Error(
+          'Stored key looks like a Cursor agent key, not an OpenAI API key. '
+          + 'Clear it and paste a key from platform.openai.com, or use OpenRouter / Anthropic / Gemini / Ollama.',
+        );
+      }
       return new OpenAIProvider({ apiKey: key, model });
-    }
-    case 'cursor': {
-      const key = await keyStore.get(provider);
-      if (!key) throw new Error('API key not configured');
-      return new CursorProvider({ apiKey: key, model });
     }
     case 'openrouter': {
       const key = await keyStore.get(provider);
-      const needsKey = openRouterModelRequiresKey(model);
-      if (needsKey && !key) throw new Error('API key not configured');
-      return new OpenRouterProvider({ apiKey: key ?? undefined, model });
-    }
-    case 'minimax': {
-      const key = await keyStore.get(provider);
-      if (!key) throw new Error('API key not configured');
-      return new MiniMaxProvider({ apiKey: key, model });
+      // OpenRouter API always requires a key — free models only mean $0 credits.
+      if (!key) {
+        throw new Error(
+          'OpenRouter API key required (free at openrouter.ai/keys). '
+          + 'Free models do not charge credits but still need a key.',
+        );
+      }
+      return new OpenRouterProvider({ apiKey: key, model });
     }
     default: {
       const exhaustive: never = provider;
@@ -80,45 +80,73 @@ export async function buildProvider(
   }
 }
 
+/**
+ * Resolve the backend for in-app Ask / Summarize.
+ * 1. Explicit preferred provider (if valid + configured)
+ * 2. Active provider from settings
+ * 3. First configured provider in {@link IN_APP_LLM_PROVIDER_ORDER}
+ */
 export async function resolveConfiguredProvider(
   registry: LLMRegistry,
   keyStore: LLMKeyStore,
   preferred?: ProviderName,
 ): Promise<ILLMService> {
-  if (preferred) {
-    const registered = tryGetRegistered(registry, preferred);
+  const preferredValid = parseInAppLlmProvider(preferred);
+  if (preferred && !preferredValid) {
+    throw new Error(NO_PROVIDER_MESSAGE);
+  }
+
+  if (preferredValid) {
+    const registered = tryGetRegistered(registry, preferredValid);
     if (registered) return registered;
-    return buildProvider(preferred, keyStore);
+    return buildProvider(preferredValid, keyStore);
   }
 
   const active = await keyStore.getActiveProvider();
   if (active) {
     try {
-      if (active === 'ollama') return await buildProvider(active, keyStore);
-      if (active === 'openrouter') {
-        const model = await keyStore.getModel(active);
-        if (!openRouterModelRequiresKey(model)) return await buildProvider(active, keyStore);
-      }
-      const key = await keyStore.get(active);
-      if (key) return await buildProvider(active, keyStore);
+      return await tryBuildConfigured(active, keyStore, registry);
     } catch {
-      // Active provider misconfigured — fall through to discovery order.
+      // Active misconfigured — fall through.
     }
   }
 
-  for (const name of PROVIDER_TRY_ORDER) {
+  for (const name of IN_APP_LLM_PROVIDER_ORDER) {
     try {
-      if (name === 'ollama') return await buildProvider(name, keyStore);
-      if (name === 'openrouter') {
-        const model = await keyStore.getModel(name);
-        if (!openRouterModelRequiresKey(model)) return await buildProvider(name, keyStore);
-      }
-      const key = await keyStore.get(name);
-      if (key) return await buildProvider(name, keyStore);
+      return await tryBuildConfigured(name, keyStore, registry);
     } catch {
-      // Try the next provider in the preference order.
+      // Try next.
     }
   }
 
-  throw new Error('No LLM provider configured. Add an API key in Settings.');
+  throw new Error(NO_PROVIDER_MESSAGE);
+}
+
+async function tryBuildConfigured(
+  name: ProviderName,
+  keyStore: LLMKeyStore,
+  registry: LLMRegistry,
+): Promise<ILLMService> {
+  if (name === 'ollama') {
+    // Only auto-select after the user completed Connect in setup (not bare localhost).
+    if (!(await keyStore.getOllamaVerified())) {
+      throw new Error('Ollama not configured');
+    }
+    const registered = tryGetRegistered(registry, name);
+    if (registered) return registered;
+    return buildProvider(name, keyStore);
+  }
+  if (name === 'openrouter') {
+    if (!(await keyStore.get(name))) {
+      throw new Error('OpenRouter not configured');
+    }
+    const registered = tryGetRegistered(registry, name);
+    if (registered) return registered;
+    return buildProvider(name, keyStore);
+  }
+  const key = await keyStore.get(name);
+  if (!key) throw new Error('API key not configured');
+  const registered = tryGetRegistered(registry, name);
+  if (registered) return registered;
+  return buildProvider(name, keyStore);
 }

@@ -4,11 +4,15 @@ const CACHE_KEY = 'llm.openrouter.modelsCache';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
-/** Used when the public models API is unreachable. */
+/**
+ * Used when the public models API is unreachable.
+ * `hint: 'free'` = $0 inference credits. OpenRouter still requires an API key
+ * for chat (free to create at openrouter.ai/keys) — browser cookie auth is not available in the extension.
+ */
 export const OPENROUTER_FALLBACK_MODELS: ProviderModelOption[] = [
-  { id: 'openrouter/free', label: 'Free Models Router', hint: 'free', requiresKey: false },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Meta Llama 3.3 70B Instruct', hint: 'free', requiresKey: false },
-  { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'NVIDIA Nemotron Nano 9B v2', hint: 'free', requiresKey: false },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Meta Llama 3.3 70B Instruct', hint: 'free', requiresKey: true },
+  { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'NVIDIA Nemotron Nano 9B v2', hint: 'free', requiresKey: true },
+  { id: 'google/gemma-3-27b-it:free', label: 'Google Gemma 3 27B', hint: 'free', requiresKey: true },
 ];
 
 export interface OpenRouterModelRecord {
@@ -50,7 +54,8 @@ export function mapOpenRouterModels(records: OpenRouterModelRecord[]): ProviderM
         id: m.id,
         label: m.name.replace(/\s*\(free\)\s*/gi, '').trim() || m.id,
         hint: free ? 'free' : 'paid',
-        requiresKey: !free,
+        // API auth is always required; free only means $0 credits.
+        requiresKey: true,
       };
     })
     .sort((a, b) => {
@@ -111,14 +116,18 @@ export async function getOpenRouterModels(options: { refresh?: boolean } = {}): 
   }
 }
 
-/** Whether the selected OpenRouter model needs an API key at runtime. */
+/**
+ * Whether chat/completions needs an OpenRouter API key.
+ * Always true: OpenRouter rejected keyless API calls (401 cookie/auth) as of 2026.
+ * `:free` models still need a key from openrouter.ai/keys — they just do not charge credits.
+ * `catalog` kept for call-site compatibility.
+ */
 export function openRouterModelRequiresKey(
-  modelId: string,
-  catalog?: ProviderModelOption[],
+  _modelId: string,
+  _catalog?: ProviderModelOption[],
 ): boolean {
-  if (isOpenRouterModelFree(modelId)) return false;
-  const match = catalog?.find(m => m.id === modelId);
-  if (match?.requiresKey === false) return false;
-  if (match?.requiresKey === true) return true;
   return true;
 }
+
+/** Short helper — auth required even when inference is free. */
+export const OPENROUTER_KEY_HELP = 'Key from openrouter.ai/keys · free models use $0 credits';

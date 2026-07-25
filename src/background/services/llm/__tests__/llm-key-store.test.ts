@@ -42,4 +42,21 @@ describe('LLMKeyStore', () => {
     await store.set('openai', 'sk-basic');
     expect(await store.get('openai')).toBe('sk-basic');
   });
+
+  it('clears legacy agent-host active provider ids (cursor) on read', async () => {
+    storage['llm.activeProvider'] = 'cursor';
+    storage['llm.cursor.key'] = 'key_leftover';
+    storage['llm.cursor.model'] = 'composer-2';
+    const store = new LLMKeyStore('pro');
+    expect(await store.getActiveProvider()).toBeNull();
+    expect(storage['llm.activeProvider']).toBeUndefined();
+    expect(storage['llm.cursor.key']).toBeUndefined();
+    expect(storage['llm.cursor.model']).toBeUndefined();
+  });
+
+  it('persists a standard in-app active provider', async () => {
+    const store = new LLMKeyStore('pro');
+    await store.setActiveProvider('openai');
+    expect(await store.getActiveProvider()).toBe('openai');
+  });
 });
