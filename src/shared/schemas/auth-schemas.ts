@@ -15,7 +15,7 @@ export const LoginPayloadSchema = z.object({
 
 export const EmailAuthPayloadSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8),
 });
 
 export const SessionBridgePayloadSchema = z.object({
@@ -29,3 +29,19 @@ export const SyncAuthSessionPayloadSchema = z.union([
 ]);
 
 export type SessionBridgePayload = z.infer<typeof SessionBridgePayloadSchema>;
+
+/** Exactly 6 numeric digits — matches Supabase's configured otp_length. */
+export const OtpCodeSchema = z.string().regex(/^\d{6}$/, 'Code must be 6 digits');
+
+export const EmailOnlyPayloadSchema = z.object({
+  email: z.string().email(),
+});
+
+export const VerifyOtpPayloadSchema = z.object({
+  email: z.string().email(),
+  token: OtpCodeSchema,
+});
+
+export const UpdatePasswordPayloadSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
+});

@@ -25,7 +25,7 @@ import { useMessageBus } from '@/shared/contexts/MessageBusContext';
  */
 export type ActionResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: false; error: string; code?: string; retryAfterMs?: number };
 
 /**
  * Returns true if the chrome.runtime.sendMessage API is available.
@@ -67,7 +67,12 @@ export function useIpcAction<TPayload = void, TResponse = unknown>(
         if (response && response.success) {
           return { success: true, data: response.data };
         }
-        return { success: false, error: response?.error ?? 'Unknown IPC error' };
+        return {
+          success: false,
+          error: response?.error ?? 'Unknown IPC error',
+          code: response?.code,
+          retryAfterMs: response?.retryAfterMs,
+        };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }

@@ -345,6 +345,8 @@ describe('AuthManager Unit Tests', () => {
 
     /**
      * Test 3e: NEW - Email sign in Supabase error handling
+     * Sign-in errors are mapped to a fixed, anti-enumeration message —
+     * the raw Supabase string must never reach the UI (see auth-error-messages.ts).
      */
     it('should handle Supabase auth errors during Email sign in gracefully', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: { user: null }, error: new Error('Invalid Login Credentials') });
@@ -353,7 +355,7 @@ describe('AuthManager Unit Tests', () => {
 
         expect(result.success).toBe(false);
         expect(result.error?.code).toBe('AUTH_ERROR');
-        expect(result.error?.message).toBe('Invalid Login Credentials');
+        expect(result.error?.message).toBe('Email or password is incorrect.');
     });
 
     /**
@@ -374,6 +376,8 @@ describe('AuthManager Unit Tests', () => {
 
     /**
      * Test 5: TRICKY - OAuth redirect without tokens
+     * The thrown message is mapped (never leaks raw provider/redirect debug
+     * info to the UI); the raw reason is still captured via the logger.
      */
     it('should throw if redirect URL has no tokens', async () => {
         mockSupabase.auth.signInWithOAuth = vi.fn().mockResolvedValue({
@@ -385,7 +389,12 @@ describe('AuthManager Unit Tests', () => {
             'https://ext.chromiumapp.org/#error=access_denied&error_description=User+cancelled'
         );
 
-        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow('User cancelled');
+        await expect(authManager.signIn(OAuthProvider.GOOGLE)).rejects.toThrow('Google sign-in failed. Please try again.');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+            'Sign in failed',
+            expect.objectContaining({ message: 'User cancelled' }),
+            expect.any(Object)
+        );
     });
 
     /**

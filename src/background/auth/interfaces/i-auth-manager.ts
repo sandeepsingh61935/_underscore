@@ -27,6 +27,8 @@ export interface AuthState {
     readonly lastAuthTime: Date | null;
     readonly verificationStatus?: 'idle' | 'awaiting' | 'failed';
     readonly verificationExpiresAt?: number | null;
+    /** Email awaiting confirmation, persisted so it survives popup close/reopen. */
+    readonly verificationEmail?: string | null;
 }
 
 /**
@@ -56,6 +58,8 @@ export interface AuthError {
     readonly code: string;
     readonly message: string;
     readonly details?: Record<string, unknown>;
+    /** Milliseconds until the caller may retry, when the error is a rate limit. */
+    readonly retryAfterMs?: number;
 }
 
 /**
@@ -160,4 +164,33 @@ export interface IAuthManager {
      * Apply an existing Supabase session (web → extension bridge).
      */
     setSession(accessToken: string, refreshToken: string): Promise<AuthResult>;
+
+    /**
+     * Verify the 6-digit code emailed after signUpWithEmail. On success this
+     * establishes a session (handled by the onAuthStateChange listener).
+     */
+    verifyEmailOtp(email: string, token: string): Promise<AuthResult>;
+
+    /**
+     * Request a new signup confirmation code for a pending (unverified) signup.
+     */
+    resendEmailOtp(email: string): Promise<AuthResult>;
+
+    /**
+     * Request a password-reset code be emailed to the given address.
+     * Always resolves successfully from Supabase's perspective regardless of
+     * whether an account exists, to avoid user-enumeration.
+     */
+    requestPasswordReset(email: string): Promise<AuthResult>;
+
+    /**
+     * Verify a password-reset code. On success this establishes a temporary
+     * recovery session that must be finalized with updatePassword().
+     */
+    verifyRecoveryOtp(email: string, token: string): Promise<AuthResult>;
+
+    /**
+     * Set a new password for the currently active (recovery or normal) session.
+     */
+    updatePassword(password: string): Promise<AuthResult>;
 }

@@ -59,4 +59,33 @@ describe('RateLimiter (persistent)', () => {
         const limiter = new RateLimiter({ maxAttempts: 3, windowMs: 60_000 });
         expect(limiter.tryAcquire()).toBe(true);
     });
+
+    describe('getRetryAfterMs', () => {
+        it('returns 0 when attempts remain', () => {
+            const limiter = new RateLimiter({ maxAttempts: 3, windowMs: 60_000 });
+            limiter.tryAcquire();
+            expect(limiter.getRetryAfterMs()).toBe(0);
+        });
+
+        it('returns the remaining window time once exhausted', () => {
+            const limiter = new RateLimiter({ maxAttempts: 1, windowMs: 60_000 });
+            limiter.tryAcquire();
+            expect(limiter.tryAcquire()).toBe(false);
+            const retryAfterMs = limiter.getRetryAfterMs();
+            expect(retryAfterMs).toBeGreaterThan(0);
+            expect(retryAfterMs).toBeLessThanOrEqual(60_000);
+        });
+
+        it('returns 0 once the window has elapsed', () => {
+            vi.useFakeTimers();
+            const limiter = new RateLimiter({ maxAttempts: 1, windowMs: 1_000 });
+            limiter.tryAcquire();
+            limiter.tryAcquire();
+            expect(limiter.getRetryAfterMs()).toBeGreaterThan(0);
+
+            vi.advanceTimersByTime(1_001);
+            expect(limiter.getRetryAfterMs()).toBe(0);
+            vi.useRealTimers();
+        });
+    });
 });

@@ -18,11 +18,13 @@ interface UseCurrentUserResult {
     user: User | null;
     verificationStatus: 'idle' | 'awaiting' | 'failed';
     verificationExpiresAt: number | null;
+    /** Email awaiting confirmation; persists across popup close/reopen. */
+    verificationEmail: string | null;
     isLoading: boolean;
     error: string | null;
     login: (provider?: OAuthProviderType) => Promise<{ success: boolean; error?: string }>;
     loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-    registerWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    registerWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string; code?: string; verificationStatus?: 'idle' | 'awaiting' | 'failed' }>;
     logout: () => Promise<void>;
 }
 
@@ -42,6 +44,7 @@ export function useCurrentUser(): UseCurrentUserResult {
     const [user, setUser] = useState<User | null>(null);
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'awaiting' | 'failed'>('idle');
     const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
+    const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +58,7 @@ export function useCurrentUser(): UseCurrentUserResult {
         setUser(null);
         setVerificationStatus('idle');
         setVerificationExpiresAt(null);
+        setVerificationEmail(null);
     };
 
     const applyAuthPayload = (data: Partial<AuthResponse>): void => {
@@ -67,6 +71,9 @@ export function useCurrentUser(): UseCurrentUserResult {
         if ('verificationExpiresAt' in data) {
             setVerificationExpiresAt(data.verificationExpiresAt ?? null);
         }
+        if ('verificationEmail' in data) {
+            setVerificationEmail(data.verificationEmail ?? null);
+        }
     };
 
     // Fetch initial auth state from background
@@ -77,6 +84,7 @@ export function useCurrentUser(): UseCurrentUserResult {
             setUser(null);
             setVerificationStatus('idle');
             setVerificationExpiresAt(null);
+            setVerificationEmail(null);
             setIsLoading(false);
 
             return () => {
@@ -94,6 +102,7 @@ export function useCurrentUser(): UseCurrentUserResult {
                 setUser(null);
                 setVerificationStatus('idle');
                 setVerificationExpiresAt(null);
+                setVerificationEmail(null);
             }
             setIsLoading(false);
         };
@@ -156,13 +165,13 @@ export function useCurrentUser(): UseCurrentUserResult {
         if (!result.success) {
             setError(result.error);
             setIsLoading(false);
-            return { success: false, error: result.error };
+            return { success: false, error: result.error, code: result.code };
         }
-        if (result.success) {
-            applyAuthPayload(result.data);
-        }
+        applyAuthPayload(result.data);
         setIsLoading(false);
-        return { success: true };
+        // Surface verificationStatus directly (not just via re-render) so callers
+        // can branch on it synchronously instead of racing a stale closure value.
+        return { success: true, verificationStatus: result.data.verificationStatus };
     }, [registerEmailAction]);
 
     const logout = useCallback(async () => {
@@ -182,6 +191,7 @@ export function useCurrentUser(): UseCurrentUserResult {
         user,
         verificationStatus,
         verificationExpiresAt,
+        verificationEmail,
         isLoading,
         error,
         login,

@@ -19,6 +19,8 @@ interface AuthContextValue {
     isLoading: boolean;
     /** Auth error message if any */
     error: string | null;
+    /** Email confirmation status from AuthManager (used to resume popup routing). */
+    verificationStatus: 'idle' | 'awaiting' | 'failed';
     /** Login with OAuth provider */
     login: (provider?: OAuthProviderType) => Promise<{ success: boolean; error?: string }>;
     /** Login with email + password (new — surfaced via useCurrentUser) */
@@ -73,6 +75,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         user: liveUser,
         isLoading,
         error,
+        verificationStatus,
         login,
         loginWithEmail,
         registerWithEmail,
@@ -104,12 +107,13 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         isAuthenticated,
         isLoading,
         error,
+        verificationStatus,
         login,
         loginWithEmail,
         registerWithEmail,
         logout,
         clearError,
-    }), [user, status, isAuthenticated, isLoading, error, login, loginWithEmail, registerWithEmail, logout, clearError]);
+    }), [user, status, isAuthenticated, isLoading, error, verificationStatus, login, loginWithEmail, registerWithEmail, logout, clearError]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

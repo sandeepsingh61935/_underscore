@@ -6,11 +6,12 @@
  */
 
 import { SupabaseClient as SupabaseSDKClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
-import type { IAuthManager, AuthState, AuthResult, User, OAuthProviderType } from './interfaces/i-auth-manager';
+import type { IAuthManager, AuthState, AuthResult, AuthError, User, OAuthProviderType } from './interfaces/i-auth-manager';
 import type { IAuditLogger } from './interfaces/i-audit-logger';
 import type { ILogger } from '@/shared/utils/logger';
 import { EventBus } from '@/shared/utils/event-bus';
 import { RateLimiter } from '@/shared/utils/rate-limiter';
+import { mapAuthError, isExistingAccountSignup, INTERNAL_RATE_LIMIT_CODE, EXISTING_ACCOUNT_CODE } from '@/shared/auth/auth-error-messages';
 import { OAuthProvider } from './interfaces/i-auth-manager';
 import {
     AuthenticationError,
@@ -29,6 +30,7 @@ export class AuthManager implements IAuthManager {
         lastAuthTime: null,
         verificationStatus: 'idle',
         verificationExpiresAt: null,
+        verificationEmail: null,
     };
 
     private readonly VERIFICATION_STORAGE_KEY = 'auth_verification_state';
@@ -36,7 +38,13 @@ export class AuthManager implements IAuthManager {
     private readonly VERIFICATION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
     private initializationPromise: Promise<void> | null = null;
-    private rateLimiter!: RateLimiter;
+    /** OAuth + email sign-in/sign-up attempts. */
+    private authRateLimiter!: RateLimiter;
+    /** verifyEmailOtp + verifyRecoveryOtp attempts — separate so a run of
+     * mistyped codes can't also exhaust the resend bucket, and vice versa. */
+    private otpVerifyRateLimiter!: RateLimiter;
+    /** resendEmailOtp + requestPasswordReset attempts. */
+    private otpResendRateLimiter!: RateLimiter;
 
     constructor(
         private readonly supabase: SupabaseSDKClient,
@@ -56,15 +64,23 @@ export class AuthManager implements IAuthManager {
         }
 
         this.initializationPromise = (async () => {
-            // Initialize rate limiter: 5 attempts per 15 minutes
-            this.rateLimiter = await RateLimiter.persistent(
-                {
-                    maxAttempts: 5,
-                    windowMs: 15 * 60 * 1000,
-                    storageKey: 'rate_limit:auth'
-                },
-                { logger: this.logger }
-            );
+            // Three independent buckets (5 attempts / 15 min each) so spamming
+            // one action (e.g. resend) can't lock a user out of a different
+            // action (e.g. verifying a code they already received).
+            [this.authRateLimiter, this.otpVerifyRateLimiter, this.otpResendRateLimiter] = await Promise.all([
+                RateLimiter.persistent(
+                    { maxAttempts: 5, windowMs: 15 * 60 * 1000, storageKey: 'rate_limit:auth' },
+                    { logger: this.logger }
+                ),
+                RateLimiter.persistent(
+                    { maxAttempts: 5, windowMs: 15 * 60 * 1000, storageKey: 'rate_limit:otp_verify' },
+                    { logger: this.logger }
+                ),
+                RateLimiter.persistent(
+                    { maxAttempts: 5, windowMs: 15 * 60 * 1000, storageKey: 'rate_limit:otp_resend' },
+                    { logger: this.logger }
+                ),
+            ]);
 
             // Setup Alarm Listener for Token Refresh
             chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
@@ -125,9 +141,8 @@ export class AuthManager implements IAuthManager {
             throw new InvalidProviderError(provider);
         }
 
-        if (!(await this.rateLimiter.tryAcquire())) {
-            const error = new RateLimitError('Too many login attempts');
-            return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
+        if (!(await this.authRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.authRateLimiter);
         }
 
         // Return existing auth flow if one is in progress
@@ -193,11 +208,13 @@ export class AuthManager implements IAuthManager {
             if (error instanceof RateLimitError) throw error;
 
             const innerMsg = error instanceof Error ? error.message : String(error);
-            const debugInfo = `\nRedirect: ${redirectUrl || 'Not generated'}`;
 
-            throw new AuthenticationError(`OAuth failed: ${innerMsg}${debugInfo}`, {
+            // User-facing message is mapped (never leaks the redirect URL /
+            // provider debug info); full detail stays in the logger call above.
+            throw new AuthenticationError(mapAuthError('oauth', { message: innerMsg }), {
                 provider,
                 error: innerMsg,
+                redirectUrl: redirectUrl || 'Not generated',
             });
         }
     }
@@ -209,9 +226,8 @@ export class AuthManager implements IAuthManager {
         await this.initialize();
         this.logger.info('Email sign in attempt', { email });
 
-        if (!(await this.rateLimiter.tryAcquire())) {
-            const error = new RateLimitError('Too many login attempts');
-            return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
+        if (!(await this.authRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.authRateLimiter);
         }
 
         try {
@@ -222,11 +238,11 @@ export class AuthManager implements IAuthManager {
 
             if (error) {
                 this.logger.error('Email sign in failed due to Supabase error', error);
-                return { success: false, error: { code: 'AUTH_ERROR', message: error.message } };
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('sign-in', error) } };
             }
 
             if (!data.user) {
-                return { success: false, error: { code: 'AUTH_ERROR', message: 'No user returned from sign in' } };
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('sign-in', null) } };
             }
 
             const user = this.mapSupabaseUser(data.user);
@@ -236,8 +252,7 @@ export class AuthManager implements IAuthManager {
         } catch (error) {
             await this.logAuthFailure('email', email);
             this.logger.error('Email sign in threw exception', error as Error, { email });
-            const innerMsg = error instanceof Error ? error.message : String(error);
-            return { success: false, error: { code: 'EXCEPTION', message: innerMsg } };
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('sign-in', null) } };
         }
     }
 
@@ -248,9 +263,8 @@ export class AuthManager implements IAuthManager {
         await this.initialize();
         this.logger.info('Email sign up attempt', { email });
 
-        if (!(await this.rateLimiter.tryAcquire())) {
-            const error = new RateLimitError('Too many sign up attempts');
-            return { success: false, error: { code: 'RATE_LIMIT', message: error.message } };
+        if (!(await this.authRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.authRateLimiter);
         }
 
         try {
@@ -261,18 +275,34 @@ export class AuthManager implements IAuthManager {
 
             if (error) {
                 this.logger.error('Email sign up failed due to Supabase error', error);
-                return { success: false, error: { code: 'AUTH_ERROR', message: error.message } };
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('sign-up', error) } };
             }
 
             if (!data.user) {
-                return { success: false, error: { code: 'AUTH_ERROR', message: 'No user returned from sign up' } };
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('sign-up', null) } };
+            }
+
+            // Supabase's anti-enumeration design: signing up with an
+            // already-registered, already-confirmed email does not error —
+            // it resolves with identities: [] and no session. Surface that
+            // as a distinct, user-facing "already exists" case instead of
+            // silently starting a verification flow that can never succeed.
+            if (isExistingAccountSignup(data.user, data.session)) {
+                this.logger.info('Sign up blocked: account already exists', { email });
+                return {
+                    success: false,
+                    error: {
+                        code: EXISTING_ACCOUNT_CODE,
+                        message: mapAuthError('sign-up', { code: 'user_already_exists' }),
+                    },
+                };
             }
 
             // Since it's a new sign up and likely requires email confirmation (no session immediately returned),
             // start the verification timer if there is no immediate session.
             const hasSession = !!data.session;
             if (!hasSession) {
-                await this.startVerificationTimer();
+                await this.startVerificationTimer(email);
             }
 
             // State will be updated by onAuthStateChange listener if there is a session,
@@ -281,8 +311,7 @@ export class AuthManager implements IAuthManager {
 
         } catch (error) {
             this.logger.error('Email sign up threw exception', error as Error, { email });
-            const innerMsg = error instanceof Error ? error.message : String(error);
-            return { success: false, error: { code: 'EXCEPTION', message: innerMsg } };
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('sign-up', null) } };
         }
     }
 
@@ -326,6 +355,149 @@ export class AuthManager implements IAuthManager {
     }
 
     /**
+     * Verify the 6-digit code emailed after signUpWithEmail.
+     */
+    async verifyEmailOtp(email: string, token: string): Promise<AuthResult> {
+        await this.initialize();
+        this.logger.info('Verify email OTP attempt', { email });
+
+        if (!(await this.otpVerifyRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.otpVerifyRateLimiter);
+        }
+
+        try {
+            const { data, error } = await this.supabase.auth.verifyOtp({ email, token, type: 'email' });
+
+            if (error) {
+                this.logger.error('Email OTP verification failed', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('verify-email-otp', error) } };
+            }
+            if (!data.user) {
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('verify-email-otp', null) } };
+            }
+
+            const user = this.mapSupabaseUser(data.user);
+            await this.logAuthSuccess(user.id, 'email');
+            // Session state (and verification-timer clearing) is applied by the
+            // onAuthStateChange listener once Supabase sets the new session.
+            return { success: true, user };
+        } catch (error) {
+            this.logger.error('Email OTP verification threw exception', error as Error, { email });
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('verify-email-otp', null) } };
+        }
+    }
+
+    /**
+     * Request a new signup confirmation code for a pending signup.
+     */
+    async resendEmailOtp(email: string): Promise<AuthResult> {
+        await this.initialize();
+        this.logger.info('Resend email OTP attempt', { email });
+
+        if (!(await this.otpResendRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.otpResendRateLimiter);
+        }
+
+        try {
+            const { error } = await this.supabase.auth.resend({ type: 'signup', email });
+            if (error) {
+                this.logger.error('Resend email OTP failed', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('resend-email-otp', error) } };
+            }
+
+            // Refresh the verification countdown to match the newly-sent code.
+            await this.startVerificationTimer(email);
+            return { success: true };
+        } catch (error) {
+            this.logger.error('Resend email OTP threw exception', error as Error, { email });
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('resend-email-otp', null) } };
+        }
+    }
+
+    /**
+     * Request a password-reset code be emailed to the given address.
+     */
+    async requestPasswordReset(email: string): Promise<AuthResult> {
+        await this.initialize();
+        this.logger.info('Password reset requested', { email });
+
+        if (!(await this.otpResendRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.otpResendRateLimiter);
+        }
+
+        try {
+            // Supabase does not reveal whether the account exists; it always
+            // resolves without error for valid email input. Do not log or
+            // surface anything account-specific here.
+            const { error } = await this.supabase.auth.resetPasswordForEmail(email);
+            if (error) {
+                this.logger.error('Password reset request failed', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('request-password-reset', error) } };
+            }
+            return { success: true };
+        } catch (error) {
+            this.logger.error('Password reset request threw exception', error as Error, { email });
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('request-password-reset', null) } };
+        }
+    }
+
+    /**
+     * Verify a password-reset code. Establishes a temporary recovery session
+     * that must be finalized with updatePassword().
+     */
+    async verifyRecoveryOtp(email: string, token: string): Promise<AuthResult> {
+        await this.initialize();
+        this.logger.info('Verify recovery OTP attempt', { email });
+
+        if (!(await this.otpVerifyRateLimiter.tryAcquire())) {
+            return this.rateLimitResult(this.otpVerifyRateLimiter);
+        }
+
+        try {
+            const { data, error } = await this.supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+
+            if (error) {
+                this.logger.error('Recovery OTP verification failed', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('verify-recovery-otp', error) } };
+            }
+            if (!data.user) {
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('verify-recovery-otp', null) } };
+            }
+
+            const user = this.mapSupabaseUser(data.user);
+            return { success: true, user };
+        } catch (error) {
+            this.logger.error('Recovery OTP verification threw exception', error as Error, { email });
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('verify-recovery-otp', null) } };
+        }
+    }
+
+    /**
+     * Set a new password for the currently active (recovery or normal) session.
+     */
+    async updatePassword(password: string): Promise<AuthResult> {
+        await this.initialize();
+        this.logger.info('Update password attempt');
+
+        try {
+            const { data, error } = await this.supabase.auth.updateUser({ password });
+            if (error) {
+                this.logger.error('Update password failed', error);
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('update-password', error) } };
+            }
+            if (!data.user) {
+                return { success: false, error: { code: 'AUTH_ERROR', message: mapAuthError('update-password', null) } };
+            }
+
+            const user = this.mapSupabaseUser(data.user);
+            return { success: true, user };
+        } catch (error) {
+            this.logger.error('Update password threw exception', error as Error);
+            return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('update-password', null) } };
+        }
+    }
+
+    /**
      * Refresh authentication token
      * Handled automatically by Supabase client, but exposed for manual trigger
      */
@@ -360,12 +532,24 @@ export class AuthManager implements IAuthManager {
         const newState = {
             ...this.currentState,
             verificationStatus: 'failed' as const,
-            verificationExpiresAt: null
+            verificationExpiresAt: null,
+            verificationEmail: null,
         };
         this.updateAuthState(newState);
     }
 
     // ==================== Private Helpers ====================
+
+    /** Build a mapped, user-facing AuthResult for an exhausted rate-limit bucket. */
+    private rateLimitResult(limiter: RateLimiter): AuthResult {
+        const retryAfterMs = limiter.getRetryAfterMs();
+        const error: AuthError = {
+            code: INTERNAL_RATE_LIMIT_CODE,
+            message: mapAuthError('sign-in', { code: INTERNAL_RATE_LIMIT_CODE }, { retryAfterMs }),
+            retryAfterMs,
+        };
+        return { success: false, error };
+    }
 
     /**
      * Complete OAuth from the chrome.identity redirect URL.
@@ -428,11 +612,11 @@ export class AuthManager implements IAuthManager {
         return { user: this.mapSupabaseUser(sessionData.user) };
     }
 
-    private async startVerificationTimer(): Promise<void> {
+    private async startVerificationTimer(email: string): Promise<void> {
         const expiresAt = Date.now() + this.VERIFICATION_TIMEOUT_MS;
 
         await browser.storage.local.set({
-            [this.VERIFICATION_STORAGE_KEY]: { expiresAt }
+            [this.VERIFICATION_STORAGE_KEY]: { expiresAt, email }
         });
 
         chrome.alarms.create(this.VERIFICATION_ALARM_NAME, {
@@ -442,7 +626,8 @@ export class AuthManager implements IAuthManager {
         const newState = {
             ...this.currentState,
             verificationStatus: 'awaiting' as const,
-            verificationExpiresAt: expiresAt
+            verificationExpiresAt: expiresAt,
+            verificationEmail: email,
         };
 
         this.updateAuthState(newState);
@@ -452,7 +637,7 @@ export class AuthManager implements IAuthManager {
     private async restoreVerificationState(): Promise<void> {
         try {
             const data = await browser.storage.local.get(this.VERIFICATION_STORAGE_KEY);
-            const state = data[this.VERIFICATION_STORAGE_KEY] as { expiresAt?: number } | undefined;
+            const state = data[this.VERIFICATION_STORAGE_KEY] as { expiresAt?: number; email?: string } | undefined;
 
             if (state && state.expiresAt) {
                 const now = Date.now();
@@ -462,7 +647,8 @@ export class AuthManager implements IAuthManager {
                     const newState = {
                         ...this.currentState,
                         verificationStatus: 'awaiting' as const,
-                        verificationExpiresAt: state.expiresAt
+                        verificationExpiresAt: state.expiresAt,
+                        verificationEmail: state.email ?? null,
                     };
                     this.updateAuthState(newState);
 
@@ -488,7 +674,8 @@ export class AuthManager implements IAuthManager {
             provider: session?.user?.app_metadata?.provider as OAuthProviderType || null,
             lastAuthTime: session ? new Date() : null,
             verificationStatus: 'idle',
-            verificationExpiresAt: null
+            verificationExpiresAt: null,
+            verificationEmail: null,
         };
 
         // If we just got authenticated, clear any pending verification state

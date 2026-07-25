@@ -8,6 +8,8 @@ export interface AuthStatePayload {
   lastAuthTime: string | null;
   verificationStatus: NonNullable<AuthState['verificationStatus']>;
   verificationExpiresAt: number | null;
+  /** Email awaiting confirmation; survives popup close/reopen via storage. */
+  verificationEmail: string | null;
 }
 
 export function toAuthStatePayload(state: AuthState): AuthStatePayload {
@@ -18,6 +20,7 @@ export function toAuthStatePayload(state: AuthState): AuthStatePayload {
     lastAuthTime: state.lastAuthTime ? state.lastAuthTime.toISOString() : null,
     verificationStatus: state.verificationStatus ?? 'idle',
     verificationExpiresAt: state.verificationExpiresAt ?? null,
+    verificationEmail: state.verificationEmail ?? null,
   };
 }
 

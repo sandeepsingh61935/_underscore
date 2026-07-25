@@ -85,6 +85,25 @@ export class RateLimiter {
         return this.attempts;
     }
 
+    /**
+     * Milliseconds until the window resets and a new attempt is allowed.
+     * Returns 0 when the caller is not currently rate-limited (window
+     * expired, or attempts remaining).
+     */
+    getRetryAfterMs(): number {
+        const now = Date.now();
+
+        if (now - this.windowStart >= this.config.windowMs) {
+            return 0;
+        }
+
+        if (this.attempts < this.config.maxAttempts) {
+            return 0;
+        }
+
+        return Math.max(0, this.windowStart + this.config.windowMs - now);
+    }
+
     /** Test/internal seam: hydrate from persisted state. */
     hydrate(state: PersistedState): void {
         this.attempts = state.attempts;
