@@ -10,6 +10,24 @@ vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
 }));
 
+const billingDefaults = {
+  billingEntitlement: {
+    plan: 'free' as const,
+    status: 'none' as const,
+    isPaidActive: false,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    provider: null,
+    manageUrlAvailable: false,
+  },
+  billingReady: true,
+  billingBusy: false,
+  billingError: null,
+  startCheckout: vi.fn(),
+  openBillingPortal: vi.fn(),
+  refreshBilling: vi.fn(),
+};
+
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   usePersistedMode: vi.fn(() => ({
     currentMode: 'basic',
@@ -65,6 +83,7 @@ describe('SettingsPage basic mode boundaries', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
     } as ReturnType<typeof useApp>);
   });
 
@@ -112,6 +131,7 @@ describe('SettingsPage basic mode boundaries', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
     } as ReturnType<typeof useApp>);
 
     render(<SettingsPage />);
@@ -141,6 +161,15 @@ describe('SettingsPage pro_xai mode boundaries', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
+      billingEntitlement: {
+        ...billingDefaults.billingEntitlement,
+        plan: 'paid',
+        status: 'active',
+        isPaidActive: true,
+        provider: 'polar',
+        manageUrlAvailable: true,
+      },
     } as ReturnType<typeof useApp>);
   });
 
@@ -152,6 +181,7 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(screen.getByText('In-app models')).toBeTruthy();
     expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
+    expect(screen.getByText('Manage billing')).toBeTruthy();
   });
 
 });
@@ -177,6 +207,7 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
     } as ReturnType<typeof useApp>);
   });
 
@@ -187,5 +218,6 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     expect(screen.getByText('In-app models')).toBeTruthy();
     expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
+    expect(screen.getByText('Upgrade to Account (Paid)')).toBeTruthy();
   });
 });

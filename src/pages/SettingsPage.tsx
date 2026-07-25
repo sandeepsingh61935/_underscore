@@ -38,10 +38,22 @@ export function SettingsPage({
   onSignIn,
   onLogout,
 }: SettingsPageProps): React.ReactElement {
-  const { theme, setTheme, currentMode, user, logout: appLogout } = useApp();
+  const {
+    theme,
+    setTheme,
+    currentMode,
+    user,
+    logout: appLogout,
+    billingEntitlement,
+    billingBusy,
+    billingError,
+    startCheckout,
+    openBillingPortal,
+  } = useApp();
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [billingActionError, setBillingActionError] = useState<string | null>(null);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
@@ -246,10 +258,15 @@ export function SettingsPage({
                       fontSize: 'var(--step--2)',
                       padding: '2px 8px',
                       border: '1px solid var(--rule-soft)',
-                      color: currentMode === 'pro_xai' ? 'var(--accent)' : 'var(--ink-3)',
+                      color:
+                        currentMode === 'pro_xai' || billingEntitlement.isPaidActive
+                          ? 'var(--accent)'
+                          : 'var(--ink-3)',
                     }}
                   >
-                    {currentMode === 'pro_xai' ? 'Paid' : 'Free'}
+                    {currentMode === 'pro_xai' || billingEntitlement.isPaidActive
+                      ? 'Paid'
+                      : 'Free'}
                   </span>
                 ) : null}
                 <button
@@ -282,6 +299,48 @@ export function SettingsPage({
             )
           }
         />
+        {user ? (
+          <Row
+            title={
+              billingEntitlement.isPaidActive
+                ? 'Manage billing'
+                : 'Upgrade to Account (Paid)'
+            }
+            sub={
+              billingActionError || billingError
+                ? billingActionError || billingError || undefined
+                : billingEntitlement.isPaidActive
+                  ? billingEntitlement.cancelAtPeriodEnd
+                    ? 'Cancels at period end · invoices & payment method'
+                    : 'Invoices, payment method, cancel'
+                  : 'AI + agent connections · billed via Polar'
+            }
+            right={
+              billingBusy ? (
+                <Spinner size="sm" />
+              ) : (
+                <span
+                  className="u-mono"
+                  data-testid="billing-cta"
+                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                >
+                  {billingEntitlement.isPaidActive ? 'Portal' : 'Upgrade'}
+                </span>
+              )
+            }
+            onClick={() => {
+              setBillingActionError(null);
+              const action = billingEntitlement.isPaidActive
+                ? openBillingPortal
+                : startCheckout;
+              void action().catch((e: unknown) => {
+                setBillingActionError(
+                  e instanceof Error ? e.message : 'Billing action failed'
+                );
+              });
+            }}
+          />
+        ) : null}
       </div>
 
       <DeleteConfirmDialog

@@ -48,7 +48,7 @@ export function McpTierCallout({
   return (
     <Row
       title="Connect to AI"
-      sub="Available with Account (Paid) — switch mode, or billing when it ships"
+      sub="Available with Account (Paid) — upgrade in Settings"
       compact
     />
   );

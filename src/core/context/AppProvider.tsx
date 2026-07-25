@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
 import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
 import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
+import { useBillingEntitlement } from '@/features/billing/hooks/useBillingEntitlement';
+import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { isBillingDevOverrideEnabled } from '@/shared/billing/dev-override';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
@@ -20,6 +23,15 @@ export interface AppContextType {
     modeReady: boolean;
     setMode: (mode: Mode) => void;
     availableModes: Mode[];
+
+    // Billing (Polar entitlements)
+    billingEntitlement: BillingEntitlement;
+    billingReady: boolean;
+    billingBusy: boolean;
+    billingError: string | null;
+    startCheckout: () => Promise<void>;
+    openBillingPortal: () => Promise<void>;
+    refreshBilling: () => Promise<void>;
 
     // Theme
     theme: Theme;
@@ -43,7 +55,31 @@ function AppProviderInner({
     dataProvider: IDataProvider;
 }): React.ReactElement {
     const { user, isAuthenticated, isLoading: authLoading, login, logout } = useWebAuth();
-    const { currentMode, persistMode } = usePersistedMode(isAuthenticated);
+
+    const supabase = useMemo(() => {
+        try {
+            return getWebSupabaseClient();
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const getAccessToken = useCallback(async () => {
+        if (!supabase) return null;
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+    }, [supabase]);
+
+    const billing = useBillingEntitlement({
+        supabase,
+        getAccessToken,
+        isAuthenticated,
+    });
+
+    const { currentMode, persistMode } = usePersistedMode(isAuthenticated, {
+        entitlement: billing.entitlement,
+        entitlementReady: billing.ready,
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [theme, setThemeState] = useState<Theme>('system');
 
@@ -58,7 +94,9 @@ function AppProviderInner({
     }, []);
 
     const availableModes: Mode[] = isAuthenticated
-        ? ['basic', 'pro', 'pro_xai']
+        ? isBillingDevOverrideEnabled() || billing.entitlement.isPaidActive
+            ? ['basic', 'pro', 'pro_xai']
+            : ['basic', 'pro']
         : ['basic'];
 
     useEffect(() => {
@@ -98,6 +136,13 @@ function AppProviderInner({
         modeReady: !authLoading,
         setMode,
         availableModes,
+        billingEntitlement: billing.entitlement,
+        billingReady: billing.ready,
+        billingBusy: billing.busy,
+        billingError: billing.error,
+        startCheckout: () => billing.startCheckout(),
+        openBillingPortal: () => billing.openPortal(),
+        refreshBilling: billing.refresh,
         theme,
         setTheme,
         isLoading: isLoading || authLoading,

@@ -141,6 +141,14 @@ export const IPC_AI_GET_ACTIVE_PROVIDER = 'IPC_AI_GET_ACTIVE_PROVIDER' as const;
 export const IPC_AI_LIST_PROVIDERS = 'IPC_AI_LIST_PROVIDERS' as const;
 export const IPC_AI_GET_PAGE_CONTEXT = 'IPC_AI_GET_PAGE_CONTEXT' as const;
 export const IPC_AI_LIST_PROVIDER_MODELS = 'IPC_AI_LIST_PROVIDER_MODELS' as const;
+
+/**
+ * Billing (Polar) IPC — extension popup talks to background.
+ * Background holds Supabase session + calls edge functions / entitlement table.
+ */
+export const IPC_BILLING_GET_ENTITLEMENT = 'IPC_BILLING_GET_ENTITLEMENT' as const;
+export const IPC_BILLING_START_CHECKOUT = 'IPC_BILLING_START_CHECKOUT' as const;
+export const IPC_BILLING_OPEN_PORTAL = 'IPC_BILLING_OPEN_PORTAL' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
 /**

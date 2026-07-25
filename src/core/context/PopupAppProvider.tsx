@@ -8,6 +8,8 @@ import { ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
+import { useExtensionBilling } from '@/features/billing/hooks/useExtensionBilling';
+import { isBillingDevOverrideEnabled } from '@/shared/billing/dev-override';
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 
@@ -37,8 +39,16 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     onLogout,
     dataProvider
 }) => {
+    const billing = useExtensionBilling(propIsAuthenticated);
+
     // Mode state — persisted in chrome.storage.local, reactive via onChanged
-    const { currentMode, modeReady, persistMode } = usePersistedMode(propIsAuthenticated);
+    const { currentMode, modeReady, persistMode } = usePersistedMode(
+        propIsAuthenticated,
+        {
+            entitlement: billing.entitlement,
+            entitlementReady: billing.ready,
+        }
+    );
     const [isLoading, setIsLoading] = useState(false);
 
     // Theme state - still use localStorage for theme preference
@@ -53,9 +63,11 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         return 'light';
     });
 
-    // Available modes depends on auth state
+    // Available modes depends on auth + billing (Paid only when entitled or dev override)
     const availableModes: Mode[] = propIsAuthenticated
-        ? ['pro', 'pro_xai']
+        ? isBillingDevOverrideEnabled() || billing.entitlement.isPaidActive
+            ? ['pro', 'pro_xai']
+            : ['pro']
         : ['basic'];
 
     // Apply theme to document
@@ -110,6 +122,13 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         modeReady,
         setMode,
         availableModes,
+        billingEntitlement: billing.entitlement,
+        billingReady: billing.ready,
+        billingBusy: billing.busy,
+        billingError: billing.error,
+        startCheckout: () => billing.startCheckout(),
+        openBillingPortal: () => billing.openPortal(),
+        refreshBilling: billing.refresh,
         theme,
         setTheme,
         isLoading,

@@ -32,7 +32,15 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, UPDATE_HIGHLIGHT_TEXT, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, UPDATE_HIGHLIGHT_TEXT, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS, IPC_BILLING_GET_ENTITLEMENT, IPC_BILLING_START_CHECKOUT, IPC_BILLING_OPEN_PORTAL } from '@/shared/schemas/message-schemas';
+import type { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
+import {
+  createBillingCheckout,
+  createBillingPortal,
+  fetchBillingEntitlement,
+  freeEntitlement,
+  openBillingUrl,
+} from '@/shared/billing';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
@@ -648,6 +656,85 @@ export default defineBackground({
         } catch (error) {
           logger.error('GET_DASHBOARD_DATA failed', error as Error);
           throw error;
+        }
+      });
+
+      // --- Billing (Polar entitlements) ---
+      const getBillingSupabase = (): SupabaseSDKClient =>
+        container.resolve<SupabaseSDKClient>('_supabaseSDK');
+
+      const getBillingAccessToken = async (): Promise<string | null> => {
+        const supabase = getBillingSupabase();
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      };
+
+      messageBus.subscribe(IPC_BILLING_GET_ENTITLEMENT, async () => {
+        try {
+          if (!authManager.isAuthenticated) {
+            return { success: true, data: freeEntitlement() };
+          }
+          const entitlement = await fetchBillingEntitlement({
+            supabase: getBillingSupabase(),
+            getAccessToken: getBillingAccessToken,
+          });
+          return { success: true, data: entitlement };
+        } catch (error) {
+          logger.error('IPC_BILLING_GET_ENTITLEMENT failed', error as Error);
+          return { success: true, data: freeEntitlement() };
+        }
+      });
+
+      messageBus.subscribe(
+        IPC_BILLING_START_CHECKOUT,
+        async (payload: { successUrl?: string; cancelUrl?: string }) => {
+          try {
+            if (!authManager.isAuthenticated) {
+              return { success: false, error: 'Sign in required' };
+            }
+            const webOrigin = 'https://underscore-web.pages.dev';
+            const successUrl =
+              payload?.successUrl ??
+              `${webOrigin}/settings?billing=success&client=extension`;
+            const cancelUrl =
+              payload?.cancelUrl ??
+              `${webOrigin}/settings?billing=cancel&client=extension`;
+            const { url } = await createBillingCheckout(
+              {
+                supabase: getBillingSupabase(),
+                getAccessToken: getBillingAccessToken,
+              },
+              { successUrl, cancelUrl }
+            );
+            openBillingUrl(url);
+            return { success: true, data: { url } };
+          } catch (error) {
+            logger.error('IPC_BILLING_START_CHECKOUT failed', error as Error);
+            return {
+              success: false,
+              error: (error as Error).message || 'Checkout failed',
+            };
+          }
+        }
+      );
+
+      messageBus.subscribe(IPC_BILLING_OPEN_PORTAL, async () => {
+        try {
+          if (!authManager.isAuthenticated) {
+            return { success: false, error: 'Sign in required' };
+          }
+          const { url } = await createBillingPortal({
+            supabase: getBillingSupabase(),
+            getAccessToken: getBillingAccessToken,
+          });
+          openBillingUrl(url);
+          return { success: true, data: { url } };
+        } catch (error) {
+          logger.error('IPC_BILLING_OPEN_PORTAL failed', error as Error);
+          return {
+            success: false,
+            error: (error as Error).message || 'Portal failed',
+          };
         }
       });
 

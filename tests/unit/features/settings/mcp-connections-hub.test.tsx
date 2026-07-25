@@ -54,7 +54,7 @@ describe('McpConnectionsHub', () => {
         isAuthenticated
       />,
     );
-    expect(screen.getByText('Upgrade · Coming soon')).toBeTruthy();
+    expect(screen.getByText('Upgrade in Settings')).toBeTruthy();
   });
 
   it('allows Add and toggle when Paid and has no Configure footer', () => {

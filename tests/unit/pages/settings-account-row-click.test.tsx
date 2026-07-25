@@ -9,6 +9,24 @@ vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
 }));
 
+const billingDefaults = {
+  billingEntitlement: {
+    plan: 'free' as const,
+    status: 'none' as const,
+    isPaidActive: false,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    provider: null,
+    manageUrlAvailable: false,
+  },
+  billingReady: true,
+  billingBusy: false,
+  billingError: null,
+  startCheckout: vi.fn(),
+  openBillingPortal: vi.fn(),
+  refreshBilling: vi.fn(),
+};
+
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   usePersistedMode: vi.fn(() => ({
     currentMode: 'basic',
@@ -65,6 +83,7 @@ describe('SettingsPage account row click targets', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
     } as ReturnType<typeof useApp>);
 
     render(<SettingsPage onSignIn={onSignIn} />);
@@ -92,6 +111,7 @@ describe('SettingsPage account row click targets', () => {
       isLoading: false,
       setIsLoading: vi.fn(),
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+      ...billingDefaults,
     } as ReturnType<typeof useApp>);
 
     render(<SettingsPage />);

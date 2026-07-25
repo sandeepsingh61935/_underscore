@@ -123,7 +123,7 @@ export function McpConnectionsHub({
                 fontSize: 'var(--step--2)',
               }}
             >
-              {isAuthenticated ? 'Upgrade · Coming soon' : 'Sign in to continue'}
+              {isAuthenticated ? 'Upgrade in Settings' : 'Sign in to continue'}
             </button>
           </div>
         </div>
