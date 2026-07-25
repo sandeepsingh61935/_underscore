@@ -104,6 +104,20 @@ describe('highlight-export', () => {
       expect(markdown).toContain('[tags] physics');
       expect(markdown).toContain('[note] Key definition');
     });
+
+    it('preserves fenced code and lists via line-wise blockquotes', () => {
+      const markdown = formatSingleHighlightMarkdown(
+        toExportableHighlight(
+          hl({
+            text: 'Intro\n\n```\nint a = 0;\n```\n\n- one\n- two',
+          }),
+        )!,
+      );
+      expect(markdown).toContain('> ```');
+      expect(markdown).toContain('> int a = 0;');
+      expect(markdown).toContain('> - one');
+      expect(markdown).not.toContain('> "Intro');
+    });
   });
 
   describe('buildExport', () => {

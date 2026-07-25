@@ -1,12 +1,12 @@
 /**
  * Single library tile: maps a highlight summary → HighlightCard (+ optional marginalia).
- * Owns presentation persistence so views do not re-spread metadata props.
+ * Owns quote text persistence so views do not re-spread IPC props.
  */
 import React, { useCallback } from 'react';
 
 import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
-import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
@@ -20,6 +20,7 @@ export interface LibraryHighlightFields {
   tags?: string[];
   sourceKind?: 'code';
   language?: string;
+  /** Display-only legacy/capture hint — not edited via chip UI. */
   presentation?: HighlightPresentation | null;
 }
 
@@ -50,16 +51,11 @@ export function LibraryHighlightTile({
   onToggleExpand,
   suggestions,
 }: LibraryHighlightTileProps): React.ReactElement {
-  const { updateMetadata } = useUpdateHighlightMetadata();
+  const { updateText } = useUpdateHighlightText();
 
-  const onPresentationChange = useCallback(
-    async (presentation: HighlightPresentation): Promise<void> => {
-      const ok = await updateMetadata(highlight.id, { presentation }, { silent: true });
-      if (!ok) {
-        throw new Error('Failed to save presentation');
-      }
-    },
-    [highlight.id, updateMetadata],
+  const onSaveQuote = useCallback(
+    async (text: string): Promise<boolean> => updateText(highlight.id, text),
+    [highlight.id, updateText],
   );
 
   const quote = highlight.text || '[Unavailable]';
@@ -94,7 +90,7 @@ export function LibraryHighlightTile({
       onSectionClick={onSectionClick}
       onCopy={onCopy}
       onDelete={onDelete}
-      onPresentationChange={onPresentationChange}
+      onSaveQuote={onSaveQuote}
       footerStart={footerStart}
     />
   );

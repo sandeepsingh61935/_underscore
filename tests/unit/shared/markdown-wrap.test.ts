@@ -5,10 +5,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyBulletList,
+  applyMarkdownFormatAction,
   applyMarkdownShortcut,
+  applyNumberedList,
   fenceWrapPretty,
   looksAlreadyPretty,
   prettyPrintCode,
+  toggleWrapSelection,
+  tryUnfence,
   wrapSelection,
 } from '@/shared/utils/markdown-wrap';
 
@@ -126,5 +131,199 @@ describe('applyMarkdownShortcut', () => {
         shiftKey: false,
       }),
     ).toBeNull();
+  });
+});
+
+describe('list format actions', () => {
+  it('applies bullets to selected lines', () => {
+    const r = applyBulletList('a\nb', 0, 3);
+    expect(r.text).toBe('- a\n- b');
+  });
+
+  it('applies numbered list to selected lines', () => {
+    const r = applyNumberedList('a\nb', 0, 3);
+    expect(r.text).toBe('1. a\n2. b');
+  });
+
+  it('toggles bullets off when already bulleted', () => {
+    const r = applyBulletList('- a\n- b', 0, 7);
+    expect(r.text).toBe('a\nb');
+  });
+
+  it('routes format actions through applyMarkdownFormatAction', () => {
+    expect(applyMarkdownFormatAction('x', 0, 1, 'bold').text).toBe('**x**');
+    expect(applyMarkdownFormatAction('a\nb', 0, 3, 'bullets').text).toBe('- a\n- b');
+  });
+});
+
+describe('toggleWrapSelection', () => {
+  it('wraps plain selection with bold', () => {
+    const r = toggleWrapSelection('hello', 0, 5, '**', '**');
+    expect(r.text).toBe('**hello**');
+    expect(r.selStart).toBe(2);
+    expect(r.selEnd).toBe(7);
+  });
+
+  it('unwraps when selection includes bold markers', () => {
+    const r = toggleWrapSelection('**hello**', 0, 9, '**', '**');
+    expect(r.text).toBe('hello');
+    expect(r.selStart).toBe(0);
+    expect(r.selEnd).toBe(5);
+  });
+
+  it('unwraps when bold markers flank the selection', () => {
+    const r = toggleWrapSelection('**hello**', 2, 7, '**', '**');
+    expect(r.text).toBe('hello');
+  });
+
+  it('does not nest bold on already-bold selection (inner)', () => {
+    const once = applyMarkdownFormatAction('hello', 0, 5, 'bold');
+    const twice = applyMarkdownFormatAction(once.text, once.selStart, once.selEnd, 'bold');
+    expect(twice.text).toBe('hello');
+  });
+
+  it('does not nest bold when markers are selected', () => {
+    const twice = applyMarkdownFormatAction('**hello**', 0, 9, 'bold');
+    expect(twice.text).toBe('hello');
+  });
+
+  it('toggles italic without treating bold as italic', () => {
+    const bold = '**hello**';
+    // Inner "hello" with italic must NOT strip one star from bold.
+    const r = toggleWrapSelection(bold, 2, 7, '*', '*');
+    expect(r.text).toBe('***hello***');
+    // Selecting full bold span with italic tool should wrap outer, not unwrap bold.
+    const outer = toggleWrapSelection(bold, 0, 9, '*', '*');
+    expect(outer.text).toBe('***hello***');
+  });
+
+  it('toggles italic on single-star wrap', () => {
+    expect(toggleWrapSelection('*hi*', 0, 4, '*', '*').text).toBe('hi');
+    expect(toggleWrapSelection('*hi*', 1, 3, '*', '*').text).toBe('hi');
+  });
+
+  it('toggles inline code', () => {
+    expect(toggleWrapSelection('`x`', 0, 3, '`', '`').text).toBe('x');
+    expect(toggleWrapSelection('`x`', 1, 2, '`', '`').text).toBe('x');
+    expect(applyMarkdownFormatAction('x', 0, 1, 'code').text).toBe('`x`');
+    expect(applyMarkdownFormatAction('`x`', 0, 3, 'code').text).toBe('x');
+  });
+
+  it('unwraps empty markers when caret sits between them', () => {
+    // **|**
+    const r = toggleWrapSelection('****', 2, 2, '**', '**');
+    expect(r.text).toBe('');
+  });
+
+  it('Ctrl+B twice returns to plain text', () => {
+    const once = applyMarkdownShortcut('ab', 0, 2, 'b', {
+      metaKey: false,
+      ctrlKey: true,
+      shiftKey: false,
+    });
+    expect(once?.text).toBe('**ab**');
+    const twice = applyMarkdownShortcut(once!.text, once!.selStart, once!.selEnd, 'b', {
+      metaKey: false,
+      ctrlKey: true,
+      shiftKey: false,
+    });
+    expect(twice?.text).toBe('ab');
+  });
+});
+
+describe('toggleStarEmphasis (no star stacking)', () => {
+  it('alternating bold and italic stays at most ***inner***', () => {
+    let text = 'hello';
+    let s = 0;
+    let e = 5;
+
+    let r = applyMarkdownFormatAction(text, s, e, 'bold');
+    text = r.text;
+    s = r.selStart;
+    e = r.selEnd;
+    expect(text).toBe('**hello**');
+
+    r = applyMarkdownFormatAction(text, s, e, 'italic');
+    text = r.text;
+    s = r.selStart;
+    e = r.selEnd;
+    expect(text).toBe('***hello***');
+
+    r = applyMarkdownFormatAction(text, s, e, 'bold');
+    text = r.text;
+    s = r.selStart;
+    e = r.selEnd;
+    expect(text).toBe('*hello*');
+
+    r = applyMarkdownFormatAction(text, s, e, 'italic');
+    expect(r.text).toBe('hello');
+  });
+
+  it('alternating on full marker selection does not nest', () => {
+    let r = applyMarkdownFormatAction('hello', 0, 5, 'bold');
+    r = applyMarkdownFormatAction(r.text, 0, r.text.length, 'italic');
+    expect(r.text).toBe('***hello***');
+    r = applyMarkdownFormatAction(r.text, 0, r.text.length, 'bold');
+    expect(r.text).toBe('*hello*');
+    r = applyMarkdownFormatAction(r.text, 0, r.text.length, 'italic');
+    expect(r.text).toBe('hello');
+    // Five more alternations stay bounded
+    for (let i = 0; i < 5; i++) {
+      r = applyMarkdownFormatAction(r.text, 0, r.text.length, i % 2 === 0 ? 'bold' : 'italic');
+    }
+    expect(r.text.replace(/[^*]/g, '').length).toBeLessThanOrEqual(6);
+  });
+
+  it('caret inside bold span toggles bold off instead of inserting stars', () => {
+    const src = '**hello**';
+    // caret between l and l
+    const r = applyMarkdownFormatAction(src, 4, 4, 'bold');
+    expect(r.text).toBe('hello');
+  });
+
+  it('collapses already-stacked stars when toggling', () => {
+    const stacked = '******hello******';
+    const r = applyMarkdownFormatAction(stacked, 0, stacked.length, 'bold');
+    // Peels stacked ** pairs down to plain (bold was on → off)
+    expect(r.text).toBe('hello');
+  });
+
+  it('multi-line code action uses fenced pretty block', () => {
+    const src = 'while (x) { int a = 1; }';
+    // force multi-line selection path via embedded newline
+    const multi = 'line1\n' + src;
+    const r = applyMarkdownFormatAction(multi, 0, multi.length, 'code');
+    expect(r.text.startsWith('```\n')).toBe(true);
+    expect(r.text).toContain('int a = 1;');
+  });
+
+  it('single-line code action stays inline', () => {
+    expect(applyMarkdownFormatAction('x', 0, 1, 'code').text).toBe('`x`');
+  });
+});
+
+describe('fence toggle', () => {
+  it('unwraps when selection is a full fence block', () => {
+    const src = '```\ncode\n```';
+    const r = fenceWrapPretty(src, 0, src.length);
+    expect(r.text).toBe('code');
+  });
+
+  it('unwraps when selection is inner code with fence flanks', () => {
+    const src = '```\ncode\n```';
+    const innerStart = src.indexOf('code');
+    const r = fenceWrapPretty(src, innerStart, innerStart + 4);
+    expect(r.text).toBe('code');
+  });
+
+  it('tryUnfence returns null when not fenced', () => {
+    expect(tryUnfence('plain', 0, 5)).toBeNull();
+  });
+
+  it('fence action twice returns to plain (no double fence)', () => {
+    const once = applyMarkdownFormatAction('a();', 0, 4, 'fence');
+    expect(once.text).toContain('```');
+    const twice = applyMarkdownFormatAction(once.text, once.selStart, once.selEnd, 'fence');
+    expect(twice.text).toBe('a();');
   });
 });

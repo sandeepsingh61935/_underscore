@@ -1,7 +1,7 @@
 # PRD: Highlight Tile Editor UX, Unified Action Row, and Density
 
 **Date:** 2026-07-14  
-**Status:** Ready for implementation  
+**Status:** Implemented (components on `dev`; wire views if still local-only)  
 **Triage:** `ready-for-agent` (local spec only — `gh` unavailable; not published to issue tracker)  
 **Scope:** Collections highlight tile (extension popup + web when sharing the same card), markdown editor affordances, code-block chrome, single action row, vertical density  
 **Baseline (already shipped):** markdown body render + Collections edit/save (`HighlightMarkdownBody`, `UPDATE_HIGHLIGHT_TEXT`), inline Notes|Tags marginalia band  

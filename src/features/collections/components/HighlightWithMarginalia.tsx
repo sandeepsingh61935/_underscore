@@ -24,8 +24,6 @@ export interface HighlightWithMarginaliaProps {
   sourceKind?: 'code';
   language?: string;
   presentation?: HighlightPresentation | null;
-  /** Ignored — presentation is owned by LibraryHighlightTile. */
-  onPresentationChange?: (presentation: HighlightPresentation) => Promise<void>;
 }
 
 export function HighlightWithMarginalia({

@@ -20,12 +20,24 @@ export function formatSourceAnnotation(url: string): string {
   return `[source] ${url}`;
 }
 
+function formatHighlightBody(text: string): string {
+  const trimmed = text.trimEnd();
+  // Multi-line / structured markdown: blockquote each line so fences and lists survive export.
+  if (trimmed.includes('\n') || /```|^\s*[-*]\s+/m.test(trimmed) || /^\s*\d+\.\s+/m.test(trimmed)) {
+    return trimmed
+      .split('\n')
+      .map((line) => `> ${line}`)
+      .join('\n');
+  }
+  const quote = trimmed.replace(/"/g, '\\"');
+  return `> "${quote}"`;
+}
+
 function formatHighlightBlock(h: ExportableHighlight, index: number): string {
-  const quote = h.text.replace(/"/g, '\\"');
   const lines: string[] = [
     `**${index}.**`,
     '',
-    `> "${quote}"`,
+    formatHighlightBody(h.text),
     '',
     `[date] ${formatDate(h.createdAt)}`,
     formatSourceAnnotation(h.url),

@@ -32,11 +32,12 @@ import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
+import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, UPDATE_HIGHLIGHT_TEXT, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { validateHighlightText } from '@/shared/utils/highlight-text';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
@@ -521,6 +522,44 @@ export default defineBackground({
           return { success: true, data: undefined };
         } catch (error) {
           logger.error('UPDATE_HIGHLIGHT_METADATA failed', error as Error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      messageBus.subscribe(UPDATE_HIGHLIGHT_TEXT, async (payload: {
+        id: string;
+        text: string;
+      }) => {
+        logger.info('Handling UPDATE_HIGHLIGHT_TEXT request', { id: payload.id });
+        try {
+          const collectionsGate = canUseFeature('collections', await getFeatureGateContext());
+          if (!collectionsGate.allowed) {
+            return {
+              success: false,
+              error: collectionsGate.reason ?? 'Collections not available in this mode',
+              code: collectionsGate.reason,
+            };
+          }
+
+          const validated = validateHighlightText(payload.text);
+          if (!validated.ok) {
+            return { success: false, error: validated.error };
+          }
+
+          const existing = repositoryFacade.get(payload.id);
+          if (!existing) {
+            return { success: false, error: 'Highlight not found' };
+          }
+
+          // Update body text only — never rewrite ranges / TextQuote selectors.
+          repositoryFacade.update(payload.id, { text: validated.text });
+          notifyLibraryDataChanged({ source: 'text-update' });
+          return { success: true, data: undefined };
+        } catch (error) {
+          logger.error('UPDATE_HIGHLIGHT_TEXT failed', error as Error);
           return {
             success: false,
             error: error instanceof Error ? error.message : String(error),

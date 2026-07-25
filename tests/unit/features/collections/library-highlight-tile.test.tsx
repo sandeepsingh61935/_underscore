@@ -4,10 +4,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 
-const updateMetadata = vi.fn().mockResolvedValue(true);
+const updateText = vi.fn().mockResolvedValue(true);
+
+vi.mock('@/features/collections/hooks/useUpdateHighlightText', () => ({
+  useUpdateHighlightText: () => ({ updateText }),
+}));
 
 vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
-  useUpdateHighlightMetadata: () => ({ updateMetadata }),
+  useUpdateHighlightMetadata: () => ({ updateMetadata: vi.fn().mockResolvedValue(true) }),
 }));
 
 vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
@@ -16,7 +20,7 @@ vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
 }));
 
 describe('LibraryHighlightTile', () => {
-  it('persists presentation via updateMetadata', async () => {
+  it('shows Edit and persists quote text via updateText', async () => {
     render(
       <LibraryHighlightTile
         highlight={{
@@ -28,13 +32,13 @@ describe('LibraryHighlightTile', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Bullets/i }));
+    expect(screen.queryByRole('button', { name: /As captured/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
+    const textarea = screen.getByLabelText(/Edit highlight markdown/);
+    fireEvent.change(textarea, { target: { value: '**edited**' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save highlight text/ }));
     await vi.waitFor(() => {
-      expect(updateMetadata).toHaveBeenCalledWith(
-        'hl-1',
-        { presentation: { format: 'bullets' } },
-        { silent: true },
-      );
+      expect(updateText).toHaveBeenCalledWith('hl-1', '**edited**');
     });
   });
 
@@ -55,5 +59,6 @@ describe('LibraryHighlightTile', () => {
     );
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('n1');
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('t1');
+    expect(screen.getByTestId('highlight-action-row').textContent).toMatch(/Edit/i);
   });
 });

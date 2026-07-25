@@ -90,8 +90,11 @@ export const SYNC_LIBRARY = 'SYNC_LIBRARY' as const;
 /** Fetch highlights formatted for scoped copy/export (library, domain, section, highlight). */
 export const GET_EXPORTABLE_HIGHLIGHTS = 'GET_EXPORTABLE_HIGHLIGHTS' as const;
 
-/** Update user notes/tags/presentation on a highlight (popup and web app). Quote text is immutable. */
+/** Update user notes/tags/presentation on a highlight (popup and web app). */
 export const UPDATE_HIGHLIGHT_METADATA = 'UPDATE_HIGHLIGHT_METADATA' as const;
+
+/** Update curated highlight body text (Collections Edit). Does not rewrite ranges/selectors. */
+export const UPDATE_HIGHLIGHT_TEXT = 'UPDATE_HIGHLIGHT_TEXT' as const;
 
 /** List normalized user labels for autocomplete (extension popup / web). */
 export const GET_USER_TAGS = 'GET_USER_TAGS' as const;
@@ -122,7 +125,7 @@ export const LOGOUT = 'LOGOUT' as const;
  * - IPC_AI_STREAM_CHAT_REQUEST:  opens a Port; payload = { template, highlights, opts }
  *                               responses on the port: CHUNK, DONE, ERROR
  * - IPC_AI_CHAT:                 single-shot completion (non-streaming)
- * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic'|'ollama'|'gemini'|'openai'|'openrouter'|'minimax' } -> { ok, model, error? }
+ * - IPC_AI_HEALTH_CHECK:         { provider: 'anthropic'|'ollama'|'gemini'|'openai'|'openrouter' } -> { ok, model, error? }
  * - IPC_AI_SET_API_KEY:          { provider, key?, model? } -> { ok: true } | error
  * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, model: string }
  * - IPC_AI_GET_ACTIVE_PROVIDER:    -> { provider: ProviderName | null }
