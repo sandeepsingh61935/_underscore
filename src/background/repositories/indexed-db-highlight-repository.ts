@@ -12,11 +12,12 @@ import {
   BASIC_HIGHLIGHT_DB_NAME,
   LEGACY_HIGHLIGHT_DB_NAME,
 } from '@/shared/constants/highlight-storage-scope';
+import { HIGHLIGHT_DB_VERSION, HIGHLIGHTS_STORE } from '@/shared/constants/highlight-db-version';
+import { upgradeHighlightDatabase } from '@/shared/storage/highlight-db-upgrade';
 
 export { BASIC_HIGHLIGHT_DB_NAME, LEGACY_HIGHLIGHT_DB_NAME };
 export const DB_NAME = LEGACY_HIGHLIGHT_DB_NAME;
-const DB_VERSION = 1;
-const STORE_NAME = 'highlights';
+const STORE_NAME = HIGHLIGHTS_STORE;
 
 /**
  * IndexedDB implementation of IHighlightRepository
@@ -30,13 +31,9 @@ export class IndexedDBHighlightRepository implements IHighlightRepository {
         private readonly logger: ILogger,
         private readonly dbName: string = BASIC_HIGHLIGHT_DB_NAME,
     ) {
-        this.dbPromise = openDB(this.dbName, DB_VERSION, {
+        this.dbPromise = openDB(this.dbName, HIGHLIGHT_DB_VERSION, {
             upgrade(db) {
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                    store.createIndex('contentHash', 'contentHash');
-                    store.createIndex('url', 'url');
-                }
+                upgradeHighlightDatabase(db);
             },
         });
     }

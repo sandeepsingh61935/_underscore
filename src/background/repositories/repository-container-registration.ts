@@ -8,6 +8,7 @@ import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/utils/logger';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
@@ -25,6 +26,10 @@ import { CloudHydrationService } from '@/background/services/cloud-hydration-ser
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
+import { IndexedDBTagRepository } from '@/background/repositories/indexed-db-tag-repository';
+import { SupabaseTagRepository } from '@/background/repositories/supabase-tag-repository';
+import { ScopedTagRepository } from '@/shared/repositories/scoped-tag-repository';
+import { TagService } from '@/background/services/tag-service';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
@@ -205,6 +210,44 @@ export function registerRepositoryComponents(container: Container): void {
         const supabaseClient = container.resolve<SupabaseClient>('_supabaseClient');
         const cloud = new HighlightCloudDeleteAdapter(supabaseClient);
         return new HighlightDeleteService(repositoryFacade, cloud);
+    });
+
+    // ==================== Tag Repositories ====================
+
+    container.registerSingleton('basicTagRepository', () => {
+        const logger = container.resolve<ILogger>('logger');
+        return new IndexedDBTagRepository(logger, BASIC_HIGHLIGHT_DB_NAME);
+    });
+
+    container.registerSingleton('proTagRepository', () => {
+        const logger = container.resolve<ILogger>('logger');
+        return new IndexedDBTagRepository(logger, PRO_HIGHLIGHT_DB_NAME);
+    });
+
+    container.registerSingleton<ScopedTagRepository>('scopedTagRepository', () => {
+        const basic = container.resolve<ITagRepository>('basicTagRepository' as never);
+        const pro = container.resolve<ITagRepository>('proTagRepository' as never);
+        return new ScopedTagRepository(basic, pro, 'basic');
+    });
+
+    container.registerSingleton('supabaseTagRepository', () => {
+        const supabaseClient = container.resolve<SupabaseClient>('_supabaseClient');
+        const authManager = container.resolve<IAuthManager>('authManager');
+        const logger = container.resolve<ILogger>('logger');
+        return new SupabaseTagRepository(supabaseClient, authManager, logger);
+    });
+
+    container.registerSingleton<TagService>('tagService', () => {
+        const scopedTagRepository = container.resolve<ScopedTagRepository>('scopedTagRepository' as never);
+        const cloudTagRepository = container.resolve<SupabaseTagRepository>('supabaseTagRepository' as never);
+        const authManager = container.resolve<IAuthManager>('authManager');
+        const logger = container.resolve<ILogger>('logger');
+        return new TagService(
+            scopedTagRepository,
+            cloudTagRepository,
+            () => authManager.isAuthenticated,
+            logger,
+        );
     });
 }
 
