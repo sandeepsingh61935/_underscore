@@ -1,48 +1,50 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import { Logo } from '../../../ui-system/components/primitives/Logo';
+import { useAuthActions } from '../../../features/auth/hooks/useAuthActions';
+import { useResendCooldown } from '../../../features/auth/hooks/useResendCooldown';
+import { DevEmailHint } from '../../../ui-system/components/composed/DevEmailHint';
+import { OtpInput } from '../../../ui-system/components/composed/OtpInput';
+
+import { AuthScreenShell } from '@/features/auth/components/AuthScreenShell';
+import { Button } from '@/ui-system/components/primitives/Button';
+import { isRateLimitCode } from '@/shared/auth/auth-error-messages';
 
 interface VerificationViewProps {
     email: string;
     expiresAt: number | null;
-    onCheckVerification: () => void;
+    onVerified: () => void;
     onCancel: () => void;
 }
 
 /**
- * VerificationView — V2 Editorial migration of the email verification screen.
+ * VerificationView — 6-digit email OTP confirmation screen.
  *
  * Body-only root: `display: flex, flex-direction: column, height: 100%, width: 100%`.
  * PopupShell owns the 400x600 chrome; this view returns body content only.
- *
- * V2 token map applied:
- *   - bg-primary-container (icon)  -> var(--accent-tint-08)
- *   - text-primary                 -> var(--accent)
- *   - bg-surface-container         -> var(--paper-2)
- *   - text-on-surface / -variant   -> var(--ink) / var(--ink-3)
- *   - border-outline-variant       -> var(--rule-soft)
- *   - text-error                   -> var(--accent) (V2 single-accent: errors use --accent)
- *   - text-display-small           -> var(--step-5) (timer numeral)
- *   - text-headline-small          -> var(--step-3) (heading)
- *   - text-body-medium             -> var(--step-0) (paragraph)
- *   - text-label-large             -> var(--step--1) (button)
- *   - text-label-small             -> var(--step--2) (caption)
- *   - min-h-[48px]                 -> minHeight: 44
- *   - var(--md-sys-color-*)        -> removed (cat-1-md3)
- *   - rounded-full                 -> var(--radius)
- *   - duration-short               -> var(--step-0) (V2 standard motion 180ms)
- *
- * Behavior preserved: setInterval timer at 1000ms, formatTime(2:30 style),
- * isExpired transition, button copy.
  */
 export function VerificationView({
     email,
     expiresAt,
-    onCheckVerification,
+    onVerified,
     onCancel,
 }: VerificationViewProps): React.ReactElement {
+    const { verifyEmailOtp, resendEmailOtp } = useAuthActions();
+
+    const [code, setCode] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [resendState, setResendState] = useState<'idle' | 'sending'>('idle');
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isExpired, setIsExpired] = useState(false);
+    const [showSentNotice, setShowSentNotice] = useState(false);
+    const resendCooldown = useResendCooldown();
+
+    useEffect(() => {
+        if (!resendCooldown.isLocked) {
+            setShowSentNotice(false);
+        }
+    }, [resendCooldown.isLocked]);
 
     useEffect(() => {
         if (!expiresAt) return;
@@ -70,226 +72,158 @@ export function VerificationView({
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const handleVerify = async (submitted?: string): Promise<void> => {
+        const value = submitted ?? code;
+        if (value.length !== 6 || isVerifying) return;
+
+        setError(null);
+        setIsVerifying(true);
+        const result = await verifyEmailOtp(email, value);
+        setIsVerifying(false);
+
+        if (result.success) {
+            onVerified();
+        } else {
+            setError(result.error || 'That code is incorrect or has expired. Try again or resend a new code.');
+            setCode('');
+        }
+    };
+
+    const handleResend = async (): Promise<void> => {
+        setError(null);
+
+        if (!email) {
+            setError('A valid email is required. Go back and start again.');
+            return;
+        }
+
+        if (resendCooldown.isLocked || resendState === 'sending') return;
+
+        setResendState('sending');
+        const result = await resendEmailOtp(email);
+        setResendState('idle');
+        setIsExpired(false);
+
+        if (result.success) {
+            resendCooldown.start();
+            setShowSentNotice(true);
+            toast.success('Code sent — check your inbox');
+            return;
+        }
+
+        setShowSentNotice(false);
+        if (isRateLimitCode(result.code)) {
+            resendCooldown.start(result.retryAfterMs);
+        }
+        setError(result.error || 'Failed to resend code. Please try again.');
+    };
+
     return (
-        <div
-            style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                maxWidth: 380,
-                margin: '0 auto',
-                overflowY: 'auto',
-                padding: '0 24px',
-                backgroundColor: 'var(--paper)',
-                color: 'var(--ink)',
-            }}
+        <AuthScreenShell
+            variant="popup"
+            kicker="Confirm email"
+            title="Check your email"
+            subtitle={<>Enter the 6-digit code we sent to{' '}<span style={{ fontWeight: 500, color: 'var(--ink)' }}>{email}</span>.</>}
+            error={error}
         >
-            {/* Logo area */}
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    marginTop: 32,
-                    marginBottom: 32,
-                    flexShrink: 0,
-                }}
-            >
-                <Logo size="lg" showText={true} />
+            <DevEmailHint />
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <OtpInput
+                    length={6}
+                    value={code}
+                    onChange={setCode}
+                    onComplete={(value) => { void handleVerify(value); }}
+                    disabled={isVerifying || isExpired}
+                    autoFocus
+                    error={Boolean(error)}
+                />
             </div>
 
-            <main
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    width: '100%',
-                }}
-            >
-                {/* Visual Icon Container */}
+            {!isExpired ? (
                 <div
+                    className="u-mono"
                     style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--accent-tint-08)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: 24,
-                        color: 'var(--accent)',
-                    }}
-                >
-                    <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                    </svg>
-                </div>
-
-                <h1
-                    className="u-serif"
-                    style={{
-                        fontSize: 'var(--step-3)',
-                        fontWeight: 500,
-                        color: 'var(--ink)',
-                        margin: '0 0 8px',
+                        color: 'var(--ink-3)',
+                        fontSize: 'var(--step--2)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.14em',
                         textAlign: 'center',
+                        marginBottom: 16,
                     }}
                 >
-                    Check your email
-                </h1>
+                    Code expires in {formatTime(timeLeft)}
+                </div>
+            ) : (
+                <div
+                    className="u-sans"
+                    style={{
+                        color: 'var(--ink)',
+                        fontSize: 'var(--step--1)',
+                        fontWeight: 500,
+                        textAlign: 'center',
+                        marginBottom: 16,
+                    }}
+                >
+                    Code expired — request a new one below
+                </div>
+            )}
 
+            {showSentNotice ? (
                 <p
                     className="u-sans"
                     style={{
-                        fontSize: 'var(--step-0)',
-                        color: 'var(--ink-3)',
-                        margin: '0 0 24px',
                         textAlign: 'center',
+                        fontSize: 'var(--step--1)',
+                        color: 'var(--ink-3)',
+                        margin: '0 0 16px',
                     }}
                 >
-                    We&apos;ve sent a verification link to{' '}
-                    <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{email}</span>.
-                    Please click the link to verify your account.
+                    New code sent
                 </p>
+            ) : null}
 
-                {/* Status Card */}
-                <div
-                    style={{
-                        width: '100%',
-                        backgroundColor: 'var(--paper-2)',
-                        borderRadius: 'var(--radius)',
-                        padding: 16,
-                        marginBottom: 32,
-                        border: '1px solid var(--rule-soft)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                    }}
+            <div
+                style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                }}
+            >
+                <Button
+                    type="button"
+                    variant="accent"
+                    onClick={() => void handleVerify()}
+                    isLoading={isVerifying}
+                    disabled={code.length !== 6 || isExpired}
+                    style={{ width: '100%' }}
                 >
-                    {isExpired ? (
-                        <div
-                            className="u-sans"
-                            style={{
-                                color: 'var(--accent)',
-                                fontSize: 'var(--step--1)',
-                                fontWeight: 500,
-                                marginBottom: 4,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                            Verification Expired
-                        </div>
-                    ) : (
-                        <>
-                            <div
-                                className="u-mono"
-                                style={{
-                                    color: 'var(--ink-3)',
-                                    fontSize: 'var(--step--2)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.14em',
-                                    marginBottom: 4,
-                                }}
-                            >
-                                Time remaining
-                            </div>
-                            <div
-                                className="u-serif"
-                                style={{
-                                    fontSize: 'var(--step-5)',
-                                    color: 'var(--accent)',
-                                    fontVariantNumeric: 'tabular-nums',
-                                    lineHeight: 1,
-                                }}
-                            >
-                                {formatTime(timeLeft)}
-                            </div>
-                        </>
-                    )}
-                </div>
+                    Verify
+                </Button>
 
-                {/* Actions */}
-                <div
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                    }}
+                <Button
+                    type="button"
+                    variant="default"
+                    onClick={() => void handleResend()}
+                    isLoading={resendState === 'sending'}
+                    disabled={resendCooldown.isLocked}
+                    style={{ width: '100%' }}
                 >
-                    <button
-                        type="button"
-                        onClick={onCheckVerification}
-                        style={{
-                            minHeight: 44,
-                            width: '100%',
-                            borderRadius: 'var(--radius)',
-                            backgroundColor: 'var(--accent)',
-                            color: 'var(--accent-ink)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontFamily: 'var(--sans)',
-                            fontSize: 'var(--step--1)',
-                            fontWeight: 500,
-                            transition: 'opacity 0.18s var(--ease-standard)',
-                        }}
-                    >
-                        I&apos;ve verified my email
-                    </button>
+                    {resendCooldown.isLocked
+                        ? `Resend in ${resendCooldown.formatted}`
+                        : 'Resend code'}
+                </Button>
 
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        style={{
-                            minHeight: 44,
-                            width: '100%',
-                            borderRadius: 'var(--radius)',
-                            backgroundColor: 'transparent',
-                            color: 'var(--accent)',
-                            border: '1px solid var(--rule)',
-                            cursor: 'pointer',
-                            fontFamily: 'var(--sans)',
-                            fontSize: 'var(--step--1)',
-                            fontWeight: 500,
-                            transition: 'opacity 0.18s var(--ease-standard)',
-                        }}
-                    >
-                        {isExpired ? 'Try again' : 'Cancel'}
-                    </button>
-                </div>
-            </main>
-        </div>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={onCancel}
+                    style={{ width: '100%', color: 'var(--ink-3)' }}
+                >
+                    Cancel
+                </Button>
+            </div>
+        </AuthScreenShell>
     );
 }
