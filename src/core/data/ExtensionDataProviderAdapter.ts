@@ -24,13 +24,11 @@ export class ExtensionDataProviderAdapter implements IDataProvider {
       if (!response?.success || !response.data) {
         return [];
       }
-      // Map CollectionSummary (background's read shape) to DomainCollection
-      // (UI's shape). lastActive is omitted; the query service doesn't
-      // compute it yet. CollectionsView falls back to empty subtitle.
       return response.data.collections.map((c) => ({
         id: c.domain,
         domain: c.domain,
         highlightCount: c.highlightCount,
+        lastActive: c.lastActive ? new Date(c.lastActive) : undefined,
       }));
     } catch {
       return [];

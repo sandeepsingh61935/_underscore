@@ -32,7 +32,14 @@ export function useCollections(): CollectionsResult {
 
     const context = isExtensionContext() ? 'extension' : 'web';
 
-    const getCollectionsAction = useIpcAction<void, { collections: Array<{ id: string; domain: string; highlightCount: number; lastActive: string }> }>('GET_COLLECTIONS');
+    const getCollectionsAction = useIpcAction<void, {
+      collections: Array<{
+        id?: string;
+        domain: string;
+        highlightCount: number;
+        lastActive?: string | Date;
+      }>;
+    }>('GET_COLLECTIONS');
 
     useEffect(() => {
         let cancelled = false;
@@ -50,10 +57,10 @@ export function useCollections(): CollectionsResult {
                     }
 
                     const collections = (ipcResult.data.collections || []).map((col) => ({
-                        id: col.id,
+                        id: col.id ?? col.domain,
                         domain: col.domain,
                         highlightCount: col.highlightCount,
-                        lastActive: new Date(col.lastActive),
+                        lastActive: col.lastActive ? new Date(col.lastActive) : undefined,
                     }));
 
                     setResult({ collections, isLoading: false, error: null });

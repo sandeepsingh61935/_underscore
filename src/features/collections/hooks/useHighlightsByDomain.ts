@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
+import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
 
 export interface Highlight {
     id: string;
@@ -8,6 +9,7 @@ export interface Highlight {
     text: string;
     path: string;
     createdAt: Date;
+    updatedAt?: Date;
 }
 
 interface GetHighlightsByDomainResponse {
@@ -17,6 +19,7 @@ interface GetHighlightsByDomainResponse {
         text: string;
         path?: string;
         createdAt: string;
+        updatedAt?: string;
     }>;
 }
 
@@ -44,13 +47,16 @@ export function useHighlightsByDomain(domain: string | undefined) {
             return;
         }
 
-        const parsedHighlights = (result.data.highlights || []).map((hl) => ({
-            id: hl.id,
-            url: hl.url,
-            text: hl.text,
-            path: hl.path || new URL(hl.url).pathname,
-            createdAt: new Date(hl.createdAt),
-        }));
+        const parsedHighlights = (result.data.highlights || [])
+            .map((hl) => ({
+                id: hl.id,
+                url: hl.url,
+                text: hl.text,
+                path: hl.path || new URL(hl.url).pathname,
+                createdAt: new Date(hl.createdAt),
+                updatedAt: hl.updatedAt ? new Date(hl.updatedAt) : undefined,
+            }))
+            .sort(compareByHighlightActivityDesc);
 
         setHighlights(parsedHighlights);
         setIsLoading(false);

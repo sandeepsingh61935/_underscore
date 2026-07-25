@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
 
 export interface Highlight {
     id: string;
@@ -8,6 +9,7 @@ export interface Highlight {
     text: string;
     path: string;
     createdAt: Date;
+    updatedAt?: Date;
 }
 
 /** Fetch highlights by domain from Supabase for the web app. */
@@ -47,7 +49,7 @@ export function useHighlightsByDomainWeb(domain: string | undefined) {
                     throw queryError;
                 }
 
-                // Map to highlight format
+                // Map to highlight format; newest update first
                 const highlights: Highlight[] = (data || []).map((hl) => {
                     const url = new URL(hl.url);
                     return {
@@ -56,11 +58,11 @@ export function useHighlightsByDomainWeb(domain: string | undefined) {
                         text: hl.text,
                         path: url.pathname,
                         createdAt: new Date(hl.created_at),
+                        updatedAt: hl.updated_at ? new Date(hl.updated_at) : undefined,
                     };
                 });
 
-                // Sort by most recent
-                highlights.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                highlights.sort(compareByHighlightActivityDesc);
 
                 setHighlights(highlights);
             } catch (err) {
