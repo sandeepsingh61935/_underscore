@@ -91,6 +91,23 @@ describe('LocalCacheIpcRepository', () => {
     expect(parsed.type).toBe('IPC_HIGHLIGHT_UPDATE');
   });
 
+  it('skipSync update patches cache but does not send IPC (prevents cloud echo loop)', async () => {
+    const h = makeHighlight();
+    await repo.add(h);
+    sentMessages.length = 0;
+    await repo.update('h-1', { text: 'from-remote' }, { skipSync: true });
+    const all = await repo.findAll();
+    expect(all[0]?.text).toBe('from-remote');
+    expect(sentMessages).toHaveLength(0);
+  });
+
+  it('skipSync add patches cache but does not send IPC', async () => {
+    await repo.add(makeHighlight({ id: 'remote-only' }), { skipSync: true });
+    const all = await repo.findAll();
+    expect(all).toHaveLength(1);
+    expect(sentMessages).toHaveLength(0);
+  });
+
   it('clear empties local cache AND sends IPC_HIGHLIGHT_CLEAR', async () => {
     await repo.add(makeHighlight({ id: 'a' }));
     await repo.add(makeHighlight({ id: 'b' }));

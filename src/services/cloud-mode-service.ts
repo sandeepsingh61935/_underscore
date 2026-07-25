@@ -157,31 +157,42 @@ export class CloudModeService {
 
       this.logger.info(`[VAULT] [HIT] Found ${highlights.length} highlights from repository`);
 
-      // Restore Ranges
+      // Restore Ranges — tolerate missing/legacy shapes so one bad row
+      // cannot abort the whole page restore (ranges undefined → [0] crash).
       const results = await Promise.all(
         highlights.map(async (highlight) => {
-          // Selectors are embedded in the highlight ranges (HighlightDataV2 schema).
-          // The runtime value may be a W3C TextQuoteSelector (current format
-          // written by saveHighlight) or a legacy MultiSelector; the dispatcher
-          // in restoreHighlightRange discriminates by `type` field.
-          const selector = highlight.ranges[0]?.selector as unknown as HighlightSelector;
+          try {
+            const selector = this.extractSelector(highlight);
+            if (!selector) {
+              this.logger.warn('[VAULT] No selectors found for highlight', {
+                id: highlight.id,
+                hasRanges: Array.isArray(highlight.ranges),
+              });
+              return {
+                highlight,
+                range: null,
+                restoredUsing: 'failed' as const,
+              };
+            }
 
-          if (!selector) {
-            this.logger.warn('[VAULT] No selectors found for highlight', highlight.id);
+            const range = await this.restoreHighlightRange(selector);
             return {
-              highlight: highlight,
+              highlight,
+              range,
+              restoredUsing: this.determineRestorationTier(range, selector),
+            };
+          } catch (rowError) {
+            this.logger.error(
+              '[VAULT] Failed to restore one highlight; continuing others',
+              rowError as Error,
+              { id: highlight.id }
+            );
+            return {
+              highlight,
               range: null,
               restoredUsing: 'failed' as const,
             };
           }
-
-          const range = await this.restoreHighlightRange(selector);
-
-          return {
-            highlight: highlight,
-            range,
-            restoredUsing: this.determineRestorationTier(range, selector),
-          };
         })
       );
 
@@ -190,6 +201,23 @@ export class CloudModeService {
       this.logger.error('[VAULT] Failed to restore highlights:', error as Error);
       throw error;
     }
+  }
+
+  /**
+   * Pull a restorable selector from V2 ranges or legacy flat `selectors`.
+   * Safe when `ranges` is missing/undefined (cloud or partial rows).
+   */
+  private extractSelector(highlight: HighlightDataV2): HighlightSelector | null {
+    const ranges = highlight.ranges;
+    if (Array.isArray(ranges) && ranges.length > 0) {
+      const embedded = ranges[0]?.selector as unknown as HighlightSelector | undefined;
+      if (embedded) return embedded;
+    }
+
+    const legacy = (highlight as { selectors?: HighlightSelector }).selectors;
+    if (legacy) return legacy;
+
+    return null;
   }
 
   /**
@@ -211,30 +239,13 @@ export class CloudModeService {
         rangesIsArray: Array.isArray(highlight.ranges)
       });
 
-      if (!highlight.ranges || !Array.isArray(highlight.ranges) || highlight.ranges.length === 0) {
-        // Fallback: Check for flat 'selectors' property (Legacy/DB schema difference?)
-        if ((highlight as any).selectors) {
-          this.logger.info('[VAULT] Found flat "selectors" property, using as fallback');
-          const selector = (highlight as any).selectors as MultiSelector;
-          const range = await this.restoreHighlightRange(selector);
-          return {
-            range,
-            restoredUsing: this.determineRestorationTier(range, selector),
-          };
-        }
-
-        this.logger.warn('[VAULT] Invalid ranges in highlight payload', highlight);
-        return { range: null, restoredUsing: 'failed' };
-      }
-
-      const selector = highlight.ranges[0]?.selector as unknown as HighlightSelector;
-
+      const selector = this.extractSelector(highlight);
       if (!selector) {
-        this.logger.warn('[VAULT] No selectors found for highlight', highlight.id);
-        return {
-          range: null,
-          restoredUsing: 'failed',
-        };
+        this.logger.warn('[VAULT] No selectors found for highlight', {
+          id: highlight.id,
+          hasRanges: Array.isArray(highlight.ranges),
+        });
+        return { range: null, restoredUsing: 'failed' };
       }
 
       const range = await this.restoreHighlightRange(selector);

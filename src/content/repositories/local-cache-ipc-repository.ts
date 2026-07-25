@@ -24,8 +24,12 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
 
   constructor(private readonly messageBus: IMessageBus) {}
 
-  async add(highlight: HighlightDataV2, _options?: RepositoryOptions): Promise<void> {
+  async add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void> {
     await this.cache.add(highlight);
+    // Remote ingest / echo paths must not re-enter background DualWrite (cloud loop).
+    if (options?.skipSync) {
+      return;
+    }
     await this.sendIpc('IPC_HIGHLIGHT_ADD', highlight);
   }
 
@@ -37,14 +41,20 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
   async update(
     id: string,
     updates: Partial<HighlightDataV2>,
-    _options?: RepositoryOptions
+    options?: RepositoryOptions
   ): Promise<void> {
     await this.cache.update(id, updates);
+    if (options?.skipSync) {
+      return;
+    }
     await this.sendIpc('IPC_HIGHLIGHT_UPDATE', { id, updates });
   }
 
-  async remove(id: string, _options?: RepositoryOptions): Promise<void> {
+  async remove(id: string, options?: RepositoryOptions): Promise<void> {
     await this.cache.remove(id);
+    if (options?.skipSync) {
+      return;
+    }
     await this.sendIpc('IPC_HIGHLIGHT_REMOVE', { id });
   }
 
