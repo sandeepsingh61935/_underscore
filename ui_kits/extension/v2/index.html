@@ -72,6 +72,7 @@
 <script type="text/babel" src="tweaks-panel.jsx"></script>
 <script type="text/babel" src="primitives.jsx"></script>
 <script type="text/babel" src="screens-mode-select.jsx"></script>
+<script type="text/babel" src="screens-mode-inline.jsx"></script>
 <script type="text/babel" src="screens-nav.jsx"></script>
 <script type="text/babel" src="screens-expression.jsx"></script>
 <script type="text/babel" src="screens-mcp-connections.jsx"></script>
@@ -155,7 +156,46 @@ function App() {
 
       <div id="canvas-host">
         <DesignCanvas>
-          <DCSection id="mode-select" title="① Mode selection" subtitle="Four approaches to picking between four modes across two families, in a 400×600 popup.">
+          <DCSection id="mode-inline" title="① Mode in Settings (from production code)" subtitle="Grounded in SettingsPage, usePersistedMode, ModeSelectionView, resolvePopupInitialRoute — not archived 4-mode wireframes. Authed choice is Free↔Paid only.">
+            <DCArtboard id="mi-budget" label="Click budget" width={440} height={440}>
+              <ModeClickBudget />
+            </DCArtboard>
+            <DCArtboard id="mi-spec" label="Behavior contract" width={440} height={560}>
+              <ModeBehaviorSpec />
+            </DCArtboard>
+            <DCArtboard id="mi-graph" label="graphify notes" width={440} height={360}>
+              <GraphifyNotes />
+            </DCArtboard>
+            <DCArtboard id="mi-header" label="ModeHeader before / after" width={440} height={320}>
+              <ModeHeaderCompare />
+            </DCArtboard>
+            <DCArtboard id="mi-today-settings" label="TODAY · Settings authed" width={440} height={720}>
+              <Settings_Today_Authed />
+            </DCArtboard>
+            <DCArtboard id="mi-today-modepage" label="TODAY · MODE_SELECTION authed" width={440} height={720}>
+              <ModePage_Today_Authed />
+            </DCArtboard>
+            <DCArtboard id="mi-rec-expand" label="REC · Settings Free/Paid expand" width={440} height={720}>
+              <Settings_Rec_Authed />
+            </DCArtboard>
+            <DCArtboard id="mi-rec-open" label="REC · Settings Free/Paid always-open" width={440} height={720}>
+              <Settings_Rec_AlwaysOpen />
+            </DCArtboard>
+            <DCArtboard id="mi-rec-guest" label="REC · Settings guest (status only)" width={440} height={720}>
+              <Settings_Rec_Guest />
+            </DCArtboard>
+            <DCArtboard id="mi-onb-today" label="TODAY · onboarding beats" width={440} height={420}>
+              <Onboard_Today_Flow />
+            </DCArtboard>
+            <DCArtboard id="mi-welcome" label="REC · Welcome → Guest" width={440} height={720}>
+              <Onboard_Rec_Welcome />
+            </DCArtboard>
+            <DCArtboard id="mi-first-lib" label="REC · Library empty (prod pattern)" width={440} height={720}>
+              <Onboard_Rec_LibraryEmpty />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="mode-select" title="①b Mode selection (archived full-page variants)" subtitle="Earlier full-page approaches. Superseded by Mode-in-Settings above — kept for reference only.">
             <DCArtboard id="ms-a" label="A · Editorial stack" width={440} height={720}>
               <ModeSelect_A />
             </DCArtboard>

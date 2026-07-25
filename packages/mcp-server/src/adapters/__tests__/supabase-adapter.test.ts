@@ -116,6 +116,110 @@ describe('SupabaseMcpAdapter', () => {
     });
   });
 
+  it('exportHighlights scopes to the requested domain when called with { scope: { domain } } (register-tools.ts shape)', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        {
+          id: 'hl-1',
+          url: 'https://example.com/page',
+          text: 'Example highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'hl-2',
+          url: 'https://other.com/page',
+          text: 'Other highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('export_highlights', {
+      scope: { kind: 'domain', domain: 'example.com' },
+    })) as { markdown: string; stats: { included: number; domains: number }; filename: string };
+
+    expect(result.markdown).toContain('example.com');
+    expect(result.markdown).not.toContain('other.com');
+    expect(result.stats.included).toBe(1);
+    expect(result.stats.domains).toBe(1);
+    expect(result.filename).toBe('underscore-example.com.md');
+  });
+
+  it('exportHighlights also accepts a flat { domain } payload for backward compatibility', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        {
+          id: 'hl-1',
+          url: 'https://example.com/page',
+          text: 'Example highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'hl-2',
+          url: 'https://other.com/page',
+          text: 'Other highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('export_highlights', {
+      domain: 'example.com',
+    })) as { stats: { included: number } };
+
+    expect(result.stats.included).toBe(1);
+  });
+
+  it('exportHighlights with kind: "library" (no domain) returns the full library', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        {
+          id: 'hl-1',
+          url: 'https://example.com/page',
+          text: 'Example highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'hl-2',
+          url: 'https://other.com/page',
+          text: 'Other highlight',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('export_highlights', {
+      scope: { kind: 'library' },
+    })) as { stats: { included: number }; filename: string };
+
+    expect(result.stats.included).toBe(2);
+    expect(result.filename).toBe('underscore-library.md');
+  });
+
   it('throws SUPABASE_ERROR on fetchHighlight PostgREST column errors', async () => {
     const chain = createHighlightsQueryChain('maybeSingle', {
       data: null,

@@ -46,12 +46,12 @@ export function McpClientSetupView({
   return (
     <div data-testid="mcp-client-setup" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <div style={{ padding: '12px 16px 6px' }}>
-          <div className="u-serif" style={{ fontSize: 'var(--step-3)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
-            Connect {app.name}
-          </div>
-          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.45 }}>
-            Shared bridge checklist — only the config path and snippet change for this app.
+        <div style={{ padding: '12px 16px 8px' }}>
+          <div
+            className="u-sans"
+            style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}
+          >
+            Shared bridge checklist — only the config path and snippet change for {app.name}.
           </div>
         </div>
 

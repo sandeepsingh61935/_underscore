@@ -40,15 +40,21 @@ describe('ConnectToAiFlow', () => {
 
   it('pushes picker then setup with contextual back', async () => {
     const onDepth = vi.fn();
+    const onExit = vi.fn();
     render(
       <ConnectToAiFlow
         isAuthenticated
         currentMode="pro_xai"
         onStackDepthChange={onDepth}
+        onExit={onExit}
       />,
     );
 
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
+    expect(screen.getByText('← Settings')).toBeTruthy();
+    expect(screen.getByText('Connect to AI')).toBeTruthy();
+    expect(screen.queryByText('Configure AI providers')).toBeNull();
+
     screen.getByRole('button', { name: 'Add an AI app' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
     expect(screen.getByText('← Connect to AI')).toBeTruthy();
@@ -57,10 +63,15 @@ describe('ConnectToAiFlow', () => {
     screen.getByRole('button', { name: 'Cursor' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-client-setup')).toBeTruthy());
     expect(screen.getByText('← Add an AI app')).toBeTruthy();
-    expect(screen.getAllByText('Connect Cursor').length).toBeGreaterThan(0);
+    expect(screen.getByText('Connect Cursor')).toBeTruthy();
 
     screen.getByText('← Add an AI app').click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
+
+    screen.getByText('← Connect to AI').click();
+    await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
+    screen.getByText('← Settings').click();
+    expect(onExit).toHaveBeenCalled();
   });
 
   it('marks Active after Check connection when bridge is connected', async () => {

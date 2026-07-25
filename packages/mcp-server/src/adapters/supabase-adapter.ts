@@ -170,6 +170,10 @@ export class SupabaseMcpAdapter implements McpAdapter {
     if (input.domain) {
       all = all.filter((hl) => hl.domain === input.domain);
     }
+    // Matching logic mirrors src/shared/utils/highlight-search.ts (searchHighlights) --
+    // this package builds standalone (own tsconfig/rootDir, NodeNext resolution, no
+    // cross-package imports elsewhere in this file), so it cannot import directly from
+    // the main src/shared tree. Keep this in sync if the shared util's semantics change.
     const matches = all.filter((hl) => {
       const haystack = [hl.text, hl.notes, ...(hl.tags ?? []), hl.url].join(' ').toLowerCase();
       return haystack.includes(query);
@@ -207,10 +211,14 @@ export class SupabaseMcpAdapter implements McpAdapter {
   }
 
   async exportHighlights(payload: unknown): Promise<unknown> {
-    const input = payload as { domain?: string };
+    // register-tools.ts dispatches `{ scope: { kind, domain } }` (matching the
+    // bridge adapter's shape); also accept a flat `{ domain }` for direct callers.
+    const input = payload as { domain?: string; scope?: { kind?: string; domain?: string } };
+    const domain = input?.scope?.domain || input?.domain;
+
     let highlights = await this.fetchHighlights();
-    if (input?.domain) {
-      highlights = highlights.filter((hl) => hl.domain === input.domain);
+    if (domain) {
+      highlights = highlights.filter((hl) => hl.domain === domain);
     }
     const markdown = highlights
       .map((hl, i) => `### ${i + 1}. ${hl.url}\n\n> ${hl.text}\n`)
@@ -219,7 +227,7 @@ export class SupabaseMcpAdapter implements McpAdapter {
     return {
       format: 'md',
       markdown,
-      filename: input?.domain ? `underscore-${input.domain}.md` : 'underscore-library.md',
+      filename: domain ? `underscore-${domain}.md` : 'underscore-library.md',
       stats: { included: highlights.length, omitted: 0, domains: new Set(highlights.map((h) => h.domain)).size },
       dataCoverage: 'pro_cloud',
     };

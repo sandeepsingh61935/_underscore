@@ -20,7 +20,6 @@ export interface McpConnectionsHubProps {
   tokenCopied?: boolean;
   onAddApp: () => void;
   onOpenActive: (id: McpAiAppId) => void;
-  onOpenModels: () => void;
 }
 
 export function McpConnectionsHub({
@@ -39,7 +38,6 @@ export function McpConnectionsHub({
   tokenCopied = false,
   onAddApp,
   onOpenActive,
-  onOpenModels,
 }: McpConnectionsHubProps): React.ReactElement {
   const locked = !mcpAllowed;
   const activeApps = activeAppIds.map((id) => getMcpAiApp(id));
@@ -54,11 +52,11 @@ export function McpConnectionsHub({
 
   return (
     <div data-testid="mcp-connections-hub">
-      <div style={{ padding: '12px 16px 6px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-3)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
-          Connect to AI
-        </div>
-        <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.4 }}>
+      <div style={{ padding: '12px 16px 8px' }}>
+        <div
+          className="u-sans"
+          style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}
+        >
           Use your highlights in the agent you already use
         </div>
       </div>
@@ -245,7 +243,7 @@ export function McpConnectionsHub({
         ))
       )}
 
-      <div style={{ padding: '8px 16px 12px' }}>
+      <div style={{ padding: '8px 16px 16px' }}>
         <button
           type="button"
           className="u-caps"
@@ -262,20 +260,6 @@ export function McpConnectionsHub({
         >
           Add an AI app
         </button>
-      </div>
-
-      <div style={{ padding: '0 16px 16px' }}>
-        <Row
-          title="Configure AI providers"
-          sub="Models / in-app chat — Settings → AI (sibling, not in Add)"
-          right={
-            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-              {locked ? 'Locked ›' : 'Open ›'}
-            </span>
-          }
-          onClick={() => tryInteract(onOpenModels)}
-          compact
-        />
       </div>
     </div>
   );

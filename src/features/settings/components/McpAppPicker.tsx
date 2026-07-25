@@ -18,10 +18,10 @@ export function McpAppPicker({
   return (
     <div data-testid="mcp-app-picker">
       <div style={{ padding: '12px 16px 8px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-3)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
-          Add an AI app
-        </div>
-        <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.4 }}>
+        <div
+          className="u-sans"
+          style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.4 }}
+        >
           Where do you want to use your highlights?
         </div>
       </div>

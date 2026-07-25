@@ -27,8 +27,9 @@ export interface ConnectToAiFlowProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
   onSignIn?: () => void;
-  onConfigureAIProviders?: () => void;
-  /** Fired when nav stack depth changes (1 = hub rooted in Settings). */
+  /** Exit full-screen Connect flow back to Settings root. */
+  onExit?: () => void;
+  /** Fired when nav stack depth changes (1 = hub). */
   onStackDepthChange?: (depth: number) => void;
 }
 
@@ -36,7 +37,7 @@ export function ConnectToAiFlow({
   isAuthenticated,
   currentMode,
   onSignIn,
-  onConfigureAIProviders,
+  onExit,
   onStackDepthChange,
 }: ConnectToAiFlowProps): React.ReactElement {
   const [stack, setStack] = useState<ConnectToAiScreen[]>([{ kind: 'hub' }]);
@@ -56,7 +57,6 @@ export function ConnectToAiFlow({
   }).allowed;
 
   const screen = stack[stack.length - 1] ?? { kind: 'hub' as const };
-  const showSubnav = screen.kind !== 'hub';
 
   useEffect(() => {
     onStackDepthChange?.(stack.length);
@@ -143,8 +143,12 @@ export function ConnectToAiFlow({
   const pop = useCallback((): void => {
     setLockMessage(null);
     setCheckResult('idle');
+    if (stack.length <= 1) {
+      onExit?.();
+      return;
+    }
     setStack((s) => popConnectScreen(s));
-  }, []);
+  }, [onExit, stack.length]);
 
   const onCheckConnection = useCallback(async (): Promise<void> => {
     if (!enabled || screen.kind !== 'setup') return;
@@ -179,13 +183,6 @@ export function ConnectToAiFlow({
           setCheckResult('idle');
           push({ kind: 'setup', appId: id });
         }}
-        onOpenModels={() => {
-          if (!mcpAllowed) {
-            lockedCta();
-            return;
-          }
-          onConfigureAIProviders?.();
-        }}
       />
     ) : screen.kind === 'picker' ? (
       <McpAppPicker
@@ -218,63 +215,58 @@ export function ConnectToAiFlow({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: showSubnav ? '100%' : undefined,
+        height: '100%',
         width: '100%',
       }}
     >
-      {showSubnav ? (
-        <div
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--rule-soft)',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          alignItems: 'center',
+          flexShrink: 0,
+          minHeight: 44,
+          gap: 8,
+        }}
+      >
+        <button
+          type="button"
+          className="u-mono"
+          onClick={pop}
           style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--rule-soft)',
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            flexShrink: 0,
+            justifySelf: 'start',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--accent)',
+            cursor: 'pointer',
+            fontSize: 'var(--step--2)',
+            padding: 0,
+            textAlign: 'left',
             minHeight: 44,
-            gap: 8,
           }}
         >
-          <button
-            type="button"
-            className="u-mono"
-            onClick={pop}
-            style={{
-              justifySelf: 'start',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--accent)',
-              cursor: 'pointer',
-              fontSize: 'var(--step--2)',
-              padding: 0,
-              textAlign: 'left',
-              minHeight: 44,
-            }}
-          >
-            {connectToAiBackLabel(stack)}
-          </button>
-          <div
-            className="u-sans"
-            style={{
-              justifySelf: 'center',
-              fontSize: 'var(--step-0)',
-              fontWeight: 500,
-              textAlign: 'center',
-              maxWidth: 160,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {connectToAiPageTitle(screen)}
-          </div>
-          <div style={{ justifySelf: 'end' }} />
+          {connectToAiBackLabel(stack)}
+        </button>
+        <div
+          className="u-sans"
+          style={{
+            justifySelf: 'center',
+            fontSize: 'var(--step-0)',
+            fontWeight: 500,
+            textAlign: 'center',
+            maxWidth: 160,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {connectToAiPageTitle(screen)}
         </div>
-      ) : null}
-      <div
-        className={showSubnav ? 'list-scroll' : undefined}
-        style={showSubnav ? { flex: 1, minHeight: 0 } : undefined}
-      >
+        <div style={{ justifySelf: 'end' }} />
+      </div>
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
         {body}
       </div>
     </div>
