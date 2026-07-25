@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
+import { LIBRARY_DATA_CHANGED, MessageSchema } from '@/shared/schemas/message-schemas';
 
 const sendMessage = vi.fn().mockResolvedValue(undefined);
 const tabsQuery = vi.fn().mockResolvedValue([]);
@@ -38,9 +38,26 @@ describe('notifyLibraryDataChanged', () => {
 
     await Promise.resolve();
 
-    expect(sendMessage).toHaveBeenCalledWith({
-      type: LIBRARY_DATA_CHANGED,
-      payload: { source: 'delete', deletedCount: 2, removedIds: ['a', 'b'] },
-    });
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: LIBRARY_DATA_CHANGED,
+        payload: { source: 'delete', deletedCount: 2, removedIds: ['a', 'b'] },
+      }),
+    );
+  });
+
+  it('includes timestamp so ChromeMessageBus MessageSchema accepts the broadcast', async () => {
+    const { notifyLibraryDataChanged } = await import(
+      '@/background/services/library-change-notifier'
+    );
+
+    notifyLibraryDataChanged({ source: 'highlight-bridge-update' });
+    await Promise.resolve();
+
+    const message = sendMessage.mock.calls[0]?.[0];
+    expect(message).toBeDefined();
+    const parsed = MessageSchema.parse(message);
+    expect(parsed.type).toBe(LIBRARY_DATA_CHANGED);
+    expect(parsed.timestamp).toBeGreaterThan(0);
   });
 });

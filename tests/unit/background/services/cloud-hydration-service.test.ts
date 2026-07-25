@@ -23,6 +23,10 @@ vi.mock('wxt/browser', () => ({
     runtime: {
       sendMessage: vi.fn().mockResolvedValue(undefined),
     },
+    tabs: {
+      query: vi.fn().mockResolvedValue([]),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+    },
   },
 }));
 
@@ -91,6 +95,11 @@ function makeAuthManager(authenticated: boolean): IAuthManager {
     onAuthStateChanged: vi.fn(),
     clearVerificationState: vi.fn(),
     setSession: vi.fn(),
+    verifyEmailOtp: vi.fn(),
+    resendEmailOtp: vi.fn(),
+    requestPasswordReset: vi.fn(),
+    verifyRecoveryOtp: vi.fn(),
+    updatePassword: vi.fn(),
   };
 }
 
@@ -189,10 +198,13 @@ describe('CloudHydrationService.hydrate()', () => {
 
     expect(collections.length).toBeGreaterThanOrEqual(1);
 
-    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
-      type: LIBRARY_DATA_CHANGED,
-      payload: expect.objectContaining({ backfilledCount: 3 }),
-    });
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: LIBRARY_DATA_CHANGED,
+        payload: expect.objectContaining({ backfilledCount: 3 }),
+        timestamp: expect.any(Number),
+      }),
+    );
     expect(syncCursor.set).toHaveBeenCalled();
   });
 

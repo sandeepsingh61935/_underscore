@@ -27,9 +27,12 @@ export function notifyLibraryDataChanged(payload: LibraryChangePayload): void {
 }
 
 function broadcastLibraryDataChanged(payload: LibraryChangePayload): void {
+  // Must match MessageSchema (type + payload + timestamp) so ChromeMessageBus
+  // does not reject the broadcast as "Invalid message received".
   const message = {
     type: LIBRARY_DATA_CHANGED,
     payload,
+    timestamp: Date.now(),
   };
 
   void browser.runtime.sendMessage(message).catch(() => {
