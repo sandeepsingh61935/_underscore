@@ -22,7 +22,7 @@ export interface ModelsHubPanelProps {
 
 function providerSubtitle(provider: ProviderName, snapshot: ProviderStatusSnapshot | undefined): string {
   const meta: ProviderMeta = PROVIDER_META[provider];
-  if (provider === 'ollama' && snapshot?.configured) return 'Local';
+  if (provider === 'ollama') return snapshot?.configured ? 'Local' : 'Not connected';
   if (snapshot?.configured && snapshot.model) {
     return formatModelDisplayName(snapshot.model);
   }
@@ -36,57 +36,70 @@ export function ModelsHubPanel({
   onOpenProvider,
   onChangeActiveModel,
 }: ModelsHubPanelProps): React.ReactElement {
-  const activeLabel = activeModelId
-    ? formatModelDisplayName(activeModelId)
-    : 'Not set';
+  const hasActive = Boolean(activeProvider && activeModelId);
+  const activeLabel = activeModelId ? formatModelDisplayName(activeModelId) : 'None selected';
   const activeProviderLabel = activeProvider ? PROVIDER_META[activeProvider].label : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <div style={{ padding: '12px 16px 8px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}>Models</div>
-        <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '4px 0 0' }}>
-          Used for summarize and ask
-        </p>
+      <div style={{ padding: '12px 16px 10px' }}>
+        <div className="u-serif" style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}>
+          Models
+        </div>
       </div>
 
-      <div
+      <button
+        type="button"
+        onClick={onChangeActiveModel}
         style={{
+          all: 'unset',
+          cursor: 'pointer',
+          display: 'block',
           margin: '0 12px 12px',
           padding: '12px 14px',
           border: '1px solid var(--rule-soft)',
           background: 'var(--paper-2)',
+          boxSizing: 'border-box',
+          width: 'calc(100% - 24px)',
         }}
       >
-        <div className="u-kicker" style={{ fontSize: 'var(--step--2)' }}>Summarize model</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-          <StatusDot connected={Boolean(activeProvider && activeModelId)} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--step-0)', color: 'var(--ink)', fontWeight: 600 }}>{activeLabel}</div>
+        <div className="u-kicker" style={{ fontSize: 'var(--step--2)' }}>Active</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <StatusDot connected={hasActive} />
+          <div style={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
+            <div
+              style={{
+                fontSize: 'var(--step-0)',
+                color: 'var(--ink)',
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {activeLabel}
+            </div>
             {activeProviderLabel ? (
               <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 2 }}>
                 {activeProviderLabel}
               </div>
             ) : null}
           </div>
+          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', flexShrink: 0 }}>
+            Change
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={onChangeActiveModel}
-          style={{ marginTop: 10, minHeight: 44 }}
-        >
-          Change model
-        </button>
-      </div>
+      </button>
 
-      <div className="u-caps" style={{ padding: '0 16px 6px', color: 'var(--ink-3)', fontSize: 'var(--step--2)' }}>
+      <div className="u-kicker" style={{ padding: '0 16px 6px' }}>
         Providers
       </div>
 
-      <div className="list-scroll" style={{ flex: 1 }}>
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
         {SETUP_PROVIDERS.map(provider => {
           const snapshot = statuses[provider];
           const configured = snapshot?.configured ?? null;
+          const isActive = activeProvider === provider;
           return (
             <button
               key={provider}
@@ -96,7 +109,7 @@ export function ModelsHubPanel({
                 all: 'unset',
                 cursor: 'pointer',
                 display: 'grid',
-                gridTemplateColumns: 'auto 1fr auto auto',
+                gridTemplateColumns: 'auto 1fr auto',
                 gap: 10,
                 alignItems: 'center',
                 width: '100%',
@@ -104,6 +117,7 @@ export function ModelsHubPanel({
                 padding: '12px 16px',
                 minHeight: 44,
                 borderBottom: '1px solid var(--rule-soft)',
+                background: isActive ? 'var(--paper-2)' : 'transparent',
               }}
             >
               <StatusDot connected={Boolean(configured)} pending={configured === null} />
@@ -118,7 +132,6 @@ export function ModelsHubPanel({
               <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
                 {providerStatusLabel(provider, configured)}
               </span>
-              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>→</span>
             </button>
           );
         })}

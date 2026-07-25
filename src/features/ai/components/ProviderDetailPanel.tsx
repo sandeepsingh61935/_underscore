@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ModelPickerList } from './ModelPickerList';
-import { StatusDot } from './StatusDot';
+import { ConnectionDateline } from './setup/ConnectionDateline';
+import { SetupField } from './setup/SetupField';
+import { SetupSection } from './setup/SetupSection';
 
 import { useAPIKeyStatus } from '@/features/ai/hooks/useAPIKeyStatus';
 import { useLLMHealthCheck } from '@/features/ai/hooks/useLLMHealthCheck';
@@ -12,7 +14,11 @@ import {
 } from '@/features/ai/constants/provider-setup';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { checkProviderHealthInBrowser } from '@/shared/llm/check-provider-health';
-import { OPENROUTER_FALLBACK_MODELS, openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
+import {
+  OPENROUTER_FALLBACK_MODELS,
+  OPENROUTER_KEY_HELP,
+  openRouterModelRequiresKey,
+} from '@/shared/llm/openrouter-models';
 import {
   getDefaultModelId,
   resolveProviderModel,
@@ -27,6 +33,8 @@ export interface ProviderDetailPanelProps {
 }
 
 type OpenRouterFilter = 'all' | 'free' | 'paid';
+
+const SAVE_CONFIRMATION_DELAY_MS = 1200;
 
 function pickDefaultModel(provider: ProviderName, models: ProviderModelOption[]): string {
   const preferred = getDefaultModelId(provider);
@@ -88,22 +96,34 @@ export function ProviderDetailPanel({
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [connectMessage, setConnectMessage] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [orFilter, setOrFilter] = useState<OpenRouterFilter>('free');
+  /** Last status.model we applied into selectedId — blocks catalog/filter churn from clobbering picks. */
+  const hydratedStatusModelRef = useRef<string | null>(null);
+
+  // The connection is only meaningful once verified — a typed-but-unverified
+  // key must not unlock paid/gated models (see plan bug #1).
+  const connectionVerified = verified || Boolean(status.configured);
 
   const catalogQuery = useProviderModels(provider, {
-    apiKey: key,
+    // Only fetch with a typed key once it's been verified, so we don't hit
+    // provider APIs with an unverified key on every keystroke.
+    apiKey: connectionVerified ? key : undefined,
     apiBase: provider === 'ollama' ? apiBase : undefined,
     useStoredCredentials: Boolean(status.configured) || verified,
   });
 
   useEffect(() => {
     setKey('');
-    setMessage(null);
+    setConnectMessage(null);
+    setSaveMessage(null);
     setSelectedId('');
     setCustomModelId('');
     setVerified(Boolean(status.configured));
     setOrFilter('free');
+    hydratedStatusModelRef.current = null;
   }, [provider, status.configured]);
 
   useEffect(() => {
@@ -125,8 +145,6 @@ export function ProviderDetailPanel({
     ? customModelId.trim()
     : selectedId || pickDefaultModel(provider, catalogModels);
 
-  const hasStoredOrVerifiedKey = verified || Boolean(status.configured) || Boolean(key.trim());
-
   const needsKey = modelRequiresKey(
     provider,
     resolvedModelId || getDefaultModelId(provider),
@@ -135,46 +153,88 @@ export function ProviderDetailPanel({
 
   const canShowModelPicker = provider === 'openrouter'
     || provider === 'ollama'
-    || hasStoredOrVerifiedKey;
+    || connectionVerified;
 
   const isCatalogModelSelectable = (model: ProviderModelOption): boolean => {
-    if (provider === 'openrouter') {
-      if (model.hint === 'free' || model.requiresKey === false) return true;
-      return hasStoredOrVerifiedKey;
-    }
-    if (provider === 'ollama') return verified;
-    return hasStoredOrVerifiedKey;
+    // OpenRouter free = $0 credits; selection still requires a verified API key.
+    void model;
+    return connectionVerified;
   };
 
   const selectedModelSelectable = selectedId === CUSTOM_MODEL_ID
-    ? provider === 'openrouter' || hasStoredOrVerifiedKey
+    ? connectionVerified
     : catalogModels.some(m => m.id === resolvedModelId)
       ? isCatalogModelSelectable(
           catalogModels.find(m => m.id === resolvedModelId) ?? { id: resolvedModelId, label: resolvedModelId },
         )
-      : hasStoredOrVerifiedKey;
+      : connectionVerified;
 
   const canSaveModel = Boolean(resolvedModelId)
     && selectedModelSelectable
-    && (!needsKey || hasStoredOrVerifiedKey)
-    && (provider !== 'ollama' || verified);
+    && (!needsKey || connectionVerified)
+    && (provider !== 'ollama' || connectionVerified);
 
+  // Reconcile OpenRouter selection when the free/paid filter changes and the
+  // current pick falls outside the new subset (plan bug: stale selectedId).
+  useEffect(() => {
+    if (provider !== 'openrouter' || selectedId === CUSTOM_MODEL_ID) return;
+    if (catalogModels.length === 0) return;
+    if (catalogModels.some(m => m.id === selectedId)) return;
+    const firstSelectable = catalogModels.find(() => connectionVerified) ?? catalogModels[0];
+    setSelectedId(firstSelectable?.id ?? '');
+  }, [provider, orFilter, catalogModels, selectedId, connectionVerified]);
+
+  // Hydrate from saved status once per status.model value. Do not depend on
+  // selectedId, and do not re-apply when only the filter/catalog subset changes.
   useEffect(() => {
     if (status.model === null || catalogQuery.loading) return;
+
+    const alreadyHydrated = hydratedStatusModelRef.current === status.model;
+    if (alreadyHydrated) {
+      // Catalog may arrive after status — fill an empty selection only.
+      setSelectedId(prev => prev || (catalogModels.length > 0 ? pickDefaultModel(provider, catalogModels) : prev));
+      return;
+    }
+
     const inCatalog = catalogModels.some(m => m.id === status.model);
     if (inCatalog) {
+      hydratedStatusModelRef.current = status.model;
       setSelectedId(status.model);
       setCustomModelId('');
-    } else if (status.model) {
-      setSelectedId(CUSTOM_MODEL_ID);
-      setCustomModelId(status.model);
-    } else if (!selectedId && catalogModels.length > 0) {
-      setSelectedId(pickDefaultModel(provider, catalogModels));
+      return;
     }
-  }, [status.model, catalogModels, catalogQuery.loading, provider, selectedId]);
+
+    if (status.model) {
+      // Wait for catalog before treating an unknown id as custom, so a default
+      // model is not forced into CUSTOM_MODEL_ID while models are still empty.
+      if (catalogModels.length === 0 && provider !== 'openrouter') return;
+      hydratedStatusModelRef.current = status.model;
+      if (catalogModels.length === 0) {
+        setSelectedId(status.model);
+        setCustomModelId('');
+      } else {
+        setSelectedId(CUSTOM_MODEL_ID);
+        setCustomModelId(status.model);
+      }
+      return;
+    }
+
+    hydratedStatusModelRef.current = status.model;
+    setSelectedId(prev => prev || (catalogModels.length > 0 ? pickDefaultModel(provider, catalogModels) : prev));
+  }, [status.model, catalogModels, catalogQuery.loading, provider]);
+
+  const handleCustomModelIdChange = (value: string): void => {
+    setCustomModelId(value);
+    // A freeform model ID hasn't been tested against the provider yet.
+    setVerified(false);
+  };
+
+  const handleFilterChange = (filter: OpenRouterFilter): void => {
+    setOrFilter(filter);
+  };
 
   const handleVerify = async (): Promise<void> => {
-    setMessage(null);
+    setConnectMessage(null);
     setVerifying(true);
     const trimmedKey = key.trim();
     const model = resolveProviderModel(provider, resolvedModelId);
@@ -183,13 +243,13 @@ export function ProviderDetailPanel({
       if (provider === 'ollama') {
         const result = await checkProviderHealthInBrowser(provider, { apiBase, model });
         setVerified(result.ok);
-        setMessage(result.ok ? `Connected · ${catalogModels.length} models` : result.error ?? 'Connection failed');
+        setConnectMessage(result.ok ? null : result.error ?? 'Connection failed');
         if (result.ok) void catalogQuery.refresh();
         return;
       }
 
       if (needsKey && !trimmedKey && !status.configured) {
-        setMessage('Enter an API key first');
+        setConnectMessage('Enter an API key first');
         setVerified(false);
         return;
       }
@@ -197,44 +257,31 @@ export function ProviderDetailPanel({
       const health = trimmedKey
         ? await checkProviderHealthInBrowser(provider, { apiKey: trimmedKey, model })
         : await (async (): Promise<{ ok: boolean; model?: string; error?: string }> => {
-            const ipc = await runIpcHealthCheck(provider);
+            const ipc = await runIpcHealthCheck(provider, { model });
             if (ipc.success && ipc.data.ok) return { ok: true, model: ipc.data.model };
             return { ok: false, error: ipc.success ? ipc.data.error : ipc.error };
           })();
 
-      if (health.ok) {
-        setVerified(true);
-        setMessage(`Connected · ${catalogQuery.models.length || catalogModels.length} models`);
-        void catalogQuery.refresh();
-      } else {
-        setVerified(false);
-        setMessage(health.error ?? 'Verification failed');
-      }
+      setVerified(health.ok);
+      setConnectMessage(health.ok ? null : health.error ?? 'Verification failed');
+      if (health.ok) void catalogQuery.refresh();
     } finally {
       setVerifying(false);
     }
   };
 
   const handleSave = async (): Promise<void> => {
-    setMessage(null);
+    setSaveMessage(null);
+
+    if (selectedId === CUSTOM_MODEL_ID && !customModelId.trim()) {
+      setSaveMessage('Enter a custom model ID');
+      return;
+    }
+    if (!canSaveModel) return;
+
     setSaving(true);
-    const trimmedKey = key.trim();
-
     try {
-      if (selectedId === CUSTOM_MODEL_ID && !customModelId.trim()) {
-        setMessage('Enter a custom model ID');
-        return;
-      }
-
-      if (!canSaveModel) {
-        setMessage(
-          needsKey && !hasStoredOrVerifiedKey
-            ? 'Verify your API key to use this model'
-            : 'Verify connection before saving',
-        );
-        return;
-      }
-
+      const trimmedKey = key.trim();
       const modelToSave = resolvedModelId || getDefaultModelId(provider);
 
       const saveResult = await status.save({
@@ -244,17 +291,40 @@ export function ProviderDetailPanel({
       });
 
       if (!saveResult.success) {
-        setMessage(saveResult.error ?? 'Save failed');
+        setSaveMessage(saveResult.error ?? 'Save failed');
         return;
       }
 
       void persistLlmSetupProvider(provider);
-      onSaved();
-      setMessage('Set as summarize model');
+      setSaveMessage('Active model updated');
+      setSaved(true);
+      // Let the confirmation render before handing control back to the hub.
+      setTimeout(onSaved, SAVE_CONFIRMATION_DELAY_MS);
     } finally {
       setSaving(false);
     }
   };
+
+  const saveHint = canSaveModel || saved
+    ? null
+    : provider === 'ollama' && !connectionVerified
+      ? 'Connect first'
+      : !resolvedModelId || (selectedId === CUSTOM_MODEL_ID && !customModelId.trim())
+        ? 'Select a model'
+        : 'Verify key first';
+
+  const datelineState: 'connected' | 'offline' | 'checking' = verifying
+    ? 'checking'
+    : connectionVerified
+      ? 'connected'
+      : 'offline';
+
+  const datelineDetail = connectionVerified
+    ? (catalogModels.length > 0 ? `${catalogModels.length} models` : 'ready')
+    : connectMessage ?? (provider === 'ollama' ? 'unreachable' : 'not verified');
+
+  const showDateline = verifying || connectionVerified || Boolean(connectMessage);
+  const headerBlurb = provider === 'openrouter' ? OPENROUTER_KEY_HELP : meta.blurb;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
@@ -266,142 +336,124 @@ export function ProviderDetailPanel({
           style={{
             all: 'unset',
             cursor: 'pointer',
-            color: 'var(--accent)',
-            fontSize: 'var(--step--2)',
-            minHeight: 44,
+            color: 'var(--ink-3)',
+            fontSize: 10,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            minHeight: 24,
             display: 'flex',
             alignItems: 'center',
           }}
         >
-          ← All providers
+          ← Providers
         </button>
       </div>
 
-      <div style={{ padding: '4px 16px 8px' }}>
+      <div style={{ padding: '4px 16px 10px' }}>
         <div className="u-serif" style={{ fontSize: 'var(--step-1)', letterSpacing: '-0.01em' }}>{meta.label}</div>
-        <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '4px 0 0' }}>
-          {provider === 'openrouter'
-            ? 'Free models need no key'
-            : provider === 'ollama'
-              ? 'Local models from your Ollama install'
-              : 'API key required to list models'}
-        </p>
+        {headerBlurb ? (
+          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '4px 0 0' }}>
+            {headerBlurb}
+          </p>
+        ) : null}
       </div>
 
-      <div className="list-scroll" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {provider === 'ollama' ? (
-          <>
-            <label className="u-kicker" htmlFor="ollama-endpoint">Endpoint</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0, padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <SetupSection index={1} label={provider === 'ollama' ? 'Endpoint' : 'Key'}>
+          {provider === 'ollama' ? (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <SetupField
                 id="ollama-endpoint"
-                type="text"
+                label="URL"
                 value={apiBase}
-                onChange={e => { setApiBase(e.target.value); setVerified(false); }}
+                onChange={value => { setApiBase(value); setVerified(false); }}
                 placeholder="http://localhost:11434"
-                style={{ flex: 1 }}
               />
-              <button type="button" disabled={verifying} onClick={() => { void handleVerify(); }} style={{ minHeight: 44 }}>
-                {verifying ? '…' : 'Verify'}
+              <button type="button" className="btn ghost" disabled={verifying} onClick={() => { void handleVerify(); }}>
+                {verifying ? '…' : 'Connect'}
               </button>
             </div>
-          </>
-        ) : (
-          <>
-            <label className="u-kicker" htmlFor="provider-api-key">
-              {provider === 'openrouter' ? 'API key (optional for free)' : 'API key'}
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
+          ) : (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <SetupField
                 id="provider-api-key"
+                label="API key"
                 type="password"
                 value={key}
-                onChange={e => { setKey(e.target.value); setVerified(false); }}
-                placeholder={status.configured ? 'Saved — leave blank to keep' : meta.keyPlaceholder}
-                style={{ flex: 1 }}
+                onChange={value => { setKey(value); setVerified(false); }}
+                placeholder={status.configured ? '••••••••  leave blank to keep' : meta.keyPlaceholder}
+                autoComplete="off"
               />
-              <button type="button" disabled={verifying} onClick={() => { void handleVerify(); }} style={{ minHeight: 44 }}>
+              <button type="button" className="btn ghost" disabled={verifying} onClick={() => { void handleVerify(); }}>
                 {verifying ? '…' : 'Verify'}
               </button>
             </div>
-          </>
-        )}
+          )}
 
-        {verified ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <StatusDot connected />
-            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-              {provider === 'openrouter' && !needsKey && !status.configured && !key.trim()
-                ? 'Free model — no API key needed'
-                : `Connected · ${catalogModels.length} models`}
-            </span>
-          </div>
-        ) : null}
+          {showDateline ? <ConnectionDateline state={datelineState} detail={datelineDetail} /> : null}
+        </SetupSection>
 
-        {meta.subscriptionNote ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0, lineHeight: 1.45, padding: '8px 10px', border: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
-            {meta.subscriptionNote}
-          </p>
-        ) : null}
+        <SetupSection index={2} label="Model">
+          {provider === 'openrouter' ? (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <FilterChip active={orFilter === 'free'} label="Free" onClick={() => handleFilterChange('free')} />
+              <FilterChip active={orFilter === 'paid'} label="Paid" onClick={() => handleFilterChange('paid')} />
+              <FilterChip active={orFilter === 'all'} label="All" onClick={() => handleFilterChange('all')} />
+            </div>
+          ) : null}
 
-        {provider === 'openrouter' ? (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <FilterChip active={orFilter === 'free'} label="Free" onClick={() => setOrFilter('free')} />
-            <FilterChip active={orFilter === 'paid'} label="Paid" onClick={() => setOrFilter('paid')} />
-            <FilterChip active={orFilter === 'all'} label="All" onClick={() => setOrFilter('all')} />
-          </div>
-        ) : null}
+          {catalogQuery.error && catalogModels.length === 0 ? (
+            <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', margin: 0 }}>
+              {catalogQuery.error}
+            </p>
+          ) : null}
 
-        {catalogQuery.error && catalogModels.length === 0 ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', margin: 0 }}>
-            {catalogQuery.error}
-          </p>
-        ) : null}
-
-        {canShowModelPicker ? (
-          <ModelPickerList
-            models={catalogModels}
-            selectedId={selectedId || pickDefaultModel(provider, catalogModels)}
-            onSelect={setSelectedId}
-            customModelId={customModelId}
-            onCustomModelIdChange={setCustomModelId}
-            customPlaceholder={getDefaultModelId(provider)}
-            loading={catalogQuery.loading}
-            isModelDisabled={m => !isCatalogModelSelectable(m)}
-            customDisabled={provider !== 'openrouter' && !hasStoredOrVerifiedKey}
-            emptyMessage={
-              provider !== 'ollama' && !hasStoredOrVerifiedKey && provider !== 'openrouter'
-                ? 'Verify your API key to load models'
-                : 'No models match your search'
-            }
-          />
-        ) : (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '8px 0' }}>
-            Verify your API key to load available models
-          </p>
-        )}
-
-        {provider === 'openrouter' && orFilter === 'paid' && !hasStoredOrVerifiedKey ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0 }}>
-            Paid models are listed above — verify your API key to select one
-          </p>
-        ) : null}
-
-        {message ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: message.startsWith('Set as') ? 'var(--accent)' : 'var(--ink)', margin: 0 }}>
-            {message}
-          </p>
-        ) : null}
+          {canShowModelPicker ? (
+            <ModelPickerList
+              models={catalogModels}
+              selectedId={selectedId || pickDefaultModel(provider, catalogModels)}
+              onSelect={setSelectedId}
+              customModelId={customModelId}
+              onCustomModelIdChange={handleCustomModelIdChange}
+              customPlaceholder={getDefaultModelId(provider)}
+              searchPlaceholder="Search…"
+              loading={catalogQuery.loading}
+              isModelDisabled={m => !isCatalogModelSelectable(m)}
+              customDisabled={!connectionVerified}
+              emptyMessage={
+                !connectionVerified && provider !== 'openrouter' && provider !== 'ollama'
+                  ? 'Verify key to load models'
+                  : !connectionVerified && provider === 'openrouter'
+                    ? 'Verify key to unlock models'
+                    : 'No matches'
+              }
+            />
+          ) : (
+            <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0 }}>
+              Verify key to load models
+            </p>
+          )}
+        </SetupSection>
       </div>
 
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--rule-soft)' }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--rule-soft)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {saveMessage ? (
+          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: saved ? 'var(--accent)' : 'var(--ink)', margin: 0 }}>
+            {saveMessage}
+          </p>
+        ) : saveHint ? (
+          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0 }}>
+            {saveHint}
+          </p>
+        ) : null}
         <button
           type="button"
-          disabled={saving || !canSaveModel}
+          className="btn accent"
+          disabled={saving || saved || !canSaveModel}
           onClick={() => { void handleSave(); }}
-          style={{ width: '100%', minHeight: 44 }}
+          style={{ width: '100%' }}
         >
-          {saving ? 'Saving…' : 'Set as summarize model'}
+          {saving ? 'Saving…' : saved ? 'Saved' : 'Use this model'}
         </button>
       </div>
     </div>

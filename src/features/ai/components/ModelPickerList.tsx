@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
+import { SetupSearchField } from './setup/SetupSearchField';
+
 import type { ProviderModelOption } from '@/shared/llm/provider-models';
 import { CUSTOM_MODEL_ID } from '@/features/ai/constants/provider-setup';
 
@@ -12,6 +14,7 @@ export interface ModelPickerListProps {
   customPlaceholder?: string;
   loading?: boolean;
   emptyMessage?: string;
+  searchPlaceholder?: string;
   /** When true, custom model row cannot be selected. */
   customDisabled?: boolean;
   /** Return true when a catalog model cannot be selected yet. */
@@ -26,12 +29,14 @@ export function ModelPickerList({
   onCustomModelIdChange,
   customPlaceholder,
   loading = false,
-  emptyMessage = 'No models match your search',
+  emptyMessage = 'No matches',
+  searchPlaceholder = 'Search…',
   customDisabled = false,
   isModelDisabled,
 }: ModelPickerListProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const usingCustom = selectedId === CUSTOM_MODEL_ID;
+  const [showCustom, setShowCustom] = useState(usingCustom);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -43,19 +48,17 @@ export function ModelPickerList({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-      <input
-        type="search"
+      <SetupSearchField
         value={query}
-        onChange={e => setQuery(e.target.value)}
-        placeholder="Search models…"
-        aria-label="Search models"
+        onChange={setQuery}
+        placeholder={searchPlaceholder}
         disabled={loading}
       />
 
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {loading ? (
           <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '12px 0' }}>
-            Loading models…
+            Loading…
           </p>
         ) : filtered.length === 0 ? (
           <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '12px 0' }}>
@@ -110,39 +113,50 @@ export function ModelPickerList({
 
         <button
           type="button"
-          disabled={customDisabled}
-          onClick={() => { if (!customDisabled) onSelect(CUSTOM_MODEL_ID); }}
+          onClick={() => setShowCustom(s => !s)}
+          className="u-mono"
           style={{
             all: 'unset',
-            cursor: customDisabled ? 'not-allowed' : 'pointer',
-            opacity: customDisabled ? 0.45 : 1,
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
-            gap: 10,
+            cursor: 'pointer',
+            display: 'flex',
             alignItems: 'center',
+            gap: 6,
             width: '100%',
-            boxSizing: 'border-box',
             padding: '10px 4px',
-            minHeight: 44,
-            borderBottom: '1px solid var(--rule-soft)',
-            background: usingCustom ? 'var(--paper-2)' : 'transparent',
+            minHeight: 40,
+            fontSize: 'var(--step--2)',
+            color: 'var(--ink-3)',
           }}
         >
-          <span className="u-mono" style={{ fontSize: 10, color: usingCustom ? 'var(--accent)' : 'var(--ink-3)', width: 14, textAlign: 'center' }}>
-            {usingCustom ? '●' : '○'}
-          </span>
-          <div style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}>Custom model ID…</div>
+          <span style={{ display: 'inline-block', transform: showCustom ? 'rotate(90deg)' : 'none', transition: 'transform 120ms ease' }}>▸</span>
+          Custom ID
         </button>
 
-        {usingCustom ? (
-          <div style={{ padding: '8px 4px 0' }}>
+        {showCustom ? (
+          <div style={{ padding: '4px 4px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="u-kicker" htmlFor="custom-model-id">Custom model ID</label>
             <input
               id="custom-model-id"
               type="text"
               value={customModelId}
-              onChange={e => onCustomModelIdChange(e.target.value)}
+              onChange={e => {
+                onCustomModelIdChange(e.target.value);
+                if (!customDisabled) onSelect(CUSTOM_MODEL_ID);
+              }}
               placeholder={customPlaceholder}
+              disabled={customDisabled}
+              style={{
+                minHeight: 40,
+                padding: '0 10px',
+                border: `1px solid ${usingCustom ? 'var(--accent)' : 'var(--rule-soft)'}`,
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                fontFamily: 'var(--mono)',
+                fontSize: 'var(--step--1)',
+                width: '100%',
+                boxSizing: 'border-box',
+                opacity: customDisabled ? 0.6 : 1,
+              }}
             />
           </div>
         ) : null}
