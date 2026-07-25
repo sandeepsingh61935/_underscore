@@ -33,4 +33,10 @@ Webhook URL:
 
 ## Local QA
 
-`VITE_BILLING_DEV_OVERRIDE=true` allows selecting Account (Paid) without a sub. Never ship enabled.
+`VITE_BILLING_DEV_OVERRIDE=true` treats the user as paid for gates without a Polar sub. Never ship enabled.
+
+Optional: `VITE_APP_ORIGIN=https://your-app.example` for checkout success/cancel redirects.
+
+## Architecture note
+
+Mode `pro_xai` is **derived** from entitlement when load state is `ready` (never from free ModeSelector). Load **error** does not demote a previously paid mode.

@@ -5,10 +5,12 @@ import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
+import { freeEntitlement } from '@/shared/billing';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import {
   useConfigureAiProvidersGate,
@@ -44,12 +46,15 @@ export function SettingsPage({
     currentMode,
     user,
     logout: appLogout,
-    billingEntitlement,
-    billingBusy,
-    billingError,
-    startCheckout,
-    openBillingPortal,
   } = useApp();
+  const billing = useBillingContextOptional();
+  const billingEntitlement = billing?.snapshot.entitlement ?? freeEntitlement();
+  const isPaidActive =
+    billing?.snapshot.isPaidActive ?? currentMode === 'pro_xai';
+  const billingBusy = billing?.busy ?? false;
+  const billingError = billing?.snapshot.error ?? null;
+  const startCheckout = billing?.startCheckout;
+  const openBillingPortal = billing?.openPortal;
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -258,15 +263,10 @@ export function SettingsPage({
                       fontSize: 'var(--step--2)',
                       padding: '2px 8px',
                       border: '1px solid var(--rule-soft)',
-                      color:
-                        currentMode === 'pro_xai' || billingEntitlement.isPaidActive
-                          ? 'var(--accent)'
-                          : 'var(--ink-3)',
+                      color: isPaidActive ? 'var(--accent)' : 'var(--ink-3)',
                     }}
                   >
-                    {currentMode === 'pro_xai' || billingEntitlement.isPaidActive
-                      ? 'Paid'
-                      : 'Free'}
+                    {isPaidActive ? 'Paid' : 'Free'}
                   </span>
                 ) : null}
                 <button
@@ -299,17 +299,13 @@ export function SettingsPage({
             )
           }
         />
-        {user ? (
+        {user && billing ? (
           <Row
-            title={
-              billingEntitlement.isPaidActive
-                ? 'Manage billing'
-                : 'Upgrade to Account (Paid)'
-            }
+            title={isPaidActive ? 'Manage billing' : 'Upgrade to Account (Paid)'}
             sub={
               billingActionError || billingError
                 ? billingActionError || billingError || undefined
-                : billingEntitlement.isPaidActive
+                : isPaidActive
                   ? billingEntitlement.cancelAtPeriodEnd
                     ? 'Cancels at period end · invoices & payment method'
                     : 'Invoices, payment method, cancel'
@@ -324,15 +320,14 @@ export function SettingsPage({
                   data-testid="billing-cta"
                   style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
                 >
-                  {billingEntitlement.isPaidActive ? 'Portal' : 'Upgrade'}
+                  {isPaidActive ? 'Portal' : 'Upgrade'}
                 </span>
               )
             }
             onClick={() => {
               setBillingActionError(null);
-              const action = billingEntitlement.isPaidActive
-                ? openBillingPortal
-                : startCheckout;
+              const action = isPaidActive ? openBillingPortal : startCheckout;
+              if (!action) return;
               void action().catch((e: unknown) => {
                 setBillingActionError(
                   e instanceof Error ? e.message : 'Billing action failed'

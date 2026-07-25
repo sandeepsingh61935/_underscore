@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canSelectMode,
+  computeEffectiveMode,
   computeIsPaidActive,
   entitlementUpsertFromPolarSubscription,
   extractPolarEntitlementSource,
   freeEntitlement,
   mapPolarSubscriptionStatus,
   planFromPolarStatus,
-  projectModeFromEntitlement,
   rowToEntitlement,
+  shouldSyncModeFromBilling,
+  snapshotFromEntitlement,
 } from '@/shared/billing';
 import type { BillingEntitlementRow } from '@/shared/billing';
 
@@ -45,38 +46,26 @@ describe('billing entitlement helpers', () => {
     expect(e.manageUrlAvailable).toBe(true);
   });
 
-  it('projectModeFromEntitlement maps auth + paid', () => {
-    expect(projectModeFromEntitlement(false, freeEntitlement())).toBe('basic');
-    expect(
-      projectModeFromEntitlement(true, {
-        ...freeEntitlement(),
-        plan: 'paid',
-        status: 'active',
-        isPaidActive: true,
-      })
-    ).toBe('pro_xai');
-    expect(projectModeFromEntitlement(true, freeEntitlement())).toBe('pro');
+  it('computeEffectiveMode projects auth + paid', () => {
+    expect(computeEffectiveMode(false, false)).toBe('basic');
+    expect(computeEffectiveMode(true, false)).toBe('pro');
+    expect(computeEffectiveMode(true, true)).toBe('pro_xai');
   });
 
-  it('canSelectMode gates pro_xai on entitlement', () => {
-    expect(canSelectMode('pro_xai', true, freeEntitlement())).toBe(false);
-    expect(
-      canSelectMode('pro_xai', true, freeEntitlement(), {
-        allowDevOverride: true,
-      })
-    ).toBe(true);
-    expect(
-      canSelectMode(
-        'pro_xai',
-        true,
-        {
-          ...freeEntitlement(),
-          isPaidActive: true,
-          plan: 'paid',
-          status: 'active',
-        }
-      )
-    ).toBe(true);
+  it('shouldSyncModeFromBilling only when ready', () => {
+    expect(shouldSyncModeFromBilling('ready')).toBe(true);
+    expect(shouldSyncModeFromBilling('error')).toBe(false);
+    expect(shouldSyncModeFromBilling('loading')).toBe(false);
+    expect(shouldSyncModeFromBilling('idle')).toBe(false);
+  });
+
+  it('snapshotFromEntitlement forcePaid for dev override', () => {
+    const snap = snapshotFromEntitlement(freeEntitlement(), {
+      loadState: 'ready',
+      forcePaid: true,
+    });
+    expect(snap.isPaidActive).toBe(true);
+    expect(snap.entitlement.isPaidActive).toBe(false);
   });
 
   it('maps Polar subscription statuses', () => {

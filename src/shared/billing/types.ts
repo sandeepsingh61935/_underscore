@@ -1,6 +1,6 @@
 /**
- * Platform-agnostic billing entitlement types.
- * Shared by web, extension, and future mobile clients.
+ * Platform-agnostic billing types.
+ * Shared by web, extension, edge (conceptually), and future mobile.
  */
 
 export type BillingPlan = 'free' | 'paid';
@@ -14,6 +14,9 @@ export type BillingStatus =
   | 'unpaid';
 
 export type BillingProvider = 'polar' | 'apple_iap' | 'google_play';
+
+/** How we loaded the entitlement — never treat load failure as free for demotion. */
+export type EntitlementLoadState = 'idle' | 'loading' | 'ready' | 'error';
 
 /** Row shape for public.billing_entitlements */
 export interface BillingEntitlementRow {
@@ -30,16 +33,30 @@ export interface BillingEntitlementRow {
   created_at: string;
 }
 
-/** DTO returned to all clients */
+/** DTO for a known entitlement row (or synthetic free when ready + no row). */
 export interface BillingEntitlement {
   plan: BillingPlan;
   status: BillingStatus;
-  /** True when Paid features must unlock */
+  /** True only when plan is paid and status is active/trialing */
   isPaidActive: boolean;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   provider: BillingProvider | null;
   manageUrlAvailable: boolean;
+}
+
+/**
+ * Full client snapshot. Mode projection must only demote/promote when loadState === 'ready'.
+ */
+export interface BillingSnapshot {
+  loadState: EntitlementLoadState;
+  entitlement: BillingEntitlement;
+  error: string | null;
+  /**
+   * Effective paid flag for product gates.
+   * true only when loadState is ready and entitlement.isPaidActive (or dev override applied by provider).
+   */
+  isPaidActive: boolean;
 }
 
 export interface CheckoutOptions {
@@ -50,4 +67,11 @@ export interface CheckoutOptions {
 
 export interface BillingUrlResult {
   url: string;
+}
+
+/** Transport for platform-agnostic billing actions. */
+export interface IBillingPort {
+  getEntitlement(): Promise<BillingEntitlement>;
+  createCheckout(options: CheckoutOptions): Promise<BillingUrlResult>;
+  createPortal(): Promise<BillingUrlResult>;
 }

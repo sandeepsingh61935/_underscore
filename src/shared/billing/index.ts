@@ -3,28 +3,37 @@ export type {
   BillingEntitlementRow,
   BillingPlan,
   BillingProvider,
+  BillingSnapshot,
   BillingStatus,
   BillingUrlResult,
   CheckoutOptions,
+  EntitlementLoadState,
+  IBillingPort,
 } from './types';
 
 export {
-  canSelectMode,
+  computeEffectiveMode,
   computeIsPaidActive,
-  entitlementUpsertFromPolarSubscription,
-  extractPolarEntitlementSource,
+  emptyBillingSnapshot,
   freeEntitlement,
   isPaidActiveStatus,
-  mapPolarSubscriptionStatus,
-  planFromPolarStatus,
-  projectModeFromEntitlement,
   rowToEntitlement,
+  shouldSyncModeFromBilling,
+  snapshotFromEntitlement,
 } from './entitlement';
 
 export {
-  createBillingCheckout,
-  createBillingPortal,
-  fetchBillingEntitlement,
+  entitlementUpsertFromPolarSubscription,
+  extractPolarEntitlementSource,
+  mapPolarSubscriptionStatus,
+  planFromPolarStatus,
+} from './polar-map';
+
+export {
   openBillingUrl,
-  type BillingClientConfig,
+  SupabaseBillingPort,
+  type SupabaseBillingPortOptions,
 } from './billing-client';
+
+export { getBillingAppOrigin, getSupabaseUrl, getSupabaseAnonKey } from './config';
+export { isBillingDevOverrideEnabled } from './dev-override';

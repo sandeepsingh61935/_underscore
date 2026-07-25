@@ -1,117 +1,101 @@
 /**
- * Platform-agnostic billing HTTP client.
- * Uses Supabase session JWT for edge functions; RLS for entitlement reads.
+ * Web (and any direct Supabase) billing port implementation.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  freeEntitlement,
-  rowToEntitlement,
-} from './entitlement';
+import { getSupabaseAnonKey, getSupabaseUrl } from './config';
+import { freeEntitlement, rowToEntitlement } from './entitlement';
 import type {
   BillingEntitlement,
   BillingEntitlementRow,
   BillingUrlResult,
   CheckoutOptions,
+  IBillingPort,
 } from './types';
 
-export interface BillingClientConfig {
+export interface SupabaseBillingPortOptions {
   supabase: SupabaseClient;
-  /** e.g. https://xxxx.supabase.co — defaults from supabase if possible */
-  functionsBaseUrl?: string;
   getAccessToken: () => Promise<string | null>;
+  functionsBaseUrl?: string;
 }
 
-function resolveFunctionsBase(
-  supabase: SupabaseClient,
-  override?: string
-): string {
-  if (override) return override.replace(/\/$/, '');
-  // supabase-js stores URL on supabaseUrl in some versions; fall back to env
-  const fromEnv =
-    typeof import.meta !== 'undefined'
-      ? (import.meta as ImportMeta & { env?: Record<string, string> }).env
-          ?.VITE_SUPABASE_URL
-      : undefined;
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
-  // Best-effort: rest URL without /rest/v1
-  const anyClient = supabase as unknown as { supabaseUrl?: string };
-  if (anyClient.supabaseUrl) return anyClient.supabaseUrl.replace(/\/$/, '');
-  throw new Error('Cannot resolve Supabase functions base URL');
+export class SupabaseBillingPort implements IBillingPort {
+  constructor(private readonly opts: SupabaseBillingPortOptions) {}
+
+  async getEntitlement(): Promise<BillingEntitlement> {
+    const { data, error } = await this.opts.supabase
+      .from('billing_entitlements')
+      .select(
+        'user_id, plan, status, provider, provider_customer_id, provider_subscription_id, current_period_end, cancel_at_period_end, raw_status, updated_at, created_at'
+      )
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message || 'Failed to load billing entitlement');
+    }
+
+    return rowToEntitlement(data as BillingEntitlementRow | null);
+  }
+
+  async createCheckout(options: CheckoutOptions): Promise<BillingUrlResult> {
+    return this.postFunction('billing-checkout', {
+      successUrl: options.successUrl,
+      cancelUrl: options.cancelUrl,
+      customerIpAddress: options.customerIpAddress,
+    });
+  }
+
+  async createPortal(): Promise<BillingUrlResult> {
+    return this.postFunction('billing-portal', {});
+  }
+
+  private async postFunction(
+    path: string,
+    body: Record<string, unknown>
+  ): Promise<BillingUrlResult> {
+    const token = await this.opts.getAccessToken();
+    if (!token) {
+      throw new Error('Sign in required for billing');
+    }
+
+    const base = (
+      this.opts.functionsBaseUrl ?? getSupabaseUrl()
+    ).replace(/\/$/, '');
+
+    const res = await fetch(`${base}/functions/v1/${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: getSupabaseAnonKey(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const json = (await res.json().catch(() => ({}))) as {
+      url?: string;
+      error?: string;
+    };
+
+    if (!res.ok || !json.url) {
+      throw new Error(json.error || `Billing request failed (${res.status})`);
+    }
+
+    return { url: json.url };
+  }
 }
 
-export async function fetchBillingEntitlement(
-  config: BillingClientConfig
+/** @deprecated use freeEntitlement + throw path; kept for rare offline probes */
+export async function fetchBillingEntitlementSafe(
+  port: IBillingPort
 ): Promise<BillingEntitlement> {
-  const { data, error } = await config.supabase
-    .from('billing_entitlements')
-    .select('*')
-    .maybeSingle();
-
-  if (error) {
-    // Table missing or RLS — treat as free rather than crash clients
-    console.warn('[billing] entitlement read failed:', error.message);
+  try {
+    return await port.getEntitlement();
+  } catch {
     return freeEntitlement();
   }
-
-  return rowToEntitlement(data as BillingEntitlementRow | null);
 }
 
-async function postBillingFunction(
-  config: BillingClientConfig,
-  path: string,
-  body: Record<string, unknown>
-): Promise<BillingUrlResult> {
-  const token = await config.getAccessToken();
-  if (!token) {
-    throw new Error('Sign in required for billing');
-  }
-
-  const base = resolveFunctionsBase(config.supabase, config.functionsBaseUrl);
-  const res = await fetch(`${base}/functions/v1/${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey:
-        (typeof import.meta !== 'undefined' &&
-          (import.meta as ImportMeta & { env?: Record<string, string> }).env
-            ?.VITE_SUPABASE_ANON_KEY) ||
-        '',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  const json = (await res.json().catch(() => ({}))) as {
-    url?: string;
-    error?: string;
-  };
-
-  if (!res.ok || !json.url) {
-    throw new Error(json.error || `Billing request failed (${res.status})`);
-  }
-
-  return { url: json.url };
-}
-
-export async function createBillingCheckout(
-  config: BillingClientConfig,
-  options: CheckoutOptions
-): Promise<BillingUrlResult> {
-  return postBillingFunction(config, 'billing-checkout', {
-    successUrl: options.successUrl,
-    cancelUrl: options.cancelUrl,
-    customerIpAddress: options.customerIpAddress,
-  });
-}
-
-export async function createBillingPortal(
-  config: BillingClientConfig
-): Promise<BillingUrlResult> {
-  return postBillingFunction(config, 'billing-portal', {});
-}
-
-/** Open a billing URL in a new tab (extension or web). */
 export function openBillingUrl(url: string): void {
   if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
     void chrome.tabs.create({ url });

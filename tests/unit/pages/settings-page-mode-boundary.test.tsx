@@ -5,28 +5,17 @@ import { render, screen } from '@testing-library/react';
 import { useApp } from '@/core/context/AppProvider';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { freeEntitlement } from '@/shared/billing';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
 }));
 
-const billingDefaults = {
-  billingEntitlement: {
-    plan: 'free' as const,
-    status: 'none' as const,
-    isPaidActive: false,
-    currentPeriodEnd: null,
-    cancelAtPeriodEnd: false,
-    provider: null,
-    manageUrlAvailable: false,
-  },
-  billingReady: true,
-  billingBusy: false,
-  billingError: null,
-  startCheckout: vi.fn(),
-  openBillingPortal: vi.fn(),
-  refreshBilling: vi.fn(),
-};
+vi.mock('@/features/billing/BillingProvider', () => ({
+  useBillingContextOptional: vi.fn(() => null),
+  BillingProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   usePersistedMode: vi.fn(() => ({
@@ -67,24 +56,58 @@ vi.mock('@/features/settings/components/TypographySettings', () => ({
   ),
 }));
 
+function mockApp(partial: Record<string, unknown>) {
+  vi.mocked(useApp).mockReturnValue({
+    theme: 'system',
+    setTheme: vi.fn(),
+    currentMode: 'basic',
+    user: null,
+    isAuthenticated: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    modeReady: true,
+    setMode: vi.fn(),
+    availableModes: ['basic'],
+    isLoading: false,
+    setIsLoading: vi.fn(),
+    dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    ...partial,
+  } as ReturnType<typeof useApp>);
+}
+
+function mockBilling(isPaidActive: boolean) {
+  vi.mocked(useBillingContextOptional).mockReturnValue({
+    snapshot: {
+      loadState: 'ready',
+      entitlement: isPaidActive
+        ? {
+            ...freeEntitlement(),
+            plan: 'paid',
+            status: 'active',
+            isPaidActive: true,
+            provider: 'polar',
+            manageUrlAvailable: true,
+          }
+        : freeEntitlement(),
+      error: null,
+      isPaidActive,
+    },
+    busy: false,
+    refresh: vi.fn(),
+    startCheckout: vi.fn(),
+    openPortal: vi.fn(),
+  });
+}
+
 describe('SettingsPage basic mode boundaries', () => {
   beforeEach(() => {
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
+    mockApp({
       currentMode: 'basic',
       user: null,
       isAuthenticated: false,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode: vi.fn(),
       availableModes: ['basic'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-      ...billingDefaults,
-    } as ReturnType<typeof useApp>);
+    });
+    vi.mocked(useBillingContextOptional).mockReturnValue(null);
   });
 
   it('disables library export and sync for a guest (library section auth-gated)', () => {
@@ -117,22 +140,12 @@ describe('SettingsPage basic mode boundaries', () => {
   });
 
   it('does not show Retention settings after TTL removal', () => {
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
+    mockApp({
       currentMode: 'basic',
       user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
       isAuthenticated: true,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode: vi.fn(),
       availableModes: ['basic'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-      ...billingDefaults,
-    } as ReturnType<typeof useApp>);
+    });
 
     render(<SettingsPage />);
 
@@ -147,30 +160,13 @@ describe('SettingsPage pro_xai mode boundaries', () => {
       modeReady: true,
       persistMode: vi.fn(),
     });
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
+    mockApp({
       currentMode: 'pro_xai',
       user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
       isAuthenticated: true,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode: vi.fn(),
-      availableModes: ['basic', 'pro', 'pro_xai'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-      ...billingDefaults,
-      billingEntitlement: {
-        ...billingDefaults.billingEntitlement,
-        plan: 'paid',
-        status: 'active',
-        isPaidActive: true,
-        provider: 'polar',
-        manageUrlAvailable: true,
-      },
-    } as ReturnType<typeof useApp>);
+      availableModes: ['pro_xai'],
+    });
+    mockBilling(true);
   });
 
   it('shows Connect then Configure open for signed-in Account (Paid)', () => {
@@ -183,7 +179,6 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
     expect(screen.getByText('Manage billing')).toBeTruthy();
   });
-
 });
 
 describe('SettingsPage Pro (non-AI) mode boundaries', () => {
@@ -193,22 +188,13 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
       modeReady: true,
       persistMode: vi.fn(),
     });
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
+    mockApp({
       currentMode: 'pro',
       user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
       isAuthenticated: true,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode: vi.fn(),
-      availableModes: ['basic', 'pro', 'pro_xai'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-      ...billingDefaults,
-    } as ReturnType<typeof useApp>);
+      availableModes: ['pro'],
+    });
+    mockBilling(false);
   });
 
   it('shows Connect then Configure locked for signed-in Account (Free)', () => {

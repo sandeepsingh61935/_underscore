@@ -5,43 +5,32 @@ import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
 import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
-import { useBillingEntitlement } from '@/features/billing/hooks/useBillingEntitlement';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
-import { isBillingDevOverrideEnabled } from '@/shared/billing/dev-override';
+import {
+  BillingProvider,
+  useModeSyncCallback,
+} from '@/features/billing/BillingProvider';
+import { computeEffectiveMode } from '@/shared/billing';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 export interface AppContextType {
-    // Authentication (web: from WebAuthProvider)
     isAuthenticated: boolean;
     user: User | null;
     login: (user: User) => void;
     logout: () => Promise<void>;
 
-    // Mode Management
     currentMode: Mode;
     modeReady: boolean;
     setMode: (mode: Mode) => void;
     availableModes: Mode[];
 
-    // Billing (Polar entitlements)
-    billingEntitlement: BillingEntitlement;
-    billingReady: boolean;
-    billingBusy: boolean;
-    billingError: string | null;
-    startCheckout: () => Promise<void>;
-    openBillingPortal: () => Promise<void>;
-    refreshBilling: () => Promise<void>;
-
-    // Theme
     theme: Theme;
     setTheme: (theme: Theme) => void;
 
-    // Loading states
     isLoading: boolean;
     setIsLoading: (loading: boolean) => void;
 
-    // Data Provider
     dataProvider: IDataProvider;
 }
 
@@ -55,6 +44,10 @@ function AppProviderInner({
     dataProvider: IDataProvider;
 }): React.ReactElement {
     const { user, isAuthenticated, isLoading: authLoading, login, logout } = useWebAuth();
+    const { currentMode, persistMode } = usePersistedMode(isAuthenticated);
+    const onEffectiveMode = useModeSyncCallback(persistMode);
+    const [isLoading, setIsLoading] = useState(false);
+    const [theme, setThemeState] = useState<Theme>('system');
 
     const supabase = useMemo(() => {
         try {
@@ -70,19 +63,6 @@ function AppProviderInner({
         return data.session?.access_token ?? null;
     }, [supabase]);
 
-    const billing = useBillingEntitlement({
-        supabase,
-        getAccessToken,
-        isAuthenticated,
-    });
-
-    const { currentMode, persistMode } = usePersistedMode(isAuthenticated, {
-        entitlement: billing.entitlement,
-        entitlementReady: billing.ready,
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [theme, setThemeState] = useState<Theme>('system');
-
     useEffect(() => {
         if (window.chrome && chrome.storage) {
             chrome.storage.local.get(['underscore-theme']).then(data => {
@@ -93,10 +73,11 @@ function AppProviderInner({
         }
     }, []);
 
+    // Mode is derived for signed-in users; do not offer free switch to Paid.
     const availableModes: Mode[] = isAuthenticated
-        ? isBillingDevOverrideEnabled() || billing.entitlement.isPaidActive
-            ? ['basic', 'pro', 'pro_xai']
-            : ['basic', 'pro']
+        ? currentMode === 'pro_xai'
+            ? ['pro_xai']
+            : ['pro']
         : ['basic'];
 
     useEffect(() => {
@@ -120,8 +101,12 @@ function AppProviderInner({
         if ((mode === 'pro' || mode === 'pro_xai') && !isAuthenticated) {
             return;
         }
-        persistMode(mode);
-    }, [isAuthenticated, persistMode]);
+        // Paid is not a free-user selection — only billing sync writes pro_xai
+        if (mode === 'pro_xai' && currentMode !== 'pro_xai') {
+            return;
+        }
+        void persistMode(mode);
+    }, [isAuthenticated, persistMode, currentMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
@@ -136,13 +121,6 @@ function AppProviderInner({
         modeReady: !authLoading,
         setMode,
         availableModes,
-        billingEntitlement: billing.entitlement,
-        billingReady: billing.ready,
-        billingBusy: billing.busy,
-        billingError: billing.error,
-        startCheckout: () => billing.startCheckout(),
-        openBillingPortal: () => billing.openPortal(),
-        refreshBilling: billing.refresh,
         theme,
         setTheme,
         isLoading: isLoading || authLoading,
@@ -150,10 +128,20 @@ function AppProviderInner({
         dataProvider,
     };
 
+    const webBilling = supabase
+        ? { supabase, getAccessToken }
+        : undefined;
+
     return (
         <AppContext.Provider value={value}>
-            <TypePresetBootstrap />
-            {children}
+            <BillingProvider
+                isAuthenticated={isAuthenticated}
+                onEffectiveMode={onEffectiveMode}
+                web={webBilling}
+            >
+                <TypePresetBootstrap />
+                {children}
+            </BillingProvider>
         </AppContext.Provider>
     );
 }
@@ -173,3 +161,6 @@ export const useApp = () => {
     }
     return context;
 };
+
+// re-export for tests that might want projection
+export { computeEffectiveMode };
