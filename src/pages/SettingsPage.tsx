@@ -55,24 +55,32 @@ export function SettingsPage({
   const billingError = billing?.snapshot.error ?? null;
   const startCheckout = billing?.startCheckout;
   const openBillingPortal = billing?.openPortal;
-  const [billingReturnNote, setBillingReturnNote] = useState<string | null>(
-    null
-  );
+  /** Post-checkout confidence banner: payment succeeded; paid may lag webhook. */
+  type BillingReturnBanner =
+    | { kind: 'success_pending' }
+    | { kind: 'success_active' }
+    | { kind: 'cancel' }
+    | null;
+  const [billingReturn, setBillingReturn] = useState<BillingReturnBanner>(null);
 
-  // Surface post-checkout wait while webhook catches up
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const flag = new URLSearchParams(window.location.search).get('billing');
-    if (flag === 'success' && !isPaidActive) {
-      setBillingReturnNote(
-        'Payment received — confirming subscription. This page will update when sync completes.'
+    if (flag === 'success') {
+      setBillingReturn(
+        isPaidActive ? { kind: 'success_active' } : { kind: 'success_pending' }
       );
-    } else if (flag === 'success' && isPaidActive) {
-      setBillingReturnNote('Account (Paid) is active.');
-    } else if (isPaidActive) {
-      setBillingReturnNote(null);
+      return;
     }
-  }, [isPaidActive]);
+    if (flag === 'cancel') {
+      setBillingReturn({ kind: 'cancel' });
+      return;
+    }
+    // After URL stripped, keep success_active briefly if we just became paid
+    if (isPaidActive && billingReturn?.kind === 'success_pending') {
+      setBillingReturn({ kind: 'success_active' });
+    }
+  }, [isPaidActive, billingReturn?.kind]);
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -317,20 +325,78 @@ export function SettingsPage({
             )
           }
         />
-        {user && billingReturnNote ? (
+        {user && billingReturn ? (
           <div
-            className="u-sans"
-            data-testid="billing-return-note"
+            data-testid="billing-return-banner"
+            role="status"
             style={{
-              margin: '0 16px 8px',
-              padding: '10px 12px',
-              border: '1px solid var(--rule-soft)',
-              fontSize: 'var(--step--1)',
-              color: 'var(--ink-3)',
-              lineHeight: 1.45,
+              margin: '0 16px 10px',
+              padding: '14px 16px',
+              border: '1px solid var(--rule)',
+              background: 'var(--paper-2)',
             }}
           >
-            {billingReturnNote}
+            <div
+              className="u-serif"
+              style={{
+                fontSize: 'var(--step-1)',
+                color:
+                  billingReturn.kind === 'cancel' ? 'var(--ink)' : 'var(--accent)',
+                marginBottom: 6,
+              }}
+            >
+              {billingReturn.kind === 'cancel'
+                ? 'Checkout canceled'
+                : billingReturn.kind === 'success_active'
+                  ? 'Payment successful'
+                  : 'Payment successful'}
+            </div>
+            <div
+              className="u-sans"
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.5,
+              }}
+            >
+              {billingReturn.kind === 'cancel'
+                ? 'No charge was made. You can upgrade anytime from below.'
+                : billingReturn.kind === 'success_active'
+                  ? 'Your account is upgraded to Account (Paid). AI and agent connections are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
+                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Stay on this page; the status below will switch to Paid when ready. Then reopen the browser extension with the same account.'}
+            </div>
+            {billingReturn.kind === 'success_pending' ? (
+              <div
+                className="u-mono"
+                style={{
+                  marginTop: 10,
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <Spinner size="sm" />
+                Confirming subscription…
+              </div>
+            ) : null}
+            {billingReturn.kind === 'success_active' ? (
+              <div
+                className="u-mono"
+                data-testid="account-plan-pill-banner"
+                style={{
+                  marginTop: 10,
+                  display: 'inline-block',
+                  fontSize: 'var(--step--2)',
+                  padding: '2px 8px',
+                  border: '1px solid var(--rule-soft)',
+                  color: 'var(--accent)',
+                }}
+              >
+                Account (Paid)
+              </div>
+            ) : null}
           </div>
         ) : null}
         {user && billing ? (
