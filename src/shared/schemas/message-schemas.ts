@@ -149,6 +149,8 @@ export const IPC_AI_LIST_PROVIDER_MODELS = 'IPC_AI_LIST_PROVIDER_MODELS' as cons
 export const IPC_BILLING_GET_ENTITLEMENT = 'IPC_BILLING_GET_ENTITLEMENT' as const;
 export const IPC_BILLING_START_CHECKOUT = 'IPC_BILLING_START_CHECKOUT' as const;
 export const IPC_BILLING_OPEN_PORTAL = 'IPC_BILLING_OPEN_PORTAL' as const;
+/** Pull Polar customer state into billing_entitlements then client re-reads. */
+export const IPC_BILLING_SYNC_FROM_POLAR = 'IPC_BILLING_SYNC_FROM_POLAR' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
 /**

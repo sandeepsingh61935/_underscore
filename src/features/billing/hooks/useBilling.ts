@@ -85,18 +85,25 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
     }
   }, [isAuthenticated, port, applyDevOverride]);
 
-  /** After checkout: pull Polar → DB, then re-read entitlement. */
+  /** After checkout: pull Polar → DB, then re-read entitlement. Throws on hard failure. */
   const syncFromPolar = useCallback(async () => {
-    if (!isAuthenticated || !port?.syncFromPolar) {
+    if (!isAuthenticated || !port) {
       await refresh();
       return;
     }
+    setBusy(true);
     try {
-      await port.syncFromPolar();
+      if (port.syncFromPolar) {
+        await port.syncFromPolar();
+      }
+      await refresh();
     } catch (e) {
-      console.warn('[billing] syncFromPolar failed', e);
+      const message = e instanceof Error ? e.message : 'Billing sync failed';
+      setSnapshot((prev) => ({ ...prev, error: message }));
+      throw e;
+    } finally {
+      setBusy(false);
     }
-    await refresh();
   }, [isAuthenticated, port, refresh]);
 
   useEffect(() => {

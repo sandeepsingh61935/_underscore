@@ -93,14 +93,26 @@ export function BillingProvider({
     onEffectiveMode,
   ]);
 
-  // Refresh entitlement when popup regains focus (return from Polar tab)
+  // After Polar tab, pull subscription (not just re-read empty table)
   useEffect(() => {
     const onFocus = () => {
-      if (isAuthenticated) void billing.refresh();
+      if (!isAuthenticated) return;
+      if (!billing.snapshot.isPaidActive) {
+        void billing.syncFromPolar().catch(() => {
+          void billing.refresh();
+        });
+      } else {
+        void billing.refresh();
+      }
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [isAuthenticated, billing.refresh]);
+  }, [
+    isAuthenticated,
+    billing.snapshot.isPaidActive,
+    billing.syncFromPolar,
+    billing.refresh,
+  ]);
 
   /**
    * After Polar checkout, user lands on /settings?billing=success.

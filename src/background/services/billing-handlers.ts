@@ -16,6 +16,7 @@ import {
   IPC_BILLING_GET_ENTITLEMENT,
   IPC_BILLING_OPEN_PORTAL,
   IPC_BILLING_START_CHECKOUT,
+  IPC_BILLING_SYNC_FROM_POLAR,
 } from '@/shared/schemas/message-schemas';
 
 export interface BillingHandlerDeps {
@@ -99,6 +100,31 @@ export function registerBillingHandlers(deps: BillingHandlerDeps): void {
         success: false,
         error: (error as Error).message || 'Portal failed',
         code: 'BILLING_PORTAL_ERROR',
+      };
+    }
+  });
+
+  messageBus.subscribe(IPC_BILLING_SYNC_FROM_POLAR, async () => {
+    try {
+      if (!authManager.isAuthenticated) {
+        return { success: false, error: 'Sign in required', code: 'AUTH_REQUIRED' };
+      }
+      const p = port();
+      if (!p.syncFromPolar) {
+        return {
+          success: false,
+          error: 'Sync not available',
+          code: 'BILLING_SYNC_UNAVAILABLE',
+        };
+      }
+      const result = await p.syncFromPolar();
+      return { success: true, data: result };
+    } catch (error) {
+      logger.error('IPC_BILLING_SYNC_FROM_POLAR failed', error as Error);
+      return {
+        success: false,
+        error: (error as Error).message || 'Billing sync failed',
+        code: 'BILLING_SYNC_ERROR',
       };
     }
   });
