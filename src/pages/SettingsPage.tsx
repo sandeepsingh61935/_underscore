@@ -49,8 +49,13 @@ export function SettingsPage({
   } = useApp();
   const billing = useBillingContextOptional();
   const billingEntitlement = billing?.snapshot.entitlement ?? freeEntitlement();
-  const isPaidActive =
-    billing?.snapshot.isPaidActive ?? currentMode === 'pro_xai';
+  // While billing loads, prefer stored mode so paid users do not flash Free.
+  const billingReady = billing?.snapshot.loadState === 'ready';
+  const isPaidActive = billing
+    ? billingReady
+      ? billing.snapshot.isPaidActive
+      : currentMode === 'pro_xai' || billing.snapshot.isPaidActive
+    : currentMode === 'pro_xai';
   const billingBusy = billing?.busy ?? false;
   const billingError = billing?.snapshot.error ?? null;
   const startCheckout = billing?.startCheckout;

@@ -13,9 +13,10 @@ import React, {
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import {
-  computeEffectiveMode,
+  shouldRunFocusBillingSync,
   shouldSyncModeFromBilling,
   SupabaseBillingPort,
+  computeEffectiveMode,
   type BillingSnapshot,
   type CheckoutOptions,
   type IBillingPort,
@@ -28,7 +29,8 @@ export interface BillingContextValue {
   snapshot: BillingSnapshot;
   busy: boolean;
   refresh: () => Promise<void>;
-  syncFromPolar: () => Promise<void>;
+  /** Returns true when paid is active after sync (for poll early-exit). */
+  syncFromPolar: () => Promise<boolean>;
   startCheckout: (opts?: Partial<CheckoutOptions>) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -73,6 +75,21 @@ export function BillingProvider({
 
   const billing = useBilling({ port, isAuthenticated });
   const lastSynced = useRef<string>('');
+  const lastFocusSyncAt = useRef(0);
+  const successHandledRef = useRef(false);
+  const isPaidActiveRef = useRef(billing.snapshot.isPaidActive);
+  isPaidActiveRef.current = billing.snapshot.isPaidActive;
+  const syncFromPolarRef = useRef(billing.syncFromPolar);
+  const refreshRef = useRef(billing.refresh);
+  syncFromPolarRef.current = billing.syncFromPolar;
+  refreshRef.current = billing.refresh;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      successHandledRef.current = false;
+      lastFocusSyncAt.current = 0;
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!onEffectiveMode) return;
@@ -93,31 +110,34 @@ export function BillingProvider({
     onEffectiveMode,
   ]);
 
-  // After Polar tab, pull subscription (not just re-read empty table)
+  // After Polar tab, pull subscription (debounced; skip when already paid)
   useEffect(() => {
     const onFocus = () => {
       if (!isAuthenticated) return;
-      if (!billing.snapshot.isPaidActive) {
-        void billing.syncFromPolar().catch(() => {
-          void billing.refresh();
-        });
-      } else {
-        void billing.refresh();
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
       }
+      if (isPaidActiveRef.current) {
+        void refreshRef.current();
+        return;
+      }
+      const now = Date.now();
+      if (!shouldRunFocusBillingSync(lastFocusSyncAt.current, now)) {
+        return;
+      }
+      lastFocusSyncAt.current = now;
+      void syncFromPolarRef.current().catch(() => {
+        void refreshRef.current();
+      });
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [
-    isAuthenticated,
-    billing.snapshot.isPaidActive,
-    billing.syncFromPolar,
-    billing.refresh,
-  ]);
+  }, [isAuthenticated]);
 
   /**
    * After Polar checkout, user lands on /settings?billing=success.
-   * Webhook may lag a few seconds — poll entitlement then strip query params.
-   * customer_session_token is ignored for now (portal uses our API).
+   * Webhook may lag — poll Polar sync then strip query params.
+   * Guarded once per page load; stops early when paid becomes active.
    */
   useEffect(() => {
     if (!isAuthenticated || typeof window === 'undefined') return;
@@ -125,15 +145,13 @@ export function BillingProvider({
     const params = new URLSearchParams(window.location.search);
     const billingFlag = params.get('billing');
     if (billingFlag !== 'success' && billingFlag !== 'cancel') return;
+    if (successHandledRef.current) return;
+    successHandledRef.current = true;
 
     let cancelled = false;
     const delaysMs = [0, 800, 2000, 4000, 7000];
 
     void (async () => {
-      // First pass: pull from Polar API (does not need webhook)
-      if (billingFlag === 'success' && !cancelled) {
-        await billing.syncFromPolar();
-      }
       for (const delay of delaysMs) {
         if (cancelled) return;
         if (delay > 0) {
@@ -141,12 +159,17 @@ export function BillingProvider({
         }
         if (cancelled) return;
         if (billingFlag === 'success') {
-          await billing.syncFromPolar();
+          if (isPaidActiveRef.current) break;
+          try {
+            const paid = await syncFromPolarRef.current();
+            if (paid || isPaidActiveRef.current) break;
+          } catch {
+            await refreshRef.current();
+          }
         } else {
-          await billing.refresh();
+          await refreshRef.current();
         }
       }
-      // Clean sensitive query tokens from address bar
       if (!cancelled && window.history.replaceState) {
         const url = new URL(window.location.href);
         url.searchParams.delete('billing');
@@ -159,7 +182,9 @@ export function BillingProvider({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, billing.refresh, billing.syncFromPolar]);
+    // Run once when authenticated + success query present; callbacks via stable refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot per auth
+  }, [isAuthenticated]);
 
   const value = useMemo<BillingContextValue>(
     () => ({

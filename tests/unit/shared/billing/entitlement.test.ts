@@ -118,4 +118,16 @@ describe('billing entitlement helpers', () => {
     expect(source?.userId).toBe('user-uuid');
     expect(source?.polarStatus).toBe('canceled');
   });
+
+  it('ignores order.* events (order status is not subscription status)', () => {
+    const source = extractPolarEntitlementSource({
+      type: 'order.paid',
+      data: {
+        id: 'ord_1',
+        status: 'paid',
+        customer: { id: 'cus_1', external_id: 'user-uuid' },
+      },
+    });
+    expect(source).toBeNull();
+  });
 });

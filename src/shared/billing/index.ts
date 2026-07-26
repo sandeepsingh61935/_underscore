@@ -65,3 +65,11 @@ export {
   extractPolarProductId,
   type WebhookWriteDecision,
 } from './webhook-product-gate';
+
+export {
+  BILLING_FOCUS_SYNC_MIN_INTERVAL_MS,
+  resolveBillingSyncFromSubscriptions,
+  shouldRunFocusBillingSync,
+  type BillingSyncResolveResult,
+  type PolarActiveSubscriptionLike,
+} from './polar-sync';

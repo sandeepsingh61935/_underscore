@@ -4,12 +4,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
+  computeIsPaidActive,
   emptyBillingSnapshot,
   getBillingAppOrigin,
   isBillingDevOverrideEnabled,
   openBillingUrl,
   snapshotFromEntitlement,
+  type BillingPlan,
   type BillingSnapshot,
+  type BillingStatus,
   type CheckoutOptions,
   type IBillingPort,
 } from '@/shared/billing';
@@ -27,8 +30,11 @@ export interface UseBillingResult {
   snapshot: BillingSnapshot;
   busy: boolean;
   refresh: () => Promise<void>;
-  /** Pull Polar customer state into DB then refresh (post-checkout). */
-  syncFromPolar: () => Promise<void>;
+  /**
+   * Pull Polar customer state into DB then refresh (post-checkout).
+   * Returns whether paid is active after the sync (for poll early-exit).
+   */
+  syncFromPolar: () => Promise<boolean>;
   startCheckout: (opts?: Partial<CheckoutOptions>) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -86,17 +92,25 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
   }, [isAuthenticated, port, applyDevOverride]);
 
   /** After checkout: pull Polar → DB, then re-read entitlement. Throws on hard failure. */
-  const syncFromPolar = useCallback(async () => {
+  const syncFromPolar = useCallback(async (): Promise<boolean> => {
     if (!isAuthenticated || !port) {
       await refresh();
-      return;
+      return false;
     }
     setBusy(true);
     try {
+      let paidFromSync = false;
       if (port.syncFromPolar) {
-        await port.syncFromPolar();
+        const result = await port.syncFromPolar();
+        const plan = (result.plan ?? 'free') as BillingPlan;
+        const status = (result.status ?? 'none') as BillingStatus;
+        paidFromSync = computeIsPaidActive(plan, status);
       }
       await refresh();
+      // Prefer sync API result for early-exit (React snapshot may not have flushed yet)
+      if (paidFromSync) return true;
+      if (applyDevOverride && isBillingDevOverrideEnabled()) return true;
+      return false;
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Billing sync failed';
       setSnapshot((prev) => ({ ...prev, error: message }));
@@ -104,7 +118,7 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
     } finally {
       setBusy(false);
     }
-  }, [isAuthenticated, port, refresh]);
+  }, [isAuthenticated, port, refresh, applyDevOverride]);
 
   useEffect(() => {
     void refresh();

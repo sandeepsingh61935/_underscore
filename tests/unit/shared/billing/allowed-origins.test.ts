@@ -168,10 +168,25 @@ describe('isAllowedBillingCorsOrigin (WP-2)', () => {
     );
   });
 
-  it('rejects null or empty allowlist', () => {
+  it('rejects null or empty allowlist for web origins', () => {
     expect(isAllowedBillingCorsOrigin(null, allowed)).toBe(false);
     expect(isAllowedBillingCorsOrigin('https://app.example.com', [])).toBe(
       false
     );
+  });
+
+  it('accepts pinned chrome-extension origin', () => {
+    expect(
+      isAllowedBillingCorsOrigin(
+        'chrome-extension://hecejpjekcgpifnemddfmkjmphmgljlm',
+        allowed
+      )
+    ).toBe(true);
+  });
+
+  it('rejects unknown chrome-extension id', () => {
+    expect(
+      isAllowedBillingCorsOrigin('chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', allowed)
+    ).toBe(false);
   });
 });

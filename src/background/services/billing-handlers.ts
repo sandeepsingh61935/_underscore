@@ -9,7 +9,6 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 import {
   freeEntitlement,
   getBillingAppOrigin,
-  openBillingUrl,
   SupabaseBillingPort,
 } from '@/shared/billing';
 import {
@@ -72,8 +71,8 @@ export function registerBillingHandlers(deps: BillingHandlerDeps): void {
         const cancelUrl =
           payload?.cancelUrl ??
           `${origin}/settings?billing=cancel&client=extension`;
+        // Return URL only — useBilling opens once (avoid double tabs).
         const { url } = await port().createCheckout({ successUrl, cancelUrl });
-        openBillingUrl(url);
         return { success: true, data: { url } };
       } catch (error) {
         logger.error('IPC_BILLING_START_CHECKOUT failed', error as Error);
@@ -91,8 +90,8 @@ export function registerBillingHandlers(deps: BillingHandlerDeps): void {
       if (!authManager.isAuthenticated) {
         return { success: false, error: 'Sign in required', code: 'AUTH_REQUIRED' };
       }
+      // Return URL only — useBilling opens once (avoid double tabs).
       const { url } = await port().createPortal();
-      openBillingUrl(url);
       return { success: true, data: { url } };
     } catch (error) {
       logger.error('IPC_BILLING_OPEN_PORTAL failed', error as Error);

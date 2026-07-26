@@ -2,6 +2,8 @@
  * Pull Polar customer state into billing_entitlements (JWT user).
  * Fallback when webhooks fail (e.g. signature issues).
  * Requires OAT scope: customers:read
+ *
+ * Product rules mirror webhook S-2 fail-closed (exact product match only).
  */
 import {
   entitlementUpsertFromPolarSubscription,
@@ -14,6 +16,8 @@ import {
   isBillingRequestOriginAllowed,
   parseBillingAllowedOrigins,
 } from '../_shared/billing-urls.ts';
+import { tryRateLimit } from '../_shared/rate-limit.ts';
+import { resolveBillingSyncFromSubscriptions } from '../_shared/polar-sync.ts';
 
 function loadAllowedOrigins(): string[] {
   return parseBillingAllowedOrigins(Deno.env.get('BILLING_ALLOWED_ORIGINS'));
@@ -70,8 +74,39 @@ Deno.serve(async (req) => {
     });
   }
 
+  // WP-5: 20 syncs / 15 min per user (focus + post-checkout poll)
+  const rl = tryRateLimit(`billing-sync:${userOrErr.id}`, 20, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: 'Too many billing sync requests',
+        code: 'RATE_LIMITED',
+        retryAfterMs: rl.retryAfterMs,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...cors,
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)),
+        },
+      }
+    );
+  }
+
   const userId = userOrErr.id;
-  const productId = polarProductId();
+  let productId: string;
+  try {
+    productId = polarProductId();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: 'POLAR_PRODUCT_ID is not configured' }),
+      {
+        status: 500,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      }
+    );
+  }
 
   // Polar: GET /v1/customers/external/{external_id}/state
   const res = await polarFetch(
@@ -79,12 +114,52 @@ Deno.serve(async (req) => {
     { method: 'GET' }
   );
 
-  if (res.status === 404) {
-    // No Polar customer yet — free
+  const { createClient } = await import(
+    'https://esm.sh/@supabase/supabase-js@2.49.1'
+  );
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
+      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  async function upsertFree(
+    polarCustomerId: string | null,
+    reason: string
+  ): Promise<Response> {
+    const freeRow = entitlementUpsertFromPolarSubscription({
+      userId,
+      polarStatus: 'canceled',
+      polarCustomerId,
+      polarSubscriptionId: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const { error } = await admin.from('billing_entitlements').upsert(freeRow, {
+      onConflict: 'user_id',
+    });
+    if (error) {
+      console.error('billing-sync free upsert failed', error);
+      return new Response(JSON.stringify({ error: 'DB error' }), {
+        status: 500,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(
-      JSON.stringify({ ok: true, plan: 'free', reason: 'no_polar_customer' }),
+      JSON.stringify({ ok: true, plan: 'free', reason }),
       { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
     );
+  }
+
+  if (res.status === 404) {
+    // No Polar customer — demote so stale paid rows do not linger
+    return await upsertFree(null, 'no_polar_customer');
   }
 
   if (!res.ok) {
@@ -119,57 +194,17 @@ Deno.serve(async (req) => {
     ? state.active_subscriptions
     : [];
 
-  // Prefer subscription for our product
-  const match =
-    subs.find((s) => s.product_id === productId) ??
-    subs.find((s) => s.status === 'active' || s.status === 'trialing') ??
-    null;
-
-  const { createClient } = await import(
-    'https://esm.sh/@supabase/supabase-js@2.49.1'
-  );
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceKey) {
-    return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
-      status: 500,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-    });
-  }
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  const decision = resolveBillingSyncFromSubscriptions({
+    allowedProductId: productId,
+    subscriptions: subs,
+    customerExists: true,
   });
 
-  if (!match) {
-    const freeRow = entitlementUpsertFromPolarSubscription({
-      userId,
-      polarStatus: 'canceled',
-      polarCustomerId: state.id ?? null,
-      polarSubscriptionId: null,
-      currentPeriodEnd: null,
-      cancelAtPeriodEnd: false,
-    });
-    await admin.from('billing_entitlements').upsert(freeRow, {
-      onConflict: 'user_id',
-    });
-    return new Response(
-      JSON.stringify({ ok: true, plan: 'free', reason: 'no_active_subscription' }),
-      { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
-    );
+  if (decision.action === 'upsert_free') {
+    return await upsertFree(state.id ?? null, decision.reason);
   }
 
-  // If we know product id and it does not match, do not grant paid
-  if (match.product_id && match.product_id !== productId) {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        plan: 'free',
-        reason: 'subscription_product_mismatch',
-      }),
-      { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
-    );
-  }
-
+  const match = decision.sub;
   const row = entitlementUpsertFromPolarSubscription({
     userId,
     polarStatus: match.status ?? 'active',
@@ -202,6 +237,7 @@ Deno.serve(async (req) => {
       ok: true,
       plan: row.plan,
       status: row.status,
+      reason: decision.reason,
     }),
     { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
   );

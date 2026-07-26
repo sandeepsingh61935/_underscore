@@ -106,7 +106,10 @@ export function extractPolarEntitlementSource(event: {
   if (!data || typeof data !== 'object') return null;
   const type = event.type ?? '';
 
-  if (type.startsWith('subscription.') || type.startsWith('order.')) {
+  // Only subscription lifecycle + customer state drive entitlements.
+  // order.* statuses (paid/pending/refunded) are not subscription statuses and
+  // would map to "none" → free and can demote an active paid entitlement.
+  if (type.startsWith('subscription.')) {
     return parseSubscriptionLike(data);
   }
 
@@ -369,9 +372,10 @@ function timingSafeEqual(a: string, b: string): boolean {
   return out === 0;
 }
 
-export function corsHeaders(origin?: string | null): HeadersInit {
+/** CORS for billing edge — callers must pass an allowlisted origin (never *). */
+export function corsHeaders(origin: string): HeadersInit {
   return {
-    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers':
       'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
