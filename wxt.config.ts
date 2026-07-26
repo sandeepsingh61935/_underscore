@@ -15,10 +15,11 @@ export default defineConfig({
     description: 'Intelligent web highlighting with Basic, Pro, and 10x-Pro modes',
     permissions: ['activeTab', 'storage', 'alarms', 'identity'],
     externally_connectable: {
+      // WP-3: pin to our app origin only (no project-wide Pages wildcard)
       matches: [
         'http://localhost/*',
         'http://127.0.0.1/*',
-        'https://*.pages.dev/*',
+        'https://underscore-web.pages.dev/*',
       ],
     },
     host_permissions: [
@@ -26,8 +27,12 @@ export default defineConfig({
       'https://api.anthropic.com/*',
       'https://api.openai.com/*',
       'https://openrouter.ai/*',
-      // Supabase Auth + billing edge functions (Polar checkout/portal/entitlements)
-      'https://*.supabase.co/*',
+      // WP-3: pin this Supabase project only (auth + billing edge)
+      'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
+      // Polar checkout tabs (navigation; host also validated in openBillingUrl)
+      'https://polar.sh/*',
+      'https://sandbox.polar.sh/*',
+      'https://buy.polar.sh/*',
       // Local Ollama + MCP bridge only — agent hosts (Cursor, etc.) use MCP, not in-app LLM.
       'http://localhost:11434/*',
       'http://127.0.0.1:11434/*',

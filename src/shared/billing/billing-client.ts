@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAnonKey, getSupabaseUrl } from './config';
 import { freeEntitlement, rowToEntitlement } from './entitlement';
+import { assertPolarCheckoutUrl } from './polar-checkout-url';
 import type {
   BillingEntitlement,
   BillingEntitlementRow,
@@ -97,11 +98,12 @@ export async function fetchBillingEntitlementSafe(
 }
 
 export function openBillingUrl(url: string): void {
+  const safe = assertPolarCheckoutUrl(url);
   if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-    void chrome.tabs.create({ url });
+    void chrome.tabs.create({ url: safe });
     return;
   }
   if (typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(safe, '_blank', 'noopener,noreferrer');
   }
 }
