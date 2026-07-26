@@ -1,7 +1,7 @@
 import {
   entitlementUpsertFromPolarSubscription,
   extractPolarEntitlementSource,
-  verifyPolarWebhook,
+  verifyPolarWebhookDetailed,
 } from '../_shared/polar.ts';
 import {
   decideWebhookEntitlementWrite,
@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.text();
-  const ok = await verifyPolarWebhook(body, req.headers, secret);
-  if (!ok) {
-    console.error('webhook signature invalid');
+  const verified = await verifyPolarWebhookDetailed(body, req.headers, secret);
+  if (!verified.ok) {
+    console.error('webhook signature invalid', { reason: verified.reason });
     return new Response('', { status: 403, headers: jsonHeaders });
   }
 

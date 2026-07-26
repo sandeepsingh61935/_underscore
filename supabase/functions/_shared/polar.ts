@@ -223,56 +223,141 @@ function parseSubscriptionLike(data: Record<string, unknown>) {
   };
 }
 
-/** Standard Webhooks verification (Polar). Secret may include whsec_ prefix. */
+/**
+ * Standard Webhooks verification (Polar).
+ * @see https://polar.sh/docs/integrate/webhooks/delivery
+ * @see https://github.com/standard-webhooks/standard-webhooks
+ *
+ * Returns a reason string when invalid (for logs); null when valid.
+ */
+export async function verifyPolarWebhookDetailed(
+  body: string,
+  headers: Headers,
+  secret: string
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const msgId = headers.get('webhook-id') ?? headers.get('Webhook-Id');
+  const timestamp =
+    headers.get('webhook-timestamp') ?? headers.get('Webhook-Timestamp');
+  const signatureHeader =
+    headers.get('webhook-signature') ?? headers.get('Webhook-Signature');
+
+  if (!msgId || !timestamp || !signatureHeader) {
+    return {
+      ok: false,
+      reason: `missing headers id=${Boolean(msgId)} ts=${Boolean(timestamp)} sig=${Boolean(signatureHeader)}`,
+    };
+  }
+
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts)) {
+    return { ok: false, reason: 'invalid timestamp' };
+  }
+  // Reject stale timestamps (>5 min) — clock skew / replay
+  if (Math.abs(Date.now() / 1000 - ts) > 300) {
+    return { ok: false, reason: 'timestamp outside tolerance' };
+  }
+
+  // Normalize secret: trim, strip wrapping quotes, strip whsec_
+  let cleaned = secret.trim();
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  if (!cleaned) {
+    return { ok: false, reason: 'empty secret' };
+  }
+
+  const keyCandidates = decodeWebhookSecretCandidates(cleaned);
+  if (keyCandidates.length === 0) {
+    return { ok: false, reason: 'could not decode secret' };
+  }
+
+  const signedContent = `${msgId}.${timestamp}.${body}`;
+  const payloadBytes = new TextEncoder().encode(signedContent);
+
+  const expectedSigs: string[] = [];
+  for (const keyBytes of keyCandidates) {
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', cryptoKey, payloadBytes);
+    expectedSigs.push(bytesToBase64(new Uint8Array(sig)));
+  }
+
+  // header format: "v1,<base64> v1,<base64>"
+  const parts = signatureHeader.trim().split(/\s+/);
+  for (const part of parts) {
+    const comma = part.indexOf(',');
+    if (comma < 0) continue;
+    const ver = part.slice(0, comma);
+    const sigB64 = part.slice(comma + 1);
+    if (ver !== 'v1' || !sigB64) continue;
+    for (const expected of expectedSigs) {
+      if (timingSafeEqual(sigB64, expected)) {
+        return { ok: true };
+      }
+    }
+  }
+
+  return {
+    ok: false,
+    reason: `no matching signature (secret_len=${cleaned.length} has_whsec=${cleaned.startsWith('whsec_')} candidates=${keyCandidates.length})`,
+  };
+}
+
 export async function verifyPolarWebhook(
   body: string,
   headers: Headers,
   secret: string
 ): Promise<boolean> {
-  const msgId = headers.get('webhook-id');
-  const timestamp = headers.get('webhook-timestamp');
-  const signatureHeader = headers.get('webhook-signature');
-  if (!msgId || !timestamp || !signatureHeader) return false;
+  const r = await verifyPolarWebhookDetailed(body, headers, secret);
+  return r.ok;
+}
 
-  // Reject stale timestamps (>5 min)
-  const ts = Number(timestamp);
-  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) {
-    return false;
-  }
+/** Standard Webhooks: strip whsec_, base64-decode; also try raw UTF-8 fallbacks. */
+function decodeWebhookSecretCandidates(secret: string): Uint8Array[] {
+  const out: Uint8Array[] = [];
+  const stripped = secret.startsWith('whsec_') ? secret.slice(6) : secret;
 
-  let keyBytes: Uint8Array;
-  const raw = secret.startsWith('whsec_') ? secret.slice(6) : secret;
-  try {
-    keyBytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
-  } catch {
-    // Plain secret fallback
-    keyBytes = new TextEncoder().encode(secret);
-  }
-
-  const signedContent = `${msgId}.${timestamp}.${body}`;
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyBytes,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sig = await crypto.subtle.sign(
-    'HMAC',
-    cryptoKey,
-    new TextEncoder().encode(signedContent)
-  );
-  const expected = btoa(String.fromCharCode(...new Uint8Array(sig)));
-
-  // header format: "v1,base64sig v1,other"
-  const parts = signatureHeader.split(' ');
-  for (const part of parts) {
-    const [ver, sigB64] = part.split(',');
-    if (ver === 'v1' && sigB64 && timingSafeEqual(sigB64, expected)) {
-      return true;
+  const tryB64 = (s: string): Uint8Array | null => {
+    try {
+      // atob needs standard base64; add padding if missing
+      let b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = b64.length % 4;
+      if (pad) b64 += '='.repeat(4 - pad);
+      const bin = atob(b64);
+      return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    } catch {
+      return null;
     }
+  };
+
+  const b64 = tryB64(stripped);
+  if (b64 && b64.length > 0) out.push(b64);
+
+  // Fallbacks if secret was stored as raw string (not base64)
+  const utf8Stripped = new TextEncoder().encode(stripped);
+  if (utf8Stripped.length > 0) out.push(utf8Stripped);
+  if (secret !== stripped) {
+    const utf8Full = new TextEncoder().encode(secret);
+    if (utf8Full.length > 0) out.push(utf8Full);
   }
-  return false;
+
+  return out;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) {
+    s += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(s);
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
