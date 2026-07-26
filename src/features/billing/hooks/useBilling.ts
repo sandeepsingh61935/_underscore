@@ -27,6 +27,8 @@ export interface UseBillingResult {
   snapshot: BillingSnapshot;
   busy: boolean;
   refresh: () => Promise<void>;
+  /** Pull Polar customer state into DB then refresh (post-checkout). */
+  syncFromPolar: () => Promise<void>;
   startCheckout: (opts?: Partial<CheckoutOptions>) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -82,6 +84,20 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
       }));
     }
   }, [isAuthenticated, port, applyDevOverride]);
+
+  /** After checkout: pull Polar → DB, then re-read entitlement. */
+  const syncFromPolar = useCallback(async () => {
+    if (!isAuthenticated || !port?.syncFromPolar) {
+      await refresh();
+      return;
+    }
+    try {
+      await port.syncFromPolar();
+    } catch (e) {
+      console.warn('[billing] syncFromPolar failed', e);
+    }
+    await refresh();
+  }, [isAuthenticated, port, refresh]);
 
   useEffect(() => {
     void refresh();
@@ -142,6 +158,7 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
     snapshot: effectiveSnapshot,
     busy,
     refresh,
+    syncFromPolar,
     startCheckout,
     openPortal,
   };

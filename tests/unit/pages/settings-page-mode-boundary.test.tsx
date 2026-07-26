@@ -94,6 +94,7 @@ function mockBilling(isPaidActive: boolean) {
     },
     busy: false,
     refresh: vi.fn(),
+    syncFromPolar: vi.fn(),
     startCheckout: vi.fn(),
     openPortal: vi.fn(),
   });

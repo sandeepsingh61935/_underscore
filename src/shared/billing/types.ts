@@ -74,4 +74,6 @@ export interface IBillingPort {
   getEntitlement(): Promise<BillingEntitlement>;
   createCheckout(options: CheckoutOptions): Promise<BillingUrlResult>;
   createPortal(): Promise<BillingUrlResult>;
+  /** Optional: pull Polar state into DB (web after checkout success). */
+  syncFromPolar?(): Promise<{ plan: string; status?: string }>;
 }

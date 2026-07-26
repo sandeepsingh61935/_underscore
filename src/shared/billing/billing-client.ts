@@ -50,6 +50,38 @@ export class SupabaseBillingPort implements IBillingPort {
     return this.postFunction('billing-portal', {});
   }
 
+  /**
+   * Pull subscription from Polar API into billing_entitlements (JWT user).
+   * Use after checkout success when webhook may have failed.
+   */
+  async syncFromPolar(): Promise<{ plan: string; status?: string }> {
+    const token = await this.opts.getAccessToken();
+    if (!token) {
+      throw new Error('Sign in required for billing');
+    }
+    const base = (
+      this.opts.functionsBaseUrl ?? getSupabaseUrl()
+    ).replace(/\/$/, '');
+    const res = await fetch(`${base}/functions/v1/billing-sync`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: getSupabaseAnonKey(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      plan?: string;
+      status?: string;
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(json.error || `Billing sync failed (${res.status})`);
+    }
+    return { plan: json.plan ?? 'free', status: json.status };
+  }
+
   private async postFunction(
     path: string,
     body: Record<string, unknown>

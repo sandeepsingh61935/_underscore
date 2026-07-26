@@ -436,6 +436,32 @@ export function SettingsPage({
             }}
           />
         ) : null}
+        {user && billing && !isPaidActive ? (
+          <Row
+            title="Refresh subscription status"
+            sub="Already paid? Pull status from Polar and update this account."
+            right={
+              billingBusy ? (
+                <Spinner size="sm" />
+              ) : (
+                <span
+                  className="u-mono"
+                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                >
+                  Sync
+                </span>
+              )
+            }
+            onClick={() => {
+              setBillingActionError(null);
+              void billing.syncFromPolar().catch((e: unknown) => {
+                setBillingActionError(
+                  e instanceof Error ? e.message : 'Sync failed'
+                );
+              });
+            }}
+          />
+        ) : null}
       </div>
 
       <DeleteConfirmDialog

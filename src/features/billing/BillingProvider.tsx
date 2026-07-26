@@ -28,6 +28,7 @@ export interface BillingContextValue {
   snapshot: BillingSnapshot;
   busy: boolean;
   refresh: () => Promise<void>;
+  syncFromPolar: () => Promise<void>;
   startCheckout: (opts?: Partial<CheckoutOptions>) => Promise<void>;
   openPortal: () => Promise<void>;
 }
@@ -117,13 +118,21 @@ export function BillingProvider({
     const delaysMs = [0, 800, 2000, 4000, 7000];
 
     void (async () => {
+      // First pass: pull from Polar API (does not need webhook)
+      if (billingFlag === 'success' && !cancelled) {
+        await billing.syncFromPolar();
+      }
       for (const delay of delaysMs) {
         if (cancelled) return;
         if (delay > 0) {
           await new Promise((r) => setTimeout(r, delay));
         }
         if (cancelled) return;
-        await billing.refresh();
+        if (billingFlag === 'success') {
+          await billing.syncFromPolar();
+        } else {
+          await billing.refresh();
+        }
       }
       // Clean sensitive query tokens from address bar
       if (!cancelled && window.history.replaceState) {
@@ -138,17 +147,25 @@ export function BillingProvider({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, billing.refresh]);
+  }, [isAuthenticated, billing.refresh, billing.syncFromPolar]);
 
   const value = useMemo<BillingContextValue>(
     () => ({
       snapshot: billing.snapshot,
       busy: billing.busy,
       refresh: billing.refresh,
+      syncFromPolar: billing.syncFromPolar,
       startCheckout: billing.startCheckout,
       openPortal: billing.openPortal,
     }),
-    [billing.snapshot, billing.busy, billing.refresh, billing.startCheckout, billing.openPortal]
+    [
+      billing.snapshot,
+      billing.busy,
+      billing.refresh,
+      billing.syncFromPolar,
+      billing.startCheckout,
+      billing.openPortal,
+    ]
   );
 
   return (
