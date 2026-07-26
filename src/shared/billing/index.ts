@@ -39,9 +39,11 @@ export { getBillingAppOrigin, getSupabaseUrl, getSupabaseAnonKey } from './confi
 export { isBillingDevOverrideEnabled } from './dev-override';
 
 export {
+  BILLING_ALLOWED_EXTENSION_IDS,
   defaultBillingSuccessUrl,
   isAllowedBillingCorsOrigin,
   isAllowedBillingRedirectUrl,
+  isBillingRequestOriginAllowed,
   parseBillingAllowedOrigins,
   resolveBillingRedirectUrl,
   resolveBillingReturnUrl,

@@ -1,6 +1,7 @@
 import { polarFetch, requireUser } from '../_shared/polar.ts';
 import {
   isAllowedBillingCorsOrigin,
+  isBillingRequestOriginAllowed,
   parseBillingAllowedOrigins,
 } from '../_shared/billing-urls.ts';
 import { tryRateLimit } from '../_shared/rate-limit.ts';
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (origin && !isAllowedBillingCorsOrigin(origin, allowed)) {
+  if (!isBillingRequestOriginAllowed(origin, allowed)) {
     return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json', Vary: 'Origin' },

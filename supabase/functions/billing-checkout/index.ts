@@ -5,6 +5,7 @@ import {
 } from '../_shared/polar.ts';
 import {
   isAllowedBillingCorsOrigin,
+  isBillingRequestOriginAllowed,
   parseBillingAllowedOrigins,
   resolveBillingRedirectUrl,
   resolveBillingReturnUrl,
@@ -53,8 +54,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Browser calls: require allowlisted Origin. Server/extension (no Origin): OK.
-  if (origin && !isAllowedBillingCorsOrigin(origin, allowed)) {
+  // Web: allowlisted origin. Extension: chrome-extension://pinned-id. No Origin: OK.
+  if (!isBillingRequestOriginAllowed(origin, allowed)) {
     return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json', Vary: 'Origin' },

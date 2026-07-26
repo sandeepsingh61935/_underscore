@@ -103,17 +103,54 @@ export function resolveBillingRedirectUrl(
   return { ok: true, url: provided };
 }
 
-/** CORS: exact Origin header match against allowlist. */
+/**
+ * Pinned extension IDs allowed to call billing edge (Origin: chrome-extension://…).
+ * Keep in sync with wxt.config permanent extension id.
+ */
+export const BILLING_ALLOWED_EXTENSION_IDS = [
+  'hecejpjekcgpifnemddfmkjmphmgljlm',
+] as const;
+
+/**
+ * Whether a request Origin may call billing-checkout/portal.
+ * - Allowlisted https/http web origins (BILLING_ALLOWED_ORIGINS)
+ * - chrome-extension:// with pinned extension id
+ * - missing Origin (server-to-server) is handled by caller (treat as allowed)
+ */
 export function isAllowedBillingCorsOrigin(
   origin: string | null | undefined,
   allowedOrigins: string[]
 ): boolean {
-  if (!origin || !allowedOrigins.length) return false;
+  if (!origin) return false;
+
+  // Extension SW fetch often sends Origin: chrome-extension://<id>
+  if (origin.startsWith('chrome-extension://')) {
+    try {
+      const id = new URL(origin).hostname;
+      return (BILLING_ALLOWED_EXTENSION_IDS as readonly string[]).includes(id);
+    } catch {
+      return false;
+    }
+  }
+
+  if (!allowedOrigins.length) return false;
   try {
     return allowedOrigins.includes(new URL(origin).origin);
   } catch {
     return false;
   }
+}
+
+/**
+ * Gate for checkout/portal POST: no Origin → allow (curl/tests);
+ * else must pass isAllowedBillingCorsOrigin.
+ */
+export function isBillingRequestOriginAllowed(
+  origin: string | null | undefined,
+  allowedOrigins: string[]
+): boolean {
+  if (!origin) return true;
+  return isAllowedBillingCorsOrigin(origin, allowedOrigins);
 }
 
 /** For cancel/return_url error copy when field is cancel-specific */

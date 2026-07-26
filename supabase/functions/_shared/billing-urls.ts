@@ -113,15 +113,40 @@ export function resolveBillingReturnUrl(
   return { ok: true, url: provided };
 }
 
-/** CORS: exact Origin match against allowlist. */
+/** Pinned extension IDs (Origin chrome-extension://id) — keep in sync with wxt key. */
+const BILLING_ALLOWED_EXTENSION_IDS = [
+  'hecejpjekcgpifnemddfmkjmphmgljlm',
+];
+
+/** CORS / request Origin gate for billing edge. */
 export function isAllowedBillingCorsOrigin(
   origin: string | null,
   allowedOrigins: string[]
 ): boolean {
-  if (!origin || !allowedOrigins.length) return false;
+  if (!origin) return false;
+
+  if (origin.startsWith('chrome-extension://')) {
+    try {
+      const id = new URL(origin).hostname;
+      return BILLING_ALLOWED_EXTENSION_IDS.includes(id);
+    } catch {
+      return false;
+    }
+  }
+
+  if (!allowedOrigins.length) return false;
   try {
     return allowedOrigins.includes(new URL(origin).origin);
   } catch {
     return false;
   }
+}
+
+/** No Origin → allow; else must pass isAllowedBillingCorsOrigin. */
+export function isBillingRequestOriginAllowed(
+  origin: string | null,
+  allowedOrigins: string[]
+): boolean {
+  if (!origin) return true;
+  return isAllowedBillingCorsOrigin(origin, allowedOrigins);
 }

@@ -9,7 +9,10 @@ import type { IHighlightRepository } from '@/shared/repositories/i-highlight-rep
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import { isRemoteHighlightNewer } from '@/shared/utils/supabase-highlight-row';
+import {
+  highlightTimestampMs,
+  isRemoteHighlightNewer,
+} from '@/shared/utils/supabase-highlight-row';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type {
@@ -118,7 +121,10 @@ export class CloudHydrationService implements ICloudHydrationService {
         break;
       }
 
-      const updatedTs = highlight.updatedAt?.getTime() ?? new Date(highlight.createdAt).getTime();
+      const updatedTs = highlightTimestampMs(
+        highlight.updatedAt as Date | string | undefined,
+        highlight.createdAt as Date | string | undefined
+      );
       if (updatedTs > maxUpdatedAt) {
         maxUpdatedAt = updatedTs;
       }

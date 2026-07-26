@@ -143,6 +143,27 @@ export function getHighlightRowUpdatedTime(row: SupabaseHighlightRow): number {
   return 0;
 }
 
+/** Coerce Date | string | number | undefined to epoch ms (cloud rows may arrive as ISO strings). */
+export function highlightTimestampMs(
+  value: Date | string | number | null | undefined,
+  fallback?: Date | string | number | null
+): number {
+  const tryOne = (v: Date | string | number | null | undefined): number | null => {
+    if (v == null) return null;
+    if (v instanceof Date) {
+      const t = v.getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string' && v.length > 0) {
+      const t = new Date(v).getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+    return null;
+  };
+  return tryOne(value) ?? tryOne(fallback) ?? 0;
+}
+
 export function isRemoteHighlightNewer(
   remote: HighlightDataV2,
   local: HighlightDataV2 | null | undefined
@@ -151,7 +172,7 @@ export function isRemoteHighlightNewer(
     return true;
   }
 
-  const remoteTs = remote.updatedAt?.getTime() ?? new Date(remote.createdAt).getTime();
-  const localTs = local.updatedAt?.getTime() ?? new Date(local.createdAt).getTime();
+  const remoteTs = highlightTimestampMs(remote.updatedAt, remote.createdAt);
+  const localTs = highlightTimestampMs(local.updatedAt, local.createdAt);
   return remoteTs > localTs;
 }
