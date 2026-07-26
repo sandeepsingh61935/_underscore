@@ -1,5 +1,9 @@
 # Billing edge functions (Polar)
 
+**Security hardening program (ordered WPs):**  
+`docs/superpowers/specs/2026-07-25-billing-security-hardening-prd.md`  
+Do not take real money until WP-1–WP-3 (P0) are done.
+
 | Function | Auth | Purpose |
 |----------|------|---------|
 | `billing-checkout` | User JWT | Create Polar checkout (`external_customer_id` = Supabase user id) |
