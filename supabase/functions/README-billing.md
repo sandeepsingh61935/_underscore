@@ -52,7 +52,7 @@ Webhook URL:
 | 1 | `successUrl` / `cancelUrl` allowlisted via `BILLING_ALLOWED_ORIGINS` |
 | 2 | CORS exact origin allowlist (no `*`) on checkout/portal |
 | 3 | Extension pins Supabase project + `underscore-web.pages.dev` |
-| 4 | Webhook: user must exist; product must match `POLAR_PRODUCT_ID` |
+| 4 | Webhook: user must exist; **fail-closed** product match for active/trialing/past_due (S-2) |
 | 5 | Rate limit: checkout 5/15m, portal 10/15m per user |
 | 6 | Pages `_headers` CSP / frame / nosniff |
 | 7 | `openBillingUrl` only allows Polar hosts |

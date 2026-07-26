@@ -57,3 +57,9 @@ export {
   tryConsumeRateLimit,
   type RateBucket,
 } from './rate-limit';
+
+export {
+  decideWebhookEntitlementWrite,
+  extractPolarProductId,
+  type WebhookWriteDecision,
+} from './webhook-product-gate';
