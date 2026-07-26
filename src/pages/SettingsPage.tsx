@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
@@ -55,6 +55,24 @@ export function SettingsPage({
   const billingError = billing?.snapshot.error ?? null;
   const startCheckout = billing?.startCheckout;
   const openBillingPortal = billing?.openPortal;
+  const [billingReturnNote, setBillingReturnNote] = useState<string | null>(
+    null
+  );
+
+  // Surface post-checkout wait while webhook catches up
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const flag = new URLSearchParams(window.location.search).get('billing');
+    if (flag === 'success' && !isPaidActive) {
+      setBillingReturnNote(
+        'Payment received — confirming subscription. This page will update when sync completes.'
+      );
+    } else if (flag === 'success' && isPaidActive) {
+      setBillingReturnNote('Account (Paid) is active.');
+    } else if (isPaidActive) {
+      setBillingReturnNote(null);
+    }
+  }, [isPaidActive]);
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -299,6 +317,22 @@ export function SettingsPage({
             )
           }
         />
+        {user && billingReturnNote ? (
+          <div
+            className="u-sans"
+            data-testid="billing-return-note"
+            style={{
+              margin: '0 16px 8px',
+              padding: '10px 12px',
+              border: '1px solid var(--rule-soft)',
+              fontSize: 'var(--step--1)',
+              color: 'var(--ink-3)',
+              lineHeight: 1.45,
+            }}
+          >
+            {billingReturnNote}
+          </div>
+        ) : null}
         {user && billing ? (
           <Row
             title={isPaidActive ? 'Manage billing' : 'Upgrade to Account (Paid)'}

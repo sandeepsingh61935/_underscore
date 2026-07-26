@@ -101,6 +101,45 @@ export function BillingProvider({
     return () => window.removeEventListener('focus', onFocus);
   }, [isAuthenticated, billing.refresh]);
 
+  /**
+   * After Polar checkout, user lands on /settings?billing=success.
+   * Webhook may lag a few seconds — poll entitlement then strip query params.
+   * customer_session_token is ignored for now (portal uses our API).
+   */
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const billingFlag = params.get('billing');
+    if (billingFlag !== 'success' && billingFlag !== 'cancel') return;
+
+    let cancelled = false;
+    const delaysMs = [0, 800, 2000, 4000, 7000];
+
+    void (async () => {
+      for (const delay of delaysMs) {
+        if (cancelled) return;
+        if (delay > 0) {
+          await new Promise((r) => setTimeout(r, delay));
+        }
+        if (cancelled) return;
+        await billing.refresh();
+      }
+      // Clean sensitive query tokens from address bar
+      if (!cancelled && window.history.replaceState) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('billing');
+        url.searchParams.delete('customer_session_token');
+        url.searchParams.delete('checkout_id');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, billing.refresh]);
+
   const value = useMemo<BillingContextValue>(
     () => ({
       snapshot: billing.snapshot,
