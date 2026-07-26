@@ -258,13 +258,14 @@ otp_expiry = 600
 # VerifyEmailView (web) / VerificationView (extension) via verifyOtp(type: 'email').
 [auth.email.template.confirmation]
 subject = "Confirm your _underscore signup"
-content_path = "./templates/confirmation.html"
+# CLI resolves content_path from project root (not supabase/)
+content_path = "supabase/templates/confirmation.html"
 
 # Password recovery email — renders the 6-digit {{ .Token }} code consumed by
 # ResetPasswordView (web) / ResetPasswordView (extension) via verifyOtp(type: 'recovery').
 [auth.email.template.recovery]
 subject = "Reset your _underscore password"
-content_path = "./templates/recovery.html"
+content_path = "supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
