@@ -106,16 +106,15 @@ export function extractPolarEntitlementSource(event: {
   if (!data || typeof data !== 'object') return null;
   const type = event.type ?? '';
 
-  if (type.startsWith('subscription.')) {
+  if (type.startsWith('subscription.') || type.startsWith('order.')) {
     return parseSubscriptionLike(data);
   }
 
   if (type === 'customer.state_changed' || type === 'customer.updated') {
     const customer = data;
-    const externalId =
-      typeof customer.external_id === 'string' ? customer.external_id : null;
-    const activeSubs = Array.isArray(customer.active_subscriptions)
-      ? (customer.active_subscriptions as Record<string, unknown>[])
+    const externalId = resolveUserIdFromPayload(customer);
+    const activeSubs = Array.isArray(customer['active_subscriptions'])
+      ? (customer['active_subscriptions'] as Record<string, unknown>[])
       : [];
 
     if (activeSubs.length > 0) {
@@ -125,14 +124,16 @@ export function extractPolarEntitlementSource(event: {
       if (externalId) {
         return {
           userId: externalId,
-          polarStatus: String(sub.status ?? 'active'),
-          polarCustomerId: typeof customer.id === 'string' ? customer.id : null,
-          polarSubscriptionId: typeof sub.id === 'string' ? sub.id : null,
+          polarStatus: String(sub['status'] ?? 'active'),
+          polarCustomerId:
+            typeof customer['id'] === 'string' ? customer['id'] : null,
+          polarSubscriptionId:
+            typeof sub['id'] === 'string' ? sub['id'] : null,
           currentPeriodEnd:
-            typeof sub.current_period_end === 'string'
-              ? sub.current_period_end
+            typeof sub['current_period_end'] === 'string'
+              ? sub['current_period_end']
               : null,
-          cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+          cancelAtPeriodEnd: Boolean(sub['cancel_at_period_end']),
         };
       }
     }
@@ -141,7 +142,8 @@ export function extractPolarEntitlementSource(event: {
       return {
         userId: externalId,
         polarStatus: 'canceled',
-        polarCustomerId: typeof customer.id === 'string' ? customer.id : null,
+        polarCustomerId:
+          typeof customer['id'] === 'string' ? customer['id'] : null,
         polarSubscriptionId: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
@@ -152,36 +154,72 @@ export function extractPolarEntitlementSource(event: {
   return null;
 }
 
-function parseSubscriptionLike(data: Record<string, unknown>) {
-  const customer = (data.customer ?? null) as Record<string, unknown> | null;
-  const externalFromCustomer =
-    customer && typeof customer.external_id === 'string'
-      ? customer.external_id
-      : null;
-  const externalDirect =
-    typeof data.customer_external_id === 'string'
-      ? data.customer_external_id
-      : typeof data.external_customer_id === 'string'
-        ? data.external_customer_id
-        : null;
+/** Resolve Supabase user id from Polar payload (external_id / metadata). */
+function resolveUserIdFromPayload(
+  data: Record<string, unknown>
+): string | null {
+  const asStr = (v: unknown): string | null =>
+    typeof v === 'string' && v.trim() ? v.trim() : null;
 
-  const userId = externalFromCustomer ?? externalDirect;
+  // Nested customer object
+  const customer = data['customer'];
+  if (customer && typeof customer === 'object') {
+    const c = customer as Record<string, unknown>;
+    const fromCustomer =
+      asStr(c['external_id']) ??
+      asStr((c['metadata'] as Record<string, unknown> | undefined)?.['user_id']);
+    if (fromCustomer) return fromCustomer;
+  }
+
+  // Direct fields on subscription / order
+  const direct =
+    asStr(data['customer_external_id']) ??
+    asStr(data['external_customer_id']) ??
+    asStr(data['external_id']);
+  if (direct) return direct;
+
+  // Checkout/subscription metadata we set at checkout
+  const meta = data['metadata'];
+  if (meta && typeof meta === 'object') {
+    const m = meta as Record<string, unknown>;
+    const fromMeta = asStr(m['user_id']) ?? asStr(m['external_customer_id']);
+    if (fromMeta) return fromMeta;
+  }
+
+  const customerMeta = data['customer_metadata'];
+  if (customerMeta && typeof customerMeta === 'object') {
+    const m = customerMeta as Record<string, unknown>;
+    const fromCm = asStr(m['user_id']);
+    if (fromCm) return fromCm;
+  }
+
+  return null;
+}
+
+function parseSubscriptionLike(data: Record<string, unknown>) {
+  const userId = resolveUserIdFromPayload(data);
   if (!userId) return null;
 
+  const customer = (data['customer'] ?? null) as Record<string, unknown> | null;
   const polarCustomerId =
-    (customer && typeof customer.id === 'string' ? customer.id : null) ??
-    (typeof data.customer_id === 'string' ? data.customer_id : null);
+    (customer && typeof customer['id'] === 'string' ? customer['id'] : null) ??
+    (typeof data['customer_id'] === 'string' ? data['customer_id'] : null);
+
+  // period end may be ISO string or null
+  let currentPeriodEnd: string | null = null;
+  const cpe = data['current_period_end'];
+  if (typeof cpe === 'string') currentPeriodEnd = cpe;
+  else if (typeof cpe === 'number') {
+    currentPeriodEnd = new Date(cpe * (cpe < 1e12 ? 1000 : 1)).toISOString();
+  }
 
   return {
     userId,
-    polarStatus: String(data.status ?? 'none'),
+    polarStatus: String(data['status'] ?? 'none'),
     polarCustomerId,
-    polarSubscriptionId: typeof data.id === 'string' ? data.id : null,
-    currentPeriodEnd:
-      typeof data.current_period_end === 'string'
-        ? data.current_period_end
-        : null,
-    cancelAtPeriodEnd: Boolean(data.cancel_at_period_end),
+    polarSubscriptionId: typeof data['id'] === 'string' ? data['id'] : null,
+    currentPeriodEnd,
+    cancelAtPeriodEnd: Boolean(data['cancel_at_period_end']),
   };
 }
 
