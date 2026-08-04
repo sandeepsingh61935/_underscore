@@ -310,6 +310,7 @@ export function ProviderDetailPanel({
   };
 
   const handleRemoveKey = async (): Promise<void> => {
+    if (isRemovingKey) return;
     setIsRemovingKey(true);
     try {
       const result = await status.clearKey();

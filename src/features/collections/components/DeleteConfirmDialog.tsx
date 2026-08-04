@@ -16,7 +16,7 @@ export interface DeleteConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   isConfirming?: boolean;
   /** Optional export actions rendered below the warning (e.g. before bulk delete). */
   exportFooter?: React.ReactNode;
@@ -85,6 +85,12 @@ export function DeleteConfirmDialog({
     onClose();
   };
 
+  const handleConfirm = (): void => {
+    // Ignore re-entry while parent reports busy (double-click / late events).
+    if (isConfirming) return;
+    void onConfirm();
+  };
+
   const confirmStyle: React.CSSProperties = isDanger
     ? {
         ...actionButtonBase,
@@ -130,7 +136,7 @@ export function DeleteConfirmDialog({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isConfirming}
             data-testid="confirm-dialog-confirm"
             data-severity={severity}

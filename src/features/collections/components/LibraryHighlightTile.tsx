@@ -3,7 +3,7 @@
  * Owns quote text persistence so views do not re-spread IPC props.
  * Owns single-highlight danger confirm before calling onDelete.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
@@ -31,7 +31,8 @@ export interface LibraryHighlightTileProps {
   highlight: LibraryHighlightFields;
   showLocationMeta?: boolean;
   onSectionClick?: () => void;
-  onDelete?: () => void;
+  /** May be async; dialog stays busy until the promise settles. */
+  onDelete?: () => void | Promise<void>;
   /** When true, embed notes/tags strip (tags feature gate). */
   allowMarginalia?: boolean;
   isExpanded?: boolean;
@@ -60,6 +61,7 @@ export function LibraryHighlightTile({
   const { updateText } = useUpdateHighlightText();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
 
   const onSaveQuote = useCallback(
     async (text: string): Promise<boolean> => updateText(highlight.id, text),
@@ -73,16 +75,20 @@ export function LibraryHighlightTile({
       }
     : undefined;
 
-  const handleConfirmDelete = useCallback((): void => {
-    if (!onDelete || isDeleting) return;
+  const handleConfirmDelete = useCallback(async (): Promise<void> => {
+    if (!onDelete || isDeletingRef.current) return;
+    isDeletingRef.current = true;
     setIsDeleting(true);
     try {
-      onDelete();
+      await onDelete();
       setDeleteOpen(false);
+    } catch {
+      // Keep dialog open so the user can retry after a failed delete.
     } finally {
+      isDeletingRef.current = false;
       setIsDeleting(false);
     }
-  }, [onDelete, isDeleting]);
+  }, [onDelete]);
 
   const footerStart =
     allowMarginalia && onToggleExpand ? (

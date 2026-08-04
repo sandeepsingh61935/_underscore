@@ -213,6 +213,7 @@ export function SubDomainView({
   });
 
   const handleDeleteSection = async (): Promise<void> => {
+    if (isDeletingSection) return;
     setIsDeletingSection(true);
     try {
       const result = await deleteScope({ scope: 'section', domain, sectionKey: section });
@@ -380,7 +381,12 @@ export function SubDomainView({
                   setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
                 }}
                 suggestions={labelSuggestions}
-                onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                onDelete={async () => {
+                  const result = await deleteScope({ scope: 'highlight', id: r.id });
+                  if (!result?.success) {
+                    throw new Error(result?.error ?? 'Delete failed');
+                  }
+                }}
                 matchBadge={formatMatchBadge(r.matchedFields)}
               />
             ))
@@ -415,7 +421,12 @@ export function SubDomainView({
                 setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
               }}
               suggestions={labelSuggestions}
-              onDelete={() => { void deleteScope({ scope: 'highlight', id: h.id }); }}
+              onDelete={async () => {
+                const result = await deleteScope({ scope: 'highlight', id: h.id });
+                if (!result?.success) {
+                  throw new Error(result?.error ?? 'Delete failed');
+                }
+              }}
             />
           ))
         )}

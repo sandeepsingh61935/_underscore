@@ -17,7 +17,7 @@ export interface HighlightWithMarginaliaProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onCopy?: () => void;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
   showLocationMeta?: boolean;
   disabled?: boolean;
   suggestions?: string[];

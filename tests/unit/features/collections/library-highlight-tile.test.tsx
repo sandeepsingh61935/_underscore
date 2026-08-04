@@ -76,8 +76,8 @@ describe('LibraryHighlightTile', () => {
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes · Tags');
   });
 
-  it('confirms before deleting a highlight', () => {
-    const onDelete = vi.fn();
+  it('confirms before deleting a highlight', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
     render(
       <LibraryHighlightTile
         highlight={{
@@ -97,7 +97,78 @@ describe('LibraryHighlightTile', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+    await vi.waitFor(() => {
+      expect(onDelete).toHaveBeenCalledOnce();
+    });
+    await vi.waitFor(() => {
+      expect(screen.queryByText('Delete this highlight?')).toBeNull();
+    });
+  });
+
+  it('keeps delete busy until async onDelete settles and closes only on success', async () => {
+    let resolveDelete!: () => void;
+    const onDelete = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'quote',
+          domain: 'example.com',
+        }}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+
+    await vi.waitFor(() => {
+      expect(onDelete).toHaveBeenCalledOnce();
+      expect(screen.getByTestId('confirm-dialog-confirm')).toBeDisabled();
+      expect(screen.getByTestId('confirm-dialog-confirm').textContent).toBe('Working…');
+    });
+    expect(screen.getByText('Delete this highlight?')).toBeInTheDocument();
+
+    // Second confirm while busy must not re-enter onDelete
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
     expect(onDelete).toHaveBeenCalledOnce();
+
+    resolveDelete();
+    await vi.waitFor(() => {
+      expect(screen.queryByText('Delete this highlight?')).toBeNull();
+    });
+  });
+
+  it('leaves delete dialog open when onDelete rejects', async () => {
+    const onDelete = vi.fn().mockRejectedValue(new Error('Delete failed'));
+
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'quote',
+          domain: 'example.com',
+        }}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+
+    await vi.waitFor(() => {
+      expect(onDelete).toHaveBeenCalledOnce();
+    });
+    await vi.waitFor(() => {
+      expect(screen.getByText('Delete this highlight?')).toBeInTheDocument();
+      expect(screen.getByTestId('confirm-dialog-confirm')).not.toBeDisabled();
+    });
   });
 
   it('shows invite marginalia on the action row when empty and allowed', () => {

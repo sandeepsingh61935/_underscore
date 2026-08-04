@@ -86,6 +86,28 @@ describe('DeleteConfirmDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('ignores confirm re-entry while isConfirming even if click is forced', () => {
+    const onConfirm = vi.fn();
+    render(
+      <DeleteConfirmDialog
+        open
+        title="Delete?"
+        message="Busy"
+        onClose={() => {}}
+        onConfirm={onConfirm}
+        isConfirming
+      />,
+    );
+
+    const confirm = screen.getByTestId('confirm-dialog-confirm');
+    // forceEvent: bypass disabled so handler guard is exercised
+    fireEvent(
+      confirm,
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   it('guest vs signed-in library delete copy', () => {
     const guest = deleteLibraryCopy(false);
     const { rerender } = render(

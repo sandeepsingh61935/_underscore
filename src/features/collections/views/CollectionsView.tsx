@@ -104,7 +104,7 @@ export function CollectionsView({
   };
 
   const handleDeleteDomain = async (): Promise<void> => {
-    if (!deleteDomain) return;
+    if (!deleteDomain || isDeletingDomain) return;
     setIsDeletingDomain(true);
     try {
       const result = await deleteScope({ scope: 'domain', domain: deleteDomain.domain });
@@ -218,7 +218,12 @@ export function CollectionsView({
                   setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
                 }}
                 suggestions={labelSuggestions}
-                onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                onDelete={async () => {
+                  const result = await deleteScope({ scope: 'highlight', id: r.id });
+                  if (!result?.success) {
+                    throw new Error(result?.error ?? 'Delete failed');
+                  }
+                }}
                 matchBadge={formatMatchBadge(r.matchedFields)}
               />
             ))

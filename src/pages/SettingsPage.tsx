@@ -124,6 +124,7 @@ export function SettingsPage({
     : null;
 
   const handleSignOut = async (): Promise<void> => {
+    if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await logout();
@@ -155,6 +156,7 @@ export function SettingsPage({
   };
 
   const handleDeleteLibrary = async (): Promise<void> => {
+    if (isDeletingLibrary) return;
     setIsDeletingLibrary(true);
     try {
       await deleteScope({ scope: 'library' });
