@@ -10,6 +10,7 @@ export interface TabBarProps {
 const TABS: ReadonlyArray<{ id: ActiveTab; label: string }> = [
   { id: 'home', label: 'Home' },
   { id: 'collections', label: 'Library' },
+  { id: 'ask', label: 'Ask' },
   { id: 'settings', label: 'Settings' },
 ];
 
