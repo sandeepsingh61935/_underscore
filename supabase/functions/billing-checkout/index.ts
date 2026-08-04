@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // WP-5: 5 checkouts / 15 min per user
-  const rl = tryRateLimit(`checkout:${userOrErr.id}`, 5, 15 * 60 * 1000);
+  // WP-5: 5 checkouts / 15 min per user (durable Postgres counter)
+  const rl = await tryRateLimit(`checkout:${userOrErr.id}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({

@@ -74,8 +74,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  // WP-5: 20 syncs / 15 min per user (focus + post-checkout poll)
-  const rl = tryRateLimit(`billing-sync:${userOrErr.id}`, 20, 15 * 60 * 1000);
+  // WP-5: 20 syncs / 15 min per user (durable Postgres counter)
+  const rl = await tryRateLimit(
+    `billing-sync:${userOrErr.id}`,
+    20,
+    15 * 60 * 1000
+  );
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({

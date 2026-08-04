@@ -55,7 +55,7 @@ Webhook URL:
 | 2 | CORS exact origin allowlist (no `*`) on checkout/portal/sync |
 | 3 | Extension pins Supabase project + `underscore-web.pages.dev` |
 | 4 | Webhook + sync: fail-closed product match for grants (S-2); only `subscription.*` / customer state (not `order.*`) |
-| 5 | Rate limit: checkout 5/15m, portal 10/15m, **sync 20/15m** per user |
+| 5 | Rate limit (durable DB): checkout 5/15m, portal 10/15m, **sync 20/15m** per user via `billing_try_rate_limit` |
 | 6 | Pages `_headers` CSP / frame / nosniff |
 | 7 | `openBillingUrl` only allows Polar hosts |
 | 8 | Dev paid override requires **both** `VITE_BILLING_DEV_OVERRIDE` and `VITE_ALLOW_BILLING_DEV_OVERRIDE` (never in release) |

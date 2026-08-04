@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createEmptyRateBucket,
+  parseBillingRateLimitRpc,
   tryConsumeRateLimit,
 } from '@/shared/billing/rate-limit';
 
@@ -20,6 +21,19 @@ describe('billing rate limit (WP-5)', () => {
     expect(blocked.retryAfterMs).toBeGreaterThan(0);
   });
 
+  it('blocks the 21st sync-style consume (20 / window)', () => {
+    const syncMax = 20;
+    let bucket = createEmptyRateBucket(0);
+    for (let i = 0; i < syncMax; i++) {
+      const r = tryConsumeRateLimit(bucket, i, syncMax, windowMs);
+      expect(r.allowed).toBe(true);
+      bucket = r.bucket;
+    }
+    expect(tryConsumeRateLimit(bucket, syncMax, syncMax, windowMs).allowed).toBe(
+      false
+    );
+  });
+
   it('resets after window elapses', () => {
     let bucket = createEmptyRateBucket(0);
     for (let i = 0; i < max; i++) {
@@ -34,5 +48,24 @@ describe('billing rate limit (WP-5)', () => {
     const b = tryConsumeRateLimit(createEmptyRateBucket(0), 0, 1, windowMs);
     expect(a.allowed).toBe(true);
     expect(b.allowed).toBe(true);
+  });
+});
+
+describe('parseBillingRateLimitRpc (durable edge response)', () => {
+  it('maps allowed true', () => {
+    expect(parseBillingRateLimitRpc({ allowed: true, retryAfterMs: 0 })).toEqual(
+      { allowed: true, retryAfterMs: 0 }
+    );
+  });
+
+  it('maps allowed false with retry', () => {
+    expect(
+      parseBillingRateLimitRpc({ allowed: false, retryAfterMs: 12_000 })
+    ).toEqual({ allowed: false, retryAfterMs: 12_000 });
+  });
+
+  it('fails open on malformed payload (availability over lockout)', () => {
+    expect(parseBillingRateLimitRpc(null).allowed).toBe(true);
+    expect(parseBillingRateLimitRpc({}).allowed).toBe(true);
   });
 });

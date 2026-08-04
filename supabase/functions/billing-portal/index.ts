@@ -74,8 +74,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // WP-5: 10 portal sessions / 15 min per user
-  const rl = tryRateLimit(`portal:${userOrErr.id}`, 10, 15 * 60 * 1000);
+  // WP-5: 10 portal sessions / 15 min per user (durable Postgres counter)
+  const rl = await tryRateLimit(`portal:${userOrErr.id}`, 10, 15 * 60 * 1000);
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({

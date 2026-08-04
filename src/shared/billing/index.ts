@@ -56,8 +56,10 @@ export {
 
 export {
   createEmptyRateBucket,
+  parseBillingRateLimitRpc,
   tryConsumeRateLimit,
   type RateBucket,
+  type RateLimitDecision,
 } from './rate-limit';
 
 export {
