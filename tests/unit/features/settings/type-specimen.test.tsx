@@ -29,4 +29,17 @@ describe('TypeSpecimen', () => {
     expect(screen.getByTestId('type-specimen-display').style.fontSize).toBe('28px');
     expect(screen.getByTestId('type-specimen-meta').textContent).toContain('Fraunces');
   });
+
+  it('Meta uses draft step--2 scale and resolved mono font family', () => {
+    const tokens = resolveBuiltinTokens('editorial');
+    tokens.scale['step--2'] = '9px';
+    tokens.fonts.mono = 'Fira Code';
+
+    render(<TypeSpecimen tokens={tokens} />);
+
+    const meta = screen.getByTestId('type-specimen-meta');
+    expect(meta.style.fontSize).toBe('9px');
+    expect(meta.style.fontFamily).toMatch(/Fira Code/);
+    expect(meta.className).not.toMatch(/u-mono/);
+  });
 });

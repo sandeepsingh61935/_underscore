@@ -21,10 +21,12 @@ export function TypeSpecimen({ tokens }: TypeSpecimenProps): React.ReactElement 
   const resolved = resolveTypography({ kind: 'custom', preset: tokens });
   const serifFamily = resolved.serif;
   const sansFamily = resolved.sans;
+  const monoFamily = resolved.mono;
   const displaySize = parsePx(tokens.scale['step-3'], 22);
   const domainSize = parsePx(tokens.scale['step-2'], 18);
   const sectionSize = parsePx(tokens.scale['step-0'], 13);
   const bodySize = parsePx(tokens.scale['step-1'], 15);
+  const metaSize = parsePx(tokens.scale['step--2'], 11);
 
   return (
     <div
@@ -87,10 +89,10 @@ export function TypeSpecimen({ tokens }: TypeSpecimenProps): React.ReactElement 
         {PREVIEW_QUOTE}
       </div>
       <div
-        className="u-mono"
         data-testid="type-specimen-meta"
         style={{
-          fontSize: 'var(--step--2)',
+          fontFamily: monoFamily,
+          fontSize: metaSize,
           color: 'var(--ink-3)',
           marginTop: 10,
           letterSpacing: '0.06em',

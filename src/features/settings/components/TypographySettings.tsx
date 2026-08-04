@@ -298,16 +298,29 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
       delete next[role];
       return next;
     });
+    // Restore role face to catalog default (editorial) so draft + wheel stay coherent.
+    const restoredFace = resolveBuiltinTokens('editorial').fonts[role];
+    const nextDraft: TypographyTokens = {
+      ...draft,
+      fonts: { ...draft.fonts, [role]: restoredFace },
+    };
+    setDraft(nextDraft);
+    setIsCustom(true);
     await setSelection({
       kind: 'custom',
-      preset: draft,
+      preset: nextDraft,
       importedFonts: Object.keys(importedFonts).length > 0 ? importedFonts : undefined,
     });
   };
 
-  const roleFonts: readonly string[] = TYPE_FONT_CATALOG[fontRole];
+  // Include imported (non-catalog) face in the wheel so selection is not clobbered to index 0.
+  const roleCatalog: readonly string[] = TYPE_FONT_CATALOG[fontRole];
+  const activeFace = draft.fonts[fontRole];
+  const roleFonts: readonly string[] = roleCatalog.includes(activeFace)
+    ? roleCatalog
+    : [activeFace, ...roleCatalog];
   const fontWheelItems = roleFonts.map((name) => ({ id: name, label: name }));
-  const fontSelectedIndex = Math.max(0, roleFonts.indexOf(draft.fonts[fontRole]));
+  const fontSelectedIndex = Math.max(0, roleFonts.indexOf(activeFace));
 
   return (
     <>
