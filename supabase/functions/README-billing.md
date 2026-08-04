@@ -20,7 +20,7 @@ npx supabase secrets set \
   POLAR_WEBHOOK_SECRET=whsec_... \
   POLAR_PRODUCT_ID=<product-uuid> \
   POLAR_SERVER=sandbox \
-  BILLING_ALLOWED_ORIGINS=https://underscore-web.pages.dev,http://localhost:3000,chrome-extension://YOUR_EXTENSION_ID
+  BILLING_ALLOWED_ORIGINS=https://underscore-web.pages.dev,http://localhost:3000,http://localhost:5173
 ```
 
 | Name | Required | Notes |
@@ -29,7 +29,7 @@ npx supabase secrets set \
 | `POLAR_WEBHOOK_SECRET` | yes | Standard Webhooks secret (`whsec_…`) — must match Polar dashboard |
 | `POLAR_PRODUCT_ID` | yes | Account (Paid) product; webhook + sync reject other products |
 | `POLAR_SERVER` | no | `sandbox` or `production` (default) |
-| `BILLING_ALLOWED_ORIGINS` | yes | Comma-separated origins for redirects + CORS (WP-1/2); include extension origin |
+| `BILLING_ALLOWED_ORIGINS` | yes | Comma-separated **http(s) origins** for success/cancel redirects + web CORS. Must include `https://underscore-web.pages.dev` (extension default return URL). **Do not rely on `chrome-extension://…` alone** — WHATWG `URL.origin` for that scheme is `"null"`, so redirects fail with `Invalid successUrl`. Extension **CORS** is pinned in code (`BILLING_ALLOWED_EXTENSION_IDS`), not this list. |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are provided to Edge automatically.
 
