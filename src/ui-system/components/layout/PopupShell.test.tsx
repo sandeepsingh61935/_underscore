@@ -110,7 +110,7 @@ describe('PopupShell', () => {
     expect(screen.queryByText('_underscore')).not.toBeInTheDocument();
   });
 
-  it('renders ModeHeader when showModeHeader is true', () => {
+  it('renders ModeHeader when showModeHeader is true and onBack is set', () => {
     render(
       <PopupShell
         chrome={{
@@ -123,7 +123,6 @@ describe('PopupShell', () => {
           modeId: 'local',
           onBack: noopHandlers.onBackToCollections,
           backLabel: 'Library',
-          onSwitch: noopHandlers.onSwitch,
         }}
         viewKey="DOMAIN_DETAILS"
       >
@@ -132,6 +131,30 @@ describe('PopupShell', () => {
     );
     // ModeHeader renders the back label as text content
     expect(screen.getByText('← Library')).toBeInTheDocument();
+  });
+
+  it('does not render ModeHeader chrome when showModeHeader is true but onBack is absent', () => {
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore',
+          place: 'Home',
+          brand: '_underscore',
+          showTitleStrip: true,
+          showModeHeader: true,
+          showTabBar: true,
+          modeId: 'local',
+          activeTab: 'home',
+          onTabChange: noopHandlers.onTabChange,
+        }}
+        viewKey="DASHBOARD"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    expect(screen.queryByText(/←/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/switch/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/on this device/i)).not.toBeInTheDocument();
   });
 
   it('renders TabBar with active tab when showTabBar is true', () => {

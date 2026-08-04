@@ -110,7 +110,6 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
             modeId={chrome.modeId ?? 'basic'}
             onBack={chrome.onBack}
             backLabel={chrome.backLabel}
-            onSwitch={chrome.onSwitch}
           />
         )}
         <div
