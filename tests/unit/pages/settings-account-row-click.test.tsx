@@ -53,7 +53,7 @@ describe('SettingsPage account row click targets', () => {
     vi.clearAllMocks();
   });
 
-  it('calls onSignIn only from the Sign in control, not the account title', () => {
+  it('calls onSignIn only from the Sign in control, not the guest card body copy', () => {
     const onSignIn = vi.fn();
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
@@ -73,7 +73,7 @@ describe('SettingsPage account row click targets', () => {
 
     render(<SettingsPage onSignIn={onSignIn} />);
 
-    fireEvent.click(screen.getByText('Sync library across devices, export, AI'));
+    fireEvent.click(screen.getByText(/Local only on this device/));
     expect(onSignIn).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));

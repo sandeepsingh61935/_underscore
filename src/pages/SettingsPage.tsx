@@ -11,7 +11,9 @@ import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStat
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
+import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import {
   useConfigureAiProvidersGate,
   useMcpGate,
@@ -29,9 +31,9 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings Page
- * Implements exactly what the Settings component in ui_kits/extension/v2/screens-nav.jsx specifies.
- * AI section: Connect to AI (hub drill-in) then Configure AI providers (sibling).
+ * Settings Page — v3 product section order (PRD):
+ * head → Guest card or Account → Billing CTAs/Sync → banners →
+ * Typography → Theme → Library tools → AI (gated) → Sign out
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -101,8 +103,20 @@ export function SettingsPage({
   const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated);
   const mcpGate = useMcpGate(isAuthenticated);
 
-  // onBack is still required on the interface for callers passing it to the shell's ModeHeader
-  // _onBack is intentionally unused in the body-only version
+  const planPill = resolveAccountPillLabel({
+    modeId: currentMode,
+    isAuthenticated,
+    isPaidActive,
+    billingStatus: billingEntitlement.status,
+  });
+
+  const billingCta = billing
+    ? resolveSettingsBillingCta({
+        isPaidActive,
+        status: billingEntitlement.status,
+        cancelAtPeriodEnd: billingEntitlement.cancelAtPeriodEnd,
+      })
+    : null;
 
   const handleSignOut = async (): Promise<void> => {
     setIsSigningOut(true);
@@ -144,6 +158,19 @@ export function SettingsPage({
     }
   };
 
+  const handleBillingCta = (): void => {
+    if (!billingCta) return;
+    setBillingActionError(null);
+    const action =
+      billingCta.action === 'portal' ? openBillingPortal : startCheckout;
+    if (!action) return;
+    void action().catch((e: unknown) => {
+      setBillingActionError(
+        e instanceof Error ? e.message : 'Billing action failed'
+      );
+    });
+  };
+
   const modeBranding = getModeBranding(currentMode);
   const monoTrailing = (label: string): React.ReactElement => (
     <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
@@ -166,17 +193,238 @@ export function SettingsPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      {/* 1. Head */}
       <div style={{ padding: '12px 16px 6px' }}>
         <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
       </div>
 
-      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
-        <TypographySettings
-          expanded={typographyExpanded}
-          onToggle={() => setTypographyExpanded((v) => !v)}
-        />
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
+        {/* 2. Guest card or Account */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-account"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          Account
+        </div>
+        {!user ? (
+          <div
+            data-testid="settings-guest-card"
+            style={{
+              margin: '0 16px 10px',
+              padding: '14px 16px',
+              border: '1px solid var(--rule)',
+              background: 'var(--paper-2)',
+            }}
+          >
+            <div className="u-serif" style={{ fontSize: 'var(--step-1)', marginBottom: 4 }}>
+              Guest
+            </div>
+            <div
+              className="u-sans"
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.5,
+                marginBottom: 12,
+              }}
+            >
+              Local only on this device. Sign in to sync library across devices, export, and use AI.
+            </div>
+            <button
+              type="button"
+              className="u-mono"
+              aria-label="Sign in"
+              onClick={() => onSignIn?.()}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                fontSize: 'var(--step--2)',
+                color: 'var(--accent)',
+                minHeight: 44,
+                display: 'inline-flex',
+                alignItems: 'center',
+                textDecoration: 'underline',
+                textUnderlineOffset: 2,
+              }}
+            >
+              Sign in
+            </button>
+          </div>
+        ) : (
+          <Row
+            title={user.email || 'Signed in'}
+            sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
+            right={
+              planPill === 'Guest' ? null : (
+                <span
+                  className="u-mono"
+                  data-testid="account-plan-pill"
+                  style={{
+                    fontSize: 'var(--step--2)',
+                    padding: '2px 8px',
+                    border: '1px solid var(--rule-soft)',
+                    color:
+                      planPill === 'Paid'
+                        ? 'var(--accent)'
+                        : planPill === 'Past due'
+                          ? 'var(--accent)'
+                          : 'var(--ink-3)',
+                  }}
+                >
+                  {planPill}
+                </span>
+              )
+            }
+          />
+        )}
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
+        {/* 3. Billing CTAs / Sync */}
+        {user && billing && billingCta ? (
+          <>
+            <Row
+              title={billingCta.title}
+              sub={
+                billingActionError || billingError
+                  ? billingActionError || billingError || undefined
+                  : billingCta.sub
+              }
+              right={
+                billingBusy ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <span
+                    className="u-mono"
+                    data-testid="billing-cta"
+                    data-billing-kind={billingCta.kind}
+                    style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                  >
+                    {billingCta.ctaLabel}
+                  </span>
+                )
+              }
+              onClick={handleBillingCta}
+            />
+            {billingCta.showSync ? (
+              <Row
+                title="Refresh subscription status"
+                sub="Already paid? Pull status from Polar and update this account."
+                right={
+                  billingBusy ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <span
+                      className="u-mono"
+                      data-testid="billing-sync-cta"
+                      style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+                    >
+                      Sync
+                    </span>
+                  )
+                }
+                onClick={() => {
+                  setBillingActionError(null);
+                  void billing.syncFromPolar().catch((e: unknown) => {
+                    setBillingActionError(
+                      e instanceof Error ? e.message : 'Sync failed'
+                    );
+                  });
+                }}
+              />
+            ) : null}
+          </>
+        ) : null}
+
+        {/* 4. Banners (post-checkout / cancel) */}
+        {user && billingReturn ? (
+          <div
+            data-testid="billing-return-banner"
+            role="status"
+            style={{
+              margin: '0 16px 10px',
+              padding: '14px 16px',
+              border: '1px solid var(--rule)',
+              background: 'var(--paper-2)',
+            }}
+          >
+            <div
+              className="u-serif"
+              style={{
+                fontSize: 'var(--step-1)',
+                color:
+                  billingReturn.kind === 'cancel' ? 'var(--ink)' : 'var(--accent)',
+                marginBottom: 6,
+              }}
+            >
+              {billingReturn.kind === 'cancel'
+                ? 'Checkout canceled'
+                : 'Payment successful'}
+            </div>
+            <div
+              className="u-sans"
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.5,
+              }}
+            >
+              {billingReturn.kind === 'cancel'
+                ? 'No charge was made. You can upgrade anytime from above.'
+                : billingReturn.kind === 'success_active'
+                  ? 'Your account is upgraded to Account (Paid). AI and agent connections are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
+                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Use Sync above if status stays Free, then reopen the extension with the same account.'}
+            </div>
+            {billingReturn.kind === 'success_pending' ? (
+              <div
+                className="u-mono"
+                style={{
+                  marginTop: 10,
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <Spinner size="sm" />
+                Confirming subscription…
+              </div>
+            ) : null}
+            {billingReturn.kind === 'success_active' ? (
+              <div
+                className="u-mono"
+                data-testid="account-plan-pill-banner"
+                style={{
+                  marginTop: 10,
+                  display: 'inline-block',
+                  fontSize: 'var(--step--2)',
+                  padding: '2px 8px',
+                  border: '1px solid var(--rule-soft)',
+                  color: 'var(--accent)',
+                }}
+              >
+                Account (Paid)
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* 5. Typography */}
+        <div data-testid="settings-section-typography">
+          <TypographySettings
+            expanded={typographyExpanded}
+            onToggle={() => setTypographyExpanded((v) => !v)}
+          />
+        </div>
+
+        {/* 6. Theme (+ Mode) */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-general"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          General
+        </div>
         <Row
           title="Theme"
           sub="Match system"
@@ -196,11 +444,17 @@ export function SettingsPage({
           right={monoTrailing(isAuthenticated ? 'Change' : 'Local')}
           onClick={isAuthenticated ? onChangeMode : undefined}
         />
-        <Row title="Density" sub="Comfortable" right={monoTrailing('Edit')} />
 
+        {/* 7. Library tools */}
         {isAuthenticated ? (
           <>
-            <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
+            <div
+              className="u-caps"
+              data-testid="settings-section-library"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Library
+            </div>
             <Row
               title="Sync library"
               sub={syncSubtitle}
@@ -249,7 +503,14 @@ export function SettingsPage({
           </>
         ) : null}
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>AI</div>
+        {/* 8. AI (gated) */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-ai"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          AI
+        </div>
         <Row
           title="Connect to AI"
           sub="External agents"
@@ -273,199 +534,37 @@ export function SettingsPage({
           onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
         />
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
-        <Row
-          title={user?.email || 'Not signed in'}
-          sub={
-            user
-              ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`
-              : 'Sync library across devices, export, AI'
-          }
-          right={
-            isSigningOut ? (
-              <Spinner size="sm" />
-            ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {user && (currentMode === 'pro' || currentMode === 'pro_xai') ? (
+        {/* 9. Sign out */}
+        {user ? (
+          <>
+            <div
+              className="u-caps"
+              data-testid="settings-section-session"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Session
+            </div>
+            <Row
+              title="Sign out"
+              sub="End this session on this device"
+              aria-label="Sign out"
+              right={
+                isSigningOut ? (
+                  <Spinner size="sm" />
+                ) : (
                   <span
                     className="u-mono"
-                    data-testid="account-plan-pill"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      padding: '2px 8px',
-                      border: '1px solid var(--rule-soft)',
-                      color: isPaidActive ? 'var(--accent)' : 'var(--ink-3)',
-                    }}
+                    style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
                   >
-                    {isPaidActive ? 'Paid' : 'Free'}
+                    Sign out
                   </span>
-                ) : null}
-                <button
-                  type="button"
-                  className="u-mono"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (user) {
-                      void handleSignOut();
-                    } else {
-                      onSignIn?.();
-                    }
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    fontSize: 'var(--step--2)',
-                    color: user ? 'var(--ink-3)' : 'var(--accent)',
-                    minHeight: 44,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '0 4px',
-                    textDecoration: user ? 'none' : 'underline',
-                    textUnderlineOffset: 2,
-                  }}
-                >
-                  {user ? 'Sign out' : 'Sign in'}
-                </button>
-              </span>
-            )
-          }
-        />
-        {user && billingReturn ? (
-          <div
-            data-testid="billing-return-banner"
-            role="status"
-            style={{
-              margin: '0 16px 10px',
-              padding: '14px 16px',
-              border: '1px solid var(--rule)',
-              background: 'var(--paper-2)',
-            }}
-          >
-            <div
-              className="u-serif"
-              style={{
-                fontSize: 'var(--step-1)',
-                color:
-                  billingReturn.kind === 'cancel' ? 'var(--ink)' : 'var(--accent)',
-                marginBottom: 6,
+                )
+              }
+              onClick={() => {
+                if (!isSigningOut) void handleSignOut();
               }}
-            >
-              {billingReturn.kind === 'cancel'
-                ? 'Checkout canceled'
-                : billingReturn.kind === 'success_active'
-                  ? 'Payment successful'
-                  : 'Payment successful'}
-            </div>
-            <div
-              className="u-sans"
-              style={{
-                fontSize: 'var(--step--1)',
-                color: 'var(--ink-3)',
-                lineHeight: 1.5,
-              }}
-            >
-              {billingReturn.kind === 'cancel'
-                ? 'No charge was made. You can upgrade anytime from below.'
-                : billingReturn.kind === 'success_active'
-                  ? 'Your account is upgraded to Account (Paid). AI and agent connections are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
-                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Stay on this page; the status below will switch to Paid when ready. Then reopen the browser extension with the same account.'}
-            </div>
-            {billingReturn.kind === 'success_pending' ? (
-              <div
-                className="u-mono"
-                style={{
-                  marginTop: 10,
-                  fontSize: 'var(--step--2)',
-                  color: 'var(--ink-3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <Spinner size="sm" />
-                Confirming subscription…
-              </div>
-            ) : null}
-            {billingReturn.kind === 'success_active' ? (
-              <div
-                className="u-mono"
-                data-testid="account-plan-pill-banner"
-                style={{
-                  marginTop: 10,
-                  display: 'inline-block',
-                  fontSize: 'var(--step--2)',
-                  padding: '2px 8px',
-                  border: '1px solid var(--rule-soft)',
-                  color: 'var(--accent)',
-                }}
-              >
-                Account (Paid)
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-        {user && billing ? (
-          <Row
-            title={isPaidActive ? 'Manage billing' : 'Upgrade to Account (Paid)'}
-            sub={
-              billingActionError || billingError
-                ? billingActionError || billingError || undefined
-                : isPaidActive
-                  ? billingEntitlement.cancelAtPeriodEnd
-                    ? 'Cancels at period end · invoices & payment method'
-                    : 'Invoices, payment method, cancel'
-                  : 'AI + agent connections · billed via Polar'
-            }
-            right={
-              billingBusy ? (
-                <Spinner size="sm" />
-              ) : (
-                <span
-                  className="u-mono"
-                  data-testid="billing-cta"
-                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
-                >
-                  {isPaidActive ? 'Portal' : 'Upgrade'}
-                </span>
-              )
-            }
-            onClick={() => {
-              setBillingActionError(null);
-              const action = isPaidActive ? openBillingPortal : startCheckout;
-              if (!action) return;
-              void action().catch((e: unknown) => {
-                setBillingActionError(
-                  e instanceof Error ? e.message : 'Billing action failed'
-                );
-              });
-            }}
-          />
-        ) : null}
-        {user && billing && !isPaidActive ? (
-          <Row
-            title="Refresh subscription status"
-            sub="Already paid? Pull status from Polar and update this account."
-            right={
-              billingBusy ? (
-                <Spinner size="sm" />
-              ) : (
-                <span
-                  className="u-mono"
-                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
-                >
-                  Sync
-                </span>
-              )
-            }
-            onClick={() => {
-              setBillingActionError(null);
-              void billing.syncFromPolar().catch((e: unknown) => {
-                setBillingActionError(
-                  e instanceof Error ? e.message : 'Sync failed'
-                );
-              });
-            }}
-          />
+            />
+          </>
         ) : null}
       </div>
 
