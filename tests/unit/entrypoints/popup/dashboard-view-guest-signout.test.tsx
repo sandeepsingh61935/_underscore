@@ -68,7 +68,7 @@ describe('DashboardView guest sign-out UX', () => {
 
     expect(screen.queryByText('Current page')).toBeNull();
     expect(screen.queryByText(/en\.wikipedia\.org/)).toBeNull();
-    expect(screen.getByText('Highlight anything on any page.')).toBeTruthy();
+    expect(screen.getByText('No highlights yet')).toBeTruthy();
   });
 
   it('shows current-page block when guest has local highlights on the active tab', () => {
@@ -109,7 +109,7 @@ describe('DashboardView guest sign-out UX', () => {
     render(<DashboardView />);
 
     expect(screen.getByText('Current page')).toBeTruthy();
-    expect(screen.getByText('1 highlights on this page')).toBeTruthy();
+    expect(screen.getByText('1 on this page')).toBeTruthy();
     expect(screen.getAllByText(/en\.wikipedia\.org/).length).toBeGreaterThan(0);
   });
 });

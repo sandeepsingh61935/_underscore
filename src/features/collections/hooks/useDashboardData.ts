@@ -17,6 +17,8 @@ export interface DashboardData {
     domain: string;
     createdAt: string | Date;
     updatedAt?: string | Date;
+    notes?: string;
+    tags?: string[];
     sourceKind?: 'code';
     language?: string;
     presentation?: HighlightPresentation;

@@ -551,6 +551,8 @@ function PopupApp(): React.ReactElement {
             onLogout={handleLogout}
             onSectionClick={handleSectionClick}
             onSignIn={() => setCurrentView(View.AUTH)}
+            isPaidActive={isPaidActive}
+            onAskPage={() => setCurrentView(View.ASK)}
           />
         </motion.div>
       )}

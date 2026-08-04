@@ -244,6 +244,8 @@ export class HighlightQueryService {
           domain,
           createdAt: hl.createdAt,
           updatedAt: hl.updatedAt,
+          notes: hl.metadata?.notes,
+          tags: hl.metadata?.tags,
           sourceKind: hl.metadata?.sourceKind,
           language: hl.metadata?.language,
           presentation: hl.metadata?.presentation,
@@ -254,12 +256,13 @@ export class HighlightQueryService {
     }
 
     recentHighlights.sort(compareByHighlightActivityDesc);
+    const topRecent = await this.resolveTags(recentHighlights.slice(0, 10));
 
     return {
       totalHighlights: highlights.length,
       totalDomains: domainMap.size,
       thisWeekCount,
-      recentHighlights: recentHighlights.slice(0, 10),
+      recentHighlights: topRecent,
     };
   }
 }

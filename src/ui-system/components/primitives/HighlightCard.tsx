@@ -41,6 +41,8 @@ export interface HighlightCardProps {
   density?: 'compact' | 'comfortable';
   onSectionClick?: () => void;
   onCopy?: () => void;
+  /** Open source URL (home Recent stream). */
+  onOpen?: () => void;
   onDelete?: () => void;
   /**
    * When provided, shows Edit and enables inline markdown source editor.
@@ -110,6 +112,7 @@ export function HighlightCard({
   density = 'comfortable',
   onSectionClick,
   onCopy,
+  onOpen,
   onDelete,
   onSaveQuote,
   showLocationMeta = true,
@@ -313,7 +316,7 @@ export function HighlightCard({
     setEditing(true);
   };
 
-  const hasTileActions = Boolean(onSaveQuote || onCopy || onDelete) || editing;
+  const hasTileActions = Boolean(onSaveQuote || onCopy || onOpen || onDelete) || editing;
   const showActionRow = hasTileActions || footerStart != null;
 
   return (
@@ -623,6 +626,20 @@ export function HighlightCard({
                         style={actionBtnStyle}
                       >
                         Copy
+                      </button>
+                    )}
+                    {onOpen && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpen();
+                        }}
+                        className="u-mono"
+                        aria-label="Open highlight source"
+                        style={actionBtnStyle}
+                      >
+                        Open
                       </button>
                     )}
                     {onDelete && (
