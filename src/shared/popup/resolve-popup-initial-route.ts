@@ -13,6 +13,7 @@ export type PopupInitialView =
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
   | 'SETTINGS'
+  | 'ASK'
   | 'DASHBOARD'
   | 'API_KEY_SETUP'
   | 'AUTH';

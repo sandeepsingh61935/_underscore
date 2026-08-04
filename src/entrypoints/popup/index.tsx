@@ -36,12 +36,15 @@ import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
 
 import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
+import { AskView } from './views/AskView';
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 
 import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
+import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 import { springs } from '@/ui-system/motion/springs';
@@ -57,6 +60,7 @@ enum View {
   SUB_DOMAIN = 'SUB_DOMAIN',
   AUTH = 'AUTH',
   SETTINGS = 'SETTINGS',
+  ASK = 'ASK',
   DASHBOARD = 'DASHBOARD',
   API_KEY_SETUP = 'API_KEY_SETUP',
   LLM_STREAMING = 'LLM_STREAMING',
@@ -114,6 +118,7 @@ class ErrorBoundary extends Component<
 function PopupApp(): React.ReactElement {
   const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
   const { verificationStatus } = useExtensionAuth();
+  const billing = useBillingContextOptional();
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
@@ -332,7 +337,7 @@ function PopupApp(): React.ReactElement {
     switch (tab) {
       case 'home':        setCurrentView(View.DASHBOARD); break;
       case 'collections': setCurrentView(View.COLLECTIONS); break;
-      case 'ask':         break; // Task 6: Ask view routing
+      case 'ask':         setCurrentView(View.ASK); break;
       case 'settings':    handleSettingsClick(); break;
     }
   };
@@ -352,6 +357,16 @@ function PopupApp(): React.ReactElement {
     setPreviousView(null);
   };
 
+  const modeId = typeof currentMode === 'string' ? currentMode : 'basic';
+  const billingReady = billing?.snapshot.loadState === 'ready';
+  // Match SettingsPage: while billing loads, avoid flashing Free for known paid modes.
+  const isPaidActive = billing
+    ? billingReady
+      ? billing.snapshot.isPaidActive
+      : modeId === 'pro_xai' || billing.snapshot.isPaidActive
+    : modeId === 'pro_xai';
+  const billingStatus = billing?.snapshot.entitlement.status ?? null;
+
   const chromeHandlers: ChromeHandlers = {
     onTabChange: handleTabChange,
     onSwitch: handleSettingsChangeMode,
@@ -361,9 +376,15 @@ function PopupApp(): React.ReactElement {
     onBackFromApiKeySetup: handleBackFromApiKeySetup,
     onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,
-    getModeId: () => (typeof currentMode === 'string' ? currentMode : 'basic'),
-    getAccountPill: () => null,
-    onAccountPillClick: () => {},
+    getModeId: () => modeId,
+    getAccountPill: () =>
+      resolveAccountPillLabel({
+        modeId,
+        isAuthenticated: Boolean(user),
+        isPaidActive,
+        billingStatus,
+      }),
+    onAccountPillClick: handleSettingsClick,
   };
   const chrome = buildChrome(chromeHandlers);
 
@@ -497,6 +518,22 @@ function PopupApp(): React.ReactElement {
             onConfigureAIProviders={handleConfigureAIProviders}
             onSignIn={() => setCurrentView(View.AUTH)}
             onLogout={handleLogout}
+          />
+        </motion.div>
+      )}
+      {currentView === View.ASK && (
+        <motion.div
+          key="ask"
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={springs.gentle}
+          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+        >
+          <AskView
+            lockReason={!user || modeId === 'basic' ? 'guest' : null}
+            onSignIn={() => setCurrentView(View.AUTH)}
           />
         </motion.div>
       )}
