@@ -41,10 +41,13 @@ import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 
 import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
+import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
+import { resolveAskLockReason } from '@/shared/utils/ask-lock';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
+import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 import { springs } from '@/ui-system/motion/springs';
@@ -366,6 +369,15 @@ function PopupApp(): React.ReactElement {
       : modeId === 'pro_xai' || billing.snapshot.isPaidActive
     : modeId === 'pro_xai';
   const billingStatus = billing?.snapshot.entitlement.status ?? null;
+  const { provider: activeLlmProvider } = useActiveLLMProvider();
+  const aiCapability = getCapabilitiesForMode(modeId as ModeType).ai;
+  const askLockReason = resolveAskLockReason({
+    isAuthenticated: Boolean(user),
+    isPaidActive,
+    billingStatus,
+    hasModel: activeLlmProvider !== null,
+    aiCapability,
+  });
 
   const chromeHandlers: ChromeHandlers = {
     onTabChange: handleTabChange,
@@ -532,8 +544,27 @@ function PopupApp(): React.ReactElement {
           style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
         >
           <AskView
-            lockReason={!user || modeId === 'basic' ? 'guest' : null}
+            lockReason={askLockReason}
             onSignIn={() => setCurrentView(View.AUTH)}
+            onUpgrade={() => {
+              if (billing?.startCheckout) {
+                void billing.startCheckout().catch(() => {
+                  setCurrentView(View.SETTINGS);
+                });
+                return;
+              }
+              setCurrentView(View.SETTINGS);
+            }}
+            onUpdatePayment={() => {
+              if (billing?.openPortal) {
+                void billing.openPortal().catch(() => {
+                  setCurrentView(View.SETTINGS);
+                });
+                return;
+              }
+              setCurrentView(View.SETTINGS);
+            }}
+            onConnectAi={handleConfigureAIProviders}
           />
         </motion.div>
       )}
