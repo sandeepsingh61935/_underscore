@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -26,7 +26,73 @@ const noopHandlers = {
 };
 
 describe('PopupShell', () => {
-  it('renders the title strip with the chrome title when showTitleStrip is true', () => {
+  it('renders place left, brand center, account pill right', () => {
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore',
+          place: 'Home',
+          brand: '_underscore',
+          accountPill: 'Guest',
+          onAccountPillClick: vi.fn(),
+          showTitleStrip: true,
+          showModeHeader: false,
+          showTabBar: false,
+        }}
+        viewKey="DASHBOARD"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('_underscore')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guest/i })).toBeInTheDocument();
+  });
+
+  it('hides account pill when accountPill is null', () => {
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore',
+          place: 'Sign in',
+          brand: '_underscore',
+          accountPill: null,
+          showTitleStrip: true,
+          showModeHeader: false,
+          showTabBar: false,
+        }}
+        viewKey="AUTH"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    expect(screen.queryByRole('button', { name: /guest|free|paid|past due/i })).not.toBeInTheDocument();
+  });
+
+  it('invokes onAccountPillClick when pill clicked', () => {
+    const onAccountPillClick = vi.fn();
+    render(
+      <PopupShell
+        chrome={{
+          title: '_underscore',
+          place: 'Home',
+          brand: '_underscore',
+          accountPill: 'Free',
+          onAccountPillClick,
+          showTitleStrip: true,
+          showModeHeader: false,
+          showTabBar: false,
+        }}
+        viewKey="DASHBOARD"
+      >
+        <div>body</div>
+      </PopupShell>
+    );
+    fireEvent.click(screen.getByRole('button', { name: /free/i }));
+    expect(onAccountPillClick).toHaveBeenCalled();
+  });
+
+  it('renders the title strip with the chrome brand when showTitleStrip is true', () => {
     render(
       <PopupShell chrome={baseChrome} viewKey="LOADING">
         <div>body</div>
@@ -37,7 +103,7 @@ describe('PopupShell', () => {
 
   it('omits the title strip when showTitleStrip is false', () => {
     render(
-      <PopupShell chrome={{ ...baseChrome, showTitleStrip: false, title: '' }} viewKey="WELCOME">
+      <PopupShell chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }} viewKey="WELCOME">
         <div>body</div>
       </PopupShell>
     );
@@ -87,7 +153,7 @@ describe('PopupShell', () => {
         <div>body</div>
       </PopupShell>
     );
-    const libraryTab = screen.getByText('Library');
+    const libraryTab = screen.getByRole('button', { name: 'Library', current: 'page' });
     expect(libraryTab.className).toContain('active');
   });
 });

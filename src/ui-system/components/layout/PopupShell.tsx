@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { type ReactNode } from 'react';
 
 import type { PopupChrome } from '../../../entrypoints/popup/chrome';
-import { modeRegistry } from '../../../features/modes/registry';
 
 import { ModeHeader } from './ModeHeader';
 import { TabBar } from './TabBar';
@@ -21,8 +20,17 @@ export interface PopupShellProps {
   dark?: boolean;
 }
 
-function PopupTitleStrip({ title, modeId }: { title: string; modeId?: string }): React.ReactElement {
-  const m = modeId ? modeRegistry.get(modeId) : null;
+function PopupTitleStrip({
+  place,
+  brand,
+  accountPill,
+  onAccountPillClick,
+}: {
+  place: string;
+  brand: string;
+  accountPill?: string | null;
+  onAccountPillClick?: () => void;
+}): React.ReactElement {
   return (
     <div
       style={{
@@ -31,9 +39,9 @@ function PopupTitleStrip({ title, modeId }: { title: string; modeId?: string }):
         borderRight: '1px solid var(--rule)',
         borderTop: '1px solid var(--rule)',
         padding: '8px 14px',
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
-        justifyContent: 'space-between',
         fontFamily: 'var(--mono)',
         fontSize: 10,
         letterSpacing: '0.14em',
@@ -41,21 +49,28 @@ function PopupTitleStrip({ title, modeId }: { title: string; modeId?: string }):
         color: 'var(--ink-3)',
       }}
     >
-      <span>{title}</span>
-      {m && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span
+      <span style={{ justifySelf: 'start' }}>{place}</span>
+      <span style={{ justifySelf: 'center', color: 'var(--ink)' }}>{brand}</span>
+      <span style={{ justifySelf: 'end' }}>
+        {accountPill ? (
+          <button
+            type="button"
+            onClick={onAccountPillClick}
+            aria-label={accountPill}
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: 99,
-              background: m.accent,
-              display: 'inline-block',
+              all: 'unset',
+              cursor: 'pointer',
+              fontFamily: 'var(--mono)',
+              fontSize: 10,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-2)',
             }}
-          />
-          {m.name}
-        </span>
-      )}
+          >
+            {accountPill}
+          </button>
+        ) : null}
+      </span>
     </div>
   );
 }
@@ -72,7 +87,14 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         flexDirection: 'column',
       }}
     >
-      {chrome.showTitleStrip && <PopupTitleStrip title={chrome.title} modeId={chrome.modeId} />}
+      {chrome.showTitleStrip && (
+        <PopupTitleStrip
+          place={chrome.place}
+          brand={chrome.brand}
+          accountPill={chrome.accountPill}
+          onAccountPillClick={chrome.onAccountPillClick}
+        />
+      )}
       <div
         className="popup"
         style={{
