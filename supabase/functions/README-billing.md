@@ -71,6 +71,31 @@ Treats the user as paid for gates without a Polar sub. **Both flags required.** 
 
 Optional: `VITE_APP_ORIGIN=https://underscore-web.pages.dev` for checkout success/cancel defaults (must be in `BILLING_ALLOWED_ORIGINS`).
 
+## Cancel vs revoke (Account Paid lifecycle)
+
+Polar has two end paths. Our app mirrors them via `billing_entitlements` + Sync/webhook.
+
+| Polar action | Polar state | DB after Sync/webhook | UI pill | Settings Manage sub |
+|--------------|-------------|------------------------|---------|---------------------|
+| **Cancel at period end** (default portal cancel) | `status=active`, `cancel_at_period_end=true` until `current_period_end` | `plan=paid`, `status=active`, `cancel_at_period_end=true` | **Paid** | “Cancels at period end · …” |
+| **Revoke immediately** (dashboard revoke) or period ends | No active sub / `canceled` | `plan=free`, `status=canceled` | **Free** | Upgrade CTA |
+
+### Manual check (your real account)
+
+1. Extension Settings → confirm **Paid** and Manage line (period-end copy if cancelled).
+2. Supabase → `billing_entitlements` for your user:
+   - Cancel scheduled: `plan=paid`, `status=active`, `cancel_at_period_end=true`.
+3. To go Free **now**: Polar → subscription → **Revoke** (not only cancel).
+4. Extension → **Sync** (or refocus popup).
+5. Expect: pill **Free**, row `plan=free` / `status=canceled`.
+
+Webhook push updates the same fields when signature + product rules pass; Sync is the pull fallback.
+
+### Automated live check (already verified)
+
+- Seed `paid` + `active` for a user with **no** Polar customer → `billing-sync` returns `plan=free` (`no_polar_customer`) and demotes the row.
+- Unit suite covers cancel-at-period-end **staying Paid** while Polar still lists an active product sub.
+
 ## Architecture note
 
 Mode `pro_xai` is **derived** from entitlement when load state is `ready` (never from free ModeSelector). Load **error** does not demote a previously paid mode.
