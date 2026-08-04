@@ -65,4 +65,22 @@ describe('HighlightWithMarginalia', () => {
     expect(row.textContent).toContain('bfs');
     expect(row.textContent).toMatch(/Edit/i);
   });
+
+  it('expanded: shows note tray placeholders without NOTE header', () => {
+    render(
+      <HighlightWithMarginalia
+        highlightId="hl-1"
+        quote="A short quote."
+        domain="example.com"
+        isExpanded
+        onToggleExpand={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('marginalia-tray')).toBeTruthy();
+    expect(screen.getByPlaceholderText('What stood out?')).toBeTruthy();
+    expect(screen.getByLabelText('Add tag')).toBeTruthy();
+    expect(screen.queryByText(/^Note$/i)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+  });
 });

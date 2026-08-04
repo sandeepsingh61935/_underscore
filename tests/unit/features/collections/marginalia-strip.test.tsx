@@ -21,7 +21,7 @@ describe('MarginaliaStrip', () => {
     vi.useRealTimers();
   });
 
-  it('shows the empty invite state', () => {
+  it('invite: shows + Add note or tags when collapsed and empty', () => {
     render(
       <MarginaliaStrip
         highlightId="hl-1"
@@ -31,6 +31,21 @@ describe('MarginaliaStrip', () => {
     );
 
     expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
+    expect(screen.queryByTestId('marginalia-tray')).toBeNull();
+  });
+
+  it('invite: clicking expands via onToggleExpand', () => {
+    const onToggleExpand = vi.fn();
+    render(
+      <MarginaliaStrip
+        highlightId="hl-1"
+        isExpanded={false}
+        onToggleExpand={onToggleExpand}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Add note or tags' }));
+    expect(onToggleExpand).toHaveBeenCalledOnce();
   });
 
   it('expanded: omits NOTE header and shows Done inside the shared notes|tags tray', () => {
@@ -47,6 +62,7 @@ describe('MarginaliaStrip', () => {
     expect(tray).not.toBeNull();
     expect(tray).toContainElement(addTag);
     expect(tray).toContainElement(screen.getByRole('button', { name: 'Done' }));
+    expect(tray?.getAttribute('data-empty')).toBe('true');
   });
 
   it('persists tags-only when a tag is added (does not send notes field)', async () => {
@@ -102,7 +118,7 @@ describe('MarginaliaStrip', () => {
     expect(screen.getByText('cpp')).toBeTruthy();
   });
 
-  it('collapsed: mirrors Notes|Tags in one shared tray with Edit', () => {
+  it('collapsed: snip + pills in shared tray with Edit (standalone)', () => {
     render(
       <MarginaliaStrip
         highlightId="hl-1"
@@ -113,13 +129,49 @@ describe('MarginaliaStrip', () => {
       />,
     );
 
-    const note = screen.getByText('Central metaphor');
+    const note = screen.getByTestId('marginalia-note-snip');
+    expect(note.textContent).toBe('Central metaphor');
     const tray = note.closest('[data-testid="marginalia-tray"]');
     expect(tray).not.toBeNull();
     expect(tray).toContainElement(screen.getByText('research'));
     expect(tray).toContainElement(screen.getByText('comedy'));
     expect(tray).toContainElement(screen.getByText('Edit'));
     expect(screen.queryByText(/^Note$/i)).toBeNull();
+  });
+
+  it('collapsed: caps visible tags at two and shows +N overflow', () => {
+    render(
+      <MarginaliaStrip
+        highlightId="hl-1"
+        labels={['css', 'fundamentals', 'cascade', 'layout']}
+        isExpanded={false}
+        onToggleExpand={vi.fn()}
+        embedInCard
+      />,
+    );
+
+    expect(screen.getByText('css')).toBeTruthy();
+    expect(screen.getByText('fundamentals')).toBeTruthy();
+    expect(screen.queryByText('cascade')).toBeNull();
+    expect(screen.getByTestId('marginalia-tag-overflow').textContent).toBe('+2');
+  });
+
+  it('collapsed (embed): snip + pills without secondary Edit label', () => {
+    render(
+      <MarginaliaStrip
+        highlightId="hl-1"
+        notes="Cascade order"
+        labels={['css']}
+        isExpanded={false}
+        onToggleExpand={vi.fn()}
+        embedInCard
+      />,
+    );
+
+    expect(screen.getByTestId('marginalia-note-snip').textContent).toBe('Cascade order');
+    expect(screen.getByText('css')).toBeTruthy();
+    expect(screen.queryByText(/^Edit$/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit note and tags' })).toBeTruthy();
   });
 
   it('does not disable the note field while saving', async () => {

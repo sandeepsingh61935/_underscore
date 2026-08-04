@@ -34,6 +34,8 @@ export interface LibraryHighlightTileProps {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   suggestions?: string[];
+  /** Search hit badge (e.g. "Notes · Tags"); omit when not searching. */
+  matchBadge?: string | null;
 }
 
 function sectionFromPath(path: string | undefined): string | undefined {
@@ -50,6 +52,7 @@ export function LibraryHighlightTile({
   isExpanded = false,
   onToggleExpand,
   suggestions,
+  matchBadge,
 }: LibraryHighlightTileProps): React.ReactElement {
   const { updateText } = useUpdateHighlightText();
 
@@ -92,6 +95,7 @@ export function LibraryHighlightTile({
       onDelete={onDelete}
       onSaveQuote={onSaveQuote}
       footerStart={footerStart}
+      matchBadge={matchBadge}
     />
   );
 }

@@ -14,7 +14,6 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
-import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibrarySectionRow } from '@/features/collections/components/LibrarySectionRow';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
@@ -25,7 +24,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { displaySectionTitle } from '@/shared/services/section-label-store';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
-import type { SearchField } from '@/shared/utils/highlight-search';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
@@ -38,20 +37,6 @@ export interface DomainDetailsViewProps {
   domain?: string;
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
-}
-
-/**
- * Small mono badge for results whose hit was only in the note or tag(s),
- * not the visible quote — otherwise a matched card can look confusing.
- */
-function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
-  if (matchedFields.includes('text')) return null;
-  const inNotes = matchedFields.includes('notes');
-  const inTags = matchedFields.includes('tags');
-  if (inNotes && inTags) return 'Matched in note & tag(s)';
-  if (inNotes) return 'Matched in note';
-  if (inTags) return 'Matched in tag(s)';
-  return null;
 }
 
 export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSectionClick }: DomainDetailsViewProps): React.ReactElement {
@@ -134,6 +119,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
   const aiGate = useModeFeature('ai', isAuthenticated);
+  const tagsGate = useModeFeature('tags', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
   const synthesis = useSynthesizeDomain();
   const { provider } = useActiveLLMProvider();
@@ -156,7 +142,8 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const { tags: userTags } = useUserTags(isAuthenticated);
+  const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
+  const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   // Reset search when the domain itself changes (route param change without remount).
   useEffect(() => {
@@ -445,37 +432,31 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                 action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
               />
             ) : (
-              filteredResults.map((r) => {
-                const badge = matchBadgeLabel(r.matchedFields);
-                return (
-                  <div key={r.id}>
-                    <LibraryHighlightTile
-                      highlight={{
-                        id: r.id,
-                        text: r.text,
-                        domain: r.domain,
-                        path: r.path,
-                        sourceKind: r.sourceKind,
-                        language: r.language,
-                        presentation: r.presentation,
-                        notes: r.notes,
-                        tags: r.tags,
-                      }}
-                      onSectionClick={() => handleSectionClick(r.path)}
-                    />
-                    {badge && (
-                      <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
-                        <span
-                          className="u-mono"
-                          style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
-                        >
-                          {badge}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              filteredResults.map((r) => (
+                <LibraryHighlightTile
+                  key={r.id}
+                  highlight={{
+                    id: r.id,
+                    text: r.text,
+                    domain: r.domain,
+                    path: r.path,
+                    sourceKind: r.sourceKind,
+                    language: r.language,
+                    presentation: r.presentation,
+                    notes: r.notes,
+                    tags: r.tags,
+                  }}
+                  onSectionClick={() => handleSectionClick(r.path)}
+                  allowMarginalia={tagsGate.allowed}
+                  isExpanded={expandedHighlightId === r.id}
+                  onToggleExpand={() => {
+                    setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                  }}
+                  suggestions={labelSuggestions}
+                  onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                  matchBadge={formatMatchBadge(r.matchedFields)}
+                />
+              ))
             )
           ) : (
             sections.map((s) => (

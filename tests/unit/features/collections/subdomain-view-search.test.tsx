@@ -188,7 +188,7 @@ describe('SubDomainView search wiring', () => {
       expect(screen.getByText('A highlighted quote about tags')).toBeTruthy();
     });
 
-    expect(screen.getByText('Matched in note')).toBeTruthy();
+    expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes');
     expect(screen.getByText('important')).toBeTruthy();
   });
 

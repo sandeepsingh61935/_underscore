@@ -5,7 +5,6 @@ import { useApp } from '@/core/context/AppProvider';
 import { useCollections } from '@/features/collections/hooks/useCollections';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
-import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibraryDomainRow } from '@/features/collections/components/LibraryDomainRow';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
@@ -15,7 +14,7 @@ import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
-import type { SearchField } from '@/shared/utils/highlight-search';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
@@ -34,20 +33,6 @@ export interface CollectionsViewProps {
   onSignIn?: () => void;
 }
 
-/**
- * Small mono badge for results whose hit was only in the note or tag(s),
- * not the visible quote — otherwise a matched card can look confusing.
- */
-function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
-  if (matchedFields.includes('text')) return null;
-  const inNotes = matchedFields.includes('notes');
-  const inTags = matchedFields.includes('tags');
-  if (inNotes && inTags) return 'Matched in note & tag(s)';
-  if (inNotes) return 'Matched in note';
-  if (inTags) return 'Matched in tag(s)';
-  return null;
-}
-
 export function CollectionsView({
   onCollectionClick,
   onSectionClick,
@@ -63,8 +48,9 @@ export function CollectionsView({
   const { collections, isLoading } = useCollections(mode);
   const aiGate = useModeFeature('ai', isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
+  const tagsGate = useModeFeature('tags', isAuthenticated);
   const { deleteScope } = useHighlightDelete();
-  const { tags: userTags } = useUserTags(isAuthenticated);
+  const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
@@ -72,6 +58,7 @@ export function CollectionsView({
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [deleteDomain, setDeleteDomain] = useState<{ domain: string; count: number } | null>(null);
   const [isDeletingDomain, setIsDeletingDomain] = useState(false);
+  const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
     query: searchQuery,
@@ -209,37 +196,31 @@ export function CollectionsView({
               action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
             />
           ) : (
-            filteredResults.map((r) => {
-              const badge = matchBadgeLabel(r.matchedFields);
-              return (
-                <div key={r.id}>
-                  <LibraryHighlightTile
-                    highlight={{
-                      id: r.id,
-                      text: r.text,
-                      domain: r.domain,
-                      path: r.path,
-                      sourceKind: r.sourceKind,
-                      language: r.language,
-                      presentation: r.presentation,
-                      notes: r.notes,
-                      tags: r.tags,
-                    }}
-                    onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
-                  />
-                  {badge && (
-                    <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
-                      <span
-                        className="u-mono"
-                        style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
-                      >
-                        {badge}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            filteredResults.map((r) => (
+              <LibraryHighlightTile
+                key={r.id}
+                highlight={{
+                  id: r.id,
+                  text: r.text,
+                  domain: r.domain,
+                  path: r.path,
+                  sourceKind: r.sourceKind,
+                  language: r.language,
+                  presentation: r.presentation,
+                  notes: r.notes,
+                  tags: r.tags,
+                }}
+                onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
+                allowMarginalia={tagsGate.allowed}
+                isExpanded={expandedHighlightId === r.id}
+                onToggleExpand={() => {
+                  setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                }}
+                suggestions={labelSuggestions}
+                onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                matchBadge={formatMatchBadge(r.matchedFields)}
+              />
+            ))
           )
         ) : collections.length === 0 && isAuthenticated ? (
           <LibraryStarters />

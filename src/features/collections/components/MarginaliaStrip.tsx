@@ -61,16 +61,23 @@ function autoGrowNoteField(el: HTMLTextAreaElement | null): void {
   el.style.height = `${Math.max(el.scrollHeight, 18)}px`;
 }
 
+/** Collapsed strip shows at most this many tag pills; overflow is "+N". */
+const COLLAPSED_TAG_VISIBLE = 2;
+
 function SharedTray({
   children,
   chrome,
+  empty,
 }: {
   children: React.ReactNode;
   chrome?: React.ReactNode;
+  /** Both notes and tags empty — soft dashed band so two slots still read. */
+  empty?: boolean;
 }): React.ReactElement {
   return (
     <div
       data-testid="marginalia-tray"
+      data-empty={empty ? 'true' : undefined}
       style={{
         position: 'relative',
         display: 'flex',
@@ -79,11 +86,12 @@ function SharedTray({
         gap: 8,
         padding: '6px 8px',
         paddingRight: chrome ? 48 : 8,
-        border: '1px solid var(--rule-soft)',
+        border: empty ? '1px dashed var(--rule-soft)' : '1px solid var(--rule-soft)',
         borderRadius: 'var(--radius)',
-        background: 'var(--paper)',
+        background: empty ? 'var(--paper-2)' : 'var(--paper)',
         minHeight: 28,
         boxSizing: 'border-box',
+        width: '100%',
       }}
     >
       {children}
@@ -265,10 +273,13 @@ export function MarginaliaStrip({
   }
 
   if (!isExpanded && hasContent) {
+    const visibleTags = labelsDraft.slice(0, COLLAPSED_TAG_VISIBLE);
+    const tagOverflow = Math.max(0, labelsDraft.length - COLLAPSED_TAG_VISIBLE);
     const collapsedBody = (
       <>
         {noteDraft.trim() !== '' && (
           <span
+            data-testid="marginalia-note-snip"
             style={{
               flex: embedInCard ? '0 1 auto' : '1 1 120px',
               minWidth: 0,
@@ -297,9 +308,28 @@ export function MarginaliaStrip({
             overflow: embedInCard ? 'hidden' : undefined,
           }}
         >
-          {labelsDraft.map((label, index) => (
+          {visibleTags.map((label, index) => (
             <TagPill key={`${label}-${index}`} label={label} readonly />
           ))}
+          {tagOverflow > 0 && (
+            <span
+              data-testid="marginalia-tag-overflow"
+              className="u-mono"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                height: 20,
+                padding: '0 6px',
+                border: '1px solid var(--rule-soft)',
+                borderRadius: 'var(--radius)',
+                fontSize: 10,
+                color: 'var(--ink-3)',
+                flexShrink: 0,
+              }}
+            >
+              +{tagOverflow}
+            </span>
+          )}
           {!embedInCard && (
             <span
               style={{
@@ -389,8 +419,10 @@ export function MarginaliaStrip({
     </button>
   );
 
+  const trayEmpty = noteDraft.trim() === '' && labelsDraft.length === 0;
+
   const editor = (
-    <SharedTray chrome={chrome}>
+    <SharedTray chrome={chrome} empty={trayEmpty}>
       <textarea
         ref={noteFieldRef}
         value={noteDraft}

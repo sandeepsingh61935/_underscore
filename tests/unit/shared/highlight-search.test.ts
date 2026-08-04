@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ALL_SEARCH_FIELDS,
+  formatMatchBadge,
   searchHighlights,
   type SearchableHighlight,
 } from '@/shared/utils/highlight-search';
@@ -165,5 +166,28 @@ describe('searchHighlights', () => {
     const results = searchHighlights(items, 'keyword');
     expect(results).toHaveLength(1);
     expect(results[0]?.matchedFields).toEqual(['text']);
+  });
+});
+
+describe('formatMatchBadge', () => {
+  it('returns null for empty or pure-text matches', () => {
+    expect(formatMatchBadge([])).toBeNull();
+    expect(formatMatchBadge(['text'])).toBeNull();
+    expect(formatMatchBadge(['url'])).toBeNull();
+  });
+
+  it('labels notes and tags when the quote did not match', () => {
+    expect(formatMatchBadge(['notes'])).toBe('Notes');
+    expect(formatMatchBadge(['tags'])).toBe('Tags');
+    expect(formatMatchBadge(['notes', 'tags'])).toBe('Notes · Tags');
+  });
+
+  it('includes Text when the quote matched along with notes/tags', () => {
+    expect(formatMatchBadge(['text', 'tags'])).toBe('Text · Tags');
+    expect(formatMatchBadge(['text', 'notes', 'tags'])).toBe('Text · Notes · Tags');
+  });
+
+  it('orders fields Text · Notes · Tags regardless of input order', () => {
+    expect(formatMatchBadge(['tags', 'text', 'notes'])).toBe('Text · Notes · Tags');
   });
 });

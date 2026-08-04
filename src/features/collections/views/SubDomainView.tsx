@@ -16,12 +16,11 @@ import { LibraryHighlightTile } from '@/features/collections/components/LibraryH
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
-import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
-import type { SearchField } from '@/shared/utils/highlight-search';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
@@ -37,20 +36,6 @@ export interface SubDomainViewProps {
   onBack?: () => void;
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
-}
-
-/**
- * Small mono badge for results whose hit was only in the note or tag(s),
- * not the visible quote — otherwise a matched card can look confusing.
- */
-function matchBadgeLabel(matchedFields: HighlightSearchResult['matchedFields']): string | null {
-  if (matchedFields.includes('text')) return null;
-  const inNotes = matchedFields.includes('notes');
-  const inTags = matchedFields.includes('tags');
-  if (inNotes && inTags) return 'Matched in note & tag(s)';
-  if (inNotes) return 'Matched in note';
-  if (inTags) return 'Matched in tag(s)';
-  return null;
 }
 
 export function SubDomainView({
@@ -373,44 +358,31 @@ export function SubDomainView({
               action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
             />
           ) : (
-            filteredSearchResults.map((r) => {
-              const badge = matchBadgeLabel(r.matchedFields);
-              return (
-                <div key={r.id}>
-                  <LibraryHighlightTile
-                    highlight={{
-                      id: r.id,
-                      text: r.text,
-                      domain: r.domain,
-                      path: r.path,
-                      notes: r.notes,
-                      tags: r.tags,
-                      sourceKind: r.sourceKind,
-                      language: r.language,
-                      presentation: r.presentation,
-                    }}
-                    showLocationMeta={false}
-                    allowMarginalia={tagsGate.allowed}
-                    isExpanded={expandedHighlightId === r.id}
-                    onToggleExpand={() => {
-                      setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
-                    }}
-                    suggestions={labelSuggestions}
-                    onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
-                  />
-                  {badge && (
-                    <div style={{ padding: '0 16px 8px', marginTop: -4 }}>
-                      <span
-                        className="u-mono"
-                        style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
-                      >
-                        {badge}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            filteredSearchResults.map((r) => (
+              <LibraryHighlightTile
+                key={r.id}
+                highlight={{
+                  id: r.id,
+                  text: r.text,
+                  domain: r.domain,
+                  path: r.path,
+                  notes: r.notes,
+                  tags: r.tags,
+                  sourceKind: r.sourceKind,
+                  language: r.language,
+                  presentation: r.presentation,
+                }}
+                showLocationMeta={false}
+                allowMarginalia={tagsGate.allowed}
+                isExpanded={expandedHighlightId === r.id}
+                onToggleExpand={() => {
+                  setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                }}
+                suggestions={labelSuggestions}
+                onDelete={() => { void deleteScope({ scope: 'highlight', id: r.id }); }}
+                matchBadge={formatMatchBadge(r.matchedFields)}
+              />
+            ))
           )
         ) : hasRefineOrTags && filteredSectionHighlights.length === 0 ? (
           <EmptyState

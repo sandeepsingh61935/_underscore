@@ -61,4 +61,35 @@ describe('LibraryHighlightTile', () => {
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('t1');
     expect(screen.getByTestId('highlight-action-row').textContent).toMatch(/Edit/i);
   });
+
+  it('passes match badge through to the card', () => {
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'quote',
+          domain: 'example.com',
+        }}
+        matchBadge="Notes · Tags"
+      />,
+    );
+    expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes · Tags');
+  });
+
+  it('shows invite marginalia on the action row when empty and allowed', () => {
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'quote',
+          domain: 'example.com',
+        }}
+        allowMarginalia
+        isExpanded={false}
+        onToggleExpand={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
+    expect(screen.getByTestId('highlight-action-row').textContent).toMatch(/Edit/i);
+  });
 });

@@ -119,8 +119,9 @@ describe('CollectionsView search wiring', () => {
     });
 
     expect(screen.getByText('Another highlight')).toBeTruthy();
-    // notes-only match gets the explanatory badge; text match does not.
-    expect(screen.getByText('Matched in note')).toBeTruthy();
+    // notes-only match gets the field badge; pure text match does not.
+    expect(screen.getByText('Notes')).toBeTruthy();
+    expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes');
     expect(screen.queryByText('example.com')).toBeNull();
   });
 

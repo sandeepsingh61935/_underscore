@@ -26,6 +26,31 @@ export const ALL_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags', 'url']
 /** User-facing field chips (Text / Notes / Tags) — matches HighlightSearchBar "All". */
 export const USER_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
 
+const MATCH_BADGE_FIELD_ORDER: ReadonlyArray<{ field: SearchField; label: string }> = [
+  { field: 'text', label: 'Text' },
+  { field: 'notes', label: 'Notes' },
+  { field: 'tags', label: 'Tags' },
+];
+
+/**
+ * Compact mono match badge for library search hits (v3: "Text · Notes · Tags").
+ * Omits pure quote-only hits (the quote is already visible) and internal `url` field.
+ * Returns null when a badge would not help the reader.
+ */
+export function formatMatchBadge(matchedFields: readonly SearchField[]): string | null {
+  if (matchedFields.length === 0) return null;
+
+  const labels = MATCH_BADGE_FIELD_ORDER
+    .filter(({ field }) => matchedFields.includes(field))
+    .map(({ label }) => label);
+
+  if (labels.length === 0) return null;
+  // Quote already shows why a pure-text hit matched.
+  if (labels.length === 1 && labels[0] === 'Text') return null;
+
+  return labels.join(' · ');
+}
+
 /**
  * Case-insensitive substring search over a list of highlight-shaped items.
  *

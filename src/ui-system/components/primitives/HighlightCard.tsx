@@ -51,6 +51,11 @@ export interface HighlightCardProps {
   onSaveQuote?: (text: string) => Promise<boolean>;
   showLocationMeta?: boolean;
   footerStart?: React.ReactNode;
+  /**
+   * When search is active and the hit is not pure-quote, show a compact
+   * field badge under the action row (e.g. "Notes · Tags", "Text · Tags").
+   */
+  matchBadge?: string | null;
   /** Capture hint from page code block (display default only). */
   sourceKind?: 'code';
   language?: string;
@@ -117,6 +122,7 @@ export function HighlightCard({
   onSaveQuote,
   showLocationMeta = true,
   footerStart,
+  matchBadge,
   sourceKind,
   language,
   presentation,
@@ -661,6 +667,23 @@ export function HighlightCard({
               </div>
             </div>
           )}
+
+          {matchBadge ? (
+            <div
+              data-testid="highlight-match-badge"
+              className="u-mono"
+              style={{
+                fontSize: 10,
+                color: 'var(--ink-3)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                marginTop: 4,
+                paddingBottom: 2,
+              }}
+            >
+              {matchBadge}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

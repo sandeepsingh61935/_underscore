@@ -220,4 +220,37 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
     expect(handler).toHaveBeenCalledOnce();
   });
+
+  it('renders quiet Edit / Copy / Delete text actions when handlers are set', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onSaveQuote={async () => true}
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const row = screen.getByTestId('highlight-action-row');
+    expect(row.textContent).toMatch(/Edit/i);
+    expect(row.textContent).toMatch(/Copy/i);
+    expect(row.textContent).toMatch(/Delete/i);
+  });
+
+  it('renders match badge under the action row when provided', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onCopy={vi.fn()}
+        matchBadge="Text · Tags"
+      />,
+    );
+    expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Text · Tags');
+  });
+
+  it('omits match badge when not provided', () => {
+    render(<HighlightCard quote="Apple" domain="example.com" onCopy={vi.fn()} />);
+    expect(screen.queryByTestId('highlight-match-badge')).toBeNull();
+  });
 });
