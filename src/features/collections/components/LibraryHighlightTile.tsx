@@ -1,12 +1,15 @@
 /**
  * Single library tile: maps a highlight summary → HighlightCard (+ optional marginalia).
  * Owns quote text persistence so views do not re-spread IPC props.
+ * Owns single-highlight danger confirm before calling onDelete.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
 import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
 import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
+import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
@@ -55,6 +58,8 @@ export function LibraryHighlightTile({
   matchBadge,
 }: LibraryHighlightTileProps): React.ReactElement {
   const { updateText } = useUpdateHighlightText();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const onSaveQuote = useCallback(
     async (text: string): Promise<boolean> => updateText(highlight.id, text),
@@ -67,6 +72,17 @@ export function LibraryHighlightTile({
         void copyHighlightPlainText(highlight.text);
       }
     : undefined;
+
+  const handleConfirmDelete = useCallback((): void => {
+    if (!onDelete || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      onDelete();
+      setDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [onDelete, isDeleting]);
 
   const footerStart =
     allowMarginalia && onToggleExpand ? (
@@ -81,21 +97,38 @@ export function LibraryHighlightTile({
       />
     ) : undefined;
 
+  const deleteCopy = deleteHighlightCopy();
+
   return (
-    <HighlightCard
-      quote={quote}
-      domain={highlight.domain}
-      section={sectionFromPath(highlight.path)}
-      showLocationMeta={showLocationMeta}
-      sourceKind={highlight.sourceKind}
-      language={highlight.language}
-      presentation={highlight.presentation}
-      onSectionClick={onSectionClick}
-      onCopy={onCopy}
-      onDelete={onDelete}
-      onSaveQuote={onSaveQuote}
-      footerStart={footerStart}
-      matchBadge={matchBadge}
-    />
+    <>
+      <HighlightCard
+        quote={quote}
+        domain={highlight.domain}
+        section={sectionFromPath(highlight.path)}
+        showLocationMeta={showLocationMeta}
+        sourceKind={highlight.sourceKind}
+        language={highlight.language}
+        presentation={highlight.presentation}
+        onSectionClick={onSectionClick}
+        onCopy={onCopy}
+        onDelete={onDelete ? () => setDeleteOpen(true) : undefined}
+        onSaveQuote={onSaveQuote}
+        footerStart={footerStart}
+        matchBadge={matchBadge}
+      />
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        severity={deleteCopy.severity}
+        title={deleteCopy.title}
+        message={deleteCopy.message}
+        note={deleteCopy.note}
+        strongNames={deleteCopy.strongNames}
+        confirmLabel={deleteCopy.confirmLabel}
+        cancelLabel={deleteCopy.cancelLabel}
+        onConfirm={handleConfirmDelete}
+        isConfirming={isDeleting}
+      />
+    </>
   );
 }

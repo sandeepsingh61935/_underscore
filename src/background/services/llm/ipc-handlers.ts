@@ -83,6 +83,8 @@ interface SetKeyPayload {
   key?: string;
   model?: string;
   apiBase?: string;
+  /** When true, remove stored key for this provider (local only). */
+  clearKey?: boolean;
 }
 
 interface StatusPayload {
@@ -141,17 +143,28 @@ export function registerAiHandlers(args: RegisterArgs): void {
     const denied = await denyIfAiSetupGated(args);
     if (denied) return denied;
     try {
-      const { provider, key, model, apiBase } = raw as SetKeyPayload;
+      const { provider, key, model, apiBase, clearKey } = raw as SetKeyPayload;
       if (!isInAppLlmProvider(provider)) {
         return createErrorResponse('Unknown in-app LLM provider');
       }
+      const store = keyStore();
+
+      if (clearKey) {
+        if (provider === 'ollama') {
+          await store.setOllamaVerified(false);
+        } else {
+          await store.clear(provider);
+        }
+        registry.setConfigured(provider, false);
+        return createSuccessResponse({ ok: true as const });
+      }
+
       const trimmedKey = key?.trim();
       const trimmedModel = model?.trim();
       const trimmedBase = apiBase?.trim();
       if (!trimmedKey && !trimmedModel && !trimmedBase) {
         return createErrorResponse('Provide a model, API key, or endpoint to save');
       }
-      const store = keyStore();
       if (trimmedKey) await store.set(provider, trimmedKey);
       if (trimmedModel) await store.setModel(provider, trimmedModel);
       if (provider === 'ollama') {

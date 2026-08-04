@@ -76,6 +76,30 @@ describe('LibraryHighlightTile', () => {
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes · Tags');
   });
 
+  it('confirms before deleting a highlight', () => {
+    const onDelete = vi.fn();
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'quote',
+          domain: 'example.com',
+        }}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText('Delete this highlight?')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('confirm-dialog-cancel'));
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
   it('shows invite marginalia on the action row when empty and allowed', () => {
     render(
       <LibraryHighlightTile

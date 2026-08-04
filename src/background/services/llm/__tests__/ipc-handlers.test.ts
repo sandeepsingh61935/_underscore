@@ -151,6 +151,19 @@ describe('registerAiHandlers', () => {
     expect(result).toEqual({ success: true, data: { ok: true } });
   });
 
+  it('IPC_AI_SET_API_KEY clearKey removes stored key', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_SET_API_KEY')!;
+    const result = await handler({ provider: 'anthropic', clearKey: true });
+    expect(keyStore.clear).toHaveBeenCalledWith('anthropic');
+    expect(registry.setConfigured).toHaveBeenCalledWith('anthropic', false);
+    expect(result).toEqual({ success: true, data: { ok: true } });
+  });
+
   it('IPC_AI_GET_API_KEY_STATUS returns configured model', async () => {
     const bus = makeMessageBus();
     const keyStore = makeKeyStore();

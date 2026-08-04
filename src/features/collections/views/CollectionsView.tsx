@@ -13,6 +13,7 @@ import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-d
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { deleteDomainCopy } from '@/shared/utils/confirm-dialog-copy';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
@@ -245,27 +246,35 @@ export function CollectionsView({
         )}
       </div>
 
-      <DeleteConfirmDialog
-        open={deleteDomain !== null}
-        onClose={() => setDeleteDomain(null)}
-        title="Delete this domain?"
-        message={
-          deleteDomain
-            ? `This permanently removes ${deleteDomain.count} highlight${deleteDomain.count === 1 ? '' : 's'} from “${deleteDomain.domain}”. This cannot be undone.`
-            : ''
-        }
-        onConfirm={() => { void handleDeleteDomain(); }}
-        isConfirming={isDeletingDomain}
-        exportFooter={
-          deleteDomain ? (
-            <ExportActions
-              scope={{ kind: 'domain', domain: deleteDomain.domain }}
-              highlightCount={deleteDomain.count}
-              disabled={!exportGate.allowed}
-            />
-          ) : undefined
-        }
-      />
+      {(() => {
+        const copy = deleteDomain
+          ? deleteDomainCopy(deleteDomain.domain, deleteDomain.count)
+          : null;
+        return (
+          <DeleteConfirmDialog
+            open={deleteDomain !== null}
+            onClose={() => setDeleteDomain(null)}
+            severity={copy?.severity}
+            title={copy?.title ?? 'Delete this domain?'}
+            message={copy?.message ?? ''}
+            note={copy?.note}
+            strongNames={copy?.strongNames}
+            confirmLabel={copy?.confirmLabel}
+            cancelLabel={copy?.cancelLabel}
+            onConfirm={() => { void handleDeleteDomain(); }}
+            isConfirming={isDeletingDomain}
+            exportFooter={
+              deleteDomain ? (
+                <ExportActions
+                  scope={{ kind: 'domain', domain: deleteDomain.domain }}
+                  highlightCount={deleteDomain.count}
+                  disabled={!exportGate.allowed}
+                />
+              ) : undefined
+            }
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   CUSTOM_MODEL_ID,
   PROVIDER_META,
 } from '@/features/ai/constants/provider-setup';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { persistLlmSetupProvider } from '@/shared/constants/popup-navigation-storage';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { checkProviderHealthInBrowser } from '@/shared/llm/check-provider-health';
 import {
@@ -24,7 +26,7 @@ import {
   resolveProviderModel,
   type ProviderModelOption,
 } from '@/shared/llm/provider-models';
-import { persistLlmSetupProvider } from '@/shared/constants/popup-navigation-storage';
+import { removeApiKeyCopy } from '@/shared/utils/confirm-dialog-copy';
 
 export interface ProviderDetailPanelProps {
   provider: ProviderName;
@@ -100,6 +102,8 @@ export function ProviderDetailPanel({
   const [connectMessage, setConnectMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [orFilter, setOrFilter] = useState<OpenRouterFilter>('free');
+  const [removeKeyOpen, setRemoveKeyOpen] = useState(false);
+  const [isRemovingKey, setIsRemovingKey] = useState(false);
   /** Last status.model we applied into selectedId — blocks catalog/filter churn from clobbering picks. */
   const hydratedStatusModelRef = useRef<string | null>(null);
 
@@ -305,6 +309,24 @@ export function ProviderDetailPanel({
     }
   };
 
+  const handleRemoveKey = async (): Promise<void> => {
+    setIsRemovingKey(true);
+    try {
+      const result = await status.clearKey();
+      if (!result.success) {
+        setConnectMessage(result.error ?? 'Could not remove key');
+        return;
+      }
+      setKey('');
+      setVerified(false);
+      setRemoveKeyOpen(false);
+      setConnectMessage(null);
+      setSaveMessage(null);
+    } finally {
+      setIsRemovingKey(false);
+    }
+  };
+
   const saveHint = canSaveModel || saved
     ? null
     : provider === 'ollama' && !connectionVerified
@@ -374,19 +396,42 @@ export function ProviderDetailPanel({
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <SetupField
-                id="provider-api-key"
-                label="API key"
-                type="password"
-                value={key}
-                onChange={value => { setKey(value); setVerified(false); }}
-                placeholder={status.configured ? '••••••••  leave blank to keep' : meta.keyPlaceholder}
-                autoComplete="off"
-              />
-              <button type="button" className="btn ghost" disabled={verifying} onClick={() => { void handleVerify(); }}>
-                {verifying ? '…' : 'Verify'}
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <SetupField
+                  id="provider-api-key"
+                  label="API key"
+                  type="password"
+                  value={key}
+                  onChange={value => { setKey(value); setVerified(false); }}
+                  placeholder={status.configured ? '••••••••  leave blank to keep' : meta.keyPlaceholder}
+                  autoComplete="off"
+                />
+                <button type="button" className="btn ghost" disabled={verifying} onClick={() => { void handleVerify(); }}>
+                  {verifying ? '…' : 'Verify'}
+                </button>
+              </div>
+              {status.configured ? (
+                <button
+                  type="button"
+                  className="u-mono"
+                  data-testid="provider-remove-key"
+                  onClick={() => setRemoveKeyOpen(true)}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start',
+                    fontSize: 'var(--step--2)',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink-3)',
+                    minHeight: 32,
+                    padding: '4px 0',
+                  }}
+                >
+                  Remove key
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -456,6 +501,25 @@ export function ProviderDetailPanel({
           {saving ? 'Saving…' : saved ? 'Saved' : 'Use this model'}
         </button>
       </div>
+
+      {(() => {
+        const copy = removeApiKeyCopy(meta.label);
+        return (
+          <DeleteConfirmDialog
+            open={removeKeyOpen}
+            onClose={() => setRemoveKeyOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleRemoveKey(); }}
+            isConfirming={isRemovingKey}
+          />
+        );
+      })()}
     </div>
   );
 }

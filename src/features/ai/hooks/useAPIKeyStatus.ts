@@ -17,13 +17,16 @@ export function useAPIKeyStatus(provider: ProviderName): {
   error: string | null;
   refresh: () => Promise<void>;
   save: (input: SaveProviderSettingsInput) => Promise<ActionResult<{ ok: true }>>;
+  /** Remove stored API key for this provider (local extension storage only). */
+  clearKey: () => Promise<ActionResult<{ ok: true }>>;
 } {
   const getStatus = useIpcAction<{ provider: ProviderName }, { configured: boolean; model: string; apiBase?: string }>(
     IPC_AI_GET_API_KEY_STATUS,
   );
-  const setKey = useIpcAction<{ provider: ProviderName; key?: string; model?: string; apiBase?: string }, { ok: true }>(
-    IPC_AI_SET_API_KEY,
-  );
+  const setKey = useIpcAction<
+    { provider: ProviderName; key?: string; model?: string; apiBase?: string; clearKey?: boolean },
+    { ok: true }
+  >(IPC_AI_SET_API_KEY);
 
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [model, setModel] = useState<string | null>(null);
@@ -62,5 +65,17 @@ export function useAPIKeyStatus(provider: ProviderName): {
     return result;
   }, [setKey, provider, refresh]);
 
-  return { configured, model, apiBase, error, refresh, save };
+  const clearKey = useCallback(async (): Promise<ActionResult<{ ok: true }>> => {
+    const result = await setKey({ provider, clearKey: true });
+    if (result.success) {
+      setError(null);
+      setConfigured(false);
+      await refresh();
+    } else {
+      setError(result.error);
+    }
+    return result;
+  }, [setKey, provider, refresh]);
+
+  return { configured, model, apiBase, error, refresh, save, clearKey };
 }

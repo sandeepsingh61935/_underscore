@@ -30,6 +30,10 @@ import {
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
+import {
+  deleteDomainCopy,
+  deleteSectionCopy,
+} from '@/shared/utils/confirm-dialog-copy';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
@@ -519,43 +523,61 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
         </div>
       )}
 
-      <DeleteConfirmDialog
-        open={deleteDomainOpen}
-        onClose={() => setDeleteDomainOpen(false)}
-        title="Delete this domain?"
-        message={`This permanently removes ${highlights.length} highlight${highlights.length === 1 ? '' : 's'} from “${domain}”. This cannot be undone.`}
-        onConfirm={() => { void handleDeleteDomain(); }}
-        isConfirming={isDeletingDomain}
-        exportFooter={
-          <ExportActions
-            scope={{ kind: 'domain', domain }}
-            highlightCount={highlights.length}
-            disabled={exportDisabled}
+      {(() => {
+        const copy = deleteDomainCopy(domain, highlights.length);
+        return (
+          <DeleteConfirmDialog
+            open={deleteDomainOpen}
+            onClose={() => setDeleteDomainOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleDeleteDomain(); }}
+            isConfirming={isDeletingDomain}
+            exportFooter={
+              <ExportActions
+                scope={{ kind: 'domain', domain }}
+                highlightCount={highlights.length}
+                disabled={exportDisabled}
+              />
+            }
           />
-        }
-      />
+        );
+      })()}
 
-      <DeleteConfirmDialog
-        open={deleteSection !== null}
-        onClose={() => setDeleteSection(null)}
-        title="Delete this section?"
-        message={
-          deleteSection
-            ? `This permanently removes ${deleteSection.count} highlight${deleteSection.count === 1 ? '' : 's'} in “${deleteSection.path === '/' ? domain : deleteSection.path}”. This cannot be undone.`
-            : ''
-        }
-        onConfirm={() => { void handleDeleteSection(); }}
-        isConfirming={isDeletingSection}
-        exportFooter={
-          deleteSection ? (
-            <ExportActions
-              scope={{ kind: 'section', domain, sectionKey: deleteSection.path }}
-              highlightCount={deleteSection.count}
-              disabled={exportDisabled}
-            />
-          ) : undefined
-        }
-      />
+      {(() => {
+        const copy = deleteSection
+          ? deleteSectionCopy(domain, deleteSection.path, deleteSection.count)
+          : null;
+        return (
+          <DeleteConfirmDialog
+            open={deleteSection !== null}
+            onClose={() => setDeleteSection(null)}
+            severity={copy?.severity}
+            title={copy?.title ?? 'Delete this section?'}
+            message={copy?.message ?? ''}
+            note={copy?.note}
+            strongNames={copy?.strongNames}
+            confirmLabel={copy?.confirmLabel}
+            cancelLabel={copy?.cancelLabel}
+            onConfirm={() => { void handleDeleteSection(); }}
+            isConfirming={isDeletingSection}
+            exportFooter={
+              deleteSection ? (
+                <ExportActions
+                  scope={{ kind: 'section', domain, sectionKey: deleteSection.path }}
+                  highlightCount={deleteSection.count}
+                  disabled={exportDisabled}
+                />
+              ) : undefined
+            }
+          />
+        );
+      })()}
     </div>
   );
 }

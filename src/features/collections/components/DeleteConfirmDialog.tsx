@@ -1,12 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
+import type { ConfirmSeverity } from '@/shared/utils/confirm-dialog-copy';
 import { Dialog } from '@/ui-system/components/primitives/Dialog';
 
 export interface DeleteConfirmDialogProps {
   open: boolean;
   title: string;
+  /** Primary warning (object + impact). */
   message: string;
+  /** Secondary note under the warn line. */
+  note?: string;
+  /** Substrings of `message` to emphasize with <strong>. */
+  strongNames?: string[];
+  severity?: ConfirmSeverity;
   confirmLabel?: string;
+  cancelLabel?: string;
   onClose: () => void;
   onConfirm: () => void;
   isConfirming?: boolean;
@@ -17,75 +25,153 @@ export interface DeleteConfirmDialogProps {
 const actionButtonBase: React.CSSProperties = {
   flex: 1,
   minHeight: 44,
-  font: 'var(--sans)',
+  fontFamily: 'var(--sans)',
   fontSize: 'var(--step--1)',
   padding: '10px 12px',
   cursor: 'pointer',
   boxSizing: 'border-box',
 };
 
-/** Single-step destructive confirm (V2 Dialog). */
+function emphasizeNames(message: string, strongNames: string[]): React.ReactNode {
+  if (!strongNames.length) return message;
+
+  const parts: React.ReactNode[] = [];
+  let rest = message;
+  strongNames.forEach((name, i) => {
+    if (!name) return;
+    const idx = rest.indexOf(name);
+    if (idx === -1) return;
+    if (idx > 0) parts.push(rest.slice(0, idx));
+    parts.push(
+      <strong
+        key={`${name}-${i}`}
+        style={{ fontWeight: 600, color: 'var(--ink)', wordBreak: 'break-word' }}
+      >
+        {name}
+      </strong>,
+    );
+    rest = rest.slice(idx + name.length);
+  });
+  if (rest) parts.push(rest);
+  return parts.length ? parts : message;
+}
+
+/** Single-step danger / caution confirm (V3 Dialog parity). */
 export function DeleteConfirmDialog({
   open,
   title,
   message,
+  note,
+  strongNames = [],
+  severity = 'danger',
   confirmLabel = 'Delete permanently',
+  cancelLabel = 'Cancel',
   onClose,
   onConfirm,
   isConfirming = false,
   exportFooter,
 }: DeleteConfirmDialogProps): React.ReactElement {
+  const isDanger = severity === 'danger';
+  const defaultNote = isDanger ? 'This action cannot be undone.' : undefined;
+  const resolvedNote = note ?? defaultNote;
+
+  const warnNode = useMemo(
+    () => emphasizeNames(message, strongNames),
+    [message, strongNames],
+  );
+
+  const handleClose = (): void => {
+    if (isConfirming) return;
+    onClose();
+  };
+
+  const confirmStyle: React.CSSProperties = isDanger
+    ? {
+        ...actionButtonBase,
+        border: '1px solid color-mix(in oklch, var(--ttl-expired) 45%, var(--rule))',
+        background: 'var(--paper)',
+        color: 'var(--ttl-expired)',
+        fontWeight: 500,
+        cursor: isConfirming ? 'wait' : 'pointer',
+        opacity: isConfirming ? 0.5 : 1,
+      }
+    : {
+        ...actionButtonBase,
+        border: '1px solid var(--accent)',
+        background: 'var(--accent)',
+        color: 'var(--paper)',
+        cursor: isConfirming ? 'wait' : 'pointer',
+        opacity: isConfirming ? 0.5 : 1,
+      };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       hideCloseButton
       actions={
         <>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isConfirming}
+            data-testid="confirm-dialog-cancel"
             style={{
               ...actionButtonBase,
               border: '1px solid var(--rule)',
               background: 'var(--paper)',
               color: 'var(--ink)',
+              opacity: isConfirming ? 0.5 : 1,
+              cursor: isConfirming ? 'wait' : 'pointer',
             }}
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={isConfirming}
-            style={{
-              ...actionButtonBase,
-              border: '1px solid var(--accent)',
-              background: 'var(--accent)',
-              color: 'var(--paper)',
-              cursor: isConfirming ? 'wait' : 'pointer',
-            }}
+            data-testid="confirm-dialog-confirm"
+            data-severity={severity}
+            style={confirmStyle}
           >
-            {isConfirming ? 'Deleting…' : confirmLabel}
+            {isConfirming ? 'Working…' : confirmLabel}
           </button>
         </>
       }
     >
       <p
+        data-testid="confirm-dialog-message"
         style={{
-          font: 'var(--sans)',
+          fontFamily: 'var(--sans)',
           fontSize: 'var(--step--1)',
           lineHeight: 1.45,
           color: 'var(--ink-2)',
           margin: 0,
         }}
       >
-        {message}
+        {warnNode}
       </p>
-      {exportFooter && (
+      {resolvedNote ? (
+        <p
+          data-testid="confirm-dialog-note"
+          className="u-mono"
+          style={{
+            margin: '8px 0 0',
+            fontSize: 'var(--step--2)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: isDanger ? 'var(--ttl-expired)' : 'var(--ink-3)',
+            lineHeight: 1.4,
+          }}
+        >
+          {resolvedNote}
+        </p>
+      ) : null}
+      {exportFooter ? (
         <div
+          data-testid="confirm-dialog-export"
           style={{
             marginTop: 14,
             paddingTop: 12,
@@ -104,7 +190,7 @@ export function DeleteConfirmDialog({
             {exportFooter}
           </div>
         </div>
-      )}
+      ) : null}
     </Dialog>
   );
 }

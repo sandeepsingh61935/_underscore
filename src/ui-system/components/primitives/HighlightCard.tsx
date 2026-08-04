@@ -15,12 +15,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 
-import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
-import {
-  applyMarkdownFormatAction,
-  applyMarkdownShortcut,
-  type MarkdownFormatAction,
-} from '@/shared/utils/markdown-wrap';
+import { discardEditsCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
   createEditHistory,
   pushEditHistory,
@@ -31,6 +26,13 @@ import {
 } from '@/shared/utils/edit-history';
 import { HIGHLIGHT_TEXT_MAX_LENGTH } from '@/shared/utils/highlight-text';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import {
+  applyMarkdownFormatAction,
+  applyMarkdownShortcut,
+  type MarkdownFormatAction,
+} from '@/shared/utils/markdown-wrap';
+import { Dialog } from '@/ui-system/components/primitives/Dialog';
+import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
 
 export interface HighlightCardProps {
   quote: string;
@@ -133,6 +135,7 @@ export function HighlightCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(quote);
   const [saving, setSaving] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -245,10 +248,19 @@ export function HighlightCard({
     }
   };
 
-  const handleCancel = (): void => {
+  const applyCancel = (): void => {
     setDraft(quote);
     setEditing(false);
+    setDiscardOpen(false);
     resetHistory();
+  };
+
+  const handleCancel = (): void => {
+    if (draft !== quote) {
+      setDiscardOpen(true);
+      return;
+    }
+    applyCancel();
   };
 
   const resolveFormatRange = (): { start: number; end: number } => {
@@ -324,6 +336,8 @@ export function HighlightCard({
 
   const hasTileActions = Boolean(onSaveQuote || onCopy || onOpen || onDelete) || editing;
   const showActionRow = hasTileActions || footerStart != null;
+
+  const discardCopy = discardEditsCopy();
 
   return (
     <div
@@ -686,6 +700,80 @@ export function HighlightCard({
           ) : null}
         </div>
       </div>
+
+      <Dialog
+        open={discardOpen}
+        onClose={() => setDiscardOpen(false)}
+        title={discardCopy.title}
+        hideCloseButton
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => setDiscardOpen(false)}
+              data-testid="discard-keep-editing"
+              style={{
+                flex: 1,
+                minHeight: 44,
+                fontFamily: 'var(--sans)',
+                fontSize: 'var(--step--1)',
+                padding: '10px 12px',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+                border: '1px solid var(--rule)',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+              }}
+            >
+              {discardCopy.cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={applyCancel}
+              data-testid="discard-confirm"
+              style={{
+                flex: 1,
+                minHeight: 44,
+                fontFamily: 'var(--sans)',
+                fontSize: 'var(--step--1)',
+                padding: '10px 12px',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+                border: '1px solid var(--accent)',
+                background: 'var(--accent)',
+                color: 'var(--paper)',
+              }}
+            >
+              {discardCopy.confirmLabel}
+            </button>
+          </>
+        }
+      >
+        <p
+          style={{
+            fontFamily: 'var(--sans)',
+            fontSize: 'var(--step--1)',
+            lineHeight: 1.45,
+            color: 'var(--ink-2)',
+            margin: 0,
+          }}
+        >
+          {discardCopy.message}
+        </p>
+        <p
+          className="u-mono"
+          style={{
+            margin: '8px 0 0',
+            fontSize: 'var(--step--2)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-3)',
+            lineHeight: 1.4,
+          }}
+        >
+          {discardCopy.note}
+        </p>
+      </Dialog>
     </div>
   );
 }

@@ -80,7 +80,7 @@ describe('SettingsPage account row click targets', () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  it('calls logout only from the Sign out control, not the account email title', async () => {
+  it('calls logout only after caution confirm, not the account email title', async () => {
     const logout = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
@@ -104,6 +104,11 @@ describe('SettingsPage account row click targets', () => {
     expect(logout).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
-    expect(logout).toHaveBeenCalledTimes(1);
+    expect(logout).not.toHaveBeenCalled();
+    expect(screen.getByText('Sign out?')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+    await vi.waitFor(() => {
+      expect(logout).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -26,6 +26,7 @@ import {
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
+import { deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
@@ -432,25 +433,31 @@ export function SubDomainView({
         />
       )}
 
-      <DeleteConfirmDialog
-        open={deleteSectionOpen}
-        onClose={() => setDeleteSectionOpen(false)}
-        title={section === '/' ? 'Delete this section?' : 'Delete this section?'}
-        message={
-          section === '/'
-            ? `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in "${domain}". This cannot be undone.`
-            : `This permanently removes ${sectionHighlights.length} highlight${sectionHighlights.length === 1 ? '' : 's'} in "${section}". This cannot be undone.`
-        }
-        onConfirm={() => { void handleDeleteSection(); }}
-        isConfirming={isDeletingSection}
-        exportFooter={
-          <ExportActions
-            scope={{ kind: 'section', domain, sectionKey: section }}
-            highlightCount={sectionHighlights.length}
-            disabled={exportDisabled}
+      {(() => {
+        const copy = deleteSectionCopy(domain, section, sectionHighlights.length);
+        return (
+          <DeleteConfirmDialog
+            open={deleteSectionOpen}
+            onClose={() => setDeleteSectionOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleDeleteSection(); }}
+            isConfirming={isDeletingSection}
+            exportFooter={
+              <ExportActions
+                scope={{ kind: 'section', domain, sectionKey: section }}
+                highlightCount={sectionHighlights.length}
+                disabled={exportDisabled}
+              />
+            }
           />
-        }
-      />
+        );
+      })()}
     </div>
   );
 }

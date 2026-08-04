@@ -12,6 +12,10 @@ import { TypographySettings } from '@/features/settings/components/TypographySet
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
+import {
+  deleteLibraryCopy,
+  signOutCopy,
+} from '@/shared/utils/confirm-dialog-copy';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import {
@@ -91,6 +95,7 @@ export function SettingsPage({
   const logout = onLogout ?? appLogout;
   const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const [billingActionError, setBillingActionError] = useState<string | null>(null);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
@@ -122,6 +127,7 @@ export function SettingsPage({
     setIsSigningOut(true);
     try {
       await logout();
+      setSignOutOpen(false);
     } finally {
       setIsSigningOut(false);
     }
@@ -561,26 +567,53 @@ export function SettingsPage({
                 )
               }
               onClick={() => {
-                if (!isSigningOut) void handleSignOut();
+                if (!isSigningOut) setSignOutOpen(true);
               }}
             />
           </>
         ) : null}
       </div>
 
-      <DeleteConfirmDialog
-        open={deleteLibraryOpen}
-        onClose={() => setDeleteLibraryOpen(false)}
-        title="Delete entire library?"
-        message={
-          user
-            ? 'This permanently removes all highlights from this device and marks them deleted in the cloud. This cannot be undone.'
-            : 'This permanently removes all highlights stored on this device as a guest. This cannot be undone.'
-        }
-        onConfirm={() => { void handleDeleteLibrary(); }}
-        isConfirming={isDeletingLibrary}
-        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
-      />
+      {(() => {
+        const copy = deleteLibraryCopy(Boolean(user));
+        return (
+          <DeleteConfirmDialog
+            open={deleteLibraryOpen}
+            onClose={() => setDeleteLibraryOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleDeleteLibrary(); }}
+            isConfirming={isDeletingLibrary}
+            exportFooter={
+              <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
+            }
+          />
+        );
+      })()}
+
+      {(() => {
+        const copy = signOutCopy();
+        return (
+          <DeleteConfirmDialog
+            open={signOutOpen}
+            onClose={() => setSignOutOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleSignOut(); }}
+            isConfirming={isSigningOut}
+          />
+        );
+      })()}
     </div>
   );
 }

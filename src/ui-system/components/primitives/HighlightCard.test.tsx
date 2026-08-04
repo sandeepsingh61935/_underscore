@@ -64,13 +64,33 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     });
   });
 
-  it('cancels edit mode without calling onSaveQuote', () => {
+  it('cancels edit mode without calling onSaveQuote when draft is clean', () => {
     const onSaveQuote = vi.fn(async () => true);
     render(
       <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
     );
     fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
     fireEvent.click(screen.getByRole('button', { name: /Cancel editing highlight/ }));
+    expect(onSaveQuote).not.toHaveBeenCalled();
+    expect(screen.queryByText('Discard edits?')).toBeNull();
+    expect(screen.getByText('Apple')).toBeTruthy();
+  });
+
+  it('prompts caution discard when canceling dirty edits', () => {
+    const onSaveQuote = vi.fn(async () => true);
+    render(
+      <HighlightCard quote="Apple" domain="example.com" onSaveQuote={onSaveQuote} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
+    fireEvent.change(screen.getByLabelText(/Edit highlight markdown/), {
+      target: { value: 'Pear' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Cancel editing highlight/ }));
+    expect(screen.getByText('Discard edits?')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('discard-keep-editing'));
+    expect(screen.getByLabelText(/Edit highlight markdown/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Cancel editing highlight/ }));
+    fireEvent.click(screen.getByTestId('discard-confirm'));
     expect(onSaveQuote).not.toHaveBeenCalled();
     expect(screen.getByText('Apple')).toBeTruthy();
   });
