@@ -172,12 +172,9 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
     return libraryHighlights;
   }, [scope, pageHighlights, domainHighlights, libraryHighlights]);
 
-  const highlightCount = useMemo(() => {
-    if (scope === 'library') {
-      return dashboardData?.totalHighlights ?? libraryHighlights.length;
-    }
-    return scopedRaw.length;
-  }, [scope, dashboardData?.totalHighlights, libraryHighlights.length, scopedRaw.length]);
+  // Library ask input uses dashboard recentHighlights only — count matches corpus, not full vault total.
+  const highlightCount = scopedRaw.length;
+  const libraryIsRecentOnly = scope === 'library';
 
   const promptHighlights: PromptHighlight[] = useMemo(
     () =>
@@ -326,9 +323,10 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
   };
 
   const showEmpty = turns.length === 0 && streamUserContent === null;
-  const showStreamingAssistant =
-    streamUserContent !== null &&
-    (query.status === 'streaming' || query.isPreparing || query.status === 'idle');
+  // Keep live assistant while streamUserContent is set — including done/error until finalize clears it.
+  const showStreamingAssistant = streamUserContent !== null;
+  const suggestionsDisabled =
+    busy || usableHighlights.length === 0 || provider === null;
 
   return (
     <div
@@ -389,7 +387,7 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
                   key={q}
                   type="button"
                   className="chip refine-chip"
-                  disabled={submitDisabled && usableHighlights.length === 0}
+                  disabled={suggestionsDisabled}
                   onClick={() => handleSuggestion(q)}
                   data-testid={`ask-suggestion-${q}`}
                 >
@@ -475,7 +473,8 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
       </form>
 
       <div className="ask-ground u-mono" data-testid="ask-ground">
-        Scope: {scope} · {highlightCount} highlight{highlightCount === 1 ? '' : 's'}
+        Scope: {libraryIsRecentOnly ? 'library (recent)' : scope} · {highlightCount}{' '}
+        highlight{highlightCount === 1 ? '' : 's'}
       </div>
     </div>
   );

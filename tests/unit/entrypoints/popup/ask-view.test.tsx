@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { AskView } from '@/entrypoints/popup/views/AskView';
 
@@ -40,7 +40,21 @@ import { useDashboardData } from '@/features/collections/hooks/useDashboardData'
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
 
-function mockPaidHooks(opts?: { highlightCount?: number }): void {
+type ScopeQueryMock = {
+  chunks: string;
+  status: 'idle' | 'streaming' | 'done' | 'error';
+  error: string | null;
+  ask: ReturnType<typeof vi.fn>;
+  isPreparing: boolean;
+  prepareError: string | null;
+  abort: ReturnType<typeof vi.fn>;
+};
+
+function mockPaidHooks(opts?: {
+  highlightCount?: number;
+  totalHighlights?: number;
+  scopeQuery?: Partial<ScopeQueryMock>;
+}): ScopeQueryMock {
   const count = opts?.highlightCount ?? 5;
   const highlights = Array.from({ length: count }, (_, i) => ({
     id: `h-${i}`,
@@ -67,7 +81,7 @@ function mockPaidHooks(opts?: { highlightCount?: number }): void {
 
   vi.mocked(useDashboardData).mockReturnValue({
     data: {
-      totalHighlights: count,
+      totalHighlights: opts?.totalHighlights ?? count,
       totalDomains: 1,
       thisWeekCount: count,
       recentHighlights: highlights,
@@ -91,7 +105,7 @@ function mockPaidHooks(opts?: { highlightCount?: number }): void {
     fetch: vi.fn().mockResolvedValue({ text: '', cacheNote: null, errorNote: null }),
   });
 
-  vi.mocked(useScopeQuery).mockReturnValue({
+  const scopeQuery: ScopeQueryMock = {
     chunks: '',
     status: 'idle',
     error: null,
@@ -99,7 +113,14 @@ function mockPaidHooks(opts?: { highlightCount?: number }): void {
     isPreparing: false,
     prepareError: null,
     abort: vi.fn(),
-  } as unknown as ReturnType<typeof useScopeQuery>);
+    ...opts?.scopeQuery,
+  };
+
+  vi.mocked(useScopeQuery).mockReturnValue(
+    scopeQuery as unknown as ReturnType<typeof useScopeQuery>,
+  );
+
+  return scopeQuery;
 }
 
 describe('AskView lock matrix', () => {
@@ -176,7 +197,146 @@ describe('AskView lock matrix', () => {
     expect(screen.getByTestId('ask-breadcrumb').textContent).toBe('developer.mozilla.org');
 
     fireEvent.click(screen.getByTestId('ask-scope-library'));
-    expect(screen.getByTestId('ask-ground').textContent).toMatch(/Scope: library/);
+    expect(screen.getByTestId('ask-ground').textContent).toMatch(/Scope: library \(recent\)/);
     expect(screen.getByTestId('ask-breadcrumb').textContent).toBe('Library');
+  });
+
+  it('Library scope uses recent count, not full vault total', () => {
+    mockPaidHooks({ highlightCount: 3, totalHighlights: 99 });
+    render(<AskView lockReason={null} />);
+
+    fireEvent.click(screen.getByTestId('ask-scope-library'));
+    expect(screen.getByTestId('ask-ground').textContent).toMatch(
+      /Scope: library \(recent\) · 3 highlights/,
+    );
+    expect(screen.getByText('3 highlights in this scope')).toBeTruthy();
+  });
+
+  it('Suggestion chips disabled when streaming/preparing (busy)', () => {
+    mockPaidHooks({
+      highlightCount: 5,
+      scopeQuery: { isPreparing: true, status: 'idle' },
+    });
+    render(<AskView lockReason={null} />);
+
+    expect(
+      (screen.getByTestId('ask-suggestion-Summarize') as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByTestId('ask-suggestion-List tags') as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it('Suggestion chips disabled when no usable highlights', () => {
+    mockPaidHooks({ highlightCount: 0 });
+    render(<AskView lockReason={null} />);
+
+    expect(
+      (screen.getByTestId('ask-suggestion-Summarize') as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it('Keeps live assistant answer visible through stream done until finalize', async () => {
+    const answer = 'Scoped summary of CSS highlights.';
+    let resolveAsk: (() => void) | undefined;
+    const askPromise = new Promise<void>((resolve) => {
+      resolveAsk = resolve;
+    });
+
+    const scopeState: ScopeQueryMock = {
+      chunks: '',
+      status: 'idle',
+      error: null,
+      ask: vi.fn().mockImplementation(async () => {
+        scopeState.status = 'streaming';
+        scopeState.chunks = answer;
+        await askPromise;
+        scopeState.status = 'done';
+        return { cacheNote: null, errorNote: null };
+      }),
+      isPreparing: false,
+      prepareError: null,
+      abort: vi.fn(),
+    };
+
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    const { rerender } = render(<AskView lockReason={null} />);
+
+    fireEvent.change(screen.getByTestId('ask-composer-input'), {
+      target: { value: 'Summarize' },
+    });
+    fireEvent.submit(screen.getByTestId('ask-composer-input').closest('form')!);
+
+    // Re-render while streaming so hook values (chunks/status) surface
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    rerender(<AskView lockReason={null} />);
+
+    expect(screen.getByTestId('ask-streaming-turn')).toBeTruthy();
+    expect(screen.getByText(answer)).toBeTruthy();
+
+    // Transition to done before finalize effect clears streamUserContent — answer must stay visible
+    scopeState.status = 'done';
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    rerender(<AskView lockReason={null} />);
+
+    expect(screen.getByText(answer)).toBeTruthy();
+
+    await act(async () => {
+      resolveAsk?.();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(answer)).toBeTruthy();
+    });
+  });
+
+  it('Finalizes stream error into thread without blanking the assistant turn', async () => {
+    const partial = 'Partial answer before failure';
+    let resolveAsk: (() => void) | undefined;
+
+    const scopeState: ScopeQueryMock = {
+      chunks: '',
+      status: 'idle',
+      error: null,
+      ask: vi.fn().mockImplementation(async () => {
+        scopeState.status = 'streaming';
+        scopeState.chunks = partial;
+        await new Promise<void>((r) => {
+          resolveAsk = r;
+        });
+        scopeState.status = 'error';
+        scopeState.error = 'rate limited';
+        return { cacheNote: null, errorNote: null };
+      }),
+      isPreparing: false,
+      prepareError: null,
+      abort: vi.fn(),
+    };
+
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    const { rerender } = render(<AskView lockReason={null} />);
+
+    fireEvent.change(screen.getByTestId('ask-composer-input'), {
+      target: { value: 'Key themes' },
+    });
+    fireEvent.submit(screen.getByTestId('ask-composer-input').closest('form')!);
+
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    rerender(<AskView lockReason={null} />);
+    expect(screen.getByText(partial)).toBeTruthy();
+
+    // Surface error status with chunks still present (live assistant must cover this gap)
+    scopeState.status = 'error';
+    scopeState.error = 'rate limited';
+    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
+    rerender(<AskView lockReason={null} />);
+
+    // After finalize: failure turn is present (never a blank assistant gap)
+    expect(screen.getByText(/Failed: rate limited/)).toBeTruthy();
+    expect(screen.getByText('Key themes')).toBeTruthy();
+
+    await act(async () => {
+      resolveAsk?.();
+    });
   });
 });
