@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
@@ -16,7 +16,9 @@ import { HighlightSearchBar } from '@/features/collections/components/HighlightS
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import { LibrarySectionRow } from '@/features/collections/components/LibrarySectionRow';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
+import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
@@ -24,8 +26,12 @@ import { displaySectionTitle } from '@/shared/services/section-label-store';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import type { SearchField } from '@/shared/utils/highlight-search';
+import {
+  DEFAULT_SEARCH_FIELDS,
+  filterHighlightsByRefineAndTags,
+  type RefineFilter,
+} from '@/shared/utils/highlight-filter';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
-import { Row } from '@/ui-system/components/primitives/Row';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
 export interface DomainDetailsViewProps {
@@ -33,8 +39,6 @@ export interface DomainDetailsViewProps {
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
 }
-
-const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
 
 /**
  * Small mono badge for results whose hit was only in the note or tag(s),
@@ -67,7 +71,8 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const [editValue, setEditValue] = React.useState('');
   /** Baseline display title when edit started — used for dirty check and Escape. */
   const [editBaseline, setEditBaseline] = React.useState('');
-  const skipBlurSaveRef = React.useRef(false);
+  const skipBlurSaveRef = useRef(false);
+  const askPanelRef = useRef<HTMLDivElement | null>(null);
 
   const { labels, canEdit, saveLabel } = useSectionLabels(domain, mode);
 
@@ -144,13 +149,21 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
   const { deleteScope } = useHighlightDelete();
   const [deleteDomainOpen, setDeleteDomainOpen] = useState(false);
   const [isDeletingDomain, setIsDeletingDomain] = useState(false);
+  const [deleteSection, setDeleteSection] = useState<{ path: string; count: number } | null>(null);
+  const [isDeletingSection, setIsDeletingSection] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [refine, setRefine] = useState<RefineFilter[]>([]);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const { tags: userTags } = useUserTags(isAuthenticated);
 
   // Reset search when the domain itself changes (route param change without remount).
   useEffect(() => {
     setSearchQuery('');
+    setRefine([]);
+    setTagFilters([]);
+    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
   }, [domain]);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
@@ -158,7 +171,26 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
     scope: { kind: 'domain', domain },
     fields: searchFields,
   });
+  const filteredResults = useMemo(
+    () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
+    [searchResults, refine, tagFilters],
+  );
   const isSearching = searchQuery.trim().length > 0;
+  const availableTags = useMemo(
+    () => userTags.map((t) => ({ label: t.name })),
+    [userTags],
+  );
+
+  const clearSearchAndFilters = (): void => {
+    setSearchQuery('');
+    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
+    setRefine([]);
+    setTagFilters([]);
+  };
+
+  const focusAskPanel = (): void => {
+    askPanelRef.current?.scrollIntoView({ block: 'nearest' });
+  };
 
   const promptHighlights = useMemo(
     () => highlights.map(h => ({
@@ -273,6 +305,22 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
     }
   };
 
+  const handleDeleteSection = async (): Promise<void> => {
+    if (!deleteSection) return;
+    setIsDeletingSection(true);
+    try {
+      const result = await deleteScope({
+        scope: 'section',
+        domain,
+        sectionKey: deleteSection.path,
+      });
+      if (!result?.success) return;
+      setDeleteSection(null);
+    } finally {
+      setIsDeletingSection(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
@@ -367,7 +415,13 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               onQueryChange={setSearchQuery}
               fields={searchFields}
               onFieldsChange={setSearchFields}
-              resultCount={searchQuery.trim() ? searchResults.length : undefined}
+              refine={refine}
+              onRefineChange={setRefine}
+              tagFilters={tagFilters}
+              onTagFiltersChange={setTagFilters}
+              availableTags={availableTags}
+              resultCount={isSearching ? filteredResults.length : undefined}
+              placeholder="Search in domain…"
             />
           </div>
         </div>
@@ -382,10 +436,16 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               <div style={{ padding: '20px 16px', textAlign: 'center' }}>
                 <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
               </div>
-            ) : searchResults.length === 0 ? (
-              <EmptyState variant="no-results" size="sm" />
+            ) : filteredResults.length === 0 ? (
+              <EmptyState
+                variant="no-results"
+                size="sm"
+                title="No matches"
+                description="Clear filters or try another query"
+                action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+              />
             ) : (
-              searchResults.map((r) => {
+              filteredResults.map((r) => {
                 const badge = matchBadgeLabel(r.matchedFields);
                 return (
                   <div key={r.id}>
@@ -398,6 +458,8 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                         sourceKind: r.sourceKind,
                         language: r.language,
                         presentation: r.presentation,
+                        notes: r.notes,
+                        tags: r.tags,
                       }}
                       onSectionClick={() => handleSectionClick(r.path)}
                     />
@@ -441,29 +503,20 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                   />
                 </form>
               ) : (
-                <Row
+                <LibrarySectionRow
                   key={s.path}
                   title={displaySectionTitle(s.path, labels)}
-                  right={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEdit(s.path);
-                          }}
-                          style={{ all: 'unset', cursor: 'pointer', fontSize: 12, color: 'var(--accent)' }}
-                        >
-                          [edit]
-                        </button>
-                      )}
-                      <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
-                        {s.count}
-                      </span>
-                    </div>
+                  count={s.count}
+                  onOpen={() => handleSectionClick(s.path)}
+                  canEdit={canEdit}
+                  onEdit={() => startEdit(s.path)}
+                  showActions={aiGate.allowed}
+                  onAsk={aiGate.allowed ? focusAskPanel : undefined}
+                  onDelete={
+                    aiGate.allowed
+                      ? () => setDeleteSection({ path: s.path, count: s.count })
+                      : undefined
                   }
-                  onClick={() => handleSectionClick(s.path)}
                 />
               )
             ))
@@ -472,15 +525,17 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
       </div>
 
       {aiGate.allowed && (
-        <ScopeAskPanel
-          scopeLabel={domain}
-          scopeKind="domain"
-          artifactScope={artifactScope}
-          highlights={promptHighlights}
-          highlightCount={highlights.length}
-          disabled={isPreparing}
-          placeholder="Ask about this domain…"
-        />
+        <div ref={askPanelRef}>
+          <ScopeAskPanel
+            scopeLabel={domain}
+            scopeKind="domain"
+            artifactScope={artifactScope}
+            highlights={promptHighlights}
+            highlightCount={highlights.length}
+            disabled={isPreparing}
+            placeholder="Ask about this domain…"
+          />
+        </div>
       )}
 
       <DeleteConfirmDialog
@@ -496,6 +551,28 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
             highlightCount={highlights.length}
             disabled={exportDisabled}
           />
+        }
+      />
+
+      <DeleteConfirmDialog
+        open={deleteSection !== null}
+        onClose={() => setDeleteSection(null)}
+        title="Delete this section?"
+        message={
+          deleteSection
+            ? `This permanently removes ${deleteSection.count} highlight${deleteSection.count === 1 ? '' : 's'} in “${deleteSection.path === '/' ? domain : deleteSection.path}”. This cannot be undone.`
+            : ''
+        }
+        onConfirm={() => { void handleDeleteSection(); }}
+        isConfirming={isDeletingSection}
+        exportFooter={
+          deleteSection ? (
+            <ExportActions
+              scope={{ kind: 'section', domain, sectionKey: deleteSection.path }}
+              highlightCount={deleteSection.count}
+              disabled={exportDisabled}
+            />
+          ) : undefined
         }
       />
     </div>

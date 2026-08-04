@@ -8,15 +8,25 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import type { SearchField } from '@/shared/utils/highlight-search';
+import type { RefineFilter } from '@/shared/utils/highlight-filter';
 
 function baseProps(
-  overrides: Partial<React.ComponentProps<typeof HighlightSearchBar>> = {}
+  overrides: Partial<React.ComponentProps<typeof HighlightSearchBar>> = {},
 ): React.ComponentProps<typeof HighlightSearchBar> {
   return {
     query: '',
     onQueryChange: vi.fn(),
     fields: ['text', 'notes', 'tags'] as SearchField[],
     onFieldsChange: vi.fn(),
+    refine: [] as RefineFilter[],
+    onRefineChange: vi.fn(),
+    tagFilters: [] as string[],
+    onTagFiltersChange: vi.fn(),
+    availableTags: [
+      { label: 'css', n: 4 },
+      { label: 'cascade', n: 2 },
+      { label: 'shipping', n: 1 },
+    ],
     ...overrides,
   };
 }
@@ -37,7 +47,6 @@ describe('HighlightSearchBar', () => {
     const input = screen.getByLabelText('Search highlights');
     fireEvent.change(input, { target: { value: 'neural' } });
 
-    // Not called yet — debounce still pending.
     expect(props.onQueryChange).not.toHaveBeenCalled();
 
     act(() => {
@@ -64,7 +73,6 @@ describe('HighlightSearchBar', () => {
     expect(props.onQueryChange).toHaveBeenCalledWith('');
     expect((input as HTMLInputElement).value).toBe('');
 
-    // Advancing time should not trigger a second, stale call with the typed value.
     act(() => {
       vi.advanceTimersByTime(500);
     });
@@ -87,72 +95,68 @@ describe('HighlightSearchBar', () => {
     expect(input.value).toBe('');
   });
 
-  it('selects only Tags when the Tags chip is clicked', () => {
-    const props = baseProps({ fields: ['text', 'notes', 'tags'] as SearchField[] });
-    render(<HighlightSearchBar {...props} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Tags' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['tags']);
+  it('shows Filters control and opens the panel', () => {
+    render(<HighlightSearchBar {...baseProps()} />);
+    const filtersBtn = screen.getByRole('button', { name: 'Filters' });
+    expect(filtersBtn).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(filtersBtn);
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByLabelText('Search fields')).toBeInTheDocument();
+    expect(screen.getByLabelText('Refine results')).toBeInTheDocument();
   });
 
-  it('selects only Notes when Notes is clicked while All is active', () => {
-    const props = baseProps({ fields: ['text', 'notes', 'tags'] as SearchField[] });
-    render(<HighlightSearchBar {...props} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notes' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['notes']);
+  it('shows active filter count on Filters when refine is set', () => {
+    render(<HighlightSearchBar {...baseProps({ refine: ['has_notes', 'has_tags'] })} />);
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByLabelText('Active filters')).toBeInTheDocument();
+    expect(screen.getByText('Has notes')).toBeInTheDocument();
   });
 
-  it('selects only Text when Text is clicked while All is active', () => {
+  it('toggles multi-select field chips inside the panel', () => {
     const props = baseProps({ fields: ['text', 'notes', 'tags'] as SearchField[] });
     render(<HighlightSearchBar {...props} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Text' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['text']);
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    const fieldGroup = screen.getByLabelText('Search fields');
+    fireEvent.click(fieldGroup.querySelector('.field-chip:nth-child(2)') as HTMLElement);
+    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'tags']);
   });
 
-  it('resets fields to all three when "All" is clicked', () => {
-    const props = baseProps({ fields: ['text'] as SearchField[] });
+  it('toggles refine chips', () => {
+    const props = baseProps({ refine: [] as RefineFilter[] });
     render(<HighlightSearchBar {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Has notes' }));
+    expect(props.onRefineChange).toHaveBeenCalledWith(['has_notes']);
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+  it('resets filters from the panel footer', () => {
+    const props = baseProps({
+      fields: ['text'] as SearchField[],
+      refine: ['has_notes'] as RefineFilter[],
+      tagFilters: ['css'],
+    });
+    render(<HighlightSearchBar {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
     expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'notes', 'tags']);
+    expect(props.onRefineChange).toHaveBeenCalledWith([]);
+    expect(props.onTagFiltersChange).toHaveBeenCalledWith([]);
   });
 
-  it('marks "All" inactive when every individual chip was toggled off', () => {
-    const props = baseProps({ fields: [] as SearchField[] });
+  it('dismisses an active refine chip from the summary row', () => {
+    const props = baseProps({ refine: ['needs_note'] as RefineFilter[] });
     render(<HighlightSearchBar {...props} />);
-
-    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('button', { name: 'Text' })).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('returns to All when the sole active chip is clicked again', () => {
-    const props = baseProps({ fields: ['text'] as SearchField[] });
-    render(<HighlightSearchBar {...props} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Text' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'notes', 'tags']);
+    fireEvent.click(screen.getByLabelText('Remove Needs note'));
+    expect(props.onRefineChange).toHaveBeenCalledWith([]);
   });
 
   it('never renders a scope pill (search scope is implicit from the parent view)', () => {
     render(<HighlightSearchBar {...baseProps()} />);
-    expect(screen.queryByText(/^in: /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^in: /i)).not.toBeInTheDocument();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-  });
-
-  it('renders all four field chips on a single, non-wrapping row', () => {
-    render(<HighlightSearchBar {...baseProps()} />);
-    const chips = [
-      screen.getByRole('button', { name: 'All' }),
-      screen.getByRole('button', { name: 'Text' }),
-      screen.getByRole('button', { name: 'Notes' }),
-      screen.getByRole('button', { name: 'Tags' }),
-    ];
-    const row = chips[0]?.parentElement;
-    expect(row).not.toBeNull();
-    chips.forEach((chip) => expect(chip.parentElement).toBe(row));
-    expect(row).toHaveStyle({ flexWrap: 'nowrap' });
   });
 
   it('disables the input when disabled is true', () => {
@@ -162,7 +166,7 @@ describe('HighlightSearchBar', () => {
 
   it('renders singular, plural, and zero result counts', () => {
     const { rerender } = render(
-      <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />
+      <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />,
     );
     expect(screen.getByText('1 result')).toBeInTheDocument();
 
@@ -181,5 +185,13 @@ describe('HighlightSearchBar', () => {
   it('hides the result count when resultCount is undefined', () => {
     render(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: undefined })} />);
     expect(screen.queryByText(/results?/)).not.toBeInTheDocument();
+  });
+
+  it('selects a popular tag from the filter panel', () => {
+    const props = baseProps();
+    render(<HighlightSearchBar {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.click(screen.getByRole('button', { name: '#css' }));
+    expect(props.onTagFiltersChange).toHaveBeenCalledWith(['css']);
   });
 });

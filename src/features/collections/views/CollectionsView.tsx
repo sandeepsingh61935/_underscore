@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
@@ -7,11 +7,21 @@ import { HighlightSearchBar } from '@/features/collections/components/HighlightS
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import type { HighlightSearchResult } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import { LibraryDomainRow } from '@/features/collections/components/LibraryDomainRow';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { ExportActions } from '@/features/collections/components/ExportActions';
+import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import type { SearchField } from '@/shared/utils/highlight-search';
-import { Row } from '@/ui-system/components/primitives/Row';
+import {
+  DEFAULT_SEARCH_FIELDS,
+  filterHighlightsByRefineAndTags,
+  type RefineFilter,
+} from '@/shared/utils/highlight-filter';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
@@ -23,8 +33,6 @@ export interface CollectionsViewProps {
   isAuthenticated?: boolean;
   onSignIn?: () => void;
 }
-
-const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
 
 /**
  * Small mono badge for results whose hit was only in the note or tag(s),
@@ -53,16 +61,43 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
+  const aiGate = useModeFeature('ai', isAuthenticated);
+  const exportGate = useModeFeature('export', isAuthenticated);
+  const { deleteScope } = useHighlightDelete();
+  const { tags: userTags } = useUserTags(isAuthenticated);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [refine, setRefine] = useState<RefineFilter[]>([]);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [deleteDomain, setDeleteDomain] = useState<{ domain: string; count: number } | null>(null);
+  const [isDeletingDomain, setIsDeletingDomain] = useState(false);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
     query: searchQuery,
     scope: { kind: 'library' },
     fields: searchFields,
   });
+
+  const filteredResults = useMemo(
+    () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
+    [searchResults, refine, tagFilters],
+  );
+
   const isSearching = searchQuery.trim().length > 0;
+  const showResultsList = isSearching;
+
+  const availableTags = useMemo(
+    () => userTags.map((t) => ({ label: t.name })),
+    [userTags],
+  );
+
+  const clearSearchAndFilters = (): void => {
+    setSearchQuery('');
+    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
+    setRefine([]);
+    setTagFilters([]);
+  };
 
   const handleCollectionClick = (domain: string): void => {
     if (onCollectionClick) {
@@ -78,6 +113,18 @@ export function CollectionsView({
       return;
     }
     navigate(`/domain/${resultDomain}/section/${encodeURIComponent(path)}`);
+  };
+
+  const handleDeleteDomain = async (): Promise<void> => {
+    if (!deleteDomain) return;
+    setIsDeletingDomain(true);
+    try {
+      const result = await deleteScope({ scope: 'domain', domain: deleteDomain.domain });
+      if (!result?.success) return;
+      setDeleteDomain(null);
+    } finally {
+      setIsDeletingDomain(false);
+    }
   };
 
   const totalHighlights = collections.reduce((acc, c) => acc + c.highlightCount, 0);
@@ -134,7 +181,12 @@ export function CollectionsView({
           onQueryChange={setSearchQuery}
           fields={searchFields}
           onFieldsChange={setSearchFields}
-          resultCount={searchQuery.trim() ? searchResults.length : undefined}
+          refine={refine}
+          onRefineChange={setRefine}
+          tagFilters={tagFilters}
+          onTagFiltersChange={setTagFilters}
+          availableTags={availableTags}
+          resultCount={isSearching ? filteredResults.length : undefined}
         />
       </div>
 
@@ -143,15 +195,21 @@ export function CollectionsView({
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
           </div>
-        ) : isSearching ? (
+        ) : showResultsList ? (
           isSearchLoading ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
             </div>
-          ) : searchResults.length === 0 ? (
-            <EmptyState variant="no-results" size="sm" />
+          ) : filteredResults.length === 0 ? (
+            <EmptyState
+              variant="no-results"
+              size="sm"
+              title="No matches"
+              description="Clear filters or try another query"
+              action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+            />
           ) : (
-            searchResults.map((r) => {
+            filteredResults.map((r) => {
               const badge = matchBadgeLabel(r.matchedFields);
               return (
                 <div key={r.id}>
@@ -164,6 +222,8 @@ export function CollectionsView({
                       sourceKind: r.sourceKind,
                       language: r.language,
                       presentation: r.presentation,
+                      notes: r.notes,
+                      tags: r.tags,
                     }}
                     onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
                   />
@@ -185,20 +245,49 @@ export function CollectionsView({
           <LibraryStarters />
         ) : (
           collections.map((c) => (
-            <Row
+            <LibraryDomainRow
               key={c.id}
-              title={c.domain}
-              sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : ''}
-              right={
-                <span className="u-serif" style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)' }}>
-                  {c.highlightCount}
-                </span>
+              domain={c.domain}
+              count={c.highlightCount}
+              sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : undefined}
+              onOpen={() => handleCollectionClick(c.domain)}
+              showActions={aiGate.allowed}
+              onAsk={
+                aiGate.allowed
+                  ? () => handleCollectionClick(c.domain)
+                  : undefined
               }
-              onClick={() => handleCollectionClick(c.domain)}
+              onDelete={
+                aiGate.allowed
+                  ? () => setDeleteDomain({ domain: c.domain, count: c.highlightCount })
+                  : undefined
+              }
             />
           ))
         )}
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteDomain !== null}
+        onClose={() => setDeleteDomain(null)}
+        title="Delete this domain?"
+        message={
+          deleteDomain
+            ? `This permanently removes ${deleteDomain.count} highlight${deleteDomain.count === 1 ? '' : 's'} from “${deleteDomain.domain}”. This cannot be undone.`
+            : ''
+        }
+        onConfirm={() => { void handleDeleteDomain(); }}
+        isConfirming={isDeletingDomain}
+        exportFooter={
+          deleteDomain ? (
+            <ExportActions
+              scope={{ kind: 'domain', domain: deleteDomain.domain }}
+              highlightCount={deleteDomain.count}
+              disabled={!exportGate.allowed}
+            />
+          ) : undefined
+        }
+      />
     </div>
   );
 }

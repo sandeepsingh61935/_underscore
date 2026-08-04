@@ -24,6 +24,21 @@ vi.mock('@/features/collections/hooks/useHighlightSearch', () => ({
 
 vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
   copyHighlightPlainText: vi.fn(),
+  useHighlightExport: vi.fn(() => ({ exportFile: vi.fn(), isBusy: false })),
+}));
+
+vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
+  useHighlightDelete: vi.fn(() => ({ deleteScope: vi.fn() })),
+}));
+
+vi.mock('@/features/collections/hooks/useUserTags', () => ({
+  useUserTags: vi.fn(() => ({
+    tags: [],
+    tagNames: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
 }));
 
 import { useApp } from '@/core/context/AppProvider';
@@ -109,7 +124,7 @@ describe('CollectionsView search wiring', () => {
     expect(screen.queryByText('example.com')).toBeNull();
   });
 
-  it('shows the no-results empty state when a search yields nothing', async () => {
+  it('shows the no-results empty state with Clear search when a search yields nothing', async () => {
     vi.mocked(useApp).mockReturnValue({
       isAuthenticated: true,
       currentMode: 'pro',
@@ -123,8 +138,24 @@ describe('CollectionsView search wiring', () => {
     fireEvent.change(input, { target: { value: 'nothing' } });
 
     await waitFor(() => {
-      expect(screen.getByText('No results found')).toBeTruthy();
+      expect(screen.getByText('No matches')).toBeTruthy();
     });
+    // Empty-state CTA text (distinct from the input × with aria-label only).
+    const emptyClear = screen
+      .getAllByRole('button', { name: 'Clear search' })
+      .find((el) => el.textContent?.includes('Clear search'));
+    expect(emptyClear).toBeTruthy();
+  });
+
+  it('exposes Filters control on the library search bar', () => {
+    vi.mocked(useApp).mockReturnValue({
+      isAuthenticated: true,
+      currentMode: 'pro',
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    } as ReturnType<typeof useApp>);
+
+    render(<CollectionsView isAuthenticated />);
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeTruthy();
   });
 
   it('lets a guest in Basic mode type and search (local search is not gated)', async () => {

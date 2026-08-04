@@ -46,6 +46,28 @@ vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
   useHighlightDelete: vi.fn(() => ({ deleteScope: vi.fn() })),
 }));
 
+vi.mock('@/features/collections/hooks/useUserTags', () => ({
+  useUserTags: vi.fn(() => ({
+    tags: [],
+    tagNames: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/collections/hooks/useSectionLabels', () => ({
+  useSectionLabels: vi.fn(() => ({
+    labels: {},
+    canEdit: false,
+    saveLabel: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/collections/hooks/useHighlightSearch', () => ({
+  useHighlightSearch: vi.fn(() => ({ results: [], isLoading: false, error: null })),
+}));
+
 vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
   useHighlightExport: vi.fn(() => ({ exportFile: vi.fn(), isBusy: false })),
 }));

@@ -59,6 +59,16 @@ vi.mock('@/features/collections/hooks/useHighlightSearch', () => ({
   useHighlightSearch: vi.fn(),
 }));
 
+vi.mock('@/features/collections/hooks/useUserTags', () => ({
+  useUserTags: vi.fn(() => ({
+    tags: [],
+    tagNames: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+}));
+
 vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
   useUpdateHighlightMetadata: vi.fn(() => ({ updateMetadata: vi.fn() })),
 }));

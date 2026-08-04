@@ -64,6 +64,24 @@ vi.mock('@/features/collections/hooks/useHighlightSearch', () => ({
   useHighlightSearch: vi.fn(),
 }));
 
+vi.mock('@/features/collections/hooks/useUserTags', () => ({
+  useUserTags: vi.fn(() => ({
+    tags: [],
+    tagNames: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+}));
+
+vi.mock('@/features/collections/hooks/useSectionLabels', () => ({
+  useSectionLabels: vi.fn(() => ({
+    labels: {},
+    canEdit: false,
+    saveLabel: vi.fn(),
+  })),
+}));
+
 vi.mock('@/features/ai/hooks/useActiveLLMProvider', () => ({
   useActiveLLMProvider: vi.fn(() => ({ provider: null })),
 }));

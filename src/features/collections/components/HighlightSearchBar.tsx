@@ -1,39 +1,54 @@
 /**
  * @file HighlightSearchBar.tsx
- * @description Presentational search bar for the Library: text input (debounced)
- * and field chips (Text / Notes / Tags). Purely controlled by props — no data
- * fetching, no mode gating, no scope selection (search scope is implicit from
- * the parent view — library, domain, or section).
+ * @description Presentational Library search bar matching v3 mock SearchBar:
+ * query + clear, Filters control with active count, expandable panel
+ * (fields / refine / optional tags), active chips, result count + reset.
+ * Purely controlled by props — no data fetching. Scope is implicit from parent.
  *
- * Visual spec (V2 Editorial, see CLAUDE.md):
- *  - Input row: hairline border (`--rule-soft`), `--radius` (2px) corners,
- *    `--paper` fill, mono search glyph, sans input text at `--step-0`.
- *  - Field chips: 20px tall, `--radius` corners, mono `--step--2` label,
- *    `--rule-soft` border always, `--paper-2` fill only when active,
- *    transparent fill when inactive (never the 44px `Chip` primitive).
- *    All chips sit on a single row (no wrap).
- *  - Result count: mono `--step--1`, `--ink-3` (muted kicker line).
+ * Visual: V2 Editorial tokens; styles live in global.css (.search-bar …).
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import type { SearchField } from '@/shared/utils/highlight-search';
+import { USER_SEARCH_FIELDS } from '@/shared/utils/highlight-search';
+import {
+  countActiveFilters,
+  DEFAULT_SEARCH_FIELDS,
+  REFINE_OPTIONS,
+  toggleRefine,
+  toggleSearchField,
+  toggleTagFilter,
+  type RefineFilter,
+} from '@/shared/utils/highlight-filter';
+
+export interface AvailableTag {
+  label: string;
+  /** Optional frequency for popular / browse lists. */
+  n?: number;
+}
 
 export interface HighlightSearchBarProps {
   query: string;
   onQueryChange: (query: string) => void;
   fields: SearchField[];
   onFieldsChange: (fields: SearchField[]) => void;
+  refine?: RefineFilter[];
+  onRefineChange?: (refine: RefineFilter[]) => void;
+  tagFilters?: string[];
+  onTagFiltersChange?: (tags: string[]) => void;
+  /** Tags available for the picker; omit or empty hides the Tags section. */
+  availableTags?: AvailableTag[];
   resultCount?: number;
   placeholder?: string;
   disabled?: boolean;
+  /** Optional controlled open state for the filter panel. */
+  filterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
 }
 
 const DEBOUNCE_MS = 150;
-
-/** The three user-facing search fields; `url` is matched internally but never surfaced as a chip. */
-const USER_FACING_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
 
 const FIELD_CHIP_LABELS: Record<SearchField, string> = {
   text: 'Text',
@@ -42,57 +57,15 @@ const FIELD_CHIP_LABELS: Record<SearchField, string> = {
   url: 'URL',
 };
 
-interface FieldChipProps {
-  label: string;
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}
-
-/**
- * Small local pill/chip used for field toggles.
- * Intentionally NOT the `src/ui-system/components/primitives/Chip.tsx`
- * primitive — that component has a 44px min touch target which is far too
- * large for this dense, inline control row.
- */
-function FieldChip({ label, active, disabled, onClick }: FieldChipProps): React.ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={active}
-      className="u-mono"
-      style={{
-        height: 20,
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '0 8px',
-        borderRadius: 'var(--radius)',
-        border: '1px solid var(--rule-soft)',
-        background: active ? 'var(--paper-2)' : 'transparent',
-        color: active ? 'var(--ink)' : 'var(--ink-3)',
-        fontSize: 'var(--step--2)',
-        letterSpacing: '0.02em',
-        lineHeight: 1,
-        cursor: disabled ? 'default' : 'pointer',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-function fieldsCoverAll(fields: SearchField[]): boolean {
-  return USER_FACING_FIELDS.every((f) => fields.includes(f));
-}
-
 function resultCountLabel(count: number): string {
   if (count === 0) return 'No results';
   if (count === 1) return '1 result';
   return `${count} results`;
+}
+
+function fieldsCoverAll(fields: SearchField[]): boolean {
+  if (fields.length === 0) return true;
+  return USER_SEARCH_FIELDS.every((f) => fields.includes(f));
 }
 
 export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactElement {
@@ -101,43 +74,57 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     onQueryChange,
     fields,
     onFieldsChange,
+    refine = [],
+    onRefineChange,
+    tagFilters = [],
+    onTagFiltersChange,
+    availableTags,
     resultCount,
     placeholder = 'Search highlights…',
     disabled = false,
+    filterOpen: filterOpenProp,
+    onFilterOpenChange,
   } = props;
 
   const [inputValue, setInputValue] = useState(query);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [tagFind, setTagFind] = useState('');
+  const [tagBrowse, setTagBrowse] = useState(false);
+  const [tagSort, setTagSort] = useState<'popular' | 'az'>('popular');
 
-  // Sync from external changes (e.g. parent clearing the query) — but skip
-  // clobbering the box while the user is actively typing/debouncing, since
-  // `props.query` intentionally lags `inputValue` by DEBOUNCE_MS.
+  const filterOpen = filterOpenProp ?? internalOpen;
+  const setFilterOpen = (open: boolean): void => {
+    if (onFilterOpenChange) onFilterOpenChange(open);
+    else setInternalOpen(open);
+  };
+
   useEffect(() => {
     setInputValue(query);
   }, [query]);
 
   useEffect(() => {
     return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, []);
+
+  const activeN = countActiveFilters({ fields, refine, tagFilters });
+  const hasFilters = activeN > 0;
+  const showTagPicker = Boolean(availableTags && availableTags.length > 0 && onTagFiltersChange);
+  const showRefine = Boolean(onRefineChange);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const next = event.target.value;
     setInputValue(next);
-
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       debounceTimer.current = null;
       onQueryChange(next);
     }, DEBOUNCE_MS);
   };
 
-  const handleClear = (): void => {
+  const handleClearQuery = (): void => {
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
       debounceTimer.current = null;
@@ -146,51 +133,54 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     onQueryChange('');
   };
 
-  const isFieldActive = (field: SearchField): boolean => fields.includes(field);
-  const isAllActive = fieldsCoverAll(fields);
-
-  const selectField = (field: SearchField): void => {
-    // Exclusive selection: one chip active at a time. Clicking the sole active
-    // chip again returns to All (all three fields).
-    if (fields.length === 1 && fields[0] === field) {
-      onFieldsChange([...USER_FACING_FIELDS]);
-      return;
-    }
-    onFieldsChange([field]);
+  const handleResetFilters = (): void => {
+    onFieldsChange([...DEFAULT_SEARCH_FIELDS]);
+    onRefineChange?.([]);
+    onTagFiltersChange?.([]);
+    setTagFind('');
   };
 
-  const handleAllClick = (): void => {
-    onFieldsChange([...USER_FACING_FIELDS]);
+  const handleFieldToggle = (field: SearchField): void => {
+    onFieldsChange(toggleSearchField(fields, field));
+  };
+
+  const handleRefineToggle = (id: RefineFilter): void => {
+    onRefineChange?.(toggleRefine(refine, id));
+  };
+
+  const handleTagToggle = (tag: string): void => {
+    onTagFiltersChange?.(toggleTagFilter(tagFilters, tag));
   };
 
   const trimmedQuery = query.trim();
   const showResultCount = trimmedQuery.length > 0 && resultCount !== undefined;
 
+  const popularTags = useMemo(() => {
+    if (!availableTags) return [];
+    return [...availableTags]
+      .sort((a, b) => (b.n ?? 0) - (a.n ?? 0) || a.label.localeCompare(b.label))
+      .slice(0, 5);
+  }, [availableTags]);
+
+  const browseTags = useMemo(() => {
+    if (!availableTags) return [];
+    const q = tagFind.trim().toLowerCase();
+    let list = availableTags;
+    if (q) {
+      list = list.filter((t) => t.label.toLowerCase().includes(q));
+    }
+    if (tagSort === 'az') {
+      return [...list].sort((a, b) => a.label.localeCompare(b.label));
+    }
+    return [...list].sort((a, b) => (b.n ?? 0) - (a.n ?? 0) || a.label.localeCompare(b.label));
+  }, [availableTags, tagFind, tagSort]);
+
+  const fieldActiveSet = fields.length === 0 ? new Set(USER_SEARCH_FIELDS) : new Set(fields);
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        opacity: disabled ? 0.5 : 1,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          border: '1px solid var(--rule-soft)',
-          borderRadius: 'var(--radius)',
-          background: 'var(--paper)',
-          padding: '8px 10px',
-        }}
-      >
-        <span
-          aria-hidden="true"
-          className="u-mono"
-          style={{ color: 'var(--ink-3)', fontSize: 'var(--step-1)', lineHeight: 1 }}
-        >
+    <div className="search-bar" style={{ opacity: disabled ? 0.5 : 1 }}>
+      <div className="search-input-row">
+        <span className="glyph" aria-hidden="true">
           ⌕
         </span>
         <input
@@ -200,77 +190,314 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           placeholder={placeholder}
           aria-label="Search highlights"
           disabled={disabled}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            color: 'var(--ink)',
-            fontFamily: 'var(--sans)',
-            fontSize: 'var(--step-0)',
-          }}
         />
         {inputValue.length > 0 && (
           <button
             type="button"
+            className="clear"
             aria-label="Clear search"
-            onClick={handleClear}
+            onClick={handleClearQuery}
             disabled={disabled}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 18,
-              height: 18,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--ink-3)',
-              fontSize: 'var(--step-0)',
-              lineHeight: 1,
-              cursor: disabled ? 'default' : 'pointer',
-              padding: 0,
-            }}
           >
             ×
           </button>
         )}
+        <button
+          type="button"
+          className={`search-filter-btn${filterOpen ? ' open' : ''}${hasFilters ? ' has-filters' : ''}`}
+          aria-label="Filters"
+          aria-expanded={filterOpen}
+          disabled={disabled}
+          onClick={() => setFilterOpen(!filterOpen)}
+        >
+          Filters
+          {activeN > 0 ? <span className="fcount">{activeN}</span> : null}
+        </button>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          flexWrap: 'nowrap',
-          overflowX: 'auto',
-        }}
-      >
-        <FieldChip label="All" active={isAllActive} disabled={disabled} onClick={handleAllClick} />
-        <FieldChip
-          label={FIELD_CHIP_LABELS.text}
-          active={isFieldActive('text')}
-          disabled={disabled}
-          onClick={() => selectField('text')}
-        />
-        <FieldChip
-          label={FIELD_CHIP_LABELS.notes}
-          active={isFieldActive('notes')}
-          disabled={disabled}
-          onClick={() => selectField('notes')}
-        />
-        <FieldChip
-          label={FIELD_CHIP_LABELS.tags}
-          active={isFieldActive('tags')}
-          disabled={disabled}
-          onClick={() => selectField('tags')}
-        />
-      </div>
+      {activeN > 0 && (
+        <div className="filter-active" role="list" aria-label="Active filters">
+          {!fieldsCoverAll(fields) && fields.length > 0 && (
+            <span className="filter-active-chip" role="listitem">
+              <span>
+                In:{' '}
+                {fields
+                  .filter((f): f is Exclude<SearchField, 'url'> => f !== 'url')
+                  .map((f) => FIELD_CHIP_LABELS[f])
+                  .join(' · ')}
+              </span>
+              <button
+                type="button"
+                className="x"
+                aria-label="Clear fields"
+                disabled={disabled}
+                onClick={() => onFieldsChange([...DEFAULT_SEARCH_FIELDS])}
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {refine.map((id) => {
+            const opt = REFINE_OPTIONS.find((o) => o.id === id);
+            return (
+              <span key={id} className="filter-active-chip" role="listitem">
+                <span>{opt ? opt.label : id}</span>
+                <button
+                  type="button"
+                  className="x"
+                  aria-label={`Remove ${opt?.label ?? id}`}
+                  disabled={disabled}
+                  onClick={() => onRefineChange?.(refine.filter((r) => r !== id))}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+          {tagFilters.slice(0, 3).map((t) => (
+            <span key={t} className="filter-active-chip" role="listitem">
+              <span>#{t}</span>
+              <button
+                type="button"
+                className="x"
+                aria-label={`Remove tag ${t}`}
+                disabled={disabled}
+                onClick={() => handleTagToggle(t)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {tagFilters.length > 3 && (
+            <span className="filter-active-chip" role="listitem">
+              <span>+{tagFilters.length - 3} tags</span>
+            </span>
+          )}
+        </div>
+      )}
 
       {showResultCount && (
-        <span className="u-mono" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
-          {resultCountLabel(resultCount as number)}
-        </span>
+        <div className="search-meta-row">
+          <span className="search-count">{resultCountLabel(resultCount as number)}</span>
+          {activeN > 0 && (
+            <button
+              type="button"
+              className="search-clear-filters"
+              disabled={disabled}
+              onClick={handleResetFilters}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {filterOpen && (
+        <div className="filter-panel">
+          <div className="filter-sec">
+            <div className="filter-sec-label">Search in</div>
+            <div className="filter-chip-row" role="group" aria-label="Search fields">
+              {USER_SEARCH_FIELDS.map((id) => {
+                const on = fieldActiveSet.has(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`field-chip${on ? ' active' : ''}`}
+                    aria-pressed={on}
+                    disabled={disabled}
+                    onClick={() => handleFieldToggle(id)}
+                  >
+                    {on ? (
+                      <span className="check" aria-hidden="true">
+                        ✓
+                      </span>
+                    ) : null}
+                    {FIELD_CHIP_LABELS[id]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {showRefine && (
+            <div className="filter-sec">
+              <div className="filter-sec-label">Refine</div>
+              <div className="filter-chip-row" role="group" aria-label="Refine results">
+                {REFINE_OPTIONS.map((o) => {
+                  const on = refine.includes(o.id);
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      className={`refine-chip${on ? ' active' : ''}`}
+                      aria-pressed={on}
+                      disabled={disabled}
+                      onClick={() => handleRefineToggle(o.id)}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {showTagPicker && availableTags && (
+            <div className="tag-picker">
+              <div className="tag-picker-head">
+                <div className="filter-sec-label">Tags</div>
+                <span className="tag-picker-count">{availableTags.length}</span>
+              </div>
+              <div className="tag-selected-row" role="list" aria-label="Selected tags">
+                {tagFilters.length === 0 ? (
+                  <span className="empty-hint">No tags selected</span>
+                ) : (
+                  tagFilters.map((t) => (
+                    <span key={t} className="tag-sel-chip" role="listitem">
+                      <span>#{t}</span>
+                      <button
+                        type="button"
+                        className="x"
+                        aria-label={`Remove ${t}`}
+                        disabled={disabled}
+                        onClick={() => handleTagToggle(t)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+              <div className="tag-find-row">
+                <span className="glyph" aria-hidden="true">
+                  ⌕
+                </span>
+                <input
+                  type="text"
+                  className="tag-find-input"
+                  placeholder="Find a tag…"
+                  aria-label="Find a tag"
+                  value={tagFind}
+                  disabled={disabled}
+                  onChange={(e) => setTagFind(e.target.value)}
+                />
+              </div>
+              {tagBrowse || tagFind.trim() ? (
+                <>
+                  <div className="tag-browse-toolbar">
+                    <span className="tag-sublabel">
+                      All tags · {browseTags.length}
+                    </span>
+                    <div className="tag-sort-seg" role="group" aria-label="Sort tags">
+                      <button
+                        type="button"
+                        className={tagSort === 'popular' ? 'active' : undefined}
+                        disabled={disabled}
+                        onClick={() => setTagSort('popular')}
+                      >
+                        Popular
+                      </button>
+                      <button
+                        type="button"
+                        className={tagSort === 'az' ? 'active' : undefined}
+                        disabled={disabled}
+                        onClick={() => setTagSort('az')}
+                      >
+                        A–Z
+                      </button>
+                    </div>
+                  </div>
+                  <div className="tag-list" role="listbox" aria-label="All tags">
+                    {browseTags.length === 0 ? (
+                      <div className="tag-empty">No tags match</div>
+                    ) : (
+                      browseTags.map((t) => {
+                        const on = tagFilters.some(
+                          (x) => x.toLowerCase() === t.label.toLowerCase(),
+                        );
+                        return (
+                          <button
+                            key={t.label}
+                            type="button"
+                            className={`tag-list-row${on ? ' selected' : ''}`}
+                            role="option"
+                            aria-selected={on}
+                            disabled={disabled}
+                            onClick={() => handleTagToggle(t.label)}
+                          >
+                            <span className="tag-list-label">#{t.label}</span>
+                            {t.n !== undefined && (
+                              <span className="tag-list-n">{t.n}</span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                  {tagBrowse && (
+                    <button
+                      type="button"
+                      className="tag-browse-toggle"
+                      disabled={disabled}
+                      onClick={() => setTagBrowse(false)}
+                    >
+                      Show less
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="tag-sublabel">Popular</div>
+                  <div className="tag-popular-row">
+                    {popularTags.map((t) => {
+                      const on = tagFilters.some(
+                        (x) => x.toLowerCase() === t.label.toLowerCase(),
+                      );
+                      return (
+                        <button
+                          key={t.label}
+                          type="button"
+                          className={`tag-filter-chip${on ? ' active' : ''}`}
+                          aria-pressed={on}
+                          disabled={disabled}
+                          onClick={() => handleTagToggle(t.label)}
+                        >
+                          #{t.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {availableTags.length > 5 && (
+                    <button
+                      type="button"
+                      className="tag-browse-toggle"
+                      disabled={disabled}
+                      onClick={() => setTagBrowse(true)}
+                    >
+                      Browse all tags
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="filter-foot">
+            <span className="hint">
+              {activeN ? `${activeN} active` : 'Find tags · refine results'}
+            </span>
+            <button
+              type="button"
+              className="search-clear-filters"
+              disabled={disabled || !activeN}
+              style={!activeN ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
+              onClick={handleResetFilters}
+            >
+              Reset filters
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -22,6 +22,11 @@ import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-stora
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
 import type { SearchField } from '@/shared/utils/highlight-search';
+import {
+  DEFAULT_SEARCH_FIELDS,
+  filterHighlightsByRefineAndTags,
+  type RefineFilter,
+} from '@/shared/utils/highlight-filter';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
@@ -33,8 +38,6 @@ export interface SubDomainViewProps {
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
 }
-
-const DEFAULT_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
 
 /**
  * Small mono badge for results whose hit was only in the note or tag(s),
@@ -97,11 +100,16 @@ export function SubDomainView({
   }, [highlights, section]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>(DEFAULT_SEARCH_FIELDS);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [refine, setRefine] = useState<RefineFilter[]>([]);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
 
   // Reset search when the domain/section itself changes (route param change without remount).
   useEffect(() => {
     setSearchQuery('');
+    setRefine([]);
+    setTagFilters([]);
+    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
   }, [domain, section]);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
@@ -109,7 +117,27 @@ export function SubDomainView({
     scope: { kind: 'section', domain, section },
     fields: searchFields,
   });
+  const filteredSearchResults = useMemo(
+    () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
+    [searchResults, refine, tagFilters],
+  );
+  const filteredSectionHighlights = useMemo(
+    () => filterHighlightsByRefineAndTags(sectionHighlights, { refine, tagFilters }),
+    [sectionHighlights, refine, tagFilters],
+  );
   const isSearching = searchQuery.trim().length > 0;
+  const hasRefineOrTags = refine.length > 0 || tagFilters.length > 0;
+  const availableTags = useMemo(
+    () => labelSuggestions.map((name) => ({ label: name })),
+    [labelSuggestions],
+  );
+
+  const clearSearchAndFilters = (): void => {
+    setSearchQuery('');
+    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
+    setRefine([]);
+    setTagFilters([]);
+  };
 
   useEffect(() => {
     if (isLoading) return;
@@ -312,7 +340,18 @@ export function SubDomainView({
             onQueryChange={setSearchQuery}
             fields={searchFields}
             onFieldsChange={setSearchFields}
-            resultCount={searchQuery.trim() ? searchResults.length : undefined}
+            refine={refine}
+            onRefineChange={setRefine}
+            tagFilters={tagFilters}
+            onTagFiltersChange={setTagFilters}
+            availableTags={availableTags}
+            resultCount={
+              isSearching
+                ? filteredSearchResults.length
+                : hasRefineOrTags
+                  ? filteredSectionHighlights.length
+                  : undefined
+            }
           />
         </div>
 
@@ -325,10 +364,16 @@ export function SubDomainView({
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
             </div>
-          ) : searchResults.length === 0 ? (
-            <EmptyState variant="no-results" size="sm" />
+          ) : filteredSearchResults.length === 0 ? (
+            <EmptyState
+              variant="no-results"
+              size="sm"
+              title="No matches"
+              description="Clear filters or try another query"
+              action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+            />
           ) : (
-            searchResults.map((r) => {
+            filteredSearchResults.map((r) => {
               const badge = matchBadgeLabel(r.matchedFields);
               return (
                 <div key={r.id}>
@@ -367,8 +412,16 @@ export function SubDomainView({
               );
             })
           )
+        ) : hasRefineOrTags && filteredSectionHighlights.length === 0 ? (
+          <EmptyState
+            variant="no-results"
+            size="sm"
+            title="No matches"
+            description="Clear filters or try another query"
+            action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+          />
         ) : (
-          sectionHighlights.map((h) => (
+          filteredSectionHighlights.map((h) => (
             <LibraryHighlightTile
               key={h.id}
               highlight={{
