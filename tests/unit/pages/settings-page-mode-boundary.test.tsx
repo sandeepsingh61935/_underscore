@@ -75,7 +75,10 @@ function mockApp(partial: Record<string, unknown>) {
   } as ReturnType<typeof useApp>);
 }
 
-function mockBilling(isPaidActive: boolean) {
+function mockBilling(
+  isPaidActive: boolean,
+  entitlementOverrides?: Partial<ReturnType<typeof freeEntitlement>>
+) {
   vi.mocked(useBillingContextOptional).mockReturnValue({
     snapshot: {
       loadState: 'ready',
@@ -87,8 +90,9 @@ function mockBilling(isPaidActive: boolean) {
             isPaidActive: true,
             provider: 'polar',
             manageUrlAvailable: true,
+            ...entitlementOverrides,
           }
-        : freeEntitlement(),
+        : { ...freeEntitlement(), ...entitlementOverrides },
       error: null,
       isPaidActive,
     },
@@ -179,6 +183,15 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
     expect(screen.getByText('Manage billing')).toBeTruthy();
+  });
+
+  it('shows cancel-at-period-end copy while still Paid', () => {
+    mockBilling(true, { cancelAtPeriodEnd: true });
+    render(<SettingsPage />);
+    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
+    expect(
+      screen.getByText('Cancels at period end · invoices & payment method')
+    ).toBeTruthy();
   });
 });
 
