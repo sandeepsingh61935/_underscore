@@ -1,6 +1,8 @@
 // src/entrypoints/popup/chrome.ts
 
-export type ActiveTab = 'home' | 'collections' | 'settings';
+import type { AccountPillLabel } from '@/shared/utils/account-pill';
+
+export type ActiveTab = 'home' | 'collections' | 'ask' | 'settings';
 export type ViewKey =
   | 'LOADING'
   | 'WELCOME'
@@ -10,12 +12,15 @@ export type ViewKey =
   | 'SUB_DOMAIN'
   | 'AUTH'
   | 'SETTINGS'
+  | 'ASK'
   | 'DASHBOARD'
   | 'API_KEY_SETUP'
   | 'LLM_STREAMING';
 
 export interface PopupChrome {
   title: string;
+  place: string;
+  brand: string;
   showTitleStrip: boolean;
   showModeHeader: boolean;
   showTabBar: boolean;
@@ -24,12 +29,16 @@ export interface PopupChrome {
   onTabChange?: (tab: ActiveTab) => void;
   onBack?: () => void;
   backLabel?: string;
+  /** @deprecated ModeHeader switch removed from tab roots; optional for gradual migration */
   onSwitch?: () => void;
+  accountPill?: AccountPillLabel | null;
+  onAccountPillClick?: () => void;
 }
 
 export interface ChromeHandlers {
   onTabChange: (tab: ActiveTab) => void;
-  onSwitch: () => void;
+  /** Optional; no longer wired onto tab-root chrome */
+  onSwitch?: () => void;
   onBackToCollections: () => void;
   onBackToDomain: () => void;
   onBackFromSettings: () => void;
@@ -37,42 +46,63 @@ export interface ChromeHandlers {
   onBackFromLlmStreaming: () => void;
   subDomainBackLabel: () => string;
   getModeId: () => string;
+  getAccountPill: () => AccountPillLabel | null;
+  onAccountPillClick: () => void;
 }
 
 export type ChromeMap = Record<ViewKey, PopupChrome>;
 
+const BRAND = '_underscore';
+
 export function buildChrome(handlers: ChromeHandlers): ChromeMap {
+  const accountPill = handlers.getAccountPill();
+  const onAccountPillClick = handlers.onAccountPillClick;
+
   return {
     LOADING: {
-      title: '_underscore',
+      title: BRAND,
+      place: '',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
       showTabBar: false,
+      accountPill: null,
     },
     WELCOME: {
-      title: '_underscore',
+      title: BRAND,
+      place: '',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
       showTabBar: false,
+      accountPill: null,
     },
     MODE_SELECTION: {
-      title: '_underscore',
+      title: BRAND,
+      place: '',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
       showTabBar: false,
+      accountPill: null,
     },
     COLLECTIONS: {
-      title: '_underscore · library',
+      title: `${BRAND} · library`,
+      place: 'Library',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: true,
       modeId: handlers.getModeId(),
       activeTab: 'collections',
       onTabChange: handlers.onTabChange,
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
     DOMAIN_DETAILS: {
-      title: '_underscore · library',
+      title: `${BRAND} · library`,
+      place: 'Library',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: true,
@@ -81,10 +111,13 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToCollections,
       backLabel: 'Library',
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
     SUB_DOMAIN: {
-      title: '_underscore · library',
+      title: `${BRAND} · library`,
+      place: 'Library',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: true,
@@ -93,16 +126,22 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToDomain,
       backLabel: handlers.subDomainBackLabel(),
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
     AUTH: {
-      title: '_underscore · sign in',
+      title: `${BRAND} · sign in`,
+      place: 'Sign in',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
       showTabBar: false,
+      accountPill: null,
     },
     SETTINGS: {
-      title: '_underscore · settings',
+      title: `${BRAND} · settings`,
+      place: 'Settings',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: true,
@@ -111,37 +150,62 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackFromSettings,
       backLabel: 'Library',
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
+    },
+    ASK: {
+      title: `${BRAND} · ask`,
+      place: 'Ask',
+      brand: BRAND,
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: true,
+      modeId: handlers.getModeId(),
+      activeTab: 'ask',
+      onTabChange: handlers.onTabChange,
+      onBack: handlers.onBackFromSettings,
+      backLabel: 'Library',
+      accountPill,
+      onAccountPillClick,
     },
     DASHBOARD: {
-      title: '_underscore',
+      title: BRAND,
+      place: 'Home',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: true,
       modeId: handlers.getModeId(),
       activeTab: 'home',
       onTabChange: handlers.onTabChange,
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
     API_KEY_SETUP: {
-      title: '_underscore · models',
+      title: `${BRAND} · models`,
+      place: 'Models',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: false,
       modeId: handlers.getModeId(),
       onBack: handlers.onBackFromApiKeySetup,
       backLabel: 'Settings',
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
     LLM_STREAMING: {
-      title: '_underscore · summary',
+      title: `${BRAND} · summary`,
+      place: 'Summary',
+      brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
       showTabBar: false,
       modeId: handlers.getModeId(),
       onBack: handlers.onBackFromLlmStreaming,
       backLabel: 'Close',
-      onSwitch: handlers.onSwitch,
+      accountPill,
+      onAccountPillClick,
     },
   };
 }

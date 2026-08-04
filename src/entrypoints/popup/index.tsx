@@ -332,6 +332,7 @@ function PopupApp(): React.ReactElement {
     switch (tab) {
       case 'home':        setCurrentView(View.DASHBOARD); break;
       case 'collections': setCurrentView(View.COLLECTIONS); break;
+      case 'ask':         break; // Task 6: Ask view routing
       case 'settings':    handleSettingsClick(); break;
     }
   };
@@ -361,6 +362,8 @@ function PopupApp(): React.ReactElement {
     onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,
     getModeId: () => (typeof currentMode === 'string' ? currentMode : 'basic'),
+    getAccountPill: () => null,
+    onAccountPillClick: () => {},
   };
   const chrome = buildChrome(chromeHandlers);
 

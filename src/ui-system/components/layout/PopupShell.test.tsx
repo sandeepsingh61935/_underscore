@@ -8,6 +8,8 @@ import { PopupShell } from './PopupShell';
 
 const baseChrome: PopupChrome = {
   title: '_underscore',
+  place: '',
+  brand: '_underscore',
   showTitleStrip: true,
   showModeHeader: false,
   showTabBar: false,
@@ -47,6 +49,8 @@ describe('PopupShell', () => {
       <PopupShell
         chrome={{
           title: '_underscore',
+          place: 'Library',
+          brand: '_underscore',
           showTitleStrip: true,
           showModeHeader: true,
           showTabBar: false,
@@ -69,6 +73,8 @@ describe('PopupShell', () => {
       <PopupShell
         chrome={{
           title: '_underscore · library',
+          place: 'Library',
+          brand: '_underscore',
           showTitleStrip: true,
           showModeHeader: true,
           showTabBar: true,
