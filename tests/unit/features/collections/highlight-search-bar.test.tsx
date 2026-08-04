@@ -177,9 +177,22 @@ describe('HighlightSearchBar', () => {
     expect(screen.getByText('No results')).toBeInTheDocument();
   });
 
-  it('hides the result count when the query is empty even if resultCount is defined', () => {
-    render(<HighlightSearchBar {...baseProps({ query: '', resultCount: 5 })} />);
+  it('hides the result count when the query is empty and no filters are active, even if resultCount is defined', () => {
+    render(
+      <HighlightSearchBar
+        {...baseProps({ query: '', resultCount: 5, refine: [], tagFilters: [] })}
+      />,
+    );
     expect(screen.queryByText(/results?/)).not.toBeInTheDocument();
+  });
+
+  it('shows the result count for refine-only filtering without a query', () => {
+    render(
+      <HighlightSearchBar
+        {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })}
+      />,
+    );
+    expect(screen.getByText('No results')).toBeInTheDocument();
   });
 
   it('hides the result count when resultCount is undefined', () => {

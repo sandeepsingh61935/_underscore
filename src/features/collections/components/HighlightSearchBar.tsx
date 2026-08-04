@@ -153,7 +153,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
   };
 
   const trimmedQuery = query.trim();
-  const showResultCount = trimmedQuery.length > 0 && resultCount !== undefined;
+  // Show count for text search and for refine/tag-only filtering (parents pass resultCount).
+  const showResultCount =
+    resultCount !== undefined && (trimmedQuery.length > 0 || hasFilters);
 
   const popularTags = useMemo(() => {
     if (!availableTags) return [];

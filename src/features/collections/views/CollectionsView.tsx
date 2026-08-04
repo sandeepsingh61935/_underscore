@@ -252,11 +252,8 @@ export function CollectionsView({
               sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : undefined}
               onOpen={() => handleCollectionClick(c.domain)}
               showActions={aiGate.allowed}
-              onAsk={
-                aiGate.allowed
-                  ? () => handleCollectionClick(c.domain)
-                  : undefined
-              }
+              // Ask needs domain-scoped context (ScopeAskPanel on DomainDetailsView).
+              // Hide on library domain list until that context exists — do not navigate-as-ask.
               onDelete={
                 aiGate.allowed
                   ? () => setDeleteDomain({ domain: c.domain, count: c.highlightCount })

@@ -225,4 +225,31 @@ describe('SubDomainView search wiring', () => {
     expect(screen.queryByText('example.com/blog')).toBeNull();
     expect(navigateMock).not.toHaveBeenCalled();
   });
+
+  it('refine Has notes filters section list to zero and Clear search recovers', async () => {
+    // sampleHighlight has empty notes/tags — Has notes should empty the list without a query.
+    render(
+      <MemoryRouter>
+        <SubDomainView domain="example.com" section="/blog" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('A highlighted quote')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Has notes' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('No matches')).toBeTruthy();
+    });
+    expect(screen.getByText('No results')).toBeTruthy();
+    expect(screen.queryByText('A highlighted quote')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('A highlighted quote')).toBeTruthy();
+    });
+    expect(screen.queryByText('No matches')).toBeNull();
+  });
 });

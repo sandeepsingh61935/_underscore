@@ -29,41 +29,38 @@ export function LibrarySectionRow({
   onEdit,
   canEdit = false,
 }: LibrarySectionRowProps): React.ReactElement {
+  const showEdit = Boolean(canEdit && onEdit);
+  const hasTrailing = showEdit || showActions;
+
   return (
     <div className="section-item">
       <button type="button" className="section-row" onClick={onOpen} aria-label={title}>
         <span className="sr-path">{title}</span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {canEdit && onEdit && (
-            <span
-              role="button"
-              tabIndex={0}
+        <span className="sr-count">{count}</span>
+      </button>
+      {hasTrailing ? (
+        <div className="sr-trailing">
+          {showEdit && onEdit ? (
+            <button
+              type="button"
+              className="sr-edit"
+              aria-label="Edit section display name"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onEdit();
-                }
-              }}
-              style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}
-              aria-label="Edit section display name"
             >
               [edit]
-            </span>
-          )}
-          <span className="sr-count">{count}</span>
-        </span>
-      </button>
-      <ScopeRowActions
-        kind="section"
-        show={showActions}
-        onAsk={onAsk}
-        onDelete={onDelete}
-      />
+            </button>
+          ) : null}
+          <ScopeRowActions
+            kind="section"
+            show={showActions}
+            onAsk={onAsk}
+            onDelete={onDelete}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

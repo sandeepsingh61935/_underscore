@@ -589,9 +589,23 @@
   font-family: var(--serif); font-size: 16px; font-style: italic; color: var(--ink-3);
   font-variant-numeric: tabular-nums; flex-shrink: 0;
 }
+.sr-trailing {
+  display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; padding-right: 6px;
+}
 .sr-actions {
   display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; padding-right: 6px;
 }
+.sr-trailing .sr-actions {
+  padding-right: 0;
+}
+button.sr-edit {
+  all: unset; cursor: pointer; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 36px; padding: 0 8px;
+  font-family: var(--mono); font-size: 11px; color: var(--accent);
+  border-radius: var(--radius);
+}
+button.sr-edit:hover { background: var(--utility-overlay-06); }
 button.sr-icon {
   all: unset; cursor: pointer; box-sizing: border-box;
   display: inline-flex; align-items: center; justify-content: center;
