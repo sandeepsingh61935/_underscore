@@ -50,6 +50,8 @@ const MARGIN_META: Array<{ key: MarginKey; label: string }> = [
   { key: 'specimenPadding', label: 'Specimen padding' },
 ];
 
+const FONT_ROLES: readonly FontRole[] = ['serif', 'sans', 'mono'];
+
 interface FontUploadZoneProps {
   fileName: string | null;
   activeRole: FontRole;
@@ -76,6 +78,7 @@ function FontUploadZone({
 
   return (
     <div
+      data-testid="typography-import-zone"
       onDragOver={(e) => {
         e.preventDefault();
         setDragOver(true);
@@ -89,19 +92,20 @@ function FontUploadZone({
       style={{
         padding: '16px',
         border: `1px dashed ${dragOver ? 'var(--accent)' : 'var(--rule)'}`,
-        background: 'var(--paper-2)',
+        background: 'var(--paper)',
         textAlign: 'center',
       }}
     >
       <div style={{ fontSize: 'var(--step--1)', fontWeight: 500, color: 'var(--ink)' }}>
         {fileName ?? 'Drop .woff2 or .ttf'}
       </div>
-      <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 4 }}>
+      <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4 }}>
         Assigns to {activeRole} role
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
         <button
           type="button"
+          data-testid="typography-import-upload"
           onClick={() => inputRef.current?.click()}
           className="u-mono"
           style={{
@@ -115,11 +119,12 @@ function FontUploadZone({
             minHeight: 36,
           }}
         >
-          Upload font
+          Upload
         </button>
         {fileName ? (
           <button
             type="button"
+            data-testid="typography-import-remove"
             onClick={() => void onRemove(activeRole)}
             className="u-mono"
             style={{
@@ -147,7 +152,11 @@ function FontUploadZone({
         }}
       />
       {error ? (
-        <div className="u-mono" style={{ fontSize: 10, color: 'var(--ttl-low)', marginTop: 8 }}>
+        <div
+          className="u-mono"
+          data-testid="typography-import-error"
+          style={{ fontSize: 'var(--step--2)', color: 'var(--ttl-low)', marginTop: 8 }}
+        >
           {error}
         </div>
       ) : null}
@@ -185,7 +194,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
 
     const names: Partial<Record<FontRole, string>> = {};
     if (sel.kind === 'custom' && sel.importedFonts) {
-      for (const role of ['serif', 'sans', 'mono'] as const) {
+      for (const role of FONT_ROLES) {
         const id = sel.importedFonts[role];
         if (!id) continue;
         const stored = await getFontFile(id);
@@ -211,6 +220,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
   }, [isCustom, selection]);
 
   const activePresetName = isCustom ? 'Custom' : displayName;
+  const collapsedSub = `${activePresetName} · ${draft.fonts.serif}`;
 
   const fontHeaderValues = [
     abbreviateLabel(draft.fonts.serif),
@@ -226,6 +236,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
     const tokens = resolveBuiltinTokens(id);
     setDraft(tokens);
     setIsCustom(false);
+    setImportError(null);
     void setSelection({ kind: 'builtin', id });
   };
 
@@ -243,12 +254,16 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
     void setSelection({ kind: 'custom', preset: draft, importedFonts });
   };
 
+  const handleReset = (): void => {
+    setImportError(null);
+    void resetToDefault();
+  };
+
   const handleFontChange = (role: FontRole, name: string): void => {
-    const next: TypographyTokens = {
+    markCustom({
       ...draft,
       fonts: { ...draft.fonts, [role]: name },
-    };
-    markCustom(next);
+    });
   };
 
   const handleUpload = async (file: File, role: FontRole): Promise<void> => {
@@ -301,6 +316,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
         onClick={onToggle}
         className="u-sans"
         aria-expanded={expanded}
+        data-testid="typography-toggle"
         style={{
           all: 'unset',
           cursor: 'pointer',
@@ -318,15 +334,19 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
         }}
       >
         <div>
-          <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>Typography</div>
-          <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>
-            {activePresetName}
+          <div style={{ fontSize: 'var(--step-1)', color: 'var(--ink)', fontWeight: 500 }}>Typography</div>
+          <div
+            className="u-mono"
+            data-testid="typography-summary"
+            style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 2 }}
+          >
+            {collapsedSub}
           </div>
         </div>
         <span
           className="u-mono"
           style={{
-            fontSize: 10,
+            fontSize: 'var(--step--2)',
             color: expanded ? 'var(--accent)' : 'var(--ink-3)',
           }}
           aria-hidden
@@ -336,7 +356,10 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
       </button>
 
       {expanded ? (
-        <div style={{ borderBottom: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
+        <div
+          data-testid="typography-panel"
+          style={{ borderBottom: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}
+        >
           <div style={{ padding: '12px 16px 0' }}>
             <TypeSpecimen tokens={draft} />
           </div>
@@ -354,9 +377,55 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   const id = BUILTIN_TYPE_PRESET_LIST[index];
                   if (id) applyBuiltin(id);
                 }}
+                aria-label="Typography preset picker"
               />
+              <div
+                data-testid="typography-preset-chips"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  maxHeight: 140,
+                  overflow: 'auto',
+                  marginTop: 10,
+                }}
+              >
+                {BUILTIN_TYPE_PRESET_LIST.map((id) => {
+                  const name = BUILTIN_TYPE_PRESETS[id].name;
+                  const active = !isCustom && selection.kind === 'builtin' && selection.id === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      data-testid={`typography-preset-chip-${id}`}
+                      onClick={() => applyBuiltin(id)}
+                      className="u-mono"
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        padding: '8px 10px',
+                        border: `1px solid ${active ? 'var(--accent)' : 'var(--rule-soft)'}`,
+                        background: active ? 'var(--accent-tint-08)' : 'var(--paper)',
+                        color: active ? 'var(--accent)' : 'var(--ink)',
+                        fontSize: 'var(--step--2)',
+                        letterSpacing: '0.06em',
+                        minHeight: 36,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
               {isCustom ? (
-                <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 8 }}>
+                <div
+                  className="u-mono"
+                  data-testid="typography-custom-hint"
+                  style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 8 }}
+                >
                   Custom — fonts or scale edited manually
                 </div>
               ) : null}
@@ -368,6 +437,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               trailing={<SectionValueColumns values={fontHeaderValues} />}
             >
               <div
+                data-testid="typography-role-tabs"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -376,14 +446,14 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   width: '100%',
                 }}
               >
-                {(['serif', 'sans', 'mono'] as const).map((role) => {
+                {FONT_ROLES.map((role) => {
                   const active = fontRole === role;
-                  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
                   const roleValue = draft.fonts[role];
                   return (
                     <button
                       key={role}
                       type="button"
+                      data-testid={`typography-role-${role}`}
                       onClick={() => setFontRole(role)}
                       style={{
                         all: 'unset',
@@ -393,31 +463,38 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                         background: active ? 'var(--paper)' : 'transparent',
                         textAlign: 'center',
                         minWidth: 0,
+                        minHeight: 44,
                         boxSizing: 'border-box',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 2,
                       }}
                     >
                       <span
                         className="u-mono"
                         style={{
                           display: 'block',
-                          fontSize: 10,
-                          color: active ? 'var(--accent)' : 'var(--ink-2)',
-                          textTransform: 'capitalize',
+                          fontSize: 'var(--step--2)',
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          color: active ? 'var(--ink)' : 'var(--ink-3)',
                         }}
                       >
-                        {roleLabel}
+                        {role}
                       </span>
                       <span
                         className="u-mono"
                         title={roleValue}
                         style={{
                           display: 'block',
-                          marginTop: 3,
-                          fontSize: 10,
+                          fontSize: 'var(--step--2)',
                           color: active ? 'var(--ink-2)' : 'var(--ink-3)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
+                          maxWidth: '100%',
                         }}
                       >
                         {abbreviateLabel(roleValue, 10)}
@@ -492,7 +569,10 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               ))}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Import" trailing={<SectionValueColumns values={[abbreviateLabel(importSummary, 14)]} />}>
+            <CollapsibleSection
+              title="Import fonts"
+              trailing={<SectionValueColumns values={[abbreviateLabel(importSummary, 14)]} />}
+            >
               <FontUploadZone
                 fileName={importedNames[fontRole] ?? null}
                 activeRole={fontRole}
@@ -505,6 +585,7 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               <button
                 type="button"
+                data-testid="typography-apply"
                 onClick={handleApply}
                 className="u-mono"
                 style={{
@@ -518,23 +599,28 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                   color: 'var(--accent-ink)',
                   fontSize: 'var(--step--1)',
                   minHeight: 44,
+                  boxSizing: 'border-box',
                 }}
               >
                 Apply
               </button>
               <button
                 type="button"
-                onClick={() => void resetToDefault()}
+                data-testid="typography-reset"
+                onClick={handleReset}
                 className="u-mono"
                 style={{
                   all: 'unset',
                   cursor: 'pointer',
+                  flex: 1,
+                  textAlign: 'center',
                   padding: '10px 14px',
                   border: '1px solid var(--rule)',
                   background: 'var(--paper)',
                   color: 'var(--ink-2)',
                   fontSize: 'var(--step--1)',
                   minHeight: 44,
+                  boxSizing: 'border-box',
                 }}
               >
                 Reset
