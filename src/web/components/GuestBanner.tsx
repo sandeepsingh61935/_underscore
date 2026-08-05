@@ -18,7 +18,7 @@ export function GuestBanner({
       <div style={{ flex: 1, minWidth: 0 }}>
         <strong>Guest</strong>
         {' — '}
-        local storage only. Sign in for sync, export, and Ask (Pro).
+        local storage only. Sign in for sync, export, and Ask · Account (Paid).
       </div>
       <Link to={signInTo} className="btn sm">
         Sign in
