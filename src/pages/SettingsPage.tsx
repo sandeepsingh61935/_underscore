@@ -4,24 +4,38 @@ import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
+import {
+  formatLastSyncedAt,
+  formatSyncSubtitle,
+  useSyncLibrary,
+} from '@/features/collections/hooks/use-sync-library';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
+import { SettingsModeInline } from '@/features/settings/components/SettingsModeInline';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
+import {
+  deleteLibraryCopy,
+  signOutCopy,
+} from '@/shared/utils/confirm-dialog-copy';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import {
   useConfigureAiProvidersGate,
   useMcpGate,
   useModeFeature,
 } from '@/ui-system/hooks/useModeFeature';
+import { BtnText } from '@/ui-system/components/primitives/BtnText';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export interface SettingsPageProps {
   onBack?: () => void;
+  /** @deprecated Prefer inline mode change; kept for callers. */
   onChangeMode?: () => void;
   onConfigureAIProviders?: () => void;
   onSignIn?: () => void;
@@ -29,13 +43,15 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings Page
- * Implements exactly what the Settings component in ui_kits/extension/v2/screens-nav.jsx specifies.
- * AI section: Connect to AI (hub drill-in) then Configure AI providers (sibling).
+ * Settings Page — v3 product section order (PRD):
+ * head → Guest card or Account → Billing CTAs/Sync → banners →
+ * Typography → Theme → Mode (inline) → Library tools → AI (gated) → Sign out
+ *
+ * Action rows are static lists; only trailing BtnText / ExportActions are clickable.
  */
 export function SettingsPage({
   onBack: _onBack,
-  onChangeMode,
+  onChangeMode: _onChangeMode,
   onConfigureAIProviders,
   onSignIn,
   onLogout,
@@ -44,6 +60,7 @@ export function SettingsPage({
     theme,
     setTheme,
     currentMode,
+    setMode,
     user,
     logout: appLogout,
   } = useApp();
@@ -81,14 +98,22 @@ export function SettingsPage({
       setBillingReturn({ kind: 'cancel' });
       return;
     }
-    // After URL stripped, keep success_active briefly if we just became paid
     if (isPaidActive && billingReturn?.kind === 'success_pending') {
       setBillingReturn({ kind: 'success_active' });
     }
   }, [isPaidActive, billingReturn?.kind]);
   const logout = onLogout ?? appLogout;
-  const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
+  const {
+    sync,
+    isSyncing,
+    lastResult,
+    error: syncError,
+    status: syncStatus,
+    progressPercent,
+    lastSyncedAt,
+  } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const [billingActionError, setBillingActionError] = useState<string | null>(null);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
   const { deleteScope } = useHighlightDelete();
@@ -101,13 +126,27 @@ export function SettingsPage({
   const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated);
   const mcpGate = useMcpGate(isAuthenticated);
 
-  // onBack is still required on the interface for callers passing it to the shell's ModeHeader
-  // _onBack is intentionally unused in the body-only version
+  const planPill = resolveAccountPillLabel({
+    modeId: currentMode,
+    isAuthenticated,
+    isPaidActive,
+    billingStatus: billingEntitlement.status,
+  });
+
+  const billingCta = billing
+    ? resolveSettingsBillingCta({
+        isPaidActive,
+        status: billingEntitlement.status,
+        cancelAtPeriodEnd: billingEntitlement.cancelAtPeriodEnd,
+      })
+    : null;
 
   const handleSignOut = async (): Promise<void> => {
+    if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await logout();
+      setSignOutOpen(false);
     } finally {
       setIsSigningOut(false);
     }
@@ -120,13 +159,21 @@ export function SettingsPage({
     setTheme(nextTheme);
   };
 
-  const syncSubtitle = (() => {
+  const syncSubtitle = ((): string => {
     if (!syncGate.allowed) return featureGateSubtitle(syncGate.reason);
     if (!user) return featureGateSubtitle('AUTH_REQUIRED');
-    if (isSyncing) return 'Pulling highlights from database…';
+    if (isSyncing) {
+      const pct =
+        progressPercent !== null && progressPercent !== undefined
+          ? ` · ${progressPercent}%`
+          : '';
+      return `Syncing library${pct}`;
+    }
     if (syncError) return syncError;
-    if (syncStatus === 'success' && lastResult) return formatSyncSubtitle(lastResult);
-    return 'Pull latest highlights from cloud';
+    if (syncStatus === 'success' && lastResult) {
+      return `${formatSyncSubtitle(lastResult)} · ${formatLastSyncedAt(lastSyncedAt)}`;
+    }
+    return formatLastSyncedAt(lastSyncedAt);
   })();
 
   const handleSyncLibrary = async (): Promise<void> => {
@@ -135,6 +182,7 @@ export function SettingsPage({
   };
 
   const handleDeleteLibrary = async (): Promise<void> => {
+    if (isDeletingLibrary) return;
     setIsDeletingLibrary(true);
     try {
       await deleteScope({ scope: 'library' });
@@ -144,12 +192,37 @@ export function SettingsPage({
     }
   };
 
+  const handleBillingCta = (): void => {
+    if (!billingCta) return;
+    setBillingActionError(null);
+    const action =
+      billingCta.action === 'portal' ? openBillingPortal : startCheckout;
+    if (!action) return;
+    void action().catch((e: unknown) => {
+      setBillingActionError(
+        e instanceof Error ? e.message : 'Billing action failed'
+      );
+    });
+  };
+
+  const handleSelectFreeMode = (): void => {
+    setMode('pro' as ModeType);
+  };
+
+  const handleSelectPaidUpgrade = (): void => {
+    setBillingActionError(null);
+    if (startCheckout) {
+      void startCheckout().catch((e: unknown) => {
+        setBillingActionError(
+          e instanceof Error ? e.message : 'Billing action failed'
+        );
+      });
+      return;
+    }
+    handleBillingCta();
+  };
+
   const modeBranding = getModeBranding(currentMode);
-  const monoTrailing = (label: string): React.ReactElement => (
-    <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-      {label}
-    </span>
-  );
 
   if (connectOpen) {
     return (
@@ -166,170 +239,130 @@ export function SettingsPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      {/* 1. Head */}
       <div style={{ padding: '12px 16px 6px' }}>
         <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
       </div>
 
-      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
-        <TypographySettings
-          expanded={typographyExpanded}
-          onToggle={() => setTypographyExpanded((v) => !v)}
-        />
-
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>General</div>
-        <Row
-          title="Theme"
-          sub="Match system"
-          right={
-            <span
-              className="u-mono"
-              style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', textTransform: 'capitalize' }}
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
+        {/* 2. Guest card or Account */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-account"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          Account
+        </div>
+        {!user ? (
+          <div
+            data-testid="settings-guest-card"
+            style={{
+              margin: '0 16px 10px',
+              padding: '14px 16px',
+              border: '1px solid var(--rule)',
+              background: 'var(--paper-2)',
+            }}
+          >
+            <div className="u-serif" style={{ fontSize: 'var(--step-1)', marginBottom: 4 }}>
+              Guest
+            </div>
+            <div
+              className="u-sans"
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.5,
+                marginBottom: 12,
+              }}
             >
-              {theme}
-            </span>
-          }
-          onClick={handleToggleTheme}
-        />
-        <Row
-          title="Mode"
-          sub={isAuthenticated ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}` : 'Guest'}
-          right={monoTrailing(isAuthenticated ? 'Change' : 'Local')}
-          onClick={isAuthenticated ? onChangeMode : undefined}
-        />
-        <Row title="Density" sub="Comfortable" right={monoTrailing('Edit')} />
-
-        {isAuthenticated ? (
-          <>
-            <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Library</div>
-            <Row
-              title="Sync library"
-              sub={syncSubtitle}
-              right={
-                isSyncing ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <span
-                    className="u-mono"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      color: syncGate.allowed && user ? 'var(--accent)' : 'var(--ink-3)',
-                    }}
-                  >
-                    {syncGate.allowed && user ? 'Sync' : '—'}
-                  </span>
-                )
-              }
-              onClick={syncGate.allowed && !isSyncing ? handleSyncLibrary : undefined}
-            />
-            <Row
-              title="Export library"
-              sub={
-                exportGate.allowed && user
-                  ? 'Download all highlights as markdown or spreadsheet'
-                  : featureGateSubtitle(exportGate.reason)
-              }
-              right={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
-            />
-            <Row
-              title="Delete library"
-              sub="Permanently remove all highlights on this device"
-              right={
+              Local only on this device. Sign in to sync library across devices, export, and use AI.
+            </div>
+            <BtnText accent aria-label="Sign in" onClick={() => onSignIn?.()}>
+              Sign in
+            </BtnText>
+          </div>
+        ) : (
+          <Row
+            title={user.email || 'Signed in'}
+            sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
+            right={
+              planPill === 'Guest' ? null : (
                 <span
                   className="u-mono"
+                  data-testid="account-plan-pill"
                   style={{
                     fontSize: 'var(--step--2)',
-                    color: 'var(--accent)',
+                    padding: '2px 8px',
+                    border: '1px solid var(--rule-soft)',
+                    color:
+                      planPill === 'Paid'
+                        ? 'var(--accent)'
+                        : planPill === 'Past due'
+                          ? 'var(--accent)'
+                          : 'var(--ink-3)',
                   }}
                 >
-                  Delete
+                  {planPill}
                 </span>
+              )
+            }
+          />
+        )}
+
+        {/* 3. Billing CTAs / Sync */}
+        {user && billing && billingCta ? (
+          <>
+            <Row
+              title={billingCta.title}
+              sub={
+                billingActionError || billingError
+                  ? billingActionError || billingError || undefined
+                  : billingCta.sub
               }
-              onClick={() => setDeleteLibraryOpen(true)}
+              right={
+                billingBusy ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <BtnText
+                    accent
+                    data-testid="billing-cta"
+                    data-billing-kind={billingCta.kind}
+                    onClick={handleBillingCta}
+                  >
+                    {billingCta.ctaLabel}
+                  </BtnText>
+                )
+              }
             />
+            {billingCta.showSync ? (
+              <Row
+                title="Refresh subscription status"
+                sub="Already paid? Pull status from Polar and update this account."
+                right={
+                  billingBusy ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <BtnText
+                      data-testid="billing-sync-cta"
+                      onClick={() => {
+                        setBillingActionError(null);
+                        void billing.syncFromPolar().catch((e: unknown) => {
+                          setBillingActionError(
+                            e instanceof Error ? e.message : 'Sync failed'
+                          );
+                        });
+                      }}
+                    >
+                      Sync
+                    </BtnText>
+                  )
+                }
+              />
+            ) : null}
           </>
         ) : null}
 
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>AI</div>
-        <Row
-          title="Connect to AI"
-          sub="External agents"
-          right={
-            <SettingsStatusGlyph
-              kind={mcpGate.allowed ? 'chevron' : 'lock'}
-              label={mcpGate.allowed ? 'Open' : 'Locked'}
-            />
-          }
-          onClick={() => setConnectOpen(true)}
-        />
-        <Row
-          title="Configure AI providers"
-          sub="In-app models"
-          right={
-            <SettingsStatusGlyph
-              kind={aiSetupGate.allowed ? 'chevron' : 'lock'}
-              label={aiSetupGate.allowed ? 'Open' : 'Locked'}
-            />
-          }
-          onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
-        />
-
-        <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>Account</div>
-        <Row
-          title={user?.email || 'Not signed in'}
-          sub={
-            user
-              ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`
-              : 'Sync library across devices, export, AI'
-          }
-          right={
-            isSigningOut ? (
-              <Spinner size="sm" />
-            ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {user && (currentMode === 'pro' || currentMode === 'pro_xai') ? (
-                  <span
-                    className="u-mono"
-                    data-testid="account-plan-pill"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      padding: '2px 8px',
-                      border: '1px solid var(--rule-soft)',
-                      color: isPaidActive ? 'var(--accent)' : 'var(--ink-3)',
-                    }}
-                  >
-                    {isPaidActive ? 'Paid' : 'Free'}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  className="u-mono"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (user) {
-                      void handleSignOut();
-                    } else {
-                      onSignIn?.();
-                    }
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    fontSize: 'var(--step--2)',
-                    color: user ? 'var(--ink-3)' : 'var(--accent)',
-                    minHeight: 44,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '0 4px',
-                    textDecoration: user ? 'none' : 'underline',
-                    textUnderlineOffset: 2,
-                  }}
-                >
-                  {user ? 'Sign out' : 'Sign in'}
-                </button>
-              </span>
-            )
-          }
-        />
+        {/* 4. Banners (post-checkout / cancel) */}
         {user && billingReturn ? (
           <div
             data-testid="billing-return-banner"
@@ -352,9 +385,7 @@ export function SettingsPage({
             >
               {billingReturn.kind === 'cancel'
                 ? 'Checkout canceled'
-                : billingReturn.kind === 'success_active'
-                  ? 'Payment successful'
-                  : 'Payment successful'}
+                : 'Payment successful'}
             </div>
             <div
               className="u-sans"
@@ -365,10 +396,10 @@ export function SettingsPage({
               }}
             >
               {billingReturn.kind === 'cancel'
-                ? 'No charge was made. You can upgrade anytime from below.'
+                ? 'No charge was made. You can upgrade anytime from above.'
                 : billingReturn.kind === 'success_active'
                   ? 'Your account is upgraded to Account (Paid). AI and agent connections are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
-                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Stay on this page; the status below will switch to Paid when ready. Then reopen the browser extension with the same account.'}
+                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Use Sync above if status stays Free, then reopen the extension with the same account.'}
             </div>
             {billingReturn.kind === 'success_pending' ? (
               <div
@@ -404,84 +435,266 @@ export function SettingsPage({
             ) : null}
           </div>
         ) : null}
-        {user && billing ? (
-          <Row
-            title={isPaidActive ? 'Manage billing' : 'Upgrade to Account (Paid)'}
-            sub={
-              billingActionError || billingError
-                ? billingActionError || billingError || undefined
-                : isPaidActive
-                  ? billingEntitlement.cancelAtPeriodEnd
-                    ? 'Cancels at period end · invoices & payment method'
-                    : 'Invoices, payment method, cancel'
-                  : 'AI + agent connections · billed via Polar'
-            }
-            right={
-              billingBusy ? (
-                <Spinner size="sm" />
-              ) : (
-                <span
-                  className="u-mono"
-                  data-testid="billing-cta"
-                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
-                >
-                  {isPaidActive ? 'Portal' : 'Upgrade'}
-                </span>
-              )
-            }
-            onClick={() => {
-              setBillingActionError(null);
-              const action = isPaidActive ? openBillingPortal : startCheckout;
-              if (!action) return;
-              void action().catch((e: unknown) => {
-                setBillingActionError(
-                  e instanceof Error ? e.message : 'Billing action failed'
-                );
-              });
-            }}
+
+        {/* 5. Typography */}
+        <div data-testid="settings-section-typography">
+          <TypographySettings
+            expanded={typographyExpanded}
+            onToggle={() => setTypographyExpanded((v) => !v)}
           />
+        </div>
+
+        {/* 6. Theme + Mode (inline) */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-general"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          General
+        </div>
+        <Row
+          title="Theme"
+          sub="Match system"
+          right={
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span
+                className="u-mono"
+                style={{
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-3)',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {theme}
+              </span>
+              <BtnText aria-label="Change theme" onClick={handleToggleTheme}>
+                Change
+              </BtnText>
+            </span>
+          }
+        />
+        <SettingsModeInline
+          currentMode={currentMode}
+          isAuthenticated={isAuthenticated}
+          isPaidActive={isPaidActive}
+          onSelectFree={handleSelectFreeMode}
+          onSelectPaidUpgrade={handleSelectPaidUpgrade}
+        />
+
+        {/* 7. Library tools */}
+        {isAuthenticated ? (
+          <>
+            <div
+              className="u-caps"
+              data-testid="settings-section-library"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Library
+            </div>
+            <Row
+              title="Sync library"
+              sub={syncSubtitle}
+              right={
+                isSyncing ? (
+                  <span
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    data-testid="sync-progress"
+                    aria-live="polite"
+                    aria-busy="true"
+                  >
+                    <Spinner size="sm" />
+                    <span
+                      className="u-mono"
+                      style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                    >
+                      {progressPercent !== null ? `${progressPercent}%` : '…'}
+                    </span>
+                  </span>
+                ) : (
+                  <BtnText
+                    accent={syncGate.allowed && Boolean(user)}
+                    muted={!syncGate.allowed || !user}
+                    disabled={!syncGate.allowed || !user}
+                    aria-label="Sync library"
+                    onClick={() => {
+                      void handleSyncLibrary();
+                    }}
+                  >
+                    Sync
+                  </BtnText>
+                )
+              }
+            />
+            {isSyncing ? (
+              <div
+                data-testid="sync-progress-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPercent ?? 0}
+                style={{
+                  margin: '0 16px 8px',
+                  height: 3,
+                  background: 'var(--rule-soft)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${progressPercent ?? 8}%`,
+                    background: 'var(--accent)',
+                    transition: 'width 120ms linear',
+                  }}
+                />
+              </div>
+            ) : null}
+            <Row
+              title="Export library"
+              sub={
+                exportGate.allowed && user
+                  ? 'Download all highlights as markdown or spreadsheet'
+                  : featureGateSubtitle(exportGate.reason)
+              }
+              right={
+                <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
+              }
+            />
+            <Row
+              title="Delete library"
+              sub="Permanently remove all highlights on this device"
+              right={
+                <BtnText
+                  danger
+                  aria-label="Delete library"
+                  onClick={() => setDeleteLibraryOpen(true)}
+                >
+                  Delete
+                </BtnText>
+              }
+            />
+          </>
         ) : null}
-        {user && billing && !isPaidActive ? (
-          <Row
-            title="Refresh subscription status"
-            sub="Already paid? Pull status from Polar and update this account."
-            right={
-              billingBusy ? (
-                <Spinner size="sm" />
-              ) : (
-                <span
-                  className="u-mono"
-                  style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
-                >
-                  Sync
-                </span>
-              )
-            }
-            onClick={() => {
-              setBillingActionError(null);
-              void billing.syncFromPolar().catch((e: unknown) => {
-                setBillingActionError(
-                  e instanceof Error ? e.message : 'Sync failed'
-                );
-              });
-            }}
-          />
+
+        {/* 8. AI (gated) */}
+        <div
+          className="u-caps"
+          data-testid="settings-section-ai"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          AI
+        </div>
+        <Row
+          title="Connect to AI"
+          sub="External agents"
+          right={
+            <BtnText
+              aria-label={mcpGate.allowed ? 'Open Connect to AI' : 'Connect to AI locked'}
+              onClick={() => setConnectOpen(true)}
+            >
+              <SettingsStatusGlyph
+                kind={mcpGate.allowed ? 'chevron' : 'lock'}
+                label={mcpGate.allowed ? 'Open' : 'Locked'}
+              />
+            </BtnText>
+          }
+        />
+        <Row
+          title="Configure AI providers"
+          sub="In-app models"
+          right={
+            <BtnText
+              aria-label={
+                aiSetupGate.allowed
+                  ? 'Open Configure AI providers'
+                  : 'Configure AI providers locked'
+              }
+              disabled={!aiSetupGate.allowed}
+              muted={!aiSetupGate.allowed}
+              onClick={() => {
+                if (aiSetupGate.allowed) onConfigureAIProviders?.();
+              }}
+            >
+              <SettingsStatusGlyph
+                kind={aiSetupGate.allowed ? 'chevron' : 'lock'}
+                label={aiSetupGate.allowed ? 'Open' : 'Locked'}
+              />
+            </BtnText>
+          }
+        />
+
+        {/* 9. Sign out */}
+        {user ? (
+          <>
+            <div
+              className="u-caps"
+              data-testid="settings-section-session"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Session
+            </div>
+            <Row
+              title="Sign out"
+              sub="End this session on this device"
+              right={
+                isSigningOut ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <BtnText
+                    aria-label="Sign out"
+                    onClick={() => {
+                      if (!isSigningOut) setSignOutOpen(true);
+                    }}
+                  >
+                    Sign out
+                  </BtnText>
+                )
+              }
+            />
+          </>
         ) : null}
       </div>
 
-      <DeleteConfirmDialog
-        open={deleteLibraryOpen}
-        onClose={() => setDeleteLibraryOpen(false)}
-        title="Delete entire library?"
-        message={
-          user
-            ? 'This permanently removes all highlights from this device and marks them deleted in the cloud. This cannot be undone.'
-            : 'This permanently removes all highlights stored on this device as a guest. This cannot be undone.'
-        }
-        onConfirm={() => { void handleDeleteLibrary(); }}
-        isConfirming={isDeletingLibrary}
-        exportFooter={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
-      />
+      {(() => {
+        const copy = deleteLibraryCopy(Boolean(user));
+        return (
+          <DeleteConfirmDialog
+            open={deleteLibraryOpen}
+            onClose={() => setDeleteLibraryOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleDeleteLibrary(); }}
+            isConfirming={isDeletingLibrary}
+            exportFooter={
+              <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
+            }
+          />
+        );
+      })()}
+
+      {(() => {
+        const copy = signOutCopy();
+        return (
+          <DeleteConfirmDialog
+            open={signOutOpen}
+            onClose={() => setSignOutOpen(false)}
+            severity={copy.severity}
+            title={copy.title}
+            message={copy.message}
+            note={copy.note}
+            strongNames={copy.strongNames}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel={copy.cancelLabel}
+            onConfirm={() => { void handleSignOut(); }}
+            isConfirming={isSigningOut}
+          />
+        );
+      })()}
     </div>
   );
 }
