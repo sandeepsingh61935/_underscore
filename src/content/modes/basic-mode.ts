@@ -15,7 +15,7 @@ import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
-import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -116,7 +116,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
 
     await this.facade.addPersisted({
       ...storageData,
-      url: normalizePageUrl(window.location.href),
+      url: getCapturePageUrl(),
       updatedAt: now,
       ...(runtimeHighlight.metadata ? { metadata: runtimeHighlight.metadata } : {}),
     });
@@ -149,7 +149,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       ranges: data.ranges,
     });
 
-    const pageUrl = data.url ?? normalizePageUrl(window.location.href);
+    const pageUrl = data.url ?? getCapturePageUrl();
     const now = new Date();
 
     await this.facade.addPersisted({

@@ -4,7 +4,7 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2, TextQuoteSelector } from '@/shared/schemas/highlight-schema';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { TextQuoteFinder } from '@/content/utils/text-quote-finder';
-import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import { getCapturePageUrl, normalizePageUrl } from '@/shared/utils/normalize-page-url';
 
 /**
  * Discriminated union: a highlight range's selector is either the W3C
@@ -99,9 +99,8 @@ export class CloudModeService {
 
       // Library / restore-by-url require url; never persist without it.
       if (!payload.url) {
-        payload.url = normalizePageUrl(
-          typeof window !== 'undefined' ? window.location.href : ''
-        );
+        payload.url =
+          typeof window !== 'undefined' ? getCapturePageUrl() : '';
       }
 
       // Activity sort (library Recent / sections) uses updatedAt when present.
@@ -145,7 +144,7 @@ export class CloudModeService {
     }>
   > {
     try {
-      const url = normalizePageUrl(window.location.href);
+      const url = getCapturePageUrl();
       if (!url) return [];
 
       this.logger.info(`[VAULT] [QUERY] Querying highlights for URL: ${url}`);

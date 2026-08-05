@@ -12,6 +12,7 @@ import type { Command } from '@/shared/patterns/command';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
 /**
  * Create highlight command - works with both APIs
@@ -115,7 +116,7 @@ export class CreateHighlightCommand implements Command {
           ranges: [this.serializedRange],
           liveRanges: [range],
           createdAt: new Date(),
-          url: window.location.origin + window.location.pathname,
+          url: getCapturePageUrl(),
         });
 
         this.logger.debug('Highlight recreated (redo)', {

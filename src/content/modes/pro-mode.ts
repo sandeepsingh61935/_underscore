@@ -28,7 +28,7 @@ import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { generateContentHash } from '@/shared/utils/content-hash';
-import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 import {
   transformHighlightRow,
   type SupabaseHighlightRow,
@@ -297,7 +297,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       });
       this.facade.add({
         ...storageData,
-        url: data.url ?? normalizePageUrl(window.location.href),
+        url: data.url ?? getCapturePageUrl(),
       });
     } else {
       this.logger.debug('[PRO] Skipping duplicate repo add during create', {
@@ -340,7 +340,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     });
     await this.facade.add({
       ...storageData,
-      url: window.location.href,
+      url: getCapturePageUrl(),
     });
 
     // Also strip liveRanges from the partial update payload in case the caller
@@ -429,7 +429,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       type: 'underscore' as const,
       createdAt: now,
       updatedAt: now,
-      url: normalizePageUrl(window.location.href),
+      url: getCapturePageUrl(),
       ranges: [serializedRange],
       liveRanges: [range],
       ...(codeMeta
@@ -488,7 +488,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   async restore(_url?: string): Promise<void> {
     this.logger.info('[PRO] [SYNC] Starting restore process...');
 
-    const pageUrl = normalizePageUrl(window.location.href);
+    const pageUrl = getCapturePageUrl();
     if (this.highlightReader) {
       try {
         const stored = await this.highlightReader.findByUrl(pageUrl);

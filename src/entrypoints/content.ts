@@ -48,6 +48,7 @@ import {
 } from '@/shared/utils/range-algebra';
 
 import { MODE_NAMES } from '@/content/modes/mode-constants';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -542,7 +543,7 @@ export default defineContentScript({
                 modeManager,
                 repositoryFacade,
                 messageBus,
-                currentUrl: window.location.href,
+                currentUrl: getCapturePageUrl(),
                 deserializeRange,
                 logger,
               },
@@ -713,7 +714,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
   const { repositoryFacade, highlightManager, modeManager, commandFactory, ipcReadableHighlightRepository } =
     context;
   try {
-    const currentUrl = window.location.href;
+    const currentUrl = getCapturePageUrl();
     // Reads go through the read-side IPC adapter, not the local in-memory
     // facade. The facade is empty after a page reload (its DI container
     // is fresh); the background holds the persisted set (IDB / DualWrite
