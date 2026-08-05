@@ -20,6 +20,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
 
 import { CloudModeService } from '@/services/cloud-mode-service';
@@ -394,7 +395,8 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     }
 
     const range = selection.getRangeAt(0);
-    const text = range.toString().trim();
+    // serializeRange / TextQuote keep raw DOM text; body text is normalized for library display.
+    const { text, codeMeta } = resolveCaptureBodyText(range);
 
     if (!text) {
       throw new Error('Empty text selection');
@@ -413,11 +415,6 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     const id = this.generateId();
     const serializedRange = serializeRange(range);
     if (!serializedRange) throw new Error('Failed to serialize range');
-
-    const { detectCodeSelectionMetadata } = await import(
-      '@/content/utils/code-selection-metadata'
-    );
-    const codeMeta = detectCodeSelectionMetadata(range);
 
     const now = new Date();
     // Build the runtime highlight with the live Range for in-page rendering.

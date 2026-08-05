@@ -11,6 +11,7 @@
 
 import { getHighlightName } from './styles/highlight-styles';
 
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { EventName, createEvent } from '@/shared/types/events';
@@ -61,7 +62,8 @@ export class HighlightManager {
     }
 
     const range = selection.getRangeAt(0);
-    const text = range.toString().trim();
+    // Body text: collapse DOM capture junk. Range serialization stays raw.
+    const { text } = resolveCaptureBodyText(range);
 
     if (!text) {
       this.logger.warn('Empty text selection');

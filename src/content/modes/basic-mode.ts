@@ -9,6 +9,7 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -57,7 +58,8 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     }
 
     const range = selection.getRangeAt(0);
-    const text = range.toString().trim();
+    // serializeRange / TextQuote keep raw DOM text; body text is normalized for library display.
+    const { text, codeMeta } = resolveCaptureBodyText(range);
 
     if (!text) {
       throw new Error('Empty text selection');
@@ -79,11 +81,6 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     if (!serializedRange) {
       throw new Error('Failed to serialize range');
     }
-
-    const { detectCodeSelectionMetadata } = await import(
-      '@/content/utils/code-selection-metadata'
-    );
-    const codeMeta = detectCodeSelectionMetadata(range);
 
     const now = new Date();
     const runtimeHighlight = {
