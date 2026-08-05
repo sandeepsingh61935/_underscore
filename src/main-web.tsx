@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { AppRoutes } from './core/routing/AppRoutes';
 import './ui-system/theme/global.css';
 import './web/theme/web-app.css';
+import './web/theme/public-pages.css';
 
 // Web app entry point
 const root = ReactDOM.createRoot(

@@ -10,26 +10,10 @@ import { AppHeader } from '@/ui-system/components/layout/AppHeader';
  */
 export function PrivacyPage(): React.ReactElement {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100%',
-        width: '100%',
-        backgroundColor: 'var(--paper)',
-        color: 'var(--ink)',
-      }}
-    >
+    <div className="public-legal">
       <AppHeader variant="standalone" />
 
-      <article
-        style={{
-          width: '100%',
-          maxWidth: 640,
-          margin: '0 auto',
-          padding: '0 24px 48px',
-        }}
-      >
+      <article className="public-legal__article">
         <Link
           to="/"
           className="u-mono"

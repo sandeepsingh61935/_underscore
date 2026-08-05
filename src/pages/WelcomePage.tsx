@@ -10,12 +10,14 @@ export interface WelcomePageProps {
 }
 
 /**
- * Welcome Page — landing experience
- * Centered layout: Logo (lg) + tagline + CTA → /home + trust signal + footer
+ * Welcome Page — landing experience.
+ * Web SPA: fluid viewport canvas (`welcome--web`).
+ * Extension popup: compact layout (`welcome--popup`) when `onStartClick` is set.
  */
 export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.ReactElement {
   const navigate = useNavigate();
   const { isAuthenticated } = useApp();
+  const isWeb = !onStartClick;
 
   React.useEffect(() => {
     if (isAuthenticated && !onStartClick) {
@@ -25,159 +27,51 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
 
   return (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflowY: 'auto',
-        backgroundColor: 'var(--paper)',
-        color: 'var(--ink)',
-        backgroundImage:
-          'radial-gradient(ellipse at 50% -5%, color-mix(in srgb, var(--ink) 8%, transparent) 0%, transparent 55%)',
-      }}
+      className={`welcome ${isWeb ? 'welcome--web' : 'welcome--popup'}`}
+      data-od-id="welcome"
+      data-platform={isWeb ? 'web' : 'popup'}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          maxWidth: 360,
-          padding: '48px 24px',
-        }}
-      >
-        {/* Logo badge */}
-        <div style={{ marginBottom: 28 }}>
+      <div className="welcome__main">
+        <div className="welcome__logo">
           <Logo size="lg" showText={false} />
         </div>
 
-        {/* App name — Serif display */}
-        <h1
-          className="u-serif"
-          style={{
-            fontSize: 'var(--step-7)',
-            fontWeight: 400,
-            letterSpacing: '-0.035em',
-            lineHeight: 1,
-            margin: 0,
-            marginBottom: 16,
-            color: 'var(--ink)',
-          }}
-        >
-          underscore
-        </h1>
+        <h1 className="u-serif welcome__title">underscore</h1>
 
-        {/* Tagline */}
-        <p
-          className="u-sans"
-          style={{
-            fontSize: 'var(--step--1)',
-            lineHeight: 1.5,
-            margin: 0,
-            marginBottom: 40,
-            color: 'var(--ink-2)',
-            maxWidth: 200,
-          }}
-        >
+        <p className="u-sans welcome__lede">
           Highlight what matters.
           <br />
           Everything else fades away.
         </p>
 
-        {/* CTA */}
         <Button
           variant="primary"
+          className="welcome__cta"
           onClick={() => {
             if (onStartClick) onStartClick();
             else navigate('/home');
           }}
-          style={{ marginBottom: 28, padding: '10px 32px' }}
         >
           Get started →
         </Button>
 
-        {/* Trust row */}
-        <div
-          className="u-mono"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            letterSpacing: '0.04em',
-          }}
-        >
+        <div className="u-mono welcome__trust">
           <span>Free forever</span>
-          <span style={{ width: 3, height: 3, borderRadius: 9999, backgroundColor: 'var(--ink-3)' }} />
+          <span className="welcome__trust-dot" aria-hidden />
           <span>No ads</span>
-          <span style={{ width: 3, height: 3, borderRadius: 9999, backgroundColor: 'var(--ink-3)' }} />
+          <span className="welcome__trust-dot" aria-hidden />
           <span>Private by default</span>
         </div>
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 24,
-          padding: '12px 0',
-          borderTop: '1px solid var(--rule-soft)',
-        }}
-      >
-        <Link
-          to="/privacy"
-          className="u-mono"
-          style={{
-            display: 'inline-flex',
-            minHeight: 44,
-            alignItems: 'center',
-            padding: '0 8px',
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            textDecoration: 'none',
-          }}
-        >
+      <div className="welcome__footer">
+        <Link to="/privacy" className="u-mono welcome__footer-link">
           Privacy
         </Link>
-        <Link
-          to="/terms"
-          className="u-mono"
-          style={{
-            display: 'inline-flex',
-            minHeight: 44,
-            alignItems: 'center',
-            padding: '0 8px',
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            textDecoration: 'none',
-          }}
-        >
+        <Link to="/terms" className="u-mono welcome__footer-link">
           Terms
         </Link>
-        <a
-          href="#help"
-          className="u-mono"
-          style={{
-            display: 'inline-flex',
-            minHeight: 44,
-            alignItems: 'center',
-            padding: '0 8px',
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            textDecoration: 'none',
-          }}
-        >
+        <a href="#help" className="u-mono welcome__footer-link">
           Help
         </a>
       </div>

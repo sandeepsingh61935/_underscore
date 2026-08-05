@@ -190,8 +190,8 @@ export function SignInView(): React.ReactElement {
 
     return (
         <div
+            className="public-legal"
             style={{
-                minHeight: '100vh',
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'var(--paper)',
@@ -213,8 +213,8 @@ export function SignInView(): React.ReactElement {
                 <div
                     style={{
                         width: '100%',
-                        maxWidth: 400,
-                        padding: '28px 32px 36px',
+                        maxWidth: 'min(100%, 28rem)',
+                        padding: 'clamp(1.5rem, 3vw, 2.25rem) clamp(1.25rem, 3vw, 2rem)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 16,
