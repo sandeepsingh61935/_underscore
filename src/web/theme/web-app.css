@@ -1209,6 +1209,297 @@ button.nav-item,
   }
 }
 
+/* ── Library master-detail ──────────────────────────────── */
+.lib-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: calc(100vh - var(--top));
+  height: calc(100dvh - var(--top));
+  background: var(--paper-2);
+}
+
+.lib-rail {
+  background: var(--paper);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lib-rail-head {
+  padding: 16px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.lib-rail-head h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: var(--step-3);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.lib-rail-meta {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.lib-rail-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  min-height: 0;
+}
+
+.lib-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.lib-main-head {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.lib-main-head h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  flex: 1;
+  min-width: 0;
+}
+
+.lib-main-head .count {
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.lib-search-wrap {
+  flex-shrink: 0;
+  padding: 12px 22px 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--border);
+}
+
+.lib-main-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 22px 40px;
+  min-height: 0;
+}
+
+.lib-main-body .stack {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lib-main-body .state-box {
+  min-height: 200px;
+}
+
+.hl-meta .match-badge {
+  color: var(--accent);
+}
+
+/* Domain / folder rows + tree (Library rail) */
+.domain-row,
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-2);
+  transition: background 140ms var(--ease), color 140ms var(--ease);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.domain-row:hover,
+.tree-item:hover {
+  background: var(--card-hover);
+  color: var(--ink);
+}
+
+.domain-row.active,
+.tree-item.active {
+  background: var(--paper-2);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.domain-ico,
+.folder-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  font-weight: 500;
+  color: var(--ink-2);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.domain-count,
+.tree-count {
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.tree-group {
+  margin: 0;
+}
+
+.tree-row {
+  --tree-row-h: 40px;
+  --tree-chev: 24px;
+  --tree-ico: 24px;
+  display: grid;
+  grid-template-columns: var(--tree-chev) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 2px;
+  min-height: var(--tree-row-h);
+}
+
+.tree-chev-slot {
+  width: var(--tree-chev);
+  height: var(--tree-row-h);
+  flex-shrink: 0;
+}
+
+.tree-toggle {
+  width: var(--tree-chev);
+  height: var(--tree-row-h);
+  border-radius: 6px;
+  color: var(--ink-4);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.tree-toggle:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+.tree-toggle:focus-visible {
+  box-shadow: var(--focus);
+}
+
+.tree-toggle .tree-chevron,
+.tree-toggle svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+  transition: transform var(--dur-ui) var(--ease);
+  transform-origin: 50% 50%;
+  transform: rotate(0deg);
+}
+
+.tree-toggle.open .tree-chevron,
+.tree-toggle.open svg,
+.tree-toggle[aria-expanded='true'] .tree-chevron,
+.tree-toggle[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+.tree-row > .tree-item {
+  min-height: var(--tree-row-h);
+  min-width: 0;
+  padding: 4px 8px 4px 4px;
+  gap: 8px;
+  border-radius: 8px;
+}
+
+.tree-item .folder-ico {
+  width: var(--tree-ico, 24px);
+  height: var(--tree-ico, 24px);
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.tree-item .tree-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--type-body);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.tree-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-ui) var(--ease);
+  pointer-events: none;
+}
+
+.tree-children.is-open {
+  grid-template-rows: 1fr;
+  pointer-events: auto;
+}
+
+.tree-children-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tree-item.is-child {
+  padding: 6px 8px 6px calc(24px + 2px + 24px + 8px);
+  min-height: 34px;
+  border-radius: 8px;
+  gap: 8px;
+}
+
+.tree-item.is-child .tree-label {
+  font-family: var(--mono);
+  font-size: var(--type-meta);
+  font-weight: 400;
+  color: var(--ink-2);
+  letter-spacing: 0;
+}
+
 @media (max-width: 1024px) {
   .grid-stats {
     grid-template-columns: repeat(2, 1fr);
@@ -1238,6 +1529,10 @@ button.nav-item,
 
   .home-col-scroll {
     max-height: 360px;
+  }
+
+  .lib-shell {
+    grid-template-columns: 240px 1fr;
   }
 }
 
@@ -1273,6 +1568,24 @@ button.nav-item,
 
   .workspace:not(.is-flush) {
     padding: 18px 16px 28px;
+  }
+
+  .lib-shell,
+  .ask-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: calc(100dvh - var(--top) - 56px);
+  }
+
+  .lib-rail,
+  .ask-projects {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 240px;
+  }
+
+  .lib-main {
+    min-height: 360px;
   }
 
   .topbar {

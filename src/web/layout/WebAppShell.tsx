@@ -118,6 +118,10 @@ export function WebAppShell(): React.ReactElement {
   const activeRoute = routeFromPathname(location.pathname);
   const meta = ROUTE_META[activeRoute];
 
+  /** OD: library always flush; ask flush when AI is allowed. */
+  const workspaceFlush =
+    activeRoute === 'library' || (activeRoute === 'ask' && caps.flags.ai);
+
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'
     : 'Guest';
@@ -142,6 +146,10 @@ export function WebAppShell(): React.ReactElement {
     'app',
     sidebarCollapsed ? 'sidebar-collapsed' : '',
   ]
+    .filter(Boolean)
+    .join(' ');
+
+  const workspaceClass = ['workspace', workspaceFlush ? 'is-flush' : '']
     .filter(Boolean)
     .join(' ');
 
@@ -279,7 +287,7 @@ export function WebAppShell(): React.ReactElement {
             </div>
           </header>
 
-          <main className="workspace" data-od-id="workspace">
+          <main className={workspaceClass} data-od-id="workspace">
             <div className="workspace-inner">
               <Outlet />
             </div>

@@ -67,4 +67,17 @@ describe('WebAppShell', () => {
     expect(cta?.textContent?.trim()).toBe('Sign in');
     expect((cta as HTMLElement).hidden).toBe(false);
   });
+
+  it('sets workspace is-flush on /library, not on /home', () => {
+    const lib = renderShell('/library');
+    expect(
+      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush'),
+    ).toBe(true);
+    lib.unmount();
+
+    renderShell('/home');
+    expect(
+      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush'),
+    ).toBe(false);
+  });
 });
