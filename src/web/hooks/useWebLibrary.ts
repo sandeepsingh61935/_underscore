@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { getDomainFromUrl } from '@/shared/utils/domain-from-url';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { highlightTimestampMs } from '@/shared/utils/supabase-highlight-row';
 import {
   aggregateLibrary,
@@ -75,12 +76,7 @@ export function mapSupabaseRowToWebHighlight(row: {
     return null;
   }
 
-  let path = '/';
-  try {
-    path = new URL(url).pathname || '/';
-  } catch {
-    return null;
-  }
+  const path = getSectionPath(url);
 
   const metadata = row.metadata ?? undefined;
   const tags = Array.isArray(metadata?.tags) ? metadata.tags.filter((t): t is string => typeof t === 'string') : [];

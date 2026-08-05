@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
 export interface Highlight {
     id: string;
@@ -51,12 +52,11 @@ export function useHighlightsByDomainWeb(domain: string | undefined) {
 
                 // Map to highlight format; newest update first
                 const highlights: Highlight[] = (data || []).map((hl) => {
-                    const url = new URL(hl.url);
                     return {
                         id: hl.id,
                         url: hl.url,
                         text: hl.text,
-                        path: url.pathname,
+                        path: getSectionPath(hl.url),
                         createdAt: new Date(hl.created_at),
                         updatedAt: hl.updated_at ? new Date(hl.updated_at) : undefined,
                     };

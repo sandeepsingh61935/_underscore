@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import { getSectionPath, normalizePageUrl } from '@/shared/utils/normalize-page-url';
+
 export interface TabContext {
   url: string | null;
   domain: string | null;
@@ -22,10 +24,11 @@ export function useCurrentTabContext() {
         if (tab && tab.url) {
           try {
             const parsedUrl = new URL(tab.url);
+            const normalized = normalizePageUrl(tab.url);
             setTabContext({
-              url: tab.url,
+              url: normalized,
               domain: parsedUrl.hostname.replace(/^www\./, ''),
-              path: parsedUrl.pathname,
+              path: getSectionPath(tab.url),
               title: tab.title || null,
             });
           } catch {

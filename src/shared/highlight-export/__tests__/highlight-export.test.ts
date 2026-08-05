@@ -66,6 +66,35 @@ describe('highlight-export', () => {
       expect(filtered[0]?.id).toBe('h-1');
     });
 
+    it('splits query-identity sections on the same path shell', () => {
+      const transcriptItems = [
+        hl({
+          id: 't-a',
+          url: 'https://youtubetotranscript.com/transcript?v=AAA&utm_source=x',
+        }),
+        hl({
+          id: 't-b',
+          url: 'https://youtubetotranscript.com/transcript?v=BBB',
+        }),
+      ];
+      const filtered = filterRawHighlightsByScope(transcriptItems, {
+        kind: 'section',
+        domain: 'youtubetotranscript.com',
+        sectionKey: '/transcript?v=AAA',
+      });
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]?.id).toBe('t-a');
+    });
+
+    it('maps query-aware sectionKey on exportable highlights', () => {
+      const result = toExportableHighlight(
+        hl({
+          url: 'https://youtubetotranscript.com/transcript?v=AAA&utm_source=x',
+        }),
+      );
+      expect(result?.sectionKey).toBe('/transcript?v=AAA');
+    });
+
     it('filters by highlight id', () => {
       const filtered = filterRawHighlightsByScope(items, { kind: 'highlight', highlightId: 'h-2' });
       expect(filtered).toHaveLength(1);

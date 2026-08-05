@@ -18,6 +18,7 @@ import { filterRawHighlightsByScope } from '@/shared/highlight-export';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { searchHighlights } from '@/shared/utils/highlight-search';
@@ -135,7 +136,7 @@ export class HighlightQueryService {
         id: hl.id,
         text: hl.text,
         url: hl.url ?? '',
-        path: hl.url ? new URL(hl.url).pathname : '/',
+        path: hl.url ? getSectionPath(hl.url) : '/',
         domain,
         createdAt: hl.createdAt,
         updatedAt: hl.updatedAt,
@@ -181,12 +182,7 @@ export class HighlightQueryService {
       const domain = options?.domain ?? getDomainFromUrl(url);
       if (!domain) continue;
 
-      let path: string;
-      try {
-        path = new URL(url).pathname;
-      } catch {
-        continue;
-      }
+      const path = getSectionPath(url);
 
       if (options?.section && getSectionKey({ url, path }) !== options.section) {
         continue;
@@ -262,7 +258,7 @@ export class HighlightQueryService {
           id: hl.id,
           text: hl.text,
           url: hl.url ?? '',
-          path: new URL(hl.url).pathname,
+          path: getSectionPath(hl.url),
           domain,
           createdAt: hl.createdAt,
           updatedAt: hl.updatedAt,

@@ -14,6 +14,7 @@ import {
 import { saveLlmArtifact } from '@/shared/llm/llm-artifact-store';
 import { summarizeSectionText } from '@/shared/llm/summarization-pipeline';
 import { buildReduceDomainRequest } from '@/shared/llm/summary-request';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 
 type StreamAPI = ReturnType<typeof useLLMStream>;
@@ -43,7 +44,7 @@ export function useSynthesizeDomain(): Omit<StreamAPI, 'start'> & {
 
     const bySection = new Map<string, { highlights: PromptHighlight[]; excerpts: HighlightExcerpt[] }>();
     for (const excerpt of excerpts) {
-      const path = paths?.[excerpt.id] ?? new URL(excerpt.url).pathname;
+      const path = paths?.[excerpt.id] ?? getSectionPath(excerpt.url);
       const sectionKey = getSectionKey({ url: excerpt.url, path });
       const bucket = bySection.get(sectionKey) ?? { highlights: [], excerpts: [] };
       const hl = ctx.highlights.find(h => h.id === excerpt.id);

@@ -9,6 +9,7 @@ import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 import { fetchHighlightLabelsWeb, mergeLabelsForHighlight } from '@/shared/services/tag-query-web';
 import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
@@ -99,7 +100,7 @@ export function useHighlightsByDomain(
             id: hl.id,
             url: hl.url,
             text: hl.text,
-            path: hl.path || new URL(hl.url).pathname,
+            path: hl.path || getSectionPath(hl.url),
             createdAt: new Date(hl.createdAt),
             updatedAt: hl.updatedAt ? new Date(hl.updatedAt) : undefined,
             notes: hl.notes,
@@ -138,7 +139,6 @@ export function useHighlightsByDomain(
         const labelMap = await fetchHighlightLabelsWeb(supabase, session.user.id, highlightIds);
 
         const highlights: Highlight[] = (data || []).map((hl) => {
-          const highlightUrl = new URL(hl.url);
           const metadata = hl.metadata as {
             notes?: string;
             tags?: string[];
@@ -150,7 +150,7 @@ export function useHighlightsByDomain(
             id: hl.id,
             url: hl.url,
             text: hl.text,
-            path: highlightUrl.pathname,
+            path: getSectionPath(hl.url),
             createdAt: new Date(hl.created_at),
             updatedAt: hl.updated_at ? new Date(hl.updated_at) : undefined,
             notes: metadata?.notes,

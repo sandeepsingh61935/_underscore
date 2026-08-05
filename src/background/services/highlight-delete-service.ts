@@ -42,15 +42,6 @@ type PendingUndo = {
 
 const UNDO_WINDOW_MS = 5000;
 
-function pathFromUrl(url: string | undefined): string {
-  if (!url) return '/';
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return '/';
-  }
-}
-
 function matchesSection(
   highlight: HighlightDataV2,
   domain: string,
@@ -59,7 +50,8 @@ function matchesSection(
   if (!highlight.url || !urlMatchesDomain(highlight.url, domain)) {
     return false;
   }
-  return getSectionKey({ url: highlight.url, path: pathFromUrl(highlight.url) }) === sectionKey;
+  // Omit path so getSectionKey derives query-aware section path from url.
+  return getSectionKey({ url: highlight.url }) === sectionKey;
 }
 
 function matchesDomain(highlight: HighlightDataV2, domain: string): boolean {

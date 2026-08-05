@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 import type { SearchField, SearchableHighlight } from '@/shared/utils/highlight-search';
 import { searchHighlights } from '@/shared/utils/highlight-search';
@@ -196,12 +197,7 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
           const domain = getDomainFromUrl(hl.url);
           if (!domain) continue;
 
-          let path: string;
-          try {
-            path = new URL(hl.url).pathname;
-          } catch {
-            continue;
-          }
+          const path = getSectionPath(hl.url);
 
           if (scope.kind === 'domain' || scope.kind === 'section') {
             if (!urlMatchesDomain(hl.url, scope.domain)) continue;

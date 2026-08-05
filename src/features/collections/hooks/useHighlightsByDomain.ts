@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
 import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
 export interface Highlight {
     id: string;
@@ -52,7 +53,7 @@ export function useHighlightsByDomain(domain: string | undefined) {
                 id: hl.id,
                 url: hl.url,
                 text: hl.text,
-                path: hl.path || new URL(hl.url).pathname,
+                path: hl.path || getSectionPath(hl.url),
                 createdAt: new Date(hl.createdAt),
                 updatedAt: hl.updatedAt ? new Date(hl.updatedAt) : undefined,
             }))

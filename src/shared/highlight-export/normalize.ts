@@ -17,14 +17,7 @@ export function toExportableHighlight(
   const domain = getDomainFromUrl(hl.url);
   if (!domain) return null;
 
-  let path = '/';
-  try {
-    path = new URL(hl.url).pathname;
-  } catch {
-    return null;
-  }
-
-  const sectionKey = getSectionKey({ url: hl.url, path });
+  const sectionKey = getSectionKey({ url: hl.url });
 
   return {
     id: hl.id,
@@ -51,13 +44,7 @@ export function filterRawHighlightsByScope(
     case 'section':
       return highlights.filter((hl) => {
         if (!hl.url || !urlMatchesDomain(hl.url, scope.domain)) return false;
-        let path = '/';
-        try {
-          path = new URL(hl.url).pathname;
-        } catch {
-          return false;
-        }
-        return getSectionKey({ url: hl.url, path }) === scope.sectionKey;
+        return getSectionKey({ url: hl.url }) === scope.sectionKey;
       });
     case 'highlight':
       return highlights.filter((hl) => hl.id === scope.highlightId);
