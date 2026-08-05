@@ -76,7 +76,7 @@ describe('SettingsPage account row click targets', () => {
 
     render(<SettingsPage onSignIn={onSignIn} />);
 
-    fireEvent.click(screen.getByText(/Local only on this device/));
+    fireEvent.click(screen.getByText(/Highlights stay on this device/));
     expect(onSignIn).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));

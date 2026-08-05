@@ -140,28 +140,32 @@ describe('SettingsPage basic mode boundaries', () => {
     expect(screen.queryByText('Sync library')).toBeNull();
   });
 
-  it('shows guest card with Sign in after Settings head (no plan pill)', () => {
+  it('shows local card, Mode segments, and Appearance for guests', () => {
     render(<SettingsPage onSignIn={vi.fn()} />);
 
     const guest = screen.getByTestId('settings-guest-card');
-    expect(within(guest).getByText('Guest')).toBeTruthy();
-    expect(within(guest).getByText(/Local only on this device/)).toBeTruthy();
+    expect(within(guest).getByText('Local only')).toBeTruthy();
+    expect(within(guest).getByText(/Highlights stay on this device/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByTestId('settings-section-mode')).toBeTruthy();
+    expect(screen.getByTestId('settings-mode-seg')).toBeTruthy();
+    expect(screen.getByTestId('settings-section-appearance')).toBeTruthy();
+    expect(screen.getByTestId('settings-theme-system')).toBeTruthy();
     expect(screen.queryByTestId('account-plan-pill')).toBeNull();
     expect(screen.queryByTestId('billing-cta')).toBeNull();
   });
 
-  it('orders Account before Typography, Theme, and AI for guests', () => {
+  it('orders Mode → Typography → Appearance → AI for guests', () => {
     render(<SettingsPage />);
     assertSectionOrder([
-      'settings-section-account',
+      'settings-section-mode',
       'settings-section-typography',
-      'settings-section-general',
+      'settings-section-appearance',
       'settings-section-ai',
     ]);
   });
 
-  it('shows Connect then Configure with short subs and lock status for guest', () => {
+  it('shows Configure and Connect with lock status for guest', () => {
     render(<SettingsPage />);
 
     expect(screen.getByText('Connect to AI')).toBeTruthy();
@@ -235,12 +239,13 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(startCheckout).not.toHaveBeenCalled();
   });
 
-  it('orders Account + billing before Typography and Library', () => {
+  it('orders Mode → Typography → Appearance → Account → Library → AI → Session', () => {
     render(<SettingsPage />);
     assertSectionOrder([
-      'settings-section-account',
+      'settings-section-mode',
       'settings-section-typography',
-      'settings-section-general',
+      'settings-section-appearance',
+      'settings-section-account',
       'settings-section-library',
       'settings-section-ai',
       'settings-section-session',
@@ -248,11 +253,12 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     const account = screen.getByTestId('settings-section-account');
     const billingCta = screen.getByTestId('billing-cta');
     const typography = screen.getByTestId('settings-section-typography');
+    // Billing trails account; Mode/Typography come before Account.
     expect(
       account.compareDocumentPosition(billingCta) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      billingCta.compareDocumentPosition(typography) & Node.DOCUMENT_POSITION_FOLLOWING
+      typography.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 });

@@ -110,10 +110,9 @@ describe('SettingsPage action click targets', () => {
     expect(screen.getByText(/Delete entire library/i)).toBeTruthy();
   });
 
-  it('expands mode panel from Change button and applies Free via Use Free', () => {
+  it('applies Free from Mode segment when Paid is active', () => {
     const setMode = vi.fn();
     mockAuthedApp(setMode);
-    // Start as paid-capable mode so Use Free is enabled
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
       setTheme: vi.fn(),
@@ -151,14 +150,33 @@ describe('SettingsPage action click targets', () => {
     });
 
     render(<SettingsPage />);
-    fireEvent.click(screen.getByText('Mode'));
-    expect(screen.queryByTestId('settings-mode-panel')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('settings-mode-toggle'));
-    expect(screen.getByTestId('settings-mode-panel')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use Free: Account (Free)' }));
+    expect(screen.getByTestId('settings-mode-paid')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('settings-mode-free'));
     expect(setMode).toHaveBeenCalledWith('pro');
+  });
+
+  it('changes theme from Appearance segments only', () => {
+    const setTheme = vi.fn();
+    mockAuthedApp();
+    vi.mocked(useApp).mockReturnValue({
+      theme: 'system',
+      setTheme,
+      currentMode: 'pro',
+      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
+      isAuthenticated: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+      modeReady: true,
+      setMode: vi.fn(),
+      availableModes: ['pro'],
+      isLoading: false,
+      setIsLoading: vi.fn(),
+      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
+    } as ReturnType<typeof useApp>);
+
+    render(<SettingsPage />);
+    fireEvent.click(screen.getByTestId('settings-theme-dark'));
+    expect(setTheme).toHaveBeenCalledWith('dark');
   });
 
   it('shows sync percent while syncing', () => {

@@ -11,8 +11,10 @@ import {
 } from '@/features/collections/hooks/use-sync-library';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
-import { SettingsModeInline } from '@/features/settings/components/SettingsModeInline';
+import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
+import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
+import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
@@ -35,7 +37,7 @@ import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export interface SettingsPageProps {
   onBack?: () => void;
-  /** @deprecated Prefer inline mode change; kept for callers. */
+  /** @deprecated Mode is inline on Settings; kept for callers. */
   onChangeMode?: () => void;
   onConfigureAIProviders?: () => void;
   onSignIn?: () => void;
@@ -43,11 +45,9 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings Page — v3 product section order (PRD):
- * head → Guest card or Account → Billing CTAs/Sync → banners →
- * Typography → Theme → Mode (inline) → Library tools → AI (gated) → Sign out
- *
- * Action rows are static lists; only trailing BtnText / ExportActions are clickable.
+ * Settings — Open Design extension mockup order:
+ * head → local card (guest) → Mode segments → Typography → Appearance/Theme →
+ * Account/billing (signed-in) → Library → AI → Sign out
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -66,7 +66,6 @@ export function SettingsPage({
   } = useApp();
   const billing = useBillingContextOptional();
   const billingEntitlement = billing?.snapshot.entitlement ?? freeEntitlement();
-  // While billing loads, prefer stored mode so paid users do not flash Free.
   const billingReady = billing?.snapshot.loadState === 'ready';
   const isPaidActive = billing
     ? billingReady
@@ -77,7 +76,6 @@ export function SettingsPage({
   const billingError = billing?.snapshot.error ?? null;
   const startCheckout = billing?.startCheckout;
   const openBillingPortal = billing?.openPortal;
-  /** Post-checkout confidence banner: payment succeeded; paid may lag webhook. */
   type BillingReturnBanner =
     | { kind: 'success_pending' }
     | { kind: 'success_active' }
@@ -152,13 +150,6 @@ export function SettingsPage({
     }
   };
 
-  const handleToggleTheme = (): void => {
-    const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
-    const currentIndex = themes.indexOf(theme as 'light' | 'dark' | 'system');
-    const nextTheme = themes[(currentIndex + 1) % themes.length] || 'system';
-    setTheme(nextTheme);
-  };
-
   const syncSubtitle = ((): string => {
     if (!syncGate.allowed) return featureGateSubtitle(syncGate.reason);
     if (!user) return featureGateSubtitle('AUTH_REQUIRED');
@@ -205,11 +196,25 @@ export function SettingsPage({
     });
   };
 
-  const handleSelectFreeMode = (): void => {
+  const handleSelectGuest = (): void => {
+    if (!isAuthenticated) return;
+    setSignOutOpen(true);
+  };
+
+  const handleSelectFree = (): void => {
+    if (!isAuthenticated) {
+      onSignIn?.();
+      return;
+    }
     setMode('pro' as ModeType);
   };
 
-  const handleSelectPaidUpgrade = (): void => {
+  const handleSelectPaid = (): void => {
+    if (!isAuthenticated) {
+      onSignIn?.();
+      return;
+    }
+    if (isPaidActive) return;
     setBillingActionError(null);
     if (startCheckout) {
       void startCheckout().catch((e: unknown) => {
@@ -239,130 +244,137 @@ export function SettingsPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      {/* 1. Head */}
       <div style={{ padding: '12px 16px 6px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>Settings</div>
+        <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>
+          Settings
+        </div>
       </div>
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
-        {/* 2. Guest card or Account */}
-        <div
-          className="u-caps"
-          data-testid="settings-section-account"
-          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-        >
-          Account
-        </div>
+        {/* 1. Local card (guest) — Open Design mockup */}
         {!user ? (
-          <div
-            data-testid="settings-guest-card"
-            style={{
-              margin: '0 16px 10px',
-              padding: '14px 16px',
-              border: '1px solid var(--rule)',
-              background: 'var(--paper-2)',
-            }}
-          >
-            <div className="u-serif" style={{ fontSize: 'var(--step-1)', marginBottom: 4 }}>
-              Guest
-            </div>
-            <div
-              className="u-sans"
-              style={{
-                fontSize: 'var(--step--1)',
-                color: 'var(--ink-3)',
-                lineHeight: 1.5,
-                marginBottom: 12,
-              }}
-            >
-              Local only on this device. Sign in to sync library across devices, export, and use AI.
-            </div>
-            <BtnText accent aria-label="Sign in" onClick={() => onSignIn?.()}>
-              Sign in
-            </BtnText>
+          <div data-testid="settings-guest-card">
+            <SettingsLocalCard
+              onSignIn={onSignIn}
+              onChooseFree={onSignIn}
+            />
           </div>
-        ) : (
-          <Row
-            title={user.email || 'Signed in'}
-            sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
-            right={
-              planPill === 'Guest' ? null : (
-                <span
-                  className="u-mono"
-                  data-testid="account-plan-pill"
-                  style={{
-                    fontSize: 'var(--step--2)',
-                    padding: '2px 8px',
-                    border: '1px solid var(--rule-soft)',
-                    color:
-                      planPill === 'Paid'
-                        ? 'var(--accent)'
-                        : planPill === 'Past due'
+        ) : null}
+
+        {/* 2. Mode / Plan segments — always */}
+        <SettingsModeSeg
+          currentMode={currentMode}
+          isAuthenticated={isAuthenticated}
+          isPaidActive={isPaidActive}
+          onSelectGuest={handleSelectGuest}
+          onSelectFree={handleSelectFree}
+          onSelectPaid={handleSelectPaid}
+        />
+
+        {/* 3. Typography */}
+        <div data-testid="settings-section-typography">
+          <TypographySettings
+            expanded={typographyExpanded}
+            onToggle={() => setTypographyExpanded((v) => !v)}
+          />
+        </div>
+
+        {/* 4. Appearance / Theme segments */}
+        <SettingsThemeSeg
+          theme={theme}
+          onChange={(t) => setTheme(t)}
+        />
+
+        {/* 5. Account + billing (signed-in) */}
+        {user ? (
+          <>
+            <div
+              className="u-caps"
+              data-testid="settings-section-account"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Account
+            </div>
+            <Row
+              title={user.email || 'Signed in'}
+              sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
+              right={
+                planPill === 'Guest' ? null : (
+                  <span
+                    className="u-mono"
+                    data-testid="account-plan-pill"
+                    style={{
+                      fontSize: 'var(--step--2)',
+                      padding: '2px 8px',
+                      border: '1px solid var(--rule-soft)',
+                      color:
+                        planPill === 'Paid' || planPill === 'Past due'
                           ? 'var(--accent)'
                           : 'var(--ink-3)',
-                  }}
-                >
-                  {planPill}
-                </span>
-              )
-            }
-          />
-        )}
-
-        {/* 3. Billing CTAs / Sync */}
-        {user && billing && billingCta ? (
-          <>
-            <Row
-              title={billingCta.title}
-              sub={
-                billingActionError || billingError
-                  ? billingActionError || billingError || undefined
-                  : billingCta.sub
-              }
-              right={
-                billingBusy ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <BtnText
-                    accent
-                    data-testid="billing-cta"
-                    data-billing-kind={billingCta.kind}
-                    onClick={handleBillingCta}
+                    }}
                   >
-                    {billingCta.ctaLabel}
-                  </BtnText>
+                    {planPill}
+                  </span>
                 )
               }
             />
-            {billingCta.showSync ? (
-              <Row
-                title="Refresh subscription status"
-                sub="Already paid? Pull status from Polar and update this account."
-                right={
-                  billingBusy ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <BtnText
-                      data-testid="billing-sync-cta"
-                      onClick={() => {
-                        setBillingActionError(null);
-                        void billing.syncFromPolar().catch((e: unknown) => {
-                          setBillingActionError(
-                            e instanceof Error ? e.message : 'Sync failed'
-                          );
-                        });
-                      }}
-                    >
-                      Sync
-                    </BtnText>
-                  )
-                }
-              />
+            {billing && billingCta ? (
+              <>
+                <Row
+                  title={billingCta.title}
+                  sub={
+                    billingActionError || billingError
+                      ? billingActionError || billingError || undefined
+                      : billingCta.sub
+                  }
+                  right={
+                    billingBusy ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <BtnText
+                        accent
+                        data-testid="billing-cta"
+                        data-billing-kind={billingCta.kind}
+                        onClick={handleBillingCta}
+                      >
+                        {billingCta.ctaLabel}
+                      </BtnText>
+                    )
+                  }
+                />
+                {billingCta.showSync ? (
+                  <Row
+                    title="Refresh subscription status"
+                    sub="Already paid? Pull status from Polar and update this account."
+                    right={
+                      billingBusy ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <BtnText
+                          data-testid="billing-sync-cta"
+                          onClick={() => {
+                            setBillingActionError(null);
+                            void billing.syncFromPolar().catch((e: unknown) => {
+                              setBillingActionError(
+                                e instanceof Error ? e.message : 'Sync failed'
+                              );
+                            });
+                          }}
+                        >
+                          Sync
+                        </BtnText>
+                      )
+                    }
+                  />
+                ) : null}
+              </>
             ) : null}
           </>
-        ) : null}
+        ) : (
+          /* Anchor for section-order tests when guest: account region is local card */
+          <div data-testid="settings-section-account" hidden aria-hidden="true" />
+        )}
 
-        {/* 4. Banners (post-checkout / cancel) */}
         {user && billingReturn ? (
           <div
             data-testid="billing-return-banner"
@@ -436,52 +448,7 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {/* 5. Typography */}
-        <div data-testid="settings-section-typography">
-          <TypographySettings
-            expanded={typographyExpanded}
-            onToggle={() => setTypographyExpanded((v) => !v)}
-          />
-        </div>
-
-        {/* 6. Theme + Mode (inline) */}
-        <div
-          className="u-caps"
-          data-testid="settings-section-general"
-          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-        >
-          General
-        </div>
-        <Row
-          title="Theme"
-          sub="Match system"
-          right={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span
-                className="u-mono"
-                style={{
-                  fontSize: 'var(--step--2)',
-                  color: 'var(--ink-3)',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {theme}
-              </span>
-              <BtnText aria-label="Change theme" onClick={handleToggleTheme}>
-                Change
-              </BtnText>
-            </span>
-          }
-        />
-        <SettingsModeInline
-          currentMode={currentMode}
-          isAuthenticated={isAuthenticated}
-          isPaidActive={isPaidActive}
-          onSelectFree={handleSelectFreeMode}
-          onSelectPaidUpgrade={handleSelectPaidUpgrade}
-        />
-
-        {/* 7. Library tools */}
+        {/* 6. Library tools */}
         {isAuthenticated ? (
           <>
             <div
@@ -576,29 +543,14 @@ export function SettingsPage({
           </>
         ) : null}
 
-        {/* 8. AI (gated) */}
+        {/* 7. AI */}
         <div
           className="u-caps"
           data-testid="settings-section-ai"
           style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
         >
-          AI
+          AI · setup
         </div>
-        <Row
-          title="Connect to AI"
-          sub="External agents"
-          right={
-            <BtnText
-              aria-label={mcpGate.allowed ? 'Open Connect to AI' : 'Connect to AI locked'}
-              onClick={() => setConnectOpen(true)}
-            >
-              <SettingsStatusGlyph
-                kind={mcpGate.allowed ? 'chevron' : 'lock'}
-                label={mcpGate.allowed ? 'Open' : 'Locked'}
-              />
-            </BtnText>
-          }
-        />
         <Row
           title="Configure AI providers"
           sub="In-app models"
@@ -622,8 +574,23 @@ export function SettingsPage({
             </BtnText>
           }
         />
+        <Row
+          title="Connect to AI"
+          sub="External agents"
+          right={
+            <BtnText
+              aria-label={mcpGate.allowed ? 'Open Connect to AI' : 'Connect to AI locked'}
+              onClick={() => setConnectOpen(true)}
+            >
+              <SettingsStatusGlyph
+                kind={mcpGate.allowed ? 'chevron' : 'lock'}
+                label={mcpGate.allowed ? 'Open' : 'Locked'}
+              />
+            </BtnText>
+          }
+        />
 
-        {/* 9. Sign out */}
+        {/* 8. Session */}
         {user ? (
           <>
             <div
