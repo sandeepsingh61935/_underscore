@@ -6,6 +6,7 @@
  */
 
 import type { HighlightData as ModeHighlightData } from '@/content/modes/highlight-mode.interface';
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { Command } from '@/shared/patterns/command';
@@ -45,6 +46,9 @@ import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 export class CreateHighlightCommand implements Command {
   private createdHighlightId: string | null = null;
   private serializedRange: SerializedRange | null = null;
+  /** Normalized body from first create — redo must not reintroduce raw DOM text. */
+  private bodyText: string | null = null;
+  private contentHash: string | null = null;
 
   /**
    * @param selection - Browser Selection object to create highlight from
@@ -79,6 +83,14 @@ export class CreateHighlightCommand implements Command {
           this.colorRole
         );
 
+        // Snapshot post-normalize body so undo→redo stays byte-identical.
+        const created = this.modeManager.getHighlight(this.createdHighlightId);
+        if (created?.text) {
+          this.bodyText = created.text;
+          this.contentHash =
+            created.contentHash ?? (await generateContentHash(created.text));
+        }
+
         this.logger.debug('Highlight created via mode', {
           id: this.createdHighlightId,
           colorRole: this.colorRole,
@@ -98,14 +110,18 @@ export class CreateHighlightCommand implements Command {
           return;
         }
 
-        // Get current mode and recreate highlight
-        const mode = this.modeManager.getCurrentMode();
-        const text = range.toString();
-
-        // Generate content hash for deduplication
-        const contentHash = await generateContentHash(text);
+        // Prefer snapshotted body; fall back to same capture policy as create.
+        const text =
+          this.bodyText ?? resolveCaptureBodyText(range).text;
+        if (!text) {
+          this.logger.warn('Cannot redo: Empty capture body text');
+          return;
+        }
+        const contentHash =
+          this.contentHash ?? (await generateContentHash(text));
 
         // Recreate via mode's createFromData - this handles ALL persistence
+        const mode = this.modeManager.getCurrentMode();
         await mode.createFromData({
           id: this.createdHighlightId,
           text,
