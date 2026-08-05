@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { HomePage } from './HomePage';
+import { HomePage, libraryHref } from './HomePage';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -67,5 +67,13 @@ describe('HomePage', () => {
     expect(screen.getByText('Nothing saved')).toBeTruthy();
     expect(screen.getByText(/Select text in the extension/i)).toBeTruthy();
     expect(screen.getByText('No page open')).toBeTruthy();
+  });
+
+  it('libraryHref: root path omits section; nested path sets section', () => {
+    expect(libraryHref('example.com', '/')).toBe('/library?domain=example.com');
+    expect(libraryHref('example.com', null)).toBe('/library?domain=example.com');
+    expect(libraryHref('example.com', '/docs/guide')).toBe(
+      '/library?domain=example.com&section=%2Fdocs%2Fguide',
+    );
   });
 });

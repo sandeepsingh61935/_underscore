@@ -141,11 +141,10 @@ function EmptyInline({
   );
 }
 
-function libraryHref(domain: string, path?: string | null): string {
-  const search = buildLibrarySearch({
-    domain,
-    section: path ?? null,
-  });
+/** Root path `/` means domain-only (no section), matching OD open-page. */
+export function libraryHref(domain: string, path?: string | null): string {
+  const section = path && path !== '/' ? path : null;
+  const search = buildLibrarySearch({ domain, section });
   return search ? `/library?${search}` : '/library';
 }
 
