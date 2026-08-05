@@ -134,11 +134,22 @@ async function defaultFetchHighlights(): Promise<WebHighlight[]> {
 /**
  * Library data for the web product shell.
  * Guest is always empty (no seed). Signed-in uses injected fetch or Supabase.
+ *
+ * In-flight fetches are generation-gated: only the latest load/refresh/auth
+ * generation may apply results, so logout and overlapping refresh cannot
+ * leak prior-session data.
  */
 export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   const { isAuthenticated, planLabel, fetchHighlights: fetchHighlightsOpt } = opts;
   const fetchRef = useRef(fetchHighlightsOpt);
   fetchRef.current = fetchHighlightsOpt;
+
+  /** Bumped on every load attempt and on guest clear; stale completions ignore. */
+  const loadGenRef = useRef(0);
+  const planLabelRef = useRef(planLabel);
+  planLabelRef.current = planLabel;
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
 
   const [status, setStatus] = useState<WebLibraryState['status']>(
     isAuthenticated ? 'loading' : 'ready',
@@ -150,52 +161,70 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   const [currentPage, setCurrentPage] = useState<WebCurrentPage>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const applyRows = useCallback(
-    (rows: WebHighlight[]) => {
-      const agg = aggregateLibrary(rows);
-      setHighlights(rows);
-      setDomains(agg.domains);
-      setStats({ ...agg.stats, planLabel });
-      setRecent(agg.recent);
-      setCurrentPage(agg.currentPage);
-      setError(null);
-      setStatus('ready');
-    },
-    [planLabel],
-  );
+  const applyEmpty = useCallback((readyStatus: 'ready' | 'error' = 'ready', err: string | null = null) => {
+    setHighlights([]);
+    setDomains([]);
+    setStats(emptyStats(planLabelRef.current));
+    setRecent([]);
+    setCurrentPage(null);
+    setError(err);
+    setStatus(readyStatus);
+  }, []);
 
-  const applyEmpty = useCallback(
-    (readyStatus: 'ready' | 'error' = 'ready', err: string | null = null) => {
-      setHighlights([]);
-      setDomains([]);
-      setStats(emptyStats(planLabel));
-      setRecent([]);
-      setCurrentPage(null);
-      setError(err);
-      setStatus(readyStatus);
-    },
-    [planLabel],
-  );
+  const applyRows = useCallback((rows: WebHighlight[]) => {
+    const agg = aggregateLibrary(rows);
+    setHighlights(rows);
+    setDomains(agg.domains);
+    setStats({ ...agg.stats, planLabel: planLabelRef.current });
+    setRecent(agg.recent);
+    setCurrentPage(agg.currentPage);
+    setError(null);
+    setStatus('ready');
+  }, []);
 
   const load = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticatedRef.current) {
+      loadGenRef.current += 1;
       applyEmpty('ready', null);
       return;
     }
 
+    const gen = ++loadGenRef.current;
+    // Clear prior session aggregate before fetch so re-login never flashes old data.
+    setHighlights([]);
+    setDomains([]);
+    setRecent([]);
+    setCurrentPage(null);
+    setError(null);
+    setStats(emptyStats(planLabelRef.current));
     setStatus('loading');
+
     try {
       const fetchFn = fetchRef.current ?? defaultFetchHighlights;
       const rows = await fetchFn();
+      if (gen !== loadGenRef.current) {
+        return;
+      }
+      if (!isAuthenticatedRef.current) {
+        return;
+      }
       applyRows(rows);
     } catch (err) {
+      if (gen !== loadGenRef.current) {
+        return;
+      }
+      if (!isAuthenticatedRef.current) {
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Failed to load library';
       applyEmpty('error', message);
     }
-  }, [isAuthenticated, applyEmpty, applyRows]);
+  }, [applyEmpty, applyRows]);
 
   useEffect(() => {
     if (!isAuthenticated) {
+      // Invalidate any in-flight signed-in fetch, then clear.
+      loadGenRef.current += 1;
       applyEmpty('ready', null);
       return;
     }

@@ -163,4 +163,104 @@ describe('useWebLibrary', () => {
     expect(fetchHighlights).not.toHaveBeenCalled();
     expect(result.current.highlights).toEqual([]);
   });
+
+  it('logout while fetch in-flight: stale success does not populate guest', async () => {
+    let resolveFetch!: (rows: WebHighlight[]) => void;
+    const fetchHighlights = vi.fn(
+      () =>
+        new Promise<WebHighlight[]>((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ isAuthenticated, planLabel }: { isAuthenticated: boolean; planLabel: string }) =>
+        useWebLibrary({ isAuthenticated, planLabel, fetchHighlights }),
+      { initialProps: { isAuthenticated: true, planLabel: 'Free' } },
+    );
+
+    expect(result.current.status).toBe('loading');
+    expect(fetchHighlights).toHaveBeenCalledTimes(1);
+
+    rerender({ isAuthenticated: false, planLabel: 'Guest' });
+
+    await waitFor(() => {
+      expect(result.current.isGuest).toBe(true);
+      expect(result.current.status).toBe('ready');
+    });
+    expect(result.current.highlights).toEqual([]);
+
+    await act(async () => {
+      resolveFetch([hl({ id: 'stale', domain: 'leak.com', path: '/', savedAt: Date.now() })]);
+      // Allow microtasks from the stale promise to run
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.isGuest).toBe(true);
+    expect(result.current.highlights).toEqual([]);
+    expect(result.current.domains).toEqual([]);
+    expect(result.current.currentPage).toBeNull();
+    expect(result.current.stats.highlightCount).toBe(0);
+  });
+
+  it('sequential refresh: only latest response wins', async () => {
+    const resolvers: Array<(rows: WebHighlight[]) => void> = [];
+    const fetchHighlights = vi.fn(
+      () =>
+        new Promise<WebHighlight[]>((resolve) => {
+          resolvers.push(resolve);
+        }),
+    );
+
+    const { result } = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(fetchHighlights).toHaveBeenCalledTimes(1);
+    });
+
+    // Start second load while first is still pending
+    let refreshDone: Promise<void> | undefined;
+    await act(async () => {
+      refreshDone = result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(fetchHighlights).toHaveBeenCalledTimes(2);
+    });
+    expect(resolvers).toHaveLength(2);
+
+    const first = resolvers[0]!;
+    const second = resolvers[1]!;
+
+    // Older fetch resolves first with "stale" data
+    await act(async () => {
+      first([hl({ id: 'old', domain: 'old.com', path: '/', savedAt: 1 })]);
+      await Promise.resolve();
+    });
+
+    // Still loading for latest gen; must not apply old rows
+    expect(result.current.highlights.find((h) => h.id === 'old')).toBeUndefined();
+
+    await act(async () => {
+      second([
+        hl({ id: 'new-a', domain: 'new.com', path: '/', savedAt: 2 }),
+        hl({ id: 'new-b', domain: 'new.com', path: '/x', savedAt: 3 }),
+      ]);
+      await refreshDone;
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready');
+    });
+    expect(result.current.highlights.map((h) => h.id)).toEqual(['new-a', 'new-b']);
+    expect(result.current.stats.highlightCount).toBe(2);
+    expect(result.current.domains.map((d) => d.domain)).toEqual(['new.com']);
+  });
 });
