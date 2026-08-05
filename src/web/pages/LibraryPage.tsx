@@ -1,7 +1,7 @@
 /**
  * @file LibraryPage.tsx
  * @description Product Library — OD viewLibrary parity: domain/section rail,
- * client-side search/filters, URL-synced selection. No chrome.runtime.
+ * client-side search/filters, URL-synced selection. No extension runtime messaging.
  */
 
 import React, { useCallback, useMemo, useState } from 'react';

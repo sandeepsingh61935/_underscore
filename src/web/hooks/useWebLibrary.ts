@@ -1,7 +1,7 @@
 /**
  * @file useWebLibrary.ts
  * @description Web library data hook: Supabase (or injected) fetch + pure aggregation.
- * Never uses chrome.runtime or MessageBus.
+ * Never uses extension runtime messaging or MessageBus.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';

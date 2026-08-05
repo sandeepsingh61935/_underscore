@@ -149,6 +149,17 @@ export function libraryHref(domain: string, path?: string | null): string {
 }
 
 /**
+ * Ask URL with optional grounding scope (domain / section).
+ * Whole-library when domain omitted; root path omits section.
+ */
+export function askHref(domain?: string | null, path?: string | null): string {
+  if (!domain) return '/ask';
+  const section = path && path !== '/' ? path : null;
+  const search = buildLibrarySearch({ domain, section });
+  return search ? `/ask?${search}` : '/ask';
+}
+
+/**
  * Product Home — OD viewHome parity.
  * Guest is always empty (useWebLibrary); Ask CTAs only when caps.ai.
  */
@@ -296,7 +307,7 @@ export function HomePage(): React.ReactElement {
   let headAction: React.ReactNode = null;
   if (!caps.isGuest && ai && !empty) {
     headAction = (
-      <Link to="/ask" className="btn accent" data-od-id="home-cta">
+      <Link to={askHref()} className="btn accent" data-od-id="home-cta">
         Ask library
       </Link>
     );
@@ -351,9 +362,13 @@ export function HomePage(): React.ReactElement {
               <div className="home-current-empty">No highlights on this page yet</div>
             )}
           </button>
-          {ai && pageHls.length > 0 ? (
+          {ai && pageHls.length > 0 && cp ? (
             <div className="home-current-actions">
-              <Link to="/ask" className="btn-text" data-od-id="home-ask-page">
+              <Link
+                to={askHref(cp.domain, cp.path)}
+                className="btn-text"
+                data-od-id="home-ask-page"
+              >
                 Ask this page
               </Link>
             </div>

@@ -1196,8 +1196,13 @@ button.nav-item,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app {
+  .app,
+  .app *,
+  .app *::before,
+  .app *::after {
+    animation: none !important;
     transition: none !important;
+    scroll-behavior: auto !important;
   }
 
   .sb-collapse svg {

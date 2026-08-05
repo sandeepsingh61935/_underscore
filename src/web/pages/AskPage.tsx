@@ -1,7 +1,7 @@
 /**
  * @file AskPage.tsx
  * @description Product Ask — OD viewAsk parity: lock when !caps.ai;
- * paid shell with grounding tree + composer. No chrome.runtime.
+ * paid shell with grounding tree + composer. No extension runtime messaging.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -19,7 +19,7 @@ import {
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
-/** Web product has no chrome-free LLM stream path (useLLMStream uses chrome.runtime). */
+/** Web product has no extension-free LLM stream path (useLLMStream needs extension IPC). */
 const WEB_STREAM_UNAVAILABLE =
   'Ask streaming is not available in the web app yet. Open the Chrome extension with the same login to get answers.';
 
@@ -389,7 +389,7 @@ function PaidAskShell({
 
 /**
  * Ask product page. Guest/Free/past_due → lock; Paid → grounding + composer.
- * Never uses chrome.runtime.
+ * Never uses extension runtime messaging.
  */
 export function AskPage(): React.ReactElement {
   const { isAuthenticated } = useApp();
