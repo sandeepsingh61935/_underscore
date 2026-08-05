@@ -110,7 +110,7 @@ function ModeRow({ m, active, onClick }: { m: ModeDefinition; active: boolean; o
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }}>
           <span style={{ color: m.accent, fontSize: 14, lineHeight: 1 }}>{m.motif}</span>
           <div className="u-serif" style={{ fontSize: 17 }}>{m.name}</div>
-          {m.signin && <span className="u-mono" style={{ fontSize: 9, color: "var(--ink-3)", letterSpacing: "0.14em", textTransform: "uppercase" }}>sign-in</span>}
+          {m.signin && <span className="u-mono" style={{ fontSize: "var(--step--2)", color: "var(--ink-3)", letterSpacing: "0.14em", textTransform: "uppercase" }}>sign-in</span>}
         </div>
         <span className="u-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>
           {active ? "●" : "○"}

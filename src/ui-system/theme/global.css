@@ -156,8 +156,11 @@
   --radius: 2px;
 }
 
-/* Dark flip, used inside artboards that opt in via .dark */
+/* Dark flip — html.dark (ThemeProvider) or .ue.dark artboard opt-in.
+   Paper/ink/rule invert; hover overlays flip to light-on-dark so rows stay legible.
+   Accent lifts slightly for contrast on near-black paper. */
 .dark {
+  color-scheme: dark;
   --paper:     #111110;
   --paper-2:   #1a1918;
   --rule:      #f2eee6;
@@ -166,8 +169,38 @@
   --ink-2:     #cfc9bd;
   --ink-3:     #8a857c;
   --ink-4:     #5a564f;
-  --mode-basic: #f2eee6;
-  --mode-local: #f2eee6;
+
+  /* Mode labels track ink (glyph + label, not color). */
+  --mode-basic:   var(--ink);
+  --mode-pro:     var(--ink);
+  --mode-pro-xai: var(--ink);
+  --mode-ephemeral: var(--ink);
+  --mode-local:     var(--ink);
+  --mode-cloud:     var(--ink);
+  --mode-ai:        var(--ink);
+
+  /* Accent — slightly brighter on dark paper for WCAG-friendly accent marks. */
+  --accent:     oklch(70% 0.13 45);
+  --accent-2:   oklch(78% 0.10 45);
+  --accent-ink: #f2eee6;
+
+  /* Elevated surface (chips, primary-adjacent fills). */
+  --utility-surface-elevated: #242220;
+
+  /* Hover/press washes — light ink on dark paper (black rgba would vanish). */
+  --utility-overlay-05: rgba(255, 255, 255, 0.05);
+  --utility-overlay-06: rgba(255, 255, 255, 0.06);
+  --utility-overlay-08: rgba(255, 255, 255, 0.08);
+  --utility-overlay-10: rgba(255, 255, 255, 0.10);
+  --utility-overlay-12: rgba(255, 255, 255, 0.12);
+  --utility-overlay-15: rgba(255, 255, 255, 0.15);
+  --utility-overlay-18: rgba(255, 255, 255, 0.18);
+  --utility-overlay-20: rgba(255, 255, 255, 0.20);
+  --utility-overlay-25: rgba(255, 255, 255, 0.25);
+  /* Heavy scrims stay dark (modal / veil). */
+  --utility-overlay-40: rgba(0, 0, 0, 0.50);
+  --utility-overlay-78: rgba(0, 0, 0, 0.78);
+  --utility-overlay-88: rgba(0, 0, 0, 0.88);
 }
 
 /* Base resets inside artboards */
@@ -418,7 +451,7 @@
 }
 .search-filter-btn .fcount {
   min-width: 14px; height: 14px; padding: 0 4px; border-radius: 99px;
-  background: var(--accent); color: var(--paper); font-size: 9px; letter-spacing: 0;
+  background: var(--accent); color: var(--paper); font-size: var(--step--2); letter-spacing: 0;
   display: inline-flex; align-items: center; justify-content: center;
   font-variant-numeric: tabular-nums;
 }
@@ -439,7 +472,7 @@
 .filter-active-chip {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px;
   border: 1px solid var(--rule-soft); border-radius: 99px; background: var(--paper);
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.04em; color: var(--ink-2);
+  font-family: var(--mono); font-size: var(--step--2); letter-spacing: 0.04em; color: var(--ink-2);
   max-width: 100%;
 }
 .filter-active-chip .x {
@@ -455,7 +488,7 @@
 }
 .filter-sec { display: flex; flex-direction: column; gap: 6px; }
 .filter-sec-label {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+  font-family: var(--mono); font-size: var(--step--2); letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--ink-3);
 }
 .filter-chip-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
@@ -471,17 +504,17 @@
 .field-chip.active, .refine-chip.active, .tag-filter-chip.active {
   background: var(--ink); color: var(--paper); border-color: var(--ink);
 }
-.field-chip .check { font-size: 9px; opacity: 0.85; }
+.field-chip .check { font-size: var(--step--2); opacity: 0.85; }
 .tag-filter-chip { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .tag-picker { display: flex; flex-direction: column; gap: 8px; }
 .tag-picker-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .tag-picker-count {
-  font-family: var(--mono); font-size: 9px; color: var(--ink-4);
+  font-family: var(--mono); font-size: var(--step--2); color: var(--ink-4);
   letter-spacing: 0.06em; font-variant-numeric: tabular-nums;
 }
 .tag-selected-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .tag-selected-row .empty-hint {
-  font-family: var(--mono); font-size: 9px; color: var(--ink-4); letter-spacing: 0.04em;
+  font-family: var(--mono); font-size: var(--step--2); color: var(--ink-4); letter-spacing: 0.04em;
 }
 .tag-sel-chip {
   display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 4px 0 8px;
@@ -506,7 +539,7 @@
   color: var(--ink); font-family: var(--sans); font-size: 12px;
 }
 .tag-sublabel {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  font-family: var(--mono); font-size: var(--step--2); letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--ink-4);
 }
 .tag-popular-row { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -523,7 +556,7 @@
 }
 .tag-sort-seg button {
   all: unset; cursor: pointer; height: 24px; padding: 0 9px;
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  font-family: var(--mono); font-size: var(--step--2); letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--ink-3);
 }
 .tag-sort-seg button.active { background: var(--ink); color: var(--paper); }
@@ -554,7 +587,7 @@
   padding-top: 2px; border-top: 1px solid var(--rule-soft);
 }
 .filter-foot .hint {
-  font-family: var(--mono); font-size: 9px; color: var(--ink-4); letter-spacing: 0.04em;
+  font-family: var(--mono); font-size: var(--step--2); color: var(--ink-4); letter-spacing: 0.04em;
 }
 
 /* Domain / section list rows + quiet Paid actions */
@@ -875,9 +908,43 @@ button.sr-icon.is-delete:hover { color: var(--accent); }
   margin-top: 18px;
 }
 
+/* ─── A11y: focus-visible (story 75) ───
+   Lives after `all: unset` chrome so outline is restored for keyboard users.
+   Covers dialogs (portaled to body) and popup controls. */
+:is(button, a, [role="button"], summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Shell fields: ring the container, not the bare input (avoids double outline). */
+.search-input-row:focus-within,
+.tag-find-row:focus-within,
+.ask-composer .ac-shell:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.search-input-row input:focus-visible,
+.tag-find-row input:focus-visible,
+.ask-composer .ac-shell input:focus-visible {
+  outline: none;
+}
+
+/* ─── A11y: prefers-reduced-motion (story 76) ───
+   Kill decorative transitions/animations; keep essential opacity snaps. */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .ask-scope-bar button.scope-chip,
-  .ask-composer .ac-send {
+  .ask-composer .ac-send,
+  .u-card-row,
+  .u-icon-btn {
     transition: none !important;
   }
 }

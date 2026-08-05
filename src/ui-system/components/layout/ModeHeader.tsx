@@ -42,7 +42,7 @@ export function ModeHeader({
         style={{
           all: 'unset',
           cursor: 'pointer',
-          fontSize: 10,
+          fontSize: 'var(--step--2)',
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           color: 'var(--ink-3)',

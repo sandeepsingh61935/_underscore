@@ -101,6 +101,30 @@ describe('PopupShell', () => {
     expect(screen.getByText('_underscore')).toBeInTheDocument();
   });
 
+  it('still mounts body content when prefers-reduced-motion is set', () => {
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    try {
+      render(
+        <PopupShell chrome={baseChrome} viewKey="DASHBOARD">
+          <div>calm-body</div>
+        </PopupShell>,
+      );
+      expect(screen.getByText('calm-body')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('omits the title strip when showTitleStrip is false', () => {
     render(
       <PopupShell chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }} viewKey="WELCOME">

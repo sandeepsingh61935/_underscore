@@ -396,7 +396,7 @@ function HomeRecentCard({
                 alignItems: 'center',
                 border: '1px solid var(--rule-soft)',
                 borderRadius: 99,
-                fontSize: 9,
+                fontSize: 'var(--step--2)',
                 letterSpacing: '0.04em',
                 color: 'var(--ink-3)',
               }}
@@ -405,7 +405,7 @@ function HomeRecentCard({
             </span>
           ))}
           {tagOverflow > 0 ? (
-            <span className="u-mono" style={{ fontSize: 9, color: 'var(--ink-4)' }}>
+            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-4)' }}>
               +{tagOverflow}
             </span>
           ) : null}
@@ -612,7 +612,7 @@ export function DashboardView({
           <span
             className="u-mono"
             style={{
-              fontSize: 9,
+              fontSize: 'var(--step--2)',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: 'var(--ink-3)',

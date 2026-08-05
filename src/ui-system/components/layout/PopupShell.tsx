@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import React, { type ReactNode } from 'react';
 
 import type { PopupChrome } from '../../../entrypoints/popup/chrome';
@@ -10,6 +10,13 @@ const screenVariants = {
   initial: { opacity: 0, y: 10, scale: 0.984 },
   animate: { opacity: 1, y: 0, scale: 1 },
   exit: { opacity: 0, y: -6, scale: 1.012 },
+} as const;
+
+/** Instant swap when prefers-reduced-motion is set (story 76). */
+const reducedScreenVariants = {
+  initial: { opacity: 1, y: 0, scale: 1 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 1, y: 0, scale: 1 },
 } as const;
 
 export interface PopupShellProps {
@@ -43,7 +50,7 @@ function PopupTitleStrip({
         gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
         fontFamily: 'var(--mono)',
-        fontSize: 10,
+        fontSize: 'var(--step--2)',
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
         color: 'var(--ink-3)',
@@ -61,7 +68,7 @@ function PopupTitleStrip({
               all: 'unset',
               cursor: 'pointer',
               fontFamily: 'var(--mono)',
-              fontSize: 10,
+              fontSize: 'var(--step--2)',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: 'var(--ink-2)',
@@ -76,6 +83,12 @@ function PopupTitleStrip({
 }
 
 export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShellProps): React.ReactElement {
+  const reduceMotion = useReducedMotion();
+  const variants = reduceMotion ? reducedScreenVariants : screenVariants;
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 120, damping: 20, mass: 1.0 };
+
   return (
     <div
       className={`ue ${dark ? 'dark' : ''}`}
@@ -119,11 +132,11 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={viewKey}
-              variants={screenVariants}
+              variants={variants}
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={{ type: 'spring', stiffness: 120, damping: 20, mass: 1.0 }}
+              transition={transition}
               style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'auto' }}
             >
               {children}

@@ -148,6 +148,7 @@ export function Dialog({
                   type="button"
                   onClick={onClose}
                   aria-label="Close dialog"
+                  data-testid="dialog-close"
                   style={{
                     flexShrink: 0,
                     width: 44,
@@ -160,6 +161,7 @@ export function Dialog({
                     color: 'var(--ink-3)',
                     cursor: 'pointer',
                     padding: 0,
+                    borderRadius: 'var(--radius)',
                   }}
                 >
                   <X size={20} strokeWidth={1.75} />
