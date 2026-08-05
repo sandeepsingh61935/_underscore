@@ -20,7 +20,6 @@ const noopHandlers = {
   onSwitch: vi.fn(),
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
-  onBackFromSettings: vi.fn(),
   subDomainBackLabel: vi.fn(() => ''),
   getModeId: vi.fn(() => 'local'),
 };

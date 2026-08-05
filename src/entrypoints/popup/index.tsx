@@ -320,14 +320,6 @@ function PopupApp(): React.ReactElement {
     }
   };
 
-  const handleBackFromSettings = (): void => {
-    if (previousView && previousView !== View.SETTINGS) {
-      setCurrentView(previousView);
-    } else {
-      setCurrentView(View.COLLECTIONS);
-    }
-  };
-
   const handleTabChange = (tab: ActiveTab): void => {
     switch (tab) {
       case 'home':        setCurrentView(View.DASHBOARD); break;
@@ -376,7 +368,6 @@ function PopupApp(): React.ReactElement {
     onSwitch: handleSettingsChangeMode,
     onBackToCollections: handleBackToCollections,
     onBackToDomain: handleBackToDomain,
-    onBackFromSettings: handleBackFromSettings,
     onBackFromApiKeySetup: handleBackFromApiKeySetup,
     onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,

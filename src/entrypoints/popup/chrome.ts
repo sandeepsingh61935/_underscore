@@ -41,7 +41,6 @@ export interface ChromeHandlers {
   onSwitch?: () => void;
   onBackToCollections: () => void;
   onBackToDomain: () => void;
-  onBackFromSettings: () => void;
   onBackFromApiKeySetup: () => void;
   onBackFromLlmStreaming: () => void;
   subDomainBackLabel: () => string;
@@ -148,8 +147,6 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'settings',
       onTabChange: handlers.onTabChange,
-      onBack: handlers.onBackFromSettings,
-      backLabel: 'Library',
       accountPill,
       onAccountPillClick,
     },
@@ -163,8 +160,6 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'ask',
       onTabChange: handlers.onTabChange,
-      onBack: handlers.onBackFromSettings,
-      backLabel: 'Library',
       accountPill,
       onAccountPillClick,
     },

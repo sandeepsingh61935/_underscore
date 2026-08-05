@@ -9,7 +9,6 @@ const makeHandlers = (): ChromeHandlers => ({
   onSwitch: vi.fn(),
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
-  onBackFromSettings: vi.fn(),
   onBackFromApiKeySetup: vi.fn(),
   onBackFromLlmStreaming: vi.fn(),
   subDomainBackLabel: vi.fn(() => 'anthropic.com'),
@@ -157,9 +156,15 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.SETTINGS.showModeHeader).toBe(true);
     expect(map.SETTINGS.showTabBar).toBe(true);
     expect(map.SETTINGS.activeTab).toBe('settings');
-    expect(map.SETTINGS.onBack).toBe(handlers.onBackFromSettings);
-    expect(map.SETTINGS.backLabel).toBe('Library');
     expect(map.SETTINGS.onSwitch).toBeUndefined();
+  });
+
+  it('primary tab roots have no onBack (ASK/SETTINGS/COLLECTIONS/DASHBOARD)', () => {
+    const map = buildChrome(makeHandlers());
+    for (const key of ['ASK', 'SETTINGS', 'COLLECTIONS', 'DASHBOARD'] as const) {
+      expect(map[key].onBack).toBeUndefined();
+      expect(map[key].backLabel).toBeUndefined();
+    }
   });
 
   it('ActiveTab ask is available on ASK view', () => {
