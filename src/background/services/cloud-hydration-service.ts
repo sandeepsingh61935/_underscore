@@ -16,6 +16,7 @@ import {
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type {
+  CloudHydrationProgress,
   CloudHydrationResult,
   ICloudHydrationService,
 } from '@/background/services/interfaces/i-cloud-hydration-service';
@@ -34,12 +35,12 @@ export class CloudHydrationService implements ICloudHydrationService {
     private readonly logger: ILogger
   ) {}
 
-  hydrate(): Promise<CloudHydrationResult> {
+  hydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult> {
     if (this.hydrationInFlight) {
       return this.hydrationInFlight;
     }
 
-    this.hydrationInFlight = this.runHydrate().finally(() => {
+    this.hydrationInFlight = this.runHydrate(onProgress).finally(() => {
       this.hydrationInFlight = null;
     });
 
@@ -58,9 +59,16 @@ export class CloudHydrationService implements ICloudHydrationService {
     };
   }
 
-  private async runHydrate(): Promise<CloudHydrationResult> {
+  private async runHydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult> {
+    const report = (percent: number, phase?: string): void => {
+      onProgress?.(Math.min(100, Math.max(0, Math.round(percent))), phase);
+    };
+
+    report(5, 'starting');
+
     if (!this.authManager.currentUser) {
       this.logger.debug('[CloudHydration] Skipping hydration (not authenticated)');
+      report(100, 'done');
       return this.emptyResult();
     }
 
@@ -86,6 +94,8 @@ export class CloudHydrationService implements ICloudHydrationService {
       cursor: cursor?.toISOString(),
     });
 
+    report(12, 'fetching');
+
     let cloudHighlights: HighlightDataV2[] = [];
     let deletedIds: string[] = [];
 
@@ -101,6 +111,8 @@ export class CloudHydrationService implements ICloudHydrationService {
       return { ...this.emptyResult(localCountBefore), error: message };
     }
 
+    report(20, 'merging');
+
     if (cloudHighlights.length >= LARGE_LIBRARY_WARN_THRESHOLD) {
       this.logger.warn('[CloudHydration] Large library detected', {
         cloudCount: cloudHighlights.length,
@@ -114,6 +126,15 @@ export class CloudHydrationService implements ICloudHydrationService {
     let skippedCount = 0;
     let failedCount = 0;
     let maxUpdatedAt = cursor?.getTime() ?? 0;
+
+    const totalWork = cloudHighlights.length + deletedIds.length;
+    let processed = 0;
+    const bump = (): void => {
+      processed += 1;
+      if (totalWork <= 0) return;
+      // Merge phase occupies 20% → 90%
+      report(20 + (processed / totalWork) * 70, 'merging');
+    };
 
     for (const highlight of cloudHighlights) {
       if (!this.authManager.currentUser) {
@@ -136,11 +157,13 @@ export class CloudHydrationService implements ICloudHydrationService {
           await this.highlightRepository.add(highlight, { skipSync: true });
           localById.set(highlight.id, highlight);
           backfilledCount++;
+          bump();
           continue;
         }
 
         if (!isRemoteHighlightNewer(highlight, local)) {
           skippedCount++;
+          bump();
           continue;
         }
 
@@ -153,10 +176,12 @@ export class CloudHydrationService implements ICloudHydrationService {
           id: highlight.id,
         });
       }
+      bump();
     }
 
     for (const id of deletedIds) {
       if (!localById.has(id)) {
+        bump();
         continue;
       }
 
@@ -168,7 +193,10 @@ export class CloudHydrationService implements ICloudHydrationService {
         failedCount++;
         this.logger.error('[CloudHydration] Failed to remove deleted highlight', error as Error, { id });
       }
+      bump();
     }
+
+    report(92, 'reloading');
 
     try {
       await this.repositoryFacade.reload();
@@ -210,6 +238,7 @@ export class CloudHydrationService implements ICloudHydrationService {
     });
 
     notifyLibraryDataChanged(result);
+    report(100, 'done');
 
     return result;
   }

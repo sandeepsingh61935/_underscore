@@ -310,6 +310,41 @@
 }
 .btn.sm { min-height: 32px; padding: 6px 10px; font-size: var(--step--1); }
 
+/* Quiet mono text actions (Settings trails, highlight cards) */
+.btn-text {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 2px;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.btn-text:hover { color: var(--ink); }
+.btn-text:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.btn-text:disabled,
+.btn-text[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+.btn-text.is-danger { color: var(--accent); }
+.btn-text.is-danger:hover { color: var(--accent); }
+.btn-text.is-muted { color: var(--ink-3); }
+.btn-text.is-muted:hover { color: var(--ink); }
+.btn-text.is-accent { color: var(--accent); }
+.btn-text.is-accent:hover { color: var(--accent); }
+
 /* Tab bar in popup */
 .tabbar {
   display: grid;

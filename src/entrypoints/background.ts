@@ -390,7 +390,12 @@ export default defineBackground({
           if (!authManager.isAuthenticated) {
             return { success: false, error: 'Sign in to sync library with cloud' };
           }
-          const result = await cloudHydrationService.hydrate();
+          const { notifyLibrarySyncProgress } = await import(
+            '@/background/services/library-sync-progress'
+          );
+          const result = await cloudHydrationService.hydrate((percent, phase) => {
+            notifyLibrarySyncProgress(percent, phase);
+          });
           if (result.error) {
             return { success: false, error: result.error };
           }

@@ -32,8 +32,11 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
     lastResult: null,
     error: null,
     status: 'idle',
+    progressPercent: null,
+    lastSyncedAt: null,
   })),
   formatSyncSubtitle: vi.fn(),
+  formatLastSyncedAt: vi.fn(() => 'Never synced on this device'),
 }));
 
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
@@ -222,10 +225,12 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     ).toBeTruthy();
   });
 
-  it('Paid Manage CTA opens portal', () => {
+  it('Paid Manage CTA opens portal from trailing button only', () => {
     const { openPortal, startCheckout } = mockBilling(true);
     render(<SettingsPage />);
     fireEvent.click(screen.getByText('Manage billing'));
+    expect(openPortal).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('billing-cta'));
     expect(openPortal).toHaveBeenCalledTimes(1);
     expect(startCheckout).not.toHaveBeenCalled();
   });
@@ -284,10 +289,14 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     expect(screen.getByTestId('billing-sync-cta').textContent).toBe('Sync');
 
     fireEvent.click(screen.getByText('Upgrade to Account (Paid)'));
+    expect(startCheckout).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('billing-cta'));
     expect(startCheckout).toHaveBeenCalledTimes(1);
     expect(openPortal).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByText('Refresh subscription status'));
+    expect(syncFromPolar).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('billing-sync-cta'));
     expect(syncFromPolar).toHaveBeenCalledTimes(1);
   });
 
@@ -333,6 +342,8 @@ describe('SettingsPage past_due billing', () => {
     expect(screen.getByTestId('billing-sync-cta')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Payment past due'));
+    expect(openPortal).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('billing-cta'));
     expect(openPortal).toHaveBeenCalledTimes(1);
     expect(startCheckout).not.toHaveBeenCalled();
   });

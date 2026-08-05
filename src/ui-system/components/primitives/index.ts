@@ -1,4 +1,5 @@
 export * from './Button';
+export * from './BtnText';
 export * from './Card';
 export * from './Chip';
 export * from './Dialog';

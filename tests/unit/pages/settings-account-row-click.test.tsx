@@ -28,8 +28,11 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
     lastResult: null,
     error: null,
     status: 'idle',
+    progressPercent: null,
+    lastSyncedAt: null,
   })),
   formatSyncSubtitle: vi.fn(),
+  formatLastSyncedAt: vi.fn(() => 'Never synced on this device'),
 }));
 
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({

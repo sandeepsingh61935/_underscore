@@ -14,6 +14,9 @@ export interface CloudHydrationResult {
   error?: string;
 }
 
+/** 0–100 progress while hydrate runs. */
+export type CloudHydrationProgress = (percent: number, phase?: string) => void;
+
 export interface ICloudHydrationService {
-  hydrate(): Promise<CloudHydrationResult>;
+  hydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult>;
 }

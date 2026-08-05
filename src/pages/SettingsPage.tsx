@@ -4,13 +4,19 @@ import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { formatSyncSubtitle, useSyncLibrary } from '@/features/collections/hooks/use-sync-library';
+import {
+  formatLastSyncedAt,
+  formatSyncSubtitle,
+  useSyncLibrary,
+} from '@/features/collections/hooks/use-sync-library';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
+import { SettingsModeInline } from '@/features/settings/components/SettingsModeInline';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import {
   deleteLibraryCopy,
@@ -23,11 +29,13 @@ import {
   useMcpGate,
   useModeFeature,
 } from '@/ui-system/hooks/useModeFeature';
+import { BtnText } from '@/ui-system/components/primitives/BtnText';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export interface SettingsPageProps {
   onBack?: () => void;
+  /** @deprecated Prefer inline mode change; kept for callers. */
   onChangeMode?: () => void;
   onConfigureAIProviders?: () => void;
   onSignIn?: () => void;
@@ -37,11 +45,13 @@ export interface SettingsPageProps {
 /**
  * Settings Page — v3 product section order (PRD):
  * head → Guest card or Account → Billing CTAs/Sync → banners →
- * Typography → Theme → Library tools → AI (gated) → Sign out
+ * Typography → Theme → Mode (inline) → Library tools → AI (gated) → Sign out
+ *
+ * Action rows are static lists; only trailing BtnText / ExportActions are clickable.
  */
 export function SettingsPage({
   onBack: _onBack,
-  onChangeMode,
+  onChangeMode: _onChangeMode,
   onConfigureAIProviders,
   onSignIn,
   onLogout,
@@ -50,6 +60,7 @@ export function SettingsPage({
     theme,
     setTheme,
     currentMode,
+    setMode,
     user,
     logout: appLogout,
   } = useApp();
@@ -87,13 +98,20 @@ export function SettingsPage({
       setBillingReturn({ kind: 'cancel' });
       return;
     }
-    // After URL stripped, keep success_active briefly if we just became paid
     if (isPaidActive && billingReturn?.kind === 'success_pending') {
       setBillingReturn({ kind: 'success_active' });
     }
   }, [isPaidActive, billingReturn?.kind]);
   const logout = onLogout ?? appLogout;
-  const { sync, isSyncing, lastResult, error: syncError, status: syncStatus } = useSyncLibrary();
+  const {
+    sync,
+    isSyncing,
+    lastResult,
+    error: syncError,
+    status: syncStatus,
+    progressPercent,
+    lastSyncedAt,
+  } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [billingActionError, setBillingActionError] = useState<string | null>(null);
@@ -141,13 +159,21 @@ export function SettingsPage({
     setTheme(nextTheme);
   };
 
-  const syncSubtitle = (() => {
+  const syncSubtitle = ((): string => {
     if (!syncGate.allowed) return featureGateSubtitle(syncGate.reason);
     if (!user) return featureGateSubtitle('AUTH_REQUIRED');
-    if (isSyncing) return 'Pulling highlights from database…';
+    if (isSyncing) {
+      const pct =
+        progressPercent !== null && progressPercent !== undefined
+          ? ` · ${progressPercent}%`
+          : '';
+      return `Syncing library${pct}`;
+    }
     if (syncError) return syncError;
-    if (syncStatus === 'success' && lastResult) return formatSyncSubtitle(lastResult);
-    return 'Pull latest highlights from cloud';
+    if (syncStatus === 'success' && lastResult) {
+      return `${formatSyncSubtitle(lastResult)} · ${formatLastSyncedAt(lastSyncedAt)}`;
+    }
+    return formatLastSyncedAt(lastSyncedAt);
   })();
 
   const handleSyncLibrary = async (): Promise<void> => {
@@ -179,12 +205,24 @@ export function SettingsPage({
     });
   };
 
+  const handleSelectFreeMode = (): void => {
+    setMode('pro' as ModeType);
+  };
+
+  const handleSelectPaidUpgrade = (): void => {
+    setBillingActionError(null);
+    if (startCheckout) {
+      void startCheckout().catch((e: unknown) => {
+        setBillingActionError(
+          e instanceof Error ? e.message : 'Billing action failed'
+        );
+      });
+      return;
+    }
+    handleBillingCta();
+  };
+
   const modeBranding = getModeBranding(currentMode);
-  const monoTrailing = (label: string): React.ReactElement => (
-    <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
-      {label}
-    </span>
-  );
 
   if (connectOpen) {
     return (
@@ -239,25 +277,9 @@ export function SettingsPage({
             >
               Local only on this device. Sign in to sync library across devices, export, and use AI.
             </div>
-            <button
-              type="button"
-              className="u-mono"
-              aria-label="Sign in"
-              onClick={() => onSignIn?.()}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                fontSize: 'var(--step--2)',
-                color: 'var(--accent)',
-                minHeight: 44,
-                display: 'inline-flex',
-                alignItems: 'center',
-                textDecoration: 'underline',
-                textUnderlineOffset: 2,
-              }}
-            >
+            <BtnText accent aria-label="Sign in" onClick={() => onSignIn?.()}>
               Sign in
-            </button>
+            </BtnText>
           </div>
         ) : (
           <Row
@@ -301,17 +323,16 @@ export function SettingsPage({
                 billingBusy ? (
                   <Spinner size="sm" />
                 ) : (
-                  <span
-                    className="u-mono"
+                  <BtnText
+                    accent
                     data-testid="billing-cta"
                     data-billing-kind={billingCta.kind}
-                    style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                    onClick={handleBillingCta}
                   >
                     {billingCta.ctaLabel}
-                  </span>
+                  </BtnText>
                 )
               }
-              onClick={handleBillingCta}
             />
             {billingCta.showSync ? (
               <Row
@@ -321,23 +342,21 @@ export function SettingsPage({
                   billingBusy ? (
                     <Spinner size="sm" />
                   ) : (
-                    <span
-                      className="u-mono"
+                    <BtnText
                       data-testid="billing-sync-cta"
-                      style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+                      onClick={() => {
+                        setBillingActionError(null);
+                        void billing.syncFromPolar().catch((e: unknown) => {
+                          setBillingActionError(
+                            e instanceof Error ? e.message : 'Sync failed'
+                          );
+                        });
+                      }}
                     >
                       Sync
-                    </span>
+                    </BtnText>
                   )
                 }
-                onClick={() => {
-                  setBillingActionError(null);
-                  void billing.syncFromPolar().catch((e: unknown) => {
-                    setBillingActionError(
-                      e instanceof Error ? e.message : 'Sync failed'
-                    );
-                  });
-                }}
               />
             ) : null}
           </>
@@ -425,7 +444,7 @@ export function SettingsPage({
           />
         </div>
 
-        {/* 6. Theme (+ Mode) */}
+        {/* 6. Theme + Mode (inline) */}
         <div
           className="u-caps"
           data-testid="settings-section-general"
@@ -437,20 +456,29 @@ export function SettingsPage({
           title="Theme"
           sub="Match system"
           right={
-            <span
-              className="u-mono"
-              style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', textTransform: 'capitalize' }}
-            >
-              {theme}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span
+                className="u-mono"
+                style={{
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-3)',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {theme}
+              </span>
+              <BtnText aria-label="Change theme" onClick={handleToggleTheme}>
+                Change
+              </BtnText>
             </span>
           }
-          onClick={handleToggleTheme}
         />
-        <Row
-          title="Mode"
-          sub={isAuthenticated ? `${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}` : 'Guest'}
-          right={monoTrailing(isAuthenticated ? 'Change' : 'Local')}
-          onClick={isAuthenticated ? onChangeMode : undefined}
+        <SettingsModeInline
+          currentMode={currentMode}
+          isAuthenticated={isAuthenticated}
+          isPaidActive={isPaidActive}
+          onSelectFree={handleSelectFreeMode}
+          onSelectPaidUpgrade={handleSelectPaidUpgrade}
         />
 
         {/* 7. Library tools */}
@@ -468,21 +496,59 @@ export function SettingsPage({
               sub={syncSubtitle}
               right={
                 isSyncing ? (
-                  <Spinner size="sm" />
-                ) : (
                   <span
-                    className="u-mono"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      color: syncGate.allowed && user ? 'var(--accent)' : 'var(--ink-3)',
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    data-testid="sync-progress"
+                    aria-live="polite"
+                    aria-busy="true"
+                  >
+                    <Spinner size="sm" />
+                    <span
+                      className="u-mono"
+                      style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                    >
+                      {progressPercent !== null ? `${progressPercent}%` : '…'}
+                    </span>
+                  </span>
+                ) : (
+                  <BtnText
+                    accent={syncGate.allowed && Boolean(user)}
+                    muted={!syncGate.allowed || !user}
+                    disabled={!syncGate.allowed || !user}
+                    aria-label="Sync library"
+                    onClick={() => {
+                      void handleSyncLibrary();
                     }}
                   >
-                    {syncGate.allowed && user ? 'Sync' : '—'}
-                  </span>
+                    Sync
+                  </BtnText>
                 )
               }
-              onClick={syncGate.allowed && !isSyncing ? handleSyncLibrary : undefined}
             />
+            {isSyncing ? (
+              <div
+                data-testid="sync-progress-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPercent ?? 0}
+                style={{
+                  margin: '0 16px 8px',
+                  height: 3,
+                  background: 'var(--rule-soft)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${progressPercent ?? 8}%`,
+                    background: 'var(--accent)',
+                    transition: 'width 120ms linear',
+                  }}
+                />
+              </div>
+            ) : null}
             <Row
               title="Export library"
               sub={
@@ -490,23 +556,22 @@ export function SettingsPage({
                   ? 'Download all highlights as markdown or spreadsheet'
                   : featureGateSubtitle(exportGate.reason)
               }
-              right={<ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />}
+              right={
+                <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
+              }
             />
             <Row
               title="Delete library"
               sub="Permanently remove all highlights on this device"
               right={
-                <span
-                  className="u-mono"
-                  style={{
-                    fontSize: 'var(--step--2)',
-                    color: 'var(--accent)',
-                  }}
+                <BtnText
+                  danger
+                  aria-label="Delete library"
+                  onClick={() => setDeleteLibraryOpen(true)}
                 >
                   Delete
-                </span>
+                </BtnText>
               }
-              onClick={() => setDeleteLibraryOpen(true)}
             />
           </>
         ) : null}
@@ -523,23 +588,39 @@ export function SettingsPage({
           title="Connect to AI"
           sub="External agents"
           right={
-            <SettingsStatusGlyph
-              kind={mcpGate.allowed ? 'chevron' : 'lock'}
-              label={mcpGate.allowed ? 'Open' : 'Locked'}
-            />
+            <BtnText
+              aria-label={mcpGate.allowed ? 'Open Connect to AI' : 'Connect to AI locked'}
+              onClick={() => setConnectOpen(true)}
+            >
+              <SettingsStatusGlyph
+                kind={mcpGate.allowed ? 'chevron' : 'lock'}
+                label={mcpGate.allowed ? 'Open' : 'Locked'}
+              />
+            </BtnText>
           }
-          onClick={() => setConnectOpen(true)}
         />
         <Row
           title="Configure AI providers"
           sub="In-app models"
           right={
-            <SettingsStatusGlyph
-              kind={aiSetupGate.allowed ? 'chevron' : 'lock'}
-              label={aiSetupGate.allowed ? 'Open' : 'Locked'}
-            />
+            <BtnText
+              aria-label={
+                aiSetupGate.allowed
+                  ? 'Open Configure AI providers'
+                  : 'Configure AI providers locked'
+              }
+              disabled={!aiSetupGate.allowed}
+              muted={!aiSetupGate.allowed}
+              onClick={() => {
+                if (aiSetupGate.allowed) onConfigureAIProviders?.();
+              }}
+            >
+              <SettingsStatusGlyph
+                kind={aiSetupGate.allowed ? 'chevron' : 'lock'}
+                label={aiSetupGate.allowed ? 'Open' : 'Locked'}
+              />
+            </BtnText>
           }
-          onClick={aiSetupGate.allowed ? onConfigureAIProviders : undefined}
         />
 
         {/* 9. Sign out */}
@@ -555,22 +636,20 @@ export function SettingsPage({
             <Row
               title="Sign out"
               sub="End this session on this device"
-              aria-label="Sign out"
               right={
                 isSigningOut ? (
                   <Spinner size="sm" />
                 ) : (
-                  <span
-                    className="u-mono"
-                    style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+                  <BtnText
+                    aria-label="Sign out"
+                    onClick={() => {
+                      if (!isSigningOut) setSignOutOpen(true);
+                    }}
                   >
                     Sign out
-                  </span>
+                  </BtnText>
                 )
               }
-              onClick={() => {
-                if (!isSigningOut) setSignOutOpen(true);
-              }}
             />
           </>
         ) : null}

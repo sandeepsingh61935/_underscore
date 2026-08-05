@@ -87,6 +87,12 @@ export const LIBRARY_DATA_CHANGED = 'LIBRARY_DATA_CHANGED' as const;
 /** Request a manual cloud → local library sync from Settings. */
 export const SYNC_LIBRARY = 'SYNC_LIBRARY' as const;
 
+/**
+ * Progress while SYNC_LIBRARY hydrate runs (0–100).
+ * Payload: { percent: number; phase?: string }.
+ */
+export const LIBRARY_SYNC_PROGRESS = 'LIBRARY_SYNC_PROGRESS' as const;
+
 /** Fetch highlights formatted for scoped copy/export (library, domain, section, highlight). */
 export const GET_EXPORTABLE_HIGHLIGHTS = 'GET_EXPORTABLE_HIGHLIGHTS' as const;
 
