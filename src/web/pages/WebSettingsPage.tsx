@@ -141,16 +141,6 @@ export function WebSettingsPage(): React.ReactElement {
     void billing.refresh();
   }, [billing]);
 
-  const handleUpgradeFromAi = useCallback(() => {
-    if (!billing) return;
-    setHandoff('checkout');
-    clearHandoffSoon();
-    void billing.startCheckout().catch((e: unknown) => {
-      setHandoff(null);
-      setBillingActionError(e instanceof Error ? e.message : 'Billing action failed');
-    });
-  }, [billing, clearHandoffSoon]);
-
   const handleExport = useCallback(() => {
     if (!caps.flags.export) return;
     const payload = lib.highlights.map((h) => ({
@@ -209,7 +199,8 @@ export function WebSettingsPage(): React.ReactElement {
         <AiPanel
           caps={caps}
           isAuthenticated={isAuthenticated}
-          onUpgrade={handleUpgradeFromAi}
+          billingCta={cta}
+          onBillingAction={handleBillingAction}
         />
       );
       break;

@@ -110,28 +110,39 @@ describe('WebSettingsPage', () => {
     expect(document.querySelector('a[href="/sign-in"]')).toBeTruthy();
   });
 
-  it('free signed-in: shows Upgrade billing CTA', () => {
+  function mockBilling(opts: {
+    isPaidActive: boolean;
+    status: string;
+    cancelAtPeriodEnd?: boolean;
+  }) {
+    const startCheckout = vi.fn().mockResolvedValue(undefined);
+    const openPortal = vi.fn().mockResolvedValue(undefined);
     (useBillingContextOptional as ReturnType<typeof vi.fn>).mockReturnValue({
       snapshot: {
         loadState: 'ready',
-        isPaidActive: false,
+        isPaidActive: opts.isPaidActive,
         error: null,
         entitlement: {
-          plan: 'free',
-          status: 'none',
-          isPaidActive: false,
+          plan: opts.isPaidActive ? 'paid' : 'free',
+          status: opts.status,
+          isPaidActive: opts.isPaidActive,
           currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-          provider: null,
-          manageUrlAvailable: false,
+          cancelAtPeriodEnd: opts.cancelAtPeriodEnd ?? false,
+          provider: 'polar',
+          manageUrlAvailable: true,
         },
       },
       busy: false,
       refresh: vi.fn(),
       syncFromPolar: vi.fn(),
-      startCheckout: vi.fn(),
-      openPortal: vi.fn(),
+      startCheckout,
+      openPortal,
     });
+    return { startCheckout, openPortal };
+  }
+
+  it('free signed-in: shows Upgrade billing CTA', () => {
+    mockBilling({ isPaidActive: false, status: 'none' });
 
     renderSettings('/settings?tab=plan', true);
 
@@ -139,6 +150,42 @@ describe('WebSettingsPage', () => {
     expect(cta).toBeTruthy();
     expect(cta?.getAttribute('data-billing-kind')).toBe('upgrade');
     expect(cta?.textContent?.trim()).toBe('Upgrade');
+  });
+
+  it('paid active: Manage CTA opens portal', () => {
+    const { startCheckout, openPortal } = mockBilling({
+      isPaidActive: true,
+      status: 'active',
+    });
+
+    renderSettings('/settings?tab=plan', true);
+
+    const cta = document.querySelector('[data-testid="billing-cta"]');
+    expect(cta).toBeTruthy();
+    expect(cta?.getAttribute('data-billing-kind')).toBe('manage');
+    expect(cta?.textContent?.trim()).toBe('Manage');
+
+    fireEvent.click(cta!);
+    expect(openPortal).toHaveBeenCalled();
+    expect(startCheckout).not.toHaveBeenCalled();
+  });
+
+  it('past_due: Update CTA opens portal', () => {
+    const { startCheckout, openPortal } = mockBilling({
+      isPaidActive: false,
+      status: 'past_due',
+    });
+
+    renderSettings('/settings?tab=plan', true);
+
+    const cta = document.querySelector('[data-testid="billing-cta"]');
+    expect(cta).toBeTruthy();
+    expect(cta?.getAttribute('data-billing-kind')).toBe('update_payment');
+    expect(cta?.textContent?.trim()).toBe('Update');
+
+    fireEvent.click(cta!);
+    expect(openPortal).toHaveBeenCalled();
+    expect(startCheckout).not.toHaveBeenCalled();
   });
 
   it('AI tab locked when !caps.ai', () => {
@@ -149,5 +196,23 @@ describe('WebSettingsPage', () => {
     expect(
       (document.querySelector('[data-od-id="settings-mcp"]') as HTMLButtonElement)?.disabled,
     ).toBe(true);
+  });
+
+  it('AI tab past_due: lock CTA is Update and opens portal', () => {
+    const { startCheckout, openPortal } = mockBilling({
+      isPaidActive: false,
+      status: 'past_due',
+    });
+
+    renderSettings('/settings?tab=ai', true);
+
+    const aiCta = document.querySelector('[data-testid="settings-ai-billing-cta"]');
+    expect(aiCta).toBeTruthy();
+    expect(aiCta?.getAttribute('data-billing-kind')).toBe('update_payment');
+    expect(aiCta?.textContent?.trim()).toBe('Update');
+
+    fireEvent.click(aiCta!);
+    expect(openPortal).toHaveBeenCalled();
+    expect(startCheckout).not.toHaveBeenCalled();
   });
 });

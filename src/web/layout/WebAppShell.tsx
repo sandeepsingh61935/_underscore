@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -10,6 +10,7 @@ import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { PlanPill } from '@/web/components/PlanPill';
+import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 
 type ProductRoute = 'home' | 'library' | 'ask' | 'settings';
 
@@ -104,6 +105,11 @@ export function WebAppShell(): React.ReactElement {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Density (and future prefs) on shell mount — not only when Appearance tab opens.
+  useEffect(() => {
+    applyWebPrefs(readWebPrefs());
+  }, []);
 
   const caps = useMemo(
     () =>

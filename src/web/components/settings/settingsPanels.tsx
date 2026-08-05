@@ -469,13 +469,18 @@ const PROVIDER_STUBS = [
 export function AiPanel({
   caps,
   isAuthenticated,
-  onUpgrade,
+  billingCta,
+  onBillingAction,
 }: {
   caps: WebCaps;
   isAuthenticated: boolean;
-  onUpgrade?: () => void;
+  /** Same CTA matrix as Plan/Account — past_due → portal, free → checkout. */
+  billingCta?: SettingsBillingCta | null;
+  onBillingAction?: () => void;
 }): React.ReactElement {
   const allowed = caps.flags.ai;
+  const lockLabel = billingCta?.ctaLabel ?? 'Upgrade';
+  const lockKind = billingCta?.kind ?? 'upgrade';
 
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-ai">
@@ -489,10 +494,12 @@ export function AiPanel({
               type="button"
               className="trail-link"
               data-od-id="settings-ai-upgrade"
+              data-billing-kind={lockKind}
+              data-testid="settings-ai-billing-cta"
               style={{ marginLeft: 8 }}
-              onClick={onUpgrade}
+              onClick={onBillingAction}
             >
-              Upgrade
+              {lockLabel}
             </button>
           ) : (
             <Link to="/sign-in" className="trail-link" style={{ marginLeft: 8 }}>
