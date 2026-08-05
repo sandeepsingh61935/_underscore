@@ -11,7 +11,7 @@ export interface WelcomePageProps {
 
 /**
  * Welcome Page — landing experience
- * Centered layout: Logo (lg) + tagline + CTA → /mode + trust signal + footer
+ * Centered layout: Logo (lg) + tagline + CTA → /home + trust signal + footer
  */
 export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.ReactElement {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
 
   React.useEffect(() => {
     if (isAuthenticated && !onStartClick) {
-      navigate('/mode');
+      navigate('/home');
     }
   }, [isAuthenticated, navigate, onStartClick]);
 
@@ -93,7 +93,7 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
           variant="primary"
           onClick={() => {
             if (onStartClick) onStartClick();
-            else navigate('/mode');
+            else navigate('/home');
           }}
           style={{ marginBottom: 28, padding: '10px 32px' }}
         >

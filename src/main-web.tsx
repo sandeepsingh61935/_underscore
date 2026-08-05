@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AppRoutes } from './core/routing/AppRoutes';
 import './ui-system/theme/global.css';
+import './web/theme/web-app.css';
 
 // Web app entry point
 const root = ReactDOM.createRoot(
