@@ -13,7 +13,10 @@ import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
-import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
+import {
+  normalizePageUrl,
+  resolveHighlightPageUrl,
+} from '@/shared/utils/normalize-page-url';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 
 export class BackgroundHighlightOrchestrator {
@@ -40,31 +43,64 @@ export class BackgroundHighlightOrchestrator {
     return summaries;
   }
 
-  private async onAdd(highlight: HighlightDataV2) {
-    this.logger.info('[bridge] add', { id: highlight.id, url: highlight.url });
+  /**
+   * Stamp highlight with tab address-bar URL when the content script location
+   * is incomplete (iframes without ?v= / other query identity).
+   */
+  private withTabPageUrl(
+    highlight: HighlightDataV2,
+    sender?: chrome.runtime.MessageSender,
+  ): HighlightDataV2 {
+    const tabUrl = sender?.tab?.url;
+    const resolved = resolveHighlightPageUrl({
+      contentUrl: highlight.url,
+      tabUrl,
+    });
+    if (!resolved || resolved === highlight.url) {
+      return highlight;
+    }
+    this.logger.info('[bridge] page url from tab', {
+      id: highlight.id,
+      contentUrl: highlight.url,
+      tabUrl,
+      resolved,
+    });
+    return { ...highlight, url: resolved };
+  }
+
+  private async onAdd(
+    highlight: HighlightDataV2,
+    sender?: chrome.runtime.MessageSender,
+  ) {
+    const stamped = this.withTabPageUrl(highlight, sender);
+    this.logger.info('[bridge] add', { id: stamped.id, url: stamped.url });
     try {
       // Await IndexedDB (active auth scope) so SW death after response does not drop the row.
-      await this.facade.addPersisted(highlight);
+      await this.facade.addPersisted(stamped);
       notifyLibraryDataChanged({ source: 'highlight-bridge-add' });
-      this.logger.debug('[bridge] response', { id: highlight.id, ok: true });
+      this.logger.debug('[bridge] response', { id: stamped.id, ok: true });
       return { success: true, data: undefined as void };
     } catch (e) {
       const err = e as Error;
-      this.logger.error('[bridge] add failed', err, { id: highlight.id });
+      this.logger.error('[bridge] add failed', err, { id: stamped.id });
       return { success: false, error: err.message };
     }
   }
 
-  private async onAddMany({ highlights }: { highlights: HighlightDataV2[] }) {
-    this.logger.info('[bridge] addMany', { count: highlights.length });
+  private async onAddMany(
+    { highlights }: { highlights: HighlightDataV2[] },
+    sender?: chrome.runtime.MessageSender,
+  ) {
+    const stamped = highlights.map((h) => this.withTabPageUrl(h, sender));
+    this.logger.info('[bridge] addMany', { count: stamped.length });
     try {
-      await this.facade.addManyPersisted(highlights);
+      await this.facade.addManyPersisted(stamped);
       notifyLibraryDataChanged({ source: 'highlight-bridge-add-many' });
-      this.logger.debug('[bridge] response', { count: highlights.length, ok: true });
+      this.logger.debug('[bridge] response', { count: stamped.length, ok: true });
       return { success: true, data: undefined as void };
     } catch (e) {
       const err = e as Error;
-      this.logger.error('[bridge] addMany failed', err, { count: highlights.length });
+      this.logger.error('[bridge] addMany failed', err, { count: stamped.length });
       return { success: false, error: err.message };
     }
   }
@@ -98,21 +134,37 @@ export class BackgroundHighlightOrchestrator {
     }
   }
 
-  private async onFindByUrl({
-    url,
-    mode,
-  }: {
-    url: string;
-    mode?: 'basic' | 'pro' | 'pro_xai';
-  }) {
-    this.logger.info('[bridge] findByUrl', { url, mode });
+  private async onFindByUrl(
+    {
+      url,
+      mode,
+    }: {
+      url: string;
+      mode?: 'basic' | 'pro' | 'pro_xai';
+    },
+    sender?: chrome.runtime.MessageSender,
+  ) {
+    const tabUrl = sender?.tab?.url;
+    const resolved = resolveHighlightPageUrl({ contentUrl: url, tabUrl });
+    this.logger.info('[bridge] findByUrl', { url, tabUrl, resolved, mode });
     try {
-      const normalized = normalizePageUrl(url);
-      // Indexed path when available; merge facade cache for any in-flight rows.
-      const durable = await this.facade.getReadable().findByUrl(normalized);
-      const byId = new Map(durable.map((h) => [h.id, h]));
+      const keys = new Set<string>();
+      if (resolved) keys.add(resolved);
+      const normalizedRequested = normalizePageUrl(url);
+      if (normalizedRequested) keys.add(normalizedRequested);
+
+      const byId = new Map<string, HighlightDataV2>();
+      const readable = this.facade.getReadable();
+      for (const key of keys) {
+        const durable = await readable.findByUrl(key);
+        for (const h of durable) {
+          byId.set(h.id, h);
+        }
+      }
       for (const h of this.facade.getAll()) {
-        if (h.url && normalizePageUrl(h.url) === normalized) {
+        if (!h.url) continue;
+        const n = normalizePageUrl(h.url);
+        if (keys.has(n)) {
           byId.set(h.id, h);
         }
       }

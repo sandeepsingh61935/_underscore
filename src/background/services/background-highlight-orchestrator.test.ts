@@ -24,7 +24,10 @@ describe('BackgroundHighlightOrchestrator', () => {
   let facade: RepositoryFacade;
   let messageBus: { subscribe: ReturnType<typeof vi.fn> };
   let orchestrator: BackgroundHighlightOrchestrator;
-  const subscriptions = new Map<string, (payload: unknown) => Promise<unknown>>();
+  const subscriptions = new Map<
+    string,
+    (payload: unknown, sender?: chrome.runtime.MessageSender) => Promise<unknown>
+  >();
 
   beforeEach(() => {
     subscriptions.clear();
@@ -52,9 +55,14 @@ describe('BackgroundHighlightOrchestrator', () => {
     } as unknown as RepositoryFacade;
 
     messageBus = {
-      subscribe: vi.fn((channel: string, handler: (payload: unknown) => Promise<unknown>) => {
-        subscriptions.set(channel, handler);
-      }),
+      subscribe: vi.fn(
+        (
+          channel: string,
+          handler: (payload: unknown, sender?: chrome.runtime.MessageSender) => Promise<unknown>,
+        ) => {
+          subscriptions.set(channel, handler);
+        },
+      ),
     };
 
     orchestrator = new BackgroundHighlightOrchestrator(
@@ -76,6 +84,23 @@ describe('BackgroundHighlightOrchestrator', () => {
     const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(h);
     expect(result).toEqual({ success: true, data: undefined });
     expect(facade.addPersisted).toHaveBeenCalledWith(h);
+  });
+
+  it('onAdd: prefers sender.tab.url over content frame url for page identity', async () => {
+    const h = makeHighlight('h-tab');
+    h.url = 'https://youtubetotranscript.com/transcript';
+    const sender = {
+      tab: { url: 'https://youtubetotranscript.com/transcript?v=0F8REGux8qs' },
+    } as chrome.runtime.MessageSender;
+
+    const result = await subscriptions.get('IPC_HIGHLIGHT_ADD')!(h, sender);
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(facade.addPersisted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'h-tab',
+        url: 'https://youtubetotranscript.com/transcript?v=0F8REGux8qs',
+      }),
+    );
   });
 
   it('onFindByUrl: uses findByUrl and merges facade cache', async () => {
