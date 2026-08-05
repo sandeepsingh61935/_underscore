@@ -28,11 +28,8 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
     lastResult: null,
     error: null,
     status: 'idle',
-    progressPercent: null,
-    lastSyncedAt: null,
   })),
   formatSyncSubtitle: vi.fn(),
-  formatLastSyncedAt: vi.fn(() => 'Never synced on this device'),
 }));
 
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
@@ -56,7 +53,7 @@ describe('SettingsPage account row click targets', () => {
     vi.clearAllMocks();
   });
 
-  it('calls onSignIn only from the Sign in control, not the guest card body copy', () => {
+  it('calls onSignIn only from the Sign in control, not the account title', () => {
     const onSignIn = vi.fn();
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
@@ -76,14 +73,14 @@ describe('SettingsPage account row click targets', () => {
 
     render(<SettingsPage onSignIn={onSignIn} />);
 
-    fireEvent.click(screen.getByText(/Local only on this device/));
+    fireEvent.click(screen.getByText('Sync library across devices, export, AI'));
     expect(onSignIn).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  it('calls logout only after caution confirm, not the account email title', async () => {
+  it('calls logout only from the Sign out control, not the account email title', async () => {
     const logout = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
@@ -107,11 +104,6 @@ describe('SettingsPage account row click targets', () => {
     expect(logout).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
-    expect(logout).not.toHaveBeenCalled();
-    expect(screen.getByText('Sign out?')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
-    await vi.waitFor(() => {
-      expect(logout).toHaveBeenCalledTimes(1);
-    });
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 });
