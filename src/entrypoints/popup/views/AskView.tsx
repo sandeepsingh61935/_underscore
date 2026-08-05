@@ -29,6 +29,11 @@ export interface AskViewProps {
   onConnectAi?: () => void;
   /** Optional initial scope chip (e.g. Home "Ask page"). */
   initialScope?: AskScopeChip;
+  /**
+   * When set (e.g. Library domain chat icon), Ask uses this hostname for
+   * domain scope instead of the current browser tab.
+   */
+  libraryDomain?: string | null;
 }
 
 interface ThreadTurn {
@@ -120,20 +125,29 @@ function AskLockPage({
   );
 }
 
-function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }): React.ReactElement {
+function PaidAskShell({
+  initialScope = 'page',
+  libraryDomain = null,
+}: {
+  initialScope?: AskScopeChip;
+  libraryDomain?: string | null;
+}): React.ReactElement {
   const { isAuthenticated, currentMode } = useApp();
   const mode = currentMode || DEFAULT_MODE;
   const tab = useCurrentTabContext();
   const { data: dashboardData } = useDashboardData(mode, isAuthenticated);
+  const domainHost = libraryDomain || tab.domain || undefined;
   const { highlights: domainHighlights } = useHighlightsByDomain(
-    tab.domain || undefined,
+    domainHost,
     isAuthenticated,
   );
   const query = useScopeQuery();
   const { provider } = useActiveLLMProvider();
   const { fetch: fetchPageContext } = usePageContext();
 
-  const [scope, setScope] = useState<AskScopeChip>(initialScope);
+  const [scope, setScope] = useState<AskScopeChip>(
+    libraryDomain ? 'domain' : initialScope,
+  );
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<ThreadTurn[]>([]);
   const [streamUserContent, setStreamUserContent] = useState<string | null>(null);
@@ -141,6 +155,15 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnSeq = useRef(0);
+
+  useEffect(() => {
+    if (!libraryDomain) return;
+    setScope('domain');
+    setTurns([]);
+    setStreamUserContent(null);
+    setAskError(null);
+    setQuestion('');
+  }, [libraryDomain]);
 
   const nextId = (): string => {
     turnSeq.current += 1;
@@ -196,21 +219,21 @@ function PaidAskShell({ initialScope = 'page' }: { initialScope?: AskScopeChip }
 
   const scopeLabel = useMemo(() => {
     if (scope === 'library') return 'Library';
-    if (scope === 'domain') return tab.domain ?? 'Domain';
+    if (scope === 'domain') return domainHost ?? 'Domain';
     const path = formatPath(tab.path);
     return tab.domain ? `${tab.domain}${path === '/' ? '' : path}` : path;
-  }, [scope, tab.domain, tab.path]);
+  }, [scope, domainHost, tab.domain, tab.path]);
 
   const breadcrumb = useMemo(() => {
     if (scope === 'library') return { segments: ['Library'] as string[] };
     if (scope === 'domain') {
-      return { segments: [tab.domain ?? 'This domain'] as string[] };
+      return { segments: [domainHost ?? 'This domain'] as string[] };
     }
     const domain = tab.domain ?? 'Page';
     const path = formatPath(tab.path);
     if (path === '/') return { segments: [domain] as string[] };
     return { segments: [domain, path] as string[] };
-  }, [scope, tab.domain, tab.path]);
+  }, [scope, domainHost, tab.domain, tab.path]);
 
   const busy = query.isPreparing || query.status === 'streaming';
   const inputDisabled = busy;
@@ -487,6 +510,7 @@ export function AskView({
   onUpdatePayment,
   onConnectAi,
   initialScope,
+  libraryDomain = null,
 }: AskViewProps): React.ReactElement {
   if (lockReason) {
     return (
@@ -500,5 +524,5 @@ export function AskView({
     );
   }
 
-  return <PaidAskShell initialScope={initialScope} />;
+  return <PaidAskShell initialScope={initialScope} libraryDomain={libraryDomain} />;
 }

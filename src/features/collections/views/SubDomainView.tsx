@@ -3,12 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
-import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
-import { useGenerateSummary } from '@/features/ai/hooks/useGenerateSummary';
-import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
-import { usePersistLlmArtifactOnDone } from '@/features/ai/hooks/usePersistLlmArtifactOnDone';
-import { usePageContext } from '@/features/ai/hooks/usePageContext';
-import { ScopeAskPanel } from '@/features/ai/components/ScopeAskPanel';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
@@ -16,7 +10,6 @@ import { LibraryHighlightTile } from '@/features/collections/components/LibraryH
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
-import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getSectionKey } from '@/shared/utils/section-key';
@@ -37,6 +30,19 @@ export interface SubDomainViewProps {
   onBack?: () => void;
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
+}
+
+function IconTrash(): React.ReactElement {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 export function SubDomainView({
@@ -62,19 +68,7 @@ export function SubDomainView({
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
-  const aiGate = useModeFeature('ai', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
-  const summary = useGenerateSummary();
-  const { provider } = useActiveLLMProvider();
-  const artifactScope = useMemo(
-    () => ({ kind: 'section' as const, domain, sectionKey: section }),
-    [domain, section],
-  );
-  const artifacts = useLlmArtifacts(artifactScope);
-  const savedSummary = artifacts.getByKind('section_summary');
-  const { fetch: fetchPageContext } = usePageContext();
-  const [contextNote, setContextNote] = useState<string | null>(null);
-  const [isPreparing, setIsPreparing] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const [deleteSectionOpen, setDeleteSectionOpen] = useState(false);
   const [isDeletingSection, setIsDeletingSection] = useState(false);
@@ -90,7 +84,6 @@ export function SubDomainView({
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
 
-  // Reset search when the domain/section itself changes (route param change without remount).
   useEffect(() => {
     setSearchQuery('');
     setRefine([]);
@@ -145,73 +138,6 @@ export function SubDomainView({
     navigate(`/domain/${encodeURIComponent(domain)}`);
   };
 
-  const [summarizeError, setSummarizeError] = useState<string | null>(null);
-
-  const promptHighlights = useMemo(
-    () => sectionHighlights.map(h => ({
-      id: h.id,
-      text: h.text,
-      url: h.url,
-      title: section,
-    })),
-    [sectionHighlights, section],
-  );
-
-  const handleSummarize = async (): Promise<void> => {
-    setContextNote(null);
-    setSummarizeError(null);
-    setIsPreparing(true);
-    try {
-      const { excerpts, cacheNote, errorNote } = await prepareHighlightExcerpts(
-        promptHighlights,
-        fetchPageContext,
-      );
-
-      if (errorNote) {
-        setContextNote(`Page context unavailable: ${errorNote}`);
-      } else if (cacheNote) {
-        setContextNote(cacheNote);
-      }
-
-      summary.start({
-        pageTitle: section,
-        pageUrl: domain,
-        pageContextWithMarks: '',
-        pageContext: '',
-        highlights: promptHighlights,
-        length: 'medium',
-      }, excerpts);
-    } catch (err) {
-      setSummarizeError((err as Error).message);
-    } finally {
-      setIsPreparing(false);
-    }
-  };
-
-  const summarizeDisabled = summary.phase === 'streaming'
-    || isPreparing
-    || sectionHighlights.some(h => !h.text);
-
-  const summaryText = summary.chunks || savedSummary?.content || '';
-  const summaryStale = savedSummary
-    ? artifacts.isStale(savedSummary, sectionHighlights.length)
-    : false;
-
-  usePersistLlmArtifactOnDone({
-    status: summary.status,
-    content: summary.chunks,
-    input: summary.status === 'done' && summary.chunks.trim()
-      ? {
-          kind: 'section_summary',
-          scope: artifactScope,
-          content: summary.chunks,
-          highlightCountAtGeneration: sectionHighlights.length,
-          provider: provider ?? undefined,
-        }
-      : null,
-    save: artifacts.save,
-  });
-
   const handleDeleteSection = async (): Promise<void> => {
     if (isDeletingSection) return;
     setIsDeletingSection(true);
@@ -219,6 +145,7 @@ export function SubDomainView({
       const result = await deleteScope({ scope: 'section', domain, sectionKey: section });
       if (!result?.success) return;
       setDeleteSectionOpen(false);
+      handleBackToDomain();
     } finally {
       setIsDeletingSection(false);
     }
@@ -237,89 +164,34 @@ export function SubDomainView({
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ padding: '10px 16px 6px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div className="u-sans" style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
                 {section === '/' ? 'HOME' : section}
               </div>
               <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                {sectionHighlights.length} highlights · {mode}
+                {sectionHighlights.length} {sectionHighlights.length === 1 ? 'highlight' : 'highlights'}
               </div>
             </div>
-            <ExportActions
-              scope={{ kind: 'section', domain, sectionKey: section }}
-              highlightCount={sectionHighlights.length}
-              disabled={exportDisabled}
-            />
+            {sectionHighlights.length > 0 ? (
+              <div className="scope-toolbar" data-testid="section-scope-toolbar">
+                <ExportActions
+                  scope={{ kind: 'section', domain, sectionKey: section }}
+                  highlightCount={sectionHighlights.length}
+                  disabled={exportDisabled}
+                />
+                <button
+                  type="button"
+                  className="sr-icon is-delete"
+                  aria-label="Delete section"
+                  title="Delete section"
+                  onClick={() => setDeleteSectionOpen(true)}
+                >
+                  <IconTrash />
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
-
-        {sectionHighlights.length > 0 && (
-          <div style={{ padding: '4px 16px 8px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {aiGate.allowed && (
-              <button
-                type="button"
-                onClick={() => { void handleSummarize(); }}
-                disabled={summarizeDisabled}
-                style={{
-                  font: 'var(--sans)', fontSize: 'var(--step--1)',
-                  padding: '6px 10px', background: 'var(--paper)', color: 'var(--ink)',
-                  border: '1px solid var(--rule)', cursor: summarizeDisabled ? 'wait' : 'pointer',
-                }}
-              >
-                Summarize this section
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setDeleteSectionOpen(true)}
-              style={{
-                font: 'var(--sans)', fontSize: 'var(--step--1)',
-                padding: '6px 10px', background: 'var(--paper)', color: 'var(--accent)',
-                border: '1px solid var(--rule)', cursor: 'pointer',
-              }}
-            >
-              Delete section
-            </button>
-          </div>
-        )}
-
-        {contextNote && (
-          <p className="u-mono" style={{ padding: '4px 16px', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
-            {contextNote}
-          </p>
-        )}
-
-        {summary.status === 'streaming' && !summary.chunks && (
-          <p className="u-mono" style={{ padding: '4px 16px', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
-            Writing summary…
-          </p>
-        )}
-
-        {(summary.error || summarizeError) && (
-          <p style={{ padding: '4px 16px', fontSize: 'var(--step--1)', color: 'var(--ink)' }}>
-            Failed: {summary.error ?? summarizeError}
-          </p>
-        )}
-
-        {summaryStale && (
-          <p className="u-mono" style={{ padding: '4px 16px', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
-            Summary may be outdated — highlight count changed since it was generated.
-          </p>
-        )}
-
-        {summaryText && (
-          <div
-            role="status"
-            aria-live="polite"
-            style={{
-              padding: '8px 16px', whiteSpace: 'pre-wrap',
-              font: 'var(--sans)', fontSize: 'var(--step--1)', color: 'var(--ink)',
-              borderTop: '1px solid var(--rule)', maxHeight: '200px', overflowY: 'auto',
-            }}
-          >
-            {summaryText}
-          </div>
-        )}
 
         <div style={{ padding: '0 16px 8px' }}>
           <HighlightSearchBar
@@ -356,8 +228,8 @@ export function SubDomainView({
               variant="no-results"
               size="sm"
               title="No matches"
-              description="Clear filters or try another query"
-              action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+              description="Try a different query"
+              action={{ label: 'Clear', onClick: clearSearchAndFilters }}
             />
           ) : (
             filteredSearchResults.map((r) => (
@@ -396,8 +268,8 @@ export function SubDomainView({
             variant="no-results"
             size="sm"
             title="No matches"
-            description="Clear filters or try another query"
-            action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+            description="Try a different query"
+            action={{ label: 'Clear', onClick: clearSearchAndFilters }}
           />
         ) : (
           filteredSectionHighlights.map((h) => (
@@ -431,18 +303,6 @@ export function SubDomainView({
           ))
         )}
       </div>
-
-      {aiGate.allowed && (
-        <ScopeAskPanel
-          scopeLabel={section === '/' ? domain : section}
-          scopeKind="section"
-          artifactScope={artifactScope}
-          highlights={promptHighlights}
-          highlightCount={sectionHighlights.length}
-          disabled={isPreparing}
-          placeholder="Ask about this section…"
-        />
-      )}
 
       {(() => {
         const copy = deleteSectionCopy(domain, section, sectionHighlights.length);

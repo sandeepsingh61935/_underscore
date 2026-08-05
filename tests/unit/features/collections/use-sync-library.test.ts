@@ -46,15 +46,15 @@ describe('formatLastSyncedAt', () => {
   });
 
   it('reports never synced when missing', () => {
-    expect(formatLastSyncedAt(null)).toBe('Never synced on this device');
-    expect(formatLastSyncedAt(undefined)).toBe('Never synced on this device');
+    expect(formatLastSyncedAt(null)).toBe('Never synced');
+    expect(formatLastSyncedAt(undefined)).toBe('Never synced');
   });
 
   it('formats relative minutes', () => {
-    expect(formatLastSyncedAt('2026-08-05T11:45:00.000Z')).toBe('Last sync 15m ago');
+    expect(formatLastSyncedAt('2026-08-05T11:45:00.000Z')).toBe('15m ago');
   });
 
   it('formats just now', () => {
-    expect(formatLastSyncedAt('2026-08-05T11:59:30.000Z')).toBe('Last sync just now');
+    expect(formatLastSyncedAt('2026-08-05T11:59:30.000Z')).toBe('Just now');
   });
 });

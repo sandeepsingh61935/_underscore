@@ -68,19 +68,54 @@ export interface HighlightCardProps {
   presentation?: HighlightPresentation | null;
 }
 
-/** List-row text actions: tappable pad, not 44px full-row min-height. */
+/** Quiet text for Save / Cancel while editing. */
 const actionBtnStyle: React.CSSProperties = {
   all: 'unset',
   cursor: 'pointer',
   fontSize: 10,
-  color: 'var(--accent)',
+  color: 'var(--ink-3)',
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
-  padding: '6px 2px',
+  padding: '6px 4px',
   lineHeight: 1,
   display: 'inline-flex',
   alignItems: 'center',
 };
+
+function IconEdit(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M10.5 2.5l3 3L5 14H2v-3L10.5 2.5z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCopy(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="5.5" y="5.5" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M3.5 10.5V3.5h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconDelete(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 const formatBtnStyle: React.CSSProperties = {
   all: 'unset',
@@ -119,7 +154,7 @@ export function HighlightCard({
   density = 'comfortable',
   onSectionClick,
   onCopy,
-  onOpen,
+  onOpen: _onOpen,
   onDelete,
   onSaveQuote,
   showLocationMeta = true,
@@ -334,7 +369,7 @@ export function HighlightCard({
     setEditing(true);
   };
 
-  const hasTileActions = Boolean(onSaveQuote || onCopy || onOpen || onDelete) || editing;
+  const hasTileActions = Boolean(onSaveQuote || onCopy || onDelete) || editing;
   const showActionRow = hasTileActions || footerStart != null;
 
   const discardCopy = discardEditsCopy();
@@ -627,11 +662,11 @@ export function HighlightCard({
                           e.stopPropagation();
                           openEditor();
                         }}
-                        className="u-mono"
+                        className="hl-icon"
                         aria-label="Edit highlight text"
-                        style={actionBtnStyle}
+                        title="Edit"
                       >
-                        Edit
+                        <IconEdit />
                       </button>
                     )}
                     {onCopy && (
@@ -641,25 +676,11 @@ export function HighlightCard({
                           e.stopPropagation();
                           onCopy();
                         }}
-                        className="u-mono"
+                        className="hl-icon"
                         aria-label="Copy highlight text"
-                        style={actionBtnStyle}
+                        title="Copy"
                       >
-                        Copy
-                      </button>
-                    )}
-                    {onOpen && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpen();
-                        }}
-                        className="u-mono"
-                        aria-label="Open highlight source"
-                        style={actionBtnStyle}
-                      >
-                        Open
+                        <IconCopy />
                       </button>
                     )}
                     {onDelete && (
@@ -669,11 +690,11 @@ export function HighlightCard({
                           e.stopPropagation();
                           onDelete();
                         }}
-                        className="u-mono"
+                        className="hl-icon is-danger"
                         aria-label="Delete highlight"
-                        style={actionBtnStyle}
+                        title="Delete"
                       >
-                        Delete
+                        <IconDelete />
                       </button>
                     )}
                   </>

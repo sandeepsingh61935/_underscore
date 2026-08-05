@@ -120,6 +120,8 @@ function PopupApp(): React.ReactElement {
   const [previousView, setPreviousView] = useState<View | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
+  /** Library domain chat icon → Ask tab with this hostname. */
+  const [askLibraryDomain, setAskLibraryDomain] = useState<string | null>(null);
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
@@ -322,9 +324,17 @@ function PopupApp(): React.ReactElement {
 
   const handleTabChange = (tab: ActiveTab): void => {
     switch (tab) {
-      case 'home':        setCurrentView(View.DASHBOARD); break;
-      case 'collections': setCurrentView(View.COLLECTIONS); break;
-      case 'ask':         setCurrentView(View.ASK); break;
+      case 'home':
+        setAskLibraryDomain(null);
+        setCurrentView(View.DASHBOARD);
+        break;
+      case 'collections':
+        setAskLibraryDomain(null);
+        setCurrentView(View.COLLECTIONS);
+        break;
+      case 'ask':
+        setCurrentView(View.ASK);
+        break;
       case 'settings':    handleSettingsClick(); break;
     }
   };
@@ -414,6 +424,10 @@ function PopupApp(): React.ReactElement {
         <CollectionsView
           onCollectionClick={handleCollectionClick}
           onSectionClick={handleSectionClick}
+          onAskDomain={(domain) => {
+            setAskLibraryDomain(domain);
+            setCurrentView(View.ASK);
+          }}
           isAuthenticated={!!user}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
@@ -423,6 +437,10 @@ function PopupApp(): React.ReactElement {
           domain={selectedDomain}
           onBack={handleBackToCollections}
           onSectionClick={handleSectionClick}
+          onAskDomain={(domain) => {
+            setAskLibraryDomain(domain);
+            setCurrentView(View.ASK);
+          }}
         />
       )}
       {currentView === View.SUB_DOMAIN && (
@@ -451,6 +469,7 @@ function PopupApp(): React.ReactElement {
       {currentView === View.ASK && (
         <AskView
           lockReason={askLockReason}
+          libraryDomain={askLibraryDomain}
           onSignIn={() => setCurrentView(View.AUTH)}
           onUpgrade={() => {
             if (billing?.startCheckout) {
@@ -479,7 +498,10 @@ function PopupApp(): React.ReactElement {
           onSectionClick={handleSectionClick}
           onSignIn={() => setCurrentView(View.AUTH)}
           isPaidActive={isPaidActive}
-          onAskPage={() => setCurrentView(View.ASK)}
+          onAskPage={() => {
+            setAskLibraryDomain(null);
+            setCurrentView(View.ASK);
+          }}
         />
       )}
       {currentView === View.API_KEY_SETUP && (

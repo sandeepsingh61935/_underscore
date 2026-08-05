@@ -54,9 +54,9 @@ function formatSyncSubtitle(result: CloudHydrationResult): string {
 
 /** Human-readable last-sync line for Settings subtitles. */
 function formatLastSyncedAt(iso: string | null | undefined): string {
-  if (!iso) return 'Never synced on this device';
+  if (!iso) return 'Never synced';
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return 'Never synced on this device';
+  if (Number.isNaN(date.getTime())) return 'Never synced';
 
   const now = Date.now();
   const diffMs = now - date.getTime();
@@ -64,26 +64,26 @@ function formatLastSyncedAt(iso: string | null | undefined): string {
   const hour = 60 * minute;
   const day = 24 * hour;
 
-  if (diffMs < minute) return 'Last sync just now';
+  if (diffMs < minute) return 'Just now';
   if (diffMs < hour) {
     const m = Math.floor(diffMs / minute);
-    return `Last sync ${m}m ago`;
+    return `${m}m ago`;
   }
   if (diffMs < day) {
     const h = Math.floor(diffMs / hour);
-    return `Last sync ${h}h ago`;
+    return `${h}h ago`;
   }
   if (diffMs < 7 * day) {
     const d = Math.floor(diffMs / day);
-    return `Last sync ${d}d ago`;
+    return `${d}d ago`;
   }
 
-  return `Last sync ${date.toLocaleString(undefined, {
+  return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  })}`;
+  });
 }
 
 async function readLastSyncedAt(): Promise<string | null> {

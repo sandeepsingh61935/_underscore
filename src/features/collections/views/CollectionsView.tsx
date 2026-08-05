@@ -40,6 +40,8 @@ export interface CollectionsViewProps {
   onCollectionClick?: (domain: string) => void;
   /** Drill into a specific result's domain/section (search results can span domains). */
   onSectionClick?: (domain: string, section: string) => void;
+  /** Open Ask tab scoped to this library domain (Paid). */
+  onAskDomain?: (domain: string) => void;
   isAuthenticated?: boolean;
   onSignIn?: () => void;
 }
@@ -47,6 +49,7 @@ export interface CollectionsViewProps {
 export function CollectionsView({
   onCollectionClick,
   onSectionClick,
+  onAskDomain,
   isAuthenticated: propIsAuthenticated,
   onSignIn,
 }: CollectionsViewProps): React.ReactElement {
@@ -87,14 +90,19 @@ export function CollectionsView({
 
   const searchGroups = useMemo(() => {
     if (!isSearching) return [];
-    const nameMatchedDomains = matchDomainNames(
-      collections.map((c) => c.domain),
-      searchQuery,
-    );
+    // Domain chip (or default All) also matches collection hostnames with zero quote hits.
+    const domainFieldOn =
+      searchFields.length === 0 || searchFields.includes('domain');
+    const nameMatchedDomains = domainFieldOn
+      ? matchDomainNames(
+          collections.map((c) => c.domain),
+          searchQuery,
+        )
+      : [];
     return groupSearchResultsByDomainAndSection(filteredResults, {
       nameMatchedDomains,
     });
-  }, [isSearching, collections, searchQuery, filteredResults]);
+  }, [isSearching, collections, searchQuery, filteredResults, searchFields]);
 
   const searchResultCount = useMemo(
     () => countGranularSearchResults(searchGroups),
@@ -219,8 +227,8 @@ export function CollectionsView({
               variant="no-results"
               size="sm"
               title="No matches"
-              description="Clear filters or try another query"
-              action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
+              description="Try a different query"
+              action={{ label: 'Clear', onClick: clearSearchAndFilters }}
             />
           ) : (
             searchGroups.map((group) => (
@@ -289,11 +297,14 @@ export function CollectionsView({
               count={c.highlightCount}
               sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : undefined}
               onOpen={() => handleCollectionClick(c.domain)}
-              showActions={aiGate.allowed}
-              // Ask needs domain-scoped context (ScopeAskPanel on DomainDetailsView).
-              // Hide on library domain list until that context exists — do not navigate-as-ask.
+              showActions={isAuthenticated}
+              onAsk={
+                aiGate.allowed && onAskDomain
+                  ? () => onAskDomain(c.domain)
+                  : undefined
+              }
               onDelete={
-                aiGate.allowed
+                isAuthenticated
                   ? () => setDeleteDomain({ domain: c.domain, count: c.highlightCount })
                   : undefined
               }

@@ -1,6 +1,7 @@
 /**
- * Library pulse — compact practice stats for Settings (not Home).
- * Home stays anchor + stream; this is opt-in library health.
+ * Library stats — Settings disclosure (parity with Typography expand).
+ * Collapsed: one row (title + quiet summary). Expanded: practice grid.
+ * Not shown on Home.
  */
 import React from 'react';
 
@@ -12,6 +13,8 @@ export interface LibraryPulseProps {
   withNotesCount: number;
   withTagsCount: number;
   loading?: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
 function PulseCell({
@@ -27,7 +30,7 @@ function PulseCell({
     <div
       data-testid={`library-pulse-${label.toLowerCase()}`}
       style={{
-        padding: '10px 12px 11px 16px',
+        padding: '10px 12px 12px 16px',
         borderRight: lastInRow ? undefined : '1px solid var(--rule-soft)',
         minWidth: 0,
       }}
@@ -47,17 +50,26 @@ function PulseCell({
         className="u-serif"
         style={{
           fontSize: 'var(--step-2)',
-          marginTop: 2,
-          letterSpacing: '-0.01em',
+          marginTop: 3,
+          letterSpacing: '-0.015em',
           color: 'var(--ink)',
           fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1.15,
+          lineHeight: 1.1,
         }}
       >
         {value}
       </div>
     </div>
   );
+}
+
+function summaryLine(
+  total: number,
+  domains: number,
+  loading: boolean,
+): string {
+  if (loading) return '…';
+  return `${total} highlights · ${domains} domains`;
 }
 
 export function LibraryPulse({
@@ -68,37 +80,52 @@ export function LibraryPulse({
   withNotesCount,
   withTagsCount,
   loading = false,
+  expanded,
+  onToggle,
 }: LibraryPulseProps): React.ReactElement {
   const v = (n: number): string => (loading ? '—' : String(n));
+  const summary = summaryLine(totalHighlights, totalDomains, loading);
 
   return (
-    <div
-      data-testid="library-pulse"
-      role="region"
-      aria-label="Library stats"
-      style={{
-        borderTop: '1px solid var(--rule-soft)',
-        borderBottom: '1px solid var(--rule-soft)',
-        background: 'var(--paper)',
-        marginBottom: 4,
-      }}
-    >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          borderBottom: '1px solid var(--rule-soft)',
-        }}
+    <div data-testid="library-pulse" data-expanded={expanded ? 'true' : 'false'}>
+      <button
+        type="button"
+        className="settings-disclose"
+        data-testid="library-stats-toggle"
+        aria-expanded={expanded}
+        aria-controls="library-stats-panel"
+        id="library-stats-toggle"
+        onClick={onToggle}
       >
-        <PulseCell label="Total" value={v(totalHighlights)} />
-        <PulseCell label="Week" value={v(thisWeekCount)} />
-        <PulseCell label="Today" value={v(todayCount)} lastInRow />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
-        <PulseCell label="Domains" value={v(totalDomains)} />
-        <PulseCell label="Notes" value={v(withNotesCount)} />
-        <PulseCell label="Tags" value={v(withTagsCount)} lastInRow />
-      </div>
+        <div style={{ minWidth: 0, textAlign: 'left' }}>
+          <div className="settings-disclose-title">Library stats</div>
+          <div className="settings-disclose-sub u-mono">{summary}</div>
+        </div>
+        <span className="settings-disclose-trail" aria-hidden="true">
+          {expanded ? '▾' : '▸'}
+        </span>
+      </button>
+
+      {expanded ? (
+        <div
+          id="library-stats-panel"
+          role="region"
+          aria-labelledby="library-stats-toggle"
+          className="library-pulse-panel"
+          data-testid="library-stats-panel"
+        >
+          <div className="library-pulse-row">
+            <PulseCell label="Total" value={v(totalHighlights)} />
+            <PulseCell label="Week" value={v(thisWeekCount)} />
+            <PulseCell label="Today" value={v(todayCount)} lastInRow />
+          </div>
+          <div className="library-pulse-row">
+            <PulseCell label="Domains" value={v(totalDomains)} />
+            <PulseCell label="Notes" value={v(withNotesCount)} />
+            <PulseCell label="Tags" value={v(withTagsCount)} lastInRow />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

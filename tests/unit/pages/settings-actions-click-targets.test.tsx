@@ -29,7 +29,7 @@ const syncMock = vi.fn();
 vi.mock('@/features/collections/hooks/use-sync-library', () => ({
   useSyncLibrary: vi.fn(),
   formatSyncSubtitle: vi.fn(),
-  formatLastSyncedAt: vi.fn(() => 'Never synced on this device'),
+  formatLastSyncedAt: vi.fn(() => 'Never synced'),
 }));
 
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
@@ -94,9 +94,9 @@ describe('SettingsPage action click targets', () => {
     mockAuthedApp();
   });
 
-  it('does not start sync when library title is clicked; Sync button does', () => {
+  it('does not start sync when row title is clicked; Sync button does', () => {
     render(<SettingsPage />);
-    fireEvent.click(screen.getByText('Sync library'));
+    fireEvent.click(screen.getByText('Library sync'));
     expect(syncMock).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Sync library' }));
     expect(syncMock).toHaveBeenCalledTimes(1);
@@ -252,6 +252,6 @@ describe('SettingsPage action click targets', () => {
     render(<SettingsPage />);
     expect(screen.getByTestId('sync-progress')).toHaveTextContent('42%');
     expect(screen.getByTestId('sync-progress-bar').getAttribute('aria-valuenow')).toBe('42');
-    expect(screen.getByText(/Syncing library · 42%/)).toBeTruthy();
+    expect(screen.getByText(/Syncing · 42%/)).toBeTruthy();
   });
 });

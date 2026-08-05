@@ -195,7 +195,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     );
     const row = screen.getByTestId('highlight-action-row');
     expect(row.textContent).toContain('+ Add note or tags');
-    expect(row.textContent).toMatch(/Edit/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
   });
 
   it('renders domain only when section is absent', () => {
@@ -241,7 +241,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
-  it('renders quiet Edit / Copy / Delete text actions when handlers are set', () => {
+  it('renders Edit / Copy / Delete icon actions when handlers are set', () => {
     render(
       <HighlightCard
         quote="Apple"
@@ -252,9 +252,10 @@ describe('HighlightCard (V2 wireframe contract)', () => {
       />,
     );
     const row = screen.getByTestId('highlight-action-row');
-    expect(row.textContent).toMatch(/Edit/i);
-    expect(row.textContent).toMatch(/Copy/i);
-    expect(row.textContent).toMatch(/Delete/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Copy highlight text/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Delete highlight/i })).toBeTruthy();
+    expect(row.querySelectorAll('button.hl-icon').length).toBe(3);
   });
 
   it('renders match badge under the action row when provided', () => {

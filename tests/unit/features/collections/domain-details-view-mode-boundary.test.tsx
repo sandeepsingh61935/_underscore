@@ -118,10 +118,10 @@ describe('DomainDetailsView basic mode boundaries', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText('Export domain highlights as MD')).toBeDisabled();
+    expect(screen.getByLabelText('Export domain as Markdown')).toBeDisabled();
   });
 
-  it('hides synthesize and ask for a guest in Basic', () => {
+  it('hides ask footer and synthesize for a guest in Basic', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
@@ -130,5 +130,6 @@ describe('DomainDetailsView basic mode boundaries', () => {
 
     expect(screen.queryByText('Synthesize this domain')).toBeNull();
     expect(screen.queryByPlaceholderText('Ask about this domain…')).toBeNull();
+    expect(screen.getByLabelText('Delete domain')).toBeTruthy();
   });
 });

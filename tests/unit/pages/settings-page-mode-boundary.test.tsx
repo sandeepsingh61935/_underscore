@@ -36,7 +36,7 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
     lastSyncedAt: null,
   })),
   formatSyncSubtitle: vi.fn(),
-  formatLastSyncedAt: vi.fn(() => 'Never synced on this device'),
+  formatLastSyncedAt: vi.fn(() => 'Never synced'),
 }));
 
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
@@ -215,8 +215,8 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(screen.getByText('In-app models')).toBeTruthy();
     expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
-    expect(screen.getByText('Manage billing')).toBeTruthy();
-    expect(screen.getByTestId('billing-cta').textContent).toBe('Portal');
+    expect(screen.getByText('Billing')).toBeTruthy();
+    expect(screen.getByTestId('billing-cta').textContent).toBe('Manage');
     expect(screen.queryByTestId('billing-sync-cta')).toBeNull();
   });
 
@@ -224,15 +224,13 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     mockBilling(true, { cancelAtPeriodEnd: true });
     render(<SettingsPage />);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
-    expect(
-      screen.getByText('Cancels at period end · invoices & payment method')
-    ).toBeTruthy();
+    expect(screen.getByText('Cancels at period end')).toBeTruthy();
   });
 
   it('Paid Manage CTA opens portal from trailing button only', () => {
     const { openPortal, startCheckout } = mockBilling(true);
     render(<SettingsPage />);
-    fireEvent.click(screen.getByText('Manage billing'));
+    fireEvent.click(screen.getByText('Billing'));
     expect(openPortal).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('billing-cta'));
     expect(openPortal).toHaveBeenCalledTimes(1);
@@ -279,7 +277,7 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     mockBilling(false);
   });
 
-  it('shows Free pill, Upgrade CTA, and Sync recovery row', () => {
+  it('shows Free pill, Upgrade CTA, and Refresh recovery row', () => {
     const { startCheckout, openPortal, syncFromPolar } = mockBilling(false);
     render(<SettingsPage />);
     expect(screen.getByText('Connect to AI')).toBeTruthy();
@@ -287,20 +285,20 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     expect(screen.getByText('In-app models')).toBeTruthy();
     expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
-    expect(screen.getByText('Upgrade to Account (Paid)')).toBeTruthy();
+    expect(screen.getByText('Upgrade to Paid')).toBeTruthy();
     expect(screen.getByTestId('billing-cta').textContent).toBe('Upgrade');
     expect(screen.getByTestId('billing-cta').getAttribute('data-billing-kind')).toBe(
       'upgrade'
     );
-    expect(screen.getByTestId('billing-sync-cta').textContent).toBe('Sync');
+    expect(screen.getByTestId('billing-sync-cta').textContent).toBe('Refresh');
 
-    fireEvent.click(screen.getByText('Upgrade to Account (Paid)'));
+    fireEvent.click(screen.getByText('Upgrade to Paid'));
     expect(startCheckout).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('billing-cta'));
     expect(startCheckout).toHaveBeenCalledTimes(1);
     expect(openPortal).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByText('Refresh subscription status'));
+    fireEvent.click(screen.getByText('Refresh status'));
     expect(syncFromPolar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('billing-sync-cta'));
     expect(syncFromPolar).toHaveBeenCalledTimes(1);
@@ -311,7 +309,7 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     expect(screen.queryByText(/Starter/)).toBeNull();
     expect(screen.queryByText(/^Pro$/)).toBeNull();
     expect(screen.getAllByText(/Account \(Free\)/).length).toBeGreaterThan(0);
-    expect(screen.getByText('Upgrade to Account (Paid)')).toBeTruthy();
+    expect(screen.getByText('Upgrade to Paid')).toBeTruthy();
   });
 });
 
@@ -341,7 +339,7 @@ describe('SettingsPage past_due billing', () => {
     render(<SettingsPage />);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Past due');
     expect(screen.getByText('Payment past due')).toBeTruthy();
-    expect(screen.getByTestId('billing-cta').textContent).toBe('Update payment');
+    expect(screen.getByTestId('billing-cta').textContent).toBe('Update');
     expect(screen.getByTestId('billing-cta').getAttribute('data-billing-kind')).toBe(
       'update_payment'
     );

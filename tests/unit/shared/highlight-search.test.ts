@@ -104,15 +104,29 @@ describe('searchHighlights', () => {
       expect(results[0]?.matchedFields).toEqual(['url']);
     });
 
-    it('all fields: matches across text, notes, tags, and url', () => {
+    it('all fields: matches across text, notes, tags, url, and domain', () => {
       const items = [
         makeHighlight({ id: 'by-text', text: 'keyword here', notes: undefined, tags: undefined, url: 'https://a.com' }),
         makeHighlight({ id: 'by-notes', text: 'no match', notes: 'keyword note', tags: undefined, url: 'https://a.com' }),
         makeHighlight({ id: 'by-tags', text: 'no match', notes: undefined, tags: ['keyword'], url: 'https://a.com' }),
         makeHighlight({ id: 'by-url', text: 'no match', notes: undefined, tags: undefined, url: 'https://keyword.com' }),
+        makeHighlight({
+          id: 'by-domain',
+          text: 'no match',
+          notes: undefined,
+          tags: undefined,
+          url: 'https://other.com/path',
+          domain: 'keyword.example.com',
+        }),
       ];
       const results = searchHighlights(items, 'keyword');
-      expect(results.map((r) => r.highlight.id)).toEqual(['by-text', 'by-notes', 'by-tags', 'by-url']);
+      expect(results.map((r) => r.highlight.id)).toEqual([
+        'by-text',
+        'by-notes',
+        'by-tags',
+        'by-url',
+        'by-domain',
+      ]);
     });
   });
 
@@ -133,7 +147,7 @@ describe('searchHighlights', () => {
         }),
       ];
       const results = searchHighlights(items, 'keyword');
-      expect(results[0]?.matchedFields).toEqual(['text', 'notes', 'tags', 'url']);
+      expect(results[0]?.matchedFields).toEqual(['text', 'notes', 'tags', 'url', 'domain']);
     });
 
     it('counts multiple matching tags as a single tags match', () => {
@@ -187,7 +201,12 @@ describe('formatMatchBadge', () => {
     expect(formatMatchBadge(['text', 'notes', 'tags'])).toBe('Text · Notes · Tags');
   });
 
-  it('orders fields Text · Notes · Tags regardless of input order', () => {
+  it('orders fields Text · Notes · Tags · Domain regardless of input order', () => {
     expect(formatMatchBadge(['tags', 'text', 'notes'])).toBe('Text · Notes · Tags');
+    expect(formatMatchBadge(['domain', 'tags'])).toBe('Tags · Domain');
+  });
+
+  it('labels domain-only matches', () => {
+    expect(formatMatchBadge(['domain'])).toBe('Domain');
   });
 });

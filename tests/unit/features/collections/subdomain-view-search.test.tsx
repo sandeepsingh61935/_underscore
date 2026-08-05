@@ -141,7 +141,7 @@ describe('SubDomainView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     expect(input).not.toBeDisabled();
 
     fireEvent.change(input, { target: { value: 'quote' } });
@@ -181,7 +181,7 @@ describe('SubDomainView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'tags' } });
 
     await waitFor(() => {
@@ -215,7 +215,7 @@ describe('SubDomainView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'quote' } });
 
     await waitFor(() => {
@@ -226,8 +226,8 @@ describe('SubDomainView search wiring', () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it('refine Has notes filters section list to zero and Clear search recovers', async () => {
-    // sampleHighlight has empty notes/tags — Has notes should empty the list without a query.
+  it('refine With notes filters section list to zero and Clear recovers', async () => {
+    // sampleHighlight has empty notes/tags — With notes should empty the list without a query.
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
@@ -237,15 +237,20 @@ describe('SubDomainView search wiring', () => {
     expect(screen.getByText('A highlighted quote')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Has notes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'With notes' }));
 
     await waitFor(() => {
       expect(screen.getByText('No matches')).toBeTruthy();
     });
-    expect(screen.getByText('No results')).toBeTruthy();
+    expect(screen.getByText('0')).toBeTruthy();
     expect(screen.queryByText('A highlighted quote')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    // Empty-state CTA (text "Clear"), not the filter meta clear alone.
+    const clearBtn = screen
+      .getAllByRole('button', { name: 'Clear' })
+      .find((el) => el.textContent?.trim() === 'Clear');
+    expect(clearBtn).toBeTruthy();
+    fireEvent.click(clearBtn!);
 
     await waitFor(() => {
       expect(screen.getByText('A highlighted quote')).toBeTruthy();

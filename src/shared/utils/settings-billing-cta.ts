@@ -1,6 +1,7 @@
 /**
  * Pure Settings billing CTA matrix — Free / Paid / Past due / cancel-scheduled.
- * Commercial action is checkout (Upgrade) or portal (Manage / Update payment).
+ * Commercial action is checkout (Upgrade) or portal (Manage / Update).
+ * Labels use product language — never "Portal" (implementation detail).
  */
 
 import type { BillingStatus } from '@/shared/billing';
@@ -15,10 +16,10 @@ export interface SettingsBillingCta {
   title: string;
   /** Default subtitle when no error is shown */
   sub: string;
-  /** Accent mono trailing label — one commercial CTA */
+  /** Trailing CTA label — one commercial action */
   ctaLabel: string;
   action: SettingsBillingAction;
-  /** Sync recovers after checkout / lagging webhook (not paid-active) */
+  /** Refresh recovers after checkout / lagging webhook (not paid-active) */
   showSync: boolean;
 }
 
@@ -34,8 +35,8 @@ export function resolveSettingsBillingCta(input: {
     return {
       kind: 'update_payment',
       title: 'Payment past due',
-      sub: 'Update payment method in Polar to restore Account (Paid)',
-      ctaLabel: 'Update payment',
+      sub: 'Restore Paid access',
+      ctaLabel: 'Update',
       action: 'portal',
       showSync: true,
     };
@@ -44,11 +45,11 @@ export function resolveSettingsBillingCta(input: {
   if (input.isPaidActive) {
     return {
       kind: 'manage',
-      title: 'Manage billing',
+      title: 'Billing',
       sub: cancelAtPeriodEnd
-        ? 'Cancels at period end · invoices & payment method'
-        : 'Invoices, payment method, cancel',
-      ctaLabel: 'Portal',
+        ? 'Cancels at period end'
+        : 'Invoices & payment',
+      ctaLabel: 'Manage',
       action: 'portal',
       showSync: false,
     };
@@ -56,8 +57,8 @@ export function resolveSettingsBillingCta(input: {
 
   return {
     kind: 'upgrade',
-    title: 'Upgrade to Account (Paid)',
-    sub: 'AI + agent connections · billed via Polar',
+    title: 'Upgrade to Paid',
+    sub: 'AI & agents',
     ctaLabel: 'Upgrade',
     action: 'checkout',
     showSync: true,

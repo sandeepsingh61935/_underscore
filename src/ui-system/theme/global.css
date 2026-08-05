@@ -278,7 +278,10 @@
   opacity: 0.6;
 }
 
-/* Buttons (wireframe) */
+/*
+ * Buttons — behavior-based color system (rest → hover → active → disabled → focus)
+ * Roles: default | primary | accent (CTA) | ghost (secondary) | danger (destructive)
+ */
 .btn {
   font-family: var(--sans);
   font-size: var(--step-0);
@@ -292,25 +295,106 @@
   letter-spacing: -0.005em;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 44px;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, filter 120ms ease;
 }
+.btn:hover:not(:disabled) {
+  background: var(--paper-2);
+  border-color: color-mix(in oklch, var(--ink) 18%, var(--rule));
+}
+.btn:active:not(:disabled) {
+  background: color-mix(in oklch, var(--ink) 6%, var(--paper));
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
+}
+
 .btn.primary {
   background: var(--rule);
   color: var(--paper);
+  border-color: var(--rule);
 }
+.btn.primary:hover:not(:disabled) {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  filter: none;
+}
+.btn.primary:active:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Primary commercial CTA (Upgrade, Continue) */
 .btn.accent {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
+.btn.accent:hover:not(:disabled) {
+  filter: brightness(0.94);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.btn.accent:active:not(:disabled) {
+  filter: brightness(0.88);
+}
+
+/* Secondary / trail — quiet rest, accent edge on interaction (prototype) */
 .btn.ghost {
   border-color: var(--rule-soft);
+  background: var(--paper);
   color: var(--ink-2);
 }
-.btn.sm { min-height: 32px; padding: 6px 10px; font-size: var(--step--1); }
+.btn.ghost:hover:not(:disabled) {
+  background: var(--utility-overlay-06);
+  border-color: color-mix(in oklch, var(--accent) 35%, var(--rule-soft));
+  color: var(--ink);
+}
+.btn.ghost:active:not(:disabled) {
+  background: color-mix(in oklch, var(--accent) 8%, var(--paper));
+  border-color: color-mix(in oklch, var(--accent) 45%, var(--rule-soft));
+  color: var(--ink);
+}
 
-/* Quiet mono text actions (Settings trails, highlight cards) */
+.btn.sm {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: var(--step--1);
+}
+
+/* Destructive — rust channel, never brand accent for all CTAs */
+.btn.danger,
+.btn.ghost.danger {
+  color: color-mix(in oklch, var(--ink) 40%, #8a2a1a);
+  border-color: color-mix(in oklch, #8a2a1a 32%, var(--rule-soft));
+  background: var(--paper);
+}
+.btn.danger:hover:not(:disabled),
+.btn.ghost.danger:hover:not(:disabled) {
+  background: color-mix(in oklch, #8a2a1a 9%, var(--paper));
+  border-color: color-mix(in oklch, #8a2a1a 48%, var(--rule-soft));
+  color: #8a2a1a;
+  filter: none;
+}
+.btn.danger:active:not(:disabled),
+.btn.ghost.danger:active:not(:disabled) {
+  background: color-mix(in oklch, #8a2a1a 14%, var(--paper));
+  color: #7a2418;
+}
+
+/*
+ * Quiet mono text actions — prototype default: accent rest, ink hover.
+ * Matches ui_kits/extension/v3 product.css .btn-text language.
+ */
 .btn-text {
   all: unset;
   box-sizing: border-box;
@@ -318,32 +402,212 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 28px;
   padding: 4px 2px;
   font-family: var(--mono);
   font-size: var(--step--2);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--accent);
   white-space: nowrap;
+  border-radius: var(--radius);
+  transition: color 120ms ease, background 120ms ease;
 }
-.btn-text:hover { color: var(--ink); }
+.btn-text:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--utility-overlay-06);
+}
+.btn-text:active:not(:disabled) {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 8%, var(--paper));
+}
 .btn-text:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .btn-text:disabled,
 .btn-text[aria-disabled="true"] {
-  opacity: 0.45;
+  opacity: 0.42;
   cursor: default;
   pointer-events: none;
 }
-.btn-text.is-danger { color: var(--accent); }
-.btn-text.is-danger:hover { color: var(--accent); }
-.btn-text.is-muted { color: var(--ink-3); }
-.btn-text.is-muted:hover { color: var(--ink); }
-.btn-text.is-accent { color: var(--accent); }
-.btn-text.is-accent:hover { color: var(--accent); }
+.btn-text.is-danger {
+  color: var(--accent);
+}
+.btn-text.is-danger:hover:not(:disabled) {
+  color: #8a2a1a;
+  background: color-mix(in oklch, #8a2a1a 8%, var(--paper));
+}
+.btn-text.is-muted {
+  color: var(--ink-3);
+}
+.btn-text.is-muted:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--utility-overlay-06);
+}
+.btn-text.is-accent {
+  color: var(--accent);
+}
+.btn-text.is-accent:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--utility-overlay-06);
+}
+
+/* Settings disclosure rows (Typography, Library stats) */
+.settings-disclose {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  background: transparent;
+  color: var(--ink);
+  transition: background 120ms ease;
+}
+.settings-disclose:hover {
+  background: var(--utility-overlay-06);
+}
+.settings-disclose:active {
+  background: color-mix(in oklch, var(--ink) 6%, var(--paper));
+}
+.settings-disclose:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.settings-disclose[aria-expanded="true"] {
+  background: var(--paper-2);
+  border-bottom-color: transparent;
+}
+.settings-disclose-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.settings-disclose-sub {
+  font-size: 10px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.settings-disclose-trail {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+  transition: color 120ms ease;
+}
+.settings-disclose:hover .settings-disclose-trail {
+  color: var(--ink);
+}
+
+.library-pulse-panel {
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--paper-2);
+  margin-bottom: 0;
+}
+.library-pulse-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.library-pulse-row + .library-pulse-row {
+  border-top: 1px solid var(--rule-soft);
+}
+
+/* Export format pair — segmented quiet control (MD | XLSX) */
+.export-inline {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper);
+  flex-shrink: 0;
+}
+.export-inline .btn-text {
+  min-height: 28px;
+  padding: 0 10px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  border-radius: 0;
+  background: transparent;
+}
+.export-inline .btn-text + .btn-text {
+  border-left: 1px solid var(--rule-soft);
+}
+.export-inline .btn-text:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--utility-overlay-06);
+}
+.export-inline .btn-text:active:not(:disabled) {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 6%, var(--paper));
+}
+.export-inline .btn-text.is-muted {
+  color: var(--ink-4);
+}
+
+/* Scope page header tools (section/domain) */
+.scope-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Highlight tile icon actions — accent rest (prototype), ink/danger hover */
+button.hl-icon {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: var(--radius);
+  color: var(--accent);
+  background: transparent;
+  transition: color 120ms ease, background 120ms ease;
+}
+button.hl-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+button.hl-icon:hover {
+  color: var(--ink);
+  background: var(--utility-overlay-06);
+}
+button.hl-icon:active {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 8%, var(--paper));
+}
+button.hl-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+button.hl-icon.is-danger {
+  color: var(--accent);
+}
+button.hl-icon.is-danger:hover {
+  color: #8a2a1a;
+  background: color-mix(in oklch, #8a2a1a 8%, var(--paper));
+}
+button.hl-icon.is-danger:active {
+  color: #7a2418;
+  background: color-mix(in oklch, #8a2a1a 12%, var(--paper));
+}
 
 /* Settings segmented control (Open Design .seg — Mode / Theme) */
 .seg {
@@ -699,11 +963,48 @@
   font-size: 10px; color: var(--ink-4); letter-spacing: 0.04em;
 }
 .filter-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding-top: 2px; border-top: 1px solid var(--rule-soft);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--rule-soft);
 }
-.filter-foot .hint {
-  font-family: var(--mono); font-size: var(--step--2); color: var(--ink-4); letter-spacing: 0.04em;
+/* Compact chip-size control — hug "Reset", match field-chip height (not .btn.sm). */
+.filter-reset {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+.filter-reset:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: color-mix(in oklch, var(--ink) 22%, var(--rule-soft));
+  background: var(--utility-overlay-06);
+}
+.filter-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.filter-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Domain / section list rows + quiet Paid actions */
@@ -756,14 +1057,44 @@ button.sr-edit {
 }
 button.sr-edit:hover { background: var(--utility-overlay-06); }
 button.sr-icon {
-  all: unset; cursor: pointer; box-sizing: border-box;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; min-width: 36px; min-height: 36px;
-  border-radius: var(--radius); color: var(--ink-3); background: transparent;
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius);
+  color: var(--ink-3);
+  background: transparent;
+  transition: color 140ms ease, background 140ms ease;
 }
-button.sr-icon svg { display: block; width: 16px; height: 16px; pointer-events: none; }
-button.sr-icon:hover { color: var(--accent); background: var(--utility-overlay-06); }
-button.sr-icon.is-delete:hover { color: var(--accent); }
+button.sr-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+button.sr-icon:hover {
+  color: var(--accent);
+  background: var(--utility-overlay-06);
+}
+button.sr-icon:active {
+  color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 12%, var(--paper));
+}
+button.sr-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+button.sr-icon.is-delete:hover,
+button.sr-icon.is-delete:active {
+  color: #8a2a1a;
+  background: color-mix(in oklch, #8a2a1a 8%, var(--paper));
+}
 
 /* ─── Ask tab (v3 shell) ─── */
 .ask-layout {
@@ -1032,17 +1363,22 @@ button.sr-icon.is-delete:hover { color: var(--accent); }
   outline-offset: 2px !important;
 }
 
-/* Shell fields: ring the container, not the bare input (avoids double outline). */
+/* Shell fields: ring the container only — never the bare input (avoids double outline). */
 .search-input-row:focus-within,
 .tag-find-row:focus-within,
 .ask-composer .ac-shell:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+  border-color: var(--rule-soft);
 }
+.search-input-row input:focus,
 .search-input-row input:focus-visible,
+.tag-find-row input:focus,
 .tag-find-row input:focus-visible,
+.ask-composer .ac-shell input:focus,
 .ask-composer .ac-shell input:focus-visible {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* ─── A11y: prefers-reduced-motion (story 76) ───

@@ -6,12 +6,14 @@
  * surfaces. No React, no chrome.* APIs — safe to import from any package.
  */
 
-export type SearchField = 'text' | 'notes' | 'tags' | 'url';
+export type SearchField = 'text' | 'notes' | 'tags' | 'url' | 'domain';
 
 export interface SearchableHighlight {
   id: string;
   text: string;
   url: string;
+  /** Hostname when known — matched by the Domain field chip. */
+  domain?: string;
   notes?: string;
   tags?: string[];
 }
@@ -21,15 +23,20 @@ export interface HighlightSearchMatch<T> {
   matchedFields: SearchField[];
 }
 
-export const ALL_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags', 'url'];
+export const ALL_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags', 'url', 'domain'];
 
-/** User-facing field chips (Text / Notes / Tags) — matches HighlightSearchBar "All". */
-export const USER_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags'];
+/**
+ * User-facing field chips (Text / Notes / Tags / Domain).
+ * Domain matches the collection hostname so users can find a site by name
+ * without relying on quote text.
+ */
+export const USER_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags', 'domain'];
 
 const MATCH_BADGE_FIELD_ORDER: ReadonlyArray<{ field: SearchField; label: string }> = [
   { field: 'text', label: 'Text' },
   { field: 'notes', label: 'Notes' },
   { field: 'tags', label: 'Tags' },
+  { field: 'domain', label: 'Domain' },
 ];
 
 /**
@@ -94,6 +101,20 @@ export function searchHighlights<T extends SearchableHighlight>(
     }
     if (fieldSet.has('url') && item.url.toLowerCase().includes(trimmed)) {
       matchedFields.push('url');
+    }
+    if (fieldSet.has('domain')) {
+      const host =
+        (item.domain ?? '').toLowerCase() ||
+        (() => {
+          try {
+            return new URL(item.url).hostname.toLowerCase();
+          } catch {
+            return '';
+          }
+        })();
+      if (host && host.includes(trimmed)) {
+        matchedFields.push('domain');
+      }
     }
 
     if (matchedFields.length > 0) {

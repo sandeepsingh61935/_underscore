@@ -55,12 +55,12 @@ const FIELD_CHIP_LABELS: Record<SearchField, string> = {
   notes: 'Notes',
   tags: 'Tags',
   url: 'URL',
+  domain: 'Domain',
 };
 
 function resultCountLabel(count: number): string {
-  if (count === 0) return 'No results';
-  if (count === 1) return '1 result';
-  return `${count} results`;
+  if (count === 0) return '0';
+  return String(count);
 }
 
 function fieldsCoverAll(fields: SearchField[]): boolean {
@@ -80,7 +80,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     onTagFiltersChange,
     availableTags,
     resultCount,
-    placeholder = 'Search highlights…',
+    placeholder = 'Search…',
     disabled = false,
     filterOpen: filterOpenProp,
     onFilterOpenChange,
@@ -190,14 +190,14 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           value={inputValue}
           onChange={handleInputChange}
           placeholder={placeholder}
-          aria-label="Search highlights"
+          aria-label="Search"
           disabled={disabled}
         />
         {inputValue.length > 0 && (
           <button
             type="button"
             className="clear"
-            aria-label="Clear search"
+            aria-label="Clear"
             onClick={handleClearQuery}
             disabled={disabled}
           >
@@ -222,16 +222,15 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           {!fieldsCoverAll(fields) && fields.length > 0 && (
             <span className="filter-active-chip" role="listitem">
               <span>
-                In:{' '}
                 {fields
-                  .filter((f): f is Exclude<SearchField, 'url'> => f !== 'url')
+                  .filter((f) => f !== 'url')
                   .map((f) => FIELD_CHIP_LABELS[f])
                   .join(' · ')}
               </span>
               <button
                 type="button"
                 className="x"
-                aria-label="Clear fields"
+                aria-label="Reset fields"
                 disabled={disabled}
                 onClick={() => onFieldsChange([...DEFAULT_SEARCH_FIELDS])}
               >
@@ -262,7 +261,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
               <button
                 type="button"
                 className="x"
-                aria-label={`Remove tag ${t}`}
+                aria-label={`Remove ${t}`}
                 disabled={disabled}
                 onClick={() => handleTagToggle(t)}
               >
@@ -272,7 +271,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           ))}
           {tagFilters.length > 3 && (
             <span className="filter-active-chip" role="listitem">
-              <span>+{tagFilters.length - 3} tags</span>
+              <span>+{tagFilters.length - 3}</span>
             </span>
           )}
         </div>
@@ -288,7 +287,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
               disabled={disabled}
               onClick={handleResetFilters}
             >
-              Clear filters
+              Clear
             </button>
           )}
         </div>
@@ -297,8 +296,8 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
       {filterOpen && (
         <div className="filter-panel">
           <div className="filter-sec">
-            <div className="filter-sec-label">Search in</div>
-            <div className="filter-chip-row" role="group" aria-label="Search fields">
+            <div className="filter-sec-label">Fields</div>
+            <div className="filter-chip-row" role="group" aria-label="Fields">
               {USER_SEARCH_FIELDS.map((id) => {
                 const on = fieldActiveSet.has(id);
                 return (
@@ -324,8 +323,8 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
 
           {showRefine && (
             <div className="filter-sec">
-              <div className="filter-sec-label">Refine</div>
-              <div className="filter-chip-row" role="group" aria-label="Refine results">
+              <div className="filter-sec-label">Status</div>
+              <div className="filter-chip-row" role="group" aria-label="Status">
                 {REFINE_OPTIONS.map((o) => {
                   const on = refine.includes(o.id);
                   return (
@@ -351,11 +350,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                 <div className="filter-sec-label">Tags</div>
                 <span className="tag-picker-count">{availableTags.length}</span>
               </div>
-              <div className="tag-selected-row" role="list" aria-label="Selected tags">
-                {tagFilters.length === 0 ? (
-                  <span className="empty-hint">No tags selected</span>
-                ) : (
-                  tagFilters.map((t) => (
+              {tagFilters.length > 0 ? (
+                <div className="tag-selected-row" role="list" aria-label="Selected tags">
+                  {tagFilters.map((t) => (
                     <span key={t} className="tag-sel-chip" role="listitem">
                       <span>#{t}</span>
                       <button
@@ -368,9 +365,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                         ×
                       </button>
                     </span>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : null}
               <div className="tag-find-row">
                 <span className="glyph" aria-hidden="true">
                   ⌕
@@ -378,8 +375,8 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                 <input
                   type="text"
                   className="tag-find-input"
-                  placeholder="Find a tag…"
-                  aria-label="Find a tag"
+                  placeholder="Tags…"
+                  aria-label="Filter tags"
                   value={tagFind}
                   disabled={disabled}
                   onChange={(e) => setTagFind(e.target.value)}
@@ -388,17 +385,15 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
               {tagBrowse || tagFind.trim() ? (
                 <>
                   <div className="tag-browse-toolbar">
-                    <span className="tag-sublabel">
-                      All tags · {browseTags.length}
-                    </span>
-                    <div className="tag-sort-seg" role="group" aria-label="Sort tags">
+                    <span className="tag-sublabel">{browseTags.length}</span>
+                    <div className="tag-sort-seg" role="group" aria-label="Sort">
                       <button
                         type="button"
                         className={tagSort === 'popular' ? 'active' : undefined}
                         disabled={disabled}
                         onClick={() => setTagSort('popular')}
                       >
-                        Popular
+                        Top
                       </button>
                       <button
                         type="button"
@@ -410,9 +405,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                       </button>
                     </div>
                   </div>
-                  <div className="tag-list" role="listbox" aria-label="All tags">
+                  <div className="tag-list" role="listbox" aria-label="Tags">
                     {browseTags.length === 0 ? (
-                      <div className="tag-empty">No tags match</div>
+                      <div className="tag-empty">None</div>
                     ) : (
                       browseTags.map((t) => {
                         const on = tagFilters.some(
@@ -444,32 +439,33 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                       disabled={disabled}
                       onClick={() => setTagBrowse(false)}
                     >
-                      Show less
+                      Less
                     </button>
                   )}
                 </>
               ) : (
                 <>
-                  <div className="tag-sublabel">Popular</div>
-                  <div className="tag-popular-row">
-                    {popularTags.map((t) => {
-                      const on = tagFilters.some(
-                        (x) => x.toLowerCase() === t.label.toLowerCase(),
-                      );
-                      return (
-                        <button
-                          key={t.label}
-                          type="button"
-                          className={`tag-filter-chip${on ? ' active' : ''}`}
-                          aria-pressed={on}
-                          disabled={disabled}
-                          onClick={() => handleTagToggle(t.label)}
-                        >
-                          #{t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {popularTags.length > 0 ? (
+                    <div className="tag-popular-row">
+                      {popularTags.map((t) => {
+                        const on = tagFilters.some(
+                          (x) => x.toLowerCase() === t.label.toLowerCase(),
+                        );
+                        return (
+                          <button
+                            key={t.label}
+                            type="button"
+                            className={`tag-filter-chip${on ? ' active' : ''}`}
+                            aria-pressed={on}
+                            disabled={disabled}
+                            onClick={() => handleTagToggle(t.label)}
+                          >
+                            #{t.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                   {availableTags.length > 5 && (
                     <button
                       type="button"
@@ -477,7 +473,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                       disabled={disabled}
                       onClick={() => setTagBrowse(true)}
                     >
-                      Browse all tags
+                      All
                     </button>
                   )}
                 </>
@@ -486,17 +482,13 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           )}
 
           <div className="filter-foot">
-            <span className="hint">
-              {activeN ? `${activeN} active` : 'Find tags · refine results'}
-            </span>
             <button
               type="button"
-              className="search-clear-filters"
+              className="filter-reset"
               disabled={disabled || !activeN}
-              style={!activeN ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
               onClick={handleResetFilters}
             >
-              Reset filters
+              Reset
             </button>
           </div>
         </div>

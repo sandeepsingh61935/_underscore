@@ -73,9 +73,7 @@ export function formatSearchMatchMeta(
   matchCount: number,
   nameMatched: boolean,
 ): string {
-  if (matchCount > 0) {
-    return matchCount === 1 ? '1 match' : `${matchCount} matches`;
-  }
-  if (nameMatched) return 'Name match';
-  return '0 matches';
+  if (matchCount > 0) return String(matchCount);
+  if (nameMatched) return 'Name';
+  return '0';
 }

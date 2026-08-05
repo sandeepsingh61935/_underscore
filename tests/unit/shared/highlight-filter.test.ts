@@ -33,7 +33,8 @@ describe('highlight-filter model', () => {
       expect(
         countActiveFilters({ fields: ['text'], refine: [], tagFilters: [] }),
       ).toBe(1);
-      expect(fieldsAreRestricted(['text', 'notes', 'tags'])).toBe(false);
+      expect(fieldsAreRestricted(['text', 'notes', 'tags', 'domain'])).toBe(false);
+      expect(fieldsAreRestricted(['text', 'notes', 'tags'])).toBe(true);
       expect(fieldsAreRestricted(['text', 'notes'])).toBe(true);
     });
 
@@ -121,8 +122,17 @@ describe('highlight-filter model', () => {
     });
 
     it('toggleSearchField multi-selects and empty returns All', () => {
-      expect(toggleSearchField(['text', 'notes', 'tags'], 'notes')).toEqual(['text', 'tags']);
-      expect(toggleSearchField(['text'], 'text')).toEqual(['text', 'notes', 'tags']);
+      expect(toggleSearchField(['text', 'notes', 'tags', 'domain'], 'notes')).toEqual([
+        'text',
+        'tags',
+        'domain',
+      ]);
+      expect(toggleSearchField(['text'], 'text')).toEqual([
+        'text',
+        'notes',
+        'tags',
+        'domain',
+      ]);
       expect(toggleSearchField(['text'], 'notes')).toEqual(['text', 'notes']);
     });
   });

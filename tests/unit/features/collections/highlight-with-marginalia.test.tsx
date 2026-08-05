@@ -40,9 +40,9 @@ describe('HighlightWithMarginalia', () => {
 
     const row = screen.getByTestId('highlight-action-row');
     expect(row.textContent).toContain('+ Add note or tags');
-    expect(row.textContent).toMatch(/Edit/i);
-    expect(row.textContent).toMatch(/Copy/i);
-    expect(row.textContent).toMatch(/Delete/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Copy highlight text/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Delete highlight/i })).toBeTruthy();
     expect(screen.queryByTestId('highlight-format-toolbar')).toBeNull();
     expect(screen.queryByRole('button', { name: /As captured/i })).toBeNull();
   });
@@ -63,7 +63,7 @@ describe('HighlightWithMarginalia', () => {
     const row = screen.getByTestId('highlight-action-row');
     expect(row.textContent).toContain('My note');
     expect(row.textContent).toContain('bfs');
-    expect(row.textContent).toMatch(/Edit/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
   });
 
   it('expanded: shows note tray placeholders without NOTE header', () => {

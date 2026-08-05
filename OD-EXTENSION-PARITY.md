@@ -1,7 +1,7 @@
 # Extension mockup ↔ codebase parity
 
 **Mockup:** `underscore-extension-prototype.html`  
-**Code branch:** `feature/v3-extension-ui` (last parity: `5f39f03`)  
+**Code branch:** `feature/v3-extension-ui` (last reverse-sync: `4a45f21` + uncommitted UI pass, OD v51+)  
 **Repo:** `_underscore` (worktree `.worktrees/v3-extension-ui`)
 
 ## Direction of truth
@@ -19,10 +19,21 @@
 3. Plan — Guest · Free · Paid segments  
 4. Typography — expand  
 5. Appearance — Theme light|dark|system  
-6. Account + billing (signed-in) — Upgrade/Portal/Sync  
-7. Library — Sync (%, bar) · Export MD·XLSX · Delete  
+6. Account + billing (signed-in) — Upgrade/Manage/Refresh  
+7. Library — **Library stats** disclosure (collapsed summary → expand grid) · Sync · Export MD|XLSX · Delete  
 8. AI · setup — Configure providers · Connect to AI  
 9. Session — Sign out  
+
+## Home structure (parity)
+
+1. Lean status — `Local only|Name · N highlights · N domains` (no stats grid)  
+2. Current page band  
+3. Recent stream  
+
+## Search / filters (parity)
+
+- Placeholder `Search…` · Fields (Text/Notes/Tags/Domain) · Status (With notes / …)  
+- Compact `Reset` chip · result count as number · no filler footer hint
 
 ## Mode transitions (mock + production)
 

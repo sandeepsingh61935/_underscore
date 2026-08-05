@@ -11,10 +11,10 @@ import { USER_SEARCH_FIELDS } from '@/shared/utils/highlight-search';
 export type RefineFilter = 'has_notes' | 'needs_note' | 'has_tags' | 'untagged';
 
 export const REFINE_OPTIONS: ReadonlyArray<{ id: RefineFilter; label: string }> = [
-  { id: 'has_notes', label: 'Has notes' },
-  { id: 'needs_note', label: 'Needs note' },
-  { id: 'has_tags', label: 'Has tags' },
-  { id: 'untagged', label: 'Untagged' },
+  { id: 'has_notes', label: 'With notes' },
+  { id: 'needs_note', label: 'No notes' },
+  { id: 'has_tags', label: 'With tags' },
+  { id: 'untagged', label: 'No tags' },
 ] as const;
 
 export const DEFAULT_SEARCH_FIELDS: SearchField[] = [...USER_SEARCH_FIELDS];
@@ -41,7 +41,7 @@ export function highlightHasTags(item: FilterableHighlight): boolean {
 }
 
 /**
- * Whether fields differ from the default "All" scope (text + notes + tags).
+ * Whether fields differ from the default "All" scope (text + notes + tags + domain).
  * Counts as a single active filter unit in the Filters badge.
  */
 export function fieldsAreRestricted(fields: SearchField[]): boolean {

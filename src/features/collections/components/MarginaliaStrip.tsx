@@ -283,7 +283,7 @@ export function MarginaliaStrip({
             style={{
               flex: embedInCard ? '0 1 auto' : '1 1 120px',
               minWidth: 0,
-              maxWidth: embedInCard ? 120 : undefined,
+              maxWidth: embedInCard ? 140 : undefined,
               fontFamily: 'var(--sans)',
               fontSize: 11,
               lineHeight: 1.4,
@@ -292,6 +292,7 @@ export function MarginaliaStrip({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              marginRight: labelsDraft.length > 0 ? 2 : 0,
             }}
           >
             {noteDraft}
@@ -302,10 +303,12 @@ export function MarginaliaStrip({
             display: 'flex',
             flexWrap: embedInCard ? 'nowrap' : 'wrap',
             alignItems: 'center',
-            gap: 5,
+            gap: 6,
             flex: '0 1 auto',
             maxWidth: '100%',
             overflow: embedInCard ? 'hidden' : undefined,
+            paddingLeft:
+              embedInCard && noteDraft.trim() !== '' && labelsDraft.length > 0 ? 2 : 0,
           }}
         >
           {visibleTags.map((label, index) => (
@@ -319,11 +322,9 @@ export function MarginaliaStrip({
                 display: 'inline-flex',
                 alignItems: 'center',
                 height: 20,
-                padding: '0 6px',
-                border: '1px solid var(--rule-soft)',
-                borderRadius: 'var(--radius)',
+                padding: '0 4px',
                 fontSize: 10,
-                color: 'var(--ink-3)',
+                color: 'var(--ink-4)',
                 flexShrink: 0,
               }}
             >
@@ -356,10 +357,10 @@ export function MarginaliaStrip({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 8,
             width: '100%',
             margin: 0,
-            padding: 0,
+            padding: '2px 0',
             border: 'none',
             background: 'transparent',
             cursor: disabled ? 'default' : 'pointer',

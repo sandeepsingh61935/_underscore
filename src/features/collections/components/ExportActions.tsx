@@ -5,6 +5,8 @@ import {
   type ExportViewScope,
 } from '@/features/collections/hooks/useHighlightExport';
 import type { ExportFormat } from '@/shared/highlight-export';
+import { BtnText } from '@/ui-system/components/primitives/BtnText';
+import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export type { ExportViewScope };
 
@@ -14,7 +16,10 @@ export interface ExportActionsProps {
   highlightCount?: number;
 }
 
-const FORMATS: ExportFormat[] = ['md', 'xlsx'];
+const FORMATS: { id: ExportFormat; label: string; aria: string }[] = [
+  { id: 'md', label: 'MD', aria: 'Markdown' },
+  { id: 'xlsx', label: 'XLSX', aria: 'Spreadsheet' },
+];
 
 function scopeLabel(scope: ExportViewScope): string {
   switch (scope.kind) {
@@ -26,16 +31,6 @@ function scopeLabel(scope: ExportViewScope): string {
       return 'section';
   }
 }
-
-const buttonStyle = (isDisabled: boolean): React.CSSProperties => ({
-  all: 'unset',
-  cursor: isDisabled ? 'wait' : 'pointer',
-  fontFamily: 'var(--mono)',
-  fontSize: 'var(--step--2)',
-  color: isDisabled ? 'var(--ink-4)' : 'var(--accent)',
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-});
 
 export function ExportActions({
   scope,
@@ -55,23 +50,28 @@ export function ExportActions({
   const isDisabled = disabled || isBusy;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      {FORMATS.map((format, index) => (
-        <React.Fragment key={format}>
-          {index > 0 && (
-            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-4)' }}>·</span>
-          )}
-          <button
-            type="button"
-            onClick={() => { void exportFile(format); }}
-            disabled={isDisabled}
-            aria-label={`Export ${label} highlights as ${format.toUpperCase()}`}
-            className="u-mono"
-            style={buttonStyle(isDisabled)}
-          >
-            {format.toUpperCase()}
-          </button>
-        </React.Fragment>
+    <div className="export-inline" data-testid="export-actions">
+      {isBusy ? (
+        <span
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <Spinner size="sm" />
+        </span>
+      ) : null}
+      {FORMATS.map((format) => (
+        <BtnText
+          key={format.id}
+          muted={isDisabled}
+          disabled={isDisabled}
+          aria-label={`Export ${label} as ${format.aria}`}
+          onClick={() => {
+            void exportFile(format.id);
+          }}
+        >
+          {format.label}
+        </BtnText>
       ))}
     </div>
   );

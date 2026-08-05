@@ -151,7 +151,7 @@ describe('DomainDetailsView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     expect(input).not.toBeDisabled();
 
     fireEvent.change(input, { target: { value: 'hit' } });
@@ -195,7 +195,7 @@ describe('DomainDetailsView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'hit' } });
 
     await waitFor(() => {
@@ -229,7 +229,7 @@ describe('DomainDetailsView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'hit' } });
 
     const resultMeta = await screen.findByText('example.com/x');
@@ -262,7 +262,7 @@ describe('DomainDetailsView search wiring', () => {
       </MemoryRouter>,
     );
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'hit' } });
 
     const resultMeta = await screen.findByText('example.com/x');

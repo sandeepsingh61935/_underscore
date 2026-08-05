@@ -16,7 +16,7 @@ function baseProps(
   return {
     query: '',
     onQueryChange: vi.fn(),
-    fields: ['text', 'notes', 'tags'] as SearchField[],
+    fields: ['text', 'notes', 'tags', 'domain'] as SearchField[],
     onFieldsChange: vi.fn(),
     refine: [] as RefineFilter[],
     onRefineChange: vi.fn(),
@@ -44,7 +44,7 @@ describe('HighlightSearchBar', () => {
     const props = baseProps();
     render(<HighlightSearchBar {...props} />);
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'neural' } });
 
     expect(props.onQueryChange).not.toHaveBeenCalled();
@@ -65,10 +65,10 @@ describe('HighlightSearchBar', () => {
     const props = baseProps();
     render(<HighlightSearchBar {...props} />);
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'neural' } });
 
-    fireEvent.click(screen.getByLabelText('Clear search'));
+    fireEvent.click(screen.getByLabelText('Clear'));
 
     expect(props.onQueryChange).toHaveBeenCalledWith('');
     expect((input as HTMLInputElement).value).toBe('');
@@ -81,14 +81,14 @@ describe('HighlightSearchBar', () => {
 
   it('hides the clear button when the input is empty', () => {
     render(<HighlightSearchBar {...baseProps()} />);
-    expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Clear')).not.toBeInTheDocument();
   });
 
   it('syncs inputValue from an externally-changed query prop', () => {
     const props = baseProps({ query: 'first' });
     const { rerender } = render(<HighlightSearchBar {...props} />);
 
-    const input = screen.getByLabelText('Search highlights') as HTMLInputElement;
+    const input = screen.getByLabelText('Search') as HTMLInputElement;
     expect(input.value).toBe('first');
 
     rerender(<HighlightSearchBar {...props} query="" />);
@@ -104,31 +104,33 @@ describe('HighlightSearchBar', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByLabelText('Search fields')).toBeInTheDocument();
-    expect(screen.getByLabelText('Refine results')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fields')).toBeInTheDocument();
+    expect(screen.getByLabelText('Status')).toBeInTheDocument();
   });
 
   it('shows active filter count on Filters when refine is set', () => {
     render(<HighlightSearchBar {...baseProps({ refine: ['has_notes', 'has_tags'] })} />);
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByLabelText('Active filters')).toBeInTheDocument();
-    expect(screen.getByText('Has notes')).toBeInTheDocument();
+    expect(screen.getByText('With notes')).toBeInTheDocument();
   });
 
   it('toggles multi-select field chips inside the panel', () => {
-    const props = baseProps({ fields: ['text', 'notes', 'tags'] as SearchField[] });
+    const props = baseProps({
+      fields: ['text', 'notes', 'tags', 'domain'] as SearchField[],
+    });
     render(<HighlightSearchBar {...props} />);
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
-    const fieldGroup = screen.getByLabelText('Search fields');
+    const fieldGroup = screen.getByLabelText('Fields');
     fireEvent.click(fieldGroup.querySelector('.field-chip:nth-child(2)') as HTMLElement);
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'tags']);
+    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'tags', 'domain']);
   });
 
   it('toggles refine chips', () => {
     const props = baseProps({ refine: [] as RefineFilter[] });
     render(<HighlightSearchBar {...props} />);
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Has notes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'With notes' }));
     expect(props.onRefineChange).toHaveBeenCalledWith(['has_notes']);
   });
 
@@ -140,8 +142,8 @@ describe('HighlightSearchBar', () => {
     });
     render(<HighlightSearchBar {...props} />);
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'notes', 'tags']);
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'notes', 'tags', 'domain']);
     expect(props.onRefineChange).toHaveBeenCalledWith([]);
     expect(props.onTagFiltersChange).toHaveBeenCalledWith([]);
   });
@@ -149,7 +151,7 @@ describe('HighlightSearchBar', () => {
   it('dismisses an active refine chip from the summary row', () => {
     const props = baseProps({ refine: ['needs_note'] as RefineFilter[] });
     render(<HighlightSearchBar {...props} />);
-    fireEvent.click(screen.getByLabelText('Remove Needs note'));
+    fireEvent.click(screen.getByLabelText('Remove No notes'));
     expect(props.onRefineChange).toHaveBeenCalledWith([]);
   });
 
@@ -161,20 +163,20 @@ describe('HighlightSearchBar', () => {
 
   it('disables the input when disabled is true', () => {
     render(<HighlightSearchBar {...baseProps({ disabled: true })} />);
-    expect(screen.getByLabelText('Search highlights')).toBeDisabled();
+    expect(screen.getByLabelText('Search')).toBeDisabled();
   });
 
   it('renders singular, plural, and zero result counts', () => {
     const { rerender } = render(
       <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />,
     );
-    expect(screen.getByText('1 result')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
 
     rerender(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: 12 })} />);
-    expect(screen.getByText('12 results')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
 
     rerender(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: 0 })} />);
-    expect(screen.getByText('No results')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('hides the result count when the query is empty and no filters are active, even if resultCount is defined', () => {
@@ -192,7 +194,7 @@ describe('HighlightSearchBar', () => {
         {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })}
       />,
     );
-    expect(screen.getByText('No results')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('hides the result count when resultCount is undefined', () => {

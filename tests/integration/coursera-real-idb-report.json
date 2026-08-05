@@ -1,51 +1,65 @@
 {
   "source": {
     "idbDir": "/home/sandy/.config/google-chrome/Default/IndexedDB/chrome-extension_hecejpjekcgpifnemddfmkjmphmgljlm_0.indexeddb.leveldb",
-    "courseraHighlights": 8,
-    "courseraUrlsInDb": 4,
-    "courseraUrlOccurrences": 7,
-    "selectorExactFields": 8,
-    "plaintextTextFields": 40,
+    "courseraHighlights": 54,
+    "courseraUrlsInDb": 7,
+    "courseraUrlOccurrences": 14,
+    "selectorExactFields": 62,
+    "plaintextTextFields": 2141,
     "encryptedMarkers": 0
   },
   "highlightStats": {
-    "uniqueUrls": 4,
+    "uniqueUrls": 7,
     "sections": [
       {
         "section": "/learn/accelerate-your-job-search-with-ai/supplement/rMnQH/welcome-to-the-course",
-        "count": 2
+        "count": 9
       },
       {
-        "section": "/learn/accelerate-your-job-search-with-ai/lecture/BGmaC/understand-career-identity-statements",
-        "count": 2
+        "section": "/learn/accelerate-your-job-search-with-ai/assignment-submission/YLM5c/explore-gemini-for-job-search-support/attempt",
+        "count": 8
       },
       {
         "section": "/learn/accelerate-your-job-search-with-ai/lecture/r8JDe/launch-R-",
-        "count": 2
+        "count": 8
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/r8JDe/launch-your-job-search-with-career-dreamer",
+        "count": 8
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/BGmaC/understand-career-identity-statements",
+        "count": 7
       },
       {
         "section": "/learn/accelerate-your-job-search-with-ai/lecture/k9miA/unlock-the-power-of-a-job-search-plan",
-        "count": 2
+        "count": 7
+      },
+      {
+        "section": "/learn/accelerate-your-job-search-with-ai/lecture/k9miA/unlock-the-power-of-a-job-s",
+        "count": 7
       }
     ],
-    "avgTextChars": 68,
-    "maxTextChars": 329,
-    "totalTextChars": 541
+    "avgTextChars": 19,
+    "maxTextChars": 150,
+    "totalTextChars": 1030
   },
   "sectionSummarize": {
     "busiestSection": "/learn/accelerate-your-job-search-with-ai/supplement/rMnQH/welcome-to-the-course",
-    "highlights": 2,
-    "estimatedInputTokens": 617,
-    "maxOutputTokens": 440,
-    "tokensPerHighlight": 220,
+    "highlights": 9,
+    "estimatedInputTokens": 2220,
+    "maxOutputTokens": 1280,
+    "tokensPerHighlight": 142.2,
     "issues": []
   },
   "domainSynthesize": {
-    "highlights": 8,
-    "uniqueUrls": 4,
-    "estimatedInputTokens": 319,
-    "maxOutputTokens": 1560,
-    "tokensPerHighlight": 195,
-    "issues": []
+    "highlights": 54,
+    "uniqueUrls": 7,
+    "estimatedInputTokens": 435,
+    "maxOutputTokens": 5230,
+    "tokensPerHighlight": 96.9,
+    "issues": [
+      "54 highlights across 7 sections — one batched excerpt call per section, then domain reduce."
+    ]
   }
 }

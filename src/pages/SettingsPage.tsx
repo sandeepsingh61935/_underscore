@@ -123,6 +123,7 @@ export function SettingsPage({
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [billingActionError, setBillingActionError] = useState<string | null>(null);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
+  const [libraryStatsOpen, setLibraryStatsOpen] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
@@ -351,7 +352,11 @@ export function SettingsPage({
                     ) : (
                       <button
                         type="button"
-                        className="btn ghost sm"
+                        className={
+                          billingCta.kind === 'upgrade'
+                            ? 'btn accent sm'
+                            : 'btn ghost sm'
+                        }
                         data-testid="billing-cta"
                         data-billing-kind={billingCta.kind}
                         onClick={handleBillingCta}
@@ -487,6 +492,8 @@ export function SettingsPage({
               withNotesCount={dashboardData?.withNotesCount ?? 0}
               withTagsCount={dashboardData?.withTagsCount ?? 0}
               loading={dashboardLoading && !dashboardData}
+              expanded={libraryStatsOpen}
+              onToggle={() => setLibraryStatsOpen((o) => !o)}
             />
             <Row
               title="Library sync"

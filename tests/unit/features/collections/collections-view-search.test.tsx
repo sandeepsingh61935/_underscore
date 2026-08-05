@@ -128,7 +128,7 @@ describe('CollectionsView search wiring', () => {
 
     render(<CollectionsView isAuthenticated />);
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'match' } });
 
     await waitFor(() => {
@@ -146,7 +146,7 @@ describe('CollectionsView search wiring', () => {
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes');
   });
 
-  it('shows the no-results empty state with Clear search when a search yields nothing', async () => {
+  it('shows the no-results empty state with Clear when a search yields nothing', async () => {
     vi.mocked(useApp).mockReturnValue({
       isAuthenticated: true,
       currentMode: 'pro',
@@ -156,7 +156,7 @@ describe('CollectionsView search wiring', () => {
 
     render(<CollectionsView isAuthenticated />);
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'nothing' } });
 
     await waitFor(() => {
@@ -164,8 +164,8 @@ describe('CollectionsView search wiring', () => {
     });
     // Empty-state CTA text (distinct from the input × with aria-label only).
     const emptyClear = screen
-      .getAllByRole('button', { name: 'Clear search' })
-      .find((el) => el.textContent?.includes('Clear search'));
+      .getAllByRole('button', { name: 'Clear' })
+      .find((el) => el.textContent?.includes('Clear'));
     expect(emptyClear).toBeTruthy();
   });
 
@@ -204,7 +204,7 @@ describe('CollectionsView search wiring', () => {
 
     render(<CollectionsView />);
 
-    const input = screen.getByLabelText('Search highlights');
+    const input = screen.getByLabelText('Search');
     expect(input).not.toBeDisabled();
 
     fireEvent.change(input, { target: { value: 'match' } });

@@ -46,19 +46,20 @@ export function ScopeRowActions({
   onDelete,
   show = true,
 }: ScopeRowActionsProps): React.ReactElement | null {
-  if (!show) return null;
+  if (!show || (!onAsk && !onDelete)) return null;
 
   const askLabel = kind === 'section' ? 'Ask about this section' : 'Ask about this domain';
   const delLabel = kind === 'section' ? 'Delete section' : 'Delete domain';
 
   return (
-    <div className="sr-actions">
-      {onAsk && (
+    <div className="sr-actions" data-testid="scope-row-actions">
+      {onAsk ? (
         <button
           type="button"
           className="sr-icon"
           title={askLabel}
           aria-label={askLabel}
+          data-testid="scope-row-ask"
           onClick={(e) => {
             e.stopPropagation();
             onAsk();
@@ -66,13 +67,14 @@ export function ScopeRowActions({
         >
           <IconChat />
         </button>
-      )}
-      {onDelete && (
+      ) : null}
+      {onDelete ? (
         <button
           type="button"
           className="sr-icon is-delete"
           title={delLabel}
           aria-label={delLabel}
+          data-testid="scope-row-delete"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
@@ -80,7 +82,7 @@ export function ScopeRowActions({
         >
           <IconDelete />
         </button>
-      )}
+      ) : null}
     </div>
   );
 }
