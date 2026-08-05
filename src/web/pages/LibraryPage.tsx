@@ -469,7 +469,10 @@ export function LibraryPage(): React.ReactElement {
           ) : null}
           {selection.domain && caps.flags.ai ? (
             <Link
-              to="/ask"
+              to={`/ask?${buildLibrarySearch({
+                domain: selection.domain,
+                section: selection.section,
+              })}`}
               className="btn sm accent"
               data-od-id="library-ask"
             >
