@@ -1079,8 +1079,8 @@ button.nav-item,
   height: 20px;
 }
 
-/* ── Controls ─────────────────────────────────────────────── */
-.btn {
+/* ── Controls (product shell only — do not restyle Welcome/auth/legal) ── */
+.app .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1104,54 +1104,54 @@ button.nav-item,
   box-sizing: border-box;
 }
 
-.btn:hover:not(:disabled) {
+.app .btn:hover:not(:disabled) {
   background: var(--paper-2);
   border-color: var(--border-strong);
 }
 
-.btn:active:not(:disabled) {
+.app .btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
-.btn.primary {
+.app .btn.primary {
   background: var(--ink);
   color: var(--paper);
   border-color: var(--ink);
 }
 
-.btn.primary:hover:not(:disabled) {
+.app .btn.primary:hover:not(:disabled) {
   background: var(--ink-2);
   border-color: var(--ink-2);
 }
 
-.btn.accent {
+.app .btn.accent {
   background: var(--accent);
   color: var(--paper);
   border-color: var(--accent);
 }
 
-.btn.accent:hover:not(:disabled) {
+.app .btn.accent:hover:not(:disabled) {
   filter: brightness(0.96);
 }
 
-.btn.ghost {
+.app .btn.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--ink-2);
 }
 
-.btn.ghost:hover:not(:disabled) {
+.app .btn.ghost:hover:not(:disabled) {
   background: var(--paper-3);
   color: var(--ink);
 }
 
-.btn.danger {
+.app .btn.danger {
   background: var(--danger-soft);
   color: var(--danger);
   border-color: transparent;
 }
 
-.btn.sm {
+.app .btn.sm {
   min-height: var(--control-h-sm);
   padding: 6px 10px;
   font-size: var(--type-meta);
