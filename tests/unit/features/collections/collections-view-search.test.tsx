@@ -77,7 +77,7 @@ describe('CollectionsView search wiring', () => {
     expect(screen.queryByText(/^in: /)).toBeNull();
   });
 
-  it('swaps the domain list for a flat results list once a query is typed', async () => {
+  it('groups results under domain and section headers (not a flat dump)', async () => {
     vi.mocked(useApp).mockReturnValue({
       isAuthenticated: true,
       currentMode: 'pro',
@@ -104,6 +104,23 @@ describe('CollectionsView search wiring', () => {
           notes: 'has a note match',
           matchedFields: ['notes'],
         },
+        {
+          id: 'r3',
+          text: 'Other site hit',
+          url: 'https://other.com/',
+          path: '/',
+          domain: 'other.com',
+          createdAt: new Date('2026-01-01'),
+          matchedFields: ['text'],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+    vi.mocked(useCollections).mockReturnValue({
+      collections: [
+        { id: '1', domain: 'example.com', highlightCount: 2, lastActive: new Date('2026-01-01') },
+        { id: '2', domain: 'other.com', highlightCount: 1, lastActive: new Date('2026-01-02') },
       ],
       isLoading: false,
       error: null,
@@ -119,10 +136,14 @@ describe('CollectionsView search wiring', () => {
     });
 
     expect(screen.getByText('Another highlight')).toBeTruthy();
+    expect(screen.getByText('Other site hit')).toBeTruthy();
+    // Hierarchical headers, not a flat list that drops domain context.
+    expect(screen.getAllByTestId('search-domain-group')).toHaveLength(2);
+    expect(screen.getAllByTestId('search-group-domain').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByTestId('search-section-group').length).toBeGreaterThanOrEqual(2);
     // notes-only match gets the field badge; pure text match does not.
     expect(screen.getByText('Notes')).toBeTruthy();
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes');
-    expect(screen.queryByText('example.com')).toBeNull();
   });
 
   it('shows the no-results empty state with Clear search when a search yields nothing', async () => {

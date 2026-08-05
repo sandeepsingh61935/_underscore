@@ -15,6 +15,10 @@ import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-d
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import {
+  formatSearchMatchMeta,
+  LibrarySearchGroupHeader,
+} from '@/features/collections/components/LibrarySearchGroupHeader';
 import { LibrarySectionRow } from '@/features/collections/components/LibrarySectionRow';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
@@ -24,6 +28,11 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { displaySectionTitle } from '@/shared/services/section-label-store';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
+import {
+  countSectionGranularResults,
+  groupSearchResultsBySection,
+  matchSectionNames,
+} from '@/shared/utils/group-library-search';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
@@ -241,6 +250,21 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
       .sort((a, b) => b.lastActivity - a.lastActivity || b.count - a.count);
   }, [highlights]);
 
+  const searchSectionGroups = useMemo(() => {
+    if (!isSearching) return [];
+    const nameMatchedSections = matchSectionNames(
+      sections.map((s) => s.path),
+      searchQuery,
+      (key) => displaySectionTitle(key, labels),
+    );
+    return groupSearchResultsBySection(filteredResults, { nameMatchedSections });
+  }, [isSearching, sections, searchQuery, labels, filteredResults]);
+
+  const searchResultCount = useMemo(
+    () => countSectionGranularResults(searchSectionGroups),
+    [searchSectionGroups],
+  );
+
   useEffect(() => {
     if (isLoading) return;
     if (highlights.length === 0) {
@@ -412,7 +436,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               tagFilters={tagFilters}
               onTagFiltersChange={setTagFilters}
               availableTags={availableTags}
-              resultCount={isSearching ? filteredResults.length : undefined}
+              resultCount={isSearching ? searchResultCount : undefined}
               placeholder="Search in domain…"
             />
           </div>
@@ -428,7 +452,7 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
               <div style={{ padding: '20px 16px', textAlign: 'center' }}>
                 <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
               </div>
-            ) : filteredResults.length === 0 ? (
+            ) : searchSectionGroups.length === 0 ? (
               <EmptyState
                 variant="no-results"
                 size="sm"
@@ -437,35 +461,47 @@ export function DomainDetailsView({ domain: propDomain, onBack: _onBack, onSecti
                 action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
               />
             ) : (
-              filteredResults.map((r) => (
-                <LibraryHighlightTile
-                  key={r.id}
-                  highlight={{
-                    id: r.id,
-                    text: r.text,
-                    domain: r.domain,
-                    path: r.path,
-                    sourceKind: r.sourceKind,
-                    language: r.language,
-                    presentation: r.presentation,
-                    notes: r.notes,
-                    tags: r.tags,
-                  }}
-                  onSectionClick={() => handleSectionClick(r.path)}
-                  allowMarginalia={tagsGate.allowed}
-                  isExpanded={expandedHighlightId === r.id}
-                  onToggleExpand={() => {
-                    setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
-                  }}
-                  suggestions={labelSuggestions}
-                  onDelete={async () => {
-                    const result = await deleteScope({ scope: 'highlight', id: r.id });
-                    if (!result?.success) {
-                      throw new Error(result?.error ?? 'Delete failed');
-                    }
-                  }}
-                  matchBadge={formatMatchBadge(r.matchedFields)}
-                />
+              searchSectionGroups.map((section) => (
+                <div key={section.sectionKey} data-testid="search-section-group">
+                  <LibrarySearchGroupHeader
+                    level="section"
+                    title={displaySectionTitle(section.sectionKey, labels)}
+                    meta={formatSearchMatchMeta(section.matchCount, section.nameMatched)}
+                    onOpen={() => handleSectionClick(section.sectionKey)}
+                  />
+                  {section.highlights.map((r) => (
+                    <LibraryHighlightTile
+                      key={r.id}
+                      highlight={{
+                        id: r.id,
+                        text: r.text,
+                        domain: r.domain,
+                        path: r.path,
+                        sourceKind: r.sourceKind,
+                        language: r.language,
+                        presentation: r.presentation,
+                        notes: r.notes,
+                        tags: r.tags,
+                      }}
+                      onSectionClick={() =>
+                        handleSectionClick(getSectionKey({ url: r.url, path: r.path }))
+                      }
+                      allowMarginalia={tagsGate.allowed}
+                      isExpanded={expandedHighlightId === r.id}
+                      onToggleExpand={() => {
+                        setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                      }}
+                      suggestions={labelSuggestions}
+                      onDelete={async () => {
+                        const result = await deleteScope({ scope: 'highlight', id: r.id });
+                        if (!result?.success) {
+                          throw new Error(result?.error ?? 'Delete failed');
+                        }
+                      }}
+                      matchBadge={formatMatchBadge(r.matchedFields)}
+                    />
+                  ))}
+                </div>
               ))
             )
           ) : (

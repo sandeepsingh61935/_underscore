@@ -163,6 +163,48 @@ describe('DomainDetailsView search wiring', () => {
     });
   });
 
+  it('groups domain search hits under section headers', async () => {
+    vi.mocked(useHighlightSearch).mockReturnValue({
+      results: [
+        {
+          id: 'r1',
+          text: 'A matching highlight',
+          url: 'https://example.com/x',
+          path: '/x',
+          domain: 'example.com',
+          createdAt: new Date('2026-01-01'),
+          matchedFields: ['text'],
+        },
+        {
+          id: 'r2',
+          text: 'Second path hit',
+          url: 'https://example.com/y',
+          path: '/y',
+          domain: 'example.com',
+          createdAt: new Date('2026-01-02'),
+          matchedFields: ['text'],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <MemoryRouter>
+        <DomainDetailsView domain="example.com" />
+      </MemoryRouter>,
+    );
+
+    const input = screen.getByLabelText('Search highlights');
+    fireEvent.change(input, { target: { value: 'hit' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('A matching highlight')).toBeTruthy();
+    });
+    expect(screen.getAllByTestId('search-section-group')).toHaveLength(2);
+    expect(screen.getByText('Second path hit')).toBeTruthy();
+  });
+
   it('routes a result click through onSectionClick when provided', async () => {
     const onSectionClick = vi.fn();
     vi.mocked(useHighlightSearch).mockReturnValue({

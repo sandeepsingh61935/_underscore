@@ -7,6 +7,10 @@ import { HighlightSearchBar } from '@/features/collections/components/HighlightS
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibraryDomainRow } from '@/features/collections/components/LibraryDomainRow';
+import {
+  formatSearchMatchMeta,
+  LibrarySearchGroupHeader,
+} from '@/features/collections/components/LibrarySearchGroupHeader';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
@@ -14,7 +18,13 @@ import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { deleteDomainCopy } from '@/shared/utils/confirm-dialog-copy';
+import {
+  countGranularSearchResults,
+  groupSearchResultsByDomainAndSection,
+  matchDomainNames,
+} from '@/shared/utils/group-library-search';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
+import { getSectionKey } from '@/shared/utils/section-key';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
@@ -75,6 +85,22 @@ export function CollectionsView({
   const isSearching = searchQuery.trim().length > 0;
   const showResultsList = isSearching;
 
+  const searchGroups = useMemo(() => {
+    if (!isSearching) return [];
+    const nameMatchedDomains = matchDomainNames(
+      collections.map((c) => c.domain),
+      searchQuery,
+    );
+    return groupSearchResultsByDomainAndSection(filteredResults, {
+      nameMatchedDomains,
+    });
+  }, [isSearching, collections, searchQuery, filteredResults]);
+
+  const searchResultCount = useMemo(
+    () => countGranularSearchResults(searchGroups),
+    [searchGroups],
+  );
+
   const availableTags = useMemo(
     () => userTags.map((t) => ({ label: t.name })),
     [userTags],
@@ -95,12 +121,12 @@ export function CollectionsView({
     navigate(`/domain/${domain}`);
   };
 
-  const handleResultSectionClick = (resultDomain: string, path: string): void => {
+  const handleResultSectionClick = (resultDomain: string, sectionKey: string): void => {
     if (onSectionClick) {
-      onSectionClick(resultDomain, path);
+      onSectionClick(resultDomain, sectionKey);
       return;
     }
-    navigate(`/domain/${resultDomain}/section/${encodeURIComponent(path)}`);
+    navigate(`/domain/${resultDomain}/section/${encodeURIComponent(sectionKey)}`);
   };
 
   const handleDeleteDomain = async (): Promise<void> => {
@@ -174,7 +200,7 @@ export function CollectionsView({
           tagFilters={tagFilters}
           onTagFiltersChange={setTagFilters}
           availableTags={availableTags}
-          resultCount={isSearching ? filteredResults.length : undefined}
+          resultCount={isSearching ? searchResultCount : undefined}
         />
       </div>
 
@@ -188,7 +214,7 @@ export function CollectionsView({
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
             </div>
-          ) : filteredResults.length === 0 ? (
+          ) : searchGroups.length === 0 ? (
             <EmptyState
               variant="no-results"
               size="sm"
@@ -197,35 +223,60 @@ export function CollectionsView({
               action={{ label: 'Clear search', onClick: clearSearchAndFilters }}
             />
           ) : (
-            filteredResults.map((r) => (
-              <LibraryHighlightTile
-                key={r.id}
-                highlight={{
-                  id: r.id,
-                  text: r.text,
-                  domain: r.domain,
-                  path: r.path,
-                  sourceKind: r.sourceKind,
-                  language: r.language,
-                  presentation: r.presentation,
-                  notes: r.notes,
-                  tags: r.tags,
-                }}
-                onSectionClick={() => handleResultSectionClick(r.domain, r.path)}
-                allowMarginalia={tagsGate.allowed}
-                isExpanded={expandedHighlightId === r.id}
-                onToggleExpand={() => {
-                  setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
-                }}
-                suggestions={labelSuggestions}
-                onDelete={async () => {
-                  const result = await deleteScope({ scope: 'highlight', id: r.id });
-                  if (!result?.success) {
-                    throw new Error(result?.error ?? 'Delete failed');
-                  }
-                }}
-                matchBadge={formatMatchBadge(r.matchedFields)}
-              />
+            searchGroups.map((group) => (
+              <div key={group.domain} data-testid="search-domain-group">
+                <LibrarySearchGroupHeader
+                  level="domain"
+                  title={group.domain}
+                  meta={formatSearchMatchMeta(group.matchCount, group.nameMatched)}
+                  onOpen={() => handleCollectionClick(group.domain)}
+                />
+                {group.sections.map((section) => (
+                  <div key={`${group.domain}::${section.sectionKey}`} data-testid="search-section-group">
+                    <LibrarySearchGroupHeader
+                      level="section"
+                      title={section.sectionKey}
+                      meta={formatSearchMatchMeta(section.matchCount, section.nameMatched)}
+                      onOpen={() => handleResultSectionClick(group.domain, section.sectionKey)}
+                    />
+                    {section.highlights.map((r) => (
+                      <LibraryHighlightTile
+                        key={r.id}
+                        highlight={{
+                          id: r.id,
+                          text: r.text,
+                          domain: r.domain,
+                          path: r.path,
+                          sourceKind: r.sourceKind,
+                          language: r.language,
+                          presentation: r.presentation,
+                          notes: r.notes,
+                          tags: r.tags,
+                        }}
+                        onSectionClick={() =>
+                          handleResultSectionClick(
+                            r.domain,
+                            getSectionKey({ url: r.url, path: r.path }),
+                          )
+                        }
+                        allowMarginalia={tagsGate.allowed}
+                        isExpanded={expandedHighlightId === r.id}
+                        onToggleExpand={() => {
+                          setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                        }}
+                        suggestions={labelSuggestions}
+                        onDelete={async () => {
+                          const result = await deleteScope({ scope: 'highlight', id: r.id });
+                          if (!result?.success) {
+                            throw new Error(result?.error ?? 'Delete failed');
+                          }
+                        }}
+                        matchBadge={formatMatchBadge(r.matchedFields)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             ))
           )
         ) : collections.length === 0 && isAuthenticated ? (
