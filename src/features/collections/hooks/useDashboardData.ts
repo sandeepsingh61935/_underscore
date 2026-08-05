@@ -9,6 +9,9 @@ export interface DashboardData {
   totalHighlights: number;
   totalDomains: number;
   thisWeekCount: number;
+  todayCount: number;
+  withNotesCount: number;
+  withTagsCount: number;
   recentHighlights: Array<{
     id: string;
     text: string;
@@ -29,6 +32,9 @@ const EMPTY_DASHBOARD: DashboardData = {
   totalHighlights: 0,
   totalDomains: 0,
   thisWeekCount: 0,
+  todayCount: 0,
+  withNotesCount: 0,
+  withTagsCount: 0,
   recentHighlights: [],
 };
 

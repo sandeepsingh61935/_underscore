@@ -22,6 +22,9 @@ describe('useDashboardData auth clearing', () => {
         totalHighlights: 5,
         totalDomains: 2,
         thisWeekCount: 1,
+        todayCount: 0,
+        withNotesCount: 0,
+        withTagsCount: 0,
         recentHighlights: [],
       },
     });
@@ -43,6 +46,9 @@ describe('useDashboardData auth clearing', () => {
         totalHighlights: 2,
         totalDomains: 1,
         thisWeekCount: 0,
+        todayCount: 0,
+        withNotesCount: 0,
+        withTagsCount: 0,
         recentHighlights: [],
       },
     });

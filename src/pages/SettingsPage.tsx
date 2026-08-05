@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import {
   formatLastSyncedAt,
@@ -11,6 +12,7 @@ import {
 } from '@/features/collections/hooks/use-sync-library';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
+import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
 import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
@@ -18,6 +20,7 @@ import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSe
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
+import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import {
@@ -47,7 +50,7 @@ export interface SettingsPageProps {
 /**
  * Settings — Open Design extension mockup order:
  * head → local card (guest) → Mode segments → Typography → Appearance/Theme →
- * Account/billing (signed-in) → Library → AI → Sign out
+ * Account/billing (signed-in) → Library (pulse + tools) → AI → Sign out
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -63,7 +66,13 @@ export function SettingsPage({
     setMode,
     user,
     logout: appLogout,
+    isAuthenticated: appAuthenticated,
   } = useApp();
+  const modeForDashboard = (currentMode ?? DEFAULT_MODE) as ModeType;
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData(
+    modeForDashboard,
+    appAuthenticated,
+  );
   const billing = useBillingContextOptional();
   const billingEntitlement = billing?.snapshot.entitlement ?? freeEntitlement();
   const billingReady = billing?.snapshot.loadState === 'ready';
@@ -158,11 +167,13 @@ export function SettingsPage({
         progressPercent !== null && progressPercent !== undefined
           ? ` · ${progressPercent}%`
           : '';
-      return `Syncing library${pct}`;
+      return `Syncing${pct}`;
     }
     if (syncError) return syncError;
     if (syncStatus === 'success' && lastResult) {
-      return `${formatSyncSubtitle(lastResult)} · ${formatLastSyncedAt(lastSyncedAt)}`;
+      const detail = formatSyncSubtitle(lastResult);
+      const when = formatLastSyncedAt(lastSyncedAt);
+      return detail === 'Library matches cloud' ? when : `${detail} · ${when}`;
     }
     return formatLastSyncedAt(lastSyncedAt);
   })();
@@ -338,38 +349,41 @@ export function SettingsPage({
                     billingBusy ? (
                       <Spinner size="sm" />
                     ) : (
-                      <BtnText
-                        accent
+                      <button
+                        type="button"
+                        className="btn ghost sm"
                         data-testid="billing-cta"
                         data-billing-kind={billingCta.kind}
                         onClick={handleBillingCta}
                       >
                         {billingCta.ctaLabel}
-                      </BtnText>
+                      </button>
                     )
                   }
                 />
                 {billingCta.showSync ? (
                   <Row
-                    title="Refresh subscription status"
-                    sub="Already paid? Pull status from Polar and update this account."
+                    title="Refresh status"
+                    sub={undefined}
                     right={
                       billingBusy ? (
                         <Spinner size="sm" />
                       ) : (
-                        <BtnText
+                        <button
+                          type="button"
+                          className="btn ghost sm"
                           data-testid="billing-sync-cta"
                           onClick={() => {
                             setBillingActionError(null);
                             void billing.syncFromPolar().catch((e: unknown) => {
                               setBillingActionError(
-                                e instanceof Error ? e.message : 'Sync failed'
+                                e instanceof Error ? e.message : 'Refresh failed'
                               );
                             });
                           }}
                         >
-                          Sync
-                        </BtnText>
+                          Refresh
+                        </button>
                       )
                     }
                   />
@@ -455,7 +469,7 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {/* 6. Library tools */}
+        {/* 6. Library pulse + tools */}
         {isAuthenticated ? (
           <>
             <div
@@ -465,38 +479,44 @@ export function SettingsPage({
             >
               Library
             </div>
+            <LibraryPulse
+              totalHighlights={dashboardData?.totalHighlights ?? 0}
+              thisWeekCount={dashboardData?.thisWeekCount ?? 0}
+              todayCount={dashboardData?.todayCount ?? 0}
+              totalDomains={dashboardData?.totalDomains ?? 0}
+              withNotesCount={dashboardData?.withNotesCount ?? 0}
+              withTagsCount={dashboardData?.withTagsCount ?? 0}
+              loading={dashboardLoading && !dashboardData}
+            />
             <Row
-              title="Sync library"
+              title="Library sync"
               sub={syncSubtitle}
               right={
-                isSyncing ? (
-                  <span
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    data-testid="sync-progress"
-                    aria-live="polite"
-                    aria-busy="true"
-                  >
-                    <Spinner size="sm" />
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  data-testid="settings-sync-btn"
+                  disabled={!syncGate.allowed || !user || isSyncing}
+                  aria-label="Sync library"
+                  aria-busy={isSyncing}
+                  onClick={() => {
+                    void handleSyncLibrary();
+                  }}
+                >
+                  {isSyncing ? (
                     <span
-                      className="u-mono"
-                      style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      data-testid="sync-progress"
                     >
-                      {progressPercent !== null ? `${progressPercent}%` : '…'}
+                      <Spinner size="sm" />
+                      <span className="u-mono" style={{ fontSize: 'var(--step--2)' }}>
+                        {progressPercent !== null ? `${progressPercent}%` : '…'}
+                      </span>
                     </span>
-                  </span>
-                ) : (
-                  <BtnText
-                    accent={syncGate.allowed && Boolean(user)}
-                    muted={!syncGate.allowed || !user}
-                    disabled={!syncGate.allowed || !user}
-                    aria-label="Sync library"
-                    onClick={() => {
-                      void handleSyncLibrary();
-                    }}
-                  >
-                    Sync
-                  </BtnText>
-                )
+                  ) : (
+                    'Sync'
+                  )}
+                </button>
               }
             />
             {isSyncing ? (
@@ -524,10 +544,10 @@ export function SettingsPage({
               </div>
             ) : null}
             <Row
-              title="Export library"
+              title="Export"
               sub={
                 exportGate.allowed && user
-                  ? 'Download all highlights as markdown or spreadsheet'
+                  ? undefined
                   : featureGateSubtitle(exportGate.reason)
               }
               right={
@@ -536,15 +556,16 @@ export function SettingsPage({
             />
             <Row
               title="Delete library"
-              sub="Permanently remove all highlights on this device"
+              sub={undefined}
               right={
-                <BtnText
-                  danger
+                <button
+                  type="button"
+                  className="btn ghost sm danger"
                   aria-label="Delete library"
                   onClick={() => setDeleteLibraryOpen(true)}
                 >
                   Delete
-                </BtnText>
+                </button>
               }
             />
           </>
@@ -609,20 +630,19 @@ export function SettingsPage({
             </div>
             <Row
               title="Sign out"
-              sub="End this session on this device"
+              sub={undefined}
               right={
-                isSigningOut ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <BtnText
-                    aria-label="Sign out"
-                    onClick={() => {
-                      if (!isSigningOut) setSignOutOpen(true);
-                    }}
-                  >
-                    Sign out
-                  </BtnText>
-                )
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  aria-label="Sign out"
+                  disabled={isSigningOut}
+                  onClick={() => {
+                    if (!isSigningOut) setSignOutOpen(true);
+                  }}
+                >
+                  {isSigningOut ? <Spinner size="sm" /> : 'Sign out'}
+                </button>
               }
             />
           </>

@@ -12,6 +12,9 @@ function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridge
       totalHighlights: 0,
       totalDomains: 0,
       thisWeekCount: 0,
+      todayCount: 0,
+      withNotesCount: 0,
+      withTagsCount: 0,
       recentHighlights: [],
     }),
   } as unknown as HighlightQueryService;

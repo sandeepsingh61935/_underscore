@@ -1,7 +1,7 @@
 /**
  * Home — Anchor + Stream (v3).
- * Layout: optional status → Current page band → Recent stream.
- * No stats hero / Resume / Needs twin rows.
+ * Layout: lean status → Current page → Recent stream.
+ * Full library stats live in Settings (LibraryPulse), not here.
  * Wireframe: ui_kits/extension/v3/screens-home.jsx
  */
 import React, { useMemo, useState } from 'react';
@@ -32,19 +32,6 @@ export interface DashboardViewProps {
   isPaidActive?: boolean;
 }
 
-function openSourceUrl(url: string): void {
-  if (!url) return;
-  try {
-    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-      void chrome.tabs.create({ url });
-      return;
-    }
-  } catch {
-    // fall through
-  }
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
 function formatPath(path: string | null | undefined): string {
   if (!path || path === '/') return '/';
   return path;
@@ -63,7 +50,7 @@ function StatusLine({
 }): React.ReactElement {
   const who = guest ? 'Local only' : (displayName?.split(' ')[0] || 'Account');
   return (
-    <div style={{ padding: '10px 16px 9px' }}>
+    <div data-testid="home-status" style={{ padding: '10px 16px 8px' }}>
       <p
         className="u-mono"
         style={{
@@ -303,6 +290,15 @@ interface RecentItem {
   presentation?: HighlightPresentation;
 }
 
+function IconCopySmall(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="5.5" y="5.5" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M3.5 10.5V3.5h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function HomeRecentCard({
   item,
   onSectionClick,
@@ -316,20 +312,7 @@ function HomeRecentCard({
   const tagOverflow = Math.max(0, tags.length - 2);
   const pathLabel = !item.path || item.path === '/' ? '' : item.path;
   const sectionKey = getSectionKey({ url: item.url, path: item.path || '/' });
-
-  const actionStyle: React.CSSProperties = {
-    all: 'unset',
-    cursor: 'pointer',
-    fontFamily: 'var(--mono)',
-    fontSize: 'var(--step--2)',
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    color: 'var(--ink-3)',
-    padding: '6px 8px',
-    minHeight: 32,
-    display: 'inline-flex',
-    alignItems: 'center',
-  };
+  const locationLabel = `${item.domain}${pathLabel}`;
 
   return (
     <article
@@ -383,7 +366,7 @@ function HomeRecentCard({
       {tags.length > 0 ? (
         <div
           aria-label="Tags"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}
         >
           {visibleTags.map((t) => (
             <span
@@ -428,6 +411,8 @@ function HomeRecentCard({
             type="button"
             onClick={() => onSectionClick(item.domain, sectionKey)}
             className="u-mono"
+            aria-label={`Open highlight in ${locationLabel}`}
+            title="Open in library"
             style={{
               all: 'unset',
               cursor: 'pointer',
@@ -438,10 +423,12 @@ function HomeRecentCard({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              textDecoration: 'underline',
+              textUnderlineOffset: 2,
+              textDecorationColor: 'var(--rule-soft)',
             }}
           >
-            {item.domain}
-            {pathLabel}
+            {locationLabel}
           </button>
         ) : (
           <span
@@ -456,36 +443,22 @@ function HomeRecentCard({
               whiteSpace: 'nowrap',
             }}
           >
-            {item.domain}
-            {pathLabel}
+            {locationLabel}
           </span>
         )}
-        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-          {item.text ? (
-            <button
-              type="button"
-              className="u-mono"
-              aria-label="Copy highlight text"
-              onClick={() => {
-                void copyHighlightPlainText(item.text);
-              }}
-              style={actionStyle}
-            >
-              Copy
-            </button>
-          ) : null}
-          {item.url ? (
-            <button
-              type="button"
-              className="u-mono"
-              aria-label="Open highlight source"
-              onClick={() => openSourceUrl(item.url)}
-              style={actionStyle}
-            >
-              Open
-            </button>
-          ) : null}
-        </div>
+        {item.text ? (
+          <button
+            type="button"
+            className="hl-icon"
+            aria-label="Copy highlight text"
+            title="Copy"
+            onClick={() => {
+              void copyHighlightPlainText(item.text);
+            }}
+          >
+            <IconCopySmall />
+          </button>
+        ) : null}
       </div>
     </article>
   );

@@ -56,6 +56,12 @@ export interface DashboardData {
   totalHighlights: number;
   totalDomains: number;
   thisWeekCount: number;
+  /** Highlights with activity since local midnight. */
+  todayCount: number;
+  /** Highlights that have a non-empty note. */
+  withNotesCount: number;
+  /** Highlights that have at least one tag. */
+  withTagsCount: number;
   recentHighlights: DomainHighlightSummary[];
 }
 
@@ -221,7 +227,13 @@ export class HighlightQueryService {
 
     const domainMap = new Map<string, number>();
     let thisWeekCount = 0;
+    let todayCount = 0;
+    let withNotesCount = 0;
+    let withTagsCount = 0;
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayStartMs = startOfToday.getTime();
     const recentHighlights: DomainHighlightSummary[] = [];
 
     for (const hl of highlights) {
@@ -231,8 +243,18 @@ export class HighlightQueryService {
 
       domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
 
-      if (highlightActivityMs(hl) >= oneWeekAgo) {
+      const activity = highlightActivityMs(hl);
+      if (activity >= oneWeekAgo) {
         thisWeekCount++;
+      }
+      if (activity >= todayStartMs) {
+        todayCount++;
+      }
+      if ((hl.metadata?.notes ?? '').trim().length > 0) {
+        withNotesCount++;
+      }
+      if ((hl.metadata?.tags ?? []).length > 0) {
+        withTagsCount++;
       }
 
       try {
@@ -262,6 +284,9 @@ export class HighlightQueryService {
       totalHighlights: highlights.length,
       totalDomains: domainMap.size,
       thisWeekCount,
+      todayCount,
+      withNotesCount,
+      withTagsCount,
       recentHighlights: topRecent,
     };
   }

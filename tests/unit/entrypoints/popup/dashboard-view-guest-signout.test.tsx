@@ -50,6 +50,9 @@ describe('DashboardView guest sign-out UX', () => {
         totalHighlights: 0,
         totalDomains: 0,
         thisWeekCount: 0,
+        todayCount: 0,
+        withNotesCount: 0,
+        withTagsCount: 0,
         recentHighlights: [],
       },
       isLoading: false,
@@ -77,6 +80,9 @@ describe('DashboardView guest sign-out UX', () => {
         totalHighlights: 2,
         totalDomains: 1,
         thisWeekCount: 2,
+        todayCount: 0,
+        withNotesCount: 0,
+        withTagsCount: 0,
         recentHighlights: [
           {
             id: 'hl-1',

@@ -55,6 +55,9 @@ function mockGuestEmpty(): void {
       totalHighlights: 0,
       totalDomains: 0,
       thisWeekCount: 0,
+      todayCount: 0,
+      withNotesCount: 0,
+      withTagsCount: 0,
       recentHighlights: [],
     },
     isLoading: false,
@@ -106,6 +109,9 @@ function mockWithHighlights(opts?: {
       totalHighlights: recentCount,
       totalDomains: 1,
       thisWeekCount: recentCount,
+      todayCount: Math.min(1, recentCount),
+      withNotesCount: recentCount > 0 ? 1 : 0,
+      withTagsCount: recentCount > 0 ? 1 : 0,
       recentHighlights,
     },
     isLoading: false,
@@ -153,15 +159,18 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
   });
 
-  it('does not render stats hero twin rows or Resume / Needs shortcuts', () => {
-    mockWithHighlights();
+  it('shows lean status only — no stats grid (pulse lives in Settings)', () => {
+    mockWithHighlights({ recentCount: 2 });
     render(<DashboardView />);
 
+    expect(screen.getByTestId('home-status')).toBeTruthy();
+    expect(screen.getByTestId('home-status').textContent).toMatch(/2 highlights/i);
+    expect(screen.getByTestId('home-status').textContent).toMatch(/1 domains/i);
+    expect(screen.queryByTestId('home-stats')).toBeNull();
+    expect(screen.queryByTestId('library-pulse')).toBeNull();
     expect(screen.queryByText('This week')).toBeNull();
-    expect(screen.queryByText('Domains')).toBeNull();
     expect(screen.queryByText('Resume')).toBeNull();
     expect(screen.queryByText('Needs')).toBeNull();
-    expect(screen.queryByText(/highlights across/i)).toBeNull();
     expect(screen.queryByText(/Good morning/i)).toBeNull();
   });
 
