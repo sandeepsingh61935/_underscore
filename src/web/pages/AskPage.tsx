@@ -11,6 +11,7 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
+import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import {
   useWebLibrary,
   type WebDomainNode,
@@ -398,13 +399,7 @@ export function AskPage(): React.ReactElement {
 
   const entitlement = billing?.snapshot.entitlement ?? freeEntitlement();
   // Never demote paid on load error — match Settings billing gate.
-  const isPaidActive = billing
-    ? billing.snapshot.loadState === 'ready'
-      ? billing.snapshot.isPaidActive
-      : Boolean(
-          billing.snapshot.entitlement.isPaidActive || billing.snapshot.isPaidActive,
-        )
-    : false;
+  const isPaidActive = resolveWebPaidActive(billing?.snapshot);
 
   const caps = useMemo(
     () =>

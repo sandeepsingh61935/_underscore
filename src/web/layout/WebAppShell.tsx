@@ -9,6 +9,7 @@ import {
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
+import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { PlanPill } from '@/web/components/PlanPill';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 
@@ -111,14 +112,15 @@ export function WebAppShell(): React.ReactElement {
     applyWebPrefs(readWebPrefs());
   }, []);
 
+  const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
     () =>
       resolveWebCaps({
         isAuthenticated,
-        isPaidActive: billing?.snapshot.isPaidActive ?? false,
+        isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [isAuthenticated, billing?.snapshot.isPaidActive, billing?.snapshot.entitlement.status],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
   );
 
   const activeRoute = routeFromPathname(location.pathname);

@@ -21,6 +21,7 @@ import {
   type SearchField,
 } from '@/shared/utils/highlight-search';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
+import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import {
   useWebLibrary,
@@ -120,18 +121,15 @@ export function LibraryPage(): React.ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
     () =>
       resolveWebCaps({
         isAuthenticated,
-        isPaidActive: billing?.snapshot.isPaidActive ?? false,
+        isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [
-      isAuthenticated,
-      billing?.snapshot.isPaidActive,
-      billing?.snapshot.entitlement.status,
-    ],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
   );
 
   const lib = useWebLibrary({

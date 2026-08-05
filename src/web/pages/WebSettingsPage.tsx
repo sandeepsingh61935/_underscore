@@ -13,6 +13,7 @@ import { downloadTextFile } from '@/shared/highlight-export';
 import type { ThemeType } from '@/shared/types/theme';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
+import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import {
   AccountPanel,
   AiPanel,
@@ -47,13 +48,7 @@ export function WebSettingsPage(): React.ReactElement {
 
   const entitlement = billing?.snapshot.entitlement ?? freeEntitlement();
   // Never demote paid on load error — use entitlement when snapshot gate is not ready.
-  const isPaidActive = billing
-    ? billing.snapshot.loadState === 'ready'
-      ? billing.snapshot.isPaidActive
-      : Boolean(
-          billing.snapshot.entitlement.isPaidActive || billing.snapshot.isPaidActive,
-        )
-    : false;
+  const isPaidActive = resolveWebPaidActive(billing?.snapshot);
 
   const caps = useMemo(
     () =>

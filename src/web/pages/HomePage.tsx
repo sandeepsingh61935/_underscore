@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import {
   resolveWebCaps,
   type WebPlanLabel,
@@ -168,18 +169,15 @@ export function HomePage(): React.ReactElement {
   const billing = useBillingContextOptional();
   const navigate = useNavigate();
 
+  const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
     () =>
       resolveWebCaps({
         isAuthenticated,
-        isPaidActive: billing?.snapshot.isPaidActive ?? false,
+        isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [
-      isAuthenticated,
-      billing?.snapshot.isPaidActive,
-      billing?.snapshot.entitlement.status,
-    ],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
   );
 
   const lib = useWebLibrary({
