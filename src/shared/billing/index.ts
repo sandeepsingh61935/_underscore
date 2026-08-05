@@ -23,6 +23,11 @@ export {
 } from './entitlement';
 
 export {
+  getEntitlementPaidActive,
+  setEntitlementPaidActive,
+} from './entitlement-gate';
+
+export {
   entitlementUpsertFromPolarSubscription,
   extractPolarEntitlementSource,
   mapPolarSubscriptionStatus,

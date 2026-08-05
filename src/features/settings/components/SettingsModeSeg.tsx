@@ -55,6 +55,9 @@ export function SettingsModeSeg({
 }: SettingsModeSegProps): React.ReactElement {
   const active = resolveActive(currentMode, isAuthenticated, isPaidActive);
 
+  // Locks: Guest free for everyone; Free needs sign-in; Paid needs sign-in
+  // (upgrade vs mode-switch is decided by onSelectPaid / transition util).
+  // When entitled, neither Free nor Paid is locked — user may flip either.
   const options: Array<{
     id: SettingsPlanSeg;
     label: string;
@@ -76,7 +79,9 @@ export function SettingsModeSeg({
     {
       id: 'paid',
       label: 'Paid',
-      gated: !isAuthenticated || !isPaidActive,
+      // Lock only when guest; free users can open upgrade path (no lock).
+      // Entitled paid: unlocked so Free↔Paid is free.
+      gated: !isAuthenticated,
       onSelect: onSelectPaid,
     },
   ];

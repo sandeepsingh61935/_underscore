@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getTransitionRule, executeTransitionGuard } from '@/content/modes/mode-transition-rules';
+import { getEntitlementPaidActive } from '@/shared/billing';
+import { resolveModeTransition } from '@/shared/utils/mode-transition';
 
 interface ModeTransitionState {
     isPending: boolean;
@@ -40,18 +42,31 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
                 return;
             }
 
-            // Auth-gated modes — redirect to sign-in
-            if ((targetMode === 'pro' || targetMode === 'pro_xai') && !isAuthenticated) {
+            const decision = resolveModeTransition({
+                from: currentMode,
+                to: targetMode,
+                isAuthenticated,
+                isPaidActive: getEntitlementPaidActive(),
+            });
+
+            if (decision.kind === 'sign_in') {
                 navigate(`/sign-in?intendedMode=${targetMode}`);
                 return;
             }
-
-            // Signed-in users cannot switch to Basic
-            if (targetMode === 'basic' && isAuthenticated) {
+            if (decision.kind === 'upgrade') {
+                // Mode selection cannot open Polar; send Free users to Settings.
+                navigate('/settings');
+                return;
+            }
+            if (decision.kind === 'sign_out' || decision.kind === 'blocked') {
+                return;
+            }
+            if (decision.kind === 'noop') {
+                navigateAfterTransition?.();
                 return;
             }
 
-            // Check transition rule
+            // Check legacy confirmation matrix for persist transitions
             const rule = getTransitionRule(currentMode, targetMode);
 
             if (rule?.requiresConfirmation) {
@@ -61,7 +76,6 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
                     confirmMessage: rule.reason,
                 });
             } else {
-                // Direct transition
                 executeTransitionDirect(targetMode);
             }
         },
@@ -77,7 +91,10 @@ export function useModeTransition({ navigateAfterTransition }: UseModeTransition
                 const guardResult = await executeTransitionGuard(
                     currentMode,
                     targetMode,
-                    { isAuthenticated },
+                    {
+                        isAuthenticated,
+                        isPaidActive: getEntitlementPaidActive(),
+                    },
                 ).catch(() => true);
 
                 if (!guardResult) {

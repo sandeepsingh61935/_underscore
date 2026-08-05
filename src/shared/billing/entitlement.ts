@@ -92,8 +92,9 @@ export function snapshotFromEntitlement(
 }
 
 /**
- * Product mode is a pure projection of auth + paid — not a free-user preference.
- * Call only when entitlement load is ready (or with forcePaid for dev override).
+ * Default mode from auth + paid (no user preference).
+ * Prefer {@link clampModeToEntitlement} / {@link resolveBillingModeWrite} when
+ * respecting paid-user Free↔Paid preference.
  */
 export function computeEffectiveMode(
   isAuthenticated: boolean,

@@ -9,6 +9,8 @@ import {
   BillingProvider,
   useModeSyncCallback,
 } from '@/features/billing/BillingProvider';
+import { getEntitlementPaidActive } from '@/shared/billing';
+import { resolveModeTransition } from '@/shared/utils/mode-transition';
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
 interface PopupAppProviderProps {
@@ -44,8 +46,8 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     });
 
     const availableModes: Mode[] = propIsAuthenticated
-        ? currentMode === 'pro_xai'
-            ? ['pro_xai']
+        ? getEntitlementPaidActive()
+            ? ['pro', 'pro_xai']
             : ['pro']
         : ['basic'];
 
@@ -76,11 +78,16 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
     }, [onLogout]);
 
     const setMode = useCallback(async (mode: Mode) => {
-        if (mode === 'pro_xai' && currentMode !== 'pro_xai') {
-            return;
+        const decision = resolveModeTransition({
+            from: currentMode,
+            to: mode,
+            isAuthenticated: propIsAuthenticated,
+            isPaidActive: getEntitlementPaidActive(),
+        });
+        if (decision.kind === 'persist' && decision.mode) {
+            await persistMode(decision.mode);
         }
-        await persistMode(mode);
-    }, [persistMode, currentMode]);
+    }, [persistMode, currentMode, propIsAuthenticated]);
 
     const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
@@ -106,6 +113,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         <AppContext.Provider value={value}>
             <BillingProvider
                 isAuthenticated={propIsAuthenticated}
+                currentMode={currentMode}
                 onEffectiveMode={onEffectiveMode}
             >
                 <TypePresetBootstrap />

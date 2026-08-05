@@ -17,6 +17,8 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
  */
 export interface TransitionGuardContext {
   isAuthenticated: boolean;
+  /** When false, Free→Paid mode write is blocked (use billing upgrade). */
+  isPaidActive?: boolean;
 }
 
 /**
@@ -94,7 +96,10 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'pro_xai',
       allowed: true,
       requiresConfirmation: false,
-      reason: 'Switching to Account (Paid) adds Connect to AI and in-app chat',
+      reason:
+        'Switching to Account (Paid) adds Connect to AI — requires active Paid entitlement',
+      // Free users must upgrade via Polar; entitled users may re-enable Paid mode.
+      guard: async (ctx) => Boolean(ctx.isPaidActive),
     },
   },
   pro_xai: {

@@ -10,7 +10,8 @@ import {
   BillingProvider,
   useModeSyncCallback,
 } from '@/features/billing/BillingProvider';
-import { computeEffectiveMode } from '@/shared/billing';
+import { computeEffectiveMode, getEntitlementPaidActive } from '@/shared/billing';
+import { resolveModeTransition } from '@/shared/utils/mode-transition';
 
 import type { IDataProvider } from '../../shared/interfaces/i-data-provider';
 
@@ -22,6 +23,10 @@ export interface AppContextType {
 
     currentMode: Mode;
     modeReady: boolean;
+    /**
+     * Persist mode when transition rules allow.
+     * Free→Paid requires isPaidActive (entitlement); Paid→Free always allowed when signed in.
+     */
     setMode: (mode: Mode) => void;
     availableModes: Mode[];
 
@@ -73,10 +78,10 @@ function AppProviderInner({
         }
     }, []);
 
-    // Mode is derived for signed-in users; do not offer free switch to Paid.
+    // Entitled paid users may switch Free ↔ Paid; free users only Free.
     const availableModes: Mode[] = isAuthenticated
-        ? currentMode === 'pro_xai'
-            ? ['pro_xai']
+        ? getEntitlementPaidActive()
+            ? ['pro', 'pro_xai']
             : ['pro']
         : ['basic'];
 
@@ -98,14 +103,16 @@ function AppProviderInner({
     }, [theme]);
 
     const setMode = useCallback((mode: Mode) => {
-        if ((mode === 'pro' || mode === 'pro_xai') && !isAuthenticated) {
-            return;
+        const decision = resolveModeTransition({
+            from: currentMode,
+            to: mode,
+            isAuthenticated,
+            isPaidActive: getEntitlementPaidActive(),
+        });
+        if (decision.kind === 'persist' && decision.mode) {
+            void persistMode(decision.mode);
         }
-        // Paid is not a free-user selection — only billing sync writes pro_xai
-        if (mode === 'pro_xai' && currentMode !== 'pro_xai') {
-            return;
-        }
-        void persistMode(mode);
+        // sign_in / upgrade / sign_out are handled by Settings / ModeSelection UI
     }, [isAuthenticated, persistMode, currentMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {
@@ -136,6 +143,7 @@ function AppProviderInner({
         <AppContext.Provider value={value}>
             <BillingProvider
                 isAuthenticated={isAuthenticated}
+                currentMode={currentMode}
                 onEffectiveMode={onEffectiveMode}
                 web={webBilling}
             >

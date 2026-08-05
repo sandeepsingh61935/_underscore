@@ -15,12 +15,13 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import {
   shouldRunFocusBillingSync,
   shouldSyncModeFromBilling,
+  setEntitlementPaidActive,
   SupabaseBillingPort,
-  computeEffectiveMode,
   type BillingSnapshot,
   type CheckoutOptions,
   type IBillingPort,
 } from '@/shared/billing';
+import { resolveBillingModeWrite } from '@/shared/utils/mode-transition';
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import { IpcBillingPort } from '@/features/billing/ports/ipc-billing-port';
 import { useBilling } from '@/features/billing/hooks/useBilling';
@@ -41,8 +42,13 @@ export interface BillingProviderProps {
   children: React.ReactNode;
   isAuthenticated: boolean;
   /**
-   * Apply effective mode when billing is ready.
-   * Only called for ready snapshots (never on error/loading).
+   * Current product mode — used so paid users can prefer Free (pro) without
+   * billing forcing them back to pro_xai on every ready snapshot.
+   */
+  currentMode?: ModeType;
+  /**
+   * Apply mode only when entitlement clamp requires it (demote unpaid AI,
+   * rising-edge paid activation). Never on error/loading.
    */
   onEffectiveMode?: (mode: ModeType) => void;
   /** Web: Supabase client + token getter. Extension: omit (uses MessageBus IPC). */
@@ -55,6 +61,7 @@ export interface BillingProviderProps {
 export function BillingProvider({
   children,
   isAuthenticated,
+  currentMode = 'pro',
   onEffectiveMode,
   web,
 }: BillingProviderProps): React.ReactElement {
@@ -77,6 +84,8 @@ export function BillingProvider({
   const lastSynced = useRef<string>('');
   const lastFocusSyncAt = useRef(0);
   const successHandledRef = useRef(false);
+  /** null until first ready entitlement sample. */
+  const previousIsPaidActiveRef = useRef<boolean | null>(null);
   const isPaidActiveRef = useRef(billing.snapshot.isPaidActive);
   isPaidActiveRef.current = billing.snapshot.isPaidActive;
   const syncFromPolarRef = useRef(billing.syncFromPolar);
@@ -84,10 +93,21 @@ export function BillingProvider({
   syncFromPolarRef.current = billing.syncFromPolar;
   refreshRef.current = billing.refresh;
 
+  // Publish paid gate for setMode (Paid↔Free when entitled).
+  useEffect(() => {
+    setEntitlementPaidActive(
+      isAuthenticated && billing.snapshot.isPaidActive
+    );
+    if (!isAuthenticated) {
+      setEntitlementPaidActive(false);
+    }
+  }, [isAuthenticated, billing.snapshot.isPaidActive]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       successHandledRef.current = false;
       lastFocusSyncAt.current = 0;
+      previousIsPaidActiveRef.current = null;
     }
   }, [isAuthenticated]);
 
@@ -95,18 +115,26 @@ export function BillingProvider({
     if (!onEffectiveMode) return;
     if (!shouldSyncModeFromBilling(billing.snapshot.loadState)) return;
 
-    const mode = computeEffectiveMode(
+    const isPaidActive = billing.snapshot.isPaidActive;
+    const decision = resolveBillingModeWrite({
       isAuthenticated,
-      billing.snapshot.isPaidActive
-    );
-    const key = `${isAuthenticated}:${billing.snapshot.isPaidActive}:${mode}`;
+      isPaidActive,
+      currentMode,
+      previousIsPaidActive: previousIsPaidActiveRef.current,
+    });
+    previousIsPaidActiveRef.current = isPaidActive;
+
+    if (!decision.write) return;
+
+    const key = `${isAuthenticated}:${isPaidActive}:${decision.mode}`;
     if (lastSynced.current === key) return;
     lastSynced.current = key;
-    onEffectiveMode(mode);
+    onEffectiveMode(decision.mode);
   }, [
     billing.snapshot.loadState,
     billing.snapshot.isPaidActive,
     isAuthenticated,
+    currentMode,
     onEffectiveMode,
   ]);
 

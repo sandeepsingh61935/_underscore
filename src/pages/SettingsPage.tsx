@@ -198,6 +198,7 @@ export function SettingsPage({
 
   const handleSelectGuest = (): void => {
     if (!isAuthenticated) return;
+    // Guest while signed-in → sign-out confirm (transition kind: sign_out)
     setSignOutOpen(true);
   };
 
@@ -206,6 +207,7 @@ export function SettingsPage({
       onSignIn?.();
       return;
     }
+    // Paid → Free allowed; Free stays Free
     setMode('pro' as ModeType);
   };
 
@@ -214,7 +216,12 @@ export function SettingsPage({
       onSignIn?.();
       return;
     }
-    if (isPaidActive) return;
+    // Entitled paid: Free → Paid is a mode write (not checkout)
+    if (isPaidActive) {
+      setMode('pro_xai' as ModeType);
+      return;
+    }
+    // Free user: Free → Paid requires billing upgrade
     setBillingActionError(null);
     if (startCheckout) {
       void startCheckout().catch((e: unknown) => {
