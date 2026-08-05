@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { ErrorInfo, ReactNode } from 'react';
 import React, { useState, useEffect } from 'react';
 import { Component } from 'react';
@@ -50,7 +49,6 @@ import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
-import { springs } from '@/ui-system/motion/springs';
 import '../../ui-system/theme/global.css';
 import './base.css';
 
@@ -68,12 +66,6 @@ enum View {
   API_KEY_SETUP = 'API_KEY_SETUP',
   LLM_STREAMING = 'LLM_STREAMING',
 }
-
-const screenVariants = {
-  initial: { opacity: 0, y: 10,  scale: 0.984 },
-  animate: { opacity: 1, y: 0,   scale: 1     },
-  exit:    { opacity: 0, y: -6,  scale: 1.012 },
-} as const;
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -410,211 +402,103 @@ function PopupApp(): React.ReactElement {
     );
   }
 
+  // Body-only views: PopupShell owns the sole AnimatePresence + motion.div
+  // (and reduced-motion gating). No per-view motion wrappers.
   return (
     <PopupShell chrome={chrome[currentView as ViewKey]} viewKey={currentView}>
       {currentView === View.WELCOME && (
-        <motion.div
-          key="welcome"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <WelcomePage onStartClick={handleStartWelcome} />
-        </motion.div>
+        <WelcomePage onStartClick={handleStartWelcome} />
       )}
       {currentView === View.MODE_SELECTION && (
-        <motion.div
-          key="mode-selection"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <ModeSelectionView
-            onModeSelect={handleModeSelect}
-            onSignInClick={handleSignInClick}
-            onBack={previousView ? handleModeSelectionBack : undefined}
-            onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
-            initialMode={currentMode}
-            isAuthenticated={!!user}
-          />
-        </motion.div>
+        <ModeSelectionView
+          onModeSelect={handleModeSelect}
+          onSignInClick={handleSignInClick}
+          onBack={previousView ? handleModeSelectionBack : undefined}
+          onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
+          initialMode={currentMode}
+          isAuthenticated={!!user}
+        />
       )}
       {currentView === View.COLLECTIONS && (
-        <motion.div
-          key="collections"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <CollectionsView
-            onCollectionClick={handleCollectionClick}
-            onSectionClick={handleSectionClick}
-            isAuthenticated={!!user}
-            onSignIn={() => setCurrentView(View.AUTH)}
-          />
-        </motion.div>
+        <CollectionsView
+          onCollectionClick={handleCollectionClick}
+          onSectionClick={handleSectionClick}
+          isAuthenticated={!!user}
+          onSignIn={() => setCurrentView(View.AUTH)}
+        />
       )}
       {currentView === View.DOMAIN_DETAILS && (
-        <motion.div
-          key="domain-details"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <DomainDetailsView
-            domain={selectedDomain}
-            onBack={handleBackToCollections}
-            onSectionClick={handleSectionClick}
-          />
-        </motion.div>
+        <DomainDetailsView
+          domain={selectedDomain}
+          onBack={handleBackToCollections}
+          onSectionClick={handleSectionClick}
+        />
       )}
       {currentView === View.SUB_DOMAIN && (
-        <motion.div
-          key="sub-domain"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <SubDomainView
-            domain={selectedDomain}
-            section={selectedSection}
-            onBack={handleBackToDomain}
-            onDomainEmpty={handleBackToCollections}
-          />
-        </motion.div>
+        <SubDomainView
+          domain={selectedDomain}
+          section={selectedSection}
+          onBack={handleBackToDomain}
+          onDomainEmpty={handleBackToCollections}
+        />
       )}
       {currentView === View.AUTH && (
-        <motion.div
-          key="auth"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <AuthView
-            onLoginSuccess={handleLoginSuccess}
-            onBackToModeSelection={handleBackToModeSelection}
-          />
-        </motion.div>
+        <AuthView
+          onLoginSuccess={handleLoginSuccess}
+          onBackToModeSelection={handleBackToModeSelection}
+        />
       )}
       {currentView === View.SETTINGS && (
-        <motion.div
-          key="settings"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <SettingsPage
-            onBack={handleBackToCollections}
-            onChangeMode={handleSettingsChangeMode}
-            onConfigureAIProviders={handleConfigureAIProviders}
-            onSignIn={() => setCurrentView(View.AUTH)}
-            onLogout={handleLogout}
-          />
-        </motion.div>
+        <SettingsPage
+          onBack={handleBackToCollections}
+          onChangeMode={handleSettingsChangeMode}
+          onConfigureAIProviders={handleConfigureAIProviders}
+          onSignIn={() => setCurrentView(View.AUTH)}
+          onLogout={handleLogout}
+        />
       )}
       {currentView === View.ASK && (
-        <motion.div
-          key="ask"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <AskView
-            lockReason={askLockReason}
-            onSignIn={() => setCurrentView(View.AUTH)}
-            onUpgrade={() => {
-              if (billing?.startCheckout) {
-                void billing.startCheckout().catch(() => {
-                  setCurrentView(View.SETTINGS);
-                });
-                return;
-              }
-              setCurrentView(View.SETTINGS);
-            }}
-            onUpdatePayment={() => {
-              if (billing?.openPortal) {
-                void billing.openPortal().catch(() => {
-                  setCurrentView(View.SETTINGS);
-                });
-                return;
-              }
-              setCurrentView(View.SETTINGS);
-            }}
-            onConnectAi={handleConfigureAIProviders}
-          />
-        </motion.div>
+        <AskView
+          lockReason={askLockReason}
+          onSignIn={() => setCurrentView(View.AUTH)}
+          onUpgrade={() => {
+            if (billing?.startCheckout) {
+              void billing.startCheckout().catch(() => {
+                setCurrentView(View.SETTINGS);
+              });
+              return;
+            }
+            setCurrentView(View.SETTINGS);
+          }}
+          onUpdatePayment={() => {
+            if (billing?.openPortal) {
+              void billing.openPortal().catch(() => {
+                setCurrentView(View.SETTINGS);
+              });
+              return;
+            }
+            setCurrentView(View.SETTINGS);
+          }}
+          onConnectAi={handleConfigureAIProviders}
+        />
       )}
       {currentView === View.DASHBOARD && (
-        <motion.div
-          key="dashboard"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <DashboardView
-            onLogout={handleLogout}
-            onSectionClick={handleSectionClick}
-            onSignIn={() => setCurrentView(View.AUTH)}
-            isPaidActive={isPaidActive}
-            onAskPage={() => setCurrentView(View.ASK)}
-          />
-        </motion.div>
+        <DashboardView
+          onLogout={handleLogout}
+          onSectionClick={handleSectionClick}
+          onSignIn={() => setCurrentView(View.AUTH)}
+          isPaidActive={isPaidActive}
+          onAskPage={() => setCurrentView(View.ASK)}
+        />
       )}
       {currentView === View.API_KEY_SETUP && (
-        <motion.div
-          key="api-key-setup"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <APIKeySetupView
-            initialProvider={lastLlmSetupProvider}
-            onClose={handleBackFromApiKeySetup}
-          />
-        </motion.div>
+        <APIKeySetupView
+          initialProvider={lastLlmSetupProvider}
+          onClose={handleBackFromApiKeySetup}
+        />
       )}
       {currentView === View.LLM_STREAMING && llmContext && (
-        <motion.div
-          key="llm-streaming"
-          variants={screenVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={springs.gentle}
-          style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
-        >
-          <LLMStreamingView ctx={llmContext} onClose={handleBackFromLlmStreaming} />
-        </motion.div>
+        <LLMStreamingView ctx={llmContext} onClose={handleBackFromLlmStreaming} />
       )}
     </PopupShell>
   );

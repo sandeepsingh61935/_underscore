@@ -910,10 +910,10 @@ button.sr-icon.is-delete:hover { color: var(--accent); }
 
 /* ─── A11y: focus-visible (story 75) ───
    Lives after `all: unset` chrome so outline is restored for keyboard users.
-   Covers dialogs (portaled to body) and popup controls. */
+   !important wins over `all: unset` on TabBar, ModeHeader, account pill, chips. */
 :is(button, a, [role="button"], summary, input, select, textarea):focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
 }
 
 /* Shell fields: ring the container, not the bare input (avoids double outline). */
