@@ -44,7 +44,7 @@ export function ModelsHubPanel({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '12px 16px 10px' }}>
         <div className="u-serif" style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}>
-          Models
+          Models &amp; providers
         </div>
       </div>
 

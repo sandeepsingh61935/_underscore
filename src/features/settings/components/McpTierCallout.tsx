@@ -22,8 +22,8 @@ export function McpTierCallout({
   if (!isAuthenticated) {
     return (
       <Row
-        title="Account sync and Connect to AI"
-        sub="Sign in to sync your library; Connect to AI needs Account (Paid)"
+        title="Account sync and Integrations"
+        sub="Sign in to sync your library; Integrations need Account (Paid)"
         right={
           <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
             Sign in
@@ -47,7 +47,7 @@ export function McpTierCallout({
 
   return (
     <Row
-      title="Connect to AI"
+      title="Integrations"
       sub="Available with Account (Paid) — upgrade in Settings"
       compact
     />

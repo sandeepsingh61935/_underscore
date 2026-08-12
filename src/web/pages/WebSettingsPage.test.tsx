@@ -193,8 +193,31 @@ describe('WebSettingsPage', () => {
 
     expect(document.querySelector('[data-od-id="settings-ai"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ai-lock-banner"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="settings-ai-see-plan"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="ai-seg-models"]')?.textContent?.trim()).toBe(
+      'Models',
+    );
     expect(
-      (document.querySelector('[data-od-id="settings-mcp"]') as HTMLButtonElement)?.disabled,
+      document.querySelector('[data-od-id="ai-seg-integrations"]')?.textContent?.trim(),
+    ).toBe('Integrations');
+    // Provider Connect controls disabled while locked (not signed in / not paid)
+    const btns = Array.from(
+      document.querySelectorAll('[data-od-id^="provider-"][data-od-id$="-action"]'),
+    ) as HTMLButtonElement[];
+    expect(btns.length).toBeGreaterThan(0);
+    expect(btns.every((b) => b.disabled)).toBe(true);
+
+    // Integrations: status row (no fake toggle); catalog locked
+    fireEvent.click(document.querySelector('[data-od-id="ai-seg-integrations"]')!);
+    expect(document.querySelector('[data-od-id="settings-mcp"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="settings-mcp-status"]')?.textContent).toMatch(
+      /Extension|Paid/i,
+    );
+    expect(document.querySelectorAll('[data-od-id^="mcp-app-"]').length).toBeGreaterThan(0);
+    expect(
+      Array.from(document.querySelectorAll('[data-od-id^="mcp-app-"]')).every(
+        (el) => (el as HTMLButtonElement).disabled,
+      ),
     ).toBe(true);
   });
 

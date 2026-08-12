@@ -135,8 +135,10 @@ export const LOGOUT = 'LOGOUT' as const;
  * - IPC_AI_SET_API_KEY:          { provider, key?, model? } -> { ok: true } | error
  * - IPC_AI_GET_API_KEY_STATUS:   { provider } -> { configured: boolean, model: string }
  * - IPC_AI_GET_ACTIVE_PROVIDER:    -> { provider: ProviderName | null }
+ * - IPC_AI_SET_ACTIVE_PROVIDER:  { provider } -> { ok: true } | error (configured only)
  * - IPC_AI_LIST_PROVIDERS:       -> [{ name, configured }]
  * - IPC_AI_GET_PAGE_CONTEXT:     { highlights: [{ url, text }] } -> marked page context
+ * - IPC_AI_SYNC_PREFS:           {} -> { source, wroteRemote } account LWW prefs (no secrets)
  */
 export const IPC_AI_STREAM_CHAT_REQUEST = 'IPC_AI_STREAM_CHAT_REQUEST' as const;
 export const IPC_AI_CHAT = 'IPC_AI_CHAT' as const;
@@ -144,9 +146,13 @@ export const IPC_AI_HEALTH_CHECK = 'IPC_AI_HEALTH_CHECK' as const;
 export const IPC_AI_SET_API_KEY = 'IPC_AI_SET_API_KEY' as const;
 export const IPC_AI_GET_API_KEY_STATUS = 'IPC_AI_GET_API_KEY_STATUS' as const;
 export const IPC_AI_GET_ACTIVE_PROVIDER = 'IPC_AI_GET_ACTIVE_PROVIDER' as const;
+/** Switch Ask default among already-configured providers (no secrets). */
+export const IPC_AI_SET_ACTIVE_PROVIDER = 'IPC_AI_SET_ACTIVE_PROVIDER' as const;
 export const IPC_AI_LIST_PROVIDERS = 'IPC_AI_LIST_PROVIDERS' as const;
 export const IPC_AI_GET_PAGE_CONTEXT = 'IPC_AI_GET_PAGE_CONTEXT' as const;
 export const IPC_AI_LIST_PROVIDER_MODELS = 'IPC_AI_LIST_PROVIDER_MODELS' as const;
+/** Pull/push account AI prefs (default model + enablement); LWW. */
+export const IPC_AI_SYNC_PREFS = 'IPC_AI_SYNC_PREFS' as const;
 
 /**
  * Billing (Polar) IPC — extension popup talks to background.

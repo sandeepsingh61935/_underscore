@@ -5,12 +5,19 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { ThemeType } from '@/shared/types/theme';
+
+import {
+  BillingReturnBanners,
+  type BillingReturnKind,
+} from './BillingReturnBanners';
+import { BillingRows } from './BillingRows';
+
 import {
   BUILTIN_TYPE_PRESET_LIST,
   BUILTIN_TYPE_PRESETS,
   type BuiltinTypePresetId,
 } from '@/shared/constants/type-presets';
+import type { ThemeType } from '@/shared/types/theme';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { useTypePreset } from '@/ui-system/hooks/useTypePreset';
 import type { WebCaps, WebPlanLabel } from '@/web/caps/resolveWebCaps';
@@ -20,11 +27,7 @@ import {
   writeWebPrefs,
   type WebDensity,
 } from '@/web/lib/webPrefs';
-import {
-  BillingReturnBanners,
-  type BillingReturnKind,
-} from './BillingReturnBanners';
-import { BillingRows } from './BillingRows';
+
 
 function formatPeriodEnd(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -325,9 +328,9 @@ export function PlanPanel({
             <h3>Account (Paid)</h3>
             <ul>
               <li>Everything Free</li>
-              <li>Ask · Summarize</li>
-              <li>Configure AI (BYOK)</li>
-              <li>Connect to AI (MCP)</li>
+              <li>Chat · Summarize</li>
+              <li>Models &amp; providers (BYOK)</li>
+              <li>Integrations (MCP)</li>
             </ul>
             {isAuthenticated && !caps.isPaidActive ? (
               <button
@@ -460,104 +463,7 @@ export function AppearancePanel({
   );
 }
 
-const PROVIDER_STUBS = [
-  { id: 'openai', name: 'OpenAI' },
-  { id: 'anthropic', name: 'Anthropic' },
-  { id: 'google', name: 'Google' },
-] as const;
-
-export function AiPanel({
-  caps,
-  isAuthenticated,
-  billingCta,
-  onBillingAction,
-}: {
-  caps: WebCaps;
-  isAuthenticated: boolean;
-  /** Same CTA matrix as Plan/Account — past_due → portal, free → checkout. */
-  billingCta?: SettingsBillingCta | null;
-  onBillingAction?: () => void;
-}): React.ReactElement {
-  const allowed = caps.flags.ai;
-  const lockLabel = billingCta?.ctaLabel ?? 'Upgrade';
-  const lockKind = billingCta?.kind ?? 'upgrade';
-
-  return (
-    <div className="settings-panel is-tab-enter" data-od-id="settings-ai">
-      <h2>AI &amp; MCP</h2>
-      <p className="lead">Providers for Ask. MCP for external clients that read your library.</p>
-      {!allowed ? (
-        <div className="banner" data-od-id="ai-lock-banner">
-          <strong>Account (Paid)</strong> — required for providers and MCP.
-          {isAuthenticated ? (
-            <button
-              type="button"
-              className="trail-link"
-              data-od-id="settings-ai-upgrade"
-              data-billing-kind={lockKind}
-              data-testid="settings-ai-billing-cta"
-              style={{ marginLeft: 8 }}
-              onClick={onBillingAction}
-            >
-              {lockLabel}
-            </button>
-          ) : (
-            <Link to="/sign-in" className="trail-link" style={{ marginLeft: 8 }}>
-              Sign in
-            </Link>
-          )}
-        </div>
-      ) : null}
-      <div className="block">
-        <p className="block-label">Providers</p>
-        {PROVIDER_STUBS.map((p) => (
-          <div className="provider-row" key={p.id} data-od-id={`provider-${p.id}`}>
-            <div className="name">{p.name}</div>
-            <span className="status">Off</span>
-            <button type="button" className="btn sm" disabled={!allowed}>
-              Connect
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn sm"
-          style={{ marginTop: 4 }}
-          data-od-id="settings-models"
-          disabled={!allowed}
-        >
-          Configure models · 0
-        </button>
-        {allowed ? (
-          <p className="type-sub" style={{ marginTop: 12 }}>
-            Provider keys configure in the extension for now.
-          </p>
-        ) : null}
-      </div>
-      <div className="block">
-        <p className="block-label">MCP</p>
-        <div className="setting-row">
-          <div className="grow">
-            <div className="title">Model Context Protocol</div>
-            <div className="sub">
-              {caps.flags.mcp
-                ? 'Expose library tools to compatible clients'
-                : 'Account (Paid)'}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn sm"
-            data-od-id="settings-mcp"
-            disabled={!caps.flags.mcp}
-          >
-            Off
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+export { AiPanel } from './AiPanel';
 
 export function DataPanel({
   caps,
@@ -569,68 +475,134 @@ export function DataPanel({
 }: {
   caps: WebCaps;
   isAuthenticated: boolean;
-  onExport: () => void;
+  onExport: (format: 'md' | 'xlsx') => void;
   onSync: () => void;
   syncing?: boolean;
   lastSyncedLabel?: string;
 }): React.ReactElement {
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onDoc = (e: MouseEvent): void => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [exportOpen]);
+
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-data">
       <h2>Data</h2>
-      <p className="lead">Sync, export, and delete.</p>
-      <div className="block">
-        <p className="block-label">Sync</p>
-        <div className="setting-row">
-          <div className="grow">
-            <div className="title">Cloud sync</div>
-            <div className="sub">
-              {caps.flags.sync
-                ? lastSyncedLabel || 'Library loads from cloud on this device'
-                : 'Sign in on Starter+'}
+      <p className="lead">Sync, download, and delete.</p>
+      {isAuthenticated ? (
+        <div className="block" data-od-id="settings-sync-block">
+          <div className="setting-row">
+            <div className="grow">
+              <div className="title">Cloud sync</div>
+              <div className="sub">
+                {caps.flags.sync
+                  ? lastSyncedLabel || 'Library loads from cloud on this device'
+                  : 'Sign in on Starter+'}
+              </div>
             </div>
+            <button
+              type="button"
+              className={`btn sm${caps.flags.sync ? ' primary' : ''}`}
+              data-od-id="settings-sync"
+              disabled={!caps.flags.sync}
+              aria-disabled={!caps.flags.sync}
+            >
+              {caps.flags.sync ? 'On' : 'Off'}
+            </button>
           </div>
-          <button
-            type="button"
-            className={`btn sm${caps.flags.sync ? ' primary' : ''}`}
-            data-od-id="settings-sync"
-            disabled={!caps.flags.sync}
-            aria-disabled={!caps.flags.sync}
-          >
-            {caps.flags.sync ? 'On' : 'Off'}
-          </button>
-        </div>
-        <div className="setting-row">
-          <div className="grow">
-            <div className="title">Sync now</div>
-            <div className="sub">Pull latest from cloud</div>
+          <div className="setting-row">
+            <div className="grow">
+              <div className="title">Sync now</div>
+            </div>
+            <button
+              type="button"
+              className="btn sm primary"
+              disabled={!caps.flags.sync || syncing}
+              aria-busy={syncing}
+              onClick={onSync}
+            >
+              {syncing ? '…' : 'Sync'}
+            </button>
           </div>
-          <button
-            type="button"
-            className="btn sm"
-            disabled={!caps.flags.sync || syncing}
-            aria-busy={syncing}
-            onClick={onSync}
-          >
-            {syncing ? '…' : 'Sync'}
-          </button>
         </div>
-      </div>
+      ) : null}
       <div className="block">
-        <p className="block-label">Export</p>
         <div className="setting-row">
           <div className="grow">
-            <div className="title">Export library</div>
-            <div className="sub">JSON bundle of all highlights</div>
+            <div className="title">Download library</div>
           </div>
-          <button
-            type="button"
-            className="btn sm"
-            data-od-id="settings-export"
-            disabled={!caps.flags.export}
-            onClick={onExport}
-          >
-            Export
-          </button>
+          <div className="export-menu" data-od-id="settings-export" ref={exportRef}>
+            <button
+              type="button"
+              className="btn sm"
+              data-od-id="settings-export-btn"
+              aria-haspopup="menu"
+              aria-expanded={exportOpen}
+              disabled={!caps.flags.export}
+              onClick={() => setExportOpen((o) => !o)}
+            >
+              Download
+              <svg
+                className="chev"
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 4.5 6 8l3-3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            {exportOpen ? (
+              <div
+                className="export-menu-pop"
+                role="menu"
+                data-od-id="settings-export-menu"
+              >
+                <button
+                  type="button"
+                  className="export-menu-item"
+                  role="menuitem"
+                  data-od-id="settings-export-md"
+                  disabled={!caps.flags.export}
+                  onClick={() => {
+                    onExport('md');
+                    setExportOpen(false);
+                  }}
+                >
+                  Markdown
+                </button>
+                <button
+                  type="button"
+                  className="export-menu-item"
+                  role="menuitem"
+                  data-od-id="settings-export-xlsx"
+                  disabled={!caps.flags.export}
+                  onClick={() => {
+                    onExport('xlsx');
+                    setExportOpen(false);
+                  }}
+                >
+                  Spreadsheet
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="block">

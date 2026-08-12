@@ -105,8 +105,8 @@ export function ConnectToAiFlow({
   const lockedCta = useCallback((): void => {
     setLockMessage(
       isAuthenticated
-        ? 'Upgrade to Account (Paid) to unlock Connect to AI — use Upgrade in Settings.'
-        : 'Sign in, then upgrade to Account (Paid) to unlock Connect to AI.',
+        ? 'Upgrade to Account (Paid) to unlock Integrations — use Upgrade in Settings.'
+        : 'Sign in, then upgrade to Account (Paid) to unlock Integrations.',
     );
     if (!isAuthenticated) {
       onSignIn?.();

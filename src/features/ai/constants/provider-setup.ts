@@ -11,7 +11,7 @@ export interface ProviderMeta {
 
 /**
  * In-app model providers for Ask / Summarize (BYOK or local Ollama).
- * Agent apps (Cursor, Claude Desktop, …) are Settings → Connect to AI only.
+ * Agent apps (Cursor, Claude Desktop, …) are Settings → Integrations only.
  */
 export const SETUP_PROVIDERS: ReadonlyArray<ProviderName> = IN_APP_LLM_PROVIDER_ORDER;
 

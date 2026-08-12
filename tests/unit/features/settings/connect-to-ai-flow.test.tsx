@@ -52,12 +52,12 @@ describe('ConnectToAiFlow', () => {
 
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
     expect(screen.getByText('← Settings')).toBeTruthy();
-    expect(screen.getByText('Connect to AI')).toBeTruthy();
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
+    expect(screen.getByText('Integrations')).toBeTruthy();
+    expect(screen.queryByText('Models & providers')).toBeNull();
 
     screen.getByRole('button', { name: 'Add an AI app' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
-    expect(screen.getByText('← Connect to AI')).toBeTruthy();
+    expect(screen.getByText('← Integrations')).toBeTruthy();
     expect(onDepth).toHaveBeenCalledWith(2);
 
     screen.getByRole('button', { name: 'Cursor' }).click();
@@ -68,7 +68,7 @@ describe('ConnectToAiFlow', () => {
     screen.getByText('← Add an AI app').click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
 
-    screen.getByText('← Connect to AI').click();
+    screen.getByText('← Integrations').click();
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
     screen.getByText('← Settings').click();
     expect(onExit).toHaveBeenCalled();

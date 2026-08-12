@@ -165,13 +165,13 @@ describe('SettingsPage basic mode boundaries', () => {
     ]);
   });
 
-  it('shows Configure and Connect with lock status for guest', () => {
+  it('shows Models & providers and Integrations with lock status for guest', () => {
     render(<SettingsPage />);
 
-    expect(screen.getByText('Connect to AI')).toBeTruthy();
-    expect(screen.getByText('External agents')).toBeTruthy();
-    expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getByText('Integrations')).toBeTruthy();
+    expect(screen.getByText('Let agents use your library')).toBeTruthy();
+    expect(screen.getByText('Models & providers')).toBeTruthy();
+    expect(screen.getByText('Keys for Ask')).toBeTruthy();
     expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText(/OpenAI, Claude, Gemini/)).toBeNull();
     expect(screen.queryByTestId('connect-to-ai-flow-mock')).toBeNull();
@@ -207,12 +207,12 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     mockBilling(true);
   });
 
-  it('shows Connect then Configure open for signed-in Account (Paid)', () => {
+  it('shows Integrations and Models & providers open for signed-in Account (Paid)', () => {
     render(<SettingsPage />);
-    expect(screen.getByText('Connect to AI')).toBeTruthy();
-    expect(screen.getByText('External agents')).toBeTruthy();
-    expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getByText('Integrations')).toBeTruthy();
+    expect(screen.getByText('Let agents use your library')).toBeTruthy();
+    expect(screen.getByText('Models & providers')).toBeTruthy();
+    expect(screen.getByText('Keys for Ask')).toBeTruthy();
     expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
     expect(screen.getByText('Billing')).toBeTruthy();
@@ -280,9 +280,9 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
   it('shows Free pill, Upgrade CTA, and Refresh recovery row', () => {
     const { startCheckout, openPortal, syncFromPolar } = mockBilling(false);
     render(<SettingsPage />);
-    expect(screen.getByText('Connect to AI')).toBeTruthy();
-    expect(screen.getByText('Configure AI providers')).toBeTruthy();
-    expect(screen.getByText('In-app models')).toBeTruthy();
+    expect(screen.getByText('Integrations')).toBeTruthy();
+    expect(screen.getByText('Models & providers')).toBeTruthy();
+    expect(screen.getByText('Keys for Ask')).toBeTruthy();
     expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
     expect(screen.getByText('Upgrade to Paid')).toBeTruthy();

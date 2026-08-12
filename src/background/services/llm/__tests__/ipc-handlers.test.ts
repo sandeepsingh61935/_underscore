@@ -164,6 +164,32 @@ describe('registerAiHandlers', () => {
     expect(result).toEqual({ success: true, data: { ok: true } });
   });
 
+  it('IPC_AI_SET_ACTIVE_PROVIDER switches among configured providers', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    (keyStore.get as ReturnType<typeof vi.fn>).mockResolvedValue('sk-x');
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_SET_ACTIVE_PROVIDER')!;
+    const result = await handler({ provider: 'openai' });
+    expect(keyStore.setActiveProvider).toHaveBeenCalledWith('openai');
+    expect(result).toEqual({ success: true, data: { ok: true, provider: 'openai' } });
+  });
+
+  it('IPC_AI_SET_ACTIVE_PROVIDER rejects unconfigured provider', async () => {
+    const bus = makeMessageBus();
+    const keyStore = makeKeyStore();
+    (keyStore.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    const registry = makeRegistry(new Map());
+    registerAiHandlers({ bus: bus as any, registry: registry as any, keyStore: keyStore as any, pageContentCache: makePageContentCache() as any });
+
+    const handler = bus.handlers.get('IPC_AI_SET_ACTIVE_PROVIDER')!;
+    const result = await handler({ provider: 'anthropic' });
+    expect(keyStore.setActiveProvider).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: false });
+  });
+
   it('IPC_AI_GET_API_KEY_STATUS returns configured model', async () => {
     const bus = makeMessageBus();
     const keyStore = makeKeyStore();

@@ -6,14 +6,16 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
-import { downloadTextFile } from '@/shared/highlight-export';
+import type { ExportFormat } from '@/shared/highlight-export';
 import type { ThemeType } from '@/shared/types/theme';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
+import type { BillingReturnKind } from '@/web/components/settings/BillingReturnBanners';
 import {
   AccountPanel,
   AiPanel,
@@ -22,8 +24,8 @@ import {
   PlanPanel,
   type SharedBillingProps,
 } from '@/web/components/settings/settingsPanels';
-import type { BillingReturnKind } from '@/web/components/settings/BillingReturnBanners';
 import { useWebLibrary } from '@/web/hooks/useWebLibrary';
+import { exportWebHighlights } from '@/web/lib/webHighlightExport';
 import {
   buildSettingsSearch,
   parseSettingsTab,
@@ -34,7 +36,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'account', label: 'Account' },
   { id: 'plan', label: 'Plan' },
   { id: 'appearance', label: 'Appearance' },
-  { id: 'ai', label: 'AI & MCP' },
+  { id: 'ai', label: 'AI' },
   { id: 'data', label: 'Data' },
 ];
 
@@ -136,23 +138,13 @@ export function WebSettingsPage(): React.ReactElement {
     void billing.refresh();
   }, [billing]);
 
-  const handleExport = useCallback(() => {
-    if (!caps.flags.export) return;
-    const payload = lib.highlights.map((h) => ({
-      id: h.id,
-      domain: h.domain,
-      path: h.path,
-      quote: h.quote,
-      note: h.note,
-      tags: h.tags,
-      savedAt: new Date(h.savedAt).toISOString(),
-    }));
-    const stamp = new Date().toISOString().slice(0, 10);
-    downloadTextFile(
-      `underscore-library-${stamp}.json`,
-      JSON.stringify(payload, null, 2),
-    );
-  }, [caps.flags.export, lib.highlights]);
+  const handleExport = useCallback(
+    (format: ExportFormat) => {
+      if (!caps.flags.export) return;
+      exportWebHighlights(lib.highlights, format, { kind: 'library' });
+    },
+    [caps.flags.export, lib.highlights],
+  );
 
   const handleDataSync = useCallback(() => {
     void lib.refresh();
@@ -194,6 +186,7 @@ export function WebSettingsPage(): React.ReactElement {
         <AiPanel
           caps={caps}
           isAuthenticated={isAuthenticated}
+          userId={user?.id ?? null}
           billingCta={cta}
           onBillingAction={handleBillingAction}
         />

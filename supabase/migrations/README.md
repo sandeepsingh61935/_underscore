@@ -39,5 +39,6 @@ Paste `20260711170000_highlights_metadata_and_schema_align.sql` into **Supabase 
 | File | Purpose |
 |------|---------|
 | `20260711170000_highlights_metadata_and_schema_align.sql` | `metadata` JSONB (notes/tags), core column align |
+| `20260812120000_ai_preferences.sql` | Account AI prefs (default model + enablement), LWW, RLS |
 
 Schema reference: [docs/06-security/highlights-schema.md](../docs/06-security/highlights-schema.md)

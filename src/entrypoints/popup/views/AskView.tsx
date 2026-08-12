@@ -5,7 +5,8 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
+import { AskModelChip } from '@/features/ai/components/AskModelChip';
+import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
 import { useScopeQuery } from '@/features/ai/hooks/useScopeQuery';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
@@ -65,8 +66,8 @@ const LOCK_COPY: Record<
   },
   no_model: {
     title: 'No model selected',
-    body: 'Add a provider key under Settings → Connect to AI.',
-    cta: 'Connect to AI',
+    body: 'Add a provider key under Settings → Models & providers.',
+    cta: 'Models & providers',
   },
 };
 
@@ -128,9 +129,11 @@ function AskLockPage({
 function PaidAskShell({
   initialScope = 'page',
   libraryDomain = null,
+  onConnectAi,
 }: {
   initialScope?: AskScopeChip;
   libraryDomain?: string | null;
+  onConnectAi?: () => void;
 }): React.ReactElement {
   const { isAuthenticated, currentMode } = useApp();
   const mode = currentMode || DEFAULT_MODE;
@@ -142,7 +145,8 @@ function PaidAskShell({
     isAuthenticated,
   );
   const query = useScopeQuery();
-  const { provider } = useActiveLLMProvider();
+  const modelSelection = useAskModelSelection();
+  const provider = modelSelection.activeProvider;
   const { fetch: fetchPageContext } = usePageContext();
 
   const [scope, setScope] = useState<AskScopeChip>(
@@ -301,6 +305,7 @@ function PaidAskShell({
       const trimmed = raw.trim();
       if (!trimmed || busy || usableHighlights.length === 0 || provider === null) return;
       setAskError(null);
+      modelSelection.clearSelectError();
       setStreamUserContent(trimmed);
       setQuestion('');
       try {
@@ -310,6 +315,7 @@ function PaidAskShell({
           scopeKind,
           highlights: usableHighlights,
           fetchPageContext,
+          provider,
         });
       } catch (err) {
         setAskError((err as Error).message);
@@ -333,6 +339,7 @@ function PaidAskShell({
       scopeLabel,
       scopeKind,
       fetchPageContext,
+      modelSelection,
     ],
   );
 
@@ -457,6 +464,23 @@ function PaidAskShell({
       </div>
 
       <form className="ask-composer" onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 8 }}>
+          <AskModelChip
+            options={modelSelection.options}
+            activeProvider={modelSelection.activeProvider}
+            activeLabel={modelSelection.activeLabel}
+            onSelect={(p) => {
+              void modelSelection.selectProvider(p);
+            }}
+            onManage={() => {
+              onConnectAi?.();
+            }}
+            emptyCta="Add provider"
+            manageLabel="Manage"
+            disabled={busy}
+            selectError={modelSelection.selectError}
+          />
+        </div>
         <div className="ac-shell">
           <input
             ref={inputRef}
@@ -524,5 +548,11 @@ export function AskView({
     );
   }
 
-  return <PaidAskShell initialScope={initialScope} libraryDomain={libraryDomain} />;
+  return (
+    <PaidAskShell
+      initialScope={initialScope}
+      libraryDomain={libraryDomain}
+      onConnectAi={onConnectAi}
+    />
+  );
 }

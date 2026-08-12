@@ -39,7 +39,7 @@ describe('McpConnectionsHub', () => {
     expect(screen.getByText('Included with Account (Paid)')).toBeTruthy();
     expect(screen.getByText('Sign in to continue')).toBeTruthy();
     expect(screen.getByText('Connections unlock with Account (Paid).')).toBeTruthy();
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
+    expect(screen.queryByText('Models & providers')).toBeNull();
 
     screen.getByRole('button', { name: 'Add an AI app' }).click();
     expect(base.onLockedInteract).toHaveBeenCalled();
@@ -66,9 +66,9 @@ describe('McpConnectionsHub', () => {
       />,
     );
 
-    expect(screen.queryByText('Configure AI providers')).toBeNull();
+    expect(screen.queryByText('Models & providers')).toBeNull();
     expect(screen.getByText('Use your highlights in the agent you already use')).toBeTruthy();
-    expect(screen.queryByText('Connect to AI', { selector: '.u-serif' })).toBeNull();
+    expect(screen.queryByText('Integrations', { selector: '.u-serif' })).toBeNull();
 
     screen.getByRole('button', { name: 'Add an AI app' }).click();
     expect(base.onAddApp).toHaveBeenCalled();

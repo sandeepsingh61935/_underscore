@@ -578,23 +578,23 @@ export function SettingsPage({
           </>
         ) : null}
 
-        {/* 7. AI */}
+        {/* 7. AI — Models & providers | Integrations (IA standard 2026-08-12) */}
         <div
           className="u-caps"
           data-testid="settings-section-ai"
           style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
         >
-          AI · setup
+          AI
         </div>
         <Row
-          title="Configure AI providers"
-          sub="In-app models"
+          title="Models & providers"
+          sub="Keys for Ask"
           right={
             <BtnText
               aria-label={
                 aiSetupGate.allowed
-                  ? 'Open Configure AI providers'
-                  : 'Configure AI providers locked'
+                  ? 'Open Models & providers'
+                  : 'Models & providers locked'
               }
               disabled={!aiSetupGate.allowed}
               muted={!aiSetupGate.allowed}
@@ -610,11 +610,11 @@ export function SettingsPage({
           }
         />
         <Row
-          title="Connect to AI"
-          sub="External agents"
+          title="Integrations"
+          sub="Let agents use your library"
           right={
             <BtnText
-              aria-label={mcpGate.allowed ? 'Open Connect to AI' : 'Connect to AI locked'}
+              aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}
               onClick={() => setConnectOpen(true)}
             >
               <SettingsStatusGlyph

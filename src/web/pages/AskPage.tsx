@@ -5,8 +5,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
+import { AskModelChip } from '@/features/ai/components/AskModelChip';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
@@ -17,12 +19,13 @@ import {
   type WebDomainNode,
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
+import { useWebAskModelSelection } from '@/web/hooks/useWebAskModelSelection';
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
 /** Web product has no extension-free LLM stream path (useLLMStream needs extension IPC). */
 const WEB_STREAM_UNAVAILABLE =
-  'Ask streaming is not available in the web app yet. Open the Chrome extension with the same login to get answers.';
+  'Chat streaming is not available in the web app yet. Open the Chrome extension with the same login to get answers.';
 
 type AskScope = 'library' | 'domain' | 'section';
 
@@ -73,9 +76,9 @@ function groundLabel(scope: ScopeState): string {
 }
 
 function placeholderFor(scope: AskScope): string {
-  if (scope === 'section') return 'Ask this section…';
-  if (scope === 'domain') return 'Ask this domain…';
-  return 'Ask your library…';
+  if (scope === 'section') return 'Chat this section…';
+  if (scope === 'domain') return 'Chat this domain…';
+  return 'Chat your library…';
 }
 
 function LockIcon(): React.ReactElement {
@@ -116,10 +119,10 @@ function AskLockPanel({
         <div className="icon" aria-hidden="true">
           <LockIcon />
         </div>
-        <h3>Ask · Account (Paid)</h3>
+        <h3>Chat · Account (Paid)</h3>
         <p>
           {isPastDue
-            ? 'Payment past due. Update billing in Polar to restore Ask. Answers ground only on your saved highlights.'
+            ? 'Payment past due. Update billing in Polar to restore Chat. Answers ground only on your saved highlights.'
             : 'Answers ground only on your saved highlights. Upgrade via Polar — no card form in-app.'}
         </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -175,18 +178,24 @@ function PaidAskShell({
   highlights,
   domains,
   initialScope,
+  isAuthenticated,
+  userId,
 }: {
   highlights: WebHighlight[];
   domains: WebDomainNode[];
   initialScope: ScopeState;
+  isAuthenticated: boolean;
+  userId?: string | null;
 }): React.ReactElement {
   const [scope, setScope] = useState<ScopeState>(initialScope);
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     if (initialScope.domain) return { [initialScope.domain]: true };
     return {};
   });
+  const navigate = useNavigate();
   const [draft, setDraft] = useState('');
   const [streamError, setStreamError] = useState<string | null>(null);
+  const modelSelection = useWebAskModelSelection({ isAuthenticated, userId });
 
   // Keep scope in sync when URL query changes (e.g. nav from Library with domain).
   useEffect(() => {
@@ -198,6 +207,7 @@ function PaidAskShell({
 
   const groundCount = countForScope(highlights, domains, scope);
   const ground = groundLabel(scope);
+  const aiSettingsHref = `/settings?${buildSettingsSearch('ai')}`;
 
   const selectLibrary = useCallback(() => {
     setScope({ scope: 'library', domain: null, section: null });
@@ -235,7 +245,7 @@ function PaidAskShell({
     <div className="ask-shell" data-od-id="ask">
       <div className="ask-projects" data-od-id="ask-projects">
         <div className="ask-projects-head">
-          <h1 data-od-id="ask-title">Ask</h1>
+          <h1 data-od-id="ask-title">Chat</h1>
         </div>
         <div className="ask-projects-body" role="tree" aria-label="Grounding">
           <div className="tree-row">
@@ -252,7 +262,6 @@ function PaidAskShell({
                 ◈
               </span>
               <span className="tree-label">Library</span>
-              <span className="tree-count">{highlights.length}</span>
             </button>
           </div>
 
@@ -299,7 +308,6 @@ function PaidAskShell({
                       {d.domain.slice(0, 1)}
                     </span>
                     <span className="tree-label">{d.domain}</span>
-                    <span className="tree-count">{d.count}</span>
                   </button>
                 </div>
                 <div
@@ -322,7 +330,6 @@ function PaidAskShell({
                           onClick={() => selectSection(d.domain, s.path)}
                         >
                           <span className="tree-label">{s.path}</span>
-                          <span className="tree-count">{s.count}</span>
                         </button>
                       );
                     })}
@@ -338,6 +345,7 @@ function PaidAskShell({
         <div className="ask-quiet" data-od-id="ask-empty" />
         <form className="ask-composer" data-od-id="ask-composer" onSubmit={handleSubmit}>
           <div className="ask-composer-inner">
+            {/* Scope pill kept — extra grounding affordance beyond OD silent composer */}
             <div
               className="scope-pill"
               data-od-id="ask-ground"
@@ -346,9 +354,22 @@ function PaidAskShell({
               <span>{ground}</span>
               <span className="n">{groundCount}</span>
             </div>
-            <p className="composer-note">
-              Model · configure keys in the Chrome extension
-            </p>
+            <div className="composer-note" data-od-id="ask-model-label">
+              <AskModelChip
+                options={modelSelection.options}
+                activeProvider={modelSelection.activeProvider}
+                activeLabel={modelSelection.activeLabel}
+                onSelect={(p) => {
+                  void modelSelection.selectProvider(p);
+                }}
+                onManage={() => {
+                  navigate(aiSettingsHref);
+                }}
+                emptyCta="Add provider"
+                manageLabel="Manage"
+                selectError={modelSelection.selectError}
+              />
+            </div>
             <div className="composer-shell">
               <textarea
                 id="ask-input"
@@ -364,11 +385,25 @@ function PaidAskShell({
               />
               <button
                 type="submit"
-                className="btn accent sm"
+                className="ask-send-btn"
                 data-od-id="ask-send"
+                aria-label="Send question"
                 disabled={!draft.trim()}
               >
-                Ask
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5" />
+                  <path d="m5 12 7-7 7 7" />
+                </svg>
               </button>
             </div>
             {streamError ? (
@@ -393,7 +428,7 @@ function PaidAskShell({
  * Never uses extension runtime messaging.
  */
 export function AskPage(): React.ReactElement {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, user } = useApp();
   const billing = useBillingContextOptional();
   const location = useLocation();
 
@@ -496,7 +531,7 @@ export function AskPage(): React.ReactElement {
     return (
       <div className="ask-shell" data-od-id="ask">
         <div className="state-box" data-od-id="error-state" style={{ gridColumn: '1 / -1' }}>
-          <h3>Ask is offline</h3>
+          <h3>Chat is offline</h3>
           <p>{lib.error || 'Try again in a moment.'}</p>
           <div className="actions">
             <button
@@ -519,6 +554,8 @@ export function AskPage(): React.ReactElement {
       highlights={lib.highlights}
       domains={lib.domains}
       initialScope={initialScope}
+      isAuthenticated={isAuthenticated}
+      userId={user?.id ?? null}
     />
   );
 }

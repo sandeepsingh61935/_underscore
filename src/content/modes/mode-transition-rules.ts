@@ -71,7 +71,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'pro_xai',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Account (Paid) enables Connect to AI and in-app chat. Requires sign-in.',
+      reason: 'Switching to Account (Paid) enables Integrations and in-app chat. Requires sign-in.',
       guard: async (ctx) => ctx.isAuthenticated,
     },
   },
@@ -97,7 +97,7 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       allowed: true,
       requiresConfirmation: false,
       reason:
-        'Switching to Account (Paid) adds Connect to AI — requires active Paid entitlement',
+        'Switching to Account (Paid) adds Integrations — requires active Paid entitlement',
       // Free users must upgrade via Polar; entitled users may re-enable Paid mode.
       guard: async (ctx) => Boolean(ctx.isPaidActive),
     },

@@ -1,5 +1,6 @@
 /**
- * Push/pop stack for Connect to AI subflow inside Settings.
+ * Push/pop stack for Integrations (MCP hosts) subflow inside Settings.
+ * Internal type names keep ConnectToAi* for stable imports; UI copy is Integrations.
  */
 
 import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
@@ -13,7 +14,7 @@ export type ConnectToAiScreen =
 export function connectToAiPageTitle(screen: ConnectToAiScreen): string {
   switch (screen.kind) {
     case 'hub':
-      return 'Connect to AI';
+      return 'Integrations';
     case 'picker':
       return 'Add an AI app';
     case 'setup':
@@ -33,10 +34,10 @@ export function connectToAiBackLabel(
     return '← Add an AI app';
   }
   if (screen.kind === 'setup' && prev.kind === 'hub') {
-    return '← Connect to AI';
+    return '← Integrations';
   }
   if (screen.kind === 'picker') {
-    return '← Connect to AI';
+    return '← Integrations';
   }
   return `← ${connectToAiPageTitle(prev)}`;
 }

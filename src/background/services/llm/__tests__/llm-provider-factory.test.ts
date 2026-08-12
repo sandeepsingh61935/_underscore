@@ -65,7 +65,7 @@ describe('resolveConfiguredProvider', () => {
 
     await expect(
       resolveConfiguredProvider(makeRegistry() as any, keyStore as any),
-    ).rejects.toThrow(/Configure AI providers/);
+    ).rejects.toThrow(/Models & providers/);
   });
 
   it('uses OpenRouter when a key is present', async () => {

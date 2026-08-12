@@ -1,6 +1,6 @@
 /**
- * External MCP hosts for Connect to AI (Option B picker).
- * Order is product-locked. Models / Ollama stay under Configure AI providers.
+ * External MCP hosts for Integrations (Option B picker).
+ * Order is product-locked. Models / Ollama stay under Models & providers.
  */
 
 export type McpAiAppId =

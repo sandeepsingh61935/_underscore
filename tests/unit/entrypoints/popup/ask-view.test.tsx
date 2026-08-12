@@ -24,6 +24,10 @@ vi.mock('@/features/ai/hooks/useActiveLLMProvider', () => ({
   useActiveLLMProvider: vi.fn(),
 }));
 
+vi.mock('@/features/ai/hooks/useAskModelSelection', () => ({
+  useAskModelSelection: vi.fn(),
+}));
+
 vi.mock('@/features/ai/hooks/usePageContext', () => ({
   usePageContext: vi.fn(),
 }));
@@ -34,6 +38,7 @@ vi.mock('@/features/ai/hooks/useScopeQuery', () => ({
 
 import { useApp } from '@/core/context/PopupAppProvider';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
+import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
 import { useScopeQuery } from '@/features/ai/hooks/useScopeQuery';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
@@ -104,6 +109,25 @@ function mockPaidHooks(opts?: {
     refresh: vi.fn(),
   });
 
+  vi.mocked(useAskModelSelection).mockReturnValue({
+    options: [
+      {
+        provider: 'openai',
+        modelId: 'gpt-4o-mini',
+        providerLabel: 'OpenAI',
+        modelLabel: 'gpt-4o-mini',
+        label: 'OpenAI · gpt-4o-mini',
+      },
+    ],
+    activeProvider: 'openai',
+    activeLabel: 'OpenAI · gpt-4o-mini',
+    selectProvider: vi.fn().mockResolvedValue(true),
+    selectError: null,
+    clearSelectError: vi.fn(),
+    refresh: vi.fn(),
+    ready: true,
+  });
+
   vi.mocked(usePageContext).mockReturnValue({
     fetch: vi.fn().mockResolvedValue({ text: '', cacheNote: null, errorNote: null }),
   });
@@ -162,13 +186,16 @@ describe('AskView lock matrix', () => {
     expect(onUpdatePayment).toHaveBeenCalledTimes(1);
   });
 
-  it('No model: Connect to AI', () => {
+  it('No model: Models & providers', () => {
     const onConnectAi = vi.fn();
     render(<AskView lockReason="no_model" onConnectAi={onConnectAi} />);
 
     expect(screen.getByTestId('ask-lock').getAttribute('data-lock')).toBe('no_model');
     expect(screen.getByText('No model selected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Connect to AI' }));
+    expect(
+      screen.getByText('Add a provider key under Settings → Models & providers.'),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Models & providers' }));
     expect(onConnectAi).toHaveBeenCalledTimes(1);
   });
 
@@ -189,6 +216,18 @@ describe('AskView lock matrix', () => {
     expect(screen.getByTestId('ask-suggestion-Key themes')).toBeTruthy();
     expect(screen.getByTestId('ask-ground').textContent).toMatch(/Scope: page · 5 highlights/);
     expect(screen.getByTestId('ask-composer-input')).toBeTruthy();
+    expect(screen.getByTestId('ask-model-chip')).toBeTruthy();
+    expect(screen.getByTestId('ask-model-chip-trigger').textContent).toMatch(/OpenAI/);
+  });
+
+  it('Paid model chip: Manage calls onConnectAi', () => {
+    mockPaidHooks({ highlightCount: 5 });
+    const onConnectAi = vi.fn();
+    render(<AskView lockReason={null} onConnectAi={onConnectAi} />);
+
+    fireEvent.click(screen.getByTestId('ask-model-chip-trigger'));
+    fireEvent.click(screen.getByTestId('ask-model-chip-manage'));
+    expect(onConnectAi).toHaveBeenCalledTimes(1);
   });
 
   it('Paid: switching scope updates ground footer label', () => {

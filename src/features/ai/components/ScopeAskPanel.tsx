@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 
-import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
+import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
 import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
 import { usePersistLlmArtifactOnDone } from '@/features/ai/hooks/usePersistLlmArtifactOnDone';
@@ -28,7 +28,8 @@ export function ScopeAskPanel({
   placeholder,
 }: ScopeAskPanelProps): React.ReactElement {
   const query = useScopeQuery();
-  const { provider } = useActiveLLMProvider();
+  const modelSelection = useAskModelSelection();
+  const provider = modelSelection.activeProvider;
   const artifacts = useLlmArtifacts(artifactScope);
   const { fetch: fetchPageContext } = usePageContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +41,8 @@ export function ScopeAskPanel({
   const usableHighlights = highlights.filter(h => h.text.trim().length > 0);
   const busy = query.isPreparing || query.status === 'streaming';
   const inputDisabled = disabled || busy;
-  const submitDisabled = inputDisabled || !question.trim() || usableHighlights.length === 0;
+  const submitDisabled =
+    inputDisabled || !question.trim() || usableHighlights.length === 0 || provider === null;
   const savedQueries = artifacts.getQueries();
   const answerText = query.chunks;
   const noModelConfigured = provider === null;
@@ -66,7 +68,7 @@ export function ScopeAskPanel({
     setContextNote(null);
     setAskError(null);
     const trimmed = question.trim();
-    if (!trimmed) return;
+    if (!trimmed || provider === null) return;
     setLastQuestion(trimmed);
     try {
       const result = await query.ask({
@@ -75,6 +77,7 @@ export function ScopeAskPanel({
         scopeKind,
         highlights: usableHighlights,
         fetchPageContext,
+        provider,
       });
       if (result?.errorNote) {
         setContextNote(`Page context unavailable: ${result.errorNote}`);
@@ -166,7 +169,7 @@ export function ScopeAskPanel({
           {usableHighlights.length === 0
             ? 'Wait for highlight text to load before asking.'
             : noModelConfigured
-              ? 'Set a model in Settings → Configure AI providers first.'
+              ? 'Set a model in Settings → Models & providers first.'
               : `Grounded to this ${scopeKind} only · ${usableHighlights.length} highlights`}
         </p>
       </form>

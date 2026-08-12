@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import { useActiveLLMProvider } from './useActiveLLMProvider';
 import { useLLMStream } from './useLLMStream';
 
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { PromptHighlight, ScopeKind } from '@/shared/llm/prompts';
 import { prepareHighlightExcerpts, type FetchPageContextFn } from '@/shared/llm/prepare-highlight-excerpts';
 import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
@@ -15,6 +15,11 @@ export interface ScopeAskParams {
   scopeKind: ScopeKind;
   highlights: PromptHighlight[];
   fetchPageContext: FetchPageContextFn;
+  /**
+   * Explicit in-app provider for this ask. Callers own selection
+   * (useAskModelSelection) so chip / gate / stream share one source.
+   */
+  provider?: ProviderName | null;
 }
 
 export interface ScopeAskResult {
@@ -28,7 +33,6 @@ export function useScopeQuery(): Omit<StreamAPI, 'start'> & {
   prepareError: string | null;
 } {
   const stream = useLLMStream();
-  const { provider } = useActiveLLMProvider();
   const [isPreparing, setIsPreparing] = useState(false);
   const [prepareError, setPrepareError] = useState<string | null>(null);
 
@@ -38,6 +42,7 @@ export function useScopeQuery(): Omit<StreamAPI, 'start'> & {
     scopeKind,
     highlights,
     fetchPageContext,
+    provider,
   }: ScopeAskParams): Promise<ScopeAskResult | undefined> => {
     const trimmed = question.trim();
     if (!trimmed) return undefined;
@@ -69,7 +74,7 @@ export function useScopeQuery(): Omit<StreamAPI, 'start'> & {
     } finally {
       setIsPreparing(false);
     }
-  }, [stream, provider]);
+  }, [stream]);
 
   return {
     ...stream,

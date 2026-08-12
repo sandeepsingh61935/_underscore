@@ -183,7 +183,10 @@ describe('AskPage', () => {
     expect(document.querySelector('[data-od-id="ask-proj-all"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ask-composer"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ask-send"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="ask-title"]')?.textContent?.trim()).toBe('Ask');
+    expect(document.querySelector('[data-od-id="ask-title"]')?.textContent?.trim()).toBe('Chat');
+    // Phase 4: model chip (empty without local keys)
+    expect(document.querySelector('[data-od-id="ask-model-chip"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="ask-model-label"]')).toBeTruthy();
   });
 
   it('paid submit shows honest error (no fabricated model text)', async () => {

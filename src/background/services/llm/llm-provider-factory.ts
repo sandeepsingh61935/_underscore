@@ -14,7 +14,7 @@ import {
 } from '@/shared/llm/in-app-providers';
 
 const NO_PROVIDER_MESSAGE =
-  'No model configured. Open Settings → Configure AI providers and add OpenAI, Anthropic, Gemini, OpenRouter, or Ollama.';
+  'No model configured. Open Settings → Models & providers and add OpenAI, Anthropic, Gemini, OpenRouter, or Ollama.';
 
 export function tryGetRegistered(registry: LLMRegistry, name: ProviderName): ILLMService | null {
   try {

@@ -45,7 +45,7 @@ export const MODE_BRANDING: Record<ModeType, ModeBranding> = {
     family: 'cloud',
     tagline: 'Synced + AI',
     description:
-      'Cloud sync plus Connect to AI and in-app chat. You bring your own model or agent — no token cost from _underscore.',
+      'Cloud sync plus Integrations and in-app chat. You bring your own model or agent — no token cost from _underscore.',
   },
 };
 

@@ -112,6 +112,16 @@ export default defineBackground({
           storageScope: scopedHighlightRepositoryForAi.getActiveScope(),
         };
       });
+      aiOrchestrator.configurePrefsSync({
+        getSupabase: () => {
+          try {
+            return container.resolve<SupabaseSDKClient>('_supabaseSDK');
+          } catch {
+            return null;
+          }
+        },
+        getUserId: async () => authManager.getAuthState().user?.id ?? null,
+      });
       aiOrchestrator.initialize();
       logger.info('[INIT] AiOrchestrator initialized');
 

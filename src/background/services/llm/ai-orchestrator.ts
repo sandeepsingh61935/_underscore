@@ -5,6 +5,7 @@ import type { BackgroundPageContentCache, PageContent } from './page-content-cac
 import type { LLMRegistry } from './llm-registry';
 import { handleStreamChat } from './stream-relay';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ILLMService, LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { PAGE_CONTENT_CACHED } from '@/shared/schemas/message-schemas';
@@ -34,6 +35,8 @@ interface StreamingPort {
  */
 export class AiOrchestrator {
   private resolveAiGateContext?: () => Promise<FeatureGateContext>;
+  private getSupabase?: () => SupabaseClient | null;
+  private getUserId?: () => Promise<string | null>;
 
   constructor(
     private readonly messageBus: IMessageBus,
@@ -47,6 +50,15 @@ export class AiOrchestrator {
     this.resolveAiGateContext = resolver;
   }
 
+  /** Optional account prefs sync (Phase 3). Wire after Supabase + auth are ready. */
+  configurePrefsSync(opts: {
+    getSupabase: () => SupabaseClient | null;
+    getUserId: () => Promise<string | null>;
+  }): void {
+    this.getSupabase = opts.getSupabase;
+    this.getUserId = opts.getUserId;
+  }
+
   initialize(): void {
     registerAiHandlers({
       bus: this.messageBus,
@@ -54,6 +66,8 @@ export class AiOrchestrator {
       keyStoreHolder: this.keyStoreHolder,
       pageContentCache: this.pageContentCache,
       resolveAiGateContext: this.resolveAiGateContext,
+      getSupabase: this.getSupabase,
+      getUserId: this.getUserId,
     });
     this.registerPageContentIngest();
     this.registerStreamPort();

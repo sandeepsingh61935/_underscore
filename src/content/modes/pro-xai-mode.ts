@@ -7,7 +7,7 @@
  * highlight create/read/update/delete/restore all delegate to ProMode's
  * IndexedDB + sync implementation unchanged. The only difference is the
  * `name` identity and the `ai` / `mcp` capability flags, which the UI/feature
- * layer uses to gate AI affordances and Connect to AI.
+ * layer uses to gate AI affordances and Integrations.
  *
  * @see docs/04-adrs (Mode Consolidation ADR) — "ai has no registered
  * highlight mode" gap; pro_xai closes it by extending ProMode directly.
