@@ -7,9 +7,14 @@ import { createClient } from '@supabase/supabase-js';
 
 import { rowToEntitlement } from '@/shared/billing/entitlement';
 import type { BillingEntitlementRow } from '@/shared/billing/types';
-import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
 import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
+import { parseLlmRequest } from './parse-llm-request';
+import {
+  llmProxyCorsHeaders,
+  resolveLlmProxyAllowedOrigins,
+} from './proxy-cors';
 import {
   LLM_PROXY_MAX_BODY_BYTES,
   LLM_PROXY_MAX_STREAM_MS,
@@ -21,17 +26,22 @@ import {
   releaseStream,
   type RateLimitState,
 } from './proxy-rate-limit';
+import { runProviderStream } from './run-provider-stream';
 import { encodeSseEvent } from './sse';
 
 export interface ProxyEnv {
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
-  /** Fallback names used by some Pages setups */
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
+  LLM_PROXY_ALLOWED_ORIGINS?: string;
+  BILLING_ALLOWED_ORIGINS?: string;
 }
 
-/** Module-level rate map (per isolate). */
+/**
+ * Soft per-isolate limits (not global across CF isolates). Product must not
+ * treat these as hard multi-region guarantees until KV/DO-backed counters.
+ */
 const rateByUser = new Map<string, RateLimitState>();
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -64,6 +74,18 @@ function apiKeyFromRequest(req: Request): string {
     || req.headers.get('X-Llm-Api-Key')
     || ''
   ).trim();
+}
+
+function allowedOrigins(env: ProxyEnv): string[] {
+  return resolveLlmProxyAllowedOrigins(env);
+}
+
+function withCors(req: Request, env: ProxyEnv, res: Response): Response {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(llmProxyCorsHeaders(req, allowedOrigins(env)))) {
+    headers.set(k, v);
+  }
+  return new Response(res.body, { status: res.status, headers });
 }
 
 async function requirePaidUser(
@@ -136,16 +158,6 @@ async function readJsonBody(req: Request): Promise<
   }
 }
 
-function isLlmRequest(value: unknown): value is LLMRequest {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as LLMRequest;
-  return (
-    typeof v.systemPrompt === 'string'
-    && Array.isArray(v.messages)
-    && typeof v.maxTokens === 'number'
-  );
-}
-
 /**
  * POST /api/llm/stream
  * Headers: Authorization: Bearer <jwt>, X-Llm-Api-Key: <user key>
@@ -156,36 +168,40 @@ export async function handleLlmStreamProxy(
   env: ProxyEnv,
 ): Promise<Response> {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders(req) });
+    return new Response(null, {
+      status: 204,
+      headers: llmProxyCorsHeaders(req, allowedOrigins(env)),
+    });
   }
   if (req.method !== 'POST') {
-    return jsonResponse(405, { error: 'Method not allowed' });
+    return withCors(req, env, jsonResponse(405, { error: 'Method not allowed' }));
   }
 
   const auth = await requirePaidUser(req, env);
   if (auth instanceof Response) {
-    return withCors(req, auth);
+    return withCors(req, env, auth);
   }
 
   const parsed = await readJsonBody(req);
-  if (!parsed.ok) return withCors(req, parsed.response);
+  if (!parsed.ok) return withCors(req, env, parsed.response);
 
   const provider = parseProvider(parsed.body['provider']);
   if (!provider) {
     return withCors(
       req,
+      env,
       jsonResponse(400, { error: 'Invalid or non-cloud provider (use Ollama direct on client)' }),
     );
   }
 
   const apiKey = apiKeyFromRequest(req);
   if (!apiKey) {
-    return withCors(req, jsonResponse(400, { error: 'Missing X-Llm-Api-Key' }));
+    return withCors(req, env, jsonResponse(400, { error: 'Missing X-Llm-Api-Key' }));
   }
 
-  const request = parsed.body['request'];
-  if (!isLlmRequest(request)) {
-    return withCors(req, jsonResponse(400, { error: 'Invalid request payload' }));
+  const request = parseLlmRequest(parsed.body['request']);
+  if (!request) {
+    return withCors(req, env, jsonResponse(400, { error: 'Invalid request payload' }));
   }
 
   const model =
@@ -199,7 +215,7 @@ export async function handleLlmStreamProxy(
       decision.reason === 'concurrent'
         ? 'Another stream is already in progress'
         : 'Rate limit exceeded; try again later';
-    return withCors(req, jsonResponse(429, { error: msg }));
+    return withCors(req, env, jsonResponse(429, { error: msg }));
   }
 
   let providerInstance;
@@ -207,7 +223,7 @@ export async function handleLlmStreamProxy(
     providerInstance = buildProviderFromConfig({ provider, apiKey, model });
   } catch (err) {
     rateByUser.set(auth.userId, releaseStream(rateByUser.get(auth.userId) ?? next));
-    return withCors(req, jsonResponse(400, { error: (err as Error).message }));
+    return withCors(req, env, jsonResponse(400, { error: (err as Error).message }));
   }
 
   const encoder = new TextEncoder();
@@ -225,23 +241,7 @@ export async function handleLlmStreamProxy(
       };
 
       try {
-        const result = await providerInstance.streamChat(
-          request,
-          (chunk) => {
-            if (chunk.delta) push({ type: 'CHUNK', payload: { delta: chunk.delta } });
-          },
-          abort.signal,
-        );
-        push({ type: 'DONE', payload: result });
-      } catch (err) {
-        if (!abort.signal.aborted) {
-          push({
-            type: 'ERROR',
-            payload: {
-              message: `[${provider}] ${(err as Error).message || 'stream failed'}`,
-            },
-          });
-        }
+        await runProviderStream(providerInstance, request, push, abort.signal);
       } finally {
         clearTimeout(timeout);
         const cur = rateByUser.get(auth.userId) ?? emptyRateLimitState();
@@ -263,6 +263,7 @@ export async function handleLlmStreamProxy(
 
   return withCors(
     req,
+    env,
     new Response(stream, {
       status: 200,
       headers: {
@@ -284,28 +285,31 @@ export async function handleLlmHealthProxy(
   env: ProxyEnv,
 ): Promise<Response> {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders(req) });
+    return new Response(null, {
+      status: 204,
+      headers: llmProxyCorsHeaders(req, allowedOrigins(env)),
+    });
   }
   if (req.method !== 'POST') {
-    return jsonResponse(405, { error: 'Method not allowed' });
+    return withCors(req, env, jsonResponse(405, { error: 'Method not allowed' }));
   }
 
   const auth = await requirePaidUser(req, env);
   if (auth instanceof Response) {
-    return withCors(req, auth);
+    return withCors(req, env, auth);
   }
 
   const parsed = await readJsonBody(req);
-  if (!parsed.ok) return withCors(req, parsed.response);
+  if (!parsed.ok) return withCors(req, env, parsed.response);
 
   const provider = parseProvider(parsed.body['provider']);
   if (!provider) {
-    return withCors(req, jsonResponse(400, { error: 'Invalid cloud provider' }));
+    return withCors(req, env, jsonResponse(400, { error: 'Invalid cloud provider' }));
   }
 
   const apiKey = apiKeyFromRequest(req);
   if (!apiKey) {
-    return withCors(req, jsonResponse(400, { error: 'Missing X-Llm-Api-Key' }));
+    return withCors(req, env, jsonResponse(400, { error: 'Missing X-Llm-Api-Key' }));
   }
 
   const model =
@@ -314,10 +318,11 @@ export async function handleLlmHealthProxy(
   try {
     const instance = buildProviderFromConfig({ provider, apiKey, model });
     const result = await instance.healthCheck();
-    return withCors(req, jsonResponse(result.ok ? 200 : 502, result));
+    return withCors(req, env, jsonResponse(result.ok ? 200 : 502, result));
   } catch (err) {
     return withCors(
       req,
+      env,
       jsonResponse(400, {
         ok: false,
         model: model ?? 'unknown',
@@ -325,26 +330,6 @@ export async function handleLlmHealthProxy(
       }),
     );
   }
-}
-
-function corsHeaders(req: Request): HeadersInit {
-  const origin = req.headers.get('Origin') || '*';
-  return {
-    'access-control-allow-origin': origin,
-    'access-control-allow-headers':
-      'authorization, content-type, x-llm-api-key',
-    'access-control-allow-methods': 'POST, OPTIONS',
-    vary: 'Origin',
-  };
-}
-
-function withCors(req: Request, res: Response): Response {
-  const headers = new Headers(res.headers);
-  const extra = corsHeaders(req);
-  for (const [k, v] of Object.entries(extra)) {
-    headers.set(k, v as string);
-  }
-  return new Response(res.body, { status: res.status, headers });
 }
 
 /** Test helper: reset in-memory rate limits. */

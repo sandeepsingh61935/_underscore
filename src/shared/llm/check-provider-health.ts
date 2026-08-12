@@ -1,19 +1,21 @@
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
+import { resolveCloudHealthTransport } from '@/shared/llm/health-transport';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
-import {
-  LLM_PROXY_HEALTH_PATH,
-  usesWebProxy,
-} from '@/shared/llm/runtime/proxy-policy';
+import { LLM_PROXY_HEALTH_PATH } from '@/shared/llm/runtime/proxy-policy';
 
 interface CheckOptions {
   apiKey?: string;
   apiBase?: string;
   model?: string;
   /**
-   * When set (web cloud path), health goes through the same Pages Function as
-   * stream so "Connect works ⇒ Chat works" (ADR-027). Ollama ignores this.
+   * When set, cloud health goes through the Pages Function (web + ADR-027).
    */
   accessToken?: string | null;
+  /**
+   * Extension may set true to call cloud providers via host_permissions.
+   * Web must omit/false so missing token returns a clear error.
+   */
+  allowDirectCloud?: boolean;
   /** Override proxy path base (tests). */
   proxyBaseUrl?: string;
   fetchImpl?: typeof fetch;
@@ -21,7 +23,6 @@ interface CheckOptions {
 
 /**
  * Run a provider health check in a browser context (popup / page).
- * Cloud on web with accessToken → proxy; Ollama and extension direct.
  */
 export async function checkProviderHealthInBrowser(
   provider: ProviderName,
@@ -30,8 +31,21 @@ export async function checkProviderHealthInBrowser(
   const model = resolveProviderModel(provider, options.model);
   const fetchFn = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
 
-  if (usesWebProxy(provider) && options.accessToken) {
+  const transport = resolveCloudHealthTransport({
+    provider,
+    accessToken: options.accessToken,
+    allowDirectCloud: options.allowDirectCloud,
+  });
+
+  if (transport === 'proxy') {
     return checkCloudViaProxy(provider, model, options, fetchFn);
+  }
+  if (transport === 'unavailable') {
+    return {
+      ok: false,
+      model,
+      error: 'Sign in required to verify cloud providers on web',
+    };
   }
 
   switch (provider) {
@@ -177,7 +191,6 @@ async function checkCloudViaProxy(
   }
 }
 
-/** Ollama has no auth failure mode — the real signal is whether the selected model is installed. */
 async function checkOllamaModelInstalled(
   tagsUrl: string,
   model: string,

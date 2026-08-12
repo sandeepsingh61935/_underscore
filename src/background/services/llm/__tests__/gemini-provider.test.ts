@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { GeminiProvider } from '../gemini-provider';
+import { GeminiProvider } from '@/shared/llm/providers/gemini-provider';
 
 const GEMINI_SSE = [
   'data: {"candidates":[{"content":{"parts":[{"text":"Hello"}]}}],"usageMetadata":{"promptTokenCount":7,"candidatesTokenCount":0}}\n\n',

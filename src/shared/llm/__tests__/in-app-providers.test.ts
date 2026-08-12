@@ -12,6 +12,7 @@ describe('in-app providers', () => {
       'openai',
       'anthropic',
       'gemini',
+      'xai',
       'openrouter',
       'ollama',
     ]);

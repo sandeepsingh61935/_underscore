@@ -1,23 +1,17 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { useLlmRuntime } from '@/features/ai/runtime/LlmRuntimeContext';
-import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
-import type { PromptHighlight, PromptTemplateName } from '@/shared/llm/prompts';
+import type { LlmStreamArgs } from '@/shared/llm/runtime';
 
 export type StreamStatus = 'idle' | 'streaming' | 'done' | 'error';
 
-interface StartArgs {
-  template: PromptTemplateName;
-  highlights: PromptHighlight[];
-  request: LLMRequest;
-  provider?: ProviderName;
-}
+export type StreamStartArgs = LlmStreamArgs;
 
 export function useLLMStream(): {
   chunks: string;
   status: StreamStatus;
   error: string | null;
-  start: (args: StartArgs) => void;
+  start: (args: StreamStartArgs) => void;
   abort: () => void;
 } {
   const runtime = useLlmRuntime();
@@ -27,7 +21,7 @@ export function useLLMStream(): {
   const [error, setError] = useState<string | null>(null);
 
   const start = useCallback(
-    (args: StartArgs) => {
+    (args: StreamStartArgs) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;

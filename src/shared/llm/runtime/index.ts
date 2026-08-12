@@ -2,6 +2,7 @@ export type { ILlmRuntime, LlmStreamArgs } from './i-llm-runtime';
 export type { LlmStreamEvent } from './stream-protocol';
 export { isLlmStreamEvent } from './stream-protocol';
 export { encodeSseEvent, parseSseBuffer } from './sse';
+export { parseLlmRequest } from './parse-llm-request';
 export {
   CLOUD_LLM_PROVIDERS,
   isCloudLlmProvider,
@@ -21,12 +22,16 @@ export {
   type RateLimitState,
   type RateLimitDecision,
 } from './proxy-rate-limit';
+export {
+  DEFAULT_LLM_PROXY_ORIGINS,
+  resolveLlmProxyAllowedOrigins,
+  isAllowedLlmProxyOrigin,
+  llmProxyCorsHeaders,
+} from './proxy-cors';
 export { createExtensionLlmRuntime } from './extension-llm-runtime';
 export {
   createBrowserLlmRuntime,
   type BrowserLlmRuntimeOptions,
   type BrowserLlmCredentials,
-  type LlmProxyStreamBody,
-  type LlmProxyHealthBody,
 } from './browser-llm-runtime';
 export { runProviderStream } from './run-provider-stream';

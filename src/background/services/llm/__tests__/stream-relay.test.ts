@@ -61,7 +61,7 @@ describe('handleStreamChat', () => {
     const req: LLMRequest = { systemPrompt: 's', messages: [{ role: 'user', content: 'm' }], maxTokens: 10 };
     const promise = handleStreamChat(port as any, provider, req);
     triggerDisconnect();
-    await expect(promise).rejects.toThrow();
+    await promise;
     expect(aborted).toBe(true);
   });
 });

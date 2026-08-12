@@ -39,8 +39,6 @@ describe('useLLMStream', () => {
     const { result } = renderHook(() => useLLMStream(), { wrapper });
     act(() => {
       result.current.start({
-        template: 'explain',
-        highlights: [],
         request: {
           systemPrompt: 's',
           messages: [{ role: 'user', content: 'm' }],
@@ -67,8 +65,6 @@ describe('useLLMStream', () => {
     const { result } = renderHook(() => useLLMStream(), { wrapper });
     act(() => {
       result.current.start({
-        template: 'explain',
-        highlights: [],
         request: {
           systemPrompt: 's',
           messages: [{ role: 'user', content: 'm' }],

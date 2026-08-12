@@ -3,13 +3,14 @@
  * Ollama → direct fetch; cloud → same-origin Pages Function SSE proxy.
  */
 
-import type { LLMRequest, LLMResult, ProviderName } from '@/shared/interfaces/i-llm-service';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import type { ILlmRuntime, LlmStreamArgs } from './i-llm-runtime';
 import {
   LLM_PROXY_STREAM_PATH,
   usesWebProxy,
 } from './proxy-policy';
+import { runProviderStream } from './run-provider-stream';
 import { parseSseBuffer } from './sse';
 import type { LlmStreamEvent } from './stream-protocol';
 
@@ -117,14 +118,7 @@ export function createBrowserLlmRuntime(options: BrowserLlmRuntimeOptions): ILlm
             apiBase: creds?.apiBase,
             model: creds?.model,
           });
-          const result = await service.streamChat(
-            args.request,
-            (chunk) => {
-              if (chunk.delta) onEvent({ type: 'CHUNK', payload: { delta: chunk.delta } });
-            },
-            signal,
-          );
-          onEvent({ type: 'DONE', payload: result });
+          await runProviderStream(service, args.request, onEvent, signal);
           return;
         }
 
@@ -174,34 +168,5 @@ export function createBrowserLlmRuntime(options: BrowserLlmRuntimeOptions): ILlm
         });
       }
     },
-
-    async chat(args, signal): Promise<LLMResult> {
-      let text = '';
-      let result: LLMResult | null = null;
-      const controller = signal ?? new AbortController().signal;
-      await this.streamChat(
-        args,
-        (ev) => {
-          if (ev.type === 'CHUNK') text += ev.payload.delta;
-          if (ev.type === 'DONE') result = ev.payload;
-          if (ev.type === 'ERROR') throw new Error(ev.payload.message);
-        },
-        controller instanceof AbortSignal ? controller : new AbortController().signal,
-      );
-      if (result) return result;
-      return { text, inputTokens: 0, outputTokens: 0, durationMs: 0 };
-    },
   };
-}
-
-/** Request body shape for /api/llm/stream and /api/llm/health */
-export interface LlmProxyStreamBody {
-  provider: ProviderName;
-  model?: string;
-  request: LLMRequest;
-}
-
-export interface LlmProxyHealthBody {
-  provider: ProviderName;
-  model?: string;
 }

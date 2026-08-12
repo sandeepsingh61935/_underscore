@@ -3,7 +3,8 @@
  * On port disconnect, aborts the in-flight fetch via AbortController (ADR-021 §6).
  */
 
-import type { ILLMService, LLMRequest, LLMResult } from '@/shared/interfaces/i-llm-service';
+import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
+import { runProviderStream } from '@/shared/llm/runtime/run-provider-stream';
 
 interface StreamingPort {
   postMessage: (msg: { type: string; payload?: unknown }) => void;
@@ -23,24 +24,17 @@ export async function handleStreamChat(
     controller.abort();
   });
 
-  try {
-    const result = await provider.streamChat(
-      request,
-      chunk => {
-        if (disconnected) return;
-        try { port.postMessage({ type: 'CHUNK', payload: chunk }); }
-        catch { controller.abort(); }
-      },
-      controller.signal,
-    );
-    if (!disconnected) port.postMessage({ type: 'DONE', payload: result satisfies LLMResult });
-  } catch (err) {
-    if (!disconnected) {
-      const base = (err as Error).message || 'unknown error';
-      // Tag the in-app backend so 401s are not mistaken for agent-host (Cursor) setup.
-      const message = `[${provider.providerName}] ${base}`;
-      port.postMessage({ type: 'ERROR', payload: { message } });
-    }
-    throw err;
-  }
+  await runProviderStream(
+    provider,
+    request,
+    (event) => {
+      if (disconnected) return;
+      try {
+        port.postMessage(event);
+      } catch {
+        controller.abort();
+      }
+    },
+    controller.signal,
+  );
 }

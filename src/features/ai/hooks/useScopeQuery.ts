@@ -57,8 +57,6 @@ export function useScopeQuery(): Omit<StreamAPI, 'start'> & {
       );
 
       stream.start({
-        template: 'askScope',
-        highlights,
         request: buildScopeQueryRequest({
           scope: { scopeLabel, scopeKind, highlightCount: highlights.length },
           excerpts,
@@ -66,6 +64,7 @@ export function useScopeQuery(): Omit<StreamAPI, 'start'> & {
         }),
         provider: provider ?? undefined,
       });
+
 
       return { cacheNote, errorNote };
     } catch (err) {

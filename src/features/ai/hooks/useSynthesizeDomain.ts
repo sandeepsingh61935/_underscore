@@ -94,8 +94,6 @@ export function useSynthesizeDomain(): Omit<StreamAPI, 'start'> & {
 
       setPhase('streaming');
       stream.start({
-        template: 'synthesizeDomain',
-        highlights: ctx.highlights,
         request: buildReduceDomainRequest(
           domain,
           toSectionDigests(digests),
@@ -103,6 +101,7 @@ export function useSynthesizeDomain(): Omit<StreamAPI, 'start'> & {
         ),
         provider: activeProvider,
       });
+
     } catch (err) {
       setPhase('error');
       stream.abort();

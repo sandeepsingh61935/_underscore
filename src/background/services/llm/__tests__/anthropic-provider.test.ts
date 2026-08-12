@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { AnthropicProvider } from '../anthropic-provider';
+import { AnthropicProvider } from '@/shared/llm/providers/anthropic-provider';
 
 const ANTHROPIC_SSE_CHUNK = [
   'event: message_start\ndata: {"type":"message_start","message":{"id":"m1","usage":{"input_tokens":12,"output_tokens":0}}}\n\n',

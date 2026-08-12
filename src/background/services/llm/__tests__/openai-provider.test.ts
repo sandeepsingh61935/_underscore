@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { OpenAIProvider } from '../openai-provider';
+import { OpenAIProvider } from '@/shared/llm/providers/openai-provider';
 
 const OPENAI_SSE = [
   'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n',

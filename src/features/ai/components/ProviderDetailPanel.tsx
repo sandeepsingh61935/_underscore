@@ -157,6 +157,7 @@ export function ProviderDetailPanel({
 
   const canShowModelPicker = provider === 'openrouter'
     || provider === 'ollama'
+    || provider === 'xai'
     || connectionVerified;
 
   const isCatalogModelSelectable = (model: ProviderModelOption): boolean => {
@@ -244,8 +245,11 @@ export function ProviderDetailPanel({
     const model = resolveProviderModel(provider, resolvedModelId);
 
     try {
+      // Extension may call cloud APIs directly (host_permissions); not the web proxy path.
+      const direct = { allowDirectCloud: true as const };
+
       if (provider === 'ollama') {
-        const result = await checkProviderHealthInBrowser(provider, { apiBase, model });
+        const result = await checkProviderHealthInBrowser(provider, { apiBase, model, ...direct });
         setVerified(result.ok);
         setConnectMessage(result.ok ? null : result.error ?? 'Connection failed');
         if (result.ok) void catalogQuery.refresh();
@@ -259,7 +263,7 @@ export function ProviderDetailPanel({
       }
 
       const health = trimmedKey
-        ? await checkProviderHealthInBrowser(provider, { apiKey: trimmedKey, model })
+        ? await checkProviderHealthInBrowser(provider, { apiKey: trimmedKey, model, ...direct })
         : await (async (): Promise<{ ok: boolean; model?: string; error?: string }> => {
             const ipc = await runIpcHealthCheck(provider, { model });
             if (ipc.success && ipc.data.ok) return { ok: true, model: ipc.data.model };

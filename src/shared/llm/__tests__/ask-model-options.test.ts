@@ -9,6 +9,7 @@ const META = {
   openai: { label: 'OpenAI' },
   anthropic: { label: 'Anthropic' },
   gemini: { label: 'Google' },
+  xai: { label: 'xAI' },
   openrouter: { label: 'OpenRouter' },
   ollama: { label: 'Ollama' },
 } as const;

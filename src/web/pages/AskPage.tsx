@@ -13,7 +13,6 @@ import { useLLMStream } from '@/features/ai/hooks/useLLMStream';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
 import type { ScopeKind } from '@/shared/llm/prompts';
-import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
@@ -291,32 +290,17 @@ function PaidAskShell({
       }
 
       try {
-        const { excerpts, errorNote } = await prepareHighlightExcerpts(
-          promptHighlights,
-          async () => ({
-            success: false,
-            error: 'Page cache unavailable on web; using highlight quotes only.',
-          }),
-        );
-        const usedExcerpts =
-          excerpts.length > 0
-            ? excerpts
-            : buildFallbackExcerpts(promptHighlights).excerpts;
-
-        if (errorNote) {
-          /* expected on web — still stream with quote fallbacks */
-        }
+        // Web has no extension page-context cache — ground on quote excerpts only.
+        const { excerpts } = buildFallbackExcerpts(promptHighlights);
 
         stream.start({
-          template: 'askScope',
-          highlights: promptHighlights,
           request: buildScopeQueryRequest({
             scope: {
               scopeLabel: groundLabel(scope),
               scopeKind: scopeKindFor(scope.scope),
               highlightCount: promptHighlights.length,
             },
-            excerpts: usedExcerpts,
+            excerpts,
             question: q,
           }),
           provider: modelSelection.activeProvider,

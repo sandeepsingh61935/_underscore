@@ -21,11 +21,10 @@ export function useGenerateSummary(): Omit<StreamAPI, 'start'> & {
   const start = useCallback((ctx: PromptContext, excerpts: HighlightExcerpt[]) => {
     setPhase('streaming');
     stream.start({
-      template: 'summarizePage',
-      highlights: ctx.highlights,
       request: buildExcerptSummaryRequest(ctx, excerpts),
       provider: provider ?? undefined,
     });
+
   }, [stream, provider]);
 
   const derivedPhase: SummarizePhase = stream.status === 'done'

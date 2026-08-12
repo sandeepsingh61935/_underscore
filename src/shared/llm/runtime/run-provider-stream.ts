@@ -1,5 +1,5 @@
 /**
- * Shared helper: stream ILLMService → LlmStreamEvent callbacks (ADR-027).
+ * Canonical ILLMService → LlmStreamEvent bridge (ADR-027 review cleanup).
  */
 
 import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
@@ -19,7 +19,9 @@ export async function runProviderStream(
       },
       signal,
     );
-    onEvent({ type: 'DONE', payload: result });
+    if (!signal.aborted) {
+      onEvent({ type: 'DONE', payload: result });
+    }
   } catch (err) {
     if (signal.aborted) return;
     const base = (err as Error).message || 'unknown error';

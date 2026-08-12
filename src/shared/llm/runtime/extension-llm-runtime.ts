@@ -2,9 +2,7 @@
  * Extension adapter: chrome.runtime Port → background AiOrchestrator (ADR-027).
  */
 
-import type { LLMResult } from '@/shared/interfaces/i-llm-service';
-import { sendLlmChat } from '@/shared/llm/llm-ipc-chat';
-import type { ILlmRuntime, LlmStreamArgs } from './i-llm-runtime';
+import type { ILlmRuntime } from './i-llm-runtime';
 import type { LlmStreamEvent } from './stream-protocol';
 import { isLlmStreamEvent } from './stream-protocol';
 
@@ -80,15 +78,6 @@ export function createExtensionLlmRuntime(): ILlmRuntime {
           },
         });
       });
-    },
-
-    async chat(args: LlmStreamArgs): Promise<LLMResult> {
-      const result = await sendLlmChat({
-        request: args.request,
-        ...(args.provider ? { provider: args.provider } : {}),
-      });
-      if (!result.success) throw new Error(result.error);
-      return result.data;
     },
   };
 }

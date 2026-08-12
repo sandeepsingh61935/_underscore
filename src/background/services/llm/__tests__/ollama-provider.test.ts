@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { OllamaProvider } from '../ollama-provider';
+import { OllamaProvider } from '@/shared/llm/providers/ollama-provider';
 
 const OLLAMA_NDJSON = [
   '{"model":"llama3.1","created_at":"2026-06-24T00:00:00Z","message":{"role":"assistant","content":"Hello"},"done":false}\n',
