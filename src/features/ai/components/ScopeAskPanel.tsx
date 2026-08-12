@@ -1,9 +1,7 @@
 import React, { useRef, useState } from 'react';
 
 import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
-import { useLlmArtifacts } from '@/features/ai/hooks/useLlmArtifacts';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
-import { usePersistLlmArtifactOnDone } from '@/features/ai/hooks/usePersistLlmArtifactOnDone';
 import { useScopeQuery } from '@/features/ai/hooks/useScopeQuery';
 import type { PromptHighlight, ScopeKind } from '@/shared/llm/prompts';
 import type { LlmArtifactScope } from '@/shared/schemas/llm-artifact-schema';
@@ -11,6 +9,7 @@ import type { LlmArtifactScope } from '@/shared/schemas/llm-artifact-schema';
 export interface ScopeAskPanelProps {
   scopeLabel: string;
   scopeKind: ScopeKind;
+  /** Kept for call-site compat; Ask no longer persists scope_query. */
   artifactScope: LlmArtifactScope;
   highlights: PromptHighlight[];
   highlightCount: number;
@@ -18,23 +17,22 @@ export interface ScopeAskPanelProps {
   placeholder?: string;
 }
 
+/** Extension scope ask composer (ephemeral stream; no scope_query writes). */
 export function ScopeAskPanel({
   scopeLabel,
   scopeKind,
-  artifactScope,
+  artifactScope: _artifactScope,
   highlights,
-  highlightCount,
+  highlightCount: _highlightCount,
   disabled = false,
   placeholder,
 }: ScopeAskPanelProps): React.ReactElement {
   const query = useScopeQuery();
   const modelSelection = useAskModelSelection();
   const provider = modelSelection.activeProvider;
-  const artifacts = useLlmArtifacts(artifactScope);
   const { fetch: fetchPageContext } = usePageContext();
   const inputRef = useRef<HTMLInputElement>(null);
   const [question, setQuestion] = useState('');
-  const [lastQuestion, setLastQuestion] = useState('');
   const [contextNote, setContextNote] = useState<string | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
 
@@ -43,25 +41,8 @@ export function ScopeAskPanel({
   const inputDisabled = disabled || busy;
   const submitDisabled =
     inputDisabled || !question.trim() || usableHighlights.length === 0 || provider === null;
-  const savedQueries = artifacts.getQueries();
   const answerText = query.chunks;
   const noModelConfigured = provider === null;
-
-  usePersistLlmArtifactOnDone({
-    status: query.status,
-    content: query.chunks,
-    input: query.status === 'done' && query.chunks.trim() && lastQuestion
-      ? {
-          kind: 'scope_query',
-          scope: artifactScope,
-          content: query.chunks,
-          question: lastQuestion,
-          highlightCountAtGeneration: highlightCount,
-          provider: provider ?? undefined,
-        }
-      : null,
-    save: artifacts.save,
-  });
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -69,7 +50,6 @@ export function ScopeAskPanel({
     setAskError(null);
     const trimmed = question.trim();
     if (!trimmed || provider === null) return;
-    setLastQuestion(trimmed);
     try {
       const result = await query.ask({
         question: trimmed,
@@ -105,21 +85,6 @@ export function ScopeAskPanel({
         pointerEvents: 'auto',
       }}
     >
-      {savedQueries.length > 0 && (
-        <div style={{ marginBottom: 8, maxHeight: 120, overflowY: 'auto' }}>
-          {savedQueries.map((qa) => (
-            <div key={qa.id} style={{ marginBottom: 8, fontSize: 'var(--step--1)', color: 'var(--ink)' }}>
-              {qa.question && (
-                <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginBottom: 2 }}>
-                  Q: {qa.question}
-                </div>
-              )}
-              <div style={{ whiteSpace: 'pre-wrap' }}>{qa.content}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <form onSubmit={(e) => { void handleSubmit(e); }} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', gap: 6 }}>
           <input

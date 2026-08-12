@@ -1,10 +1,10 @@
 /**
  * @file AskPage.tsx
  * @description Product Ask — OD viewAsk parity: lock when !caps.ai;
- * paid shell with grounding tree + composer. Streams via ILlmRuntime (ADR-027).
+ * paid shell with threads + grounding + composer (ADR-027 stream, ADR-028 history).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
@@ -12,8 +12,12 @@ import { AskModelChip } from '@/features/ai/components/AskModelChip';
 import { useLLMStream } from '@/features/ai/hooks/useLLMStream';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
-import type { ScopeKind } from '@/shared/llm/prompts';
-import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
+import {
+  assembleChatRequest,
+  scopeKindForPrompt,
+  scopeLabel as chatScopeLabel,
+  type ChatScope,
+} from '@/shared/chat';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
@@ -24,6 +28,7 @@ import {
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
 import { useWebAskModelSelection } from '@/web/hooks/useWebAskModelSelection';
+import { useWebChat } from '@/web/hooks/useWebChat';
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
@@ -34,6 +39,26 @@ type ScopeState = {
   domain: string | null;
   section: string | null;
 };
+
+function toChatScope(state: ScopeState): ChatScope {
+  if (state.scope === 'section' && state.domain && state.section) {
+    return { kind: 'section', domain: state.domain, sectionKey: state.section };
+  }
+  if (state.scope === 'domain' && state.domain) {
+    return { kind: 'domain', domain: state.domain };
+  }
+  return { kind: 'library' };
+}
+
+function scopeStateFromChat(scope: ChatScope): ScopeState {
+  if (scope.kind === 'section') {
+    return { scope: 'section', domain: scope.domain, section: scope.sectionKey };
+  }
+  if (scope.kind === 'domain') {
+    return { scope: 'domain', domain: scope.domain, section: null };
+  }
+  return { scope: 'library', domain: null, section: null };
+}
 
 function shortPath(p: string): string {
   const parts = String(p).split('/').filter(Boolean);
@@ -106,10 +131,6 @@ function toPromptHighlights(list: WebHighlight[]) {
       url: `https://${h.domain}${h.path.startsWith('/') ? h.path : `/${h.path}`}`,
       title: h.path || h.domain,
     }));
-}
-
-function scopeKindFor(scope: AskScope): ScopeKind {
-  return scope === 'section' ? 'section' : 'domain';
 }
 
 function LockIcon(): React.ReactElement {
@@ -225,43 +246,191 @@ function PaidAskShell({
   });
   const navigate = useNavigate();
   const [draft, setDraft] = useState('');
-  const [lastQuestion, setLastQuestion] = useState('');
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const modelSelection = useWebAskModelSelection({ isAuthenticated, userId });
   const stream = useLLMStream();
+  const chat = useWebChat({
+    userId,
+    enabled: isAuthenticated && Boolean(userId),
+  });
+  const inflightAssistantId = useRef<string | null>(null);
+  const turnSubmitting = useRef(false);
+  const [turnBusy, setTurnBusy] = useState(false);
+  const prevStreamStatus = useRef(stream.status);
+  const streamRef = useRef(stream);
+  const chatRef = useRef(chat);
+  streamRef.current = stream;
+  chatRef.current = chat;
 
-  // Keep scope in sync when URL query changes (e.g. nav from Library with domain).
+  // Keep composer scope in sync when URL query changes (new chat only).
   useEffect(() => {
+    if (chat.activeThreadId) return;
     setScope(initialScope);
     if (initialScope.domain) {
       setExpanded((prev) => ({ ...prev, [initialScope.domain!]: true }));
     }
-  }, [initialScope.scope, initialScope.domain, initialScope.section]);
+  }, [chat.activeThreadId, initialScope.scope, initialScope.domain, initialScope.section]);
+
+  // When opening a thread, lock composer scope to the thread.
+  const activeThread = useMemo(
+    () => chat.threads.find((t) => t.id === chat.activeThreadId) ?? null,
+    [chat.activeThreadId, chat.threads],
+  );
+
+  useEffect(() => {
+    if (!activeThread) return;
+    const next = scopeStateFromChat(activeThread.scope);
+    setScope(next);
+    if (next.domain) {
+      setExpanded((prev) => ({ ...prev, [next.domain!]: true }));
+    }
+  }, [activeThread]);
+
+  const clearTurnBusy = useCallback(() => {
+    turnSubmitting.current = false;
+    setTurnBusy(false);
+  }, []);
+
+  // Stream → finalize assistant row (ADR-028 write path).
+  useEffect(() => {
+    const prev = prevStreamStatus.current;
+    prevStreamStatus.current = stream.status;
+    const assistantId = inflightAssistantId.current;
+    if (!assistantId) return;
+
+    if (stream.status === 'streaming') {
+      chat.patchLocalMessage(assistantId, { content: stream.chunks, status: 'streaming' });
+      return;
+    }
+
+    if (stream.status === 'done' && prev === 'streaming') {
+      inflightAssistantId.current = null;
+      void chat
+        .finalizeTurn({
+          assistantMessageId: assistantId,
+          content: stream.chunks,
+          status: 'completed',
+          provider: modelSelection.activeProvider ?? undefined,
+        })
+        .then(() => clearTurnBusy())
+        .catch((err: Error) => {
+          chat.patchLocalMessage(assistantId, {
+            content: stream.chunks,
+            status: 'completed',
+          });
+          clearTurnBusy();
+          setPrepareError(err.message || 'Failed to save answer');
+        });
+      return;
+    }
+
+    if (stream.status === 'error' && prev === 'streaming') {
+      inflightAssistantId.current = null;
+      void chat
+        .finalizeTurn({
+          assistantMessageId: assistantId,
+          content: stream.chunks,
+          status: 'failed',
+          provider: modelSelection.activeProvider ?? undefined,
+        })
+        .catch(() => undefined)
+        .finally(() => clearTurnBusy());
+    }
+
+    if (stream.status === 'idle' && prev === 'streaming') {
+      // abort()
+      inflightAssistantId.current = null;
+      void chat
+        .finalizeTurn({
+          assistantMessageId: assistantId,
+          content: stream.chunks,
+          status: 'cancelled',
+          provider: modelSelection.activeProvider ?? undefined,
+        })
+        .catch(() => undefined)
+        .finally(() => clearTurnBusy());
+    }
+  }, [chat, clearTurnBusy, modelSelection.activeProvider, stream.chunks, stream.status]);
+
+  // Unmount / hard leave: cancel in-flight assistant so it is not stuck streaming.
+  useEffect(() => {
+    return () => {
+      const assistantId = inflightAssistantId.current;
+      if (!assistantId) return;
+      inflightAssistantId.current = null;
+      const chunks = streamRef.current.chunks;
+      streamRef.current.abort();
+      void chatRef.current
+        .finalizeTurn({
+          assistantMessageId: assistantId,
+          content: chunks,
+          status: 'cancelled',
+        })
+        .catch(() => undefined);
+    };
+  }, []);
+
+  const cancelInflightIfAny = useCallback(() => {
+    const assistantId = inflightAssistantId.current;
+    if (!assistantId && stream.status !== 'streaming' && !turnBusy) return;
+    if (assistantId) {
+      inflightAssistantId.current = null;
+      const chunks = stream.chunks;
+      stream.abort();
+      void chat
+        .finalizeTurn({
+          assistantMessageId: assistantId,
+          content: chunks,
+          status: 'cancelled',
+          provider: modelSelection.activeProvider ?? undefined,
+        })
+        .catch(() => undefined)
+        .finally(() => clearTurnBusy());
+    } else if (stream.status === 'streaming') {
+      stream.abort();
+      clearTurnBusy();
+    }
+  }, [chat, clearTurnBusy, modelSelection.activeProvider, stream, turnBusy]);
 
   const groundCount = countForScope(highlights, domains, scope);
   const ground = groundLabel(scope);
   const aiSettingsHref = `/settings?${buildSettingsSearch('ai')}`;
   const needsKey = modelSelection.activeProvider === null;
-  const busy = stream.status === 'streaming';
-  const streamError = prepareError || stream.error;
-  const answerText = stream.chunks;
+  const busy = stream.status === 'streaming' || turnBusy;
+  const streamError = prepareError || stream.error || chat.error;
+  const hasTranscript = chat.messages.length > 0 || busy;
 
   const selectLibrary = useCallback(() => {
+    if (busy) return;
+    cancelInflightIfAny();
+    if (chat.activeThreadId) chat.newThread();
     setScope({ scope: 'library', domain: null, section: null });
     setPrepareError(null);
-  }, []);
+  }, [busy, cancelInflightIfAny, chat]);
 
-  const selectDomain = useCallback((domain: string) => {
-    setScope({ scope: 'domain', domain, section: null });
-    setExpanded((prev) => ({ ...prev, [domain]: true }));
-    setPrepareError(null);
-  }, []);
+  const selectDomain = useCallback(
+    (domain: string) => {
+      if (busy) return;
+      cancelInflightIfAny();
+      if (chat.activeThreadId) chat.newThread();
+      setScope({ scope: 'domain', domain, section: null });
+      setExpanded((prev) => ({ ...prev, [domain]: true }));
+      setPrepareError(null);
+    },
+    [busy, cancelInflightIfAny, chat],
+  );
 
-  const selectSection = useCallback((domain: string, path: string) => {
-    setScope({ scope: 'section', domain, section: path });
-    setExpanded((prev) => ({ ...prev, [domain]: true }));
-    setPrepareError(null);
-  }, []);
+  const selectSection = useCallback(
+    (domain: string, path: string) => {
+      if (busy) return;
+      cancelInflightIfAny();
+      if (chat.activeThreadId) chat.newThread();
+      setScope({ scope: 'section', domain, section: path });
+      setExpanded((prev) => ({ ...prev, [domain]: true }));
+      setPrepareError(null);
+    },
+    [busy, cancelInflightIfAny, chat],
+  );
 
   const toggleDomain = useCallback((domain: string) => {
     setExpanded((prev) => ({ ...prev, [domain]: !prev[domain] }));
@@ -271,190 +440,332 @@ function PaidAskShell({
     async (e: React.FormEvent) => {
       e.preventDefault();
       const q = draft.trim();
-      if (!q || busy) return;
+      if (!q || busy || turnSubmitting.current) return;
       if (needsKey || !modelSelection.activeProvider) {
         setPrepareError(
           'Add a provider key on this device (Settings → Models & providers).',
         );
         return;
       }
+      if (!userId) {
+        setPrepareError('Sign in required to save chat history.');
+        return;
+      }
 
       setPrepareError(null);
-      setLastQuestion(q);
 
-      const scoped = highlightsForScope(highlights, scope);
+      const chatScope = activeThread ? activeThread.scope : toChatScope(scope);
+      const scopeForHighlights = activeThread
+        ? scopeStateFromChat(activeThread.scope)
+        : scope;
+      const scoped = highlightsForScope(highlights, scopeForHighlights);
       const promptHighlights = toPromptHighlights(scoped);
       if (promptHighlights.length === 0) {
         setPrepareError('No highlights in this scope to ground the answer.');
         return;
       }
 
+      turnSubmitting.current = true;
+      setTurnBusy(true);
+
       try {
+        // Prior completed turns only (React state not yet updated by beginTurn).
+        const history = chat.messages.filter((m) => m.status === 'completed');
+
+        const turn = await chat.beginTurn({
+          question: q,
+          scope: chatScope,
+          provider: modelSelection.activeProvider,
+        });
+        inflightAssistantId.current = turn.assistantMessage.id;
+        setDraft('');
+
         // Web has no extension page-context cache — ground on quote excerpts only.
         const { excerpts } = buildFallbackExcerpts(promptHighlights);
 
-        stream.start({
-          request: buildScopeQueryRequest({
-            scope: {
-              scopeLabel: groundLabel(scope),
-              scopeKind: scopeKindFor(scope.scope),
-              highlightCount: promptHighlights.length,
-            },
-            excerpts,
-            question: q,
-          }),
-          provider: modelSelection.activeProvider,
-        });
-        setDraft('');
+        try {
+          stream.start({
+            request: assembleChatRequest({
+              scope: {
+                scopeLabel: chatScopeLabel(chatScope),
+                scopeKind: scopeKindForPrompt(chatScope),
+                highlightCount: promptHighlights.length,
+              },
+              excerpts,
+              history,
+              question: q,
+            }),
+            provider: modelSelection.activeProvider,
+          });
+        } catch (streamErr) {
+          inflightAssistantId.current = null;
+          void chat
+            .finalizeTurn({
+              assistantMessageId: turn.assistantMessage.id,
+              content: '',
+              status: 'failed',
+              provider: modelSelection.activeProvider,
+            })
+            .catch(() => undefined);
+          clearTurnBusy();
+          throw streamErr;
+        }
       } catch (err) {
+        inflightAssistantId.current = null;
+        clearTurnBusy();
         setPrepareError((err as Error).message || 'Could not prepare question');
       }
     },
-    [busy, draft, highlights, modelSelection.activeProvider, needsKey, scope, stream],
+    [
+      activeThread,
+      busy,
+      chat,
+      clearTurnBusy,
+      draft,
+      highlights,
+      modelSelection.activeProvider,
+      needsKey,
+      scope,
+      stream,
+      userId,
+    ],
   );
+
+  const handleAbort = useCallback(() => {
+    stream.abort();
+  }, [stream]);
 
   return (
     <div className="ask-shell" data-od-id="ask">
       <div className="ask-projects" data-od-id="ask-projects">
         <div className="ask-projects-head">
           <h1 data-od-id="ask-title">Chat</h1>
+          <button
+            type="button"
+            className="btn ghost sm"
+            data-od-id="ask-new-thread"
+            style={{ marginTop: 8 }}
+            disabled={busy}
+            onClick={() => {
+              cancelInflightIfAny();
+              chat.newThread();
+              setPrepareError(null);
+            }}
+          >
+            New chat
+          </button>
         </div>
-        <div className="ask-projects-body" role="tree" aria-label="Grounding">
-          <div className="tree-row">
-            <span className="tree-chev-slot" aria-hidden="true" />
-            <button
-              type="button"
-              className={`tree-item${scope.scope === 'library' ? ' active' : ''}`}
-              data-od-id="ask-proj-all"
-              role="treeitem"
-              aria-selected={scope.scope === 'library'}
-              onClick={selectLibrary}
-            >
-              <span className="folder-ico" aria-hidden="true">
-                ◈
-              </span>
-              <span className="tree-label">Library</span>
-            </button>
-          </div>
 
-          {domains.map((d) => {
-            const open = !!expanded[d.domain];
-            const activeDom = scope.scope === 'domain' && scope.domain === d.domain;
-            const domId = d.domain.replace(/\./g, '-');
-            return (
-              <div key={d.domain} className="tree-group" data-tree-group={d.domain}>
-                <div className="tree-row">
-                  <button
-                    type="button"
-                    className={`tree-toggle${open ? ' open' : ''}`}
-                    aria-label={`${open ? 'Collapse' : 'Expand'} ${d.domain}`}
-                    aria-expanded={open}
-                    onClick={() => toggleDomain(d.domain)}
-                  >
-                    <svg
-                      className="tree-chevron"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      aria-hidden="true"
+        <div className="ask-projects-body" data-od-id="ask-thread-list">
+          {chat.threads.length > 0 ? (
+            <ul className="ask-thread-list" aria-label="Chats">
+              {chat.threads.map((t) => {
+                const active = t.id === chat.activeThreadId;
+                return (
+                  <li key={t.id} className="ask-thread-row">
+                    <button
+                      type="button"
+                      className={`tree-item ask-thread-item${active ? ' active' : ''}`}
+                      data-od-id={`ask-thread-${t.id}`}
+                      aria-current={active ? 'true' : undefined}
+                      disabled={busy}
+                      onClick={() => {
+                        cancelInflightIfAny();
+                        void chat.selectThread(t.id);
+                        setPrepareError(null);
+                      }}
                     >
-                      <path
-                        d="M4 2.5 8 6 4 9.5"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    className={`tree-item${activeDom ? ' active' : ''}`}
-                    data-od-id={`ask-proj-${domId}`}
-                    role="treeitem"
-                    aria-selected={activeDom}
-                    onClick={() => selectDomain(d.domain)}
+                      <span className="tree-label">{t.title}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ask-thread-delete"
+                      data-od-id={`ask-thread-delete-${t.id}`}
+                      aria-label={`Delete ${t.title}`}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        void chat.deleteThread(t.id);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="composer-note" style={{ padding: '0 6px' }}>
+              No saved chats yet.
+            </p>
+          )}
+
+          <p
+            className="u-kicker"
+            style={{ margin: '16px 6px 8px', color: 'var(--ink-3)' }}
+          >
+            Grounding
+          </p>
+          <div role="tree" aria-label="Grounding">
+            <div className="tree-row">
+              <span className="tree-chev-slot" aria-hidden="true" />
+              <button
+                type="button"
+                className={`tree-item${scope.scope === 'library' && !chat.activeThreadId ? ' active' : ''}`}
+                data-od-id="ask-proj-all"
+                role="treeitem"
+                aria-selected={scope.scope === 'library'}
+                onClick={selectLibrary}
+              >
+                <span className="folder-ico" aria-hidden="true">
+                  ◈
+                </span>
+                <span className="tree-label">Library</span>
+              </button>
+            </div>
+
+            {domains.map((d) => {
+              const open = !!expanded[d.domain];
+              const activeDom = scope.scope === 'domain' && scope.domain === d.domain;
+              const domId = d.domain.replace(/\./g, '-');
+              return (
+                <div key={d.domain} className="tree-group" data-tree-group={d.domain}>
+                  <div className="tree-row">
+                    <button
+                      type="button"
+                      className={`tree-toggle${open ? ' open' : ''}`}
+                      aria-label={`${open ? 'Collapse' : 'Expand'} ${d.domain}`}
+                      aria-expanded={open}
+                      onClick={() => toggleDomain(d.domain)}
+                    >
+                      <svg
+                        className="tree-chevron"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M4 2.5 8 6 4 9.5"
+                          stroke="currentColor"
+                          strokeWidth="1.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className={`tree-item${activeDom ? ' active' : ''}`}
+                      data-od-id={`ask-proj-${domId}`}
+                      role="treeitem"
+                      aria-selected={activeDom}
+                      onClick={() => selectDomain(d.domain)}
+                    >
+                      <span className="folder-ico" aria-hidden="true">
+                        {d.domain.slice(0, 1)}
+                      </span>
+                      <span className="tree-label">{d.domain}</span>
+                    </button>
+                  </div>
+                  <div
+                    className={`tree-children${open ? ' is-open' : ''}`}
+                    data-tree-children
                   >
-                    <span className="folder-ico" aria-hidden="true">
-                      {d.domain.slice(0, 1)}
-                    </span>
-                    <span className="tree-label">{d.domain}</span>
-                  </button>
-                </div>
-                <div
-                  className={`tree-children${open ? ' is-open' : ''}`}
-                  data-tree-children
-                >
-                  <div className="tree-children-inner">
-                    {d.sections.map((s) => {
-                      const activeSec =
-                        scope.scope === 'section' &&
-                        scope.domain === d.domain &&
-                        scope.section === s.path;
-                      return (
-                        <button
-                          key={s.path}
-                          type="button"
-                          className={`tree-item is-child${activeSec ? ' active' : ''}`}
-                          role="treeitem"
-                          aria-selected={activeSec}
-                          onClick={() => selectSection(d.domain, s.path)}
-                        >
-                          <span className="tree-label">{s.path}</span>
-                        </button>
-                      );
-                    })}
+                    <div className="tree-children-inner">
+                      {d.sections.map((s) => {
+                        const activeSec =
+                          scope.scope === 'section' &&
+                          scope.domain === d.domain &&
+                          scope.section === s.path;
+                        return (
+                          <button
+                            key={s.path}
+                            type="button"
+                            className={`tree-item is-child${activeSec ? ' active' : ''}`}
+                            role="treeitem"
+                            aria-selected={activeSec}
+                            onClick={() => selectSection(d.domain, s.path)}
+                          >
+                            <span className="tree-label">{s.path}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <div className="ask-chat" data-od-id="ask-chat">
-        <div className="ask-quiet" data-od-id="ask-empty">
-          {lastQuestion || answerText || busy ? (
-            <div data-od-id="ask-transcript" style={{ padding: '16px 20px' }}>
-              {lastQuestion ? (
-                <p
-                  className="type-sub"
-                  data-od-id="ask-last-question"
-                  style={{ marginBottom: 12, color: 'var(--ink-2)' }}
-                >
-                  {lastQuestion}
-                </p>
-              ) : null}
-              {busy && !answerText ? (
-                <p className="type-sub" data-od-id="ask-streaming" aria-live="polite">
-                  …
-                </p>
-              ) : null}
-              {answerText ? (
+        {hasTranscript ? (
+          <div className="ask-thread" data-od-id="ask-transcript">
+            {chat.messages.map((m) => {
+              if (m.role === 'user') {
+                return (
+                  <div
+                    key={m.id}
+                    className="bubble-user"
+                    data-od-id="ask-user-bubble"
+                  >
+                    {m.content}
+                  </div>
+                );
+              }
+              const body =
+                m.status === 'streaming' &&
+                inflightAssistantId.current === m.id
+                  ? stream.chunks || m.content
+                  : m.content;
+              return (
                 <div
+                  key={m.id}
+                  className="bubble-ai"
                   data-od-id="ask-answer"
-                  className="u-serif"
-                  style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--step-0)' }}
+                  data-status={m.status}
                 >
-                  {answerText}
+                  {m.status === 'streaming' && !body ? (
+                    <span data-od-id="ask-streaming" aria-live="polite">
+                      …
+                    </span>
+                  ) : (
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{body}</span>
+                  )}
+                  {m.status === 'failed' ? (
+                    <p className="composer-note" style={{ marginTop: 8 }}>
+                      Failed{stream.error ? `: ${stream.error}` : ''}
+                    </p>
+                  ) : null}
                 </div>
-              ) : null}
-              {busy ? (
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  data-od-id="ask-abort"
-                  style={{ marginTop: 12 }}
-                  onClick={() => stream.abort()}
-                >
-                  Stop
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-        <form className="ask-composer" data-od-id="ask-composer" onSubmit={(e) => { void handleSubmit(e); }}>
+              );
+            })}
+            {busy ? (
+              <button
+                type="button"
+                className="btn ghost sm"
+                data-od-id="ask-abort"
+                style={{ alignSelf: 'flex-start' }}
+                onClick={handleAbort}
+              >
+                Stop
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="ask-quiet" data-od-id="ask-empty">
+            <span>Ask grounded questions about your library.</span>
+          </div>
+        )}
+        <form
+          className="ask-composer"
+          data-od-id="ask-composer"
+          onSubmit={(e) => {
+            void handleSubmit(e);
+          }}
+        >
           <div className="ask-composer-inner">
             <div
               className="scope-pill"

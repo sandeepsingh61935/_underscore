@@ -33,6 +33,34 @@ vi.mock('@/web/hooks/useWebLibrary', async () => {
   };
 });
 
+vi.mock('@/web/hooks/useWebChat', () => ({
+  useWebChat: () => ({
+    status: 'ready',
+    error: null,
+    threads: [],
+    activeThreadId: null,
+    messages: [],
+    refreshThreads: vi.fn().mockResolvedValue(undefined),
+    selectThread: vi.fn().mockResolvedValue(undefined),
+    newThread: vi.fn(),
+    deleteThread: vi.fn().mockResolvedValue(undefined),
+    beginTurn: vi.fn(),
+    finalizeTurn: vi.fn(),
+    patchLocalMessage: vi.fn(),
+    replaceMessages: vi.fn(),
+  }),
+}));
+
+vi.mock('@/features/ai/hooks/useLLMStream', () => ({
+  useLLMStream: () => ({
+    chunks: '',
+    status: 'idle',
+    error: null,
+    start: vi.fn(),
+    abort: vi.fn(),
+  }),
+}));
+
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 
