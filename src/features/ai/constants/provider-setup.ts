@@ -34,6 +34,12 @@ export const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
     keyPlaceholder: 'AIza…',
     blurb: 'aistudio.google.com',
   },
+  xai: {
+    label: 'xAI',
+    shortLabel: 'Grok',
+    keyPlaceholder: 'xai-…',
+    blurb: 'console.x.ai',
+  },
   openrouter: {
     label: 'OpenRouter',
     shortLabel: 'OpenRouter',
@@ -63,6 +69,7 @@ export function formatModelDisplayName(modelId: string): string {
   return modelId
     .replace(/^claude-/i, 'Claude ')
     .replace(/^gpt-/i, 'GPT-')
+    .replace(/^grok-/i, 'Grok ')
     .replace(/-/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
 }

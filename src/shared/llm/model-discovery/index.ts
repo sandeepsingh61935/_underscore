@@ -5,6 +5,7 @@ import { fetchAnthropicModels } from './anthropic-models';
 import { fetchGeminiModels } from './gemini-models';
 import { fetchOllamaModels } from './ollama-models';
 import { fetchOpenAIModels } from './openai-models';
+import { fetchXaiModels } from './xai-models';
 import type { ModelDiscoveryInput, ModelDiscoveryResult } from './types';
 
 export type { ModelDiscoveryInput, ModelDiscoveryResult };
@@ -14,6 +15,7 @@ export const DYNAMIC_MODEL_PROVIDERS: ReadonlyArray<ProviderName> = [
   'anthropic',
   'openai',
   'gemini',
+  'xai',
   'ollama',
   'openrouter',
 ];
@@ -33,6 +35,8 @@ export async function fetchProviderModels(
       return fetchOpenAIModels(input.apiKey ?? '');
     case 'gemini':
       return fetchGeminiModels(input.apiKey ?? '');
+    case 'xai':
+      return fetchXaiModels(input.apiKey ?? '');
     case 'ollama':
       return fetchOllamaModels(input.apiBase);
     case 'openrouter': {

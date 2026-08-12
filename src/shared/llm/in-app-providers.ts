@@ -12,6 +12,7 @@ export const IN_APP_LLM_PROVIDER_ORDER = [
   'openai',
   'anthropic',
   'gemini',
+  'xai',
   'openrouter',
   'ollama',
 ] as const satisfies ReadonlyArray<ProviderName>;

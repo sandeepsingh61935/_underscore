@@ -59,7 +59,8 @@ export type ProviderName =
   | 'ollama'
   | 'gemini'
   | 'openai'
-  | 'openrouter';
+  | 'openrouter'
+  | 'xai';
 
 export interface ILLMService {
   readonly providerName: ProviderName;

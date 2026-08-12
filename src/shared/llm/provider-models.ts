@@ -29,6 +29,10 @@ export const PROVIDER_MODEL_CATALOG: Record<ProviderName, ProviderModelCatalog> 
     defaultModelId: 'gemini-2.0-flash',
     models: [],
   },
+  xai: {
+    defaultModelId: 'grok-4.5',
+    models: [],
+  },
   openrouter: {
     // Concrete free model — "openrouter/free" is not a reliable chat model id.
     defaultModelId: 'meta-llama/llama-3.3-70b-instruct:free',

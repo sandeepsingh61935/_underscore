@@ -58,12 +58,13 @@ export function parseBillingRateLimitRpc(
     return { allowed: true, retryAfterMs: 0 };
   }
   const rec = data as Record<string, unknown>;
-  if (typeof rec.allowed !== 'boolean') {
+  if (typeof rec['allowed'] !== 'boolean') {
     return { allowed: true, retryAfterMs: 0 };
   }
+  const rawRetry = rec['retryAfterMs'];
   const retry =
-    typeof rec.retryAfterMs === 'number' && Number.isFinite(rec.retryAfterMs)
-      ? Math.max(0, Math.floor(rec.retryAfterMs))
+    typeof rawRetry === 'number' && Number.isFinite(rawRetry)
+      ? Math.max(0, Math.floor(rawRetry))
       : 0;
-  return { allowed: rec.allowed, retryAfterMs: retry };
+  return { allowed: rec['allowed'] as boolean, retryAfterMs: retry };
 }

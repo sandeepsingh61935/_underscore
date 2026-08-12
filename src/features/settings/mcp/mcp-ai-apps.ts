@@ -11,6 +11,7 @@ export type McpAiAppId =
   | 'cursor'
   | 'antigravity'
   | 'gemini'
+  | 'grok'
   | 'other';
 
 export interface McpAiAppDef {
@@ -87,6 +88,16 @@ export const MCP_AI_APPS: readonly McpAiAppDef[] = [
     configHint: 'Agent mode required for tools.',
     configTemplate: BRIDGE_JSON,
     restartLabel: 'Restart Cursor MCP / reload window',
+  },
+  {
+    id: 'grok',
+    name: 'Grok (xAI)',
+    sub: 'Grok Build · ~/.grok/config.toml',
+    configLabel: '~/.grok/config.toml (or Grok Build MCP settings)',
+    configHint:
+      'Local stdio MCP via Grok Build; remote MCP tools on the xAI API are a separate path.',
+    configTemplate: BRIDGE_TOML,
+    restartLabel: 'Restart Grok Build / reload MCP servers',
   },
   {
     id: 'antigravity',

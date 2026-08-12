@@ -6,7 +6,7 @@ CREATE TABLE public.ai_preferences (
   default_provider text
     CHECK (
       default_provider IS NULL
-      OR default_provider IN ('openai', 'anthropic', 'gemini', 'openrouter', 'ollama')
+      OR default_provider IN ('openai', 'anthropic', 'gemini', 'xai', 'openrouter', 'ollama')
     ),
   -- { "openai": "gpt-4o-mini", ... } — model ids only, never API keys
   models jsonb NOT NULL DEFAULT '{}'::jsonb,
