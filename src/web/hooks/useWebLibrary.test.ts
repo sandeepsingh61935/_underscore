@@ -88,6 +88,34 @@ describe('useWebLibrary', () => {
     });
     expect(result.current.recent[0]?.id).toBe('1');
     expect(result.current.error).toBeNull();
+    expect(typeof result.current.patchHighlight).toBe('function');
+  });
+
+  it('signed-in: patchHighlight updates note and tags in local aggregate', async () => {
+    const now = Date.now();
+    const fetchHighlights = vi.fn().mockResolvedValue([
+      hl({ id: '1', domain: 'a.com', path: '/', savedAt: now, note: '', tags: [] }),
+    ]);
+
+    const { result } = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready');
+    });
+
+    act(() => {
+      result.current.patchHighlight('1', { note: 'hello note', tags: ['x'] });
+    });
+
+    expect(result.current.highlights[0]?.note).toBe('hello note');
+    expect(result.current.highlights[0]?.tags).toEqual(['x']);
+    expect(result.current.recent[0]?.note).toBe('hello note');
   });
 
   it('signed-in: surfaces error from fetch', async () => {

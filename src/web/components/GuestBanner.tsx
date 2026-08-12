@@ -15,10 +15,8 @@ export function GuestBanner({
 }: GuestBannerProps): React.ReactElement {
   return (
     <div className="banner" data-od-id="guest-banner">
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <strong>Guest</strong>
-        {' — '}
-        local storage only. Sign in for sync, export, and Ask · Account (Paid).
+      <div style={{ flex: 1, minWidth: 0 }} data-od-id="guest-passive">
+        Local only — sync, export, and Chat after sign-in.
       </div>
       <Link to={signInTo} className="btn sm">
         Sign in

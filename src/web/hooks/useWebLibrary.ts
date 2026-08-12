@@ -7,7 +7,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { fetchHighlightLabelsWeb } from '@/shared/services/tag-query-web';
 import { getDomainFromUrl } from '@/shared/utils/domain-from-url';
+import { mergeHighlightLabels } from '@/shared/utils/highlight-metadata';
 import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { highlightTimestampMs } from '@/shared/utils/supabase-highlight-row';
 import {
@@ -25,6 +27,11 @@ export type {
   WebCurrentPage,
 } from '@/web/lib/aggregateLibrary';
 
+export type WebHighlightPatch = {
+  note?: string;
+  tags?: string[];
+};
+
 export type WebLibraryState = {
   status: 'idle' | 'loading' | 'ready' | 'error';
   isGuest: boolean;
@@ -35,6 +42,8 @@ export type WebLibraryState = {
   currentPage: WebCurrentPage;
   error: string | null;
   refresh: () => Promise<void>;
+  /** Optimistically patch a highlight in local aggregate (after note/tag save). */
+  patchHighlight: (id: string, patch: WebHighlightPatch) => void;
 };
 
 export type UseWebLibraryOpts = {
@@ -63,7 +72,7 @@ export function mapSupabaseRowToWebHighlight(row: {
   updated_at?: string | null;
   deleted_at?: string | null;
 }): WebHighlight | null {
-  if (row.deleted_at != null && row.deleted_at !== '') {
+  if (row.deleted_at !== null && row.deleted_at !== undefined && row.deleted_at !== '') {
     return null;
   }
   const url = row.url ?? '';
@@ -124,6 +133,23 @@ async function defaultFetchHighlights(): Promise<WebHighlight[]> {
       out.push(mapped);
     }
   }
+
+  // Merge junction-table labels so tags written only to highlight_tags still show.
+  try {
+    const labels = await fetchHighlightLabelsWeb(
+      supabase,
+      session.user.id,
+      out.map((h) => h.id),
+    );
+    for (const h of out) {
+      const junction = labels.get(h.id);
+      const merged = mergeHighlightLabels(junction, h.tags);
+      h.tags = merged ?? [];
+    }
+  } catch {
+    // Non-fatal: metadata.tags still available if junction query fails.
+  }
+
   return out;
 }
 
@@ -236,6 +262,28 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     await load();
   }, [load]);
 
+  const patchHighlight = useCallback(
+    (id: string, patch: WebHighlightPatch) => {
+      setHighlights((prev) => {
+        const next = prev.map((h) => {
+          if (h.id !== id) return h;
+          return {
+            ...h,
+            ...(patch.note !== undefined ? { note: patch.note } : {}),
+            ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
+          };
+        });
+        const agg = aggregateLibrary(next);
+        setDomains(agg.domains);
+        setStats({ ...agg.stats, planLabel: planLabelRef.current });
+        setRecent(agg.recent);
+        setCurrentPage(agg.currentPage);
+        return next;
+      });
+    },
+    [],
+  );
+
   // Guest: initial state is already ready+empty; load() never calls fetch.
   return {
     status: isAuthenticated ? status : 'ready',
@@ -247,5 +295,6 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     currentPage: isAuthenticated ? currentPage : null,
     error: isAuthenticated ? error : null,
     refresh,
+    patchHighlight,
   };
 }

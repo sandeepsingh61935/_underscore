@@ -1,13 +1,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
-import {
-  resolveWebCaps,
-  type WebPlanLabel,
-} from '@/web/caps/resolveWebCaps';
 import { GuestBanner } from '@/web/components/GuestBanner';
+import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import {
   useWebLibrary,
   type WebCurrentPage,
@@ -29,38 +29,6 @@ function greetingFor(name: string | null): string {
   const h = new Date().getHours();
   const when = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   return name ? `${when}, ${name}` : when;
-}
-
-function homeLede(opts: {
-  isGuest: boolean;
-  empty: boolean;
-  ai: boolean;
-}): string {
-  if (opts.isGuest) {
-    return opts.empty
-      ? 'Extension captures stay here until you sign in.'
-      : 'Local library — sign in to sync and export.';
-  }
-  if (opts.empty) {
-    return 'Highlight text with the extension; it shows up here.';
-  }
-  if (opts.ai) {
-    return 'Resume a page, or Ask from what you’ve saved.';
-  }
-  return 'Current page and recent saves — search lives in Library.';
-}
-
-function planPersistence(label: WebPlanLabel): string {
-  switch (label) {
-    case 'Guest':
-      return 'This browser only';
-    case 'Paid':
-      return 'Synced · Ask on';
-    case 'Past due':
-    case 'Free':
-    default:
-      return 'Synced devices';
-  }
 }
 
 function relativeTime(ts: number, now = Date.now()): string {
@@ -160,9 +128,27 @@ export function askHref(domain?: string | null, path?: string | null): string {
   return search ? `/ask?${search}` : '/ask';
 }
 
+function HomeLockIcon(): React.ReactElement {
+  return (
+    <svg
+      className="g-stat-lock-ico"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      aria-hidden="true"
+    >
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
 /**
  * Product Home — OD viewHome parity.
- * Guest is always empty (useWebLibrary); Ask CTAs only when caps.ai.
+ * Guest is always empty (useWebLibrary); Chat CTAs only when caps.ai.
  */
 export function HomePage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();
@@ -184,17 +170,47 @@ export function HomePage(): React.ReactElement {
     isAuthenticated,
     planLabel: caps.planLabel,
   });
+  const { updateMetadata } = useUpdateHighlightMetadata();
 
   const empty = lib.highlights.length === 0;
   const ai = caps.flags.ai;
+  const guest = caps.isGuest;
+
+  const patchHighlight = lib.patchHighlight;
+
+  const handleNoteSave = useCallback(
+    async (id: string, note: string): Promise<boolean> => {
+      const ok = await updateMetadata(id, { notes: note }, { silent: true });
+      if (ok) patchHighlight(id, { note });
+      return ok;
+    },
+    [updateMetadata, patchHighlight],
+  );
+
+  const handleTagsChange = useCallback(
+    async (id: string, tags: string[]): Promise<boolean> => {
+      const ok = await updateMetadata(id, { tags }, { silent: true });
+      if (ok) patchHighlight(id, { tags });
+      return ok;
+    },
+    [updateMetadata, patchHighlight],
+  );
+
+  const handleToggleTagFilter = useCallback(
+    (tag: string) => {
+      // Home has no filter state — open Library with search context via hash-free query.
+      // Tag chips still filter when user is already on Library; from Home, navigate.
+      void navigate(`/library?tag=${encodeURIComponent(tag)}`);
+    },
+    [navigate],
+  );
 
   const name = isAuthenticated
     ? emailLocalPart(user?.email) ||
       (user?.displayName?.trim() ? user.displayName.trim() : null)
     : null;
 
-  const title = caps.isGuest ? 'Your local library' : greetingFor(name);
-  const lede = homeLede({ isGuest: caps.isGuest, empty, ai });
+  const title = guest ? 'Local Library' : greetingFor(name);
 
   const pageHls = useMemo(
     () => (empty ? [] : highlightsOnPage(lib.highlights, lib.currentPage)),
@@ -212,8 +228,21 @@ export function HomePage(): React.ReactElement {
     [empty, lib.highlights, lib.currentPage],
   );
 
+  /** OD: pageCount includes current page (excludeCurrent: false). */
+  const pageCountAll = useMemo(
+    () =>
+      empty
+        ? 0
+        : buildActivePages(lib.highlights, lib.currentPage, {
+            excludeCurrent: false,
+            cap: 99,
+          }).length,
+    [empty, lib.highlights, lib.currentPage],
+  );
+
   const recent = lib.recent;
   const hasMoreRecent = lib.highlights.length > RECENT_CAP;
+  const fmt = (n: number): string => n.toLocaleString();
 
   const openLibraryPage = useCallback(
     (domain: string, path?: string | null) => {
@@ -239,14 +268,18 @@ export function HomePage(): React.ReactElement {
             className="skeleton sk-line"
             style={{ width: '52%', height: 12, marginBottom: 22 }}
           />
-          <div className="grid-stats" style={{ marginBottom: 18, minHeight: 64 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div className="stat" key={i}>
+          <div className="stats-groups" style={{ minHeight: 96 }}>
+            {[0, 1, 2].map((i) => (
+              <div className="stats-group" key={i}>
                 <div
                   className="skeleton sk-line"
-                  style={{ width: '48%', height: 8, marginBottom: 10 }}
+                  style={{ width: '40%', height: 8, marginBottom: 12 }}
                 />
-                <div className="skeleton sk-line" style={{ width: '32%', height: 20 }} />
+                <div
+                  className="skeleton sk-line"
+                  style={{ width: '55%', height: 18, marginBottom: 8 }}
+                />
+                <div className="skeleton sk-line" style={{ width: '48%', height: 18 }} />
               </div>
             ))}
           </div>
@@ -302,21 +335,6 @@ export function HomePage(): React.ReactElement {
         ? cp.sectionLabel
         : '';
 
-  let headAction: React.ReactNode = null;
-  if (!caps.isGuest && ai && !empty) {
-    headAction = (
-      <Link to={askHref()} className="btn accent" data-od-id="home-cta">
-        Ask library
-      </Link>
-    );
-  } else if (!caps.isGuest && !empty) {
-    headAction = (
-      <Link to="/library" className="btn" data-od-id="home-cta">
-        Library
-      </Link>
-    );
-  }
-
   const pagesBody = empty ? (
     <EmptyInline
       title="No page open"
@@ -367,7 +385,7 @@ export function HomePage(): React.ReactElement {
                 className="btn-text"
                 data-od-id="home-ask-page"
               >
-                Ask this page
+                Chat this page
               </Link>
             </div>
           ) : null}
@@ -419,21 +437,16 @@ export function HomePage(): React.ReactElement {
     />
   ) : (
     recent.map((h) => (
-      <button
+      <WebHighlightCard
         key={h.id}
-        type="button"
-        className="hl"
-        data-od-id={`hl-${h.id}`}
-        onClick={() => openLibraryPage(h.domain, h.path)}
-      >
-        <p className="hl-quote">“{h.quote}”</p>
-        <div className="hl-meta">
-          <span className="src">{h.domain}</span>
-          <span>{h.path}</span>
-          <span>{relativeTime(h.savedAt)}</span>
-          {h.note.trim() ? <span>{h.note.trim()}</span> : null}
-        </div>
-      </button>
+        highlight={h}
+        showDomain
+        readOnly={guest}
+        onOpenPage={openLibraryPage}
+        onToggleTagFilter={guest ? undefined : handleToggleTagFilter}
+        onNoteSave={guest ? undefined : handleNoteSave}
+        onTagsChange={guest ? undefined : handleTagsChange}
+      />
     ))
   );
 
@@ -441,42 +454,69 @@ export function HomePage(): React.ReactElement {
     <div className="home" data-od-id="home">
       <div className="page-head">
         <div>
-          {caps.isGuest ? (
-            <p className="page-kicker" data-od-id="home-kicker">
-              Local only
-            </p>
-          ) : null}
           <h1 className="page-title" data-od-id="home-title">
             {title}
           </h1>
-          <p className="page-lede" data-od-id="home-lede">
-            {lede}
-          </p>
-        </div>
-        {headAction ? <div className="page-actions">{headAction}</div> : null}
-      </div>
-
-      {caps.isGuest ? <GuestBanner /> : null}
-
-      <div className="grid-stats" data-od-id="home-stats" style={{ marginBottom: 18 }}>
-        <div className="stat" data-od-id="stat-highlights">
-          <div className="stat-label">Highlights</div>
-          <div className="stat-val">{lib.stats.highlightCount}</div>
-        </div>
-        <div className="stat" data-od-id="stat-pages">
-          <div className="stat-label">Pages</div>
-          <div className="stat-val">{lib.stats.pageCount}</div>
-        </div>
-        <div className="stat" data-od-id="stat-week">
-          <div className="stat-label">This week</div>
-          <div className="stat-val">{lib.stats.thisWeekCount}</div>
-        </div>
-        <div className="stat" data-od-id="stat-plan">
-          <div className="stat-label">Plan</div>
-          <div className="stat-val is-word">{caps.planLabel}</div>
-          <div className="stat-hint">{planPersistence(caps.planLabel)}</div>
         </div>
       </div>
+
+      {guest ? <GuestBanner /> : null}
+
+      {!empty ? (
+        <div className="stats-groups" data-od-id="home-stats">
+          <section className="stats-group" data-od-id="stats-highlights">
+            <h3 className="stats-group-title">Highlights</h3>
+            <div className="g-stat" data-od-id="stat-highlights">
+              <span className="g-stat-label">Total</span>
+              <span className="g-stat-val">{fmt(lib.stats.highlightCount)}</span>
+            </div>
+            <div className="g-stat" data-od-id="stat-week">
+              <span className="g-stat-label">This week</span>
+              <span className="g-stat-val">{fmt(lib.stats.thisWeekCount)}</span>
+            </div>
+          </section>
+          <section className="stats-group" data-od-id="stats-pages">
+            <h3 className="stats-group-title">Pages</h3>
+            <div className="g-stat" data-od-id="stat-pages">
+              <span className="g-stat-label">Active</span>
+              <span className="g-stat-val">{fmt(pageCountAll)}</span>
+            </div>
+            <div className="g-stat" data-od-id="stat-sources">
+              <span className="g-stat-label">Sources</span>
+              <span className="g-stat-val">{fmt(lib.domains.length)}</span>
+            </div>
+          </section>
+          <section className="stats-group" data-od-id="stats-asks">
+            <h3 className="stats-group-title">Chats</h3>
+            <div
+              className={`g-stat${guest || !ai ? ' is-locked' : ''}`}
+              data-od-id={guest || !ai ? 'stat-ai-week-lock' : 'stat-ai-week'}
+            >
+              <span className="g-stat-label">This week</span>
+              {guest || !ai ? (
+                <span className="g-stat-val g-stat-lock">
+                  <HomeLockIcon />
+                </span>
+              ) : (
+                <span className="g-stat-val">0</span>
+              )}
+            </div>
+            <div
+              className={`g-stat${guest || !ai ? ' is-locked' : ''}`}
+              data-od-id={guest || !ai ? 'stat-ai-total-lock' : 'stat-ai-total'}
+            >
+              <span className="g-stat-label">Total</span>
+              {guest || !ai ? (
+                <span className="g-stat-val g-stat-lock">
+                  <HomeLockIcon />
+                </span>
+              ) : (
+                <span className="g-stat-val">0</span>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <div className="home-cols" data-od-id="home-cols">
         <section
@@ -490,7 +530,7 @@ export function HomePage(): React.ReactElement {
             </div>
             {!empty ? (
               <span className="meta" data-od-id="home-pages-count">
-                {lib.stats.pageCount}
+                {pageCountAll}
               </span>
             ) : null}
           </div>

@@ -74,7 +74,7 @@ export function BillingReturnBanners({
       <div className="billing-banner" data-od-id="billing-return-active" role="status">
         <p className="bb-title">Payment successful</p>
         <p className="bb-body">
-          AI unlocked · reopen the Chrome extension with the same login to use Ask, Summarize, and
+          AI unlocked · reopen the Chrome extension with the same login to use Chat, Summarize, and
           MCP there.
         </p>
         <div className="bb-actions">

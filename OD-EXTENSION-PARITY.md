@@ -21,7 +21,7 @@
 5. Appearance — Theme light|dark|system  
 6. Account + billing (signed-in) — Upgrade/Manage/Refresh  
 7. Library — **Library stats** disclosure (collapsed summary → expand grid) · Sync · Export MD|XLSX · Delete  
-8. AI · setup — Configure providers · Connect to AI  
+8. AI — Models & providers · Integrations  
 9. Session — Sign out  
 
 ## Home structure (parity)

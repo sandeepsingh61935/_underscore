@@ -16,6 +16,12 @@ vi.mock('@/features/billing/BillingProvider', () => ({
   useBillingContextOptional: vi.fn(() => null),
 }));
 
+vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
+  useUpdateHighlightMetadata: () => ({
+    updateMetadata: vi.fn().mockResolvedValue(true),
+  }),
+}));
+
 const mockFetch = vi.fn<() => Promise<WebHighlight[]>>();
 
 vi.mock('@/web/hooks/useWebLibrary', async () => {
@@ -143,22 +149,57 @@ describe('LibraryPage', () => {
     expect(document.querySelector('[data-od-id="library-export"]')).toBeNull();
     expect(document.querySelectorAll('.hl-quote').length).toBe(0);
     expect(screen.getByText('No highlights')).toBeTruthy();
-    // fetch must not leak guest with seed data from mock if hook ignores it —
-    // useWebLibrary guest path never calls fetch; still assert empty rail counts
-    expect(
-      document.querySelector('[data-od-id="lib-all"] .tree-count')?.textContent,
-    ).toBe('0');
+    // useWebLibrary guest path never calls fetch — rail stays domain-empty
+    expect(document.querySelector('[data-od-id="lib-all"]')).toBeTruthy();
+    expect(screen.getByText('No domains')).toBeTruthy();
   });
 
-  it('signed-in free: shows Export when caps.export', async () => {
+  it('signed-in free: shows Download export when caps.export', async () => {
     renderLibrary('/library', true);
 
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="library-export"]')).toBeTruthy();
     });
 
+    expect(
+      document.querySelector('[data-od-id="library-export-btn"]')?.textContent,
+    ).toMatch(/Download/i);
+
     await waitFor(() => {
       expect(document.querySelectorAll('.hl-quote').length).toBe(3);
+    });
+  });
+
+  it('signed-in: shows tag chips, note affordance, and note text on cards', async () => {
+    renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-h1"]')).toBeTruthy();
+    });
+
+    expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="hl-tag-add-h1"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
+      /Add note/,
+    );
+    expect(document.querySelector('[data-od-id="hl-note-h2"]')?.textContent).toMatch(
+      /note here/,
+    );
+  });
+
+  it('clicking a tag chip toggles tag filter (does not only navigate)', async () => {
+    renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-h1-a"]')!);
+
+    await waitFor(() => {
+      // With tag filter "a", only h1 remains in the list
+      expect(document.querySelectorAll('.hl-quote').length).toBe(1);
+      expect(screen.getByText(/Hello library/)).toBeTruthy();
     });
   });
 });

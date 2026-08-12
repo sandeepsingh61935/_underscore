@@ -30,7 +30,7 @@ const ROUTE_META: Record<
     path: '/library',
   },
   ask: {
-    label: 'Ask',
+    label: 'Chat',
     hint: 'Grounded on your library',
     path: '/ask',
   },

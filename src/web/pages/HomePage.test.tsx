@@ -12,6 +12,12 @@ vi.mock('@/features/billing/BillingProvider', () => ({
   useBillingContextOptional: vi.fn(() => null),
 }));
 
+vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
+  useUpdateHighlightMetadata: () => ({
+    updateMetadata: vi.fn().mockResolvedValue(true),
+  }),
+}));
+
 import { useApp } from '@/core/context/AppProvider';
 
 function renderHome() {
@@ -31,32 +37,23 @@ describe('HomePage', () => {
     });
   });
 
-  it('guest: Local only kicker, local library title, true empty (no seed quotes)', () => {
+  it('guest: Local Library title, guest banner, true empty (no seed quotes or stats)', () => {
     renderHome();
 
     const root = document.querySelector('[data-od-id="home"]');
     expect(root).toBeTruthy();
 
-    const kicker = document.querySelector('[data-od-id="home-kicker"]');
-    expect(kicker).toBeTruthy();
-    expect(kicker?.textContent?.trim()).toBe('Local only');
-
     const title = document.querySelector('[data-od-id="home-title"]');
     expect(title).toBeTruthy();
-    expect(title?.textContent?.trim()).toBe('Your local library');
+    expect(title?.textContent?.trim()).toBe('Local Library');
 
     expect(document.querySelector('[data-od-id="guest-banner"]')).toBeTruthy();
-
-    const stats = document.querySelector('[data-od-id="home-stats"]');
-    expect(stats).toBeTruthy();
-    expect(document.querySelector('[data-od-id="stat-highlights"] .stat-val')?.textContent).toBe(
-      '0',
+    expect(document.querySelector('[data-od-id="guest-passive"]')?.textContent).toMatch(
+      /Local only/i,
     );
-    expect(document.querySelector('[data-od-id="stat-pages"] .stat-val')?.textContent).toBe('0');
-    expect(document.querySelector('[data-od-id="stat-week"] .stat-val')?.textContent).toBe('0');
-    expect(
-      document.querySelector('[data-od-id="stat-plan"] .stat-val')?.textContent?.trim(),
-    ).toBe('Guest');
+
+    // OD: stats-groups only when library has rows
+    expect(document.querySelector('[data-od-id="home-stats"]')).toBeNull();
 
     // True empty: no highlight cards / seed quotes
     expect(document.querySelectorAll('.hl-quote').length).toBe(0);
