@@ -1,7 +1,7 @@
 /**
  * @file AskPage.tsx
  * @description Product Ask — OD viewAsk parity: lock when !caps.ai;
- * paid shell with grounding tree + composer. No extension runtime messaging.
+ * paid shell with grounding tree + composer. Streams via ILlmRuntime (ADR-027).
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -9,8 +9,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { AskModelChip } from '@/features/ai/components/AskModelChip';
+import { useLLMStream } from '@/features/ai/hooks/useLLMStream';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
+import type { ScopeKind } from '@/shared/llm/prompts';
+import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
+import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
+import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
@@ -22,10 +27,6 @@ import {
 import { useWebAskModelSelection } from '@/web/hooks/useWebAskModelSelection';
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
-
-/** Web product has no extension-free LLM stream path (useLLMStream needs extension IPC). */
-const WEB_STREAM_UNAVAILABLE =
-  'Chat streaming is not available in the web app yet. Open the Chrome extension with the same login to get answers.';
 
 type AskScope = 'library' | 'domain' | 'section';
 
@@ -79,6 +80,37 @@ function placeholderFor(scope: AskScope): string {
   if (scope === 'section') return 'Chat this section…';
   if (scope === 'domain') return 'Chat this domain…';
   return 'Chat your library…';
+}
+
+function highlightsForScope(
+  highlights: WebHighlight[],
+  scope: ScopeState,
+): WebHighlight[] {
+  if (scope.scope === 'library') return highlights;
+  if (scope.scope === 'domain' && scope.domain) {
+    return highlights.filter((h) => h.domain === scope.domain);
+  }
+  if (scope.scope === 'section' && scope.domain && scope.section) {
+    return highlights.filter(
+      (h) => h.domain === scope.domain && h.path === scope.section,
+    );
+  }
+  return highlights;
+}
+
+function toPromptHighlights(list: WebHighlight[]) {
+  return list
+    .filter((h) => h.quote.trim().length > 0)
+    .map((h) => ({
+      id: h.id,
+      text: h.quote,
+      url: `https://${h.domain}${h.path.startsWith('/') ? h.path : `/${h.path}`}`,
+      title: h.path || h.domain,
+    }));
+}
+
+function scopeKindFor(scope: AskScope): ScopeKind {
+  return scope === 'section' ? 'section' : 'domain';
 }
 
 function LockIcon(): React.ReactElement {
@@ -194,8 +226,10 @@ function PaidAskShell({
   });
   const navigate = useNavigate();
   const [draft, setDraft] = useState('');
-  const [streamError, setStreamError] = useState<string | null>(null);
+  const [lastQuestion, setLastQuestion] = useState('');
+  const [prepareError, setPrepareError] = useState<string | null>(null);
   const modelSelection = useWebAskModelSelection({ isAuthenticated, userId });
+  const stream = useLLMStream();
 
   // Keep scope in sync when URL query changes (e.g. nav from Library with domain).
   useEffect(() => {
@@ -208,22 +242,26 @@ function PaidAskShell({
   const groundCount = countForScope(highlights, domains, scope);
   const ground = groundLabel(scope);
   const aiSettingsHref = `/settings?${buildSettingsSearch('ai')}`;
+  const needsKey = modelSelection.activeProvider === null;
+  const busy = stream.status === 'streaming';
+  const streamError = prepareError || stream.error;
+  const answerText = stream.chunks;
 
   const selectLibrary = useCallback(() => {
     setScope({ scope: 'library', domain: null, section: null });
-    setStreamError(null);
+    setPrepareError(null);
   }, []);
 
   const selectDomain = useCallback((domain: string) => {
     setScope({ scope: 'domain', domain, section: null });
     setExpanded((prev) => ({ ...prev, [domain]: true }));
-    setStreamError(null);
+    setPrepareError(null);
   }, []);
 
   const selectSection = useCallback((domain: string, path: string) => {
     setScope({ scope: 'section', domain, section: path });
     setExpanded((prev) => ({ ...prev, [domain]: true }));
-    setStreamError(null);
+    setPrepareError(null);
   }, []);
 
   const toggleDomain = useCallback((domain: string) => {
@@ -231,14 +269,64 @@ function PaidAskShell({
   }, []);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       const q = draft.trim();
-      if (!q) return;
-      // No chrome-free stream path in product web — honest error only.
-      setStreamError(WEB_STREAM_UNAVAILABLE);
+      if (!q || busy) return;
+      if (needsKey || !modelSelection.activeProvider) {
+        setPrepareError(
+          'Add a provider key on this device (Settings → Models & providers).',
+        );
+        return;
+      }
+
+      setPrepareError(null);
+      setLastQuestion(q);
+
+      const scoped = highlightsForScope(highlights, scope);
+      const promptHighlights = toPromptHighlights(scoped);
+      if (promptHighlights.length === 0) {
+        setPrepareError('No highlights in this scope to ground the answer.');
+        return;
+      }
+
+      try {
+        const { excerpts, errorNote } = await prepareHighlightExcerpts(
+          promptHighlights,
+          async () => ({
+            success: false,
+            error: 'Page cache unavailable on web; using highlight quotes only.',
+          }),
+        );
+        const usedExcerpts =
+          excerpts.length > 0
+            ? excerpts
+            : buildFallbackExcerpts(promptHighlights).excerpts;
+
+        if (errorNote) {
+          /* expected on web — still stream with quote fallbacks */
+        }
+
+        stream.start({
+          template: 'askScope',
+          highlights: promptHighlights,
+          request: buildScopeQueryRequest({
+            scope: {
+              scopeLabel: groundLabel(scope),
+              scopeKind: scopeKindFor(scope.scope),
+              highlightCount: promptHighlights.length,
+            },
+            excerpts: usedExcerpts,
+            question: q,
+          }),
+          provider: modelSelection.activeProvider,
+        });
+        setDraft('');
+      } catch (err) {
+        setPrepareError((err as Error).message || 'Could not prepare question');
+      }
     },
-    [draft],
+    [busy, draft, highlights, modelSelection.activeProvider, needsKey, scope, stream],
   );
 
   return (
@@ -342,10 +430,48 @@ function PaidAskShell({
       </div>
 
       <div className="ask-chat" data-od-id="ask-chat">
-        <div className="ask-quiet" data-od-id="ask-empty" />
-        <form className="ask-composer" data-od-id="ask-composer" onSubmit={handleSubmit}>
+        <div className="ask-quiet" data-od-id="ask-empty">
+          {lastQuestion || answerText || busy ? (
+            <div data-od-id="ask-transcript" style={{ padding: '16px 20px' }}>
+              {lastQuestion ? (
+                <p
+                  className="type-sub"
+                  data-od-id="ask-last-question"
+                  style={{ marginBottom: 12, color: 'var(--ink-2)' }}
+                >
+                  {lastQuestion}
+                </p>
+              ) : null}
+              {busy && !answerText ? (
+                <p className="type-sub" data-od-id="ask-streaming" aria-live="polite">
+                  …
+                </p>
+              ) : null}
+              {answerText ? (
+                <div
+                  data-od-id="ask-answer"
+                  className="u-serif"
+                  style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--step-0)' }}
+                >
+                  {answerText}
+                </div>
+              ) : null}
+              {busy ? (
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  data-od-id="ask-abort"
+                  style={{ marginTop: 12 }}
+                  onClick={() => stream.abort()}
+                >
+                  Stop
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <form className="ask-composer" data-od-id="ask-composer" onSubmit={(e) => { void handleSubmit(e); }}>
           <div className="ask-composer-inner">
-            {/* Scope pill kept — extra grounding affordance beyond OD silent composer */}
             <div
               className="scope-pill"
               data-od-id="ask-ground"
@@ -358,7 +484,9 @@ function PaidAskShell({
               <AskModelChip
                 options={modelSelection.options}
                 activeProvider={modelSelection.activeProvider}
-                activeLabel={modelSelection.activeLabel}
+                activeLabel={
+                  needsKey ? 'Add provider' : modelSelection.activeLabel
+                }
                 onSelect={(p) => {
                   void modelSelection.selectProvider(p);
                 }}
@@ -375,12 +503,17 @@ function PaidAskShell({
                 id="ask-input"
                 data-od-id="ask-input"
                 rows={1}
-                placeholder={placeholderFor(scope.scope)}
+                placeholder={
+                  needsKey
+                    ? 'Add a model key to chat…'
+                    : placeholderFor(scope.scope)
+                }
                 aria-label="Question"
                 value={draft}
+                disabled={busy}
                 onChange={(e) => {
                   setDraft(e.target.value);
-                  if (streamError) setStreamError(null);
+                  if (prepareError) setPrepareError(null);
                 }}
               />
               <button
@@ -388,7 +521,7 @@ function PaidAskShell({
                 className="ask-send-btn"
                 data-od-id="ask-send"
                 aria-label="Send question"
-                disabled={!draft.trim()}
+                disabled={!draft.trim() || busy || needsKey}
               >
                 <svg
                   width="16"
@@ -425,7 +558,7 @@ function PaidAskShell({
 
 /**
  * Ask product page. Guest/Free/past_due → lock; Paid → grounding + composer.
- * Never uses extension runtime messaging.
+ * Streams via browser ILlmRuntime (no chrome).
  */
 export function AskPage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();

@@ -1,10 +1,5 @@
-import { AnthropicProvider } from './anthropic-provider';
-import { GeminiProvider } from './gemini-provider';
 import type { LLMKeyStore } from './llm-key-store';
 import type { LLMRegistry } from './llm-registry';
-import { OllamaProvider } from './ollama-provider';
-import { OpenAIProvider } from './openai-provider';
-import { OpenRouterProvider } from './openrouter-provider';
 
 import type { ILLMService, ProviderName } from '@/shared/interfaces/i-llm-service';
 import {
@@ -12,9 +7,11 @@ import {
   isInAppLlmProvider,
   parseInAppLlmProvider,
 } from '@/shared/llm/in-app-providers';
+import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
+
 
 const NO_PROVIDER_MESSAGE =
-  'No model configured. Open Settings → Models & providers and add OpenAI, Anthropic, Gemini, OpenRouter, or Ollama.';
+  'No model configured. Open Settings → Models & providers and add OpenAI, Anthropic, Gemini, xAI (Grok), OpenRouter, or Ollama.';
 
 export function tryGetRegistered(registry: LLMRegistry, name: ProviderName): ILLMService | null {
   try {
@@ -36,48 +33,14 @@ export async function buildProvider(
 
   const model = modelOverride ?? await keyStore.getModel(provider);
   const resolvedApiBase = apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
+  const apiKey = provider === 'ollama' ? undefined : (await keyStore.get(provider)) ?? undefined;
 
-  switch (provider) {
-    case 'ollama':
-      return new OllamaProvider({ apiBase: resolvedApiBase, model });
-    case 'anthropic': {
-      const key = await keyStore.get(provider);
-      if (!key) throw new Error('API key not configured');
-      return new AnthropicProvider({ apiKey: key, model });
-    }
-    case 'gemini': {
-      const key = await keyStore.get(provider);
-      if (!key) throw new Error('API key not configured');
-      return new GeminiProvider({ apiKey: key, model });
-    }
-    case 'openai': {
-      const key = await keyStore.get(provider);
-      if (!key) throw new Error('API key not configured');
-      // Cursor agent keys look like key_… — they are not OpenAI platform keys.
-      if (/^key_/i.test(key.trim())) {
-        throw new Error(
-          'Stored key looks like a Cursor agent key, not an OpenAI API key. '
-          + 'Clear it and paste a key from platform.openai.com, or use OpenRouter / Anthropic / Gemini / Ollama.',
-        );
-      }
-      return new OpenAIProvider({ apiKey: key, model });
-    }
-    case 'openrouter': {
-      const key = await keyStore.get(provider);
-      // OpenRouter API always requires a key — free models only mean $0 credits.
-      if (!key) {
-        throw new Error(
-          'OpenRouter API key required (free at openrouter.ai/keys). '
-          + 'Free models do not charge credits but still need a key.',
-        );
-      }
-      return new OpenRouterProvider({ apiKey: key, model });
-    }
-    default: {
-      const exhaustive: never = provider;
-      throw new Error(`Unknown LLM provider: ${String(exhaustive)}`);
-    }
-  }
+  return buildProviderFromConfig({
+    provider,
+    apiKey,
+    apiBase: resolvedApiBase,
+    model: model ?? undefined,
+  });
 }
 
 /**

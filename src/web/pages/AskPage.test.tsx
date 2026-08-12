@@ -189,7 +189,7 @@ describe('AskPage', () => {
     expect(document.querySelector('[data-od-id="ask-model-label"]')).toBeTruthy();
   });
 
-  it('paid submit shows honest error (no fabricated model text)', async () => {
+  it('paid without local keys: send disabled (needs key on this device)', async () => {
     mockBilling({ isPaidActive: true, status: 'active' });
     mockFetch.mockResolvedValue([
       {
@@ -213,15 +213,11 @@ describe('AskPage', () => {
       '[data-od-id="ask-input"]',
     ) as HTMLTextAreaElement;
     fireEvent.change(input, { target: { value: 'Summarize my library' } });
-    fireEvent.click(document.querySelector('[data-od-id="ask-send"]')!);
-
-    await waitFor(() => {
-      expect(document.querySelector('[data-od-id="ask-stream-error"]')).toBeTruthy();
-    });
-    const err = document.querySelector('[data-od-id="ask-stream-error"]')?.textContent ?? '';
-    expect(err.toLowerCase()).toMatch(/not available|extension|unavailable/);
+    const send = document.querySelector('[data-od-id="ask-send"]') as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
     // No fabricated assistant bubble
     expect(document.querySelector('.bubble-ai')).toBeNull();
+    expect(document.querySelector('[data-od-id="ask-answer"]')).toBeNull();
   });
 
   it('accepts domain/section query for grounding scope', async () => {

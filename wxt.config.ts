@@ -26,6 +26,7 @@ export default defineConfig({
       'https://generativelanguage.googleapis.com/*',
       'https://api.anthropic.com/*',
       'https://api.openai.com/*',
+      'https://api.x.ai/*',
       'https://openrouter.ai/*',
       // WP-3: pin this Supabase project only (auth + billing edge)
       'https://cuzwaukxagefyvtxbqmi.supabase.co/*',

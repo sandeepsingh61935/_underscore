@@ -1,20 +1,38 @@
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
+import {
+  LLM_PROXY_HEALTH_PATH,
+  usesWebProxy,
+} from '@/shared/llm/runtime/proxy-policy';
 
 interface CheckOptions {
   apiKey?: string;
   apiBase?: string;
   model?: string;
+  /**
+   * When set (web cloud path), health goes through the same Pages Function as
+   * stream so "Connect works ⇒ Chat works" (ADR-027). Ollama ignores this.
+   */
+  accessToken?: string | null;
+  /** Override proxy path base (tests). */
+  proxyBaseUrl?: string;
+  fetchImpl?: typeof fetch;
 }
 
 /**
  * Run a provider health check in a browser context (popup / page).
+ * Cloud on web with accessToken → proxy; Ollama and extension direct.
  */
 export async function checkProviderHealthInBrowser(
   provider: ProviderName,
   options: CheckOptions = {},
 ): Promise<HealthCheckResult> {
   const model = resolveProviderModel(provider, options.model);
+  const fetchFn = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
+
+  if (usesWebProxy(provider) && options.accessToken) {
+    return checkCloudViaProxy(provider, model, options, fetchFn);
+  }
 
   switch (provider) {
     case 'gemini': {
@@ -22,7 +40,7 @@ export async function checkProviderHealthInBrowser(
       if (!apiKey) return { ok: false, model, error: 'API key required' };
       const apiBase = options.apiBase ?? 'https://generativelanguage.googleapis.com/v1beta';
       const url = `${apiBase}/models/${model}?key=${encodeURIComponent(apiKey)}`;
-      return fetchHealth(url, model);
+      return fetchHealth(url, model, undefined, fetchFn);
     }
     case 'anthropic': {
       const apiKey = options.apiKey?.trim();
@@ -41,7 +59,7 @@ export async function checkProviderHealthInBrowser(
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),
-      });
+      }, fetchFn);
     }
     case 'openai': {
       const apiKey = options.apiKey?.trim();
@@ -59,10 +77,27 @@ export async function checkProviderHealthInBrowser(
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),
-      });
+      }, fetchFn);
+    }
+    case 'xai': {
+      const apiKey = options.apiKey?.trim();
+      if (!apiKey) return { ok: false, model, error: 'API key required' };
+      const apiBase = options.apiBase ?? 'https://api.x.ai/v1';
+      const url = `${apiBase}/chat/completions`;
+      return fetchHealth(url, model, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'ping' }],
+        }),
+      }, fetchFn);
     }
     case 'openrouter': {
-      // Free models still need a key — OpenRouter API has no keyless chat path.
       const apiKey = options.apiKey?.trim();
       if (!apiKey) {
         return {
@@ -86,12 +121,12 @@ export async function checkProviderHealthInBrowser(
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),
-      });
+      }, fetchFn);
     }
     case 'ollama': {
       const apiBase = options.apiBase ?? 'http://localhost:11434';
       const url = `${apiBase.replace(/\/$/, '')}/api/tags`;
-      return checkOllamaModelInstalled(url, model);
+      return checkOllamaModelInstalled(url, model, fetchFn);
     }
     default: {
       const exhaustive: never = provider;
@@ -100,10 +135,56 @@ export async function checkProviderHealthInBrowser(
   }
 }
 
-/** Ollama has no auth failure mode — the real signal is whether the selected model is installed. */
-async function checkOllamaModelInstalled(tagsUrl: string, model: string): Promise<HealthCheckResult> {
+async function checkCloudViaProxy(
+  provider: ProviderName,
+  model: string,
+  options: CheckOptions,
+  fetchFn: typeof fetch,
+): Promise<HealthCheckResult> {
+  const apiKey = options.apiKey?.trim();
+  if (!apiKey) return { ok: false, model, error: 'API key required' };
+  const token = options.accessToken?.trim();
+  if (!token) return { ok: false, model, error: 'Sign in required to verify cloud providers' };
+
+  const base = (options.proxyBaseUrl ?? '').replace(/\/$/, '');
   try {
-    const response = await fetch(tagsUrl);
+    const response = await fetchFn(`${base}${LLM_PROXY_HEALTH_PATH}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+        'x-llm-api-key': apiKey,
+      },
+      body: JSON.stringify({ provider, model }),
+    });
+    const json = (await response.json().catch(() => ({}))) as HealthCheckResult & {
+      error?: string;
+    };
+    if (typeof json.ok === 'boolean') {
+      return {
+        ok: json.ok,
+        model: json.model || model,
+        error: json.error,
+      };
+    }
+    return {
+      ok: false,
+      model,
+      error: json.error || `HTTP ${response.status}`,
+    };
+  } catch (err) {
+    return { ok: false, model, error: (err as Error).message };
+  }
+}
+
+/** Ollama has no auth failure mode — the real signal is whether the selected model is installed. */
+async function checkOllamaModelInstalled(
+  tagsUrl: string,
+  model: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<HealthCheckResult> {
+  try {
+    const response = await fetchFn(tagsUrl);
     if (!response.ok) return { ok: false, model, error: `HTTP ${response.status}` };
     const json = await response.json() as { models?: Array<{ name: string }> };
     const names = (json.models ?? []).map(m => m.name);
@@ -123,9 +204,10 @@ async function fetchHealth(
   url: string,
   model: string,
   init: RequestInit = { method: 'GET' },
+  fetchFn: typeof fetch = fetch,
 ): Promise<HealthCheckResult> {
   try {
-    const response = await fetch(url, init);
+    const response = await fetchFn(url, init);
     if (response.ok) return { ok: true, model };
     const errorText = await response.text().catch(() => '');
     const detail = errorText ? `: ${errorText.slice(0, 200)}` : '';

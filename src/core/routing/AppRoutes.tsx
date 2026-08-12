@@ -19,6 +19,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
+import { WebLlmRuntimeProvider } from '@/web/components/WebLlmRuntimeProvider';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
@@ -69,6 +70,7 @@ export function AppRoutes() {
   return (
     <WebAuthProvider>
       <AppProvider dataProvider={dataProvider}>
+        <WebLlmRuntimeProvider>
         <BrowserRouter>
           <IntentCatcher>
             <Routes>
@@ -103,6 +105,7 @@ export function AppRoutes() {
             </Routes>
           </IntentCatcher>
         </BrowserRouter>
+        </WebLlmRuntimeProvider>
       </AppProvider>
     </WebAuthProvider>
   );

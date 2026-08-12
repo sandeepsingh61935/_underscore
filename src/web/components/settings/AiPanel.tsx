@@ -257,8 +257,8 @@ function ModelsList({
     >
       <p className="block-label">Models &amp; providers</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        Keys stay on this device (not synced). Used when web Chat can stream;
-        extension Ask uses extension keys until then.
+        Keys stay on this device (not synced). Used for web Chat on this browser;
+        the extension has its own device keys.
       </p>
       {!isAuthenticated ? (
         <div className="banner" data-od-id="models-signin-banner" style={{ marginBottom: 12 }}>
@@ -338,10 +338,20 @@ function ProviderSetup({
     setMessage(null);
     setOk(null);
     try {
+      let accessToken: string | null = null;
+      if (provider !== 'ollama') {
+        try {
+          const { data } = await getWebSupabaseClient().auth.getSession();
+          accessToken = data.session?.access_token ?? null;
+        } catch {
+          accessToken = null;
+        }
+      }
       const result = await checkProviderHealthInBrowser(provider, {
         apiKey: apiKey.trim() || undefined,
         apiBase: apiBase.trim() || undefined,
         model: model.trim() || undefined,
+        accessToken,
       });
       if (result.ok) {
         const next = upsertProviderConfig(provider, {
@@ -355,7 +365,7 @@ function ProviderSetup({
         });
         onStateChange(next);
         setOk(true);
-        setMessage('Connection ok · saved for web Ask when streaming ships');
+        setMessage('Connection ok · ready for Chat on this device');
       } else {
         setOk(false);
         setMessage(result.error ?? 'Check failed');
