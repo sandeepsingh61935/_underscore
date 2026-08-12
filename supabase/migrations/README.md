@@ -70,5 +70,19 @@ Do **not** paste ad-hoc DDL into the dashboard for schema that belongs in
 | `20260812160000_chat_threads_messages.sql` | Grounded chat threads + messages (ADR-028) |
 | `bootstrap-cli-migrations-and-apply-ai-preferences.sql` | one-shot history bootstrap + apply ai_preferences |
 | `apply-ai-preferences-manual.sql` | legacy table-only fallback (no history) |
+| `apply-chat-threads-messages-manual.sql` | SQL Editor one-shot for chat_threads + chat_messages |
+
+### Chat tables missing (`Could not find the table 'public.chat_threads'`)
+
+App code is live; schema must be applied on the linked project.
+
+**Preferred:** `npx supabase db push --linked --yes` (or `-p "$SUPABASE_DB_PASSWORD"` when login-role fails).
+
+**SQL Editor (works today when CLI hits `cli_login_postgres` permission denied):**
+
+1. Open [SQL Editor](https://supabase.com/dashboard/project/cuzwaukxagefyvtxbqmi/sql/new)
+2. Paste and run **`apply-chat-threads-messages-manual.sql`**
+3. Confirm result rows: `chat_threads` / `chat_messages` → `exists = true`
+4. Retry Ask in the web app (hard refresh if the client cached the schema error)
 
 Schema reference: [docs/06-security/highlights-schema.md](../docs/06-security/highlights-schema.md)
