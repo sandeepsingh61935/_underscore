@@ -352,8 +352,7 @@ function ProviderSetup({
         apiBase: apiBase.trim() || undefined,
         model: model.trim() || undefined,
         accessToken,
-        // Web cloud must use proxy — never silent browser-direct CORS path.
-        allowDirectCloud: false,
+        // default allowDirectCloud=false: web cloud uses proxy only
       });
       if (result.ok) {
         const next = upsertProviderConfig(provider, {

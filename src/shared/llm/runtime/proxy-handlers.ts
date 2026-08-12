@@ -229,6 +229,14 @@ export async function handleLlmStreamProxy(
   const encoder = new TextEncoder();
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), LLM_PROXY_MAX_STREAM_MS);
+  let released = false;
+  const releaseOnce = (): void => {
+    if (released) return;
+    released = true;
+    clearTimeout(timeout);
+    const cur = rateByUser.get(auth.userId) ?? emptyRateLimitState();
+    rateByUser.set(auth.userId, releaseStream(cur));
+  };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -243,9 +251,7 @@ export async function handleLlmStreamProxy(
       try {
         await runProviderStream(providerInstance, request, push, abort.signal);
       } finally {
-        clearTimeout(timeout);
-        const cur = rateByUser.get(auth.userId) ?? emptyRateLimitState();
-        rateByUser.set(auth.userId, releaseStream(cur));
+        releaseOnce();
         try {
           controller.close();
         } catch {
@@ -255,9 +261,7 @@ export async function handleLlmStreamProxy(
     },
     cancel() {
       abort.abort();
-      clearTimeout(timeout);
-      const cur = rateByUser.get(auth.userId) ?? emptyRateLimitState();
-      rateByUser.set(auth.userId, releaseStream(cur));
+      releaseOnce();
     },
   });
 

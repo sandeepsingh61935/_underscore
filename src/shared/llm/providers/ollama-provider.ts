@@ -115,8 +115,19 @@ export class OllamaProvider implements ILLMService {
       }
       const json = await response.json() as { models?: Array<{ name: string }> };
       const names = (json.models ?? []).map(m => m.name);
+      if (names.length === 0) {
+        return {
+          ok: false,
+          model: this.model,
+          error: 'No models installed — run ollama pull <model>',
+        };
+      }
       if (!names.includes(this.model)) {
-        return { ok: false, model: this.model, error: `Model not installed — run ollama pull ${this.model}` };
+        return {
+          ok: false,
+          model: this.model,
+          error: `Model not installed — run ollama pull ${this.model}`,
+        };
       }
       return { ok: true, model: this.model };
     } catch (err) {

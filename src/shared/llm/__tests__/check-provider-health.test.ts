@@ -14,7 +14,7 @@ describe('checkProviderHealthInBrowser', () => {
       allowDirectCloud: true,
     });
     expect(result.ok).toBe(false);
-    expect(result.error).toBe('API key required');
+    expect(result.error).toMatch(/API key/i);
   });
 
   it('returns ok when gemini health fetch succeeds (extension direct)', async () => {

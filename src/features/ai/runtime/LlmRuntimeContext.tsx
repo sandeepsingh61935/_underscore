@@ -21,11 +21,27 @@ export function LlmRuntimeProvider({
   );
 }
 
+function hasChromeRuntimeConnect(): boolean {
+  return typeof chrome !== 'undefined' && typeof chrome.runtime?.connect === 'function';
+}
+
 /**
- * Resolve runtime: explicit context, else extension Port adapter when chrome exists.
+ * Resolve runtime: explicit context, else extension Port adapter.
+ * Web product must wrap with WebLlmRuntimeProvider — no silent chrome fallback off-extension.
  */
 export function useLlmRuntime(): ILlmRuntime {
   const ctx = useContext(LlmRuntimeContext);
-  const fallback = useMemo(() => createExtensionLlmRuntime(), []);
-  return ctx ?? fallback;
+  const fallback = useMemo(() => {
+    if (hasChromeRuntimeConnect()) {
+      return createExtensionLlmRuntime();
+    }
+    return null;
+  }, []);
+
+  if (ctx) return ctx;
+  if (fallback) return fallback;
+
+  throw new Error(
+    'LlmRuntimeProvider is required outside the Chrome extension (web must use WebLlmRuntimeProvider).',
+  );
 }

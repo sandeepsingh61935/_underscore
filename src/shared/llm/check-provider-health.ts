@@ -1,5 +1,12 @@
+/**
+ * Provider health in browser/popup (ADR-027).
+ * Transport: proxy | direct | unavailable (see health-transport).
+ * Direct path uses shared providers' healthCheck() — no hand-rolled HTTP.
+ */
+
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { resolveCloudHealthTransport } from '@/shared/llm/health-transport';
+import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
 import { LLM_PROXY_HEALTH_PATH } from '@/shared/llm/runtime/proxy-policy';
 
@@ -7,16 +14,13 @@ interface CheckOptions {
   apiKey?: string;
   apiBase?: string;
   model?: string;
-  /**
-   * When set, cloud health goes through the Pages Function (web + ADR-027).
-   */
+  /** Cloud health via Pages Function when set. */
   accessToken?: string | null;
   /**
-   * Extension may set true to call cloud providers via host_permissions.
-   * Web must omit/false so missing token returns a clear error.
+   * Extension may set true (host_permissions).
+   * Web must omit/false so missing token does not attempt CORS-doomed direct.
    */
   allowDirectCloud?: boolean;
-  /** Override proxy path base (tests). */
   proxyBaseUrl?: string;
   fetchImpl?: typeof fetch;
 }
@@ -48,104 +52,20 @@ export async function checkProviderHealthInBrowser(
     };
   }
 
-  switch (provider) {
-    case 'gemini': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      const apiBase = options.apiBase ?? 'https://generativelanguage.googleapis.com/v1beta';
-      const url = `${apiBase}/models/${model}?key=${encodeURIComponent(apiKey)}`;
-      return fetchHealth(url, model, undefined, fetchFn);
-    }
-    case 'anthropic': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      const apiBase = options.apiBase ?? 'https://api.anthropic.com/v1';
-      const url = `${apiBase}/messages`;
-      return fetchHealth(url, model, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      }, fetchFn);
-    }
-    case 'openai': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      const apiBase = options.apiBase ?? 'https://api.openai.com/v1';
-      const url = `${apiBase}/chat/completions`;
-      return fetchHealth(url, model, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      }, fetchFn);
-    }
-    case 'xai': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) return { ok: false, model, error: 'API key required' };
-      const apiBase = options.apiBase ?? 'https://api.x.ai/v1';
-      const url = `${apiBase}/chat/completions`;
-      return fetchHealth(url, model, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      }, fetchFn);
-    }
-    case 'openrouter': {
-      const apiKey = options.apiKey?.trim();
-      if (!apiKey) {
-        return {
-          ok: false,
-          model,
-          error: 'OpenRouter API key required (free at openrouter.ai/keys). Free models do not charge credits.',
-        };
-      }
-      const apiBase = options.apiBase ?? 'https://openrouter.ai/api/v1';
-      const url = `${apiBase}/chat/completions`;
-      return fetchHealth(url, model, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'HTTP-Referer': 'https://underscore.app',
-          'X-Title': 'Underscore Highlighter',
-          authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      }, fetchFn);
-    }
-    case 'ollama': {
-      const apiBase = options.apiBase ?? 'http://localhost:11434';
-      const url = `${apiBase.replace(/\/$/, '')}/api/tags`;
-      return checkOllamaModelInstalled(url, model, fetchFn);
-    }
-    default: {
-      const exhaustive: never = provider;
-      return { ok: false, model: 'unknown', error: `Unknown provider: ${String(exhaustive)}` };
-    }
+  try {
+    const instance = buildProviderFromConfig({
+      provider,
+      apiKey: options.apiKey,
+      apiBase: options.apiBase,
+      model,
+    });
+    return await instance.healthCheck();
+  } catch (err) {
+    return {
+      ok: false,
+      model,
+      error: (err as Error).message || 'Health check failed',
+    };
   }
 }
 
@@ -158,7 +78,9 @@ async function checkCloudViaProxy(
   const apiKey = options.apiKey?.trim();
   if (!apiKey) return { ok: false, model, error: 'API key required' };
   const token = options.accessToken?.trim();
-  if (!token) return { ok: false, model, error: 'Sign in required to verify cloud providers' };
+  if (!token) {
+    return { ok: false, model, error: 'Sign in required to verify cloud providers' };
+  }
 
   const base = (options.proxyBaseUrl ?? '').replace(/\/$/, '');
   try {
@@ -186,45 +108,6 @@ async function checkCloudViaProxy(
       model,
       error: json.error || `HTTP ${response.status}`,
     };
-  } catch (err) {
-    return { ok: false, model, error: (err as Error).message };
-  }
-}
-
-async function checkOllamaModelInstalled(
-  tagsUrl: string,
-  model: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<HealthCheckResult> {
-  try {
-    const response = await fetchFn(tagsUrl);
-    if (!response.ok) return { ok: false, model, error: `HTTP ${response.status}` };
-    const json = await response.json() as { models?: Array<{ name: string }> };
-    const names = (json.models ?? []).map(m => m.name);
-    if (names.length === 0) {
-      return { ok: false, model, error: 'No models installed — run ollama pull <model>' };
-    }
-    if (!names.includes(model)) {
-      return { ok: false, model, error: `Model not installed — run ollama pull ${model}` };
-    }
-    return { ok: true, model };
-  } catch (err) {
-    return { ok: false, model, error: (err as Error).message };
-  }
-}
-
-async function fetchHealth(
-  url: string,
-  model: string,
-  init: RequestInit = { method: 'GET' },
-  fetchFn: typeof fetch = fetch,
-): Promise<HealthCheckResult> {
-  try {
-    const response = await fetchFn(url, init);
-    if (response.ok) return { ok: true, model };
-    const errorText = await response.text().catch(() => '');
-    const detail = errorText ? `: ${errorText.slice(0, 200)}` : '';
-    return { ok: false, model, error: `HTTP ${response.status}${detail}` };
   } catch (err) {
     return { ok: false, model, error: (err as Error).message };
   }
