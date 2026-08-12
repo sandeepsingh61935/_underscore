@@ -74,6 +74,12 @@ export interface FinalizeMessagePatch {
   model?: string;
 }
 
+/** Message write that also returns the touched thread (avoids a follow-up get). */
+export interface MessageWriteResult {
+  message: ChatMessage;
+  thread: ChatThread;
+}
+
 /** v1 quotas (ADR-028 §10). */
 export const CHAT_QUOTAS = {
   threadsPerUser: 200,

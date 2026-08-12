@@ -9,6 +9,7 @@ import type {
   ChatThread,
   CreateThreadInput,
   FinalizeMessagePatch,
+  MessageWriteResult,
   UpdateThreadPatch,
 } from './types';
 
@@ -25,12 +26,12 @@ export interface IChatRepository {
   countThreads(userId: string): Promise<number>;
 
   listMessages(userId: string, threadId: string): Promise<ChatMessage[]>;
-  appendMessage(input: AppendMessageInput): Promise<ChatMessage>;
+  appendMessage(input: AppendMessageInput): Promise<MessageWriteResult>;
   finalizeMessage(
     userId: string,
     messageId: string,
     patch: FinalizeMessagePatch,
-  ): Promise<ChatMessage>;
+  ): Promise<MessageWriteResult>;
   countMessages(userId: string, threadId: string): Promise<number>;
 }
 

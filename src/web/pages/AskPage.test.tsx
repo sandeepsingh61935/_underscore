@@ -40,14 +40,27 @@ vi.mock('@/web/hooks/useWebChat', () => ({
     threads: [],
     activeThreadId: null,
     messages: [],
+    service: null,
     refreshThreads: vi.fn().mockResolvedValue(undefined),
     selectThread: vi.fn().mockResolvedValue(undefined),
     newThread: vi.fn(),
     deleteThread: vi.fn().mockResolvedValue(undefined),
-    beginTurn: vi.fn(),
-    finalizeTurn: vi.fn(),
-    patchLocalMessage: vi.fn(),
-    replaceMessages: vi.fn(),
+    applyTurnStarted: vi.fn(),
+    applyStreamText: vi.fn(),
+    applyTurnFinished: vi.fn(),
+  }),
+}));
+
+vi.mock('@/features/ai/hooks/useGroundedChatTurn', () => ({
+  useGroundedChatTurn: () => ({
+    phase: 'idle',
+    busy: false,
+    error: null,
+    streamText: '',
+    inflightAssistantId: null,
+    clearError: vi.fn(),
+    send: vi.fn(),
+    abort: vi.fn(),
   }),
 }));
 

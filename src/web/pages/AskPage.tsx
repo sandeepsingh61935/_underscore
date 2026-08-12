@@ -1,25 +1,23 @@
 /**
  * @file AskPage.tsx
- * @description Product Ask — OD viewAsk parity: lock when !caps.ai;
- * paid shell with threads + grounding + composer (ADR-027 stream, ADR-028 history).
+ * @description Product Ask — lock when !caps.ai; paid shell with threads +
+ * grounding + composer. Turn lifecycle via useGroundedChatTurn (ADR-027/028).
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
-import { AskModelChip } from '@/features/ai/components/AskModelChip';
-import { useLLMStream } from '@/features/ai/hooks/useLLMStream';
+import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
-import {
-  assembleChatRequest,
-  scopeKindForPrompt,
-  scopeLabel as chatScopeLabel,
-  type ChatScope,
-} from '@/shared/chat';
+import type { ChatScope } from '@/shared/chat';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
+import { AskComposer } from '@/web/components/ask/AskComposer';
+import { AskGroundingTree } from '@/web/components/ask/AskGroundingTree';
+import { AskThreadSidebar } from '@/web/components/ask/AskThreadSidebar';
+import { AskTranscript } from '@/web/components/ask/AskTranscript';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import {
@@ -32,94 +30,43 @@ import { useWebChat } from '@/web/hooks/useWebChat';
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
-type AskScope = 'library' | 'domain' | 'section';
-
-type ScopeState = {
-  scope: AskScope;
-  domain: string | null;
-  section: string | null;
-};
-
-function toChatScope(state: ScopeState): ChatScope {
-  if (state.scope === 'section' && state.domain && state.section) {
-    return { kind: 'section', domain: state.domain, sectionKey: state.section };
-  }
-  if (state.scope === 'domain' && state.domain) {
-    return { kind: 'domain', domain: state.domain };
-  }
-  return { kind: 'library' };
-}
-
-function scopeStateFromChat(scope: ChatScope): ScopeState {
-  if (scope.kind === 'section') {
-    return { scope: 'section', domain: scope.domain, section: scope.sectionKey };
-  }
-  if (scope.kind === 'domain') {
-    return { scope: 'domain', domain: scope.domain, section: null };
-  }
-  return { scope: 'library', domain: null, section: null };
-}
-
-function shortPath(p: string): string {
-  const parts = String(p).split('/').filter(Boolean);
-  return parts.length ? parts[parts.length - 1]! : p;
-}
-
-function scopeFromQuery(search: string): ScopeState {
+function scopeFromQuery(search: string): ChatScope {
   const sel = parseLibrarySelection(search);
   if (sel.domain && sel.section) {
-    return { scope: 'section', domain: sel.domain, section: sel.section };
+    return { kind: 'section', domain: sel.domain, sectionKey: sel.section };
   }
   if (sel.domain) {
-    return { scope: 'domain', domain: sel.domain, section: null };
+    return { kind: 'domain', domain: sel.domain };
   }
-  return { scope: 'library', domain: null, section: null };
+  return { kind: 'library' };
 }
 
 function countForScope(
   highlights: WebHighlight[],
   domains: WebDomainNode[],
-  scope: ScopeState,
+  scope: ChatScope,
 ): number {
-  if (scope.scope === 'library') return highlights.length;
-  if (scope.scope === 'domain' && scope.domain) {
+  if (scope.kind === 'library') return highlights.length;
+  if (scope.kind === 'domain') {
     const d = domains.find((x) => x.domain === scope.domain);
     return d?.count ?? highlights.filter((h) => h.domain === scope.domain).length;
   }
-  if (scope.scope === 'section' && scope.domain && scope.section) {
-    return highlights.filter(
-      (h) => h.domain === scope.domain && h.path === scope.section,
-    ).length;
-  }
-  return highlights.length;
-}
-
-function groundLabel(scope: ScopeState): string {
-  if (scope.scope === 'section' && scope.section) return shortPath(scope.section);
-  if (scope.scope === 'domain' && scope.domain) return scope.domain;
-  return 'Library';
-}
-
-function placeholderFor(scope: AskScope): string {
-  if (scope === 'section') return 'Chat this section…';
-  if (scope === 'domain') return 'Chat this domain…';
-  return 'Chat your library…';
+  return highlights.filter(
+    (h) => h.domain === scope.domain && h.path === scope.sectionKey,
+  ).length;
 }
 
 function highlightsForScope(
   highlights: WebHighlight[],
-  scope: ScopeState,
+  scope: ChatScope,
 ): WebHighlight[] {
-  if (scope.scope === 'library') return highlights;
-  if (scope.scope === 'domain' && scope.domain) {
+  if (scope.kind === 'library') return highlights;
+  if (scope.kind === 'domain') {
     return highlights.filter((h) => h.domain === scope.domain);
   }
-  if (scope.scope === 'section' && scope.domain && scope.section) {
-    return highlights.filter(
-      (h) => h.domain === scope.domain && h.path === scope.section,
-    );
-  }
-  return highlights;
+  return highlights.filter(
+    (h) => h.domain === scope.domain && h.path === scope.sectionKey,
+  );
 }
 
 function toPromptHighlights(list: WebHighlight[]) {
@@ -177,7 +124,15 @@ function AskLockPanel({
             ? 'Payment past due. Update billing in Polar to restore Chat. Answers ground only on your saved highlights.'
             : 'Answers ground only on your saved highlights. Upgrade via Polar — no card form in-app.'}
         </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginTop: 8,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
           {isGuest ? (
             <>
               <Link to="/sign-in" className="btn primary" data-od-id="ask-signin">
@@ -235,633 +190,182 @@ function PaidAskShell({
 }: {
   highlights: WebHighlight[];
   domains: WebDomainNode[];
-  initialScope: ScopeState;
+  initialScope: ChatScope;
   isAuthenticated: boolean;
   userId?: string | null;
 }): React.ReactElement {
-  const [scope, setScope] = useState<ScopeState>(initialScope);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    if (initialScope.domain) return { [initialScope.domain]: true };
-    return {};
-  });
-  const navigate = useNavigate();
+  const [composerScope, setComposerScope] = useState<ChatScope>(initialScope);
   const [draft, setDraft] = useState('');
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const modelSelection = useWebAskModelSelection({ isAuthenticated, userId });
-  const stream = useLLMStream();
+
   const chat = useWebChat({
     userId,
     enabled: isAuthenticated && Boolean(userId),
   });
-  const inflightAssistantId = useRef<string | null>(null);
-  const turnSubmitting = useRef(false);
-  const [turnBusy, setTurnBusy] = useState(false);
-  const prevStreamStatus = useRef(stream.status);
-  const streamRef = useRef(stream);
-  const chatRef = useRef(chat);
-  streamRef.current = stream;
-  chatRef.current = chat;
 
-  // Keep composer scope in sync when URL query changes (new chat only).
-  useEffect(() => {
-    if (chat.activeThreadId) return;
-    setScope(initialScope);
-    if (initialScope.domain) {
-      setExpanded((prev) => ({ ...prev, [initialScope.domain!]: true }));
-    }
-  }, [chat.activeThreadId, initialScope.scope, initialScope.domain, initialScope.section]);
+  const turn = useGroundedChatTurn({
+    userId,
+    service: chat.service,
+    activeThreadId: chat.activeThreadId,
+    messages: chat.messages,
+    onTurnStarted: chat.applyTurnStarted,
+    onStreamText: chat.applyStreamText,
+    onTurnFinished: chat.applyTurnFinished,
+  });
 
-  // When opening a thread, lock composer scope to the thread.
   const activeThread = useMemo(
     () => chat.threads.find((t) => t.id === chat.activeThreadId) ?? null,
     [chat.activeThreadId, chat.threads],
   );
 
   useEffect(() => {
-    if (!activeThread) return;
-    const next = scopeStateFromChat(activeThread.scope);
-    setScope(next);
-    if (next.domain) {
-      setExpanded((prev) => ({ ...prev, [next.domain!]: true }));
-    }
-  }, [activeThread]);
-
-  const clearTurnBusy = useCallback(() => {
-    turnSubmitting.current = false;
-    setTurnBusy(false);
-  }, []);
-
-  // Stream → finalize assistant row (ADR-028 write path).
-  useEffect(() => {
-    const prev = prevStreamStatus.current;
-    prevStreamStatus.current = stream.status;
-    const assistantId = inflightAssistantId.current;
-    if (!assistantId) return;
-
-    if (stream.status === 'streaming') {
-      chat.patchLocalMessage(assistantId, { content: stream.chunks, status: 'streaming' });
+    if (activeThread) {
+      setComposerScope(activeThread.scope);
       return;
     }
+    setComposerScope(initialScope);
+  }, [activeThread, initialScope]);
 
-    if (stream.status === 'done' && prev === 'streaming') {
-      inflightAssistantId.current = null;
-      void chat
-        .finalizeTurn({
-          assistantMessageId: assistantId,
-          content: stream.chunks,
-          status: 'completed',
-          provider: modelSelection.activeProvider ?? undefined,
-        })
-        .then(() => clearTurnBusy())
-        .catch((err: Error) => {
-          chat.patchLocalMessage(assistantId, {
-            content: stream.chunks,
-            status: 'completed',
-          });
-          clearTurnBusy();
-          setPrepareError(err.message || 'Failed to save answer');
-        });
-      return;
-    }
-
-    if (stream.status === 'error' && prev === 'streaming') {
-      inflightAssistantId.current = null;
-      void chat
-        .finalizeTurn({
-          assistantMessageId: assistantId,
-          content: stream.chunks,
-          status: 'failed',
-          provider: modelSelection.activeProvider ?? undefined,
-        })
-        .catch(() => undefined)
-        .finally(() => clearTurnBusy());
-    }
-
-    if (stream.status === 'idle' && prev === 'streaming') {
-      // abort()
-      inflightAssistantId.current = null;
-      void chat
-        .finalizeTurn({
-          assistantMessageId: assistantId,
-          content: stream.chunks,
-          status: 'cancelled',
-          provider: modelSelection.activeProvider ?? undefined,
-        })
-        .catch(() => undefined)
-        .finally(() => clearTurnBusy());
-    }
-  }, [chat, clearTurnBusy, modelSelection.activeProvider, stream.chunks, stream.status]);
-
-  // Unmount / hard leave: cancel in-flight assistant so it is not stuck streaming.
-  useEffect(() => {
-    return () => {
-      const assistantId = inflightAssistantId.current;
-      if (!assistantId) return;
-      inflightAssistantId.current = null;
-      const chunks = streamRef.current.chunks;
-      streamRef.current.abort();
-      void chatRef.current
-        .finalizeTurn({
-          assistantMessageId: assistantId,
-          content: chunks,
-          status: 'cancelled',
-        })
-        .catch(() => undefined);
-    };
-  }, []);
-
-  const cancelInflightIfAny = useCallback(() => {
-    const assistantId = inflightAssistantId.current;
-    if (!assistantId && stream.status !== 'streaming' && !turnBusy) return;
-    if (assistantId) {
-      inflightAssistantId.current = null;
-      const chunks = stream.chunks;
-      stream.abort();
-      void chat
-        .finalizeTurn({
-          assistantMessageId: assistantId,
-          content: chunks,
-          status: 'cancelled',
-          provider: modelSelection.activeProvider ?? undefined,
-        })
-        .catch(() => undefined)
-        .finally(() => clearTurnBusy());
-    } else if (stream.status === 'streaming') {
-      stream.abort();
-      clearTurnBusy();
-    }
-  }, [chat, clearTurnBusy, modelSelection.activeProvider, stream, turnBusy]);
-
-  const groundCount = countForScope(highlights, domains, scope);
-  const ground = groundLabel(scope);
-  const aiSettingsHref = `/settings?${buildSettingsSearch('ai')}`;
+  const effectiveScope = activeThread?.scope ?? composerScope;
+  const groundCount = countForScope(highlights, domains, effectiveScope);
   const needsKey = modelSelection.activeProvider === null;
-  const busy = stream.status === 'streaming' || turnBusy;
-  const streamError = prepareError || stream.error || chat.error;
-  const hasTranscript = chat.messages.length > 0 || busy;
+  const busy = turn.busy;
+  const error = prepareError || turn.error || chat.error;
 
-  const selectLibrary = useCallback(() => {
-    if (busy) return;
-    cancelInflightIfAny();
-    if (chat.activeThreadId) chat.newThread();
-    setScope({ scope: 'library', domain: null, section: null });
+  const beginNewWithScope = useCallback(
+    (scope: ChatScope) => {
+      if (busy) return;
+      turn.abort();
+      chat.newThread();
+      setComposerScope(scope);
+      setPrepareError(null);
+      turn.clearError();
+    },
+    [busy, chat, turn],
+  );
+
+  const handleNewThread = useCallback(() => {
+    beginNewWithScope(composerScope);
+  }, [beginNewWithScope, composerScope]);
+
+  const handleSelectThread = useCallback(
+    (id: string) => {
+      if (busy) return;
+      turn.abort();
+      void chat.selectThread(id);
+      setPrepareError(null);
+      turn.clearError();
+    },
+    [busy, chat, turn],
+  );
+
+  const handleSubmit = useCallback(() => {
+    const q = draft.trim();
+    if (!q || busy) return;
+    if (needsKey || !modelSelection.activeProvider) {
+      setPrepareError(
+        'Add a provider key on this device (Settings → Models & providers).',
+      );
+      return;
+    }
+    if (!userId) {
+      setPrepareError('Sign in required to save chat history.');
+      return;
+    }
+
+    const scoped = highlightsForScope(highlights, effectiveScope);
+    const promptHighlights = toPromptHighlights(scoped);
+    if (promptHighlights.length === 0) {
+      setPrepareError('No highlights in this scope to ground the answer.');
+      return;
+    }
+
     setPrepareError(null);
-  }, [busy, cancelInflightIfAny, chat]);
-
-  const selectDomain = useCallback(
-    (domain: string) => {
-      if (busy) return;
-      cancelInflightIfAny();
-      if (chat.activeThreadId) chat.newThread();
-      setScope({ scope: 'domain', domain, section: null });
-      setExpanded((prev) => ({ ...prev, [domain]: true }));
-      setPrepareError(null);
-    },
-    [busy, cancelInflightIfAny, chat],
-  );
-
-  const selectSection = useCallback(
-    (domain: string, path: string) => {
-      if (busy) return;
-      cancelInflightIfAny();
-      if (chat.activeThreadId) chat.newThread();
-      setScope({ scope: 'section', domain, section: path });
-      setExpanded((prev) => ({ ...prev, [domain]: true }));
-      setPrepareError(null);
-    },
-    [busy, cancelInflightIfAny, chat],
-  );
-
-  const toggleDomain = useCallback((domain: string) => {
-    setExpanded((prev) => ({ ...prev, [domain]: !prev[domain] }));
-  }, []);
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      const q = draft.trim();
-      if (!q || busy || turnSubmitting.current) return;
-      if (needsKey || !modelSelection.activeProvider) {
-        setPrepareError(
-          'Add a provider key on this device (Settings → Models & providers).',
-        );
-        return;
-      }
-      if (!userId) {
-        setPrepareError('Sign in required to save chat history.');
-        return;
-      }
-
-      setPrepareError(null);
-
-      const chatScope = activeThread ? activeThread.scope : toChatScope(scope);
-      const scopeForHighlights = activeThread
-        ? scopeStateFromChat(activeThread.scope)
-        : scope;
-      const scoped = highlightsForScope(highlights, scopeForHighlights);
-      const promptHighlights = toPromptHighlights(scoped);
-      if (promptHighlights.length === 0) {
-        setPrepareError('No highlights in this scope to ground the answer.');
-        return;
-      }
-
-      turnSubmitting.current = true;
-      setTurnBusy(true);
-
-      try {
-        // Prior completed turns only (React state not yet updated by beginTurn).
-        const history = chat.messages.filter((m) => m.status === 'completed');
-
-        const turn = await chat.beginTurn({
-          question: q,
-          scope: chatScope,
-          provider: modelSelection.activeProvider,
-        });
-        inflightAssistantId.current = turn.assistantMessage.id;
-        setDraft('');
-
-        // Web has no extension page-context cache — ground on quote excerpts only.
-        const { excerpts } = buildFallbackExcerpts(promptHighlights);
-
-        try {
-          stream.start({
-            request: assembleChatRequest({
-              scope: {
-                scopeLabel: chatScopeLabel(chatScope),
-                scopeKind: scopeKindForPrompt(chatScope),
-                highlightCount: promptHighlights.length,
-              },
-              excerpts,
-              history,
-              question: q,
-            }),
-            provider: modelSelection.activeProvider,
-          });
-        } catch (streamErr) {
-          inflightAssistantId.current = null;
-          void chat
-            .finalizeTurn({
-              assistantMessageId: turn.assistantMessage.id,
-              content: '',
-              status: 'failed',
-              provider: modelSelection.activeProvider,
-            })
-            .catch(() => undefined);
-          clearTurnBusy();
-          throw streamErr;
-        }
-      } catch (err) {
-        inflightAssistantId.current = null;
-        clearTurnBusy();
-        setPrepareError((err as Error).message || 'Could not prepare question');
-      }
-    },
-    [
-      activeThread,
-      busy,
-      chat,
-      clearTurnBusy,
-      draft,
-      highlights,
-      modelSelection.activeProvider,
-      needsKey,
-      scope,
-      stream,
-      userId,
-    ],
-  );
-
-  const handleAbort = useCallback(() => {
-    stream.abort();
-  }, [stream]);
+    turn.clearError();
+    const { excerpts } = buildFallbackExcerpts(promptHighlights);
+    setDraft('');
+    void turn.send({
+      question: q,
+      scope: effectiveScope,
+      excerpts,
+      provider: modelSelection.activeProvider,
+    });
+  }, [
+    busy,
+    draft,
+    effectiveScope,
+    highlights,
+    modelSelection.activeProvider,
+    needsKey,
+    turn,
+    userId,
+  ]);
 
   return (
     <div className="ask-shell" data-od-id="ask">
       <div className="ask-projects" data-od-id="ask-projects">
-        <div className="ask-projects-head">
-          <h1 data-od-id="ask-title">Chat</h1>
-          <button
-            type="button"
-            className="btn ghost sm"
-            data-od-id="ask-new-thread"
-            style={{ marginTop: 8 }}
-            disabled={busy}
-            onClick={() => {
-              cancelInflightIfAny();
-              chat.newThread();
-              setPrepareError(null);
-            }}
-          >
-            New chat
-          </button>
-        </div>
-
-        <div className="ask-projects-body" data-od-id="ask-thread-list">
-          {chat.threads.length > 0 ? (
-            <ul className="ask-thread-list" aria-label="Chats">
-              {chat.threads.map((t) => {
-                const active = t.id === chat.activeThreadId;
-                return (
-                  <li key={t.id} className="ask-thread-row">
-                    <button
-                      type="button"
-                      className={`tree-item ask-thread-item${active ? ' active' : ''}`}
-                      data-od-id={`ask-thread-${t.id}`}
-                      aria-current={active ? 'true' : undefined}
-                      disabled={busy}
-                      onClick={() => {
-                        cancelInflightIfAny();
-                        void chat.selectThread(t.id);
-                        setPrepareError(null);
-                      }}
-                    >
-                      <span className="tree-label">{t.title}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="ask-thread-delete"
-                      data-od-id={`ask-thread-delete-${t.id}`}
-                      aria-label={`Delete ${t.title}`}
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        void chat.deleteThread(t.id);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="composer-note" style={{ padding: '0 6px' }}>
-              No saved chats yet.
-            </p>
-          )}
-
-          <p
-            className="u-kicker"
-            style={{ margin: '16px 6px 8px', color: 'var(--ink-3)' }}
-          >
-            Grounding
-          </p>
-          <div role="tree" aria-label="Grounding">
-            <div className="tree-row">
-              <span className="tree-chev-slot" aria-hidden="true" />
-              <button
-                type="button"
-                className={`tree-item${scope.scope === 'library' && !chat.activeThreadId ? ' active' : ''}`}
-                data-od-id="ask-proj-all"
-                role="treeitem"
-                aria-selected={scope.scope === 'library'}
-                onClick={selectLibrary}
-              >
-                <span className="folder-ico" aria-hidden="true">
-                  ◈
-                </span>
-                <span className="tree-label">Library</span>
-              </button>
-            </div>
-
-            {domains.map((d) => {
-              const open = !!expanded[d.domain];
-              const activeDom = scope.scope === 'domain' && scope.domain === d.domain;
-              const domId = d.domain.replace(/\./g, '-');
-              return (
-                <div key={d.domain} className="tree-group" data-tree-group={d.domain}>
-                  <div className="tree-row">
-                    <button
-                      type="button"
-                      className={`tree-toggle${open ? ' open' : ''}`}
-                      aria-label={`${open ? 'Collapse' : 'Expand'} ${d.domain}`}
-                      aria-expanded={open}
-                      onClick={() => toggleDomain(d.domain)}
-                    >
-                      <svg
-                        className="tree-chevron"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M4 2.5 8 6 4 9.5"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      className={`tree-item${activeDom ? ' active' : ''}`}
-                      data-od-id={`ask-proj-${domId}`}
-                      role="treeitem"
-                      aria-selected={activeDom}
-                      onClick={() => selectDomain(d.domain)}
-                    >
-                      <span className="folder-ico" aria-hidden="true">
-                        {d.domain.slice(0, 1)}
-                      </span>
-                      <span className="tree-label">{d.domain}</span>
-                    </button>
-                  </div>
-                  <div
-                    className={`tree-children${open ? ' is-open' : ''}`}
-                    data-tree-children
-                  >
-                    <div className="tree-children-inner">
-                      {d.sections.map((s) => {
-                        const activeSec =
-                          scope.scope === 'section' &&
-                          scope.domain === d.domain &&
-                          scope.section === s.path;
-                        return (
-                          <button
-                            key={s.path}
-                            type="button"
-                            className={`tree-item is-child${activeSec ? ' active' : ''}`}
-                            role="treeitem"
-                            aria-selected={activeSec}
-                            onClick={() => selectSection(d.domain, s.path)}
-                          >
-                            <span className="tree-label">{s.path}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <AskThreadSidebar
+          threads={chat.threads}
+          activeThreadId={chat.activeThreadId}
+          busy={busy}
+          onNewThread={handleNewThread}
+          onSelectThread={handleSelectThread}
+          onDeleteThread={(id) => {
+            void chat.deleteThread(id);
+          }}
+        />
+        <div className="ask-projects-body">
+          <AskGroundingTree
+            domains={domains}
+            scope={effectiveScope}
+            locked={Boolean(activeThread)}
+            busy={busy}
+            onSelectScope={beginNewWithScope}
+          />
         </div>
       </div>
 
       <div className="ask-chat" data-od-id="ask-chat">
-        {hasTranscript ? (
-          <div className="ask-thread" data-od-id="ask-transcript">
-            {chat.messages.map((m) => {
-              if (m.role === 'user') {
-                return (
-                  <div
-                    key={m.id}
-                    className="bubble-user"
-                    data-od-id="ask-user-bubble"
-                  >
-                    {m.content}
-                  </div>
-                );
-              }
-              const body =
-                m.status === 'streaming' &&
-                inflightAssistantId.current === m.id
-                  ? stream.chunks || m.content
-                  : m.content;
-              return (
-                <div
-                  key={m.id}
-                  className="bubble-ai"
-                  data-od-id="ask-answer"
-                  data-status={m.status}
-                >
-                  {m.status === 'streaming' && !body ? (
-                    <span data-od-id="ask-streaming" aria-live="polite">
-                      …
-                    </span>
-                  ) : (
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{body}</span>
-                  )}
-                  {m.status === 'failed' ? (
-                    <p className="composer-note" style={{ marginTop: 8 }}>
-                      Failed{stream.error ? `: ${stream.error}` : ''}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
-            {busy ? (
-              <button
-                type="button"
-                className="btn ghost sm"
-                data-od-id="ask-abort"
-                style={{ alignSelf: 'flex-start' }}
-                onClick={handleAbort}
-              >
-                Stop
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <div className="ask-quiet" data-od-id="ask-empty">
-            <span>Ask grounded questions about your library.</span>
-          </div>
-        )}
-        <form
-          className="ask-composer"
-          data-od-id="ask-composer"
-          onSubmit={(e) => {
-            void handleSubmit(e);
+        <AskTranscript
+          messages={chat.messages}
+          streamText={turn.streamText}
+          inflightAssistantId={turn.inflightAssistantId}
+          busy={busy}
+          streamError={turn.error}
+          onAbort={turn.abort}
+        />
+        <AskComposer
+          scope={effectiveScope}
+          groundCount={groundCount}
+          draft={draft}
+          onDraftChange={(v) => {
+            setDraft(v);
+            if (prepareError) setPrepareError(null);
           }}
-        >
-          <div className="ask-composer-inner">
-            <div
-              className="scope-pill"
-              data-od-id="ask-ground"
-              title="Answers use only this scope"
-            >
-              <span>{ground}</span>
-              <span className="n">{groundCount}</span>
-            </div>
-            <div className="composer-note" data-od-id="ask-model-label">
-              <AskModelChip
-                options={modelSelection.options}
-                activeProvider={modelSelection.activeProvider}
-                activeLabel={
-                  needsKey ? 'Add provider' : modelSelection.activeLabel
-                }
-                onSelect={(p) => {
-                  void modelSelection.selectProvider(p);
-                }}
-                onManage={() => {
-                  navigate(aiSettingsHref);
-                }}
-                emptyCta="Add provider"
-                manageLabel="Manage"
-                selectError={modelSelection.selectError}
-              />
-            </div>
-            <div className="composer-shell">
-              <textarea
-                id="ask-input"
-                data-od-id="ask-input"
-                rows={1}
-                placeholder={
-                  needsKey
-                    ? 'Add a model key to chat…'
-                    : placeholderFor(scope.scope)
-                }
-                aria-label="Question"
-                value={draft}
-                disabled={busy}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  if (prepareError) setPrepareError(null);
-                }}
-              />
-              <button
-                type="submit"
-                className="ask-send-btn"
-                data-od-id="ask-send"
-                aria-label="Send question"
-                disabled={!draft.trim() || busy || needsKey}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 19V5" />
-                  <path d="m5 12 7-7 7 7" />
-                </svg>
-              </button>
-            </div>
-            {streamError ? (
-              <p
-                className="composer-note"
-                data-od-id="ask-stream-error"
-                role="alert"
-                style={{ color: 'var(--ink-2)', marginTop: 8 }}
-              >
-                {streamError}
-              </p>
-            ) : null}
-          </div>
-        </form>
+          busy={busy}
+          needsKey={needsKey}
+          error={error}
+          modelOptions={modelSelection.options}
+          activeProvider={modelSelection.activeProvider}
+          activeLabel={modelSelection.activeLabel}
+          selectError={modelSelection.selectError}
+          onSelectProvider={(p) => {
+            void modelSelection.selectProvider(p);
+          }}
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   );
 }
 
-/**
- * Ask product page. Guest/Free/past_due → lock; Paid → grounding + composer.
- * Streams via browser ILlmRuntime (no chrome).
- */
 export function AskPage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();
   const billing = useBillingContextOptional();
   const location = useLocation();
 
   const entitlement = billing?.snapshot.entitlement ?? freeEntitlement();
-  // Never demote paid on load error — match Settings billing gate.
   const isPaidActive = resolveWebPaidActive(billing?.snapshot);
 
   const caps = useMemo(
@@ -889,19 +393,14 @@ export function AskPage(): React.ReactElement {
 
   const handleUpgrade = useCallback(() => {
     if (!billing) return;
-    void billing.startCheckout().catch(() => {
-      /* surface via absence of navigation; page stays locked */
-    });
+    void billing.startCheckout().catch(() => undefined);
   }, [billing]);
 
   const handleUpdatePayment = useCallback(() => {
     if (!billing) return;
-    void billing.openPortal().catch(() => {
-      /* portal open failed; stay on lock */
-    });
+    void billing.openPortal().catch(() => undefined);
   }, [billing]);
 
-  // Prefer explicit billing matrix action when present.
   const onPrimaryBilling = useCallback(() => {
     if (!billing || !billingCta) return;
     if (billingCta.action === 'portal') {
@@ -958,7 +457,11 @@ export function AskPage(): React.ReactElement {
   if (lib.status === 'error') {
     return (
       <div className="ask-shell" data-od-id="ask">
-        <div className="state-box" data-od-id="error-state" style={{ gridColumn: '1 / -1' }}>
+        <div
+          className="state-box"
+          data-od-id="error-state"
+          style={{ gridColumn: '1 / -1' }}
+        >
           <h3>Chat is offline</h3>
           <p>{lib.error || 'Try again in a moment.'}</p>
           <div className="actions">

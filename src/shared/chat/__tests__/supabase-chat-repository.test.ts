@@ -152,7 +152,7 @@ describe('SupabaseChatRepository', () => {
     };
     const repo = new SupabaseChatRepository(makeClient(store) as never);
 
-    const msg = await repo.appendMessage({
+    const { message: msg, thread } = await repo.appendMessage({
       userId: 'u1',
       threadId: 't1',
       role: 'user',
@@ -161,6 +161,7 @@ describe('SupabaseChatRepository', () => {
       id: 'm1',
     });
     expect(msg.role).toBe('user');
+    expect(thread.title).toMatch(/What did I save/);
 
     const threads = await repo.listThreads('u1');
     expect(threads[0]?.title).toMatch(/What did I save/);
@@ -223,7 +224,7 @@ describe('SupabaseChatRepository', () => {
     };
     const repo = new SupabaseChatRepository(makeClient(store) as never);
 
-    const done = await repo.finalizeMessage('u1', 'a1', {
+    const { message: done, thread } = await repo.finalizeMessage('u1', 'a1', {
       content: 'Here is the answer',
       status: 'completed',
       provider: 'openai',
@@ -233,6 +234,7 @@ describe('SupabaseChatRepository', () => {
     expect(done.status).toBe('completed');
     expect(done.content).toBe('Here is the answer');
     expect(done.model).toBe('gpt-4o-mini');
+    expect(thread.id).toBe('t1');
   });
 
   it('rejects oversized content', async () => {

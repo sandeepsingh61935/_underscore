@@ -8,6 +8,7 @@ export type {
   ChatThread,
   CreateThreadInput,
   FinalizeMessagePatch,
+  MessageWriteResult,
   UpdateThreadPatch,
 } from './types';
 export { CHAT_QUOTAS, ChatQuotaError } from './types';
@@ -50,3 +51,10 @@ export {
   type BeginTurnResult,
   type FinalizeTurnInput,
 } from './chat-service';
+
+export {
+  runGroundedTurn,
+  type RunGroundedTurnInput,
+  type RunGroundedTurnResult,
+  type TurnOutcome,
+} from './run-grounded-turn';

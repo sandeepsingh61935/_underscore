@@ -1,9 +1,5 @@
 /**
- * High-level grounded chat write path (ADR-028 §6).
- *
- * 1. Persist user message
- * 2. Create assistant stub (streaming)
- * 3. Finalize on DONE / failed / cancelled
+ * Grounded chat session + turn write path (ADR-028 §6).
  */
 
 import type { IChatRepository } from './i-chat-repository';
@@ -14,11 +10,11 @@ import {
   type ChatScope,
   type ChatThread,
   type ChatMessageStatus,
+  type MessageWriteResult,
 } from './types';
 
 export interface BeginTurnInput {
   userId: string;
-  /** Existing thread, or null to create with scope. */
   threadId: string | null;
   scope: ChatScope;
   question: string;
@@ -60,6 +56,35 @@ export class ChatService {
     return this.repo.deleteThread(userId, threadId);
   }
 
+  /**
+   * Load messages and terminalize any stuck `streaming` assistants
+   * (prior session crash / navigation without finalize).
+   */
+  async listMessagesRecovered(
+    userId: string,
+    threadId: string,
+  ): Promise<ChatMessage[]> {
+    const list = await this.repo.listMessages(userId, threadId);
+    const stale = list.filter(
+      (m) => m.role === 'assistant' && m.status === 'streaming',
+    );
+    if (stale.length === 0) return list;
+
+    const recovered = await Promise.all(
+      stale.map((m) =>
+        this.repo
+          .finalizeMessage(userId, m.id, {
+            content: m.content,
+            status: 'cancelled',
+          })
+          .then((r) => r.message)
+          .catch((): ChatMessage => ({ ...m, status: 'cancelled' })),
+      ),
+    );
+    const byId = new Map(recovered.map((m) => [m.id, m]));
+    return list.map((m) => byId.get(m.id) ?? m);
+  }
+
   async beginTurn(input: BeginTurnInput): Promise<BeginTurnResult> {
     const question = input.question.trim();
     if (!question) throw new Error('Question is required');
@@ -78,7 +103,6 @@ export class ChatService {
       });
     }
 
-    // Reserve user + assistant rows so we never leave a half-turn at the quota edge.
     const msgCount = await this.repo.countMessages(input.userId, thread.id);
     if (msgCount + 2 > CHAT_QUOTAS.messagesPerThread) {
       throw new ChatQuotaError(
@@ -87,19 +111,16 @@ export class ChatService {
       );
     }
 
-    const userMessage = await this.repo.appendMessage({
+    const userWrite = await this.repo.appendMessage({
       userId: input.userId,
       threadId: thread.id,
       role: 'user',
       content: question,
       status: 'completed',
     });
+    thread = userWrite.thread;
 
-    // Refresh thread after auto-title
-    const refreshed = await this.repo.getThread(input.userId, thread.id);
-    if (refreshed) thread = refreshed;
-
-    const assistantMessage = await this.repo.appendMessage({
+    const assistantWrite = await this.repo.appendMessage({
       userId: input.userId,
       threadId: thread.id,
       role: 'assistant',
@@ -109,10 +130,14 @@ export class ChatService {
       model: input.model,
     });
 
-    return { thread, userMessage, assistantMessage };
+    return {
+      thread: assistantWrite.thread,
+      userMessage: userWrite.message,
+      assistantMessage: assistantWrite.message,
+    };
   }
 
-  async finalizeTurn(input: FinalizeTurnInput): Promise<ChatMessage> {
+  async finalizeTurn(input: FinalizeTurnInput): Promise<MessageWriteResult> {
     return this.repo.finalizeMessage(input.userId, input.assistantMessageId, {
       content: input.content,
       status: input.status,

@@ -10,6 +10,7 @@ import type {
   ChatThread,
   CreateThreadInput,
   FinalizeMessagePatch,
+  MessageWriteResult,
   UpdateThreadPatch,
 } from './types';
 
@@ -81,24 +82,22 @@ export class CachedChatRepository implements IChatRepository {
     }
   }
 
-  async appendMessage(input: AppendMessageInput): Promise<ChatMessage> {
-    const message = await this.remote.appendMessage(input);
-    await this.cache.putMessage(message);
-    const thread = await this.remote.getThread(input.userId, input.threadId);
-    if (thread) await this.cache.putThread(thread);
-    return message;
+  async appendMessage(input: AppendMessageInput): Promise<MessageWriteResult> {
+    const result = await this.remote.appendMessage(input);
+    await this.cache.putMessage(result.message);
+    await this.cache.putThread(result.thread);
+    return result;
   }
 
   async finalizeMessage(
     userId: string,
     messageId: string,
     patch: FinalizeMessagePatch,
-  ): Promise<ChatMessage> {
-    const message = await this.remote.finalizeMessage(userId, messageId, patch);
-    await this.cache.putMessage(message);
-    const thread = await this.remote.getThread(userId, message.threadId);
-    if (thread) await this.cache.putThread(thread);
-    return message;
+  ): Promise<MessageWriteResult> {
+    const result = await this.remote.finalizeMessage(userId, messageId, patch);
+    await this.cache.putMessage(result.message);
+    await this.cache.putThread(result.thread);
+    return result;
   }
 
   async countMessages(userId: string, threadId: string): Promise<number> {

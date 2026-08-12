@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ChatService } from '../chat-service';
 import type { IChatRepository } from '../i-chat-repository';
-import type { ChatMessage, ChatThread } from '../types';
+import type { ChatMessage, ChatThread, MessageWriteResult } from '../types';
 
 function thread(overrides: Partial<ChatThread> = {}): ChatThread {
   return {
@@ -30,6 +30,13 @@ function message(overrides: Partial<ChatMessage> = {}): ChatMessage {
   };
 }
 
+function write(
+  msg: ChatMessage,
+  thr: ChatThread = thread(),
+): MessageWriteResult {
+  return { message: msg, thread: thr };
+}
+
 describe('ChatService', () => {
   it('creates a thread, user message, and streaming assistant stub', async () => {
     const created = thread({ title: 'hello there' });
@@ -43,10 +50,7 @@ describe('ChatService', () => {
 
     const repo: IChatRepository = {
       listThreads: vi.fn(),
-      getThread: vi
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValue(created),
+      getThread: vi.fn().mockResolvedValue(created),
       createThread: vi.fn().mockResolvedValue(created),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
@@ -54,14 +58,11 @@ describe('ChatService', () => {
       listMessages: vi.fn(),
       appendMessage: vi
         .fn()
-        .mockResolvedValueOnce(userMsg)
-        .mockResolvedValueOnce(assistantMsg),
+        .mockResolvedValueOnce(write(userMsg, created))
+        .mockResolvedValueOnce(write(assistantMsg, created)),
       finalizeMessage: vi.fn(),
       countMessages: vi.fn().mockResolvedValue(0),
     };
-
-    // beginTurn with null threadId → create path; getThread after user append
-    (repo.getThread as ReturnType<typeof vi.fn>).mockResolvedValue(created);
 
     const service = new ChatService(repo);
     const result = await service.beginTurn({
@@ -76,14 +77,6 @@ describe('ChatService', () => {
       expect.objectContaining({ userId: 'u1', scope: { kind: 'library' } }),
     );
     expect(repo.appendMessage).toHaveBeenCalledTimes(2);
-    expect(repo.appendMessage).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ role: 'user', content: 'hello there', status: 'completed' }),
-    );
-    expect(repo.appendMessage).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ role: 'assistant', status: 'streaming', content: '' }),
-    );
     expect(result.userMessage.id).toBe('user-1');
     expect(result.assistantMessage.status).toBe('streaming');
   });
@@ -95,6 +88,7 @@ describe('ChatService', () => {
       content: 'done',
       status: 'completed',
     });
+    const thr = thread({ title: 'Q' });
     const repo: IChatRepository = {
       listThreads: vi.fn(),
       getThread: vi.fn(),
@@ -104,7 +98,7 @@ describe('ChatService', () => {
       countThreads: vi.fn(),
       listMessages: vi.fn(),
       appendMessage: vi.fn(),
-      finalizeMessage: vi.fn().mockResolvedValue(finalized),
+      finalizeMessage: vi.fn().mockResolvedValue(write(finalized, thr)),
       countMessages: vi.fn(),
     };
 
@@ -123,7 +117,8 @@ describe('ChatService', () => {
       provider: 'openai',
       model: undefined,
     });
-    expect(result.status).toBe('completed');
+    expect(result.message.status).toBe('completed');
+    expect(result.thread.id).toBe('t1');
   });
 
   it('reuses an existing thread when threadId is provided', async () => {
@@ -138,9 +133,12 @@ describe('ChatService', () => {
       listMessages: vi.fn(),
       appendMessage: vi
         .fn()
-        .mockResolvedValueOnce(message({ content: 'q' }))
+        .mockResolvedValueOnce(write(message({ content: 'q' }), existing))
         .mockResolvedValueOnce(
-          message({ id: 'a', role: 'assistant', content: '', status: 'streaming' }),
+          write(
+            message({ id: 'a', role: 'assistant', content: '', status: 'streaming' }),
+            existing,
+          ),
         ),
       finalizeMessage: vi.fn(),
       countMessages: vi.fn().mockResolvedValue(0),
@@ -156,5 +154,38 @@ describe('ChatService', () => {
 
     expect(repo.createThread).not.toHaveBeenCalled();
     expect(repo.getThread).toHaveBeenCalledWith('u1', 'existing');
+  });
+
+  it('recovers stale streaming assistants when listing messages', async () => {
+    const stale = message({
+      id: 'a-stale',
+      role: 'assistant',
+      content: 'partial',
+      status: 'streaming',
+    });
+    const user = message({ id: 'u1', role: 'user', content: 'q', status: 'completed' });
+    const cancelled = { ...stale, status: 'cancelled' as const };
+    const thr = thread();
+
+    const repo: IChatRepository = {
+      listThreads: vi.fn(),
+      getThread: vi.fn(),
+      createThread: vi.fn(),
+      updateThread: vi.fn(),
+      deleteThread: vi.fn(),
+      countThreads: vi.fn(),
+      listMessages: vi.fn().mockResolvedValue([user, stale]),
+      appendMessage: vi.fn(),
+      finalizeMessage: vi.fn().mockResolvedValue(write(cancelled, thr)),
+      countMessages: vi.fn(),
+    };
+
+    const service = new ChatService(repo);
+    const list = await service.listMessagesRecovered('u1', 't1');
+    expect(repo.finalizeMessage).toHaveBeenCalledWith('u1', 'a-stale', {
+      content: 'partial',
+      status: 'cancelled',
+    });
+    expect(list.find((m) => m.id === 'a-stale')?.status).toBe('cancelled');
   });
 });

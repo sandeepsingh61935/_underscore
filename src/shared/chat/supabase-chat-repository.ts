@@ -27,6 +27,7 @@ import {
   type ChatThread,
   type CreateThreadInput,
   type FinalizeMessagePatch,
+  type MessageWriteResult,
   type UpdateThreadPatch,
 } from './types';
 
@@ -168,7 +169,7 @@ export class SupabaseChatRepository implements IChatRepository {
     return (data as ChatMessageRow[] | null)?.map(messageFromRow) ?? [];
   }
 
-  async appendMessage(input: AppendMessageInput): Promise<ChatMessage> {
+  async appendMessage(input: AppendMessageInput): Promise<MessageWriteResult> {
     assertContentLength(input.content);
 
     const msgCount = await this.countMessages(input.userId, input.threadId);
@@ -201,12 +202,10 @@ export class SupabaseChatRepository implements IChatRepository {
 
     if (error) throw new Error(error.message || 'Failed to append chat message');
 
-    // Touch thread updated_at; auto-title on first user message.
     const threadPatch: UpdateThreadPatch = { updatedAt: ts };
     if (input.role === 'user' && input.content.trim()) {
       const existing = await this.listMessages(input.userId, input.threadId);
       const userCount = existing.filter((m) => m.role === 'user').length;
-      // includes the message we just inserted
       if (userCount <= 1) {
         threadPatch.title = autoTitleFromUserMessage(input.content);
       }
@@ -214,21 +213,19 @@ export class SupabaseChatRepository implements IChatRepository {
     if (input.provider) threadPatch.lastProvider = input.provider;
     if (input.model) threadPatch.lastModel = input.model;
 
-    await this.updateThread(input.userId, input.threadId, threadPatch);
-
-    return messageFromRow(data as ChatMessageRow);
+    const thread = await this.updateThread(input.userId, input.threadId, threadPatch);
+    return { message: messageFromRow(data as ChatMessageRow), thread };
   }
 
   async finalizeMessage(
     userId: string,
     messageId: string,
     patch: FinalizeMessagePatch,
-  ): Promise<ChatMessage> {
+  ): Promise<MessageWriteResult> {
     if (patch.content !== undefined) {
       assertContentLength(patch.content);
     }
 
-    // Idempotent: already-terminal assistant rows are returned as-is.
     const existing = await this.supabase
       .from(CHAT_MESSAGES_TABLE)
       .select(MESSAGE_SELECT)
@@ -245,7 +242,9 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error('Only assistant messages can be finalized');
     }
     if (current.status !== 'streaming') {
-      return current;
+      const thread = await this.getThread(userId, current.threadId);
+      if (!thread) throw new Error('Chat thread not found');
+      return { message: current, thread };
     }
 
     const updates: Record<string, unknown> = {
@@ -268,25 +267,29 @@ export class SupabaseChatRepository implements IChatRepository {
 
     if (error) throw new Error(error.message || 'Failed to finalize chat message');
     if (!data) {
-      // Concurrent finalize won — re-fetch terminal row.
       const again = await this.supabase
         .from(CHAT_MESSAGES_TABLE)
         .select(MESSAGE_SELECT)
         .eq('user_id', userId)
         .eq('id', messageId)
         .maybeSingle();
-      if (again.data) return messageFromRow(again.data as ChatMessageRow);
+      if (again.data) {
+        const message = messageFromRow(again.data as ChatMessageRow);
+        const thread = await this.getThread(userId, message.threadId);
+        if (!thread) throw new Error('Chat thread not found');
+        return { message, thread };
+      }
       throw new Error('Chat message not found');
     }
 
     const message = messageFromRow(data as ChatMessageRow);
-    await this.updateThread(userId, message.threadId, {
+    const thread = await this.updateThread(userId, message.threadId, {
       updatedAt: message.updatedAt,
       lastProvider: patch.provider,
       lastModel: patch.model,
     });
 
-    return message;
+    return { message, thread };
   }
 
   async countMessages(userId: string, threadId: string): Promise<number> {

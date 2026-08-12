@@ -1,5 +1,6 @@
 /**
- * Web grounded chat: hydrate threads/messages via CachedChatRepository (ADR-028).
+ * Web chat session state: threads list + active transcript (ADR-028).
+ * Turn orchestration lives in useGroundedChatTurn / runGroundedTurn.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -10,10 +11,11 @@ import {
   IndexedDbChatCache,
   MemoryChatCache,
   SupabaseChatRepository,
+  type BeginTurnResult,
   type ChatMessage,
-  type ChatScope,
   type ChatThread,
   type IChatCache,
+  type MessageWriteResult,
 } from '@/shared/chat';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 
@@ -33,8 +35,7 @@ function createCache(): IChatCache {
 function createService(): ChatService {
   const supabase = getWebSupabaseClient();
   const remote = new SupabaseChatRepository(supabase);
-  const cache = createCache();
-  return new ChatService(new CachedChatRepository(remote, cache));
+  return new ChatService(new CachedChatRepository(remote, createCache()));
 }
 
 export function useWebChat(opts: {
@@ -46,33 +47,17 @@ export function useWebChat(opts: {
   threads: ChatThread[];
   activeThreadId: string | null;
   messages: ChatMessage[];
+  service: ChatService | null;
   refreshThreads: () => Promise<void>;
   selectThread: (threadId: string | null) => Promise<void>;
   newThread: () => void;
   deleteThread: (threadId: string) => Promise<void>;
-  beginTurn: (input: {
-    question: string;
-    scope: ChatScope;
-    provider?: string;
-    model?: string;
-  }) => Promise<{
-    thread: ChatThread;
-    userMessage: ChatMessage;
-    assistantMessage: ChatMessage;
-  }>;
-  finalizeTurn: (input: {
-    assistantMessageId: string;
-    content: string;
-    status: 'completed' | 'failed' | 'cancelled';
-    provider?: string;
-    model?: string;
-  }) => Promise<ChatMessage>;
-  /** Optimistic local message patch (streaming deltas). */
-  patchLocalMessage: (
-    messageId: string,
-    patch: Partial<Pick<ChatMessage, 'content' | 'status'>>,
-  ) => void;
-  replaceMessages: (threadId: string, messages: ChatMessage[]) => void;
+  /** Apply beginTurn result into local session state. */
+  applyTurnStarted: (turn: BeginTurnResult) => void;
+  /** Apply streaming text onto an assistant message. */
+  applyStreamText: (assistantId: string, content: string) => void;
+  /** Apply finalize result into local session state. */
+  applyTurnFinished: (result: MessageWriteResult) => void;
 } {
   const serviceRef = useRef<ChatService | null>(null);
   const [status, setStatus] = useState<WebChatStatus>('idle');
@@ -118,27 +103,11 @@ export function useWebChat(opts: {
         return;
       }
       try {
-        const list = await getService().listMessages(opts.userId, threadId);
-        // Stale streaming rows from prior sessions are not live — terminalize.
-        const recovered: ChatMessage[] = [];
-        for (const m of list) {
-          if (m.role === 'assistant' && m.status === 'streaming') {
-            try {
-              const done = await getService().finalizeTurn({
-                userId: opts.userId,
-                assistantMessageId: m.id,
-                content: m.content,
-                status: 'cancelled',
-              });
-              recovered.push(done);
-            } catch {
-              recovered.push({ ...m, status: 'cancelled' });
-            }
-          } else {
-            recovered.push(m);
-          }
-        }
-        setMessages(recovered);
+        const list = await getService().listMessagesRecovered(
+          opts.userId,
+          threadId,
+        );
+        setMessages(list);
       } catch (err) {
         setError((err as Error).message || 'Failed to load messages');
       }
@@ -164,100 +133,47 @@ export function useWebChat(opts: {
     [activeThreadId, getService, opts.userId],
   );
 
-  const beginTurn = useCallback(
-    async (input: {
-      question: string;
-      scope: ChatScope;
-      provider?: string;
-      model?: string;
-    }) => {
-      if (!opts.userId) throw new Error('Sign in required for chat history');
-      const result = await getService().beginTurn({
-        userId: opts.userId,
-        threadId: activeThreadId,
-        scope: input.scope,
-        question: input.question,
-        provider: input.provider,
-        model: input.model,
-      });
-
-      setActiveThreadId(result.thread.id);
+  const applyTurnStarted = useCallback(
+    (turn: BeginTurnResult) => {
+      setActiveThreadId(turn.thread.id);
       setThreads((prev) => {
-        const without = prev.filter((t) => t.id !== result.thread.id);
-        return [result.thread, ...without];
+        const without = prev.filter((t) => t.id !== turn.thread.id);
+        return [turn.thread, ...without];
       });
       setMessages((prev) => {
-        const base =
-          activeThreadId === result.thread.id
-            ? prev.filter(
-                (m) =>
-                  m.id !== result.userMessage.id &&
-                  m.id !== result.assistantMessage.id,
-              )
-            : [];
-        return [...base, result.userMessage, result.assistantMessage];
+        const sameThread = activeThreadId === turn.thread.id;
+        const base = sameThread
+          ? prev.filter(
+              (m) =>
+                m.id !== turn.userMessage.id &&
+                m.id !== turn.assistantMessage.id,
+            )
+          : [];
+        return [...base, turn.userMessage, turn.assistantMessage];
       });
-
-      return result;
-    },
-    [activeThreadId, getService, opts.userId],
-  );
-
-  const finalizeTurn = useCallback(
-    async (input: {
-      assistantMessageId: string;
-      content: string;
-      status: 'completed' | 'failed' | 'cancelled';
-      provider?: string;
-      model?: string;
-    }) => {
-      if (!opts.userId) throw new Error('Sign in required for chat history');
-      const message = await getService().finalizeTurn({
-        userId: opts.userId,
-        assistantMessageId: input.assistantMessageId,
-        content: input.content,
-        status: input.status,
-        provider: input.provider,
-        model: input.model,
-      });
-      setMessages((prev) =>
-        prev.map((m) => (m.id === message.id ? message : m)),
-      );
-      // Bump thread to top
-      setThreads((prev) => {
-        const hit = prev.find((t) => t.id === message.threadId);
-        if (!hit) return prev;
-        const updated = {
-          ...hit,
-          updatedAt: message.updatedAt,
-          lastProvider: message.provider ?? hit.lastProvider,
-          lastModel: message.model ?? hit.lastModel,
-        };
-        return [updated, ...prev.filter((t) => t.id !== message.threadId)];
-      });
-      return message;
-    },
-    [getService, opts.userId],
-  );
-
-  const patchLocalMessage = useCallback(
-    (
-      messageId: string,
-      patch: Partial<Pick<ChatMessage, 'content' | 'status'>>,
-    ) => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
-      );
-    },
-    [],
-  );
-
-  const replaceMessages = useCallback(
-    (threadId: string, next: ChatMessage[]) => {
-      if (activeThreadId === threadId) setMessages(next);
     },
     [activeThreadId],
   );
+
+  const applyStreamText = useCallback((assistantId: string, content: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === assistantId
+          ? { ...m, content, status: 'streaming' as const }
+          : m,
+      ),
+    );
+  }, []);
+
+  const applyTurnFinished = useCallback((result: MessageWriteResult) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === result.message.id ? result.message : m)),
+    );
+    setThreads((prev) => {
+      const without = prev.filter((t) => t.id !== result.thread.id);
+      return [result.thread, ...without];
+    });
+  }, []);
 
   return useMemo(
     () => ({
@@ -266,14 +182,14 @@ export function useWebChat(opts: {
       threads,
       activeThreadId,
       messages,
+      service: opts.userId && opts.enabled ? getService() : null,
       refreshThreads,
       selectThread,
       newThread,
       deleteThread,
-      beginTurn,
-      finalizeTurn,
-      patchLocalMessage,
-      replaceMessages,
+      applyTurnStarted,
+      applyStreamText,
+      applyTurnFinished,
     }),
     [
       status,
@@ -281,14 +197,16 @@ export function useWebChat(opts: {
       threads,
       activeThreadId,
       messages,
+      opts.userId,
+      opts.enabled,
+      getService,
       refreshThreads,
       selectThread,
       newThread,
       deleteThread,
-      beginTurn,
-      finalizeTurn,
-      patchLocalMessage,
-      replaceMessages,
+      applyTurnStarted,
+      applyStreamText,
+      applyTurnFinished,
     ],
   );
 }
