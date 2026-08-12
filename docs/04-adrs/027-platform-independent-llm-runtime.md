@@ -199,6 +199,16 @@ Suggested PR sequence:
 3. Web runtime adapter + AskPage stream wire-up + chip "needs key" gating.
 4. Point cloud web health checks at proxy; keep Ollama direct.
 
+### Local web DX
+
+| Command | Role |
+|---------|------|
+| `npm run web:dev` (or `dev:web`) | Vite SPA on `:3000` + **same** `/api/llm/stream` and `/api/llm/health` handlers via `scripts/vite-web-llm-proxy-plugin.ts` |
+| `npm run web:pages-dev` | Production-like: build `dist-web` then `wrangler pages dev` (real Pages Functions) |
+| `npm run web:deploy` | Build + deploy Pages (functions/ included) |
+
+Requires `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in `.env.development` (proxy also accepts `SUPABASE_*`). Load with `--env-file` / Vite `loadEnv`.
+
 Docs: update IA standard—web stream is **in scope** under this ADR; remove
 "extension IPC only" out-of-scope line.
 

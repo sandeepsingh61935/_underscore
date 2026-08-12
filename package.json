@@ -13,9 +13,11 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "dev:web": "vite --config vite.config.web.ts",
+    "dev:web": "vite --config vite.config.web.ts --mode development",
+    "web:dev": "node --env-file=.env.development ./node_modules/vite/bin/vite.js --config vite.config.web.ts --mode development",
     "build:web": "vite build --config vite.config.web.ts",
     "web:build": "node --env-file=.env.development ./node_modules/vite/bin/vite.js build --config vite.config.web.ts",
+    "web:pages-dev": "npm run web:build && npx wrangler pages dev dist-web --project-name=underscore-web --compatibility-date=2024-12-01",
     "web:deploy": "npm run web:build && npx wrangler pages deploy dist-web --project-name=underscore-web",
     "supabase:link": "npx supabase link --project-ref cuzwaukxagefyvtxbqmi",
     "supabase:push": "npx supabase db push --linked --yes",
