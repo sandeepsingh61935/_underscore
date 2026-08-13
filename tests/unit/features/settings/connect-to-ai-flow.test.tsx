@@ -9,12 +9,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { MCP_BRIDGE_STORAGE_KEYS } from '@/shared/constants/mcp-bridge';
 
+const reloadGrants = vi.fn();
+
 vi.mock('@/features/oauth/hooks/useOAuthGrants', () => ({
   useOAuthGrants: () => ({
     grants: [],
     isLoading: false,
     error: null,
-    reload: vi.fn(),
+    reload: reloadGrants,
     revoke: vi.fn(),
     isRevoking: false,
   }),
@@ -40,6 +42,7 @@ vi.stubGlobal('chrome', {
 describe('ConnectToAiFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    reloadGrants.mockReset();
     storageLocal.get.mockResolvedValue({
       [MCP_BRIDGE_STORAGE_KEYS.enabled]: false,
       [MCP_BRIDGE_STORAGE_KEYS.token]: '',
@@ -103,5 +106,16 @@ describe('ConnectToAiFlow', () => {
     expect(screen.getByTestId('mcp-legacy-bridge-notice')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Run connection check' })).toBeNull();
     expect(screen.getByTestId('mcp-remote-url').textContent).toMatch(/mcp/i);
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+  });
+
+  it('reloads grants when the window is focused', async () => {
+    render(
+      <ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />,
+    );
+    await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
+    reloadGrants.mockClear();
+    window.dispatchEvent(new Event('focus'));
+    expect(reloadGrants).toHaveBeenCalled();
   });
 });

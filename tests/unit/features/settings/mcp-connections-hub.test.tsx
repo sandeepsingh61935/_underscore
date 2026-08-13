@@ -83,7 +83,54 @@ describe('McpConnectionsHub', () => {
         connectedApps={[]}
       />,
     );
-    expect(screen.getAllByText(/not “I copied the snippet”/).length).toBeGreaterThan(0);
     expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
+    expect(screen.getByText(/add this url in your agent/i)).toBeTruthy();
+    expect(screen.queryByText(/copied the snippet/i)).toBeNull();
+  });
+
+  it('shows Connect, not a JWT or get_session recipe', () => {
+    render(
+      <McpConnectionsHub
+        {...base}
+        mcpAllowed
+        isAuthenticated
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Copy URL' })).toBeNull();
+    expect(screen.getByText('Advanced')).toBeTruthy();
+    const hub = screen.getByTestId('mcp-connections-hub').textContent ?? '';
+    expect(hub).not.toMatch(/get_session/i);
+    expect(hub).not.toMatch(/copied the snippet/i);
+  });
+
+  it('keeps Connect when already Connected', () => {
+    render(
+      <McpConnectionsHub
+        {...base}
+        mcpAllowed
+        isAuthenticated
+        status="connected"
+        connectedApps={[{ id: 'c1', title: 'ChatGPT', sub: 'openid' }]}
+      />,
+    );
+    expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Connected');
+    expect(screen.getAllByText('ChatGPT').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+  });
+
+  it('says the agent reached Cloud MCP when Connected with no grants', () => {
+    render(
+      <McpConnectionsHub
+        {...base}
+        mcpAllowed
+        isAuthenticated
+        status="connected"
+        connectedApps={[]}
+      />,
+    );
+    expect(screen.getByText(/your agent reached cloud mcp/i)).toBeTruthy();
+    expect(screen.queryByText(/approved oauth client/i)).toBeNull();
   });
 });

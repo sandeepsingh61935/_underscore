@@ -1,6 +1,8 @@
 import React from 'react';
 
+import { resolveConnectAction } from '@/shared/mcp/connect-next-action';
 import {
+  integrationsStatusDetail,
   integrationsStatusLabel,
   type IntegrationsStatus,
 } from '@/shared/mcp/integrations-status';
@@ -40,6 +42,12 @@ export function McpConnectionsHub({
   connectedApps,
 }: McpConnectionsHubProps): React.ReactElement {
   const locked = !mcpAllowed;
+  const connectAction = resolveConnectAction({ mcpAllowed, urlCopied });
+  const statusDetail = integrationsStatusDetail({
+    status,
+    oauthGrantCount: connectedApps.length,
+    grantTitles: connectedApps.map((app) => app.title),
+  });
 
   const tryInteract = (fn: () => void): void => {
     if (locked) {
@@ -159,13 +167,7 @@ export function McpConnectionsHub({
       >
         <Row
           title="Status"
-          sub={
-            locked
-              ? 'Off until Account (Paid)'
-              : status === 'connected'
-                ? 'At least one approved OAuth client'
-                : 'Ready — copy the URL. Connected is not “I copied the snippet”.'
-          }
+          sub={locked ? 'Off until Account (Paid)' : statusDetail}
           right={
             <span
               className="u-mono"
@@ -186,9 +188,6 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
               Remote MCP URL
             </div>
-            <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.4 }}>
-              OAuth for public hosts · Bearer JWT for scripts
-            </div>
             <div
               className="u-mono"
               data-testid="mcp-remote-url"
@@ -205,23 +204,48 @@ export function McpConnectionsHub({
             >
               {remoteUrl}
             </div>
-            <button
-              type="button"
-              className="u-mono"
-              onClick={() => tryInteract(onCopyUrl)}
-              style={{
-                marginTop: 8,
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--accent)',
-                cursor: 'pointer',
-                fontSize: 'var(--step--2)',
-                padding: 0,
-                minHeight: 44,
-              }}
-            >
-              {urlCopied ? 'Copied' : 'Copy URL'}
-            </button>
+            {connectAction.kind !== 'locked' ? (
+              <button
+                type="button"
+                className="u-caps"
+                data-testid="mcp-connect"
+                onClick={() => tryInteract(onCopyUrl)}
+                style={{
+                  marginTop: 10,
+                  width: '100%',
+                  minHeight: 44,
+                  border: '1px solid var(--accent)',
+                  background: 'var(--accent)',
+                  color: 'var(--paper)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--step--2)',
+                }}
+              >
+                {connectAction.kind === 'copied' ? 'Copied' : 'Connect'}
+              </button>
+            ) : null}
+            <details data-testid="mcp-advanced" style={{ marginTop: 12 }}>
+              <summary
+                className="u-mono"
+                style={{
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--step--2)',
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                Advanced
+              </summary>
+              <p
+                className="u-sans"
+                style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '0 0 8px' }}
+              >
+                Scripts may send <span className="u-mono">Authorization: Bearer</span> with a
+                Supabase access token. Do not paste that token in this app.
+              </p>
+            </details>
           </div>
         ) : null}
       </div>
@@ -234,7 +258,7 @@ export function McpConnectionsHub({
           <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}>
             {locked
               ? 'Connections unlock with Account (Paid).'
-              : 'No OAuth clients yet. Connected is not “I copied the snippet”.'}
+              : 'No approved clients yet. Add the URL in your agent, then approve if asked.'}
           </div>
         </div>
       ) : (

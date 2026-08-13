@@ -2,14 +2,17 @@ import React, { useMemo } from 'react';
 
 import { CodeSnippetBlock } from '@/features/settings/components/CodeSnippetBlock';
 import { useIntegrationsConnect } from '@/features/settings/integrations/use-integrations-connect';
+import { resolveHostConnection } from '@/features/settings/mcp/host-connection';
 import {
-  fillMcpConfigTemplate,
   getMcpAiApp,
   MCP_AI_APPS,
   type McpAiAppId,
 } from '@/features/settings/mcp/mcp-ai-apps';
-import { mcpSetupStepLabels } from '@/features/settings/mcp/mcp-setup-steps';
-import { integrationsStatusLabel } from '@/shared/mcp/integrations-status';
+import { resolveConnectAction } from '@/shared/mcp/connect-next-action';
+import {
+  integrationsStatusDetail,
+  integrationsStatusLabel,
+} from '@/shared/mcp/integrations-status';
 
 export function IntegrationsWebList({
   isAuthenticated,
@@ -22,6 +25,12 @@ export function IntegrationsWebList({
 }): React.ReactElement {
   const { mcpAllowed, status, remoteUrl, urlCopied, copyUrl, connectedApps } =
     useIntegrationsConnect({ isAuthenticated, isPaidActive });
+  const connectAction = resolveConnectAction({ mcpAllowed, urlCopied });
+  const statusDetail = integrationsStatusDetail({
+    status,
+    oauthGrantCount: connectedApps.length,
+    grantTitles: connectedApps.map((app) => app.title),
+  });
 
   return (
     <div
@@ -38,7 +47,7 @@ export function IntegrationsWebList({
           <div className="title">Cloud MCP</div>
           <div className="sub">
             {mcpAllowed
-              ? 'OAuth for public hosts · Bearer JWT for scripts. Connected is an approved client, not a copied snippet.'
+              ? statusDetail
               : 'Account (Paid)'}
           </div>
         </div>
@@ -53,15 +62,30 @@ export function IntegrationsWebList({
             <div className="title">Remote MCP URL</div>
             <div className="sub u-mono">{remoteUrl}</div>
           </div>
-          <button
-            type="button"
-            className="btn sm"
-            data-od-id="settings-mcp-copy-url"
-            onClick={copyUrl}
-          >
-            {urlCopied ? 'Copied' : 'Copy'}
-          </button>
+          {connectAction.kind !== 'locked' ? (
+            <button
+              type="button"
+              className="btn sm"
+              data-od-id="settings-mcp-copy-url"
+              data-testid="mcp-connect"
+              onClick={copyUrl}
+            >
+              {connectAction.kind === 'copied' ? 'Copied' : 'Connect'}
+            </button>
+          ) : null}
         </div>
+      ) : null}
+
+      {mcpAllowed ? (
+        <details data-testid="mcp-advanced" style={{ marginTop: 8 }}>
+          <summary className="type-sub" style={{ cursor: 'pointer', minHeight: 44 }}>
+            Advanced
+          </summary>
+          <p className="type-sub" style={{ marginTop: 8 }}>
+            Scripts may send <span className="u-mono">Authorization: Bearer</span> with a
+            Supabase access token. Do not paste that token in this app.
+          </p>
+        </details>
       ) : null}
 
       {connectedApps.length > 0 ? (
@@ -74,7 +98,7 @@ export function IntegrationsWebList({
         Host tips
       </p>
       <p className="type-sub" style={{ marginBottom: 8 }}>
-        Cloud config for the agent you already use.
+        Where to add the URL in the agent you already use.
       </p>
       {MCP_AI_APPS.map((app) => (
         <button
@@ -108,11 +132,10 @@ export function IntegrationsWebSetup({
   onBack: () => void;
 }): React.ReactElement {
   const app = useMemo(() => getMcpAiApp(appId), [appId]);
-  const snippet = useMemo(
-    () => fillMcpConfigTemplate(app.configTemplate, { url: remoteUrl }),
-    [app.configTemplate, remoteUrl],
+  const tip = useMemo(
+    () => resolveHostConnection(app, remoteUrl),
+    [app, remoteUrl],
   );
-  const steps = useMemo(() => mcpSetupStepLabels(app, 'web'), [app]);
 
   return (
     <div className="block" data-od-id="settings-mcp-setup">
@@ -127,24 +150,21 @@ export function IntegrationsWebSetup({
       </button>
       <p className="block-label">Connect {app.name}</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        {app.configHint}
+        {tip.hint}
       </p>
       <ol className="ai-setup-steps" data-od-id="mcp-setup-steps">
-        {steps.map((label, i) => (
-          <li key={label}>
-            <span className="step-num u-mono">{i + 1}</span>
-            <span className="step-label">{label}</span>
-          </li>
-        ))}
+        <li>
+          <span className="step-num u-mono">1</span>
+          <span className="step-label">Add the server to {tip.pasteTarget}</span>
+        </li>
+        <li>
+          <span className="step-num u-mono">2</span>
+          <span className="step-label">{tip.restart}</span>
+        </li>
       </ol>
       {mcpAllowed ? (
         <div data-od-id="mcp-config-snippet">
-          <CodeSnippetBlock label={app.configLabel} code={snippet} />
-          <p className="type-sub" style={{ marginTop: 10 }}>
-            Public hosts use OAuth. Power users can send{' '}
-            <span className="u-mono">Authorization: Bearer</span> with a
-            Supabase access token.
-          </p>
+          <CodeSnippetBlock label={tip.pasteTarget} code={tip.snippet} />
         </div>
       ) : (
         <p className="type-sub">Upgrade to copy host config snippets.</p>

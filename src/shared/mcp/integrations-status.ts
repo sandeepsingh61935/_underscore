@@ -36,3 +36,28 @@ export function integrationsStatusLabel(status: IntegrationsStatus): string {
       return 'Connected';
   }
 }
+
+const READY_DETAIL =
+  'Add this URL in your agent. Approve when the browser opens.';
+
+const SESSION_CONNECTED_DETAIL = 'Your agent reached Cloud MCP.';
+
+/** Hub subtitle. Does not claim an OAuth client for JWT-only Connected. */
+export function integrationsStatusDetail(input: {
+  status: IntegrationsStatus;
+  oauthGrantCount: number;
+  grantTitles?: readonly string[];
+}): string {
+  if (input.status === 'off') {
+    return '';
+  }
+  if (input.status === 'ready') {
+    return READY_DETAIL;
+  }
+  if (input.oauthGrantCount > 0) {
+    const titles = (input.grantTitles ?? []).map((t) => t.trim()).filter(Boolean);
+    return titles.length > 0 ? titles.join(', ') : 'Approved OAuth client';
+  }
+  return SESSION_CONNECTED_DETAIL;
+}
+

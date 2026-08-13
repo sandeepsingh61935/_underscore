@@ -18,19 +18,33 @@ export function useIntegrationsConnect(opts: {
   const [lastMcpSuccessAtMs, setLastMcpSuccessAtMs] = useState<number | null>(null);
   const messageBus = useMessageBus();
 
-  useEffect(() => {
+  const reloadSession = useCallback((): void => {
     if (!opts.isAuthenticated || !mcpAllowed) {
       setLastMcpSuccessAtMs(null);
       return;
     }
-    let cancelled = false;
     void fetchLastMcpSuccessAtMs(messageBus).then((ms) => {
-      if (!cancelled) setLastMcpSuccessAtMs(ms);
+      setLastMcpSuccessAtMs(ms);
     });
-    return () => {
-      cancelled = true;
-    };
   }, [opts.isAuthenticated, mcpAllowed, messageBus]);
+
+  useEffect(() => {
+    reloadSession();
+  }, [reloadSession]);
+
+  useEffect(() => {
+    if (!opts.isAuthenticated || !mcpAllowed) {
+      return;
+    }
+    const onFocus = (): void => {
+      void grantsState.reload();
+      reloadSession();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [opts.isAuthenticated, mcpAllowed, grantsState.reload, reloadSession]);
 
   const status = resolveIntegrationsStatus({
     mcpAllowed,
