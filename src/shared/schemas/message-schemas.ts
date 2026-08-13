@@ -163,6 +163,10 @@ export const IPC_BILLING_START_CHECKOUT = 'IPC_BILLING_START_CHECKOUT' as const;
 export const IPC_BILLING_OPEN_PORTAL = 'IPC_BILLING_OPEN_PORTAL' as const;
 /** Pull Polar customer state into billing_entitlements then client re-reads. */
 export const IPC_BILLING_SYNC_FROM_POLAR = 'IPC_BILLING_SYNC_FROM_POLAR' as const;
+
+/** OAuth client grants for Cloud MCP Connected truth (extension popup). */
+export const IPC_OAUTH_LIST_GRANTS = 'IPC_OAUTH_LIST_GRANTS' as const;
+export const IPC_OAUTH_REVOKE_GRANT = 'IPC_OAUTH_REVOKE_GRANT' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
 /**

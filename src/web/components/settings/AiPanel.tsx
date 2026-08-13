@@ -3,7 +3,7 @@
  * Spec: docs/superpowers/specs/2026-08-12-ai-integrations-ia-standard.md
  *
  * Shell only for chrome; provider check + MCP catalog reuse shared modules.
- * Bridge is not toggled on web (extension owns bridge) — status + setup kit only.
+ * Cloud MCP is the product path (ADR-029). Models stay on a separate tab.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,6 +21,12 @@ import {
   type McpAiAppId,
 } from '@/features/settings/mcp/mcp-ai-apps';
 import { mcpSetupStepLabels } from '@/features/settings/mcp/mcp-setup-steps';
+import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
+import {
+  integrationsStatusLabel,
+  resolveIntegrationsStatus,
+} from '@/shared/mcp/integrations-status';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
@@ -483,6 +489,15 @@ function IntegrationsList({
   mcpAllowed: boolean;
   onOpenApp: (id: McpAiAppId) => void;
 }): React.ReactElement {
+  const { grants } = useOAuthGrants(mcpAllowed);
+  const status = resolveIntegrationsStatus({
+    mcpAllowed,
+    oauthGrantCount: grants.length,
+    hasRecentSession: false,
+  });
+  const remoteUrl = getMcpCloudUrl();
+  const [urlCopied, setUrlCopied] = useState(false);
+
   return (
     <div
       className={`block${mcpAllowed ? '' : ' is-ai-muted'}`}
@@ -490,29 +505,50 @@ function IntegrationsList({
     >
       <p className="block-label">Integrations</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        Use highlights in the agent you already use. We do not sell tokens.
+        Let agents read your synced cloud library. No extension required.
       </p>
 
-      {/* Status only — no fake On/Off control (bridge lives in the extension). */}
       <div className="setting-row" data-od-id="settings-mcp">
         <div className="grow">
-          <div className="title">Bridge</div>
+          <div className="title">Cloud MCP</div>
           <div className="sub">
             {mcpAllowed
-              ? 'Managed in the browser extension · security code and toggle there'
+              ? 'OAuth for public hosts · Bearer JWT for scripts. Connected is an approved client, not a copied snippet.'
               : 'Account (Paid)'}
           </div>
         </div>
         <span className="status" data-od-id="settings-mcp-status">
-          Extension
+          {integrationsStatusLabel(status)}
         </span>
       </div>
 
+      {mcpAllowed ? (
+        <div className="setting-row" data-od-id="settings-mcp-url">
+          <div className="grow">
+            <div className="title">Remote MCP URL</div>
+            <div className="sub u-mono">{remoteUrl}</div>
+          </div>
+          <button
+            type="button"
+            className="btn sm"
+            data-od-id="settings-mcp-copy-url"
+            onClick={() => {
+              void navigator.clipboard.writeText(remoteUrl).then(() => {
+                setUrlCopied(true);
+                setTimeout(() => setUrlCopied(false), 2000);
+              });
+            }}
+          >
+            {urlCopied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      ) : null}
+
       <p className="block-label" style={{ marginTop: 16 }}>
-        Add an agent
+        Host tips
       </p>
       <p className="type-sub" style={{ marginBottom: 8 }}>
-        Where do you want to use your highlights?
+        Cloud config for the agent you already use.
       </p>
       {MCP_AI_APPS.map((app) => (
         <button
@@ -545,7 +581,7 @@ function IntegrationSetup({
 }): React.ReactElement {
   const app = useMemo(() => getMcpAiApp(appId), [appId]);
   const snippet = useMemo(
-    () => fillMcpConfigTemplate(app.configTemplate, ''),
+    () => fillMcpConfigTemplate(app.configTemplate, { url: getMcpCloudUrl() }),
     [app.configTemplate],
   );
   const steps = useMemo(() => mcpSetupStepLabels(app, 'web'), [app]);
@@ -577,8 +613,9 @@ function IntegrationSetup({
         <div data-od-id="mcp-config-snippet">
           <CodeSnippetBlock label={app.configLabel} code={snippet} />
           <p className="type-sub" style={{ marginTop: 10 }}>
-            Replace <span className="u-mono">your-code</span> with the security
-            code from the extension.
+            Public hosts use OAuth. Power users can send{' '}
+            <span className="u-mono">Authorization: Bearer</span> with a
+            Supabase access token.
           </p>
         </div>
       ) : (

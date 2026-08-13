@@ -10,15 +10,12 @@ import { McpConnectionsHub } from '@/features/settings/components/McpConnections
 
 describe('McpConnectionsHub', () => {
   const base = {
-    bridgeEnabled: false,
-    token: '',
-    activeAppIds: [] as const,
+    status: 'ready' as const,
+    remoteUrl: 'https://underscore-mcp.example/mcp',
+    connectedApps: [] as const,
     onDismissLockMessage: vi.fn(),
     onLockedInteract: vi.fn(),
-    onToggleBridge: vi.fn(),
-    onTokenChange: vi.fn(),
-    onTokenBlur: vi.fn(),
-    onCopyToken: vi.fn(),
+    onCopyUrl: vi.fn(),
     onAddApp: vi.fn(),
     onOpenActive: vi.fn(),
   };
@@ -27,12 +24,13 @@ describe('McpConnectionsHub', () => {
     vi.clearAllMocks();
   });
 
-  it('shows locked upsell for Guest and routes Add to CTA', () => {
+  it('shows locked upsell for Guest and routes Host tips to CTA', () => {
     render(
       <McpConnectionsHub
         {...base}
         mcpAllowed={false}
         isAuthenticated={false}
+        status="off"
       />,
     );
 
@@ -41,7 +39,7 @@ describe('McpConnectionsHub', () => {
     expect(screen.getByText('Connections unlock with Account (Paid).')).toBeTruthy();
     expect(screen.queryByText('Models & providers')).toBeNull();
 
-    screen.getByRole('button', { name: 'Add an AI app' }).click();
+    screen.getByRole('button', { name: 'Host tips' }).click();
     expect(base.onLockedInteract).toHaveBeenCalled();
     expect(base.onAddApp).not.toHaveBeenCalled();
   });
@@ -52,12 +50,13 @@ describe('McpConnectionsHub', () => {
         {...base}
         mcpAllowed={false}
         isAuthenticated
+        status="off"
       />,
     );
     expect(screen.getByText('Upgrade in Settings')).toBeTruthy();
   });
 
-  it('allows Add and toggle when Paid and has no Configure footer', () => {
+  it('allows Host tips when Paid and has no Models footer or bridge toggle', () => {
     render(
       <McpConnectionsHub
         {...base}
@@ -67,26 +66,24 @@ describe('McpConnectionsHub', () => {
     );
 
     expect(screen.queryByText('Models & providers')).toBeNull();
-    expect(screen.getByText('Use your highlights in the agent you already use')).toBeTruthy();
-    expect(screen.queryByText('Integrations', { selector: '.u-serif' })).toBeNull();
+    expect(screen.getByText(/synced cloud library/)).toBeTruthy();
+    expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
+    expect(screen.queryByRole('switch')).toBeNull();
 
-    screen.getByRole('button', { name: 'Add an AI app' }).click();
+    screen.getByRole('button', { name: 'Host tips' }).click();
     expect(base.onAddApp).toHaveBeenCalled();
-
-    screen.getByRole('switch', { name: 'Let AI apps read highlights' }).click();
-    expect(base.onToggleBridge).toHaveBeenCalled();
   });
 
-  it('lists Active apps after Check connection', () => {
+  it('does not list Connected apps from a copied snippet', () => {
     render(
       <McpConnectionsHub
         {...base}
         mcpAllowed
         isAuthenticated
-        activeAppIds={['cursor']}
+        connectedApps={[]}
       />,
     );
-    expect(screen.getByText('Cursor')).toBeTruthy();
-    expect(screen.getByText('Connected')).toBeTruthy();
+    expect(screen.getAllByText(/not “I copied the snippet”/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
   });
 });

@@ -61,7 +61,7 @@ describe('McpBridgeSettings paid gate', () => {
     });
 
     render(
-      <McpBridgeSettings isAuthenticated currentMode="pro_xai" />,
+      <McpBridgeSettings isAuthenticated currentMode="pro_xai" isPaidActive />,
     );
 
     await waitFor(() => {

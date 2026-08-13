@@ -254,6 +254,7 @@ export function SettingsPage({
         <ConnectToAiFlow
           isAuthenticated={isAuthenticated}
           currentMode={currentMode}
+          isPaidActive={isPaidActive}
           onSignIn={onSignIn}
           onExit={() => setConnectOpen(false)}
         />

@@ -21,14 +21,27 @@ describe('MCP_AI_APPS', () => {
     ]);
   });
 
-  it('fills token placeholder in config templates', () => {
+  it('fills remote Cloud MCP URL in config templates', () => {
     const app = getMcpAiApp('cursor');
-    expect(fillMcpConfigTemplate(app.configTemplate, 'abc123')).toContain('"UNDERSCORE_MCP_TOKEN": "abc123"');
+    expect(fillMcpConfigTemplate(app.configTemplate, { url: 'https://mcp.example/mcp' })).toContain(
+      '"url": "https://mcp.example/mcp"',
+    );
+    expect(app.configTemplate).not.toContain('UNDERSCORE_MCP_TOKEN');
+    expect(app.configTemplate).not.toContain('--adapter=bridge');
   });
 
-  it('Grok uses toml bridge snippet', () => {
+  it('Grok uses toml remote URL snippet', () => {
     const app = getMcpAiApp('grok');
     expect(app.name).toBe('Grok (xAI)');
-    expect(fillMcpConfigTemplate(app.configTemplate, 'tok')).toContain('UNDERSCORE_MCP_TOKEN = "tok"');
+    expect(fillMcpConfigTemplate(app.configTemplate, { url: 'https://mcp.example/mcp' })).toContain(
+      'url = "https://mcp.example/mcp"',
+    );
+    expect(app.configTemplate).not.toContain('UNDERSCORE_MCP_TOKEN');
+  });
+
+  it('ChatGPT is OAuth-oriented cloud config', () => {
+    const app = getMcpAiApp('chatgpt-desktop');
+    expect(app.authHint).toBe('oauth');
+    expect(app.configHint.toLowerCase()).toContain('oauth');
   });
 });

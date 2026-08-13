@@ -1,31 +1,25 @@
 /**
- * Shared MCP host setup checklist labels (Option B).
- * Extension uses interactive steps; web uses the same order with extension-aware copy.
+ * Shared MCP host setup checklist labels (cloud-first, ADR-029).
  */
 
 import type { McpAiAppDef } from '@/features/settings/mcp/mcp-ai-apps';
 
 export type McpSetupVariant = 'extension' | 'web';
 
-/** Five-step checklist; copy differs only where the bridge is managed. */
+/** Cloud Connect checklist. Host-specific restart text only. */
 export function mcpSetupStepLabels(
   app: McpAiAppDef,
-  variant: McpSetupVariant,
+  _variant: McpSetupVariant,
 ): readonly string[] {
-  if (variant === 'web') {
-    return [
-      'Turn on the bridge in the _underscore extension (Integrations)',
-      'Copy the security code from the extension',
-      `Add the server to ${app.configLabel}`,
-      app.restartLabel,
-      'Check connection from the extension',
-    ] as const;
-  }
+  const authStep =
+    app.authHint === 'oauth'
+      ? 'Approve OAuth when the host prompts (public hosts)'
+      : 'Use OAuth if the host supports it, or paste a Bearer JWT for scripts';
   return [
-    'Turn on in _underscore',
-    'Copy security code',
-    'Add server to client config',
+    'Copy the remote MCP URL from Integrations',
+    authStep,
+    `Add the server to ${app.configLabel}`,
     app.restartLabel,
-    'Check connection',
+    'Open a new chat and call get_session — Connected is not “I copied the snippet”',
   ] as const;
 }

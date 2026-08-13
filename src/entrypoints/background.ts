@@ -35,6 +35,8 @@ import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
 import { SYNC_LIBRARY, GET_EXPORTABLE_HIGHLIGHTS, UPDATE_HIGHLIGHT_METADATA, UPDATE_HIGHLIGHT_TEXT, GET_USER_TAGS, IPC_HIGHLIGHT_DELETE_SCOPE, IPC_HIGHLIGHT_UNDO_DELETE, CLEAR_HIGHLIGHT_DATA, SEARCH_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
 import type { SupabaseClient as SupabaseSDKClient } from '@supabase/supabase-js';
 import { registerBillingHandlers } from '@/background/services/billing-handlers';
+import { registerOAuthGrantHandlers } from '@/background/services/oauth-grant-handlers';
+import { resolveBackgroundPaidActive } from '@/background/services/resolve-paid-active';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { HighlightDeleteService, type DeleteRequest } from '@/background/services/highlight-delete-service';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
@@ -102,6 +104,18 @@ export default defineBackground({
 
       const aiOrchestrator = container.resolve<AiOrchestrator>('aiOrchestrator');
       const scopedHighlightRepositoryForAi = container.resolve<ScopedHighlightRepository>('scopedHighlightRepository');
+      const getIsPaidActive = async (): Promise<boolean> =>
+        resolveBackgroundPaidActive({
+          isAuthenticated: authManager.isAuthenticated,
+          getSupabase: () => {
+            try {
+              return container.resolve<SupabaseSDKClient>('_supabaseSDK');
+            } catch {
+              return null;
+            }
+          },
+        });
+
       aiOrchestrator.configureFeatureGate(async () => {
         const stored = await browser.storage.local.get(MODE_STORAGE_KEY);
         const mode = normalizeMode(stored[MODE_STORAGE_KEY]);
@@ -110,6 +124,7 @@ export default defineBackground({
           capabilities: getCapabilitiesForMode(mode),
           isAuthenticated: authManager.isAuthenticated,
           storageScope: scopedHighlightRepositoryForAi.getActiveScope(),
+          isPaidActive: await getIsPaidActive(),
         };
       });
       aiOrchestrator.configurePrefsSync({
@@ -383,6 +398,7 @@ export default defineBackground({
           const result = await instance.chat(payload.request);
           return { text: result.text };
         },
+        getIsPaidActive,
       });
       const mcpBridgeClient = new McpBridgeClientService(mcpBridgeHandler, logger);
       mcpBridgeClient.start();
@@ -490,6 +506,7 @@ export default defineBackground({
           capabilities: getCapabilitiesForMode(mode),
           isAuthenticated: authManager.isAuthenticated,
           storageScope: scopedHighlightRepository.getActiveScope(),
+          isPaidActive: await getIsPaidActive(),
         };
       };
 
@@ -669,6 +686,12 @@ export default defineBackground({
       });
 
       registerBillingHandlers({
+        messageBus,
+        authManager,
+        getSupabase: () => container.resolve<SupabaseSDKClient>('_supabaseSDK'),
+        logger,
+      });
+      registerOAuthGrantHandlers({
         messageBus,
         authManager,
         getSupabase: () => container.resolve<SupabaseSDKClient>('_supabaseSDK'),

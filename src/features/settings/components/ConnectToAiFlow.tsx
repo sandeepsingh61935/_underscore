@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { McpAppPicker } from '@/features/settings/components/McpAppPicker';
-import { McpClientSetupView, type McpCheckResult } from '@/features/settings/components/McpClientSetupView';
+import { McpClientSetupView } from '@/features/settings/components/McpClientSetupView';
 import { McpConnectionsHub } from '@/features/settings/components/McpConnectionsHub';
+import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
 import {
   connectToAiBackLabel,
   connectToAiPageTitle,
@@ -10,22 +11,17 @@ import {
   pushConnectScreen,
   type ConnectToAiScreen,
 } from '@/features/settings/mcp/connect-to-ai-nav';
-import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { getMcpAiApp } from '@/features/settings/mcp/mcp-ai-apps';
-import {
-  markMcpAppActive,
-  persistMcpBridgeEnabled,
-  persistMcpBridgeToken,
-  readMcpBridgeUiState,
-} from '@/features/settings/mcp/mcp-bridge-ui-state';
-import { MCP_BRIDGE_STORAGE_KEYS } from '@/shared/constants/mcp-bridge';
-import type { BridgeConnectionState } from '@/shared/mcp/bridge-protocol';
+import { readMcpBridgeUiState } from '@/features/settings/mcp/mcp-bridge-ui-state';
+import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
+import { resolveIntegrationsStatus } from '@/shared/mcp/integrations-status';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 
 export interface ConnectToAiFlowProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
+  isPaidActive?: boolean;
   onSignIn?: () => void;
   /** Exit full-screen Connect flow back to Settings root. */
   onExit?: () => void;
@@ -36,25 +32,31 @@ export interface ConnectToAiFlowProps {
 export function ConnectToAiFlow({
   isAuthenticated,
   currentMode,
+  isPaidActive = false,
   onSignIn,
   onExit,
   onStackDepthChange,
 }: ConnectToAiFlowProps): React.ReactElement {
   const [stack, setStack] = useState<ConnectToAiScreen[]>([{ kind: 'hub' }]);
-  const [enabled, setEnabled] = useState(false);
-  const [token, setToken] = useState('');
-  const [connectionState, setConnectionState] = useState<BridgeConnectionState>('disconnected');
-  const [activeApps, setActiveApps] = useState<McpAiAppId[]>([]);
-  const [checkResult, setCheckResult] = useState<McpCheckResult>('idle');
   const [lockMessage, setLockMessage] = useState<string | null>(null);
-  const [tokenCopied, setTokenCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [legacyBridgeOn, setLegacyBridgeOn] = useState(false);
+  const remoteUrl = getMcpCloudUrl();
 
   const mcpAllowed = canUseMcp({
     mode: currentMode,
     capabilities: getCapabilitiesForMode(currentMode),
     isAuthenticated,
     storageScope: isAuthenticated ? 'pro' : 'basic',
+    isPaidActive,
   }).allowed;
+
+  const { grants, error: grantsError } = useOAuthGrants(isAuthenticated && mcpAllowed);
+  const status = resolveIntegrationsStatus({
+    mcpAllowed,
+    oauthGrantCount: grants.length,
+    hasRecentSession: false,
+  });
 
   const screen = stack[stack.length - 1] ?? { kind: 'hub' as const };
 
@@ -64,43 +66,9 @@ export function ConnectToAiFlow({
 
   useEffect(() => {
     void readMcpBridgeUiState().then((s) => {
-      setEnabled(s.enabled);
-      setToken(s.token);
-      setConnectionState(s.connectionState);
-      setActiveApps(s.activeApps);
+      setLegacyBridgeOn(s.enabled);
     });
-
-    const onChanged = (
-      changes: Record<string, chrome.storage.StorageChange>,
-      area: string,
-    ): void => {
-      if (area !== 'local') return;
-      if (changes[MCP_BRIDGE_STORAGE_KEYS.enabled]) {
-        setEnabled(changes[MCP_BRIDGE_STORAGE_KEYS.enabled]?.newValue === true);
-      }
-      if (changes[MCP_BRIDGE_STORAGE_KEYS.token]) {
-        const next = changes[MCP_BRIDGE_STORAGE_KEYS.token]?.newValue;
-        setToken(typeof next === 'string' ? next : '');
-      }
-      if (changes[MCP_BRIDGE_STORAGE_KEYS.connectionState]) {
-        const next = changes[MCP_BRIDGE_STORAGE_KEYS.connectionState]?.newValue;
-        if (next === 'connected' || next === 'connecting' || next === 'error' || next === 'disconnected') {
-          setConnectionState(next);
-        }
-      }
-      if (changes[MCP_BRIDGE_STORAGE_KEYS.activeApps]) {
-        void readMcpBridgeUiState().then((s) => setActiveApps(s.activeApps));
-      }
-    };
-    chrome.storage.onChanged.addListener(onChanged);
-    return () => chrome.storage.onChanged.removeListener(onChanged);
   }, []);
-
-  useEffect(() => {
-    if (!mcpAllowed && enabled) {
-      void persistMcpBridgeEnabled(false, token).then(() => setEnabled(false));
-    }
-  }, [mcpAllowed, enabled, token]);
 
   const lockedCta = useCallback((): void => {
     setLockMessage(
@@ -113,27 +81,12 @@ export function ConnectToAiFlow({
     }
   }, [isAuthenticated, onSignIn]);
 
-  const toggleBridge = useCallback((): void => {
-    if (!mcpAllowed) {
-      lockedCta();
-      return;
-    }
-    const next = !enabled;
-    setEnabled(next);
-    void persistMcpBridgeEnabled(next, token);
-  }, [enabled, lockedCta, mcpAllowed, token]);
-
-  const persistToken = useCallback((): void => {
-    void persistMcpBridgeToken(token, enabled);
-  }, [enabled, token]);
-
-  const copyToken = useCallback((): void => {
-    if (!token) return;
-    void navigator.clipboard.writeText(token).then(() => {
-      setTokenCopied(true);
-      setTimeout(() => setTokenCopied(false), 2000);
+  const copyUrl = useCallback((): void => {
+    void navigator.clipboard.writeText(remoteUrl).then(() => {
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
     });
-  }, [token]);
+  }, [remoteUrl]);
 
   const push = useCallback((next: ConnectToAiScreen): void => {
     setLockMessage(null);
@@ -142,7 +95,6 @@ export function ConnectToAiFlow({
 
   const pop = useCallback((): void => {
     setLockMessage(null);
-    setCheckResult('idle');
     if (stack.length <= 1) {
       onExit?.();
       return;
@@ -150,45 +102,37 @@ export function ConnectToAiFlow({
     setStack((s) => popConnectScreen(s));
   }, [onExit, stack.length]);
 
-  const onCheckConnection = useCallback(async (): Promise<void> => {
-    if (!enabled || screen.kind !== 'setup') return;
-    const latest = await readMcpBridgeUiState();
-    if (latest.connectionState === 'connected') {
-      const next = await markMcpAppActive(screen.appId);
-      setActiveApps(next);
-      setCheckResult('ok');
-      return;
-    }
-    setCheckResult('fail');
-  }, [enabled, screen]);
+  const connectedApps = useMemo(
+    () =>
+      grants.map((grant) => ({
+        id: grant.clientId,
+        title: grant.clientName,
+        sub: grant.scopes.length > 0 ? grant.scopes.join(', ') : 'Approved MCP access',
+      })),
+    [grants],
+  );
 
   const body =
     screen.kind === 'hub' ? (
       <McpConnectionsHub
         mcpAllowed={mcpAllowed}
         isAuthenticated={isAuthenticated}
-        bridgeEnabled={enabled}
-        token={token}
-        activeAppIds={activeApps}
+        status={status}
+        remoteUrl={remoteUrl}
+        urlCopied={urlCopied}
+        showLegacyNotice={legacyBridgeOn}
         lockMessage={lockMessage}
+        grantsError={grantsError}
         onDismissLockMessage={() => setLockMessage(null)}
         onLockedInteract={lockedCta}
-        onToggleBridge={toggleBridge}
-        onTokenChange={setToken}
-        onTokenBlur={persistToken}
-        onCopyToken={copyToken}
-        tokenCopied={tokenCopied}
+        onCopyUrl={copyUrl}
         onAddApp={() => push({ kind: 'picker' })}
-        onOpenActive={(id) => {
-          setCheckResult('idle');
-          push({ kind: 'setup', appId: id });
-        }}
+        connectedApps={connectedApps}
       />
     ) : screen.kind === 'picker' ? (
       <McpAppPicker
         mcpAllowed={mcpAllowed}
         onPick={(id) => {
-          setCheckResult('idle');
           push({ kind: 'setup', appId: id });
         }}
         onLockedInteract={lockedCta}
@@ -196,16 +140,7 @@ export function ConnectToAiFlow({
     ) : (
       <McpClientSetupView
         app={getMcpAiApp(screen.appId)}
-        bridgeEnabled={enabled}
-        token={token}
-        connectionState={connectionState}
-        checkResult={checkResult}
-        onToggleBridge={toggleBridge}
-        onTokenChange={setToken}
-        onTokenBlur={persistToken}
-        onCheckConnection={() => {
-          void onCheckConnection();
-        }}
+        remoteUrl={remoteUrl}
       />
     );
 

@@ -1,46 +1,45 @@
 import React from 'react';
 
-import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
-import { getMcpAiApp } from '@/features/settings/mcp/mcp-ai-apps';
+import {
+  integrationsStatusLabel,
+  type IntegrationsStatus,
+} from '@/shared/mcp/integrations-status';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 export interface McpConnectionsHubProps {
   mcpAllowed: boolean;
   isAuthenticated: boolean;
-  bridgeEnabled: boolean;
-  token: string;
-  activeAppIds: readonly McpAiAppId[];
+  status: IntegrationsStatus;
+  remoteUrl: string;
+  urlCopied?: boolean;
+  showLegacyNotice?: boolean;
   lockMessage?: string | null;
+  grantsError?: string | null;
   onDismissLockMessage?: () => void;
   onLockedInteract: () => void;
-  onToggleBridge: () => void;
-  onTokenChange: (token: string) => void;
-  onTokenBlur: () => void;
-  onCopyToken: () => void;
-  tokenCopied?: boolean;
+  onCopyUrl: () => void;
   onAddApp: () => void;
-  onOpenActive: (id: McpAiAppId) => void;
+  onOpenActive?: (id: string) => void;
+  connectedApps: readonly { id: string; title: string; sub: string }[];
 }
 
 export function McpConnectionsHub({
   mcpAllowed,
   isAuthenticated,
-  bridgeEnabled,
-  token,
-  activeAppIds,
+  status,
+  remoteUrl,
+  urlCopied = false,
+  showLegacyNotice = false,
   lockMessage,
+  grantsError,
   onDismissLockMessage,
   onLockedInteract,
-  onToggleBridge,
-  onTokenChange,
-  onTokenBlur,
-  onCopyToken,
-  tokenCopied = false,
+  onCopyUrl,
   onAddApp,
   onOpenActive,
+  connectedApps,
 }: McpConnectionsHubProps): React.ReactElement {
   const locked = !mcpAllowed;
-  const activeApps = activeAppIds.map((id) => getMcpAiApp(id));
 
   const tryInteract = (fn: () => void): void => {
     if (locked) {
@@ -57,7 +56,7 @@ export function McpConnectionsHub({
           className="u-sans"
           style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}
         >
-          Use your highlights in the agent you already use
+          Let agents read your synced cloud library. No extension required.
         </div>
       </div>
 
@@ -106,7 +105,7 @@ export function McpConnectionsHub({
               Included with Account (Paid)
             </div>
             <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.45 }}>
-              You connect your own AI — no token cost from _underscore. Toggle and apps stay visible so you know what you get.
+              Integrations stay visible so you can see what Paid unlocks. Setup does not ask for model keys.
             </div>
             <button
               type="button"
@@ -129,6 +128,27 @@ export function McpConnectionsHub({
         </div>
       ) : null}
 
+      {grantsError && !locked ? (
+        <div style={{ padding: '0 16px 10px' }} role="status" data-testid="mcp-grants-error">
+          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}>
+            {grantsError}
+          </div>
+        </div>
+      ) : null}
+
+      {showLegacyNotice && !locked ? (
+        <div style={{ padding: '0 16px 10px' }} data-testid="mcp-legacy-bridge-notice">
+          <div style={{ padding: 12, border: '1px solid var(--rule)', background: 'var(--paper-2)' }}>
+            <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
+              Local bridge is no longer the product path
+            </div>
+            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.45 }}>
+              Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge may still run until it is removed.
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div
         style={{
           margin: '0 16px 10px',
@@ -138,107 +158,97 @@ export function McpConnectionsHub({
         }}
       >
         <Row
-          title="Let AI apps read highlights"
+          title="Status"
           sub={
             locked
-              ? 'Locked'
-              : bridgeEnabled
-                ? 'On · bridge listening'
-                : 'Off · nothing can reach this library'
+              ? 'Off until Account (Paid)'
+              : status === 'connected'
+                ? 'At least one approved OAuth client'
+                : 'Ready — copy the URL. Connected is not “I copied the snippet”.'
           }
           right={
             <span
               className="u-mono"
+              data-testid="mcp-integrations-status"
               style={{
                 fontSize: 'var(--step--2)',
-                color: !locked && bridgeEnabled ? 'var(--accent)' : 'var(--ink-3)',
+                color: !locked && status === 'connected' ? 'var(--accent)' : 'var(--ink-3)',
               }}
-              aria-hidden="true"
             >
-              {!locked && bridgeEnabled ? 'On' : 'Off'}
+              {integrationsStatusLabel(status)}
             </span>
           }
-          onClick={() => tryInteract(onToggleBridge)}
-          role="switch"
-          aria-checked={!locked && bridgeEnabled}
-          aria-disabled={locked}
           compact
         />
 
-        {bridgeEnabled && !locked ? (
+        {!locked ? (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--rule-soft)' }}>
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
-              Security code
+              Remote MCP URL
             </div>
             <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.4 }}>
-              Same value in every client config (UNDERSCORE_MCP_TOKEN)
+              OAuth for public hosts · Bearer JWT for scripts
             </div>
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => onTokenChange(e.target.value)}
-              onBlur={onTokenBlur}
-              placeholder="Paste or generate a code"
-              autoComplete="off"
-              aria-label="Security code"
+            <div
+              className="u-mono"
+              data-testid="mcp-remote-url"
               style={{
                 marginTop: 8,
                 padding: 8,
                 border: '1px solid var(--rule)',
                 background: 'var(--paper)',
                 color: 'var(--ink)',
-                fontFamily: 'var(--mono)',
-                fontSize: 'var(--step-1)',
-                width: '100%',
-                boxSizing: 'border-box',
+                fontSize: 'var(--step--2)',
+                wordBreak: 'break-all',
                 minHeight: 44,
               }}
-            />
+            >
+              {remoteUrl}
+            </div>
             <button
               type="button"
               className="u-mono"
-              onClick={onCopyToken}
-              disabled={!token}
+              onClick={() => tryInteract(onCopyUrl)}
               style={{
                 marginTop: 8,
                 border: 'none',
                 background: 'transparent',
-                color: token ? 'var(--accent)' : 'var(--ink-3)',
-                cursor: token ? 'pointer' : 'default',
+                color: 'var(--accent)',
+                cursor: 'pointer',
                 fontSize: 'var(--step--2)',
                 padding: 0,
                 minHeight: 44,
               }}
             >
-              {tokenCopied ? 'Copied' : 'Copy code'}
+              {urlCopied ? 'Copied' : 'Copy URL'}
             </button>
           </div>
         ) : null}
       </div>
 
       <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
-        Active
+        Connected
       </div>
-      {activeApps.length === 0 || locked ? (
+      {connectedApps.length === 0 || locked ? (
         <div style={{ padding: '8px 16px 12px' }}>
           <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}>
             {locked
               ? 'Connections unlock with Account (Paid).'
-              : 'No connections yet. Add an AI app, finish setup, then Check connection.'}
+              : 'No OAuth clients yet. Connected is not “I copied the snippet”.'}
           </div>
         </div>
       ) : (
-        activeApps.map((app) => (
+        connectedApps.map((app) => (
           <Row
             key={app.id}
-            title={app.name}
+            title={app.title}
             sub={app.sub}
             right={
               <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
                 Connected
               </span>
             }
-            onClick={() => onOpenActive(app.id)}
+            onClick={onOpenActive ? () => onOpenActive(app.id) : undefined}
           />
         ))
       )}
@@ -258,7 +268,7 @@ export function McpConnectionsHub({
             fontSize: 'var(--step--2)',
           }}
         >
-          Add an AI app
+          Host tips
         </button>
       </div>
     </div>

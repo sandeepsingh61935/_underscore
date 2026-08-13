@@ -9,6 +9,17 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { MCP_BRIDGE_STORAGE_KEYS } from '@/shared/constants/mcp-bridge';
 
+vi.mock('@/features/oauth/hooks/useOAuthGrants', () => ({
+  useOAuthGrants: () => ({
+    grants: [],
+    isLoading: false,
+    error: null,
+    reload: vi.fn(),
+    revoke: vi.fn(),
+    isRevoking: false,
+  }),
+}));
+
 const storageLocal = {
   get: vi.fn(),
   set: vi.fn(),
@@ -45,6 +56,7 @@ describe('ConnectToAiFlow', () => {
       <ConnectToAiFlow
         isAuthenticated
         currentMode="pro_xai"
+        isPaidActive
         onStackDepthChange={onDepth}
         onExit={onExit}
       />,
@@ -55,17 +67,17 @@ describe('ConnectToAiFlow', () => {
     expect(screen.getByText('Integrations')).toBeTruthy();
     expect(screen.queryByText('Models & providers')).toBeNull();
 
-    screen.getByRole('button', { name: 'Add an AI app' }).click();
+    screen.getByRole('button', { name: 'Host tips' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
     expect(screen.getByText('← Integrations')).toBeTruthy();
     expect(onDepth).toHaveBeenCalledWith(2);
 
     screen.getByRole('button', { name: 'Cursor' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-client-setup')).toBeTruthy());
-    expect(screen.getByText('← Add an AI app')).toBeTruthy();
+    expect(screen.getByText('← Host tips')).toBeTruthy();
     expect(screen.getByText('Connect Cursor')).toBeTruthy();
 
-    screen.getByText('← Add an AI app').click();
+    screen.getByText('← Host tips').click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
 
     screen.getByText('← Integrations').click();
@@ -74,30 +86,22 @@ describe('ConnectToAiFlow', () => {
     expect(onExit).toHaveBeenCalled();
   });
 
-  it('marks Active after Check connection when bridge is connected', async () => {
+  it('does not treat a copied snippet or bridge handshake as Connected', async () => {
     storageLocal.get.mockResolvedValue({
       [MCP_BRIDGE_STORAGE_KEYS.enabled]: true,
       [MCP_BRIDGE_STORAGE_KEYS.token]: 'tok',
       [MCP_BRIDGE_STORAGE_KEYS.connectionState]: 'connected',
-      [MCP_BRIDGE_STORAGE_KEYS.activeApps]: [],
+      [MCP_BRIDGE_STORAGE_KEYS.activeApps]: ['claude-code'],
     });
 
     render(
-      <ConnectToAiFlow isAuthenticated currentMode="pro_xai" />,
+      <ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />,
     );
 
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
-    screen.getByRole('button', { name: 'Add an AI app' }).click();
-    await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
-    screen.getByRole('button', { name: 'Claude Code' }).click();
-    await waitFor(() => expect(screen.getByTestId('mcp-client-setup')).toBeTruthy());
-    screen.getByRole('button', { name: 'Run connection check' }).click();
-
-    await waitFor(() => {
-      expect(screen.getByText(/can read highlights/)).toBeTruthy();
-    });
-    expect(storageLocal.set).toHaveBeenCalledWith({
-      [MCP_BRIDGE_STORAGE_KEYS.activeApps]: ['claude-code'],
-    });
+    expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
+    expect(screen.getByTestId('mcp-legacy-bridge-notice')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Run connection check' })).toBeNull();
+    expect(screen.getByTestId('mcp-remote-url').textContent).toMatch(/mcp/i);
   });
 });

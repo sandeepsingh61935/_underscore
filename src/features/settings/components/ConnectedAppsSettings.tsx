@@ -10,18 +10,22 @@ import { Spinner } from '@/ui-system/components/primitives/Spinner';
 export interface ConnectedAppsSettingsProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
+  isPaidActive?: boolean;
 }
 
 export function ConnectedAppsSettings({
   isAuthenticated,
   currentMode,
+  isPaidActive = false,
 }: ConnectedAppsSettingsProps): React.ReactElement | null {
-  const mcpAllowed = canUseMcp({
+  const mcpGate = canUseMcp({
     mode: currentMode,
     capabilities: getCapabilitiesForMode(currentMode),
     isAuthenticated,
     storageScope: isAuthenticated ? 'pro' : 'basic',
-  }).allowed;
+    isPaidActive,
+  });
+  const mcpAllowed = mcpGate.allowed;
 
   const { grants, isLoading, error, revoke, isRevoking } = useOAuthGrants(
     isAuthenticated && mcpAllowed,
@@ -39,7 +43,7 @@ export function ConnectedAppsSettings({
         </div>
         <Row
           title="Connected apps"
-          sub={featureGateSubtitle('WRONG_MODE')}
+          sub={featureGateSubtitle(mcpGate.reason)}
           right={
             <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
               —

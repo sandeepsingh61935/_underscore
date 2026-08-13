@@ -29,6 +29,7 @@ const srOnlyStyle: React.CSSProperties = {
 export interface McpBridgeSettingsProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
+  isPaidActive?: boolean;
   onSignIn?: () => void;
 }
 
@@ -81,6 +82,7 @@ function connectionColor(state: BridgeConnectionState, enabled: boolean): string
 export function McpBridgeSettings({
   isAuthenticated,
   currentMode,
+  isPaidActive = false,
   onSignIn,
 }: McpBridgeSettingsProps): React.ReactElement {
   const [enabled, setEnabled] = useState(false);
@@ -95,8 +97,9 @@ export function McpBridgeSettings({
         capabilities: getCapabilitiesForMode(currentMode),
         isAuthenticated,
         storageScope: isAuthenticated ? 'pro' : 'basic',
+        isPaidActive,
       }),
-    [currentMode, isAuthenticated],
+    [currentMode, isAuthenticated, isPaidActive],
   );
   const mcpAllowed = mcpGate.allowed;
 

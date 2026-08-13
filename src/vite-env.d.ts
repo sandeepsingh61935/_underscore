@@ -23,4 +23,6 @@ interface ImportMetaEnv {
     readonly VITE_ALLOW_BILLING_DEV_OVERRIDE?: string;
     /** Public web app origin for extension popup legal links (Privacy / Terms). */
     readonly VITE_WEB_APP_URL?: string;
+    /** Cloud MCP Streamable HTTP URL (Integrations product path). */
+    readonly VITE_MCP_CLOUD_URL?: string;
 }

@@ -13,6 +13,17 @@ vi.mock('@/features/billing/BillingProvider', () => ({
   useBillingContextOptional: vi.fn(() => null),
 }));
 
+vi.mock('@/features/oauth/hooks/useOAuthGrants', () => ({
+  useOAuthGrants: () => ({
+    grants: [],
+    isLoading: false,
+    error: null,
+    reload: vi.fn(),
+    revoke: vi.fn(),
+    isRevoking: false,
+  }),
+}));
+
 vi.mock('@/ui-system/hooks/useTypePreset', () => ({
   useTypePreset: () => ({
     selection: { kind: 'builtin' as const, id: 'editorial' as const },
@@ -211,7 +222,7 @@ describe('WebSettingsPage', () => {
     fireEvent.click(document.querySelector('[data-od-id="ai-seg-integrations"]')!);
     expect(document.querySelector('[data-od-id="settings-mcp"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="settings-mcp-status"]')?.textContent).toMatch(
-      /Extension|Paid/i,
+      /Off|Ready|Connected|Paid/i,
     );
     expect(document.querySelectorAll('[data-od-id^="mcp-app-"]').length).toBeGreaterThan(0);
     expect(

@@ -1,6 +1,6 @@
 /**
- * External MCP hosts for Integrations (Option B picker).
- * Order is product-locked. Models / Ollama stay under Models & providers.
+ * External MCP hosts for Integrations (cloud-first, ADR-029).
+ * Host tips are secondary; product path is remote Worker URL + OAuth/JWT.
  */
 
 export type McpAiAppId =
@@ -14,117 +14,122 @@ export type McpAiAppId =
   | 'grok'
   | 'other';
 
+export type McpAuthHint = 'oauth' | 'url';
+
 export interface McpAiAppDef {
   id: McpAiAppId;
   name: string;
   sub: string;
   configLabel: string;
   configHint: string;
-  /** Snippet with {{TOKEN}} placeholder replaced at render time. */
+  /** Snippet with {{MCP_URL}} placeholder. */
   configTemplate: string;
   restartLabel: string;
+  authHint: McpAuthHint;
 }
 
-const BRIDGE_JSON = `{
+const CLOUD_JSON = `{
   "mcpServers": {
     "underscore": {
-      "command": "node",
-      "args": ["/path/to/_underscore/packages/mcp-server/dist/index.js", "--adapter=bridge"],
-      "env": { "UNDERSCORE_MCP_TOKEN": "{{TOKEN}}" }
+      "url": "{{MCP_URL}}"
     }
   }
 }`;
 
-const BRIDGE_TOML = `[mcp_servers.underscore]
-command = "node"
-args = ["/path/to/_underscore/packages/mcp-server/dist/index.js", "--adapter=bridge"]
-
-[mcp_servers.underscore.env]
-UNDERSCORE_MCP_TOKEN = "{{TOKEN}}"`;
+const CLOUD_TOML = `[mcp_servers.underscore]
+url = "{{MCP_URL}}"`;
 
 /** Flat picker list — locked order (Claude Code → … → Other MCP). */
 export const MCP_AI_APPS: readonly McpAiAppDef[] = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    sub: 'CLI / IDE · .mcp.json or ~/.claude.json',
+    sub: 'CLI / IDE · remote MCP',
     configLabel: 'Project .mcp.json (or ~/.claude.json)',
-    configHint: 'Same JSON family as Desktop — different file.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Remote Cloud MCP. OAuth on supported hosts, or Bearer JWT for scripts.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Restart Claude Code / open new session',
+    authHint: 'url',
   },
   {
     id: 'claude-desktop',
     name: 'Claude Desktop',
-    sub: 'Desktop app · claude_desktop_config.json',
+    sub: 'Desktop app · remote MCP',
     configLabel: 'claude_desktop_config.json',
-    configHint: 'Settings → Developer → Edit Config, then fully quit & reopen.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Settings → Developer → Edit Config. Use the remote URL, then fully quit & reopen.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Quit Claude Desktop fully, then reopen',
+    authHint: 'url',
   },
   {
     id: 'codex',
     name: 'Codex',
-    sub: 'CLI / IDE · ~/.codex/config.toml',
+    sub: 'CLI / IDE · remote MCP',
     configLabel: '~/.codex/config.toml (or: codex mcp add)',
-    configHint: 'Shared config with ChatGPT Desktop Codex host.',
-    configTemplate: BRIDGE_TOML,
+    configHint: 'Point Codex at the Cloud MCP URL. OAuth or Bearer JWT.',
+    configTemplate: CLOUD_TOML,
     restartLabel: 'Restart Codex / start a new session',
+    authHint: 'url',
   },
   {
     id: 'chatgpt-desktop',
-    name: 'ChatGPT Desktop',
-    sub: 'Desktop Codex host · same config as Codex',
-    configLabel: '~/.codex/config.toml',
-    configHint: 'Not ChatGPT web Apps/OAuth — local MCP via Codex host.',
-    configTemplate: BRIDGE_TOML,
-    restartLabel: 'Restart ChatGPT Desktop',
+    name: 'ChatGPT',
+    sub: 'Developer Mode app · OAuth',
+    configLabel: 'ChatGPT Settings → Apps (Developer Mode)',
+    configHint: 'Public hosts use OAuth 2.1 against Cloud MCP. Paste the remote URL; do not use a local token.',
+    configTemplate: CLOUD_JSON,
+    restartLabel: 'Reload ChatGPT / start a new chat',
+    authHint: 'oauth',
   },
   {
     id: 'cursor',
     name: 'Cursor',
-    sub: 'Agent · ~/.cursor/mcp.json',
+    sub: 'Agent · remote MCP',
     configLabel: '~/.cursor/mcp.json',
-    configHint: 'Agent mode required for tools.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Agent mode required for tools. Remote URL — no extension token.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Restart Cursor MCP / reload window',
+    authHint: 'url',
   },
   {
     id: 'grok',
     name: 'Grok (xAI)',
-    sub: 'Grok Build · ~/.grok/config.toml',
+    sub: 'Grok Build · remote MCP',
     configLabel: '~/.grok/config.toml (or Grok Build MCP settings)',
-    configHint:
-      'Local stdio MCP via Grok Build; remote MCP tools on the xAI API are a separate path.',
-    configTemplate: BRIDGE_TOML,
+    configHint: 'Remote Cloud MCP. Local stdio/bridge is legacy and unsupported in this UI.',
+    configTemplate: CLOUD_TOML,
     restartLabel: 'Restart Grok Build / reload MCP servers',
+    authHint: 'url',
   },
   {
     id: 'antigravity',
     name: 'Antigravity',
-    sub: 'Google agent platform · mcp_config.json',
+    sub: 'Google agent platform · remote MCP',
     configLabel: '~/.gemini/antigravity/mcp_config.json',
-    configHint: 'Local stdio or remote HTTP — we use the bridge path here.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Use the remote Cloud MCP URL, not a local bridge.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Reload MCP servers in Antigravity',
+    authHint: 'url',
   },
   {
     id: 'gemini',
     name: 'Gemini',
     sub: 'Gemini / Google agent surfaces with MCP',
     configLabel: 'Gemini MCP config (path varies by surface)',
-    configHint: 'Paste the same bridge block your Gemini client expects.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Paste the Cloud MCP remote URL your Gemini client expects.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Reload Gemini / agent session',
+    authHint: 'url',
   },
   {
     id: 'other',
     name: 'Other MCP client',
-    sub: 'Any MCP host · paste generic snippet',
+    sub: 'Any MCP host · remote URL',
     configLabel: 'Your client’s MCP config',
-    configHint: 'No Add-custom form — same bridge + token, your file format.',
-    configTemplate: BRIDGE_JSON,
+    configHint: 'Remote Cloud MCP URL. OAuth for public hosts; Bearer JWT for scripts.',
+    configTemplate: CLOUD_JSON,
     restartLabel: 'Restart / reload your MCP client',
+    authHint: 'url',
   },
 ] as const;
 
@@ -136,7 +141,14 @@ export function getMcpAiApp(id: McpAiAppId): McpAiAppDef {
   return found;
 }
 
-export function fillMcpConfigTemplate(template: string, token: string): string {
-  const value = token.trim() || 'your-code';
-  return template.split('{{TOKEN}}').join(value);
+export function fillMcpConfigTemplate(
+  template: string,
+  vars: string | { url?: string; token?: string } = {},
+): string {
+  const resolved = typeof vars === 'string' ? { token: vars } : vars;
+  return template
+    .split('{{MCP_URL}}')
+    .join((resolved.url ?? '').trim() || 'https://YOUR-WORKER/mcp')
+    .split('{{TOKEN}}')
+    .join((resolved.token ?? '').trim() || 'your-code');
 }
