@@ -2,7 +2,7 @@
 
 MCP server for [_underscore](https://github.com) highlights. **Product path (ADR-029):** Cloud MCP on Cloudflare Workers. Agents see the **synced Pro cloud library** only (`dataCoverage: pro_cloud`).
 
-Basic / guest highlights never appear on Cloud MCP. The local stdio **bridge** is compatibility-only and is not the Integrations setup path.
+Basic / guest highlights never appear on Cloud MCP. The local stdio **bridge** has been removed (`--adapter=bridge` errors). Use the Worker URL + OAuth or Bearer JWT.
 
 ## Product path: Cloud Worker
 
@@ -162,4 +162,4 @@ See [ADR-029](../../docs/04-adrs/029-cloud-first-library-and-integrations.md) (p
 
 ## Legacy: local bridge (compat)
 
-Stdio `--adapter=bridge` plus `UNDERSCORE_MCP_TOKEN` still exists for existing installs. It is **not** shown in Integrations UI and will be removed in a later epic. Do not add new bridge tools.
+Stdio `--adapter=bridge` is removed. Existing installs must switch to Cloud MCP.

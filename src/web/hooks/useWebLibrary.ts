@@ -9,9 +9,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { fetchHighlightLabelsWeb } from '@/shared/services/tag-query-web';
 import { getDomainFromUrl } from '@/shared/utils/domain-from-url';
-import { mergeHighlightLabels } from '@/shared/utils/highlight-metadata';
+import {
+  mapCloudBodyText,
+  resolveCloudHighlightTags,
+} from '@/shared/library/cloud-highlight-mapper';
 import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { highlightTimestampMs } from '@/shared/utils/supabase-highlight-row';
+import { readWebLibraryCache, writeWebLibraryCache } from '@/web/lib/web-library-cache';
 import {
   aggregateLibrary,
   type WebCurrentPage,
@@ -88,14 +92,15 @@ export function mapSupabaseRowToWebHighlight(row: {
   const path = getSectionPath(url);
 
   const metadata = row.metadata ?? undefined;
-  const tags = Array.isArray(metadata?.tags) ? metadata.tags.filter((t): t is string => typeof t === 'string') : [];
+  const tags = resolveCloudHighlightTags(undefined, metadata?.tags);
   const note = typeof metadata?.notes === 'string' ? metadata.notes : '';
+  const body = mapCloudBodyText({ text: row.text });
 
   return {
     id: row.id,
     domain,
     path,
-    quote: row.text ?? '',
+    quote: body.text,
     note,
     tags,
     savedAt: highlightTimestampMs(row.updated_at, row.created_at),
@@ -143,14 +148,27 @@ async function defaultFetchHighlights(): Promise<WebHighlight[]> {
     );
     for (const h of out) {
       const junction = labels.get(h.id);
-      const merged = mergeHighlightLabels(junction, h.tags);
-      h.tags = merged ?? [];
+      h.tags = resolveCloudHighlightTags(junction, h.tags);
     }
   } catch {
     // Non-fatal: metadata.tags still available if junction query fails.
   }
 
+  await writeWebLibraryCache(session.user.id, out);
   return out;
+}
+
+async function readCachedHighlights(): Promise<WebHighlight[] | null> {
+  try {
+    const supabase = getWebSupabaseClient();
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId) return null;
+    const cached = await readWebLibraryCache(userId);
+    return cached?.highlights ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -239,6 +257,17 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         return;
       }
       const message = err instanceof Error ? err.message : 'Failed to load library';
+      if (fetchRef.current) {
+        applyEmpty('error', message);
+        return;
+      }
+      const cached = await readCachedHighlights();
+      if (gen !== loadGenRef.current || !isAuthenticatedRef.current) return;
+      if (cached) {
+        applyRows(cached);
+        setError(message);
+        return;
+      }
       applyEmpty('error', message);
     }
   }, [applyEmpty, applyRows]);

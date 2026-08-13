@@ -28,4 +28,13 @@ describe('cloud-highlight-text', () => {
     expect(displayTextFromCloudRow('Hello world')).toBe('Hello world');
     expect(displayTextFromCloudRow('')).toBe('');
   });
+
+  it('prefers junction labels over metadata.tags (shared mapper contract)', () => {
+    expect(
+      notesAndTagsFromCloudRow(
+        { metadata: { notes: 'n', tags: ['legacy'] } },
+        ['junction'],
+      ),
+    ).toEqual({ notes: 'n', tags: ['junction'] });
+  });
 });

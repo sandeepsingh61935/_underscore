@@ -1,7 +1,7 @@
 {
   "name": "@underscore/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for _underscore highlights (bridge + cloud adapters)",
+  "description": "MCP server for _underscore highlights (Cloud MCP Worker)",
   "type": "module",
   "bin": {
     "underscore-mcp": "./dist/index.js"
