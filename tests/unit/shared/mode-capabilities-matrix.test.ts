@@ -45,6 +45,7 @@ function happyContext(mode: ModeType) {
     capabilities: getCapabilitiesForMode(mode),
     isAuthenticated: isProFamily,
     storageScope: isProFamily ? ('pro' as const) : ('basic' as const),
+    isPaidActive: mode === 'pro_xai',
   };
 }
 
@@ -62,7 +63,11 @@ describe('canUseFeature capability matrix', () => {
       expect(result.allowed).toBe(shouldAllow);
       if (!shouldAllow) {
         const expectedReason =
-          feature === 'ai' || feature === 'mcp' ? 'WRONG_MODE' : 'CAPABILITY_DENIED';
+          feature === 'ai' || feature === 'mcp'
+            ? mode === 'basic'
+              ? 'AUTH_REQUIRED'
+              : 'PAID_REQUIRED'
+            : 'CAPABILITY_DENIED';
         expect(result.reason).toBe(expectedReason);
       }
     },

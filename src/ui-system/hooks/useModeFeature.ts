@@ -8,6 +8,7 @@
 
 import { useMemo } from 'react';
 
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import {
   canConfigureAiProviders,
   canUseFeature,
@@ -28,6 +29,11 @@ export interface ModeFeatureResult {
 /**
  * Check whether the active mode allows a feature for the current session.
  */
+function usePaidActive(isAuthenticated: boolean): boolean {
+  const billing = useBillingContextOptional();
+  return Boolean(isAuthenticated && billing?.snapshot.isPaidActive);
+}
+
 export function useModeFeature(
   feature: FeatureKey,
   isAuthenticated: boolean,
@@ -35,10 +41,17 @@ export function useModeFeature(
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
   const storageScope = isAuthenticated ? 'pro' : 'basic';
+  const isPaidActive = usePaidActive(isAuthenticated);
 
   return useMemo(
     () => {
-      const ctx = buildGateContext(currentMode, capabilities, isAuthenticated, storageScope);
+      const ctx = buildGateContext(
+        currentMode,
+        capabilities,
+        isAuthenticated,
+        storageScope,
+        isPaidActive,
+      );
       const gate = canUseFeature(feature, ctx);
 
       return {
@@ -47,7 +60,7 @@ export function useModeFeature(
         capabilities,
       };
     },
-    [feature, currentMode, capabilities, isAuthenticated, storageScope],
+    [feature, currentMode, capabilities, isAuthenticated, storageScope, isPaidActive],
   );
 }
 
@@ -56,12 +69,14 @@ function buildGateContext(
   capabilities: ReturnType<typeof getCapabilitiesForMode>,
   isAuthenticated: boolean,
   storageScope: 'basic' | 'pro',
+  isPaidActive: boolean,
 ): FeatureGateContext {
   return {
     mode: currentMode,
     capabilities,
     isAuthenticated,
     storageScope,
+    isPaidActive,
   };
 }
 
@@ -70,10 +85,17 @@ export function useConfigureAiProvidersGate(isAuthenticated: boolean): ModeFeatu
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
   const storageScope = isAuthenticated ? 'pro' : 'basic';
+  const isPaidActive = usePaidActive(isAuthenticated);
 
   return useMemo(
     () => {
-      const ctx = buildGateContext(currentMode, capabilities, isAuthenticated, storageScope);
+      const ctx = buildGateContext(
+        currentMode,
+        capabilities,
+        isAuthenticated,
+        storageScope,
+        isPaidActive,
+      );
       const gate = canConfigureAiProviders(ctx);
 
       return {
@@ -82,19 +104,26 @@ export function useConfigureAiProvidersGate(isAuthenticated: boolean): ModeFeatu
         capabilities,
       };
     },
-    [currentMode, capabilities, isAuthenticated, storageScope],
+    [currentMode, capabilities, isAuthenticated, storageScope, isPaidActive],
   );
 }
 
-/** Gate for MCP bridge + cloud connectors (Account Paid only). */
+/** Gate for Cloud MCP + compat bridge (Account Paid only). */
 export function useMcpGate(isAuthenticated: boolean): ModeFeatureResult {
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
   const storageScope = isAuthenticated ? 'pro' : 'basic';
+  const isPaidActive = usePaidActive(isAuthenticated);
 
   return useMemo(
     () => {
-      const ctx = buildGateContext(currentMode, capabilities, isAuthenticated, storageScope);
+      const ctx = buildGateContext(
+        currentMode,
+        capabilities,
+        isAuthenticated,
+        storageScope,
+        isPaidActive,
+      );
       const gate = canUseMcp(ctx);
 
       return {
@@ -103,6 +132,6 @@ export function useMcpGate(isAuthenticated: boolean): ModeFeatureResult {
         capabilities,
       };
     },
-    [currentMode, capabilities, isAuthenticated, storageScope],
+    [currentMode, capabilities, isAuthenticated, storageScope, isPaidActive],
   );
 }

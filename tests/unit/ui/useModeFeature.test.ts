@@ -3,9 +3,14 @@ import { renderHook } from '@testing-library/react';
 
 import { useModeFeature, useConfigureAiProvidersGate } from '@/ui-system/hooks/useModeFeature';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   usePersistedMode: vi.fn(),
+}));
+
+vi.mock('@/features/billing/BillingProvider', () => ({
+  useBillingContextOptional: vi.fn(() => null),
 }));
 
 function mockMode(mode: 'basic' | 'pro' | 'pro_xai'): void {
@@ -14,6 +19,14 @@ function mockMode(mode: 'basic' | 'pro' | 'pro_xai'): void {
     modeReady: true,
     persistMode: vi.fn(),
   });
+}
+
+function mockPaid(isPaidActive: boolean): void {
+  vi.mocked(useBillingContextOptional).mockReturnValue(
+    isPaidActive
+      ? ({ snapshot: { isPaidActive: true, loadState: 'ready' } } as never)
+      : null,
+  );
 }
 
 describe('useModeFeature', () => {
@@ -37,13 +50,14 @@ describe('useModeFeature', () => {
     expect(result.current.reason).toBe('AUTH_REQUIRED');
   });
 
-  it('denies AI in pro mode when signed in', () => {
+  it('denies AI when signed in but not paid', () => {
     mockMode('pro');
+    mockPaid(false);
 
     const { result } = renderHook(() => useModeFeature('ai', true));
 
     expect(result.current.allowed).toBe(false);
-    expect(result.current.reason).toBe('WRONG_MODE');
+    expect(result.current.reason).toBe('PAID_REQUIRED');
   });
 
   it('allows export in pro mode when signed in', () => {
@@ -54,16 +68,18 @@ describe('useModeFeature', () => {
     expect(result.current.allowed).toBe(true);
   });
 
-  it('allows AI in pro_xai when signed in', () => {
+  it('allows AI when signed in and paid', () => {
     mockMode('pro_xai');
+    mockPaid(true);
 
     const { result } = renderHook(() => useModeFeature('ai', true));
 
     expect(result.current.allowed).toBe(true);
   });
 
-  it('allows provider setup in pro_xai', () => {
+  it('allows provider setup when paid', () => {
     mockMode('pro_xai');
+    mockPaid(true);
 
     const { result } = renderHook(() => useConfigureAiProvidersGate(true));
 

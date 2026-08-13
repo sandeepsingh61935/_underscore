@@ -8,6 +8,7 @@
 
 import type { ModeCapabilities } from '@/content/modes/mode-interfaces';
 import { AUTH_REQUIRED_MODES } from '@/shared/constants/mode-storage';
+import { resolveEntitlement } from '@/shared/entitlement/resolve-entitlement';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 /** Boolean capability keys only (excludes persistence enum). */
@@ -19,13 +20,16 @@ export type FeatureDenyReason =
   | 'AUTH_REQUIRED'
   | 'CAPABILITY_DENIED'
   | 'WRONG_MODE'
-  | 'WRONG_SCOPE';
+  | 'WRONG_SCOPE'
+  | 'PAID_REQUIRED';
 
 export interface FeatureGateContext {
   mode: ModeType;
   capabilities: ModeCapabilities;
   isAuthenticated: boolean;
   storageScope?: 'basic' | 'pro';
+  /** Commercial Paid flag (ADR-029). Required for AI / MCP gates. */
+  isPaidActive?: boolean;
 }
 
 export interface FeatureGateResult {
@@ -107,12 +111,29 @@ export function canAccessLibrary(isAuthenticated: boolean): boolean {
   return isAuthenticated;
 }
 
+function commercialGate(
+  ctx: FeatureGateContext,
+  flag: 'ai' | 'mcp',
+): FeatureGateResult {
+  if (!ctx.isAuthenticated) {
+    return { allowed: false, reason: 'AUTH_REQUIRED' };
+  }
+  const entitlement = resolveEntitlement({
+    isAuthenticated: ctx.isAuthenticated,
+    isPaidActive: Boolean(ctx.isPaidActive),
+  });
+  if (!entitlement.flags[flag]) {
+    return { allowed: false, reason: 'PAID_REQUIRED' };
+  }
+  return { allowed: true };
+}
+
 export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
 ): FeatureGateResult {
-  if ((feature === 'ai' || feature === 'mcp') && ctx.mode !== 'pro_xai') {
-    return { allowed: false, reason: 'WRONG_MODE' };
+  if (feature === 'ai' || feature === 'mcp') {
+    return commercialGate(ctx, feature);
   }
 
   const cap = ctx.capabilities[feature];
@@ -140,46 +161,14 @@ export function canUseFeature(
  * Pro-family modes use persistent chrome.storage.local for API keys (plain text in extension sandbox).
  */
 export function canConfigureAiProviders(ctx: FeatureGateContext): FeatureGateResult {
-  if (ctx.mode !== 'pro_xai') {
-    return { allowed: false, reason: 'WRONG_MODE' };
-  }
-
-  if (!ctx.capabilities.ai) {
-    return { allowed: false, reason: 'CAPABILITY_DENIED' };
-  }
-
-  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
-    return { allowed: false, reason: 'AUTH_REQUIRED' };
-  }
-
-  if (ctx.storageScope === 'basic' && proOnlyFeature('ai')) {
-    return { allowed: false, reason: 'WRONG_SCOPE' };
-  }
-
-  return { allowed: true };
+  return commercialGate(ctx, 'ai');
 }
 
 /**
- * MCP bridge + cloud connectors. Account (Paid) only — separate from in-app AI.
+ * Cloud MCP + (compat) bridge. Account (Paid) only — entitlement, not mode string.
  */
 export function canUseMcp(ctx: FeatureGateContext): FeatureGateResult {
-  if (ctx.mode !== 'pro_xai') {
-    return { allowed: false, reason: 'WRONG_MODE' };
-  }
-
-  if (!ctx.capabilities.mcp) {
-    return { allowed: false, reason: 'CAPABILITY_DENIED' };
-  }
-
-  if (AUTH_REQUIRED_MODES.includes(ctx.mode) && !ctx.isAuthenticated) {
-    return { allowed: false, reason: 'AUTH_REQUIRED' };
-  }
-
-  if (ctx.storageScope === 'basic' && proOnlyFeature('mcp')) {
-    return { allowed: false, reason: 'WRONG_SCOPE' };
-  }
-
-  return { allowed: true };
+  return commercialGate(ctx, 'mcp');
 }
 
 /** Features that require pro storage scope (signed-in cloud sync). */

@@ -76,11 +76,11 @@ describe('McpBridgeHandler', () => {
     expect(result.collections).toHaveLength(1);
   });
 
-  it('ask_scope rejects when not pro_xai', async () => {
+  it('ask_scope rejects when not entitled', async () => {
     const handler = createHandler();
     await expect(
       handler.askScope({ domain: 'example.com', sectionKey: '/', question: 'test' }),
-    ).rejects.toMatchObject({ code: 'AI_NOT_ENABLED' });
+    ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   });
 
   it('get_session denies export and sync for guest Basic', async () => {
@@ -129,6 +129,7 @@ describe('McpBridgeHandler', () => {
         getActiveScope: () => 'pro',
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
+      getIsPaidActive: async () => true,
     });
     const session = (await handler.getSession()) as {
       capabilities: { ai: boolean };
@@ -149,6 +150,7 @@ describe('McpBridgeHandler', () => {
         getActiveScope: () => 'pro',
       } as McpBridgeHandlerDeps['scopedHighlightRepository'],
       getActiveMode: vi.fn().mockResolvedValue('pro_xai'),
+      getIsPaidActive: async () => true,
       getHighlightQueryService: () => ({
         getCollections: vi.fn(),
         getHighlightsByDomain: vi.fn().mockResolvedValue([

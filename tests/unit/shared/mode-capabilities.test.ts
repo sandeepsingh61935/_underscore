@@ -87,21 +87,34 @@ describe('mode-capabilities', () => {
       expect(result).toEqual({ allowed: false, reason: 'AUTH_REQUIRED' });
     });
 
-    it('denies AI in pro mode even when authenticated', () => {
+    it('denies AI when authenticated but not paid (mode is not commercial)', () => {
       const result = canUseFeature('ai', {
         mode: 'pro',
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
+        isPaidActive: false,
       });
-      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
+      expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
     });
 
-    it('allows AI in pro_xai when authenticated', () => {
+    it('allows AI when paid even if stored mode is pro', () => {
+      const result = canUseFeature('ai', {
+        mode: 'pro',
+        capabilities: getCapabilitiesForMode('pro'),
+        isAuthenticated: true,
+        storageScope: 'pro',
+        isPaidActive: true,
+      });
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('allows AI in pro_xai when authenticated and paid', () => {
       const result = canUseFeature('ai', {
         mode: 'pro_xai',
         capabilities: getCapabilitiesForMode('pro_xai'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: true,
       });
       expect(result).toEqual({ allowed: true });
     });
@@ -138,24 +151,26 @@ describe('mode-capabilities', () => {
   });
 
   describe('canConfigureAiProviders', () => {
-    it('allows provider setup in pro_xai', () => {
+    it('allows provider setup when paid', () => {
       const result = canConfigureAiProviders({
         mode: 'pro_xai',
         capabilities: getCapabilitiesForMode('pro_xai'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: true,
       });
       expect(result).toEqual({ allowed: true });
     });
 
-    it('denies provider setup in pro mode with WRONG_MODE', () => {
+    it('denies provider setup when not paid', () => {
       const result = canConfigureAiProviders({
         mode: 'pro',
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: false,
       });
-      expect(result).toEqual({ allowed: false, reason: 'WRONG_MODE' });
+      expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
     });
   });
 });

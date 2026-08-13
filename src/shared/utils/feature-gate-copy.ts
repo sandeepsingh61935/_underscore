@@ -12,6 +12,7 @@ export function featureGateSubtitle(reason?: FeatureDenyReason): string {
     case 'AUTH_REQUIRED':
       return 'Sign in to use account features';
     case 'WRONG_MODE':
+    case 'PAID_REQUIRED':
       return 'Available with Account (Paid)';
     case 'WRONG_SCOPE':
       return 'Available with Account (Free)';
@@ -26,6 +27,7 @@ export function featureGateErrorCode(reason?: FeatureDenyReason): string {
     case 'AUTH_REQUIRED':
       return 'AUTH_REQUIRED';
     case 'WRONG_MODE':
+    case 'PAID_REQUIRED':
     case 'CAPABILITY_DENIED':
       return 'AI_NOT_ENABLED';
     default:

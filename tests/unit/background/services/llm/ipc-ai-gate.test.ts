@@ -51,6 +51,7 @@ function proContext(): FeatureGateContext {
     capabilities: getCapabilitiesForMode('pro'),
     isAuthenticated: true,
     storageScope: 'pro',
+    isPaidActive: false,
   };
 }
 
@@ -60,6 +61,7 @@ function proXaiContext(overrides: Partial<FeatureGateContext> = {}): FeatureGate
     capabilities: getCapabilitiesForMode('pro_xai'),
     isAuthenticated: true,
     storageScope: 'pro',
+    isPaidActive: true,
     ...overrides,
   };
 }

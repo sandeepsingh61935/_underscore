@@ -14,4 +14,8 @@ describe('featureGateSubtitle', () => {
   it('maps wrong mode to Account (Paid) upgrade copy', () => {
     expect(featureGateSubtitle('WRONG_MODE')).toBe('Available with Account (Paid)');
   });
+
+  it('maps paid-required to Account (Paid) upgrade copy', () => {
+    expect(featureGateSubtitle('PAID_REQUIRED')).toBe('Available with Account (Paid)');
+  });
 });

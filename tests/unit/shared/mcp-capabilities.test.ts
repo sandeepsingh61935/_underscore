@@ -50,6 +50,7 @@ describe('buildMcpCapabilities', () => {
       capabilities: getCapabilitiesForMode('pro_xai'),
       isAuthenticated: true,
       storageScope: 'pro',
+      isPaidActive: true,
     });
 
     expect(caps.sync).toBe(true);
@@ -75,17 +76,19 @@ describe('canUseMcp', () => {
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: false,
       }),
-    ).toEqual({ allowed: false, reason: 'WRONG_MODE' });
+    ).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
   });
 
-  it('allows signed-in pro_xai', () => {
+  it('allows signed-in paid (regardless of stored mode)', () => {
     expect(
       canUseMcp({
         mode: 'pro_xai',
         capabilities: getCapabilitiesForMode('pro_xai'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: true,
       }).allowed,
     ).toBe(true);
   });

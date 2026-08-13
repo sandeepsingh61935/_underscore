@@ -49,6 +49,8 @@ export interface McpBridgeHandlerDeps {
   librarySyncCursor: LibrarySyncCursor;
   llmChat?: (payload: { provider?: ProviderName; request: LLMRequest }) => Promise<{ text: string }>;
   getActiveMode?: () => Promise<ModeType>;
+  /** Commercial Paid flag (ADR-029). Fail closed when omitted. */
+  getIsPaidActive?: () => Promise<boolean>;
 }
 
 export class McpBridgeHandler {
@@ -106,16 +108,20 @@ export class McpBridgeHandler {
     return this.deps.scopedHighlightRepository.getActiveScope() === 'pro' ? 'pro_local' : 'basic_local';
   }
 
-  private capabilitiesForMode(
+  private async capabilitiesForSession(
     mode: ModeType,
     signedIn: boolean,
     storageScope: 'basic' | 'pro',
-  ): McpSessionSnapshot['capabilities'] {
+  ): Promise<McpSessionSnapshot['capabilities']> {
+    const isPaidActive = this.deps.getIsPaidActive
+      ? await this.deps.getIsPaidActive()
+      : false;
     return buildMcpCapabilities({
       mode,
       capabilities: getCapabilitiesForMode(mode),
       isAuthenticated: signedIn,
       storageScope,
+      isPaidActive,
     });
   }
 
@@ -136,7 +142,7 @@ export class McpBridgeHandler {
         userId: authState.user?.id,
         email: authState.user?.email,
       },
-      capabilities: this.capabilitiesForMode(mode, authState.isAuthenticated, storageScope),
+      capabilities: await this.capabilitiesForSession(mode, authState.isAuthenticated, storageScope),
       sync: cursor ? { lastHydratedAt: cursor.toISOString() } : undefined,
       dataCoverage: this.dataCoverage(),
       bridgeConnected: true,
@@ -355,16 +361,24 @@ export class McpBridgeHandler {
     return buildFallbackExcerpts(this.toPromptHighlights(filtered)).excerpts;
   }
 
-  private async assertMcpFeature(): Promise<void> {
+  private async gateContext() {
     const mode = await this.readMode();
     const signedIn = this.deps.authManager.isAuthenticated;
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    const gate = canUseMcp({
+    const isPaidActive = this.deps.getIsPaidActive
+      ? await this.deps.getIsPaidActive()
+      : false;
+    return {
       mode,
       capabilities: getCapabilitiesForMode(mode),
       isAuthenticated: signedIn,
       storageScope,
-    });
+      isPaidActive,
+    };
+  }
+
+  private async assertMcpFeature(): Promise<void> {
+    const gate = canUseMcp(await this.gateContext());
     if (!gate.allowed) {
       throw Object.assign(new Error(featureGateSubtitle(gate.reason)), {
         code: featureGateErrorCode(gate.reason),
@@ -372,17 +386,9 @@ export class McpBridgeHandler {
     }
   }
 
-  /** Whether MCP is allowed for the current mode + auth session. */
+  /** Whether Cloud MCP / bridge tools are allowed for the current entitlement. */
   async isMcpAllowed(): Promise<boolean> {
-    const mode = await this.readMode();
-    const signedIn = this.deps.authManager.isAuthenticated;
-    const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    return canUseMcp({
-      mode,
-      capabilities: getCapabilitiesForMode(mode),
-      isAuthenticated: signedIn,
-      storageScope,
-    }).allowed;
+    return canUseMcp(await this.gateContext()).allowed;
   }
 
   /**
@@ -402,15 +408,7 @@ export class McpBridgeHandler {
 
   private async assertAiFeature(): Promise<void> {
     await this.assertMcpFeature();
-    const mode = await this.readMode();
-    const signedIn = this.deps.authManager.isAuthenticated;
-    const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    const gate = canUseFeature('ai', {
-      mode,
-      capabilities: getCapabilitiesForMode(mode),
-      isAuthenticated: signedIn,
-      storageScope,
-    });
+    const gate = canUseFeature('ai', await this.gateContext());
     if (!gate.allowed) {
       throw Object.assign(new Error(featureGateSubtitle(gate.reason)), {
         code: featureGateErrorCode(gate.reason),
