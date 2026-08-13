@@ -12,7 +12,7 @@ import {
   type ConnectToAiScreen,
 } from '@/features/settings/mcp/connect-to-ai-nav';
 import { getMcpAiApp } from '@/features/settings/mcp/mcp-ai-apps';
-import { readMcpBridgeUiState } from '@/features/settings/mcp/mcp-bridge-ui-state';
+import { readMcpBridgeEnabled } from '@/features/settings/mcp/mcp-bridge-ui-state';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export interface ConnectToAiFlowProps {
@@ -54,8 +54,8 @@ export function ConnectToAiFlow({
   }, [onStackDepthChange, stack.length]);
 
   useEffect(() => {
-    void readMcpBridgeUiState().then((s) => {
-      setLegacyBridgeOn(s.enabled);
+    void readMcpBridgeEnabled().then((enabled) => {
+      setLegacyBridgeOn(enabled);
     });
   }, []);
 

@@ -23,7 +23,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
 
   server.tool(
     'list_collections',
-    `List highlight collections grouped by domain. dataCoverage: ${adapter.dataCoverage}. Basic highlights are only visible via the extension bridge adapter.`,
+    `List highlight collections grouped by domain. dataCoverage: ${adapter.dataCoverage}.`,
     {},
     async () => {
       const data = await adapter.dispatch('list_collections');
@@ -68,110 +68,6 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
     async ({ kind, domain }) => {
       const scope = kind === 'domain' ? { kind, domain: domain ?? '' } : { kind: 'library' };
       const data = await adapter.dispatch('export_highlights', { scope });
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  if (adapter.name === 'bridge') {
-    registerBridgeOnlyTools(server, adapter);
-  }
-}
-
-function registerBridgeOnlyTools(server: McpServer, adapter: McpAdapter): void {
-  server.tool(
-    'sync_library',
-    'Pull cloud highlights into local Pro storage. Requires sign-in.',
-    {},
-    async () => {
-      const data = await adapter.dispatch('sync_library');
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'get_sync_status',
-    'Last library hydration timestamp and auth state.',
-    {},
-    async () => {
-      const data = await adapter.dispatch('get_sync_status');
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'get_mode',
-    'Get current highlight mode (basic, pro, pro_xai).',
-    {},
-    async () => {
-      const data = await adapter.dispatch('get_mode');
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'set_mode',
-    'Switch highlight mode. Auth rules apply (Pro requires sign-in; Basic blocked when signed in).',
-    {
-      mode: z.enum(['basic', 'pro', 'pro_xai']),
-    },
-    async ({ mode }) => {
-      const data = await adapter.dispatch('set_mode', { mode });
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'update_highlight_metadata',
-    'Update notes and tags on a highlight.',
-    {
-      id: z.string(),
-      notes: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-    },
-    async ({ id, notes, tags }) => {
-      const data = await adapter.dispatch('update_highlight_metadata', { id, notes, tags });
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'ask_scope',
-    'Q&A over highlights in a domain section. Requires pro_xai mode. Default: context-only; set useOrchestrator for extension LLM.',
-    {
-      domain: z.string(),
-      sectionKey: z.string(),
-      question: z.string(),
-      useOrchestrator: z.boolean().optional(),
-    },
-    async (args) => {
-      const data = await adapter.dispatch('ask_scope', args);
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'summarize_section',
-    'Summarize highlights in a domain section. Requires pro_xai. Default context-only.',
-    {
-      domain: z.string(),
-      sectionKey: z.string(),
-      useOrchestrator: z.boolean().optional(),
-    },
-    async (args) => {
-      const data = await adapter.dispatch('summarize_section', args);
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
-    },
-  );
-
-  server.tool(
-    'synthesize_domain',
-    'Synthesize themes across a domain. Requires pro_xai. Default context-only.',
-    {
-      domain: z.string(),
-      useOrchestrator: z.boolean().optional(),
-    },
-    async (args) => {
-      const data = await adapter.dispatch('synthesize_domain', args);
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     },
   );
