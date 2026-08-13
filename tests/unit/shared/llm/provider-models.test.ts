@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 
-import { getDefaultModelId, resolveProviderModel } from '@/shared/llm/provider-models';
+import { IN_APP_LLM_PROVIDER_ORDER } from '@/shared/llm/in-app-providers';
+import {
+  getDefaultModelId,
+  getProviderModels,
+  resolveCatalogModels,
+  resolveProviderModel,
+} from '@/shared/llm/provider-models';
 
 describe('provider-models', () => {
   it('returns catalog default per provider', () => {
@@ -12,5 +18,25 @@ describe('provider-models', () => {
     expect(resolveProviderModel('openrouter', 'nvidia/nemotron-nano-9b-v2:free'))
       .toBe('nvidia/nemotron-nano-9b-v2:free');
     expect(resolveProviderModel('openrouter', null)).toBe(getDefaultModelId('openrouter'));
+  });
+
+  it('ships a non-empty in-app catalog for every BYOK + Ollama provider', () => {
+    for (const provider of IN_APP_LLM_PROVIDER_ORDER) {
+      const models = getProviderModels(provider);
+      expect(models.length, provider).toBeGreaterThanOrEqual(2);
+      expect(models.some((m) => m.id === getDefaultModelId(provider)), provider).toBe(true);
+      expect(new Set(models.map((m) => m.id)).size, provider).toBe(models.length);
+      for (const model of models) {
+        expect(model.id.trim().length, `${provider}:${model.id}`).toBeGreaterThan(0);
+        expect(model.label.trim().length, `${provider}:${model.id}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('resolveCatalogModels prefers a live list; empty live stays empty', () => {
+    const live = [{ id: 'gpt-live', label: 'Live GPT' }];
+    expect(resolveCatalogModels('openai', live)).toEqual(live);
+    expect(resolveCatalogModels('openai', [])).toEqual([]);
+    expect(resolveCatalogModels('openai', null)).toEqual(getProviderModels('openai'));
   });
 });

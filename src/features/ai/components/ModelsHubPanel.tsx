@@ -41,11 +41,20 @@ export function ModelsHubPanel({
   const activeProviderLabel = activeProvider ? PROVIDER_META[activeProvider].label : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <div
+      data-testid="models-hub"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+    >
       <div style={{ padding: '12px 16px 10px' }}>
         <div className="u-serif" style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}>
           Models &amp; providers
         </div>
+        <p
+          className="u-mono"
+          style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '6px 0 0' }}
+        >
+          Keys stay on this device. Used for Ask on this browser.
+        </p>
       </div>
 
       <button

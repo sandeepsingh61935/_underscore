@@ -1,4 +1,4 @@
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
+import { getProviderModels, type ProviderModelOption } from '@/shared/llm/provider-models';
 
 const CACHE_KEY = 'llm.openrouter.modelsCache';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -9,11 +9,7 @@ const MODELS_URL = 'https://openrouter.ai/api/v1/models';
  * `hint: 'free'` = $0 inference credits. OpenRouter still requires an API key
  * for chat (free to create at openrouter.ai/keys) — browser cookie auth is not available in the extension.
  */
-export const OPENROUTER_FALLBACK_MODELS: ProviderModelOption[] = [
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Meta Llama 3.3 70B Instruct', hint: 'free', requiresKey: true },
-  { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'NVIDIA Nemotron Nano 9B v2', hint: 'free', requiresKey: true },
-  { id: 'google/gemma-3-27b-it:free', label: 'Google Gemma 3 27B', hint: 'free', requiresKey: true },
-];
+export const OPENROUTER_FALLBACK_MODELS: ProviderModelOption[] = getProviderModels('openrouter');
 
 export interface OpenRouterModelRecord {
   id: string;

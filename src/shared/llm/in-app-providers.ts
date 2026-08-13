@@ -2,7 +2,7 @@
  * Canonical in-app LLM providers for Ask / Summarize (BYOK + local).
  *
  * External agent hosts (Cursor, Claude Desktop, Codex, …) live under
- * Settings → Integrations (MCP bridge). They are never LLM backends here.
+ * Settings → Integrations (Cloud MCP). They are never LLM backends here.
  */
 
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';

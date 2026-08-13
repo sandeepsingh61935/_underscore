@@ -17,7 +17,6 @@ import { persistLlmSetupProvider } from '@/shared/constants/popup-navigation-sto
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { checkProviderHealthInBrowser } from '@/shared/llm/check-provider-health';
 import {
-  OPENROUTER_FALLBACK_MODELS,
   OPENROUTER_KEY_HELP,
   openRouterModelRequiresKey,
 } from '@/shared/llm/openrouter-models';
@@ -138,9 +137,8 @@ export function ProviderDetailPanel({
 
   const catalogModels = useMemo(() => {
     if (provider === 'openrouter') {
-      const base = catalogQuery.models.length > 0 ? catalogQuery.models : OPENROUTER_FALLBACK_MODELS;
-      if (orFilter === 'all') return base;
-      return base.filter(m => (orFilter === 'free' ? m.hint === 'free' : m.hint === 'paid'));
+      if (orFilter === 'all') return catalogQuery.models;
+      return catalogQuery.models.filter(m => (orFilter === 'free' ? m.hint === 'free' : m.hint === 'paid'));
     }
     return catalogQuery.models;
   }, [provider, catalogQuery.models, orFilter]);
@@ -154,11 +152,6 @@ export function ProviderDetailPanel({
     resolvedModelId || getDefaultModelId(provider),
     catalogQuery.models.length > 0 ? catalogQuery.models : catalogModels,
   );
-
-  const canShowModelPicker = provider === 'openrouter'
-    || provider === 'ollama'
-    || provider === 'xai'
-    || connectionVerified;
 
   const isCatalogModelSelectable = (model: ProviderModelOption): boolean => {
     // OpenRouter free = $0 credits; selection still requires a verified API key.
@@ -452,37 +445,29 @@ export function ProviderDetailPanel({
             </div>
           ) : null}
 
-          {catalogQuery.error && catalogModels.length === 0 ? (
+          {catalogQuery.error ? (
             <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', margin: 0 }}>
               {catalogQuery.error}
             </p>
           ) : null}
 
-          {canShowModelPicker ? (
-            <ModelPickerList
-              models={catalogModels}
-              selectedId={selectedId || pickDefaultModel(provider, catalogModels)}
-              onSelect={setSelectedId}
-              customModelId={customModelId}
-              onCustomModelIdChange={handleCustomModelIdChange}
-              customPlaceholder={getDefaultModelId(provider)}
-              searchPlaceholder="Search…"
-              loading={catalogQuery.loading}
-              isModelDisabled={m => !isCatalogModelSelectable(m)}
-              customDisabled={!connectionVerified}
-              emptyMessage={
-                !connectionVerified && provider !== 'openrouter' && provider !== 'ollama'
-                  ? 'Verify key to load models'
-                  : !connectionVerified && provider === 'openrouter'
-                    ? 'Verify key to unlock models'
-                    : 'No matches'
-              }
-            />
-          ) : (
-            <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: 0 }}>
-              Verify key to load models
-            </p>
-          )}
+          <ModelPickerList
+            models={catalogModels}
+            selectedId={selectedId || pickDefaultModel(provider, catalogModels)}
+            onSelect={setSelectedId}
+            customModelId={customModelId}
+            onCustomModelIdChange={handleCustomModelIdChange}
+            customPlaceholder={getDefaultModelId(provider)}
+            searchPlaceholder="Search…"
+            loading={catalogQuery.loading}
+            isModelDisabled={m => !isCatalogModelSelectable(m)}
+            customDisabled={!connectionVerified}
+            emptyMessage={
+              !connectionVerified && provider !== 'ollama'
+                ? 'Verify key to unlock models'
+                : 'No matches'
+            }
+          />
         </SetupSection>
       </div>
 

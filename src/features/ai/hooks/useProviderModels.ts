@@ -3,7 +3,10 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { fetchProviderModels } from '@/shared/llm/model-discovery';
 import { OPENROUTER_FALLBACK_MODELS } from '@/shared/llm/openrouter-models';
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
+import {
+  resolveCatalogModels,
+  type ProviderModelOption,
+} from '@/shared/llm/provider-models';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { IPC_AI_LIST_PROVIDER_MODELS } from '@/shared/schemas/message-schemas';
 
@@ -29,11 +32,15 @@ export function useProviderModels(
   >(IPC_AI_LIST_PROVIDER_MODELS);
 
   const [models, setModels] = useState<ProviderModelOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (refresh = false) => {
-    if (!provider) return;
+    if (!provider) {
+      setModels([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -58,15 +65,21 @@ export function useProviderModels(
           setError(null);
           return;
         }
-        if (!typedKey && provider !== 'ollama') {
-          setModels([]);
+        if (provider === 'ollama') {
+          const runtimeMissing = /unavailable/i.test(ipcResult.error);
+          setModels(runtimeMissing ? resolveCatalogModels('ollama', null) : []);
           setError(ipcResult.error);
+          return;
+        }
+        if (!typedKey) {
+          setModels(resolveCatalogModels(provider, null));
+          setError(null);
           return;
         }
       }
 
-      if (!typedKey && provider !== 'ollama') {
-        setModels([]);
+      if (!typedKey) {
+        setModels(resolveCatalogModels(provider, null));
         setError(null);
         return;
       }
@@ -76,10 +89,10 @@ export function useProviderModels(
         apiBase: input.apiBase,
       });
       setModels(result.models);
-      setError(result.error ?? null);
+      setError(result.models.length > 0 ? null : (result.error ?? null));
     } catch (err) {
       setError((err as Error).message);
-      setModels([]);
+      setModels(resolveCatalogModels(provider, null));
     } finally {
       setLoading(false);
     }

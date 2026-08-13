@@ -211,12 +211,11 @@ describe('WebSettingsPage', () => {
     expect(
       document.querySelector('[data-od-id="ai-seg-integrations"]')?.textContent?.trim(),
     ).toBe('Integrations');
-    // Provider Connect controls disabled while locked (not signed in / not paid)
-    const btns = Array.from(
-      document.querySelectorAll('[data-od-id^="provider-"][data-od-id$="-action"]'),
-    ) as HTMLButtonElement[];
-    expect(btns.length).toBeGreaterThan(0);
-    expect(btns.every((b) => b.disabled)).toBe(true);
+    // Guest: catalog is visible, no setup actions (sign-in only).
+    expect(document.querySelector('[data-od-id="provider-openai"]')).toBeTruthy();
+    expect(
+      document.querySelectorAll('[data-od-id^="provider-"][data-od-id$="-action"]').length,
+    ).toBe(0);
 
     // Integrations: status row (no fake toggle); catalog locked
     fireEvent.click(document.querySelector('[data-od-id="ai-seg-integrations"]')!);

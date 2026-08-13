@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
+  CUSTOM_MODEL_ID,
   PROVIDER_META,
   providerStatusLabel,
 } from '@/features/ai/constants/provider-setup';
@@ -24,7 +25,7 @@ import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { IN_APP_LLM_PROVIDER_ORDER } from '@/shared/llm/in-app-providers';
 import { checkProviderHealthInBrowser } from '@/shared/llm/check-provider-health';
-import { getDefaultModelId } from '@/shared/llm/provider-models';
+import { getDefaultModelId, getProviderModels } from '@/shared/llm/provider-models';
 import type { WebCaps } from '@/web/caps/resolveWebCaps';
 import {
   pullWebAiPreferences,
@@ -286,15 +287,17 @@ function ModelsList({
             <span className={`status${configured ? ' on' : ''}`}>
               {providerStatusLabel(id, configured)}
             </span>
-            <button
-              type="button"
-              className="btn sm"
-              disabled={!canConfigure}
-              data-od-id={`provider-${id}-action`}
-              onClick={() => onOpenSetup(id)}
-            >
-              {configured ? 'Configure' : 'Connect'}
-            </button>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                className="btn sm"
+                disabled={!canConfigure}
+                data-od-id={`provider-${id}-action`}
+                onClick={() => onOpenSetup(id)}
+              >
+                {configured ? 'Configure' : 'Connect'}
+              </button>
+            ) : null}
           </div>
         );
       })}
@@ -323,11 +326,16 @@ function ProviderSetup({
 }): React.ReactElement {
   const meta = PROVIDER_META[provider];
   const existing = llmState.providers[provider];
+  const catalog = getProviderModels(provider);
   const [apiKey, setApiKey] = useState(existing?.apiKey ?? '');
   const [apiBase, setApiBase] = useState(
     existing?.apiBase ?? (provider === 'ollama' ? 'http://localhost:11434' : ''),
   );
   const [model, setModel] = useState(existing?.model ?? getDefaultModelId(provider));
+  const [useCustomModel, setUseCustomModel] = useState(() => {
+    const initial = existing?.model ?? getDefaultModelId(provider);
+    return !catalog.some((m) => m.id === initial);
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [ok, setOk] = useState<boolean | null>(null);
@@ -432,15 +440,42 @@ function ProviderSetup({
       )}
       <label className="ai-field" style={{ marginTop: 10 }}>
         <span className="u-mono">Model</span>
-        <input
+        <select
           className="field"
-          type="text"
-          value={model}
+          value={useCustomModel ? CUSTOM_MODEL_ID : model}
           disabled={!canConfigure || busy}
-          onChange={(e) => setModel(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            if (next === CUSTOM_MODEL_ID) {
+              setUseCustomModel(true);
+              return;
+            }
+            setUseCustomModel(false);
+            setModel(next);
+          }}
           data-od-id="provider-model"
-        />
+        >
+          {catalog.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+          <option value={CUSTOM_MODEL_ID}>Custom…</option>
+        </select>
       </label>
+      {useCustomModel ? (
+        <label className="ai-field" style={{ marginTop: 10 }}>
+          <span className="u-mono">Custom model id</span>
+          <input
+            className="field"
+            type="text"
+            value={model}
+            disabled={!canConfigure || busy}
+            onChange={(e) => setModel(e.target.value)}
+            data-od-id="provider-model-custom"
+          />
+        </label>
+      ) : null}
       <div className="ai-setup-actions">
         <button
           type="button"
