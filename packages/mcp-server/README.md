@@ -1,15 +1,32 @@
 # @underscore/mcp-server
 
-MCP server for [_underscore](https://github.com) highlights. Exposes library tools to Cursor, Claude Desktop, and any MCP client.
+MCP server for [_underscore](https://github.com) highlights. **Product path (ADR-029):** Cloud MCP on Cloudflare Workers. Agents see the **synced Pro cloud library** only (`dataCoverage: pro_cloud`).
 
-## Adapters
+Basic / guest highlights never appear on Cloud MCP. The local stdio **bridge** is compatibility-only and is not the Integrations setup path.
 
-| Adapter | Command | Data coverage |
-|---------|---------|---------------|
-| **Bridge** (default) | `--adapter=bridge` | Full library via extension (`basic_local` / `pro_local`) |
-| **Cloud** | `--adapter=cloud` | Pro cloud only (`pro_cloud`) via Supabase JWT |
+## Product path: Cloud Worker
 
-Basic (on-device) highlights are **never** available on the cloud adapter.
+| | |
+|--|--|
+| Transport | Streamable HTTP |
+| URL | `https://YOUR-WORKER/mcp` |
+| Auth | OAuth 2.1 (public hosts) or `Authorization: Bearer <supabase_access_token>` (scripts) |
+| Gate | Signed-in **Paid** (past_due is rejected) |
+| Data | Synced Supabase library (`pro_cloud`) |
+
+### Remote MCP snippet (Cursor, Claude, Grok, …)
+
+```json
+{
+  "mcpServers": {
+    "underscore": {
+      "url": "https://YOUR-WORKER/mcp"
+    }
+  }
+}
+```
+
+Do **not** put `UNDERSCORE_MCP_TOKEN` or `--adapter=bridge` in product templates.
 
 ## ChatGPT setup (Pro cloud MCP)
 
@@ -91,51 +108,14 @@ The worker expects: `Authorization: Bearer <supabase_access_token>`.
 2. Prompt: *"Call get_session on _underscore, then list my highlight collections."*
 3. Confirm `dataCoverage` is `pro_cloud`
 
-### ChatGPT vs Cursor
+### ChatGPT vs other hosts
 
-| Client | Adapter | Auth | Basic highlights |
-|--------|---------|------|------------------|
-| **Cursor / Claude Desktop** | `--adapter=bridge` (stdio) | Extension token | Yes (local) |
-| **ChatGPT** | Cloud worker (HTTPS) | Supabase JWT | No (Pro cloud only) |
+| Client | Transport | Auth | Basic highlights |
+|--------|-----------|------|------------------|
+| **ChatGPT** | Cloud worker (HTTPS) | OAuth 2.1 | No (synced cloud only) |
+| **Cursor / Claude / Grok** | Cloud worker (HTTPS) | OAuth or Bearer JWT | No (synced cloud only) |
 
-## Cursor setup (bridge)
-
-1. Build the server:
-
-```bash
-cd packages/mcp-server
-npm install
-npm run build
-```
-
-2. Generate a token (or set your own):
-
-```bash
-export UNDERSCORE_MCP_TOKEN="$(openssl rand -hex 24)"
-echo $UNDERSCORE_MCP_TOKEN
-```
-
-3. Add to Cursor **mcp.json**:
-
-```json
-{
-  "mcpServers": {
-    "underscore": {
-      "command": "node",
-      "args": ["/absolute/path/to/_underscore/packages/mcp-server/dist/index.js", "--adapter=bridge"],
-      "env": {
-        "UNDERSCORE_MCP_TOKEN": "your-token-here"
-      }
-    }
-  }
-}
-```
-
-4. In the extension: **Settings → MCP Bridge** → Enable, paste the same token.
-
-5. Restart Cursor MCP or open a new chat. Call `get_session` first.
-
-## Cloud Worker (Pro only)
+## Cloud Worker (Paid only)
 
 Deploy from **`packages/mcp-server`** (contains `wrangler.toml`):
 
@@ -178,4 +158,8 @@ Clients send `Authorization: Bearer <supabase_access_token>`.
 
 ## Architecture
 
-See [ADR-023](../../docs/04-adrs/023-mcp-server-architecture.md).
+See [ADR-029](../../docs/04-adrs/029-cloud-first-library-and-integrations.md) (product path) and [ADR-023](../../docs/04-adrs/023-mcp-server-architecture.md) (dual-adapter code; bridge is compat).
+
+## Legacy: local bridge (compat)
+
+Stdio `--adapter=bridge` plus `UNDERSCORE_MCP_TOKEN` still exists for existing installs. It is **not** shown in Integrations UI and will be removed in a later epic. Do not add new bridge tools.

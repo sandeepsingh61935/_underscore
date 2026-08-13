@@ -3,8 +3,10 @@
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import { createClient } from '@supabase/supabase-js';
 import { SupabaseMcpAdapter } from '../adapters/supabase-adapter.js';
 import { registerMcpTools } from '../tools/register-tools.js';
+import { assertPaidCloudMcpAccess } from './paid-gate.js';
 import {
   buildProtectedResourceMetadata,
   corsPreflightResponse,
@@ -111,6 +113,31 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
   }
 
   try {
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const paid = await assertPaidCloudMcpAccess({
+      getUser: async () => {
+        const { data, error } = await supabase.auth.getUser(token);
+        return { user: data.user ? { id: data.user.id } : null, error };
+      },
+      getEntitlement: async (userId) => {
+        const { data, error } = await supabase
+          .from('billing_entitlements')
+          .select('plan, status')
+          .eq('user_id', userId)
+          .maybeSingle();
+        return { data, error };
+      },
+    });
+    if (!paid.ok) {
+      if (paid.status === 401) {
+        return withCors(oauthUnauthorizedResponse(request, env));
+      }
+      return withCors(Response.json({ error: paid.error }, { status: paid.status }));
+    }
+
     const adapter = new SupabaseMcpAdapter({
       supabaseUrl: env.SUPABASE_URL,
       supabaseAnonKey: env.SUPABASE_ANON_KEY,
