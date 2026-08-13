@@ -1,11 +1,7 @@
 import React from 'react';
 
-import { resolveConnectAction } from '@/shared/mcp/connect-next-action';
-import {
-  integrationsStatusDetail,
-  integrationsStatusLabel,
-  type IntegrationsStatus,
-} from '@/shared/mcp/integrations-status';
+import { IntegrationsConnectChrome } from '@/features/settings/integrations/IntegrationsConnectChrome';
+import { type IntegrationsStatus } from '@/shared/mcp/integrations-status';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 export interface McpConnectionsHubProps {
@@ -42,12 +38,6 @@ export function McpConnectionsHub({
   connectedApps,
 }: McpConnectionsHubProps): React.ReactElement {
   const locked = !mcpAllowed;
-  const connectAction = resolveConnectAction({ mcpAllowed, urlCopied });
-  const statusDetail = integrationsStatusDetail({
-    status,
-    oauthGrantCount: connectedApps.length,
-    grantTitles: connectedApps.map((app) => app.title),
-  });
 
   const tryInteract = (fn: () => void): void => {
     if (locked) {
@@ -62,7 +52,7 @@ export function McpConnectionsHub({
       <div style={{ padding: '12px 16px 8px' }}>
         <div
           className="u-sans"
-          style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}
+          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}
         >
           Let agents read your synced cloud library. No extension required.
         </div>
@@ -80,7 +70,7 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
               Locked
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.45 }}>
+            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}>
               {lockMessage}
             </div>
             {onDismissLockMessage ? (
@@ -112,7 +102,7 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
               Included with Account (Paid)
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.45 }}>
+            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 6, lineHeight: 1.45 }}>
               Integrations stay visible so you can see what Paid unlocks. Setup does not ask for model keys.
             </div>
             <button
@@ -138,7 +128,7 @@ export function McpConnectionsHub({
 
       {grantsError && !locked ? (
         <div style={{ padding: '0 16px 10px' }} role="status" data-testid="mcp-grants-error">
-          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}>
+          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}>
             {grantsError}
           </div>
         </div>
@@ -150,112 +140,31 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
               Local bridge is no longer the product path
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', marginTop: 4, lineHeight: 1.45 }}>
+            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}>
               Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge may still run until it is removed.
             </div>
           </div>
         </div>
       ) : null}
 
-      <div
-        style={{
-          margin: '0 16px 10px',
-          padding: 12,
-          border: '1px solid var(--rule)',
-          opacity: locked ? 0.65 : 1,
-        }}
-      >
-        <Row
-          title="Status"
-          sub={locked ? 'Off until Account (Paid)' : statusDetail}
-          right={
-            <span
-              className="u-mono"
-              data-testid="mcp-integrations-status"
-              style={{
-                fontSize: 'var(--step--2)',
-                color: !locked && status === 'connected' ? 'var(--accent)' : 'var(--ink-3)',
-              }}
-            >
-              {integrationsStatusLabel(status)}
-            </span>
-          }
-          compact
+      <div style={{ padding: '0 16px' }}>
+        <IntegrationsConnectChrome
+          mcpAllowed={mcpAllowed}
+          status={status}
+          remoteUrl={remoteUrl}
+          urlCopied={urlCopied}
+          onConnect={() => tryInteract(onCopyUrl)}
+          grantTitles={connectedApps.map((app) => app.title)}
+          lockedDetail="Off until Account (Paid)"
         />
-
-        {!locked ? (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--rule-soft)' }}>
-            <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
-              Remote MCP URL
-            </div>
-            <div
-              className="u-mono"
-              data-testid="mcp-remote-url"
-              style={{
-                marginTop: 8,
-                padding: 8,
-                border: '1px solid var(--rule)',
-                background: 'var(--paper)',
-                color: 'var(--ink)',
-                fontSize: 'var(--step--2)',
-                wordBreak: 'break-all',
-                minHeight: 44,
-              }}
-            >
-              {remoteUrl}
-            </div>
-            {connectAction.kind !== 'locked' ? (
-              <button
-                type="button"
-                className="u-caps"
-                data-testid="mcp-connect"
-                onClick={() => tryInteract(onCopyUrl)}
-                style={{
-                  marginTop: 10,
-                  width: '100%',
-                  minHeight: 44,
-                  border: '1px solid var(--accent)',
-                  background: 'var(--accent)',
-                  color: 'var(--paper)',
-                  cursor: 'pointer',
-                  fontSize: 'var(--step--2)',
-                }}
-              >
-                {connectAction.kind === 'copied' ? 'Copied' : 'Connect'}
-              </button>
-            ) : null}
-            <details data-testid="mcp-advanced" style={{ marginTop: 12 }}>
-              <summary
-                className="u-mono"
-                style={{
-                  color: 'var(--accent)',
-                  cursor: 'pointer',
-                  fontSize: 'var(--step--2)',
-                  minHeight: 44,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                Advanced
-              </summary>
-              <p
-                className="u-sans"
-                style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '0 0 8px' }}
-              >
-                Scripts may send <span className="u-mono">Authorization: Bearer</span> with a
-                Supabase access token. Do not paste that token in this app.
-              </p>
-            </details>
-          </div>
-        ) : null}
       </div>
 
-      <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+      <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink)' }}>
         Connected
       </div>
       {connectedApps.length === 0 || locked ? (
         <div style={{ padding: '8px 16px 12px' }}>
-          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)', lineHeight: 1.45 }}>
+          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}>
             {locked
               ? 'Connections unlock with Account (Paid).'
               : 'No approved clients yet. Add the URL in your agent, then approve if asked.'}
@@ -287,7 +196,7 @@ export function McpConnectionsHub({
             minHeight: 44,
             border: '1px solid var(--accent)',
             background: locked ? 'var(--paper-2)' : 'var(--accent)',
-            color: locked ? 'var(--ink-3)' : 'var(--paper)',
+            color: locked ? 'var(--ink)' : 'var(--paper)',
             cursor: 'pointer',
             fontSize: 'var(--step--2)',
           }}

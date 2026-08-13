@@ -18,33 +18,28 @@ export function useIntegrationsConnect(opts: {
   const [lastMcpSuccessAtMs, setLastMcpSuccessAtMs] = useState<number | null>(null);
   const messageBus = useMessageBus();
 
-  const reloadSession = useCallback((): void => {
+  useEffect(() => {
     if (!opts.isAuthenticated || !mcpAllowed) {
       setLastMcpSuccessAtMs(null);
       return;
     }
-    void fetchLastMcpSuccessAtMs(messageBus).then((ms) => {
-      setLastMcpSuccessAtMs(ms);
-    });
-  }, [opts.isAuthenticated, mcpAllowed, messageBus]);
-
-  useEffect(() => {
-    reloadSession();
-  }, [reloadSession]);
-
-  useEffect(() => {
-    if (!opts.isAuthenticated || !mcpAllowed) {
-      return;
-    }
+    let cancelled = false;
+    const loadSession = (): void => {
+      void fetchLastMcpSuccessAtMs(messageBus).then((ms) => {
+        if (!cancelled) setLastMcpSuccessAtMs(ms);
+      });
+    };
+    loadSession();
     const onFocus = (): void => {
       void grantsState.reload();
-      reloadSession();
+      loadSession();
     };
     window.addEventListener('focus', onFocus);
     return () => {
+      cancelled = true;
       window.removeEventListener('focus', onFocus);
     };
-  }, [opts.isAuthenticated, mcpAllowed, grantsState.reload, reloadSession]);
+  }, [opts.isAuthenticated, mcpAllowed, messageBus, grantsState.reload]);
 
   const status = resolveIntegrationsStatus({
     mcpAllowed,
