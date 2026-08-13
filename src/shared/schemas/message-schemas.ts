@@ -167,6 +167,7 @@ export const IPC_BILLING_SYNC_FROM_POLAR = 'IPC_BILLING_SYNC_FROM_POLAR' as cons
 /** OAuth client grants for Cloud MCP Connected truth (extension popup). */
 export const IPC_OAUTH_LIST_GRANTS = 'IPC_OAUTH_LIST_GRANTS' as const;
 export const IPC_OAUTH_REVOKE_GRANT = 'IPC_OAUTH_REVOKE_GRANT' as const;
+export const IPC_MCP_LAST_SESSION = 'IPC_MCP_LAST_SESSION' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
 /**

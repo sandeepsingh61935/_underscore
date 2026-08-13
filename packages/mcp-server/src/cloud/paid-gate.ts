@@ -12,7 +12,7 @@ export function isPaidEntitlement(row: PaidEntitlementRow | null | undefined): b
 }
 
 export type PaidGateResult =
-  | { ok: true }
+  | { ok: true; userId: string }
   | { ok: false; status: 401 | 403 | 503; error: string };
 
 export async function assertPaidCloudMcpAccess(
@@ -38,5 +38,5 @@ export async function assertPaidCloudMcpAccess(
     return { ok: false, status: 403, error: 'Cloud MCP requires an active paid plan' };
   }
 
-  return { ok: true };
+  return { ok: true, userId: userData.user.id };
 }

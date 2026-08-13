@@ -71,6 +71,6 @@ describe('assertPaidCloudMcpAccess', () => {
       fakeClient({ user: { id: 'u1' }, row: { plan: 'paid', status: 'active' } }) as never,
       'tok',
     );
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, userId: 'u1' });
   });
 });

@@ -6,6 +6,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseMcpAdapter } from '../adapters/supabase-adapter.js';
 import { registerMcpTools } from '../tools/register-tools.js';
+import { recordMcpSessionSuccess } from './mcp-session.js';
 import { assertPaidCloudMcpAccess } from './paid-gate.js';
 import {
   buildProtectedResourceMetadata,
@@ -124,6 +125,7 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
       }
       return withCors(Response.json({ error: paid.error }, { status: paid.status }));
     }
+    void recordMcpSessionSuccess(supabase, paid.userId);
 
     const adapter = new SupabaseMcpAdapter({
       supabaseUrl: env.SUPABASE_URL,

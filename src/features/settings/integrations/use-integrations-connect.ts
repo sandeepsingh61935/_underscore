@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import { canUseMcp } from '@/shared/entitlement/commercial';
 import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import { resolveIntegrationsStatus } from '@/shared/mcp/integrations-status';
+import { fetchLastMcpSuccessAtMs } from '@/shared/mcp/mcp-session-client';
 
 export function useIntegrationsConnect(opts: {
   isAuthenticated: boolean;
@@ -13,10 +15,27 @@ export function useIntegrationsConnect(opts: {
   const grantsState = useOAuthGrants(opts.isAuthenticated && mcpAllowed);
   const remoteUrl = getMcpCloudUrl();
   const [urlCopied, setUrlCopied] = useState(false);
+  const [lastMcpSuccessAtMs, setLastMcpSuccessAtMs] = useState<number | null>(null);
+  const messageBus = useMessageBus();
+
+  useEffect(() => {
+    if (!opts.isAuthenticated || !mcpAllowed) {
+      setLastMcpSuccessAtMs(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchLastMcpSuccessAtMs(messageBus).then((ms) => {
+      if (!cancelled) setLastMcpSuccessAtMs(ms);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [opts.isAuthenticated, mcpAllowed, messageBus]);
 
   const status = resolveIntegrationsStatus({
     mcpAllowed,
     oauthGrantCount: grantsState.grants.length,
+    lastMcpSuccessAtMs,
   });
 
   const connectedApps = useMemo(

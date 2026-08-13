@@ -4,7 +4,9 @@ import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { mapOAuthGrantList, type OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
+import { parseMcpLastSuccessAt } from '@/shared/mcp/mcp-session-client';
 import {
+  IPC_MCP_LAST_SESSION,
   IPC_OAUTH_LIST_GRANTS,
   IPC_OAUTH_REVOKE_GRANT,
 } from '@/shared/schemas/message-schemas';
@@ -62,6 +64,29 @@ export function registerOAuthGrantHandlers(deps: OAuthGrantHandlerDeps): void {
         error: (error as Error).message || 'Failed to revoke access',
         code: 'OAUTH_REVOKE_ERROR',
       };
+    }
+  });
+
+  messageBus.subscribe(IPC_MCP_LAST_SESSION, async () => {
+    try {
+      if (!authManager.isAuthenticated) {
+        return { success: true, data: { lastSuccessAtMs: null as number | null } };
+      }
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('mcp_sessions')
+        .select('last_success_at')
+        .maybeSingle();
+      if (error) {
+        return { success: true, data: { lastSuccessAtMs: null as number | null } };
+      }
+      return {
+        success: true,
+        data: { lastSuccessAtMs: parseMcpLastSuccessAt(data?.last_success_at) },
+      };
+    } catch (error) {
+      logger.error('IPC_MCP_LAST_SESSION failed', error as Error);
+      return { success: true, data: { lastSuccessAtMs: null as number | null } };
     }
   });
 }
