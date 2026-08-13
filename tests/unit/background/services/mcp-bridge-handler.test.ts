@@ -45,6 +45,7 @@ function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridge
       set: vi.fn(),
     } as unknown as McpBridgeHandlerDeps['librarySyncCursor'],
     getActiveMode: vi.fn().mockResolvedValue('basic'),
+    getIsPaidActive: async () => false,
     ...overrides,
   };
 

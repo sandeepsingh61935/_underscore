@@ -6,6 +6,7 @@ export interface SupabaseAdapterConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
   accessToken: string;
+  client?: SupabaseClient;
 }
 
 function rowToSummary(row: Record<string, unknown>): {
@@ -47,7 +48,7 @@ export class SupabaseMcpAdapter implements McpAdapter {
   private readonly client: SupabaseClient;
 
   constructor(config: SupabaseAdapterConfig) {
-    this.client = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+    this.client = config.client ?? createClient(config.supabaseUrl, config.supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${config.accessToken}` } },
     });
   }

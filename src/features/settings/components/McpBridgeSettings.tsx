@@ -8,7 +8,7 @@ import {
 import type { BridgeConnectionState } from '@/shared/mcp/bridge-protocol';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
-import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
+import { canUseMcp } from '@/shared/entitlement/commercial';
 import { McpBridgeSetupGuide } from '@/features/settings/components/McpBridgeSetupGuide';
 import { McpTierCallout, mcpTierLabel } from '@/features/settings/components/McpTierCallout';
 import { Row } from '@/ui-system/components/primitives/Row';
@@ -29,7 +29,7 @@ const srOnlyStyle: React.CSSProperties = {
 export interface McpBridgeSettingsProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
-  isPaidActive?: boolean;
+  isPaidActive: boolean;
   onSignIn?: () => void;
 }
 
@@ -82,7 +82,7 @@ function connectionColor(state: BridgeConnectionState, enabled: boolean): string
 export function McpBridgeSettings({
   isAuthenticated,
   currentMode,
-  isPaidActive = false,
+  isPaidActive,
   onSignIn,
 }: McpBridgeSettingsProps): React.ReactElement {
   const [enabled, setEnabled] = useState(false);
@@ -92,14 +92,8 @@ export function McpBridgeSettings({
 
   const mcpGate = useMemo(
     () =>
-      canUseMcp({
-        mode: currentMode,
-        capabilities: getCapabilitiesForMode(currentMode),
-        isAuthenticated,
-        storageScope: isAuthenticated ? 'pro' : 'basic',
-        isPaidActive,
-      }),
-    [currentMode, isAuthenticated, isPaidActive],
+      canUseMcp({ isAuthenticated, isPaidActive }),
+    [isAuthenticated, isPaidActive],
   );
   const mcpAllowed = mcpGate.allowed;
 

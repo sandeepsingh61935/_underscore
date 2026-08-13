@@ -74,6 +74,7 @@ describe('mode-capabilities', () => {
         mode: 'basic',
         capabilities: getCapabilitiesForMode('basic'),
         isAuthenticated: false,
+        isPaidActive: false,
       });
       expect(result).toEqual({ allowed: false, reason: 'CAPABILITY_DENIED' });
     });
@@ -83,6 +84,7 @@ describe('mode-capabilities', () => {
         mode: 'pro',
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: false,
+        isPaidActive: false,
       });
       expect(result).toEqual({ allowed: false, reason: 'AUTH_REQUIRED' });
     });
@@ -125,6 +127,7 @@ describe('mode-capabilities', () => {
         capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
         storageScope: 'pro',
+        isPaidActive: false,
       });
       expect(result).toEqual({ allowed: true });
     });
@@ -135,6 +138,7 @@ describe('mode-capabilities', () => {
         capabilities: getCapabilitiesForMode('basic'),
         isAuthenticated: false,
         storageScope: 'basic',
+        isPaidActive: false,
       });
       expect(result).toEqual({ allowed: true });
     });
@@ -145,6 +149,7 @@ describe('mode-capabilities', () => {
         capabilities: getCapabilitiesForMode('basic'),
         isAuthenticated: false,
         storageScope: 'basic',
+        isPaidActive: false,
       });
       expect(result).toEqual({ allowed: true });
     });
@@ -153,10 +158,7 @@ describe('mode-capabilities', () => {
   describe('canConfigureAiProviders', () => {
     it('allows provider setup when paid', () => {
       const result = canConfigureAiProviders({
-        mode: 'pro_xai',
-        capabilities: getCapabilitiesForMode('pro_xai'),
         isAuthenticated: true,
-        storageScope: 'pro',
         isPaidActive: true,
       });
       expect(result).toEqual({ allowed: true });
@@ -164,10 +166,7 @@ describe('mode-capabilities', () => {
 
     it('denies provider setup when not paid', () => {
       const result = canConfigureAiProviders({
-        mode: 'pro',
-        capabilities: getCapabilitiesForMode('pro'),
         isAuthenticated: true,
-        storageScope: 'pro',
         isPaidActive: false,
       });
       expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });

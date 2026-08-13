@@ -58,7 +58,10 @@ async function denyIfAiSetupGated(
 ): Promise<ReturnType<typeof createErrorResponse> | null> {
   if (!args.resolveAiGateContext) return null;
   const ctx = await args.resolveAiGateContext();
-  const gate = canConfigureAiProviders(ctx);
+  const gate = canConfigureAiProviders({
+    isAuthenticated: ctx.isAuthenticated,
+    isPaidActive: ctx.isPaidActive,
+  });
   if (!gate.allowed) {
     return createErrorResponse(featureGateSubtitle(gate.reason));
   }

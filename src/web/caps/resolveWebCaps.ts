@@ -1,4 +1,4 @@
-import { resolveEntitlement } from '@/shared/entitlement/resolve-entitlement';
+import { isCommercialUnlocked } from '@/shared/entitlement/commercial';
 
 export type WebCapFlags = {
   sync: boolean;
@@ -22,17 +22,13 @@ export function resolveWebCaps(input: {
   isPaidActive: boolean;
   billingStatus?: string | null;
 }): WebCaps {
-  const entitlement = resolveEntitlement({
-    isAuthenticated: input.isAuthenticated,
-    isPaidActive: input.isPaidActive,
-  });
-  const isGuest = !entitlement.isAuthenticated;
+  const isGuest = !input.isAuthenticated;
   const isPastDue = !isGuest && input.billingStatus === 'past_due';
-  const isPaidActive = entitlement.isPaidActive && !isPastDue;
-  const commercial = resolveEntitlement({
-    isAuthenticated: entitlement.isAuthenticated,
-    isPaidActive,
-  }).flags;
+  const isPaidActive = isCommercialUnlocked({
+    isAuthenticated: input.isAuthenticated,
+    isPaidActive: input.isPaidActive && !isPastDue,
+  });
+  const commercial = { ai: isPaidActive, mcp: isPaidActive };
 
   if (isGuest) {
     return {

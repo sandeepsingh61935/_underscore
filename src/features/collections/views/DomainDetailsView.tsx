@@ -36,6 +36,7 @@ import {
   deleteDomainCopy,
   deleteSectionCopy,
 } from '@/shared/utils/confirm-dialog-copy';
+import { getEntitlementPaidActive } from '@/shared/billing';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
@@ -82,7 +83,7 @@ export function DomainDetailsView({
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
-  const aiGate = useModeFeature('ai', isAuthenticated);
+  const aiGate = useModeFeature('ai', isAuthenticated, getEntitlementPaidActive());
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
   const { deleteScope } = useHighlightDelete();

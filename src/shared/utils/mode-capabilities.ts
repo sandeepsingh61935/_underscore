@@ -8,8 +8,10 @@
 
 import type { ModeCapabilities } from '@/content/modes/mode-interfaces';
 import { AUTH_REQUIRED_MODES } from '@/shared/constants/mode-storage';
-import { resolveEntitlement } from '@/shared/entitlement/resolve-entitlement';
+import { canUseMcp, commercialGate } from '@/shared/entitlement/commercial';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+
+export { canConfigureAiProviders, canUseMcp } from '@/shared/entitlement/commercial';
 
 /** Boolean capability keys only (excludes persistence enum). */
 export type FeatureKey = {
@@ -28,8 +30,8 @@ export interface FeatureGateContext {
   capabilities: ModeCapabilities;
   isAuthenticated: boolean;
   storageScope?: 'basic' | 'pro';
-  /** Commercial Paid flag (ADR-029). Required for AI / MCP gates. */
-  isPaidActive?: boolean;
+  /** Required for AI / MCP. Ignored for other features. */
+  isPaidActive: boolean;
 }
 
 export interface FeatureGateResult {
@@ -111,29 +113,15 @@ export function canAccessLibrary(isAuthenticated: boolean): boolean {
   return isAuthenticated;
 }
 
-function commercialGate(
-  ctx: FeatureGateContext,
-  flag: 'ai' | 'mcp',
-): FeatureGateResult {
-  if (!ctx.isAuthenticated) {
-    return { allowed: false, reason: 'AUTH_REQUIRED' };
-  }
-  const entitlement = resolveEntitlement({
-    isAuthenticated: ctx.isAuthenticated,
-    isPaidActive: Boolean(ctx.isPaidActive),
-  });
-  if (!entitlement.flags[flag]) {
-    return { allowed: false, reason: 'PAID_REQUIRED' };
-  }
-  return { allowed: true };
-}
-
 export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
 ): FeatureGateResult {
   if (feature === 'ai' || feature === 'mcp') {
-    return commercialGate(ctx, feature);
+    return commercialGate({
+      isAuthenticated: ctx.isAuthenticated,
+      isPaidActive: ctx.isPaidActive,
+    });
   }
 
   const cap = ctx.capabilities[feature];
@@ -160,17 +148,6 @@ export function canUseFeature(
  * Provider setup (API keys, model pickers, health checks).
  * Pro-family modes use persistent chrome.storage.local for API keys (plain text in extension sandbox).
  */
-export function canConfigureAiProviders(ctx: FeatureGateContext): FeatureGateResult {
-  return commercialGate(ctx, 'ai');
-}
-
-/**
- * Cloud MCP + (compat) bridge. Account (Paid) only — entitlement, not mode string.
- */
-export function canUseMcp(ctx: FeatureGateContext): FeatureGateResult {
-  return commercialGate(ctx, 'mcp');
-}
-
 /** Features that require pro storage scope (signed-in cloud sync). */
 function proOnlyFeature(feature: FeatureKey): boolean {
   return feature === 'sync' || feature === 'export' || feature === 'ai' || feature === 'mcp';
@@ -187,7 +164,7 @@ export interface McpCapabilityFlags {
 
 /** Build MCP session capability flags from the shared feature gate. */
 export function buildMcpCapabilities(ctx: FeatureGateContext): McpCapabilityFlags {
-  if (!canUseMcp(ctx).allowed) {
+  if (!canUseMcp({ isAuthenticated: ctx.isAuthenticated, isPaidActive: ctx.isPaidActive }).allowed) {
     return {
       sync: false,
       export: false,

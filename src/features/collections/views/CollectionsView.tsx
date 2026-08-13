@@ -31,6 +31,7 @@ import {
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
+import { getEntitlementPaidActive } from '@/shared/billing';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
@@ -60,7 +61,7 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
-  const aiGate = useModeFeature('ai', isAuthenticated);
+  const aiGate = useModeFeature('ai', isAuthenticated, getEntitlementPaidActive());
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const { deleteScope } = useHighlightDelete();

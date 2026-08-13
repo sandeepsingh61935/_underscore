@@ -131,8 +131,8 @@ export function SettingsPage({
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
-  const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated);
-  const mcpGate = useMcpGate(isAuthenticated);
+  const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated, isPaidActive);
+  const mcpGate = useMcpGate(isAuthenticated, isPaidActive);
 
   const planPill = resolveAccountPillLabel({
     modeId: currentMode,

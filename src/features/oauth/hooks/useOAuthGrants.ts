@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { resolveOAuthGrantsPort } from '@/features/oauth/oauth-grants-port';
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
-import {
-  mapOAuthGrantList,
-  type OAuthGrantSummary,
-} from '@/shared/oauth/oauth-grants';
-import {
-  IPC_OAUTH_LIST_GRANTS,
-  IPC_OAUTH_REVOKE_GRANT,
-  type MessageResponse,
-} from '@/shared/schemas/message-schemas';
+import type { OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
 
 export type { OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
 
@@ -21,10 +13,6 @@ export interface UseOAuthGrantsResult {
   reload: () => Promise<void>;
   revoke: (clientId: string) => Promise<void>;
   isRevoking: boolean;
-}
-
-function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
 }
 
 export function useOAuthGrants(enabled: boolean): UseOAuthGrantsResult {
@@ -45,31 +33,8 @@ export function useOAuthGrants(enabled: boolean): UseOAuthGrantsResult {
     setError(null);
 
     try {
-      if (hasChromeRuntime() && messageBus) {
-        const res = await messageBus.send<MessageResponse<OAuthGrantSummary[]>>(
-          'background',
-          { type: IPC_OAUTH_LIST_GRANTS, payload: {}, timestamp: Date.now() },
-        );
-        if (!res || !res.success) {
-          throw new Error(res && !res.success ? res.error : 'Failed to load connected apps');
-        }
-        setGrants(res.data ?? []);
-        return;
-      }
-
-      const supabase = getWebSupabaseClient();
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        setGrants([]);
-        setError('Sign in to see connected apps');
-        return;
-      }
-
-      const { data, error: listError } = await supabase.auth.oauth.listGrants();
-      if (listError) {
-        throw listError;
-      }
-      setGrants(mapOAuthGrantList(data));
+      const port = resolveOAuthGrantsPort(messageBus);
+      setGrants(await port.list());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load connected apps';
       setError(message);
@@ -87,27 +52,8 @@ export function useOAuthGrants(enabled: boolean): UseOAuthGrantsResult {
     setIsRevoking(true);
     setError(null);
     try {
-      if (hasChromeRuntime() && messageBus) {
-        const res = await messageBus.send<MessageResponse<{ clientId: string }>>(
-          'background',
-          {
-            type: IPC_OAUTH_REVOKE_GRANT,
-            payload: { clientId },
-            timestamp: Date.now(),
-          },
-        );
-        if (!res || !res.success) {
-          throw new Error(res && !res.success ? res.error : 'Failed to revoke access');
-        }
-        await reload();
-        return;
-      }
-
-      const supabase = getWebSupabaseClient();
-      const { error: revokeError } = await supabase.auth.oauth.revokeGrant({ clientId });
-      if (revokeError) {
-        throw revokeError;
-      }
+      const port = resolveOAuthGrantsPort(messageBus);
+      await port.revoke(clientId);
       await reload();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to revoke access';

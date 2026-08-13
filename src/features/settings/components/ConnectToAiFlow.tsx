@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { McpAppPicker } from '@/features/settings/components/McpAppPicker';
 import { McpClientSetupView } from '@/features/settings/components/McpClientSetupView';
 import { McpConnectionsHub } from '@/features/settings/components/McpConnectionsHub';
-import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import { useIntegrationsConnect } from '@/features/settings/integrations/use-integrations-connect';
 import {
   connectToAiBackLabel,
   connectToAiPageTitle,
@@ -13,15 +13,12 @@ import {
 } from '@/features/settings/mcp/connect-to-ai-nav';
 import { getMcpAiApp } from '@/features/settings/mcp/mcp-ai-apps';
 import { readMcpBridgeUiState } from '@/features/settings/mcp/mcp-bridge-ui-state';
-import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
-import { resolveIntegrationsStatus } from '@/shared/mcp/integrations-status';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 
 export interface ConnectToAiFlowProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
-  isPaidActive?: boolean;
+  isPaidActive: boolean;
   onSignIn?: () => void;
   /** Exit full-screen Connect flow back to Settings root. */
   onExit?: () => void;
@@ -31,32 +28,24 @@ export interface ConnectToAiFlowProps {
 
 export function ConnectToAiFlow({
   isAuthenticated,
-  currentMode,
-  isPaidActive = false,
+  currentMode: _currentMode,
+  isPaidActive,
   onSignIn,
   onExit,
   onStackDepthChange,
 }: ConnectToAiFlowProps): React.ReactElement {
   const [stack, setStack] = useState<ConnectToAiScreen[]>([{ kind: 'hub' }]);
   const [lockMessage, setLockMessage] = useState<string | null>(null);
-  const [urlCopied, setUrlCopied] = useState(false);
   const [legacyBridgeOn, setLegacyBridgeOn] = useState(false);
-  const remoteUrl = getMcpCloudUrl();
-
-  const mcpAllowed = canUseMcp({
-    mode: currentMode,
-    capabilities: getCapabilitiesForMode(currentMode),
-    isAuthenticated,
-    storageScope: isAuthenticated ? 'pro' : 'basic',
-    isPaidActive,
-  }).allowed;
-
-  const { grants, error: grantsError } = useOAuthGrants(isAuthenticated && mcpAllowed);
-  const status = resolveIntegrationsStatus({
+  const {
     mcpAllowed,
-    oauthGrantCount: grants.length,
-    hasRecentSession: false,
-  });
+    status,
+    remoteUrl,
+    urlCopied,
+    copyUrl,
+    connectedApps,
+    grantsError,
+  } = useIntegrationsConnect({ isAuthenticated, isPaidActive });
 
   const screen = stack[stack.length - 1] ?? { kind: 'hub' as const };
 
@@ -81,13 +70,6 @@ export function ConnectToAiFlow({
     }
   }, [isAuthenticated, onSignIn]);
 
-  const copyUrl = useCallback((): void => {
-    void navigator.clipboard.writeText(remoteUrl).then(() => {
-      setUrlCopied(true);
-      setTimeout(() => setUrlCopied(false), 2000);
-    });
-  }, [remoteUrl]);
-
   const push = useCallback((next: ConnectToAiScreen): void => {
     setLockMessage(null);
     setStack((s) => pushConnectScreen(s, next));
@@ -101,16 +83,6 @@ export function ConnectToAiFlow({
     }
     setStack((s) => popConnectScreen(s));
   }, [onExit, stack.length]);
-
-  const connectedApps = useMemo(
-    () =>
-      grants.map((grant) => ({
-        id: grant.clientId,
-        title: grant.clientName,
-        sub: grant.scopes.length > 0 ? grant.scopes.join(', ') : 'Approved MCP access',
-      })),
-    [grants],
-  );
 
   const body =
     screen.kind === 'hub' ? (

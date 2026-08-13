@@ -117,20 +117,7 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const paid = await assertPaidCloudMcpAccess({
-      getUser: async () => {
-        const { data, error } = await supabase.auth.getUser(token);
-        return { user: data.user ? { id: data.user.id } : null, error };
-      },
-      getEntitlement: async (userId) => {
-        const { data, error } = await supabase
-          .from('billing_entitlements')
-          .select('plan, status')
-          .eq('user_id', userId)
-          .maybeSingle();
-        return { data, error };
-      },
-    });
+    const paid = await assertPaidCloudMcpAccess(supabase, token);
     if (!paid.ok) {
       if (paid.status === 401) {
         return withCors(oauthUnauthorizedResponse(request, env));
@@ -142,6 +129,7 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
       supabaseUrl: env.SUPABASE_URL,
       supabaseAnonKey: env.SUPABASE_ANON_KEY,
       accessToken: token,
+      client: supabase,
     });
 
     const server = new McpServer({ name: 'underscore-cloud', version: '0.1.0' });

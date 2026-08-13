@@ -14,6 +14,7 @@ describe('buildMcpCapabilities', () => {
       capabilities: getCapabilitiesForMode('basic'),
       isAuthenticated: false,
       storageScope: 'basic',
+      isPaidActive: false,
     });
 
     expect(caps).toEqual<McpCapabilityFlags>({
@@ -32,6 +33,7 @@ describe('buildMcpCapabilities', () => {
       capabilities: getCapabilitiesForMode('pro'),
       isAuthenticated: true,
       storageScope: 'pro',
+      isPaidActive: false,
     });
 
     expect(caps).toEqual<McpCapabilityFlags>({
@@ -62,34 +64,15 @@ describe('buildMcpCapabilities', () => {
 });
 
 describe('canUseMcp', () => {
-  it('denies basic and pro', () => {
-    expect(
-      canUseMcp({
-        mode: 'basic',
-        capabilities: getCapabilitiesForMode('basic'),
-        isAuthenticated: false,
-      }).allowed,
-    ).toBe(false);
-    expect(
-      canUseMcp({
-        mode: 'pro',
-        capabilities: getCapabilitiesForMode('pro'),
-        isAuthenticated: true,
-        storageScope: 'pro',
-        isPaidActive: false,
-      }),
-    ).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
+  it('denies guests and unpaid', () => {
+    expect(canUseMcp({ isAuthenticated: false, isPaidActive: false }).allowed).toBe(false);
+    expect(canUseMcp({ isAuthenticated: true, isPaidActive: false })).toEqual({
+      allowed: false,
+      reason: 'PAID_REQUIRED',
+    });
   });
 
-  it('allows signed-in paid (regardless of stored mode)', () => {
-    expect(
-      canUseMcp({
-        mode: 'pro_xai',
-        capabilities: getCapabilitiesForMode('pro_xai'),
-        isAuthenticated: true,
-        storageScope: 'pro',
-        isPaidActive: true,
-      }).allowed,
-    ).toBe(true);
+  it('allows signed-in paid without a mode string', () => {
+    expect(canUseMcp({ isAuthenticated: true, isPaidActive: true }).allowed).toBe(true);
   });
 });

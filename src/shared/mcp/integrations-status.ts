@@ -1,19 +1,11 @@
-/**
- * Product Connected truth for Integrations (ADR-029 §4).
- * Copying a snippet is never Connected.
- */
-
 export type IntegrationsStatus = 'off' | 'ready' | 'connected';
 
 export function resolveIntegrationsStatus(input: {
   mcpAllowed: boolean;
   oauthGrantCount: number;
-  hasRecentSession: boolean;
-  /** Ignored — leftover from bridge-era optimistic Active. */
-  snippetCopied?: boolean;
 }): IntegrationsStatus {
   if (!input.mcpAllowed) return 'off';
-  if (input.oauthGrantCount > 0 || input.hasRecentSession) return 'connected';
+  if (input.oauthGrantCount > 0) return 'connected';
   return 'ready';
 }
 

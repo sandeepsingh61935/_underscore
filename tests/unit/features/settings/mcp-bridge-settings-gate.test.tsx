@@ -39,7 +39,7 @@ describe('McpBridgeSettings paid gate', () => {
 
   it('hard-cuts over an enabled bridge when mode is Account Free', async () => {
     render(
-      <McpBridgeSettings isAuthenticated currentMode="pro" />,
+      <McpBridgeSettings isAuthenticated currentMode="pro" isPaidActive={false} />,
     );
 
     await waitFor(() => {

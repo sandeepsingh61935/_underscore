@@ -1,13 +1,11 @@
-/**
- * Cloud MCP commercial gate (ADR-029 §5).
- * Duplicate of app `computeIsPaidActive` — this package cannot import src/shared.
- */
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type PaidEntitlementRow = {
   plan?: string | null;
   status?: string | null;
 };
 
+/** Same rule as app `computeIsPaidActive` — this package cannot import src/shared. */
 export function isPaidEntitlement(row: PaidEntitlementRow | null | undefined): boolean {
   if (!row) return false;
   return row.plan === 'paid' && (row.status === 'active' || row.status === 'trialing');
@@ -17,19 +15,21 @@ export type PaidGateResult =
   | { ok: true }
   | { ok: false; status: 401 | 403 | 503; error: string };
 
-export async function assertPaidCloudMcpAccess(opts: {
-  getUser: () => Promise<{ user: { id: string } | null; error: { message: string } | null }>;
-  getEntitlement: (userId: string) => Promise<{
-    data: PaidEntitlementRow | null;
-    error: { message: string } | null;
-  }>;
-}): Promise<PaidGateResult> {
-  const { user, error: userError } = await opts.getUser();
-  if (userError || !user) {
+export async function assertPaidCloudMcpAccess(
+  client: SupabaseClient,
+  token: string,
+): Promise<PaidGateResult> {
+  const { data: userData, error: userError } = await client.auth.getUser(token);
+  if (userError || !userData.user) {
     return { ok: false, status: 401, error: 'Invalid session' };
   }
 
-  const { data, error } = await opts.getEntitlement(user.id);
+  const { data, error } = await client
+    .from('billing_entitlements')
+    .select('plan, status')
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
   if (error) {
     return { ok: false, status: 503, error: 'Could not verify entitlement' };
   }

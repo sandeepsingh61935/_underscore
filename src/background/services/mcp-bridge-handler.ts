@@ -49,8 +49,7 @@ export interface McpBridgeHandlerDeps {
   librarySyncCursor: LibrarySyncCursor;
   llmChat?: (payload: { provider?: ProviderName; request: LLMRequest }) => Promise<{ text: string }>;
   getActiveMode?: () => Promise<ModeType>;
-  /** Commercial Paid flag (ADR-029). Fail closed when omitted. */
-  getIsPaidActive?: () => Promise<boolean>;
+  getIsPaidActive: () => Promise<boolean>;
 }
 
 export class McpBridgeHandler {
@@ -113,9 +112,7 @@ export class McpBridgeHandler {
     signedIn: boolean,
     storageScope: 'basic' | 'pro',
   ): Promise<McpSessionSnapshot['capabilities']> {
-    const isPaidActive = this.deps.getIsPaidActive
-      ? await this.deps.getIsPaidActive()
-      : false;
+    const isPaidActive = await this.deps.getIsPaidActive();
     return buildMcpCapabilities({
       mode,
       capabilities: getCapabilitiesForMode(mode),
@@ -365,9 +362,7 @@ export class McpBridgeHandler {
     const mode = await this.readMode();
     const signedIn = this.deps.authManager.isAuthenticated;
     const storageScope = this.deps.scopedHighlightRepository.getActiveScope();
-    const isPaidActive = this.deps.getIsPaidActive
-      ? await this.deps.getIsPaidActive()
-      : false;
+    const isPaidActive = await this.deps.getIsPaidActive();
     return {
       mode,
       capabilities: getCapabilitiesForMode(mode),
@@ -377,8 +372,15 @@ export class McpBridgeHandler {
     };
   }
 
+  private async commercialAuth() {
+    return {
+      isAuthenticated: this.deps.authManager.isAuthenticated,
+      isPaidActive: await this.deps.getIsPaidActive(),
+    };
+  }
+
   private async assertMcpFeature(): Promise<void> {
-    const gate = canUseMcp(await this.gateContext());
+    const gate = canUseMcp(await this.commercialAuth());
     if (!gate.allowed) {
       throw Object.assign(new Error(featureGateSubtitle(gate.reason)), {
         code: featureGateErrorCode(gate.reason),
@@ -388,7 +390,7 @@ export class McpBridgeHandler {
 
   /** Whether Cloud MCP / bridge tools are allowed for the current entitlement. */
   async isMcpAllowed(): Promise<boolean> {
-    return canUseMcp(await this.gateContext()).allowed;
+    return canUseMcp(await this.commercialAuth()).allowed;
   }
 
   /**

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
-import { canUseMcp, getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
+import { canUseMcp } from '@/shared/entitlement/commercial';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
@@ -10,21 +10,15 @@ import { Spinner } from '@/ui-system/components/primitives/Spinner';
 export interface ConnectedAppsSettingsProps {
   isAuthenticated: boolean;
   currentMode: ModeType;
-  isPaidActive?: boolean;
+  isPaidActive: boolean;
 }
 
 export function ConnectedAppsSettings({
   isAuthenticated,
-  currentMode,
-  isPaidActive = false,
+  currentMode: _currentMode,
+  isPaidActive,
 }: ConnectedAppsSettingsProps): React.ReactElement | null {
-  const mcpGate = canUseMcp({
-    mode: currentMode,
-    capabilities: getCapabilitiesForMode(currentMode),
-    isAuthenticated,
-    storageScope: isAuthenticated ? 'pro' : 'basic',
-    isPaidActive,
-  });
+  const mcpGate = canUseMcp({ isAuthenticated, isPaidActive });
   const mcpAllowed = mcpGate.allowed;
 
   const { grants, isLoading, error, revoke, isRevoking } = useOAuthGrants(
