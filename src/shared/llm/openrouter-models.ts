@@ -5,11 +5,9 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 /**
- * Used when the public models API is unreachable.
  * `hint: 'free'` = $0 inference credits. OpenRouter still requires an API key
  * for chat (free to create at openrouter.ai/keys) — browser cookie auth is not available in the extension.
  */
-export const OPENROUTER_FALLBACK_MODELS: ProviderModelOption[] = getProviderModels('openrouter');
 
 export interface OpenRouterModelRecord {
   id: string;
@@ -108,7 +106,7 @@ export async function getOpenRouterModels(options: { refresh?: boolean } = {}): 
   } catch {
     const stale = await readCache();
     if (stale) return stale.models;
-    return OPENROUTER_FALLBACK_MODELS;
+    return getProviderModels('openrouter');
   }
 }
 

@@ -4,7 +4,6 @@ import { IN_APP_LLM_PROVIDER_ORDER } from '@/shared/llm/in-app-providers';
 import {
   getDefaultModelId,
   getProviderModels,
-  resolveCatalogModels,
   resolveProviderModel,
 } from '@/shared/llm/provider-models';
 
@@ -33,10 +32,4 @@ describe('provider-models', () => {
     }
   });
 
-  it('resolveCatalogModels prefers a live list; empty live stays empty', () => {
-    const live = [{ id: 'gpt-live', label: 'Live GPT' }];
-    expect(resolveCatalogModels('openai', live)).toEqual(live);
-    expect(resolveCatalogModels('openai', [])).toEqual([]);
-    expect(resolveCatalogModels('openai', null)).toEqual(getProviderModels('openai'));
-  });
 });

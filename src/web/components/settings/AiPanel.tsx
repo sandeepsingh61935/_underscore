@@ -10,11 +10,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
-  CUSTOM_MODEL_ID,
-  PROVIDER_META,
-  providerStatusLabel,
-} from '@/features/ai/constants/provider-setup';
-import {
   IntegrationsWebList,
   IntegrationsWebSetup,
 } from '@/features/settings/integrations/IntegrationsWebPanel';
@@ -23,22 +18,14 @@ import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
-import { IN_APP_LLM_PROVIDER_ORDER } from '@/shared/llm/in-app-providers';
-import { checkProviderHealthInBrowser } from '@/shared/llm/check-provider-health';
-import { getDefaultModelId, getProviderModels } from '@/shared/llm/provider-models';
 import type { WebCaps } from '@/web/caps/resolveWebCaps';
 import {
   pullWebAiPreferences,
   pushWebAiPreferences,
 } from '@/web/lib/syncWebAiPreferences';
-import {
-  clearProviderConfig,
-  formatDefaultModelLabel,
-  isProviderConfigured,
-  readWebLlmState,
-  type WebLlmState,
-  upsertProviderConfig,
-} from '@/web/lib/webLlmKeys';
+import { readWebLlmState, type WebLlmState } from '@/web/lib/webLlmKeys';
+import { ModelsList } from './ModelsList';
+import { ModelsProviderSetup } from './ModelsProviderSetup';
 
 /** Single discriminant for tab + drill-in (no dual nullable modes). */
 export type AiView =
@@ -200,7 +187,7 @@ export function AiPanel({
 
       {view.tab === 'models' ? (
         view.panel === 'provider' ? (
-          <ProviderSetup
+          <ModelsProviderSetup
             provider={view.id}
             canConfigure={canConfigureModels}
             llmState={llmState}
@@ -232,281 +219,6 @@ export function AiPanel({
           onOpenApp={(id) => setView({ tab: 'integrations', panel: 'app', id })}
         />
       )}
-    </div>
-  );
-}
-
-function ModelsList({
-  allowed,
-  canConfigure,
-  isAuthenticated,
-  llmState,
-  onOpenSetup,
-}: {
-  allowed: boolean;
-  canConfigure: boolean;
-  isAuthenticated: boolean;
-  llmState: WebLlmState;
-  onOpenSetup: (p: ProviderName) => void;
-}): React.ReactElement {
-  const defaultLabel = formatDefaultModelLabel(llmState);
-
-  return (
-    <div
-      className={`block${allowed ? '' : ' is-ai-muted'}`}
-      data-od-id="settings-configure-ai"
-    >
-      <p className="block-label">Models &amp; providers</p>
-      <p className="type-sub" style={{ marginBottom: 12 }}>
-        Keys stay on this device (not synced). Used for web Chat on this browser;
-        the extension has its own device keys.
-      </p>
-      {!isAuthenticated ? (
-        <div className="banner" data-od-id="models-signin-banner" style={{ marginBottom: 12 }}>
-          <div className="grow">
-            <strong>Sign in</strong>
-            <div className="sub" style={{ marginTop: 4 }}>
-              Model setup requires a signed-in session.
-            </div>
-          </div>
-          <Link to="/sign-in" className="btn accent sm" data-od-id="models-signin-cta">
-            Sign in
-          </Link>
-        </div>
-      ) : null}
-      {IN_APP_LLM_PROVIDER_ORDER.map((id) => {
-        const configured = isProviderConfigured(llmState, id);
-        return (
-          <div className="provider-row" key={id} data-od-id={`provider-${id}`}>
-            <div className="grow">
-              <div className="name">{PROVIDER_META[id].label}</div>
-              {PROVIDER_META[id].blurb ? (
-                <div className="sub">{PROVIDER_META[id].blurb}</div>
-              ) : null}
-            </div>
-            <span className={`status${configured ? ' on' : ''}`}>
-              {providerStatusLabel(id, configured)}
-            </span>
-            {isAuthenticated ? (
-              <button
-                type="button"
-                className="btn sm"
-                disabled={!canConfigure}
-                data-od-id={`provider-${id}-action`}
-                onClick={() => onOpenSetup(id)}
-              >
-                {configured ? 'Configure' : 'Connect'}
-              </button>
-            ) : null}
-          </div>
-        );
-      })}
-      <div className="setting-row" style={{ marginTop: 8 }} data-od-id="settings-default-model">
-        <div className="grow">
-          <div className="title">Default for Ask</div>
-          <div className="sub">{defaultLabel}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProviderSetup({
-  provider,
-  canConfigure,
-  llmState,
-  onBack,
-  onStateChange,
-}: {
-  provider: ProviderName;
-  canConfigure: boolean;
-  llmState: WebLlmState;
-  onBack: () => void;
-  onStateChange: (s: WebLlmState) => void;
-}): React.ReactElement {
-  const meta = PROVIDER_META[provider];
-  const existing = llmState.providers[provider];
-  const catalog = getProviderModels(provider);
-  const [apiKey, setApiKey] = useState(existing?.apiKey ?? '');
-  const [apiBase, setApiBase] = useState(
-    existing?.apiBase ?? (provider === 'ollama' ? 'http://localhost:11434' : ''),
-  );
-  const [model, setModel] = useState(existing?.model ?? getDefaultModelId(provider));
-  const [useCustomModel, setUseCustomModel] = useState(() => {
-    const initial = existing?.model ?? getDefaultModelId(provider);
-    return !catalog.some((m) => m.id === initial);
-  });
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [ok, setOk] = useState<boolean | null>(null);
-
-  const saveAndCheck = useCallback(async () => {
-    if (!canConfigure) return;
-    setBusy(true);
-    setMessage(null);
-    setOk(null);
-    try {
-      let accessToken: string | null = null;
-      if (provider !== 'ollama') {
-        try {
-          const { data } = await getWebSupabaseClient().auth.getSession();
-          accessToken = data.session?.access_token ?? null;
-        } catch {
-          accessToken = null;
-        }
-      }
-      const result = await checkProviderHealthInBrowser(provider, {
-        apiKey: apiKey.trim() || undefined,
-        apiBase: apiBase.trim() || undefined,
-        model: model.trim() || undefined,
-        accessToken,
-        // default allowDirectCloud=false: web cloud uses proxy only
-      });
-      if (result.ok) {
-        const next = upsertProviderConfig(provider, {
-          apiKey: apiKey.trim() || undefined,
-          apiBase:
-            provider === 'ollama'
-              ? apiBase.trim() || 'http://localhost:11434'
-              : apiBase.trim() || undefined,
-          model: model.trim() || getDefaultModelId(provider),
-          checkedAt: Date.now(),
-        });
-        onStateChange(next);
-        setOk(true);
-        setMessage('Connection ok · ready for Chat on this device');
-      } else {
-        setOk(false);
-        setMessage(result.error ?? 'Check failed');
-      }
-    } catch (e) {
-      setOk(false);
-      setMessage(e instanceof Error ? e.message : 'Check failed');
-    } finally {
-      setBusy(false);
-    }
-  }, [apiBase, apiKey, canConfigure, model, onStateChange, provider]);
-
-  const clear = useCallback(() => {
-    if (!canConfigure) return;
-    onStateChange(clearProviderConfig(provider));
-    setApiKey('');
-    setMessage(null);
-    setOk(null);
-    onBack();
-  }, [canConfigure, onBack, onStateChange, provider]);
-
-  return (
-    <div className="block" data-od-id="settings-provider-setup">
-      <button
-        type="button"
-        className="btn ghost sm"
-        data-od-id="provider-setup-back"
-        onClick={onBack}
-        style={{ marginBottom: 12 }}
-      >
-        Back to models
-      </button>
-      <p className="block-label">{meta.label}</p>
-      <p className="type-sub" style={{ marginBottom: 12 }}>
-        {meta.blurb ?? 'API key for this device'}
-      </p>
-      {provider !== 'ollama' ? (
-        <label className="ai-field">
-          <span className="u-mono">API key</span>
-          <input
-            className="field"
-            type="password"
-            autoComplete="off"
-            placeholder={meta.keyPlaceholder ?? 'sk-…'}
-            value={apiKey}
-            disabled={!canConfigure || busy}
-            onChange={(e) => setApiKey(e.target.value)}
-            data-od-id="provider-api-key"
-          />
-        </label>
-      ) : (
-        <label className="ai-field">
-          <span className="u-mono">Base URL</span>
-          <input
-            className="field"
-            type="url"
-            value={apiBase}
-            disabled={!canConfigure || busy}
-            onChange={(e) => setApiBase(e.target.value)}
-            data-od-id="provider-api-base"
-          />
-        </label>
-      )}
-      <label className="ai-field" style={{ marginTop: 10 }}>
-        <span className="u-mono">Model</span>
-        <select
-          className="field"
-          value={useCustomModel ? CUSTOM_MODEL_ID : model}
-          disabled={!canConfigure || busy}
-          onChange={(e) => {
-            const next = e.target.value;
-            if (next === CUSTOM_MODEL_ID) {
-              setUseCustomModel(true);
-              return;
-            }
-            setUseCustomModel(false);
-            setModel(next);
-          }}
-          data-od-id="provider-model"
-        >
-          {catalog.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-          <option value={CUSTOM_MODEL_ID}>Custom…</option>
-        </select>
-      </label>
-      {useCustomModel ? (
-        <label className="ai-field" style={{ marginTop: 10 }}>
-          <span className="u-mono">Custom model id</span>
-          <input
-            className="field"
-            type="text"
-            value={model}
-            disabled={!canConfigure || busy}
-            onChange={(e) => setModel(e.target.value)}
-            data-od-id="provider-model-custom"
-          />
-        </label>
-      ) : null}
-      <div className="ai-setup-actions">
-        <button
-          type="button"
-          className="btn accent sm"
-          disabled={!canConfigure || busy}
-          data-od-id="provider-save-check"
-          onClick={() => void saveAndCheck()}
-        >
-          {busy ? 'Checking…' : 'Save & check'}
-        </button>
-        {isProviderConfigured(llmState, provider) ? (
-          <button
-            type="button"
-            className="btn sm"
-            disabled={!canConfigure || busy}
-            data-od-id="provider-clear"
-            onClick={clear}
-          >
-            Clear
-          </button>
-        ) : null}
-      </div>
-      {message ? (
-        <div
-          className={`check-result${ok ? ' done' : ' fail'}`}
-          data-od-id="provider-check-result"
-          role="status"
-        >
-          {message}
-        </div>
-      ) : null}
     </div>
   );
 }

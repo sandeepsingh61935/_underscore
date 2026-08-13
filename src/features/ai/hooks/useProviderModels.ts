@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
+import { loadInAppCatalog } from '@/shared/llm/catalog-load';
 import { fetchProviderModels } from '@/shared/llm/model-discovery';
-import { OPENROUTER_FALLBACK_MODELS } from '@/shared/llm/openrouter-models';
-import {
-  resolveCatalogModels,
-  type ProviderModelOption,
-} from '@/shared/llm/provider-models';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import type { ProviderModelOption } from '@/shared/llm/provider-models';
+import { hasChromeRuntime, useIpcAction } from '@/shared/hooks/useIpcAction';
 import { IPC_AI_LIST_PROVIDER_MODELS } from '@/shared/schemas/message-schemas';
 
 export interface UseProviderModelsInput {
@@ -38,61 +35,40 @@ export function useProviderModels(
   const load = useCallback(async (refresh = false) => {
     if (!provider) {
       setModels([]);
+      setError(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      if (provider === 'openrouter') {
-        const { getOpenRouterModels } = await import('@/shared/llm/openrouter-models');
-        const list = await getOpenRouterModels({ refresh });
-        setModels(list.length > 0 ? list : OPENROUTER_FALLBACK_MODELS);
-        setError(null);
-        return;
-      }
-
-      const typedKey = input.apiKey?.trim();
-      const canUseStored = input.useStoredCredentials && !typedKey;
-
-      if (canUseStored || provider === 'ollama') {
-        const ipcResult = await listViaIpc({
+      const presented = await loadInAppCatalog(
+        {
           provider,
+          apiKey: input.apiKey,
           apiBase: input.apiBase,
-        });
-        if (ipcResult.success) {
-          setModels(ipcResult.data.models);
-          setError(null);
-          return;
-        }
-        if (provider === 'ollama') {
-          const runtimeMissing = /unavailable/i.test(ipcResult.error);
-          setModels(runtimeMissing ? resolveCatalogModels('ollama', null) : []);
-          setError(ipcResult.error);
-          return;
-        }
-        if (!typedKey) {
-          setModels(resolveCatalogModels(provider, null));
-          setError(null);
-          return;
-        }
-      }
-
-      if (!typedKey) {
-        setModels(resolveCatalogModels(provider, null));
-        setError(null);
-        return;
-      }
-
-      const result = await fetchProviderModels(provider, {
-        apiKey: typedKey,
-        apiBase: input.apiBase,
-      });
-      setModels(result.models);
-      setError(result.models.length > 0 ? null : (result.error ?? null));
-    } catch (err) {
-      setError((err as Error).message);
-      setModels(resolveCatalogModels(provider, null));
+          useStoredCredentials: input.useStoredCredentials,
+          refresh,
+        },
+        {
+          fetchLive: async (id, opts) => {
+            if (id === 'openrouter') {
+              const { getOpenRouterModels } = await import('@/shared/llm/openrouter-models');
+              return { models: await getOpenRouterModels({ refresh: opts.refresh }) };
+            }
+            return fetchProviderModels(id, opts);
+          },
+          listViaIpc: hasChromeRuntime()
+            ? async (payload) => {
+                const result = await listViaIpc(payload);
+                if (result.success) return { ok: true, models: result.data.models };
+                return { ok: false, reason: 'error', message: result.error };
+              }
+            : undefined,
+        },
+      );
+      setModels(presented.models);
+      setError(presented.error);
     } finally {
       setLoading(false);
     }

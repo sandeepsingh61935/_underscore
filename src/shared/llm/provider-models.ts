@@ -97,15 +97,6 @@ export function getProviderModels(provider: ProviderName): ProviderModelOption[]
   return PROVIDER_MODEL_CATALOG[provider].models;
 }
 
-/** `null`/`undefined` = unknown (use snapshot). `[]` = known empty. */
-export function resolveCatalogModels(
-  provider: ProviderName,
-  live: readonly ProviderModelOption[] | null | undefined,
-): ProviderModelOption[] {
-  if (live == null) return [...getProviderModels(provider)];
-  return [...live];
-}
-
 export function resolveProviderModel(provider: ProviderName, stored: string | null | undefined): string {
   const trimmed = stored?.trim();
   if (trimmed) return trimmed;

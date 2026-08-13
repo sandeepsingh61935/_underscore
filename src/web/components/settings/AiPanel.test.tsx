@@ -21,6 +21,10 @@ vi.mock('@/web/lib/syncWebAiPreferences', () => ({
   pushWebAiPreferences: vi.fn(async (_s: unknown, _u: string, next: unknown) => ({ state: next })),
 }));
 
+vi.mock('@/shared/llm/model-discovery', () => ({
+  fetchProviderModels: vi.fn(async () => ({ models: [] })),
+}));
+
 vi.mock('@/features/oauth/hooks/useOAuthGrants', () => ({
   useOAuthGrants: () => ({
     grants: [],
@@ -78,6 +82,24 @@ describe('AiPanel Models polish', () => {
     expect(ids).toContain(getDefaultModelId('openai'));
     expect(ids.length).toBeGreaterThan(getProviderModels('openai').length);
     expect(ids).toContain('__custom__');
+  });
+
+  it('derives Custom from the model id instead of a separate flag', () => {
+    localStorage.setItem(
+      'underscore.web.llm',
+      JSON.stringify({
+        providers: {
+          openai: { apiKey: 'sk-test', model: 'my-finetune', checkedAt: 1 },
+        },
+        defaultProvider: 'openai',
+      }),
+    );
+    renderAi(PAID, true);
+    fireEvent.click(document.querySelector('[data-od-id="provider-openai-action"]')!);
+    const picker = document.querySelector('[data-od-id="provider-model"]') as HTMLSelectElement;
+    expect(picker.value).toBe('__custom__');
+    expect((document.querySelector('[data-od-id="provider-model-custom"]') as HTMLInputElement).value)
+      .toBe('my-finetune');
   });
 
   it('Models tab copy never mentions MCP, OAuth, JWT, or Connect agent', () => {

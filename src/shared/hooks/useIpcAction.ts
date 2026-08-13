@@ -31,7 +31,7 @@ export type ActionResult<T> =
  * Returns true if the chrome.runtime.sendMessage API is available.
  * Returns false in web app context or in tests.
  */
-function hasChromeRuntime(): boolean {
+export function hasChromeRuntime(): boolean {
   return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
 }
 

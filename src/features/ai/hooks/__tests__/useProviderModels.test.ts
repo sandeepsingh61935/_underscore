@@ -12,7 +12,10 @@ vi.mock('@/shared/hooks/useIpcAction', () => {
     success: false as const,
     error: 'Chrome extension runtime is unavailable in this context.',
   }));
-  return { useIpcAction: () => ipcUnavailable };
+  return {
+    hasChromeRuntime: () => false,
+    useIpcAction: () => ipcUnavailable,
+  };
 });
 
 describe('useProviderModels', () => {

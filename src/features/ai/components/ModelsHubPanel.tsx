@@ -53,7 +53,7 @@ export function ModelsHubPanel({
           className="u-mono"
           style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '6px 0 0' }}
         >
-          Keys stay on this device. Used for Ask on this browser.
+          Keys stay on this device. Used for Ask.
         </p>
       </div>
 
