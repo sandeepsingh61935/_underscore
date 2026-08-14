@@ -11,12 +11,14 @@ import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
 import {
+  addMember,
   highlightsForPlace,
   placeToScope,
+  removeMember,
   scopeToPlace,
-  summarizeMembers,
   type ChatProject,
   type Place,
+  type ProjectMember,
 } from '@/shared/chat';
 import { noopPageContextFetch } from '@/shared/llm/noop-page-context-fetch';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
@@ -402,10 +404,25 @@ function PaidAskShell({
     userId,
   ]);
 
-  const groundNote =
-    activePlace?.type === 'project'
-      ? summarizeMembers(activeProject?.members ?? [])
-      : null;
+  const handleAddMember = useCallback(
+    (projectId: string, member: ProjectMember) => {
+      const project = projects.projects.find((p) => p.id === projectId);
+      if (!project || !userId) return;
+      const next = addMember(project.members, member);
+      if (next.length === project.members.length) return;
+      void projects.setMembers(projectId, next);
+    },
+    [projects, userId],
+  );
+
+  const handleRemoveMember = useCallback(
+    (projectId: string, member: ProjectMember) => {
+      const project = projects.projects.find((p) => p.id === projectId);
+      if (!project || !userId) return;
+      void projects.setMembers(projectId, removeMember(project.members, member));
+    },
+    [projects, userId],
+  );
 
   return (
     <div className="ask-shell" data-od-id="ask">
@@ -421,60 +438,18 @@ function PaidAskShell({
           onCreateProject={handleCreateProject}
           onClearChat={handleClearChat}
           onDeleteProject={handleDeleteProject}
+          onAddMember={handleAddMember}
+          onRemoveMember={handleRemoveMember}
         />
-        {activePlace?.type === 'project' ? (
-          <div className="ask-projects-body" style={{ padding: '8px 12px' }}>
-            <p className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-              Project grounding
-            </p>
-            <p className="composer-note" style={{ marginTop: 4 }}>
-              {groundNote}
-              {activeProject?.members.length === 0
-                ? ' Add domains from the library (coming soon: member editor). Create multi-domain projects via multi-select later.'
-                : null}
-            </p>
-            {domains.length > 0 ? (
-              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {domains.map((d) => {
-                  const on = activeProject?.members.some(
-                    (m) => m.kind === 'domain' && m.domain === d.domain,
-                  );
-                  return (
-                    <button
-                      key={d.domain}
-                      type="button"
-                      className={`chip refine-chip${on ? ' active' : ''}`}
-                      disabled={busy || !activeProject}
-                      data-testid={`ask-member-toggle-${d.domain}`}
-                      onClick={() => {
-                        if (!activeProject || !userId) return;
-                        const members = on
-                          ? activeProject.members.filter(
-                              (m) =>
-                                !(m.kind === 'domain' && m.domain === d.domain),
-                            )
-                          : [
-                              ...activeProject.members,
-                              { kind: 'domain' as const, domain: d.domain },
-                            ];
-                        void projects.setMembers(activeProject.id, members);
-                      }}
-                    >
-                      {on ? '− ' : '+ '}
-                      {d.domain}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       <div className="ask-chat" data-od-id="ask-chat">
         {!activePlace ? (
           <div className="ask-quiet" data-od-id="ask-pick-place">
-            <span>Select a domain or project to open its chat.</span>
+            <span>
+              Select a domain or page to chat, or open a project. Drag library
+              rows onto a project to add grounding.
+            </span>
           </div>
         ) : (
           <AskTranscript

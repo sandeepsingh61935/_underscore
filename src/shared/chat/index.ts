@@ -41,6 +41,17 @@ export {
   type ProjectMember,
 } from './project-types';
 
+export {
+  addMember,
+  hasMember,
+  memberToLabel,
+  parseMemberDrag,
+  placeToMember,
+  PROJECT_MEMBER_DRAG_TYPE,
+  removeMember,
+  serializeMemberDrag,
+} from './project-members';
+
 export { highlightsForPlace, type PlaceHighlight } from './highlights-for-place';
 
 export { autoTitleFromUserMessage } from './chat-title';

@@ -12,7 +12,7 @@ class RootErrorBoundary extends Component<
 > {
   state: { error: Error | null } = { error: null };
 
-  static getDerivedStateFromError(error: Error): { error: Error } {
+  static override getDerivedStateFromError(error: Error): { error: Error } {
     return { error };
   }
 
