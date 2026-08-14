@@ -53,6 +53,11 @@ export {
 } from './chat-service';
 
 export {
+  createChatCache,
+  createChatService,
+} from './create-chat-service';
+
+export {
   runGroundedTurn,
   type RunGroundedTurnInput,
   type RunGroundedTurnResult,

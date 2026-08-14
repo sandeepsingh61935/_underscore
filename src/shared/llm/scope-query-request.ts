@@ -1,3 +1,9 @@
+/**
+ * One-shot grounded ask request (MCP / legacy).
+ * Same prompt + user content shape as empty-history assembleChatRequest
+ * (shared/chat context-assembler). Kept named for MCP without importing chat.
+ */
+
 import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
 import { formatExcerptUserContent } from '@/shared/llm/summary-request';
 import { PROMPT_TEMPLATES, type ScopeQueryContext } from '@/shared/llm/prompts';
@@ -21,12 +27,21 @@ export function formatScopeQueryUserContent(excerpts: HighlightExcerpt[], questi
   ].join('\n');
 }
 
+/**
+ * One-shot LLMRequest: equivalent to assembleChatRequest with empty history.
+ * Do not fork prompt policy here — keep in lockstep with context-assembler.
+ */
 export function buildScopeQueryRequest(input: BuildScopeQueryInput): LLMRequest {
-  const { scope, excerpts, question } = input;
+  const question = input.question.trim();
+  if (!question) {
+    throw new Error('buildScopeQueryRequest requires a non-empty question');
+  }
   return {
-    systemPrompt: PROMPT_TEMPLATES.askScope(scope),
-    messages: [{ role: 'user', content: formatScopeQueryUserContent(excerpts, question) }],
-    maxTokens: computeScopeQueryOutputTokens(excerpts.length),
+    systemPrompt: PROMPT_TEMPLATES.askScope(input.scope),
+    messages: [
+      { role: 'user', content: formatScopeQueryUserContent(input.excerpts, question) },
+    ],
+    maxTokens: computeScopeQueryOutputTokens(input.excerpts.length),
     temperature: SUMMARY_TEMPERATURE,
   };
 }

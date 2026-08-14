@@ -12,7 +12,8 @@ import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
 import type { ChatScope } from '@/shared/chat';
-import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
+import { noopPageContextFetch } from '@/shared/llm/noop-page-context-fetch';
+import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { AskComposer } from '@/web/components/ask/AskComposer';
 import { AskGroundingTree } from '@/web/components/ask/AskGroundingTree';
@@ -283,14 +284,27 @@ function PaidAskShell({
 
     setPrepareError(null);
     turn.clearError();
-    const { excerpts } = buildFallbackExcerpts(promptHighlights);
     setDraft('');
-    void turn.send({
-      question: q,
-      scope: effectiveScope,
-      excerpts,
-      provider: modelSelection.activeProvider,
-    });
+    void (async () => {
+      try {
+        // Web v1: quote-only via prepare + noop page context (same prepare seam as extension).
+        const { excerpts, errorNote } = await prepareHighlightExcerpts(
+          promptHighlights,
+          noopPageContextFetch,
+        );
+        if (errorNote) {
+          setPrepareError(errorNote);
+        }
+        await turn.send({
+          question: q,
+          scope: effectiveScope,
+          excerpts,
+          provider: modelSelection.activeProvider!,
+        });
+      } catch (err) {
+        setPrepareError((err as Error).message || 'Failed to prepare grounding');
+      }
+    })();
   }, [
     busy,
     draft,

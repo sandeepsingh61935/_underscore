@@ -107,4 +107,18 @@ describe('assembleChatRequest', () => {
       assembleChatRequest({ scope, excerpts, history: [], question: '  ' }),
     ).toThrow(/non-empty/);
   });
+
+  it('empty history is one-shot (same shape as buildScopeQueryRequest)', () => {
+    const req = assembleChatRequest({
+      scope,
+      excerpts,
+      history: [],
+      question: 'What is the main theme?',
+    });
+    expect(req.messages).toHaveLength(1);
+    expect(req.messages[0]?.role).toBe('user');
+    expect(req.messages[0]?.content).toContain('## Question');
+    expect(req.messages[0]?.content).toContain('What is the main theme?');
+    expect(req.messages[0]?.content).toContain('Important highlight');
+  });
 });

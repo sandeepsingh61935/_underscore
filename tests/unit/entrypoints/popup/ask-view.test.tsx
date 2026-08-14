@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { AskView } from '@/entrypoints/popup/views/AskView';
 
@@ -32,34 +32,63 @@ vi.mock('@/features/ai/hooks/usePageContext', () => ({
   usePageContext: vi.fn(),
 }));
 
-vi.mock('@/features/ai/hooks/useScopeQuery', () => ({
-  useScopeQuery: vi.fn(),
+vi.mock('@/features/ai/hooks/useExtensionChat', () => ({
+  useExtensionChat: vi.fn(),
+}));
+
+vi.mock('@/features/ai/hooks/useGroundedChatTurn', () => ({
+  useGroundedChatTurn: vi.fn(),
+}));
+
+vi.mock('@/shared/llm/prepare-highlight-excerpts', () => ({
+  prepareHighlightExcerpts: vi.fn().mockResolvedValue({
+    excerpts: [
+      {
+        id: 'h0',
+        url: 'https://example.com',
+        highlightText: 'x',
+        pageTitle: 't',
+        excerpt: 'x',
+      },
+    ],
+    cacheNote: null,
+    errorNote: null,
+  }),
 }));
 
 import { useApp } from '@/core/context/PopupAppProvider';
 import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
+import { useExtensionChat } from '@/features/ai/hooks/useExtensionChat';
+import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
-import { useScopeQuery } from '@/features/ai/hooks/useScopeQuery';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
+import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 
-type ScopeQueryMock = {
-  chunks: string;
-  status: 'idle' | 'streaming' | 'done' | 'error';
+type TurnMock = {
+  phase: 'idle' | 'running';
+  busy: boolean;
   error: string | null;
-  ask: ReturnType<typeof vi.fn>;
-  isPreparing: boolean;
-  prepareError: string | null;
+  streamText: string;
+  inflightAssistantId: string | null;
+  clearError: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
   abort: ReturnType<typeof vi.fn>;
 };
 
 function mockPaidHooks(opts?: {
   highlightCount?: number;
   totalHighlights?: number;
-  scopeQuery?: Partial<ScopeQueryMock>;
-}): ScopeQueryMock {
+  turn?: Partial<TurnMock>;
+  messages?: Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    status: 'completed' | 'streaming' | 'failed' | 'cancelled';
+  }>;
+}): TurnMock {
   const count = opts?.highlightCount ?? 5;
   const highlights = Array.from({ length: count }, (_, i) => ({
     id: `h-${i}`,
@@ -129,25 +158,51 @@ function mockPaidHooks(opts?: {
   });
 
   vi.mocked(usePageContext).mockReturnValue({
-    fetch: vi.fn().mockResolvedValue({ text: '', cacheNote: null, errorNote: null }),
+    fetch: vi.fn().mockResolvedValue({
+      success: true,
+      data: { highlightExcerpts: [], cacheMissUrls: [] },
+    }),
   });
 
-  const scopeQuery: ScopeQueryMock = {
-    chunks: '',
-    status: 'idle',
+  vi.mocked(useExtensionChat).mockReturnValue({
+    status: 'ready',
     error: null,
-    ask: vi.fn().mockResolvedValue({ cacheNote: null, errorNote: null }),
-    isPreparing: false,
-    prepareError: null,
+    threads: [],
+    activeThreadId: null,
+    messages: (opts?.messages ?? []).map((m) => ({
+      ...m,
+      threadId: 't1',
+      userId: 'u1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })),
+    service: {} as never,
+    refreshThreads: vi.fn(),
+    selectThread: vi.fn(),
+    newThread: vi.fn(),
+    deleteThread: vi.fn(),
+    applyTurnStarted: vi.fn(),
+    applyStreamText: vi.fn(),
+    applyTurnFinished: vi.fn(),
+  });
+
+  const turn: TurnMock = {
+    phase: 'idle',
+    busy: false,
+    error: null,
+    streamText: '',
+    inflightAssistantId: null,
+    clearError: vi.fn(),
+    send: vi.fn().mockResolvedValue(undefined),
     abort: vi.fn(),
-    ...opts?.scopeQuery,
+    ...opts?.turn,
   };
 
-  vi.mocked(useScopeQuery).mockReturnValue(
-    scopeQuery as unknown as ReturnType<typeof useScopeQuery>,
+  vi.mocked(useGroundedChatTurn).mockReturnValue(
+    turn as unknown as ReturnType<typeof useGroundedChatTurn>,
   );
 
-  return scopeQuery;
+  return turn;
 }
 
 describe('AskView lock matrix', () => {
@@ -230,13 +285,18 @@ describe('AskView lock matrix', () => {
     expect(onConnectAi).toHaveBeenCalledTimes(1);
   });
 
-  it('Paid: switching scope updates ground footer label', () => {
+  it('Paid: switching scope updates ground footer label and starts new thread', () => {
     mockPaidHooks({ highlightCount: 5 });
     render(<AskView lockReason={null} />);
 
     fireEvent.click(screen.getByTestId('ask-scope-domain'));
     expect(screen.getByTestId('ask-ground').textContent).toMatch(/Scope: domain/);
     expect(screen.getByTestId('ask-breadcrumb').textContent).toBe('developer.mozilla.org');
+    const chatMocks = vi.mocked(useExtensionChat).mock.results;
+    const lastChat = chatMocks[chatMocks.length - 1]?.value as {
+      newThread: ReturnType<typeof vi.fn>;
+    };
+    expect(lastChat.newThread).toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('ask-scope-library'));
     expect(screen.getByTestId('ask-ground').textContent).toMatch(/Scope: library \(recent\)/);
@@ -254,19 +314,31 @@ describe('AskView lock matrix', () => {
     expect(screen.getByText('3 highlights in this scope')).toBeTruthy();
   });
 
-  it('Suggestion chips disabled when streaming/preparing (busy)', () => {
+  it('While turn busy, composer shows Stop (not empty suggestions)', () => {
     mockPaidHooks({
       highlightCount: 5,
-      scopeQuery: { isPreparing: true, status: 'idle' },
+      turn: { busy: true, phase: 'running' },
+      messages: [
+        {
+          id: 'u1',
+          role: 'user',
+          content: 'Hi',
+          status: 'completed',
+        },
+        {
+          id: 'a1',
+          role: 'assistant',
+          content: '',
+          status: 'streaming',
+        },
+      ],
     });
     render(<AskView lockReason={null} />);
 
-    expect(
-      (screen.getByTestId('ask-suggestion-Summarize') as HTMLButtonElement).disabled,
-    ).toBe(true);
-    expect(
-      (screen.getByTestId('ask-suggestion-List tags') as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect(screen.queryByTestId('ask-empty-suggestions')).toBeNull();
+    expect(screen.getByTestId('ask-composer-send').getAttribute('aria-label')).toBe(
+      'Stop',
+    );
   });
 
   it('Suggestion chips disabled when no usable highlights', () => {
@@ -278,107 +350,78 @@ describe('AskView lock matrix', () => {
     ).toBe(true);
   });
 
-  it('Keeps live assistant answer visible through stream done until finalize', async () => {
-    const answer = 'Scoped summary of CSS highlights.';
-    let resolveAsk: (() => void) | undefined;
-    const askPromise = new Promise<void>((resolve) => {
-      resolveAsk = resolve;
-    });
-
-    const scopeState: ScopeQueryMock = {
-      chunks: '',
-      status: 'idle',
-      error: null,
-      ask: vi.fn().mockImplementation(async () => {
-        scopeState.status = 'streaming';
-        scopeState.chunks = answer;
-        await askPromise;
-        scopeState.status = 'done';
-        return { cacheNote: null, errorNote: null };
-      }),
-      isPreparing: false,
-      prepareError: null,
-      abort: vi.fn(),
-    };
-
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    const { rerender } = render(<AskView lockReason={null} />);
+  it('Submit prepares excerpts and sends grounded turn with section scope', async () => {
+    const turn = mockPaidHooks({ highlightCount: 5 });
+    render(<AskView lockReason={null} />);
 
     fireEvent.change(screen.getByTestId('ask-composer-input'), {
       target: { value: 'Summarize' },
     });
     fireEvent.submit(screen.getByTestId('ask-composer-input').closest('form')!);
 
-    // Re-render while streaming so hook values (chunks/status) surface
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    rerender(<AskView lockReason={null} />);
-
-    expect(screen.getByTestId('ask-streaming-turn')).toBeTruthy();
-    expect(screen.getByText(answer)).toBeTruthy();
-
-    // Transition to done before finalize effect clears streamUserContent — answer must stay visible
-    scopeState.status = 'done';
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    rerender(<AskView lockReason={null} />);
-
-    expect(screen.getByText(answer)).toBeTruthy();
-
-    await act(async () => {
-      resolveAsk?.();
-    });
-
     await waitFor(() => {
-      expect(screen.getByText(answer)).toBeTruthy();
+      expect(prepareHighlightExcerpts).toHaveBeenCalled();
+      expect(turn.send).toHaveBeenCalled();
     });
+
+    const sendArg = turn.send.mock.calls[0]?.[0] as {
+      question: string;
+      scope: { kind: string; domain?: string; sectionKey?: string };
+      provider: string;
+    };
+    expect(sendArg.question).toBe('Summarize');
+    expect(sendArg.provider).toBe('openai');
+    expect(sendArg.scope.kind).toBe('section');
+    expect(sendArg.scope.domain).toBe('developer.mozilla.org');
   });
 
-  it('Finalizes stream error into thread without blanking the assistant turn', async () => {
-    const partial = 'Partial answer before failure';
-    let resolveAsk: (() => void) | undefined;
-
-    const scopeState: ScopeQueryMock = {
-      chunks: '',
-      status: 'idle',
-      error: null,
-      ask: vi.fn().mockImplementation(async () => {
-        scopeState.status = 'streaming';
-        scopeState.chunks = partial;
-        await new Promise<void>((r) => {
-          resolveAsk = r;
-        });
-        scopeState.status = 'error';
-        scopeState.error = 'rate limited';
-        return { cacheNote: null, errorNote: null };
-      }),
-      isPreparing: false,
-      prepareError: null,
-      abort: vi.fn(),
-    };
-
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    const { rerender } = render(<AskView lockReason={null} />);
-
-    fireEvent.change(screen.getByTestId('ask-composer-input'), {
-      target: { value: 'Key themes' },
+  it('Shows completed transcript messages from chat session', () => {
+    mockPaidHooks({
+      highlightCount: 5,
+      messages: [
+        {
+          id: 'm1',
+          role: 'user',
+          content: 'What is CSS?',
+          status: 'completed',
+        },
+        {
+          id: 'm2',
+          role: 'assistant',
+          content: 'Cascading Style Sheets.',
+          status: 'completed',
+        },
+      ],
     });
-    fireEvent.submit(screen.getByTestId('ask-composer-input').closest('form')!);
+    render(<AskView lockReason={null} />);
 
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    rerender(<AskView lockReason={null} />);
-    expect(screen.getByText(partial)).toBeTruthy();
+    expect(screen.queryByTestId('ask-empty-suggestions')).toBeNull();
+    expect(screen.getByText('What is CSS?')).toBeTruthy();
+    expect(screen.getByText('Cascading Style Sheets.')).toBeTruthy();
+  });
 
-    // Surface error status with chunks still present (live assistant must cover this gap)
-    scopeState.status = 'error';
-    scopeState.error = 'rate limited';
-    mockPaidHooks({ highlightCount: 5, scopeQuery: scopeState });
-    rerender(<AskView lockReason={null} />);
-
-    // After finalize: failure turn is present (never a blank assistant gap)
-    expect(screen.getByText(/Failed: rate limited/)).toBeTruthy();
-    expect(screen.getByText('Key themes')).toBeTruthy();
-
-    await act(async () => {
-      resolveAsk?.();
+  it('Abort while busy calls turn.abort', async () => {
+    const turn = mockPaidHooks({
+      highlightCount: 5,
+      turn: { busy: true, phase: 'running' },
+      messages: [
+        {
+          id: 'u1',
+          role: 'user',
+          content: 'Hi',
+          status: 'completed',
+        },
+        {
+          id: 'a1',
+          role: 'assistant',
+          content: '…',
+          status: 'streaming',
+        },
+      ],
     });
+    render(<AskView lockReason={null} />);
+
+    fireEvent.click(screen.getByTestId('ask-composer-send'));
+    expect(turn.abort).toHaveBeenCalled();
   });
 });

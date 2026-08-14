@@ -1,5 +1,6 @@
 /**
- * Ask tab body — commercial locks + Paid scope thread shell.
+ * Ask tab body — commercial locks + Paid grounded chat (ADR-028).
+ * Thin client: scope + active thread transcript; full history on web.
  * Wireframe: ui_kits/extension/v3/screens-ask.jsx (+ billing AskLockedBilling).
  * Body-only: PopupShell owns chrome (ModeHeader + TabBar).
  */
@@ -7,13 +8,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { AskModelChip } from '@/features/ai/components/AskModelChip';
 import { useAskModelSelection } from '@/features/ai/hooks/useAskModelSelection';
+import { useExtensionChat } from '@/features/ai/hooks/useExtensionChat';
+import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { usePageContext } from '@/features/ai/hooks/usePageContext';
-import { useScopeQuery } from '@/features/ai/hooks/useScopeQuery';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { useApp } from '@/core/context/PopupAppProvider';
+import { getWebAppOrigin } from '@/shared/auth/web-legal-urls';
+import type { ChatScope } from '@/shared/chat';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
-import type { PromptHighlight, ScopeKind } from '@/shared/llm/prompts';
+import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
+import type { PromptHighlight } from '@/shared/llm/prompts';
 import type { AskLockReason } from '@/shared/utils/ask-lock';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
@@ -35,12 +40,6 @@ export interface AskViewProps {
    * domain scope instead of the current browser tab.
    */
   libraryDomain?: string | null;
-}
-
-interface ThreadTurn {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
 }
 
 const SUGGESTIONS = ['Summarize', 'List tags', 'Key themes'] as const;
@@ -74,6 +73,33 @@ const LOCK_COPY: Record<
 function formatPath(path: string | null | undefined): string {
   if (!path || path === '/') return '/';
   return path;
+}
+
+function openWebAsk(threadId?: string | null): void {
+  const origin = getWebAppOrigin();
+  if (!origin) return;
+  const url = threadId
+    ? `${origin}/ask?thread=${encodeURIComponent(threadId)}`
+    : `${origin}/ask`;
+  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+    void chrome.tabs.create({ url });
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function chipToChatScope(
+  chip: AskScopeChip,
+  domain: string | undefined,
+  sectionKey: string,
+): ChatScope {
+  if (chip === 'library') return { kind: 'library' };
+  if (chip === 'domain') {
+    if (!domain) return { kind: 'library' };
+    return { kind: 'domain', domain };
+  }
+  if (!domain) return { kind: 'library' };
+  return { kind: 'section', domain, sectionKey };
 }
 
 function AskLockPage({
@@ -135,7 +161,8 @@ function PaidAskShell({
   libraryDomain?: string | null;
   onConnectAi?: () => void;
 }): React.ReactElement {
-  const { isAuthenticated, currentMode } = useApp();
+  const { isAuthenticated, currentMode, user } = useApp();
+  const userId = user?.id ?? null;
   const mode = currentMode || DEFAULT_MODE;
   const tab = useCurrentTabContext();
   const { data: dashboardData } = useDashboardData(mode, isAuthenticated);
@@ -144,35 +171,42 @@ function PaidAskShell({
     domainHost,
     isAuthenticated,
   );
-  const query = useScopeQuery();
   const modelSelection = useAskModelSelection();
   const provider = modelSelection.activeProvider;
   const { fetch: fetchPageContext } = usePageContext();
+
+  const chat = useExtensionChat({
+    userId,
+    enabled: isAuthenticated && Boolean(userId),
+  });
+
+  const turn = useGroundedChatTurn({
+    userId,
+    service: chat.service,
+    activeThreadId: chat.activeThreadId,
+    messages: chat.messages,
+    onTurnStarted: chat.applyTurnStarted,
+    onStreamText: chat.applyStreamText,
+    onTurnFinished: chat.applyTurnFinished,
+  });
 
   const [scope, setScope] = useState<AskScopeChip>(
     libraryDomain ? 'domain' : initialScope,
   );
   const [question, setQuestion] = useState('');
-  const [turns, setTurns] = useState<ThreadTurn[]>([]);
-  const [streamUserContent, setStreamUserContent] = useState<string | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const turnSeq = useRef(0);
 
+  const newThread = chat.newThread;
   useEffect(() => {
     if (!libraryDomain) return;
     setScope('domain');
-    setTurns([]);
-    setStreamUserContent(null);
+    newThread();
     setAskError(null);
     setQuestion('');
-  }, [libraryDomain]);
-
-  const nextId = (): string => {
-    turnSeq.current += 1;
-    return `turn-${turnSeq.current}`;
-  };
+  }, [libraryDomain, newThread]);
 
   const currentSectionKey = useMemo(() => {
     if (!tab.url && !tab.path) return '/';
@@ -199,7 +233,6 @@ function PaidAskShell({
     return libraryHighlights;
   }, [scope, pageHighlights, domainHighlights, libraryHighlights]);
 
-  // Library ask input uses dashboard recentHighlights only — count matches corpus, not full vault total.
   const highlightCount = scopedRaw.length;
   const libraryIsRecentOnly = scope === 'library';
 
@@ -209,7 +242,10 @@ function PaidAskShell({
         id: h.id,
         text: h.text,
         url: h.url,
-        title: 'domain' in h && typeof h.domain === 'string' ? h.domain : (tab.domain ?? ''),
+        title:
+          'domain' in h && typeof h.domain === 'string'
+            ? h.domain
+            : (tab.domain ?? ''),
       })),
     [scopedRaw, tab.domain],
   );
@@ -219,14 +255,10 @@ function PaidAskShell({
     [promptHighlights],
   );
 
-  const scopeKind: ScopeKind = scope === 'domain' || scope === 'library' ? 'domain' : 'section';
-
-  const scopeLabel = useMemo(() => {
-    if (scope === 'library') return 'Library';
-    if (scope === 'domain') return domainHost ?? 'Domain';
-    const path = formatPath(tab.path);
-    return tab.domain ? `${tab.domain}${path === '/' ? '' : path}` : path;
-  }, [scope, domainHost, tab.domain, tab.path]);
+  const chatScope: ChatScope = useMemo(
+    () => chipToChatScope(scope, domainHost, currentSectionKey),
+    [scope, domainHost, currentSectionKey],
+  );
 
   const breadcrumb = useMemo(() => {
     if (scope === 'library') return { segments: ['Library'] as string[] };
@@ -239,10 +271,14 @@ function PaidAskShell({
     return { segments: [domain, path] as string[] };
   }, [scope, domainHost, tab.domain, tab.path]);
 
-  const busy = query.isPreparing || query.status === 'streaming';
+  const busy = preparing || turn.busy;
   const inputDisabled = busy;
   const submitDisabled =
-    inputDisabled || !question.trim() || usableHighlights.length === 0 || provider === null;
+    inputDisabled ||
+    !question.trim() ||
+    usableHighlights.length === 0 ||
+    provider === null ||
+    !userId;
 
   const placeholder =
     scope === 'page'
@@ -258,88 +294,67 @@ function PaidAskShell({
         ? '1 highlight in this scope'
         : `${highlightCount} highlights in this scope`;
 
-  // Finalize streaming turn into thread history
-  useEffect(() => {
-    if (query.status === 'done' && streamUserContent !== null) {
-      const answer = query.chunks.trim();
-      setTurns((prev) => [
-        ...prev,
-        { id: nextId(), role: 'user', content: streamUserContent },
-        ...(answer
-          ? [{ id: nextId(), role: 'assistant' as const, content: answer }]
-          : []),
-      ]);
-      setStreamUserContent(null);
-    }
-    if (query.status === 'error' && streamUserContent !== null) {
-      setTurns((prev) => [
-        ...prev,
-        { id: nextId(), role: 'user', content: streamUserContent },
-        {
-          id: nextId(),
-          role: 'assistant',
-          content: `Failed: ${query.error ?? query.prepareError ?? 'unknown error'}`,
-        },
-      ]);
-      setStreamUserContent(null);
-    }
-  }, [query.status, query.chunks, query.error, query.prepareError, streamUserContent]);
-
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [turns, query.chunks, streamUserContent]);
+  }, [chat.messages, turn.streamText, turn.inflightAssistantId]);
 
   const handleScopeChange = (next: AskScopeChip): void => {
     if (next === scope || busy) return;
+    turn.abort();
     setScope(next);
-    setTurns([]);
-    setStreamUserContent(null);
+    chat.newThread();
     setAskError(null);
     setQuestion('');
+    turn.clearError();
   };
 
   const runAsk = useCallback(
     async (raw: string): Promise<void> => {
       const trimmed = raw.trim();
-      if (!trimmed || busy || usableHighlights.length === 0 || provider === null) return;
+      if (
+        !trimmed ||
+        busy ||
+        usableHighlights.length === 0 ||
+        provider === null ||
+        !userId
+      ) {
+        return;
+      }
       setAskError(null);
       modelSelection.clearSelectError();
-      setStreamUserContent(trimmed);
       setQuestion('');
+      setPreparing(true);
       try {
-        await query.ask({
-          question: trimmed,
-          scopeLabel,
-          scopeKind,
-          highlights: usableHighlights,
+        const { excerpts, errorNote } = await prepareHighlightExcerpts(
+          usableHighlights,
           fetchPageContext,
+        );
+        if (errorNote) {
+          setAskError(errorNote);
+        }
+        await turn.send({
+          question: trimmed,
+          scope: chatScope,
+          excerpts,
           provider,
         });
       } catch (err) {
         setAskError((err as Error).message);
-        setStreamUserContent(null);
-        setTurns((prev) => [
-          ...prev,
-          { id: nextId(), role: 'user', content: trimmed },
-          {
-            id: nextId(),
-            role: 'assistant',
-            content: `Failed: ${(err as Error).message}`,
-          },
-        ]);
+      } finally {
+        setPreparing(false);
       }
     },
     [
       busy,
       usableHighlights,
       provider,
-      query,
-      scopeLabel,
-      scopeKind,
-      fetchPageContext,
+      userId,
       modelSelection,
+      fetchPageContext,
+      turn,
+      chatScope,
     ],
   );
 
@@ -352,11 +367,12 @@ function PaidAskShell({
     void runAsk(text);
   };
 
-  const showEmpty = turns.length === 0 && streamUserContent === null;
-  // Keep live assistant while streamUserContent is set — including done/error until finalize clears it.
-  const showStreamingAssistant = streamUserContent !== null;
+  const messages = chat.messages;
+  const showEmpty = messages.length === 0 && !turn.busy && !preparing;
   const suggestionsDisabled =
-    busy || usableHighlights.length === 0 || provider === null;
+    busy || usableHighlights.length === 0 || provider === null || !userId;
+  const displayError = askError || turn.error || chat.error;
+  const webOrigin = getWebAppOrigin();
 
   return (
     <div
@@ -400,6 +416,26 @@ function PaidAskShell({
             </React.Fragment>
           ))}
         </div>
+        {webOrigin ? (
+          <button
+            type="button"
+            className="u-mono"
+            style={{
+              marginTop: 6,
+              fontSize: 11,
+              color: 'var(--accent)',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+            data-testid="ask-continue-web"
+            onClick={() => openWebAsk(chat.activeThreadId)}
+          >
+            Continue in web
+          </button>
+        ) : null}
       </div>
 
       <div
@@ -428,37 +464,44 @@ function PaidAskShell({
           </div>
         ) : (
           <>
-            {turns.map((t) => (
-              <div key={t.id} className="ask-turn">
-                <div className={t.role === 'user' ? 'at-user' : 'at-assistant'}>{t.content}</div>
-              </div>
-            ))}
-            {streamUserContent !== null ? (
-              <div className="ask-turn" data-testid="ask-streaming-turn">
-                <div className="at-user">{streamUserContent}</div>
-                {showStreamingAssistant ? (
-                  <div className="at-assistant">
-                    {query.chunks ? (
+            {messages.map((m) => {
+              const body =
+                m.status === 'streaming' && turn.inflightAssistantId === m.id
+                  ? turn.streamText || m.content
+                  : m.content;
+              const showThinking =
+                m.role === 'assistant' &&
+                m.status === 'streaming' &&
+                turn.inflightAssistantId === m.id &&
+                !body.trim();
+              return (
+                <div key={m.id} className="ask-turn" data-testid={`ask-msg-${m.id}`}>
+                  <div className={m.role === 'user' ? 'at-user' : 'at-assistant'}>
+                    {showThinking ? (
+                      <span className="at-thinking u-mono" aria-live="polite">
+                        Thinking
+                        <span className="at-dots" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                      </span>
+                    ) : (
                       <>
-                        {query.chunks}
-                        {query.status === 'streaming' ? (
+                        {body}
+                        {m.role === 'assistant' &&
+                        m.status === 'streaming' &&
+                        turn.inflightAssistantId === m.id ? (
                           <span className="at-dots" aria-hidden="true">
                             …
                           </span>
                         ) : null}
                       </>
-                    ) : (
-                      <span className="at-thinking u-mono" aria-live="polite">
-                        Thinking
-                        <span className="at-dots" aria-hidden="true">
-                          <span /><span /><span />
-                        </span>
-                      </span>
                     )}
                   </div>
-                ) : null}
-              </div>
-            ) : null}
+                </div>
+              );
+            })}
           </>
         )}
       </div>
@@ -502,8 +545,8 @@ function PaidAskShell({
               busy
                 ? (e) => {
                     e.preventDefault();
-                    query.abort();
-                    setStreamUserContent(null);
+                    turn.abort();
+                    setPreparing(false);
                   }
                 : undefined
             }
@@ -512,9 +555,12 @@ function PaidAskShell({
             {busy ? '·' : '↑'}
           </button>
         </div>
-        {askError ? (
-          <p className="u-mono" style={{ margin: '6px 4px 0', fontSize: 11, color: 'var(--ink-3)' }}>
-            {askError}
+        {displayError ? (
+          <p
+            className="u-mono"
+            style={{ margin: '6px 4px 0', fontSize: 11, color: 'var(--ink-3)' }}
+          >
+            {displayError}
           </p>
         ) : null}
       </form>
