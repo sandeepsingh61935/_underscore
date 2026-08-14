@@ -302,13 +302,18 @@ function PaidAskShell({
     if (busy || !userId) return;
     void (async () => {
       try {
+        setPrepareError(null);
+        turn.clearError();
+        turn.abort();
+        // Project row only — chat thread created on first send (faster create).
         const p = await projects.createUntitled([]);
-        await openPlace({ type: 'project', projectId: p.id });
+        setActivePlace({ type: 'project', projectId: p.id });
+        chat.newThread();
       } catch (err) {
         setPrepareError((err as Error).message || 'Failed to create project');
       }
     })();
-  }, [busy, openPlace, projects, userId]);
+  }, [busy, chat, projects, turn, userId]);
 
   const handleClearChat = useCallback(() => {
     if (busy || !userId || !chat.activeThreadId || !chat.service) return;
@@ -365,6 +370,7 @@ function PaidAskShell({
     setDraft('');
     void (async () => {
       try {
+        // Lazily ensure place thread (deferred on New project until first message).
         if (!chat.activeThreadId) {
           await openPlace(activePlace);
         }
