@@ -35,21 +35,27 @@ export function useWebProjects(opts: {
   const [error, setError] = useState<string | null>(null);
   const serviceRef = useRef<ProjectService | null>(null);
 
-  const getService = useCallback((): ProjectService | null => {
-    if (!opts.chatService) return null;
-    if (!serviceRef.current) {
+  // Build off render path — never construct clients during render.
+  useEffect(() => {
+    if (!opts.chatService || !opts.enabled || !opts.userId) {
+      serviceRef.current = null;
+      return;
+    }
+    try {
       serviceRef.current = new ProjectService(
         new SupabaseProjectRepository(getWebSupabaseClient()),
         opts.chatService,
       );
+    } catch (err) {
+      serviceRef.current = null;
+      setError((err as Error).message || 'Projects unavailable');
+      setStatus('error');
     }
-    return serviceRef.current;
-  }, [opts.chatService]);
+  }, [opts.chatService, opts.enabled, opts.userId]);
 
-  // Reset project service when chat service instance changes
-  useEffect(() => {
-    serviceRef.current = null;
-  }, [opts.chatService]);
+  const getService = useCallback((): ProjectService | null => {
+    return serviceRef.current;
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!opts.userId || !opts.enabled) {
@@ -59,7 +65,7 @@ export function useWebProjects(opts: {
     }
     const svc = getService();
     if (!svc) {
-      setStatus('idle');
+      setStatus(opts.chatService ? 'loading' : 'idle');
       return;
     }
     setStatus((s) => (s === 'ready' ? s : 'loading'));
@@ -72,11 +78,11 @@ export function useWebProjects(opts: {
       setError((err as Error).message || 'Failed to load projects');
       setStatus('error');
     }
-  }, [getService, opts.enabled, opts.userId]);
+  }, [getService, opts.chatService, opts.enabled, opts.userId]);
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, opts.chatService]);
 
   const createUntitled = useCallback(
     async (members: ProjectMember[]) => {
@@ -139,7 +145,7 @@ export function useWebProjects(opts: {
       rename,
       setMembers,
       remove,
-      projectService: opts.userId && opts.enabled ? getService() : null,
+      projectService: opts.userId && opts.enabled ? serviceRef.current : null,
     }),
     [
       projects,
@@ -152,7 +158,7 @@ export function useWebProjects(opts: {
       remove,
       opts.userId,
       opts.enabled,
-      getService,
+      opts.chatService,
     ],
   );
 }

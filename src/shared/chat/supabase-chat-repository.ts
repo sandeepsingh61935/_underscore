@@ -67,7 +67,18 @@ export class SupabaseChatRepository implements IChatRepository {
       .order('updated_at', { ascending: false });
 
     if (error) throw new Error(error.message || 'Failed to list chat threads');
-    return (data as ChatThreadRow[] | null)?.map(threadFromRow) ?? [];
+    const rows = (data as ChatThreadRow[] | null) ?? [];
+    // Skip corrupt rows (e.g. project scope without project_id) so one bad
+    // thread cannot crash Ask / blank the shell.
+    const out: ChatThread[] = [];
+    for (const row of rows) {
+      try {
+        out.push(threadFromRow(row));
+      } catch {
+        /* ignore unreadable row */
+      }
+    }
+    return out;
   }
 
   async getThread(userId: string, threadId: string): Promise<ChatThread | null> {

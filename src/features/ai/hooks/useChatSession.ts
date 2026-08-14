@@ -1,6 +1,8 @@
 /**
  * Shared grounded-chat session state (ADR-028).
  * Platform supplies Supabase via getSupabase; turn orchestration is separate.
+ *
+ * Service construction is effect-bound (never throws during render).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -36,40 +38,48 @@ export function useChatSession(opts: {
   applyStreamText: (assistantId: string, content: string) => void;
   applyTurnFinished: (result: MessageWriteResult) => void;
 } {
-  const serviceRef = useRef<ChatService | null>(null);
   const getSupabaseRef = useRef(opts.getSupabase);
   getSupabaseRef.current = opts.getSupabase;
 
+  const [service, setService] = useState<ChatService | null>(null);
   const [status, setStatus] = useState<ChatSessionStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const getService = useCallback((): ChatService => {
-    if (!serviceRef.current) {
-      serviceRef.current = createChatService(getSupabaseRef.current());
+  // Build service off the render path so missing env / client errors don't white-screen.
+  useEffect(() => {
+    if (!opts.enabled || !opts.userId) {
+      setService(null);
+      return;
     }
-    return serviceRef.current;
-  }, []);
+    try {
+      setService(createChatService(getSupabaseRef.current()));
+    } catch (err) {
+      setService(null);
+      setError((err as Error).message || 'Chat unavailable');
+      setStatus('error');
+    }
+  }, [opts.enabled, opts.userId]);
 
   const refreshThreads = useCallback(async () => {
-    if (!opts.userId || !opts.enabled) {
+    if (!opts.userId || !opts.enabled || !service) {
       setThreads([]);
-      setStatus('idle');
+      setStatus(opts.enabled && opts.userId ? 'loading' : 'idle');
       return;
     }
     setStatus((s) => (s === 'ready' ? s : 'loading'));
     setError(null);
     try {
-      const list = await getService().listThreads(opts.userId);
+      const list = await service.listThreads(opts.userId);
       setThreads(list);
       setStatus('ready');
     } catch (err) {
       setError((err as Error).message || 'Failed to load chats');
       setStatus('error');
     }
-  }, [getService, opts.enabled, opts.userId]);
+  }, [service, opts.enabled, opts.userId]);
 
   useEffect(() => {
     void refreshThreads();
@@ -78,21 +88,18 @@ export function useChatSession(opts: {
   const selectThread = useCallback(
     async (threadId: string | null) => {
       setActiveThreadId(threadId);
-      if (!threadId || !opts.userId) {
+      if (!threadId || !opts.userId || !service) {
         setMessages([]);
         return;
       }
       try {
-        const list = await getService().listMessagesRecovered(
-          opts.userId,
-          threadId,
-        );
+        const list = await service.listMessagesRecovered(opts.userId, threadId);
         setMessages(list);
       } catch (err) {
         setError((err as Error).message || 'Failed to load messages');
       }
     },
-    [getService, opts.userId],
+    [service, opts.userId],
   );
 
   const newThread = useCallback(() => {
@@ -102,15 +109,15 @@ export function useChatSession(opts: {
 
   const deleteThread = useCallback(
     async (threadId: string) => {
-      if (!opts.userId) return;
-      await getService().deleteThread(opts.userId, threadId);
+      if (!opts.userId || !service) return;
+      await service.deleteThread(opts.userId, threadId);
       setThreads((prev) => prev.filter((t) => t.id !== threadId));
       if (activeThreadId === threadId) {
         setActiveThreadId(null);
         setMessages([]);
       }
     },
-    [activeThreadId, getService, opts.userId],
+    [activeThreadId, service, opts.userId],
   );
 
   const applyTurnStarted = useCallback(
@@ -162,7 +169,7 @@ export function useChatSession(opts: {
       threads,
       activeThreadId,
       messages,
-      service: opts.userId && opts.enabled ? getService() : null,
+      service: opts.userId && opts.enabled ? service : null,
       refreshThreads,
       selectThread,
       newThread,
@@ -179,7 +186,7 @@ export function useChatSession(opts: {
       messages,
       opts.userId,
       opts.enabled,
-      getService,
+      service,
       refreshThreads,
       selectThread,
       newThread,
