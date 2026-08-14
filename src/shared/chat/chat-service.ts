@@ -3,7 +3,7 @@
  */
 
 import type { IChatRepository } from './i-chat-repository';
-import { placeToScope, type Place } from './place';
+import { placeToScope, scopeToPlace, type Place } from './place';
 import {
   CHAT_QUOTAS,
   ChatQuotaError,
@@ -90,18 +90,21 @@ export class ChatService {
     const question = input.question.trim();
     if (!question) throw new Error('Question is required');
 
+    const place = scopeToPlace(input.scope);
+    if (!place) {
+      throw new Error(
+        'library is not a chat place; use domain, section, or project',
+      );
+    }
+
     let thread: ChatThread;
     if (input.threadId) {
       const existing = await this.repo.getThread(input.userId, input.threadId);
       if (!existing) throw new Error('Chat thread not found');
       thread = existing;
     } else {
-      thread = await this.repo.createThread({
-        userId: input.userId,
-        scope: input.scope,
-        lastProvider: input.provider,
-        lastModel: input.model,
-      });
+      // Place scopes always go through singleton resolve — never free-form create.
+      thread = await this.resolvePlaceChat(input.userId, place);
     }
 
     const msgCount = await this.repo.countMessages(input.userId, thread.id);

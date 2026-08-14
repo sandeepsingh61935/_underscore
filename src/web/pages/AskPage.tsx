@@ -228,7 +228,10 @@ function PaidAskShell({
   }, [activePlace, projects.projects]);
 
   const effectiveScope = useMemo(() => {
-    if (!activePlace) return { kind: 'library' as const };
+    // No library chat identity — require an explicit place for scope.
+    if (!activePlace) {
+      return { kind: 'domain' as const, domain: '—' };
+    }
     return placeToScope(activePlace);
   }, [activePlace]);
 

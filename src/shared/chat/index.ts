@@ -33,6 +33,7 @@ export {
 } from './place';
 
 export {
+  LIBRARY_PROJECT_TITLE,
   membersEqual,
   PROJECT_QUOTAS,
   summarizeMembers,

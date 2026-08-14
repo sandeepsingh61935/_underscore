@@ -21,6 +21,9 @@ export const PROJECT_QUOTAS = {
   titleMaxChars: 80,
 } as const;
 
+/** Stable multi-domain bag for extension "library" / whole-vault style asks. */
+export const LIBRARY_PROJECT_TITLE = 'Library';
+
 export function membersEqual(a: ProjectMember, b: ProjectMember): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'domain' && b.kind === 'domain') return a.domain === b.domain;

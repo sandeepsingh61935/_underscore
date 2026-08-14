@@ -4,7 +4,12 @@
 
 import type { ChatService } from './chat-service';
 import type { IProjectRepository } from './i-project-repository';
-import type { ChatProject, ProjectMember } from './project-types';
+import {
+  LIBRARY_PROJECT_TITLE,
+  membersEqual,
+  type ChatProject,
+  type ProjectMember,
+} from './project-types';
 import type { ChatThread } from './types';
 
 export class ProjectService {
@@ -42,6 +47,41 @@ export class ProjectService {
       title: 'Untitled project',
       members,
     });
+  }
+
+  /**
+   * Stable "Library" project for multi-domain grounding (find-or-create).
+   * Syncs domain members to the provided list so vault growth is reflected.
+   * Does not create a new project on every call.
+   */
+  async resolveLibraryProject(
+    userId: string,
+    domainNames: string[],
+  ): Promise<ChatProject> {
+    const unique = [...new Set(domainNames.filter(Boolean))].sort();
+    const members: ProjectMember[] = unique.map((domain) => ({
+      kind: 'domain',
+      domain,
+    }));
+
+    const existing = (await this.projects.listProjects(userId)).find(
+      (p) => p.title === LIBRARY_PROJECT_TITLE,
+    );
+
+    if (!existing) {
+      return this.projects.createProject({
+        userId,
+        title: LIBRARY_PROJECT_TITLE,
+        members,
+      });
+    }
+
+    const same =
+      existing.members.length === members.length &&
+      members.every((m) => existing.members.some((e) => membersEqual(e, m)));
+    if (same) return existing;
+
+    return this.projects.updateProject(userId, existing.id, { members });
   }
 
   renameProject(

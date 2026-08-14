@@ -38,8 +38,11 @@ function write(
 }
 
 describe('ChatService', () => {
-  it('creates a thread, user message, and streaming assistant stub', async () => {
-    const created = thread({ title: 'hello there' });
+  it('resolves place singleton then writes user + streaming assistant', async () => {
+    const created = thread({
+      title: 'hello there',
+      scope: { kind: 'domain', domain: 'example.com' },
+    });
     const userMsg = message({ id: 'user-1', content: 'hello there' });
     const assistantMsg = message({
       id: 'asst-1',
@@ -70,17 +73,48 @@ describe('ChatService', () => {
     const result = await service.beginTurn({
       userId: 'u1',
       threadId: null,
-      scope: { kind: 'library' },
+      scope: { kind: 'domain', domain: 'example.com' },
       question: 'hello there',
       provider: 'openai',
     });
 
+    expect(repo.findThreadByScope).toHaveBeenCalled();
     expect(repo.createThread).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'u1', scope: { kind: 'library' } }),
+      expect.objectContaining({
+        userId: 'u1',
+        scope: { kind: 'domain', domain: 'example.com' },
+      }),
     );
     expect(repo.appendMessage).toHaveBeenCalledTimes(2);
     expect(result.userMessage.id).toBe('user-1');
     expect(result.assistantMessage.status).toBe('streaming');
+  });
+
+  it('rejects library scope as a chat place', async () => {
+    const repo: IChatRepository = {
+      listThreads: vi.fn(),
+      getThread: vi.fn(),
+      findThreadByScope: vi.fn(),
+      clearMessages: vi.fn(),
+      createThread: vi.fn(),
+      updateThread: vi.fn(),
+      deleteThread: vi.fn(),
+      countThreads: vi.fn(),
+      listMessages: vi.fn(),
+      appendMessage: vi.fn(),
+      finalizeMessage: vi.fn(),
+      countMessages: vi.fn(),
+    };
+    const service = new ChatService(repo);
+    await expect(
+      service.beginTurn({
+        userId: 'u1',
+        threadId: null,
+        scope: { kind: 'library' },
+        question: 'hi',
+      }),
+    ).rejects.toThrow(/not a chat place/i);
+    expect(repo.createThread).not.toHaveBeenCalled();
   });
 
   it('finalizes the assistant message with content and status', async () => {

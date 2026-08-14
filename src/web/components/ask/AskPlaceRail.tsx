@@ -1,7 +1,7 @@
 /**
- * Place-based Ask navigator: projects + domains (no global thread list).
+ * Place-based Ask navigator: projects + domains + sections (no global thread list).
  */
-import React from 'react';
+import React, { useState } from 'react';
 
 import {
   placeLabel,
@@ -49,6 +49,13 @@ export function AskPlaceRail({
   onClearChat: () => void;
   onDeleteProject: (projectId: string) => void;
 }): React.ReactElement {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    if (activePlace?.type === 'section' || activePlace?.type === 'domain') {
+      return { [activePlace.domain]: true };
+    }
+    return {};
+  });
+
   return (
     <>
       <div className="ask-projects-head">
@@ -57,7 +64,7 @@ export function AskPlaceRail({
           className="composer-note"
           style={{ marginTop: 6, marginBottom: 0, fontSize: 11 }}
         >
-          One chat per domain or project
+          One chat per domain, section, or project
         </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button
@@ -154,29 +161,98 @@ export function AskPlaceRail({
         ) : (
           <ul className="ask-thread-list" aria-label="Domains">
             {domains.map((d) => {
-              const place: Place = { type: 'domain', domain: d.domain };
-              const active = placesMatch(activePlace, place);
+              const domainPlace: Place = { type: 'domain', domain: d.domain };
+              const domainActive = placesMatch(activePlace, domainPlace);
+              const open = !!expanded[d.domain];
+              const sections = d.sections ?? [];
               return (
-                <li key={placeKey(place)} className="ask-thread-row">
-                  <button
-                    type="button"
-                    className={`tree-item ask-thread-item${active ? ' active' : ''}`}
-                    data-od-id={`ask-place-domain-${d.domain}`}
-                    data-testid={`ask-place-domain-${d.domain}`}
-                    aria-current={active ? 'true' : undefined}
-                    disabled={busy}
-                    onClick={() => onSelectPlace(place)}
-                  >
-                    <span className="tree-label">
-                      {placeLabel(place)}
-                      <span
-                        className="u-mono"
-                        style={{ color: 'var(--ink-3)', marginLeft: 6 }}
+                <li key={placeKey(domainPlace)} style={{ listStyle: 'none' }}>
+                  <div className="ask-thread-row">
+                    {sections.length > 0 ? (
+                      <button
+                        type="button"
+                        className="tree-toggle"
+                        aria-expanded={open}
+                        aria-label={`${open ? 'Collapse' : 'Expand'} ${d.domain}`}
+                        disabled={busy}
+                        onClick={() =>
+                          setExpanded((prev) => ({
+                            ...prev,
+                            [d.domain]: !prev[d.domain],
+                          }))
+                        }
+                        style={{ marginRight: 2 }}
                       >
-                        {d.count}
+                        {open ? '▾' : '▸'}
+                      </button>
+                    ) : (
+                      <span style={{ width: 14, display: 'inline-block' }} />
+                    )}
+                    <button
+                      type="button"
+                      className={`tree-item ask-thread-item${domainActive ? ' active' : ''}`}
+                      data-od-id={`ask-place-domain-${d.domain}`}
+                      data-testid={`ask-place-domain-${d.domain}`}
+                      aria-current={domainActive ? 'true' : undefined}
+                      disabled={busy}
+                      onClick={() => onSelectPlace(domainPlace)}
+                    >
+                      <span className="tree-label">
+                        {placeLabel(domainPlace)}
+                        <span
+                          className="u-mono"
+                          style={{ color: 'var(--ink-3)', marginLeft: 6 }}
+                        >
+                          {d.count}
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+                  </div>
+                  {open && sections.length > 0 ? (
+                    <ul
+                      className="ask-thread-list"
+                      aria-label={`Sections of ${d.domain}`}
+                      style={{ paddingLeft: 18 }}
+                    >
+                      {sections.map((s) => {
+                        const sectionPlace: Place = {
+                          type: 'section',
+                          domain: d.domain,
+                          sectionKey: s.path,
+                        };
+                        const sectionActive = placesMatch(
+                          activePlace,
+                          sectionPlace,
+                        );
+                        return (
+                          <li key={placeKey(sectionPlace)} className="ask-thread-row">
+                            <button
+                              type="button"
+                              className={`tree-item ask-thread-item${sectionActive ? ' active' : ''}`}
+                              data-od-id={`ask-place-section-${d.domain}-${s.path}`}
+                              data-testid={`ask-place-section-${d.domain}-${s.path}`}
+                              aria-current={sectionActive ? 'true' : undefined}
+                              disabled={busy}
+                              onClick={() => onSelectPlace(sectionPlace)}
+                            >
+                              <span className="tree-label">
+                                {s.path || '/'}
+                                <span
+                                  className="u-mono"
+                                  style={{
+                                    color: 'var(--ink-3)',
+                                    marginLeft: 6,
+                                  }}
+                                >
+                                  {s.count}
+                                </span>
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}

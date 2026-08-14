@@ -118,4 +118,19 @@ describe('ProjectService', () => {
     expect(t1.id).toBe(t2.id);
     expect(t1.scope).toEqual({ kind: 'project', projectId: p.id });
   });
+
+  it('resolveLibraryProject is stable across calls', async () => {
+    const chat = new ChatService(new MemoryChatRepository());
+    const projects = new ProjectService(new MemoryProjectRepository(), chat);
+    const a = await projects.resolveLibraryProject('u1', ['b.com', 'a.com']);
+    const b = await projects.resolveLibraryProject('u1', ['a.com', 'b.com']);
+    expect(a.id).toBe(b.id);
+    expect(a.title).toBe('Library');
+    const list = await projects.listProjects('u1');
+    expect(list.filter((p) => p.title === 'Library')).toHaveLength(1);
+
+    const t1 = await projects.openProjectChat('u1', a);
+    const t2 = await projects.openProjectChat('u1', b);
+    expect(t1.id).toBe(t2.id);
+  });
 });

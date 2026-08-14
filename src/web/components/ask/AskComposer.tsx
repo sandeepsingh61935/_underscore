@@ -8,7 +8,11 @@ import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
 function placeholderFor(scope: ChatScope): string {
   if (scope.kind === 'section') return 'Chat this section…';
-  if (scope.kind === 'domain') return 'Chat this domain…';
+  if (scope.kind === 'domain') {
+    return scope.domain === '—'
+      ? 'Select a place to chat…'
+      : 'Chat this domain…';
+  }
   if (scope.kind === 'project') return 'Chat this project…';
   return 'Select a place to chat…';
 }

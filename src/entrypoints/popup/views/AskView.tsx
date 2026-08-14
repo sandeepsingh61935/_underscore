@@ -263,6 +263,7 @@ function PaidAskShell({
 
   const openChipPlace = useCallback(async (): Promise<ChatScope | null> => {
     if (!userId || !chat.service) return null;
+
     if (scope === 'library') {
       const domains = [
         ...new Set(
@@ -274,18 +275,17 @@ function PaidAskShell({
         ),
       ];
       if (domains.length === 0) return null;
+      // Stable Library project — never create a new project per message.
       const projectSvc = new ProjectService(
         new SupabaseProjectRepository(getExtensionSupabaseClient()),
         chat.service,
       );
-      const project = await projectSvc.createUntitledFromMembers(
-        userId,
-        domains.map((domain) => ({ kind: 'domain' as const, domain })),
-      );
+      const project = await projectSvc.resolveLibraryProject(userId, domains);
       const thread = await projectSvc.openProjectChat(userId, project);
       await chat.selectThread(thread.id);
       return thread.scope;
     }
+
     const place = chipToPlace(scope, domainHost, currentSectionKey);
     if (!place) return null;
     const thread = await chat.service.resolvePlaceChat(userId, place, {
