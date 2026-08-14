@@ -22,8 +22,17 @@ export function IntegrationsWebList({
   isPaidActive: boolean;
   onOpenApp: (id: McpAiAppId) => void;
 }): React.ReactElement {
-  const { mcpAllowed, status, remoteUrl, urlCopied, copyUrl, connectedApps } =
-    useIntegrationsConnect({ isAuthenticated, isPaidActive });
+  const {
+    mcpAllowed,
+    status,
+    remoteUrl,
+    urlCopied,
+    copyUrl,
+    connectedApps,
+    isCatalogAppConnected,
+    grantsError,
+    reloadConnectionState,
+  } = useIntegrationsConnect({ isAuthenticated, isPaidActive });
 
   return (
     <div
@@ -43,14 +52,48 @@ export function IntegrationsWebList({
         lockedDetail="Account (Paid)"
       />
 
-      {connectedApps.length > 0 ? (
-        <p className="type-sub" style={{ marginTop: 8 }}>
-          Active: {connectedApps.map((app) => app.title).join(', ')}
+      {grantsError && mcpAllowed ? (
+        <p className="type-sub" role="status" style={{ marginTop: 8 }} data-testid="mcp-grants-error">
+          {grantsError}
         </p>
+      ) : null}
+
+      {connectedApps.length > 0 ? (
+        <div style={{ marginTop: 12 }} data-testid="mcp-active-grants">
+          <p className="block-label">Active</p>
+          {connectedApps.map((app) => (
+            <div
+              key={app.id}
+              className="integration-app-row"
+              style={{ cursor: 'default' }}
+              data-testid={`mcp-active-grant-${app.id}`}
+            >
+              <span className="grow">
+                <span className="title">{app.title}</span>
+                <span className="sub">{app.sub}</span>
+              </span>
+              <span className="trail u-mono" style={{ color: 'var(--accent)' }}>
+                Connected
+              </span>
+            </div>
+          ))}
+        </div>
       ) : mcpAllowed ? (
         <p className="type-sub" style={{ marginTop: 8 }}>
           Nothing connected yet. Choose an AI app below, then approve when the browser opens.
         </p>
+      ) : null}
+
+      {mcpAllowed ? (
+        <button
+          type="button"
+          className="btn ghost sm"
+          data-testid="mcp-refresh-connection"
+          onClick={() => void reloadConnectionState()}
+          style={{ marginTop: 8 }}
+        >
+          Refresh status
+        </button>
       ) : null}
 
       <p className="block-label" style={{ marginTop: 16 }}>
@@ -59,22 +102,34 @@ export function IntegrationsWebList({
       <p className="type-sub" style={{ marginBottom: 8 }}>
         One-click install, one command, or paste URL — then OAuth in the host.
       </p>
-      {MCP_AI_APPS.map((app) => (
-        <button
-          key={app.id}
-          type="button"
-          className="integration-app-row"
-          data-od-id={`mcp-app-${app.id}`}
-          disabled={!mcpAllowed}
-          onClick={() => onOpenApp(app.id)}
-        >
-          <span className="grow">
-            <span className="title">{app.name}</span>
-            <span className="sub">{handoffPickerSub(app.handoff)}</span>
-          </span>
-          <span className="trail u-mono">Set up</span>
-        </button>
-      ))}
+      {MCP_AI_APPS.map((app) => {
+        const connected = isCatalogAppConnected(app.id);
+        return (
+          <button
+            key={app.id}
+            type="button"
+            className="integration-app-row"
+            data-od-id={`mcp-app-${app.id}`}
+            data-testid={`mcp-app-row-${app.id}`}
+            data-connected={connected ? 'true' : 'false'}
+            disabled={!mcpAllowed}
+            onClick={() => onOpenApp(app.id)}
+          >
+            <span className="grow">
+              <span className="title">{app.name}</span>
+              <span className="sub">
+                {connected ? 'Approved access' : handoffPickerSub(app.handoff)}
+              </span>
+            </span>
+            <span
+              className="trail u-mono"
+              style={connected ? { color: 'var(--accent)' } : undefined}
+            >
+              {connected ? 'Connected' : 'Set up'}
+            </span>
+          </button>
+        );
+      })}
 
       {mcpAllowed ? (
         <details data-testid="mcp-server-details" style={{ marginTop: 16 }}>

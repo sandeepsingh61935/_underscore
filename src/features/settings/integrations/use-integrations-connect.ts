@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import { canUseMcp } from '@/shared/entitlement/commercial';
 import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import { resolveIntegrationsStatus } from '@/shared/mcp/integrations-status';
 import { fetchLastMcpSuccessAtMs } from '@/shared/mcp/mcp-session-client';
+import { catalogAppIdsWithGrants } from '@/features/settings/mcp/match-grant-to-catalog';
 
 export function useIntegrationsConnect(opts: {
   isAuthenticated: boolean;
@@ -57,6 +59,16 @@ export function useIntegrationsConnect(opts: {
     [grantsState.grants],
   );
 
+  const connectedCatalogIds = useMemo(
+    () => catalogAppIdsWithGrants(grantsState.grants),
+    [grantsState.grants],
+  );
+
+  const isCatalogAppConnected = useCallback(
+    (appId: McpAiAppId): boolean => connectedCatalogIds.has(appId),
+    [connectedCatalogIds],
+  );
+
   const copyUrl = useCallback((): void => {
     void navigator.clipboard.writeText(remoteUrl).then(() => {
       setUrlCopied(true);
@@ -71,9 +83,12 @@ export function useIntegrationsConnect(opts: {
     urlCopied,
     copyUrl,
     connectedApps,
+    connectedCatalogIds,
+    isCatalogAppConnected,
     grantsError: grantsState.error,
     revoke: grantsState.revoke,
     isRevoking: grantsState.isRevoking,
     isLoadingGrants: grantsState.isLoading,
+    reloadConnectionState: grantsState.reload,
   };
 }

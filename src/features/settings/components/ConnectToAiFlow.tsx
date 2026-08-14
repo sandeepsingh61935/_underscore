@@ -44,6 +44,7 @@ export function ConnectToAiFlow({
     urlCopied,
     copyUrl,
     connectedApps,
+    connectedCatalogIds,
     grantsError,
   } = useIntegrationsConnect({ isAuthenticated, isPaidActive });
 
@@ -104,6 +105,7 @@ export function ConnectToAiFlow({
     ) : screen.kind === 'picker' ? (
       <McpAppPicker
         mcpAllowed={mcpAllowed}
+        connectedAppIds={connectedCatalogIds}
         onPick={(id) => {
           push({ kind: 'setup', appId: id });
         }}
