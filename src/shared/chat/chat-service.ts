@@ -3,6 +3,7 @@
  */
 
 import type { IChatRepository } from './i-chat-repository';
+import { placeToScope, type Place } from './place';
 import {
   CHAT_QUOTAS,
   ChatQuotaError,
@@ -144,5 +145,37 @@ export class ChatService {
       provider: input.provider,
       model: input.model,
     });
+  }
+
+  /**
+   * Get or create the singleton thread for a place (domain | section | project).
+   */
+  async resolvePlaceChat(
+    userId: string,
+    place: Place,
+    opts?: { title?: string },
+  ): Promise<ChatThread> {
+    const scope = placeToScope(place);
+    const existing = await this.repo.findThreadByScope(userId, scope);
+    if (existing) return existing;
+
+    const title =
+      opts?.title ??
+      (place.type === 'domain'
+        ? place.domain
+        : place.type === 'section'
+          ? place.sectionKey
+          : 'Project');
+
+    return this.repo.createThread({
+      userId,
+      scope,
+      title,
+    });
+  }
+
+  /** Clear transcript for a place chat (keep thread / place identity). */
+  async clearConversation(userId: string, threadId: string): Promise<void> {
+    await this.repo.clearMessages(userId, threadId);
   }
 }

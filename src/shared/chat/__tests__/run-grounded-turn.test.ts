@@ -62,7 +62,9 @@ describe('runGroundedTurn', () => {
 
     const repo: IChatRepository = {
       listThreads: vi.fn(),
-      getThread: vi.fn().mockResolvedValue(t),
+      getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn().mockResolvedValue(t),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
@@ -129,6 +131,8 @@ describe('runGroundedTurn', () => {
     const repo: IChatRepository = {
       listThreads: vi.fn(),
       getThread: vi.fn().mockResolvedValue(t),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn().mockResolvedValue(t),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),

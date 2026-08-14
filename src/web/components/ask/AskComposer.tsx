@@ -9,7 +9,8 @@ import { buildSettingsSearch } from '@/web/routing/settingsTab';
 function placeholderFor(scope: ChatScope): string {
   if (scope.kind === 'section') return 'Chat this section…';
   if (scope.kind === 'domain') return 'Chat this domain…';
-  return 'Chat your library…';
+  if (scope.kind === 'project') return 'Chat this project…';
+  return 'Select a place to chat…';
 }
 
 export function AskComposer({

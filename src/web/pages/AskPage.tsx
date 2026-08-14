@@ -1,7 +1,6 @@
 /**
  * @file AskPage.tsx
- * @description Product Ask — lock when !caps.ai; paid shell with threads +
- * grounding + composer. Turn lifecycle via useGroundedChatTurn (ADR-027/028).
+ * @description Place-based Ask — domain/section/project singletons + grounded turns.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,13 +10,19 @@ import { useApp } from '@/core/context/AppProvider';
 import { useGroundedChatTurn } from '@/features/ai/hooks/useGroundedChatTurn';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
-import type { ChatScope } from '@/shared/chat';
+import {
+  highlightsForPlace,
+  placeToScope,
+  scopeToPlace,
+  summarizeMembers,
+  type ChatProject,
+  type Place,
+} from '@/shared/chat';
 import { noopPageContextFetch } from '@/shared/llm/noop-page-context-fetch';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { AskComposer } from '@/web/components/ask/AskComposer';
-import { AskGroundingTree } from '@/web/components/ask/AskGroundingTree';
-import { AskThreadSidebar } from '@/web/components/ask/AskThreadSidebar';
+import { AskPlaceRail } from '@/web/components/ask/AskPlaceRail';
 import { AskTranscript } from '@/web/components/ask/AskTranscript';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
@@ -28,55 +33,50 @@ import {
 } from '@/web/hooks/useWebLibrary';
 import { useWebAskModelSelection } from '@/web/hooks/useWebAskModelSelection';
 import { useWebChat } from '@/web/hooks/useWebChat';
+import { useWebProjects } from '@/web/hooks/useWebProjects';
 import { parseLibrarySelection } from '@/web/routing/librarySelection';
 import { buildSettingsSearch } from '@/web/routing/settingsTab';
 
-function scopeFromQuery(search: string): ChatScope {
+function placeFromQuery(search: string): Place | null {
   const sel = parseLibrarySelection(search);
   if (sel.domain && sel.section) {
-    return { kind: 'section', domain: sel.domain, sectionKey: sel.section };
+    return {
+      type: 'section',
+      domain: sel.domain,
+      sectionKey: sel.section,
+    };
   }
   if (sel.domain) {
-    return { kind: 'domain', domain: sel.domain };
+    return { type: 'domain', domain: sel.domain };
   }
-  return { kind: 'library' };
+  return null;
 }
 
-function countForScope(
-  highlights: WebHighlight[],
-  domains: WebDomainNode[],
-  scope: ChatScope,
-): number {
-  if (scope.kind === 'library') return highlights.length;
-  if (scope.kind === 'domain') {
-    const d = domains.find((x) => x.domain === scope.domain);
-    return d?.count ?? highlights.filter((h) => h.domain === scope.domain).length;
-  }
-  return highlights.filter(
-    (h) => h.domain === scope.domain && h.path === scope.sectionKey,
-  ).length;
+function toPlaceHighlights(list: WebHighlight[]) {
+  return list.map((h) => ({
+    id: h.id,
+    domain: h.domain,
+    path: h.path,
+    text: h.quote,
+    url: `https://${h.domain}${h.path.startsWith('/') ? h.path : `/${h.path}`}`,
+  }));
 }
 
-function highlightsForScope(
-  highlights: WebHighlight[],
-  scope: ChatScope,
-): WebHighlight[] {
-  if (scope.kind === 'library') return highlights;
-  if (scope.kind === 'domain') {
-    return highlights.filter((h) => h.domain === scope.domain);
-  }
-  return highlights.filter(
-    (h) => h.domain === scope.domain && h.path === scope.sectionKey,
-  );
-}
-
-function toPromptHighlights(list: WebHighlight[]) {
+function toPromptHighlights(
+  list: Array<{
+    id: string;
+    domain: string;
+    path: string;
+    text: string;
+    url?: string;
+  }>,
+) {
   return list
-    .filter((h) => h.quote.trim().length > 0)
+    .filter((h) => h.text.trim().length > 0)
     .map((h) => ({
       id: h.id,
-      text: h.quote,
-      url: `https://${h.domain}${h.path.startsWith('/') ? h.path : `/${h.path}`}`,
+      text: h.text,
+      url: h.url ?? `https://${h.domain}`,
       title: h.path || h.domain,
     }));
 }
@@ -185,24 +185,31 @@ function AskLockPanel({
 function PaidAskShell({
   highlights,
   domains,
-  initialScope,
+  initialPlace,
   isAuthenticated,
   userId,
 }: {
   highlights: WebHighlight[];
   domains: WebDomainNode[];
-  initialScope: ChatScope;
+  initialPlace: Place | null;
   isAuthenticated: boolean;
   userId?: string | null;
 }): React.ReactElement {
-  const [composerScope, setComposerScope] = useState<ChatScope>(initialScope);
+  const [activePlace, setActivePlace] = useState<Place | null>(initialPlace);
   const [draft, setDraft] = useState('');
   const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
   const modelSelection = useWebAskModelSelection({ isAuthenticated, userId });
 
   const chat = useWebChat({
     userId,
     enabled: isAuthenticated && Boolean(userId),
+  });
+
+  const projects = useWebProjects({
+    userId,
+    enabled: isAuthenticated && Boolean(userId),
+    chatService: chat.service,
   });
 
   const turn = useGroundedChatTurn({
@@ -215,70 +222,138 @@ function PaidAskShell({
     onTurnFinished: chat.applyTurnFinished,
   });
 
-  const activeThread = useMemo(
-    () => chat.threads.find((t) => t.id === chat.activeThreadId) ?? null,
-    [chat.activeThreadId, chat.threads],
-  );
+  const activeProject: ChatProject | null = useMemo(() => {
+    if (!activePlace || activePlace.type !== 'project') return null;
+    return projects.projects.find((p) => p.id === activePlace.projectId) ?? null;
+  }, [activePlace, projects.projects]);
 
-  useEffect(() => {
-    if (activeThread) {
-      setComposerScope(activeThread.scope);
-      return;
-    }
-    setComposerScope(initialScope);
-  }, [activeThread, initialScope]);
+  const effectiveScope = useMemo(() => {
+    if (!activePlace) return { kind: 'library' as const };
+    return placeToScope(activePlace);
+  }, [activePlace]);
 
-  const effectiveScope = activeThread?.scope ?? composerScope;
-  const groundCount = countForScope(highlights, domains, effectiveScope);
+  const placeHighlights = useMemo(() => {
+    if (!activePlace) return [];
+    const members =
+      activePlace.type === 'project' ? activeProject?.members : undefined;
+    return highlightsForPlace(
+      toPlaceHighlights(highlights),
+      activePlace,
+      members,
+    );
+  }, [activePlace, activeProject?.members, highlights]);
+
+  const groundCount = placeHighlights.length;
   const needsKey = modelSelection.activeProvider === null;
-  const busy = turn.busy;
-  const error = prepareError || turn.error || chat.error;
+  const busy = turn.busy || opening;
+  const error = prepareError || turn.error || chat.error || projects.error;
 
-  const beginNewWithScope = useCallback(
-    (scope: ChatScope) => {
-      if (busy) return;
-      turn.abort();
-      chat.newThread();
-      setComposerScope(scope);
+  const openPlace = useCallback(
+    async (place: Place) => {
+      if (!userId || !chat.service) {
+        setPrepareError('Sign in required for place chat.');
+        return;
+      }
+      setOpening(true);
       setPrepareError(null);
       turn.clearError();
+      turn.abort();
+      try {
+        const title =
+          place.type === 'domain'
+            ? place.domain
+            : place.type === 'section'
+              ? place.sectionKey
+              : activeProject?.title;
+        const thread = await chat.service.resolvePlaceChat(userId, place, {
+          title,
+        });
+        setActivePlace(place);
+        await chat.selectThread(thread.id);
+      } catch (err) {
+        setPrepareError((err as Error).message || 'Failed to open place');
+      } finally {
+        setOpening(false);
+      }
     },
-    [busy, chat, turn],
+    [activeProject?.title, chat, turn, userId],
   );
 
-  const handleNewThread = useCallback(() => {
-    beginNewWithScope(composerScope);
-  }, [beginNewWithScope, composerScope]);
+  // Open initial place from URL / library selection once service is ready
+  useEffect(() => {
+    if (!initialPlace || !chat.service || !userId) return;
+    if (activePlace) return;
+    void openPlace(initialPlace);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot open
+  }, [chat.service, userId, initialPlace]);
 
-  const handleSelectThread = useCallback(
-    (id: string) => {
+  // Sync place from active thread (e.g. after turn creates thread)
+  useEffect(() => {
+    const t = chat.threads.find((x) => x.id === chat.activeThreadId);
+    if (!t) return;
+    const p = scopeToPlace(t.scope);
+    if (p) setActivePlace(p);
+  }, [chat.activeThreadId, chat.threads]);
+
+  const handleCreateProject = useCallback(() => {
+    if (busy || !userId) return;
+    void (async () => {
+      try {
+        const p = await projects.createUntitled([]);
+        await openPlace({ type: 'project', projectId: p.id });
+      } catch (err) {
+        setPrepareError((err as Error).message || 'Failed to create project');
+      }
+    })();
+  }, [busy, openPlace, projects, userId]);
+
+  const handleClearChat = useCallback(() => {
+    if (busy || !userId || !chat.activeThreadId || !chat.service) return;
+    void (async () => {
+      try {
+        await chat.service!.clearConversation(userId, chat.activeThreadId!);
+        await chat.selectThread(chat.activeThreadId);
+      } catch (err) {
+        setPrepareError((err as Error).message || 'Failed to clear chat');
+      }
+    })();
+  }, [busy, chat, userId]);
+
+  const handleDeleteProject = useCallback(
+    (projectId: string) => {
       if (busy) return;
-      turn.abort();
-      void chat.selectThread(id);
-      setPrepareError(null);
-      turn.clearError();
+      void (async () => {
+        await projects.remove(projectId);
+        if (activePlace?.type === 'project' && activePlace.projectId === projectId) {
+          setActivePlace(null);
+          chat.newThread();
+        }
+      })();
     },
-    [busy, chat, turn],
+    [activePlace, busy, chat, projects],
   );
 
   const handleSubmit = useCallback(() => {
     const q = draft.trim();
     if (!q || busy) return;
+    if (!activePlace) {
+      setPrepareError('Select a domain or project first.');
+      return;
+    }
     if (needsKey || !modelSelection.activeProvider) {
       setPrepareError(
         'Add a provider key on this device (Settings → Models & providers).',
       );
       return;
     }
-    if (!userId) {
+    if (!userId || !chat.service) {
       setPrepareError('Sign in required to save chat history.');
       return;
     }
 
-    const scoped = highlightsForScope(highlights, effectiveScope);
-    const promptHighlights = toPromptHighlights(scoped);
+    const promptHighlights = toPromptHighlights(placeHighlights);
     if (promptHighlights.length === 0) {
-      setPrepareError('No highlights in this scope to ground the answer.');
+      setPrepareError('No highlights in this place to ground the answer.');
       return;
     }
 
@@ -287,17 +362,17 @@ function PaidAskShell({
     setDraft('');
     void (async () => {
       try {
-        // Web v1: quote-only via prepare + noop page context (same prepare seam as extension).
+        if (!chat.activeThreadId) {
+          await openPlace(activePlace);
+        }
         const { excerpts, errorNote } = await prepareHighlightExcerpts(
           promptHighlights,
           noopPageContextFetch,
         );
-        if (errorNote) {
-          setPrepareError(errorNote);
-        }
+        if (errorNote) setPrepareError(errorNote);
         await turn.send({
           question: q,
-          scope: effectiveScope,
+          scope: placeToScope(activePlace),
           excerpts,
           provider: modelSelection.activeProvider!,
         });
@@ -306,49 +381,102 @@ function PaidAskShell({
       }
     })();
   }, [
+    activePlace,
     busy,
+    chat,
     draft,
-    effectiveScope,
-    highlights,
     modelSelection.activeProvider,
     needsKey,
+    openPlace,
+    placeHighlights,
     turn,
     userId,
   ]);
 
+  const groundNote =
+    activePlace?.type === 'project'
+      ? summarizeMembers(activeProject?.members ?? [])
+      : null;
+
   return (
     <div className="ask-shell" data-od-id="ask">
       <div className="ask-projects" data-od-id="ask-projects">
-        <AskThreadSidebar
-          threads={chat.threads}
-          activeThreadId={chat.activeThreadId}
+        <AskPlaceRail
+          domains={domains}
+          projects={projects.projects}
+          activePlace={activePlace}
           busy={busy}
-          onNewThread={handleNewThread}
-          onSelectThread={handleSelectThread}
-          onDeleteThread={(id) => {
-            void chat.deleteThread(id);
+          onSelectPlace={(p) => {
+            void openPlace(p);
           }}
+          onCreateProject={handleCreateProject}
+          onClearChat={handleClearChat}
+          onDeleteProject={handleDeleteProject}
         />
-        <div className="ask-projects-body">
-          <AskGroundingTree
-            domains={domains}
-            scope={effectiveScope}
-            locked={Boolean(activeThread)}
-            busy={busy}
-            onSelectScope={beginNewWithScope}
-          />
-        </div>
+        {activePlace?.type === 'project' ? (
+          <div className="ask-projects-body" style={{ padding: '8px 12px' }}>
+            <p className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+              Project grounding
+            </p>
+            <p className="composer-note" style={{ marginTop: 4 }}>
+              {groundNote}
+              {activeProject?.members.length === 0
+                ? ' Add domains from the library (coming soon: member editor). Create multi-domain projects via multi-select later.'
+                : null}
+            </p>
+            {domains.length > 0 ? (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {domains.map((d) => {
+                  const on = activeProject?.members.some(
+                    (m) => m.kind === 'domain' && m.domain === d.domain,
+                  );
+                  return (
+                    <button
+                      key={d.domain}
+                      type="button"
+                      className={`chip refine-chip${on ? ' active' : ''}`}
+                      disabled={busy || !activeProject}
+                      data-testid={`ask-member-toggle-${d.domain}`}
+                      onClick={() => {
+                        if (!activeProject || !userId) return;
+                        const members = on
+                          ? activeProject.members.filter(
+                              (m) =>
+                                !(m.kind === 'domain' && m.domain === d.domain),
+                            )
+                          : [
+                              ...activeProject.members,
+                              { kind: 'domain' as const, domain: d.domain },
+                            ];
+                        void projects.setMembers(activeProject.id, members);
+                      }}
+                    >
+                      {on ? '− ' : '+ '}
+                      {d.domain}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="ask-chat" data-od-id="ask-chat">
-        <AskTranscript
-          messages={chat.messages}
-          streamText={turn.streamText}
-          inflightAssistantId={turn.inflightAssistantId}
-          busy={busy}
-          streamError={turn.error}
-          onAbort={turn.abort}
-        />
+        {!activePlace ? (
+          <div className="ask-quiet" data-od-id="ask-pick-place">
+            <span>Select a domain or project to open its chat.</span>
+          </div>
+        ) : (
+          <AskTranscript
+            messages={chat.messages}
+            streamText={turn.streamText}
+            inflightAssistantId={turn.inflightAssistantId}
+            busy={busy}
+            streamError={turn.error}
+            onAbort={turn.abort}
+          />
+        )}
         <AskComposer
           scope={effectiveScope}
           groundCount={groundCount}
@@ -357,7 +485,7 @@ function PaidAskShell({
             setDraft(v);
             if (prepareError) setPrepareError(null);
           }}
-          busy={busy}
+          busy={busy || !activePlace}
           needsKey={needsKey}
           error={error}
           modelOptions={modelSelection.options}
@@ -424,8 +552,8 @@ export function AskPage(): React.ReactElement {
     void billing.startCheckout().catch(() => undefined);
   }, [billing, billingCta]);
 
-  const initialScope = useMemo(
-    () => scopeFromQuery(location.search),
+  const initialPlace = useMemo(
+    () => placeFromQuery(location.search),
     [location.search],
   );
 
@@ -498,7 +626,7 @@ export function AskPage(): React.ReactElement {
     <PaidAskShell
       highlights={lib.highlights}
       domains={lib.domains}
-      initialScope={initialScope}
+      initialPlace={initialPlace}
       isAuthenticated={isAuthenticated}
       userId={user?.id ?? null}
     />

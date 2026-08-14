@@ -5,7 +5,7 @@ export function scopeKind(scope: ChatScope): ChatScopeKind {
 }
 
 export function scopeDomain(scope: ChatScope): string | null {
-  if (scope.kind === 'library') return null;
+  if (scope.kind === 'library' || scope.kind === 'project') return null;
   return scope.domain;
 }
 
@@ -14,10 +14,16 @@ export function scopeSectionKey(scope: ChatScope): string | null {
   return null;
 }
 
+export function scopeProjectId(scope: ChatScope): string | null {
+  if (scope.kind === 'project') return scope.projectId;
+  return null;
+}
+
 export function parseChatScope(
   kind: string,
   domain: string | null | undefined,
   sectionKey: string | null | undefined,
+  projectId?: string | null | undefined,
 ): ChatScope {
   if (kind === 'library') {
     return { kind: 'library' };
@@ -32,6 +38,10 @@ export function parseChatScope(
     }
     return { kind: 'section', domain, sectionKey };
   }
+  if (kind === 'project') {
+    if (!projectId) throw new Error('project scope requires projectId');
+    return { kind: 'project', projectId };
+  }
   throw new Error(`Unknown chat scope kind: ${kind}`);
 }
 
@@ -44,6 +54,9 @@ export function scopesEqual(a: ChatScope, b: ChatScope): boolean {
   if (a.kind === 'section' && b.kind === 'section') {
     return a.domain === b.domain && a.sectionKey === b.sectionKey;
   }
+  if (a.kind === 'project' && b.kind === 'project') {
+    return a.projectId === b.projectId;
+  }
   return false;
 }
 
@@ -51,11 +64,12 @@ export function scopesEqual(a: ChatScope, b: ChatScope): boolean {
 export function scopeLabel(scope: ChatScope): string {
   if (scope.kind === 'library') return 'Library';
   if (scope.kind === 'domain') return scope.domain;
+  if (scope.kind === 'project') return 'Project';
   const parts = scope.sectionKey.split('/').filter(Boolean);
   return parts.length ? parts[parts.length - 1]! : scope.sectionKey;
 }
 
-/** Prompt ScopeKind for templates (library maps to domain-wide phrasing). */
+/** Prompt ScopeKind for templates (library/project map to domain-wide phrasing). */
 export function scopeKindForPrompt(scope: ChatScope): 'section' | 'domain' {
   return scope.kind === 'section' ? 'section' : 'domain';
 }

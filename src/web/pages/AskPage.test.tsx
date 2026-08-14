@@ -51,6 +51,20 @@ vi.mock('@/web/hooks/useWebChat', () => ({
   }),
 }));
 
+vi.mock('@/web/hooks/useWebProjects', () => ({
+  useWebProjects: () => ({
+    projects: [],
+    status: 'ready',
+    error: null,
+    refresh: vi.fn(),
+    createUntitled: vi.fn(),
+    rename: vi.fn(),
+    setMembers: vi.fn(),
+    remove: vi.fn(),
+    projectService: null,
+  }),
+}));
+
 vi.mock('@/features/ai/hooks/useGroundedChatTurn', () => ({
   useGroundedChatTurn: () => ({
     phase: 'idle',
@@ -199,7 +213,7 @@ describe('AskPage', () => {
     expect(document.querySelector('[data-od-id="ask-composer"]')).toBeNull();
   });
 
-  it('paid: renders grounding tree and composer (mock caps)', async () => {
+  it('paid: renders place rail and composer (mock caps)', async () => {
     mockBilling({ isPaidActive: true, status: 'active' });
     mockFetch.mockResolvedValue([
       {
@@ -221,11 +235,11 @@ describe('AskPage', () => {
 
     expect(document.querySelector('[data-od-id="ask-lock"]')).toBeNull();
     expect(document.querySelector('[data-od-id="ask-projects"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="ask-proj-all"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="ask-place-list"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="ask-new-project"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ask-composer"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ask-send"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="ask-title"]')?.textContent?.trim()).toBe('Chat');
-    // Phase 4: model chip (empty without local keys)
+    expect(document.querySelector('[data-od-id="ask-title"]')?.textContent?.trim()).toBe('Ask');
     expect(document.querySelector('[data-od-id="ask-model-chip"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ask-model-label"]')).toBeTruthy();
   });

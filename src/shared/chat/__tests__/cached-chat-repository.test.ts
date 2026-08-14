@@ -21,6 +21,8 @@ describe('CachedChatRepository', () => {
     const remote: IChatRepository = {
       listThreads: vi.fn().mockResolvedValue([thread('t1')]),
       getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn().mockResolvedValue(thread('t2')),
       updateThread: vi.fn(),
       deleteThread: vi.fn().mockResolvedValue(undefined),
@@ -47,6 +49,8 @@ describe('CachedChatRepository', () => {
     const remote: IChatRepository = {
       listThreads: vi.fn().mockRejectedValue(new Error('network')),
       getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn(),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),

@@ -14,8 +14,13 @@ import { usePageContext } from '@/features/ai/hooks/usePageContext';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { useApp } from '@/core/context/PopupAppProvider';
+import { getExtensionSupabaseClient } from '@/shared/auth/supabase-extension-client';
 import { getWebAppOrigin } from '@/shared/auth/web-legal-urls';
-import type { ChatScope } from '@/shared/chat';
+import type { ChatScope, Place } from '@/shared/chat';
+import {
+  ProjectService,
+  SupabaseProjectRepository,
+} from '@/shared/chat';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { prepareHighlightExcerpts } from '@/shared/llm/prepare-highlight-excerpts';
 import type { PromptHighlight } from '@/shared/llm/prompts';
@@ -88,18 +93,21 @@ function openWebAsk(threadId?: string | null): void {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function chipToChatScope(
+function chipToPlace(
   chip: AskScopeChip,
   domain: string | undefined,
   sectionKey: string,
-): ChatScope {
-  if (chip === 'library') return { kind: 'library' };
+): Place | null {
   if (chip === 'domain') {
-    if (!domain) return { kind: 'library' };
-    return { kind: 'domain', domain };
+    if (!domain) return null;
+    return { type: 'domain', domain };
   }
-  if (!domain) return { kind: 'library' };
-  return { kind: 'section', domain, sectionKey };
+  if (chip === 'page') {
+    if (!domain) return null;
+    return { type: 'section', domain, sectionKey };
+  }
+  // library → project place resolved async
+  return null;
 }
 
 function AskLockPage({
@@ -199,14 +207,12 @@ function PaidAskShell({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const newThread = chat.newThread;
   useEffect(() => {
     if (!libraryDomain) return;
     setScope('domain');
-    newThread();
     setAskError(null);
     setQuestion('');
-  }, [libraryDomain, newThread]);
+  }, [libraryDomain]);
 
   const currentSectionKey = useMemo(() => {
     if (!tab.url && !tab.path) return '/';
@@ -255,10 +261,51 @@ function PaidAskShell({
     [promptHighlights],
   );
 
-  const chatScope: ChatScope = useMemo(
-    () => chipToChatScope(scope, domainHost, currentSectionKey),
-    [scope, domainHost, currentSectionKey],
-  );
+  const openChipPlace = useCallback(async (): Promise<ChatScope | null> => {
+    if (!userId || !chat.service) return null;
+    if (scope === 'library') {
+      const domains = [
+        ...new Set(
+          libraryHighlights
+            .map((h) =>
+              'domain' in h && typeof h.domain === 'string' ? h.domain : null,
+            )
+            .filter((d): d is string => Boolean(d)),
+        ),
+      ];
+      if (domains.length === 0) return null;
+      const projectSvc = new ProjectService(
+        new SupabaseProjectRepository(getExtensionSupabaseClient()),
+        chat.service,
+      );
+      const project = await projectSvc.createUntitledFromMembers(
+        userId,
+        domains.map((domain) => ({ kind: 'domain' as const, domain })),
+      );
+      const thread = await projectSvc.openProjectChat(userId, project);
+      await chat.selectThread(thread.id);
+      return thread.scope;
+    }
+    const place = chipToPlace(scope, domainHost, currentSectionKey);
+    if (!place) return null;
+    const thread = await chat.service.resolvePlaceChat(userId, place, {
+      title:
+        place.type === 'domain'
+          ? place.domain
+          : place.type === 'section'
+            ? place.sectionKey
+            : 'Project',
+    });
+    await chat.selectThread(thread.id);
+    return thread.scope;
+  }, [
+    chat,
+    currentSectionKey,
+    domainHost,
+    libraryHighlights,
+    scope,
+    userId,
+  ]);
 
   const breadcrumb = useMemo(() => {
     if (scope === 'library') return { segments: ['Library'] as string[] };
@@ -327,6 +374,11 @@ function PaidAskShell({
       setQuestion('');
       setPreparing(true);
       try {
+        const chatScope = await openChipPlace();
+        if (!chatScope) {
+          setAskError('Could not open a place chat for this scope.');
+          return;
+        }
         const { excerpts, errorNote } = await prepareHighlightExcerpts(
           usableHighlights,
           fetchPageContext,
@@ -354,7 +406,7 @@ function PaidAskShell({
       modelSelection,
       fetchPageContext,
       turn,
-      chatScope,
+      openChipPlace,
     ],
   );
 

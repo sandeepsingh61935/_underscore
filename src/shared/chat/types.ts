@@ -2,12 +2,13 @@
  * Grounded chat domain types (ADR-028).
  */
 
-export type ChatScopeKind = 'library' | 'domain' | 'section';
+export type ChatScopeKind = 'library' | 'domain' | 'section' | 'project';
 
 export type ChatScope =
   | { kind: 'library' }
   | { kind: 'domain'; domain: string }
-  | { kind: 'section'; domain: string; sectionKey: string };
+  | { kind: 'section'; domain: string; sectionKey: string }
+  | { kind: 'project'; projectId: string };
 
 export type ChatMessageRole = 'user' | 'assistant';
 

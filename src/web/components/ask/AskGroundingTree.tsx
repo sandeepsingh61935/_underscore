@@ -18,7 +18,9 @@ export function AskGroundingTree({
   onSelectScope: (scope: ChatScope) => void;
 }): React.ReactElement {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    if (scope.kind !== 'library') return { [scope.domain]: true };
+    if (scope.kind === 'domain' || scope.kind === 'section') {
+      return { [scope.domain]: true };
+    }
     return {};
   });
 
@@ -29,7 +31,7 @@ export function AskGroundingTree({
   const pick = useCallback(
     (next: ChatScope) => {
       if (busy) return;
-      if (next.kind !== 'library') {
+      if (next.kind === 'domain' || next.kind === 'section') {
         setExpanded((prev) => ({ ...prev, [next.domain]: true }));
       }
       onSelectScope(next);

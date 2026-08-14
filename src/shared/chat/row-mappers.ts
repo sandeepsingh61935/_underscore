@@ -1,4 +1,10 @@
-import { parseChatScope, scopeDomain, scopeKind, scopeSectionKey } from './chat-scope';
+import {
+  parseChatScope,
+  scopeDomain,
+  scopeKind,
+  scopeProjectId,
+  scopeSectionKey,
+} from './chat-scope';
 import type { ChatMessage, ChatMessageRole, ChatMessageStatus, ChatThread } from './types';
 
 export type ChatThreadRow = {
@@ -8,6 +14,7 @@ export type ChatThreadRow = {
   scope_kind: string;
   domain: string | null;
   section_key: string | null;
+  project_id?: string | null;
   last_provider: string | null;
   last_model: string | null;
   created_at: string;
@@ -32,7 +39,12 @@ export function threadFromRow(row: ChatThreadRow): ChatThread {
     id: row.id,
     userId: row.user_id,
     title: row.title,
-    scope: parseChatScope(row.scope_kind, row.domain, row.section_key),
+    scope: parseChatScope(
+      row.scope_kind,
+      row.domain,
+      row.section_key,
+      row.project_id,
+    ),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastProvider: row.last_provider ?? undefined,
@@ -48,6 +60,7 @@ export function threadToInsertRow(thread: ChatThread): ChatThreadRow {
     scope_kind: scopeKind(thread.scope),
     domain: scopeDomain(thread.scope),
     section_key: scopeSectionKey(thread.scope),
+    project_id: scopeProjectId(thread.scope),
     last_provider: thread.lastProvider ?? null,
     last_model: thread.lastModel ?? null,
     created_at: thread.createdAt,

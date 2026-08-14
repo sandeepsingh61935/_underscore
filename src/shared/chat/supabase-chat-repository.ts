@@ -19,11 +19,13 @@ import {
   type ChatThreadRow,
 } from './row-mappers';
 import { autoTitleFromUserMessage } from './chat-title';
+import { scopesEqual } from './chat-scope';
 import {
   CHAT_QUOTAS,
   ChatQuotaError,
   type AppendMessageInput,
   type ChatMessage,
+  type ChatScope,
   type ChatThread,
   type CreateThreadInput,
   type FinalizeMessagePatch,
@@ -32,7 +34,7 @@ import {
 } from './types';
 
 const THREAD_SELECT =
-  'id, user_id, title, scope_kind, domain, section_key, last_provider, last_model, created_at, updated_at';
+  'id, user_id, title, scope_kind, domain, section_key, project_id, last_provider, last_model, created_at, updated_at';
 
 const MESSAGE_SELECT =
   'id, thread_id, user_id, role, content, status, provider, model, created_at, updated_at';
@@ -79,6 +81,35 @@ export class SupabaseChatRepository implements IChatRepository {
     if (error) throw new Error(error.message || 'Failed to load chat thread');
     if (!data) return null;
     return threadFromRow(data as ChatThreadRow);
+  }
+
+  async findThreadByScope(
+    userId: string,
+    scope: ChatScope,
+  ): Promise<ChatThread | null> {
+    let q = this.supabase
+      .from(CHAT_THREADS_TABLE)
+      .select(THREAD_SELECT)
+      .eq('user_id', userId)
+      .eq('scope_kind', scope.kind)
+      .order('updated_at', { ascending: false })
+      .limit(1);
+
+    if (scope.kind === 'domain') {
+      q = q.eq('domain', scope.domain).is('section_key', null);
+    } else if (scope.kind === 'section') {
+      q = q.eq('domain', scope.domain).eq('section_key', scope.sectionKey);
+    } else if (scope.kind === 'project') {
+      q = q.eq('project_id', scope.projectId);
+    } else {
+      q = q.is('domain', null).is('section_key', null).is('project_id', null);
+    }
+
+    const { data, error } = await q.maybeSingle();
+    if (error) throw new Error(error.message || 'Failed to find chat thread');
+    if (!data) return null;
+    const thread = threadFromRow(data as ChatThreadRow);
+    return scopesEqual(thread.scope, scope) ? thread : null;
   }
 
   async createThread(input: CreateThreadInput): Promise<ChatThread> {
@@ -301,5 +332,19 @@ export class SupabaseChatRepository implements IChatRepository {
 
     if (error) throw new Error(error.message || 'Failed to count chat messages');
     return count ?? 0;
+  }
+
+  async clearMessages(userId: string, threadId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from(CHAT_MESSAGES_TABLE)
+      .delete()
+      .eq('user_id', userId)
+      .eq('thread_id', threadId);
+
+    if (error) throw new Error(error.message || 'Failed to clear chat messages');
+    await this.updateThread(userId, threadId, {
+      title: 'New chat',
+      updatedAt: nowIso(),
+    });
   }
 }

@@ -7,6 +7,7 @@ import type { IChatRepository } from './i-chat-repository';
 import type {
   AppendMessageInput,
   ChatMessage,
+  ChatScope,
   ChatThread,
   CreateThreadInput,
   FinalizeMessagePatch,
@@ -43,6 +44,13 @@ export class CachedChatRepository implements IChatRepository {
       if (hit) return hit;
       throw err;
     }
+  }
+
+  async findThreadByScope(
+    userId: string,
+    scope: ChatScope,
+  ): Promise<ChatThread | null> {
+    return this.remote.findThreadByScope(userId, scope);
   }
 
   async createThread(input: CreateThreadInput): Promise<ChatThread> {
@@ -102,5 +110,10 @@ export class CachedChatRepository implements IChatRepository {
 
   async countMessages(userId: string, threadId: string): Promise<number> {
     return this.remote.countMessages(userId, threadId);
+  }
+
+  async clearMessages(userId: string, threadId: string): Promise<void> {
+    await this.remote.clearMessages(userId, threadId);
+    await this.cache.putMessages(userId, threadId, []);
   }
 }

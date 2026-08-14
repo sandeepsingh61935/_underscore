@@ -50,7 +50,9 @@ describe('ChatService', () => {
 
     const repo: IChatRepository = {
       listThreads: vi.fn(),
-      getThread: vi.fn().mockResolvedValue(created),
+      getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn().mockResolvedValue(created),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
@@ -92,6 +94,8 @@ describe('ChatService', () => {
     const repo: IChatRepository = {
       listThreads: vi.fn(),
       getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn(),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
@@ -126,6 +130,8 @@ describe('ChatService', () => {
     const repo: IChatRepository = {
       listThreads: vi.fn(),
       getThread: vi.fn().mockResolvedValue(existing),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn(),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
@@ -170,6 +176,8 @@ describe('ChatService', () => {
     const repo: IChatRepository = {
       listThreads: vi.fn(),
       getThread: vi.fn(),
+      findThreadByScope: vi.fn().mockResolvedValue(null),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
       createThread: vi.fn(),
       updateThread: vi.fn(),
       deleteThread: vi.fn(),
