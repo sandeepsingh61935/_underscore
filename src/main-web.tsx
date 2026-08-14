@@ -10,9 +10,12 @@ class RootErrorBoundary extends Component<
   { children: ReactNode },
   { error: Error | null }
 > {
-  state: { error: Error | null } = { error: null };
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
 
-  static override getDerivedStateFromError(error: Error): { error: Error } {
+  static getDerivedStateFromError(error: Error): { error: Error } {
     return { error };
   }
 
