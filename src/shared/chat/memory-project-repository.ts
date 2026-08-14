@@ -35,6 +35,10 @@ export class MemoryProjectRepository implements IProjectRepository {
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   }
 
+  async countProjects(userId: string): Promise<number> {
+    return (await this.listProjects(userId)).length;
+  }
+
   async getProject(
     userId: string,
     projectId: string,
@@ -45,8 +49,8 @@ export class MemoryProjectRepository implements IProjectRepository {
   }
 
   async createProject(input: CreateProjectInput): Promise<ChatProject> {
-    const list = await this.listProjects(input.userId);
-    if (list.length >= PROJECT_QUOTAS.projectsPerUser) {
+    const count = await this.countProjects(input.userId);
+    if (count >= PROJECT_QUOTAS.projectsPerUser) {
       throw new Error(`Project limit of ${PROJECT_QUOTAS.projectsPerUser} reached`);
     }
     const members = dedupeMembers(input.members ?? []);

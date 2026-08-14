@@ -83,11 +83,13 @@ export function useWebProjects(opts: {
       if (!opts.userId) throw new Error('Sign in required');
       const svc = getService();
       if (!svc) throw new Error('Chat not ready');
+      // Single insert path; prepend locally — no full listProjects refresh.
       const p = await svc.createUntitledFromMembers(opts.userId, members);
-      await refresh();
+      setProjects((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
+      setStatus('ready');
       return p;
     },
-    [getService, opts.userId, refresh],
+    [getService, opts.userId],
   );
 
   const rename = useCallback(
@@ -95,10 +97,12 @@ export function useWebProjects(opts: {
       if (!opts.userId) return;
       const svc = getService();
       if (!svc) return;
-      await svc.renameProject(opts.userId, projectId, title);
-      await refresh();
+      const updated = await svc.renameProject(opts.userId, projectId, title);
+      setProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? updated : p)),
+      );
     },
-    [getService, opts.userId, refresh],
+    [getService, opts.userId],
   );
 
   const setMembers = useCallback(
@@ -106,10 +110,12 @@ export function useWebProjects(opts: {
       if (!opts.userId) return;
       const svc = getService();
       if (!svc) return;
-      await svc.setMembers(opts.userId, projectId, members);
-      await refresh();
+      const updated = await svc.setMembers(opts.userId, projectId, members);
+      setProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? updated : p)),
+      );
     },
-    [getService, opts.userId, refresh],
+    [getService, opts.userId],
   );
 
   const remove = useCallback(
@@ -118,9 +124,9 @@ export function useWebProjects(opts: {
       const svc = getService();
       if (!svc) return;
       await svc.deleteProject(opts.userId, projectId);
-      await refresh();
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
     },
-    [getService, opts.userId, refresh],
+    [getService, opts.userId],
   );
 
   return useMemo(

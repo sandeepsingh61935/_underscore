@@ -12,6 +12,8 @@ export interface CreateProjectInput {
 
 export interface IProjectRepository {
   listProjects(userId: string): Promise<ChatProject[]>;
+  /** Cheap quota check — must not load members. */
+  countProjects(userId: string): Promise<number>;
   getProject(userId: string, projectId: string): Promise<ChatProject | null>;
   createProject(input: CreateProjectInput): Promise<ChatProject>;
   updateProject(

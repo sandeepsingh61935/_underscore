@@ -73,19 +73,43 @@ export class SupabaseProjectRepository implements IProjectRepository {
 
     if (error) throw new Error(error.message || 'Failed to list projects');
     const rows = (data as ProjectRow[] | null) ?? [];
-    const projects: ChatProject[] = [];
-    for (const row of rows) {
-      const members = await this.loadMembers(userId, row.id);
-      projects.push({
-        id: row.id,
-        userId: row.user_id,
-        title: row.title,
-        members,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      });
+    if (rows.length === 0) return [];
+
+    // One members query for all projects (not N+1).
+    const { data: memberData, error: memberError } = await this.supabase
+      .from(CHAT_PROJECT_MEMBERS_TABLE)
+      .select('id, project_id, user_id, member_kind, domain, section_key')
+      .eq('user_id', userId);
+
+    if (memberError) {
+      throw new Error(memberError.message || 'Failed to load project members');
     }
-    return projects;
+
+    const byProject = new Map<string, ProjectMember[]>();
+    for (const row of (memberData as MemberRow[] | null) ?? []) {
+      const list = byProject.get(row.project_id) ?? [];
+      list.push(memberFromRow(row));
+      byProject.set(row.project_id, list);
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      title: row.title,
+      members: byProject.get(row.id) ?? [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  async countProjects(userId: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from(CHAT_PROJECTS_TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (error) throw new Error(error.message || 'Failed to count projects');
+    return count ?? 0;
   }
 
   async getProject(
@@ -114,8 +138,9 @@ export class SupabaseProjectRepository implements IProjectRepository {
   }
 
   async createProject(input: CreateProjectInput): Promise<ChatProject> {
-    const existing = await this.listProjects(input.userId);
-    if (existing.length >= PROJECT_QUOTAS.projectsPerUser) {
+    // Cheap count — never load full list + all members just for quota.
+    const count = await this.countProjects(input.userId);
+    if (count >= PROJECT_QUOTAS.projectsPerUser) {
       throw new Error(`Project limit of ${PROJECT_QUOTAS.projectsPerUser} reached`);
     }
     const members = dedupeMembers(input.members ?? []);
@@ -145,7 +170,10 @@ export class SupabaseProjectRepository implements IProjectRepository {
       .single();
 
     if (error) throw new Error(error.message || 'Failed to create project');
-    await this.replaceMembers(input.userId, id, members);
+    // Empty members: one insert only (skip members round-trips).
+    if (members.length > 0) {
+      await this.replaceMembers(input.userId, id, members);
+    }
     return {
       id,
       userId: input.userId,
