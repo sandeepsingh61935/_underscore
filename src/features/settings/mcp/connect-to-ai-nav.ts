@@ -16,7 +16,7 @@ export function connectToAiPageTitle(screen: ConnectToAiScreen): string {
     case 'hub':
       return 'Integrations';
     case 'picker':
-      return 'Host tips';
+      return 'Add an AI app';
     case 'setup':
       return `Connect ${getMcpAiApp(screen.appId).name}`;
   }
@@ -31,7 +31,7 @@ export function connectToAiBackLabel(
   const screen = stack[stack.length - 1]!;
   const prev = stack[stack.length - 2]!;
   if (screen.kind === 'setup' && prev.kind === 'picker') {
-    return '← Host tips';
+    return '← Add an AI app';
   }
   if (screen.kind === 'setup' && prev.kind === 'hub') {
     return '← Integrations';

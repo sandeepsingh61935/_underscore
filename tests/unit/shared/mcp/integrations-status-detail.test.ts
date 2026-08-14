@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { integrationsStatusDetail } from '@/shared/mcp/integrations-status';
 
 describe('integrationsStatusDetail', () => {
-  it('tells a Ready user to add the URL in the agent and approve when asked', () => {
+  it('tells a Ready user to add an AI app and approve when asked', () => {
     expect(
       integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 }),
-    ).toMatch(/add this url in your agent/i);
+    ).toMatch(/add an ai app/i);
     expect(
       integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 }),
     ).toMatch(/approve/i);

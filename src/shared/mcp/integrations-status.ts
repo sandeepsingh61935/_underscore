@@ -38,7 +38,7 @@ export function integrationsStatusLabel(status: IntegrationsStatus): string {
 }
 
 const READY_DETAIL =
-  'Add this URL in your agent. Approve when the browser opens.';
+  'Add an AI app, then approve when the browser opens.';
 
 const SESSION_CONNECTED_DETAIL = 'Your agent reached Cloud MCP.';
 

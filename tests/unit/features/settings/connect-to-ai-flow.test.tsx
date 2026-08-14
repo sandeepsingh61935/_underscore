@@ -70,17 +70,18 @@ describe('ConnectToAiFlow', () => {
     expect(screen.getByText('Integrations')).toBeTruthy();
     expect(screen.queryByText('Models & providers')).toBeNull();
 
-    screen.getByRole('button', { name: 'Host tips' }).click();
+    screen.getByRole('button', { name: 'Add an AI app' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
     expect(screen.getByText('← Integrations')).toBeTruthy();
     expect(onDepth).toHaveBeenCalledWith(2);
 
     screen.getByRole('button', { name: 'Cursor' }).click();
     await waitFor(() => expect(screen.getByTestId('mcp-client-setup')).toBeTruthy());
-    expect(screen.getByText('← Host tips')).toBeTruthy();
+    expect(screen.getByText('← Add an AI app')).toBeTruthy();
     expect(screen.getByText('Connect Cursor')).toBeTruthy();
+    expect(screen.getByTestId('mcp-handoff-primary').textContent).toMatch(/open in cursor/i);
 
-    screen.getByText('← Host tips').click();
+    screen.getByText('← Add an AI app').click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
 
     screen.getByText('← Integrations').click();
@@ -106,7 +107,9 @@ describe('ConnectToAiFlow', () => {
     expect(screen.getByTestId('mcp-legacy-bridge-notice')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Run connection check' })).toBeNull();
     expect(screen.getByTestId('mcp-remote-url').textContent).toMatch(/mcp/i);
-    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add an AI app' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy URL' })).toBeTruthy();
   });
 
   it('reloads grants when the window is focused', async () => {

@@ -21,6 +21,20 @@ describe('MCP_AI_APPS', () => {
     ]);
   });
 
+  it('declares handoff kinds without token placeholders', () => {
+    expect(getMcpAiApp('cursor').handoff).toBe('deep_link');
+    expect(getMcpAiApp('claude-code').handoff).toBe('copy_command');
+    expect(getMcpAiApp('codex').handoff).toBe('copy_command');
+    expect(getMcpAiApp('chatgpt-desktop').handoff).toBe('copy_url');
+    for (const app of MCP_AI_APPS) {
+      expect(app.steps.length).toBeGreaterThanOrEqual(3);
+      expect(app.steps.some((s) => /return here|connected/i.test(s))).toBe(true);
+      expect(app.commandTemplate ?? '').not.toContain('{{TOKEN}}');
+      expect(app.configTemplate).not.toContain('{{TOKEN}}');
+      expect(`${app.hint} ${app.primaryLabel}`).not.toMatch(/get_session/i);
+    }
+  });
+
   it('fills remote Cloud MCP URL in config templates', () => {
     const app = getMcpAiApp('cursor');
     expect(fillMcpConfigTemplate(app.configTemplate, 'https://mcp.example/mcp')).toContain(

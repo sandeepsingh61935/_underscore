@@ -24,7 +24,7 @@ describe('McpConnectionsHub', () => {
     vi.clearAllMocks();
   });
 
-  it('shows locked upsell for Guest and routes Host tips to CTA', () => {
+  it('shows locked upsell for Guest and routes Add an AI app to CTA', () => {
     render(
       <McpConnectionsHub
         {...base}
@@ -38,8 +38,9 @@ describe('McpConnectionsHub', () => {
     expect(screen.getByText('Sign in to continue')).toBeTruthy();
     expect(screen.getByText('Connections unlock with Account (Paid).')).toBeTruthy();
     expect(screen.queryByText('Models & providers')).toBeNull();
+    expect(screen.queryByTestId('mcp-server-details')).toBeNull();
 
-    screen.getByRole('button', { name: 'Host tips' }).click();
+    screen.getByRole('button', { name: 'Add an AI app' }).click();
     expect(base.onLockedInteract).toHaveBeenCalled();
     expect(base.onAddApp).not.toHaveBeenCalled();
   });
@@ -56,7 +57,7 @@ describe('McpConnectionsHub', () => {
     expect(screen.getByText('Upgrade in Settings')).toBeTruthy();
   });
 
-  it('allows Host tips when Paid and has no Models footer or bridge toggle', () => {
+  it('allows Add an AI app when Paid and has no Models footer or bridge toggle', () => {
     render(
       <McpConnectionsHub
         {...base}
@@ -66,11 +67,12 @@ describe('McpConnectionsHub', () => {
     );
 
     expect(screen.queryByText('Models & providers')).toBeNull();
-    expect(screen.getByText(/synced cloud library/)).toBeTruthy();
+    expect(screen.getByText(/oauth happens in your agent/i)).toBeTruthy();
     expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
     expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
 
-    screen.getByRole('button', { name: 'Host tips' }).click();
+    screen.getByRole('button', { name: 'Add an AI app' }).click();
     expect(base.onAddApp).toHaveBeenCalled();
   });
 
@@ -84,11 +86,11 @@ describe('McpConnectionsHub', () => {
       />,
     );
     expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
-    expect(screen.getByText(/add this url in your agent/i)).toBeTruthy();
+    expect(screen.getByText(/nothing connected yet/i)).toBeTruthy();
     expect(screen.queryByText(/copied the snippet/i)).toBeNull();
   });
 
-  it('shows Connect, not a JWT or get_session recipe', () => {
+  it('exposes Copy URL under Server details, not a primary Connect', () => {
     render(
       <McpConnectionsHub
         {...base}
@@ -97,15 +99,19 @@ describe('McpConnectionsHub', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Copy URL' })).toBeNull();
-    expect(screen.getByText('Advanced')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
+    expect(screen.getByTestId('mcp-server-details')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy URL' })).toBeTruthy();
+    expect(screen.getByText(/Authorization: Bearer/i)).toBeTruthy();
     const hub = screen.getByTestId('mcp-connections-hub').textContent ?? '';
     expect(hub).not.toMatch(/get_session/i);
     expect(hub).not.toMatch(/copied the snippet/i);
+
+    screen.getByRole('button', { name: 'Copy URL' }).click();
+    expect(base.onCopyUrl).toHaveBeenCalled();
   });
 
-  it('keeps Connect when already Connected', () => {
+  it('keeps Add an AI app when already Connected', () => {
     render(
       <McpConnectionsHub
         {...base}
@@ -117,7 +123,8 @@ describe('McpConnectionsHub', () => {
     );
     expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Connected');
     expect(screen.getAllByText('ChatGPT').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add an AI app' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
   });
 
   it('says the agent reached Cloud MCP when Connected with no grants', () => {

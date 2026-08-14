@@ -1,6 +1,9 @@
 import React from 'react';
 
-import { IntegrationsConnectChrome } from '@/features/settings/integrations/IntegrationsConnectChrome';
+import {
+  IntegrationsConnectChrome,
+  INTEGRATIONS_ADVANCED_COPY,
+} from '@/features/settings/integrations/IntegrationsConnectChrome';
 import { type IntegrationsStatus } from '@/shared/mcp/integrations-status';
 import { Row } from '@/ui-system/components/primitives/Row';
 
@@ -54,7 +57,8 @@ export function McpConnectionsHub({
           className="u-sans"
           style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}
         >
-          Let agents read your synced cloud library. No extension required.
+          Use your highlights in the agent you already use. OAuth happens in your agent — not in this
+          app.
         </div>
       </div>
 
@@ -70,7 +74,10 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
               Locked
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}>
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}
+            >
               {lockMessage}
             </div>
             {onDismissLockMessage ? (
@@ -102,8 +109,12 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
               Included with Account (Paid)
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 6, lineHeight: 1.45 }}>
-              Integrations stay visible so you can see what Paid unlocks. Setup does not ask for model keys.
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 6, lineHeight: 1.45 }}
+            >
+              Integrations stay visible so you can see what Paid unlocks. Setup does not ask for model
+              keys.
             </div>
             <button
               type="button"
@@ -140,8 +151,12 @@ export function McpConnectionsHub({
             <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
               Local bridge is no longer the product path
             </div>
-            <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}>
-              Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge may still run until it is removed.
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}
+            >
+              Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge may still run
+              until it is removed.
             </div>
           </div>
         </div>
@@ -151,23 +166,20 @@ export function McpConnectionsHub({
         <IntegrationsConnectChrome
           mcpAllowed={mcpAllowed}
           status={status}
-          remoteUrl={remoteUrl}
-          urlCopied={urlCopied}
-          onConnect={() => tryInteract(onCopyUrl)}
           grantTitles={connectedApps.map((app) => app.title)}
           lockedDetail="Off until Account (Paid)"
         />
       </div>
 
       <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink)' }}>
-        Connected
+        Active
       </div>
       {connectedApps.length === 0 || locked ? (
         <div style={{ padding: '8px 16px 12px' }}>
           <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}>
             {locked
               ? 'Connections unlock with Account (Paid).'
-              : 'No approved clients yet. Add the URL in your agent, then approve if asked.'}
+              : 'Nothing connected yet. Add an AI app, then approve when the browser opens.'}
           </div>
         </div>
       ) : (
@@ -186,10 +198,11 @@ export function McpConnectionsHub({
         ))
       )}
 
-      <div style={{ padding: '8px 16px 16px' }}>
+      <div style={{ padding: '8px 16px 12px' }}>
         <button
           type="button"
           className="u-caps"
+          data-testid="mcp-add-ai-app"
           onClick={() => tryInteract(onAddApp)}
           style={{
             width: '100%',
@@ -201,9 +214,76 @@ export function McpConnectionsHub({
             fontSize: 'var(--step--2)',
           }}
         >
-          Host tips
+          Add an AI app
         </button>
       </div>
+
+      {!locked ? (
+        <div style={{ padding: '0 16px 16px' }}>
+          <details data-testid="mcp-server-details">
+            <summary
+              className="u-mono"
+              style={{
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontSize: 'var(--step--2)',
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              Server details
+            </summary>
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)', marginTop: 4 }}
+            >
+              Remote MCP URL
+            </div>
+            <div
+              className="u-mono"
+              data-testid="mcp-remote-url"
+              style={{
+                marginTop: 8,
+                padding: 8,
+                border: '1px solid var(--rule)',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                fontSize: 'var(--step--2)',
+                wordBreak: 'break-all',
+                minHeight: 44,
+              }}
+            >
+              {remoteUrl}
+            </div>
+            <button
+              type="button"
+              className="u-caps btn sm"
+              data-od-id="settings-mcp-copy-url"
+              data-testid="mcp-copy-url"
+              onClick={() => tryInteract(onCopyUrl)}
+              style={{
+                marginTop: 10,
+                width: '100%',
+                minHeight: 44,
+                border: '1px solid var(--rule)',
+                background: 'var(--paper)',
+                color: 'var(--ink)',
+                cursor: 'pointer',
+                fontSize: 'var(--step--2)',
+              }}
+            >
+              {urlCopied ? 'Copied' : 'Copy URL'}
+            </button>
+            <p
+              className="u-sans type-sub"
+              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '12px 0 0' }}
+            >
+              {INTEGRATIONS_ADVANCED_COPY}
+            </p>
+          </details>
+        </div>
+      ) : null}
     </div>
   );
 }

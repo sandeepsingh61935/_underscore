@@ -11,7 +11,7 @@ import {
 describe('connect-to-ai-nav', () => {
   it('titles hub, picker, and setup by app name', () => {
     expect(connectToAiPageTitle({ kind: 'hub' })).toBe('Integrations');
-    expect(connectToAiPageTitle({ kind: 'picker' })).toBe('Host tips');
+    expect(connectToAiPageTitle({ kind: 'picker' })).toBe('Add an AI app');
     expect(connectToAiPageTitle({ kind: 'setup', appId: 'cursor' })).toBe('Connect Cursor');
   });
 
@@ -21,7 +21,7 @@ describe('connect-to-ai-nav', () => {
       { kind: 'picker' },
       { kind: 'setup', appId: 'claude-code' },
     ];
-    expect(connectToAiBackLabel(stack)).toBe('← Host tips');
+    expect(connectToAiBackLabel(stack)).toBe('← Add an AI app');
     expect(connectToAiBackLabel(stack.slice(0, 2))).toBe('← Integrations');
     expect(connectToAiBackLabel([{ kind: 'hub' }])).toBe('← Settings');
   });

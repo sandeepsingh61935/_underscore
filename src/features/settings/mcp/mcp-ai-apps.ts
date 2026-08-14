@@ -1,7 +1,9 @@
 /**
  * External MCP hosts for Integrations (cloud-first, ADR-029).
- * The catalog is Host connection: amateur hint, URL snippet, restart.
+ * Catalog owns Host connection: handoff, steps, URL snippet, restart.
  */
+
+import type { HandoffKind } from '@/features/settings/mcp/mcp-host-handoff';
 
 export type McpAiAppId =
   | 'claude-code'
@@ -17,7 +19,14 @@ export type McpAiAppId =
 export interface McpAiAppDef {
   id: McpAiAppId;
   name: string;
+  /** Legacy short line; picker prefers handoffPickerSub(handoff). */
   sub: string;
+  handoff: HandoffKind;
+  primaryLabel: string;
+  /** When handoff is copy_command; {{MCP_URL}} only — no token. */
+  commandTemplate?: string;
+  /** 3–4 plain steps; OAuth in host, then return for Connected. */
+  steps: readonly string[];
   configLabel: string;
   /** Amateur paste instruction. No JWT / get_session. */
   hint: string;
@@ -37,8 +46,34 @@ const CLOUD_JSON = `{
 const CLOUD_TOML = `[mcp_servers.underscore]
 url = "{{MCP_URL}}"`;
 
-function pasteHint(where: string): string {
-  return `Paste the remote URL in ${where}.`;
+const STEP_RETURN =
+  'Return here — status becomes Connected after the agent finishes.';
+
+function stepsOpenApprove(where: string): readonly string[] {
+  return [
+    where,
+    'In the agent: connect or authenticate when prompted.',
+    'Allow access in the browser if asked.',
+    STEP_RETURN,
+  ];
+}
+
+function stepsCopyCommand(cli: string): readonly string[] {
+  return [
+    `Copy the one-line ${cli} install command below.`,
+    'Paste and run it in your terminal.',
+    'Authenticate or approve when the agent opens a browser.',
+    STEP_RETURN,
+  ];
+}
+
+function stepsCopyUrl(where: string): readonly string[] {
+  return [
+    'Copy the remote MCP URL.',
+    `Paste it in ${where}.`,
+    'Approve when the browser opens.',
+    STEP_RETURN,
+  ];
 }
 
 /** Flat picker list — locked order (Claude Code → … → Other MCP). */
@@ -46,34 +81,49 @@ export const MCP_AI_APPS: readonly McpAiAppDef[] = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    sub: 'CLI / IDE · remote MCP',
+    sub: 'CLI · one command',
+    handoff: 'copy_command',
+    primaryLabel: 'Copy install command',
+    commandTemplate:
+      'claude mcp add --transport http underscore {{MCP_URL}}',
+    steps: stepsCopyCommand('Claude Code'),
     configLabel: 'Project .mcp.json (or ~/.claude.json)',
-    hint: pasteHint('Project .mcp.json (or ~/.claude.json)'),
+    hint: 'Or add the remote URL in Project .mcp.json (or ~/.claude.json).',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Restart Claude Code / open new session',
   },
   {
     id: 'claude-desktop',
     name: 'Claude Desktop',
-    sub: 'Desktop app · remote MCP',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('claude_desktop_config.json'),
     configLabel: 'claude_desktop_config.json',
-    hint: pasteHint('claude_desktop_config.json'),
+    hint: 'Paste the remote URL in claude_desktop_config.json.',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Quit Claude Desktop fully, then reopen',
   },
   {
     id: 'codex',
     name: 'Codex',
-    sub: 'CLI / IDE · remote MCP',
+    sub: 'CLI · one command',
+    handoff: 'copy_command',
+    primaryLabel: 'Copy install command',
+    commandTemplate: 'codex mcp add underscore --url {{MCP_URL}}',
+    steps: stepsCopyCommand('Codex'),
     configLabel: '~/.codex/config.toml (or: codex mcp add)',
-    hint: pasteHint('~/.codex/config.toml (or: codex mcp add)'),
+    hint: 'Or paste the remote URL in ~/.codex/config.toml.',
     configTemplate: CLOUD_TOML,
     restartLabel: 'Restart Codex / start a new session',
   },
   {
     id: 'chatgpt-desktop',
     name: 'ChatGPT',
-    sub: 'Developer Mode app · OAuth',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('ChatGPT Settings → Apps (Developer Mode)'),
     configLabel: 'ChatGPT Settings → Apps (Developer Mode)',
     hint: 'Paste the remote URL in ChatGPT connectors. Approve when the browser opens.',
     configTemplate: CLOUD_JSON,
@@ -82,45 +132,62 @@ export const MCP_AI_APPS: readonly McpAiAppDef[] = [
   {
     id: 'cursor',
     name: 'Cursor',
-    sub: 'Agent · remote MCP',
+    sub: 'IDE · one-click install',
+    handoff: 'deep_link',
+    primaryLabel: 'Open in Cursor',
+    steps: stepsOpenApprove(
+      'Open Cursor with _underscore pre-filled (button below).',
+    ),
     configLabel: '~/.cursor/mcp.json',
-    hint: pasteHint('~/.cursor/mcp.json'),
+    hint: 'If Cursor did not open, use Manual to copy the install link or config.',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Restart Cursor MCP / reload window',
   },
   {
     id: 'grok',
     name: 'Grok (xAI)',
-    sub: 'Grok Build · remote MCP',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('Grok Build MCP settings (or ~/.grok/config.toml)'),
     configLabel: '~/.grok/config.toml (or Grok Build MCP settings)',
-    hint: pasteHint('~/.grok/config.toml (or Grok Build MCP settings)'),
+    hint: 'Paste the remote URL in ~/.grok/config.toml (or Grok Build MCP settings).',
     configTemplate: CLOUD_TOML,
     restartLabel: 'Restart Grok Build / reload MCP servers',
   },
   {
     id: 'antigravity',
     name: 'Antigravity',
-    sub: 'Google agent platform · remote MCP',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('~/.gemini/antigravity/mcp_config.json'),
     configLabel: '~/.gemini/antigravity/mcp_config.json',
-    hint: pasteHint('~/.gemini/antigravity/mcp_config.json'),
+    hint: 'Paste the remote URL in ~/.gemini/antigravity/mcp_config.json.',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Reload MCP servers in Antigravity',
   },
   {
     id: 'gemini',
     name: 'Gemini',
-    sub: 'Gemini / Google agent surfaces with MCP',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('Gemini MCP config (path varies by surface)'),
     configLabel: 'Gemini MCP config (path varies by surface)',
-    hint: pasteHint('Gemini MCP config (path varies by surface)'),
+    hint: 'Paste the remote URL in Gemini MCP config (path varies by surface).',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Reload Gemini / agent session',
   },
   {
     id: 'other',
     name: 'Other MCP client',
-    sub: 'Any MCP host · remote URL',
+    sub: 'Paste URL in host settings',
+    handoff: 'copy_url',
+    primaryLabel: 'Copy remote URL',
+    steps: stepsCopyUrl('your client’s MCP settings'),
     configLabel: 'Your client’s MCP config',
-    hint: pasteHint('your client’s MCP config'),
+    hint: 'Paste the remote URL in your client’s MCP config.',
     configTemplate: CLOUD_JSON,
     restartLabel: 'Restart / reload your MCP client',
   },
