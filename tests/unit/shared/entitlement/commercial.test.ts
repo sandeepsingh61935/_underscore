@@ -37,6 +37,15 @@ describe('canUseMcp free window', () => {
     ).toEqual({ allowed: true });
   });
 
+  it('denies past_due even when free window on', () => {
+    expect(
+      canUseMcp(
+        { isAuthenticated: true, isPaidActive: false, isPastDue: true },
+        { freeWindow: true },
+      ),
+    ).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
+  });
+
   it('denies signed-in unpaid when free window off', () => {
     expect(
       canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: false }),

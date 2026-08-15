@@ -32,6 +32,8 @@ export interface FeatureGateContext {
   storageScope?: 'basic' | 'pro';
   /** Required for AI / MCP. Ignored for other features. */
   isPaidActive: boolean;
+  /** Blocks MCP during free window when billing is past due. */
+  isPastDue?: boolean;
 }
 
 export interface FeatureGateResult {
@@ -128,6 +130,7 @@ export function canUseFeature(
     return canUseMcp({
       isAuthenticated: ctx.isAuthenticated,
       isPaidActive: ctx.isPaidActive,
+      isPastDue: ctx.isPastDue,
     });
   }
 
@@ -171,7 +174,13 @@ export interface McpCapabilityFlags {
 
 /** Build MCP session capability flags from the shared feature gate. */
 export function buildMcpCapabilities(ctx: FeatureGateContext): McpCapabilityFlags {
-  if (!canUseMcp({ isAuthenticated: ctx.isAuthenticated, isPaidActive: ctx.isPaidActive }).allowed) {
+  if (
+    !canUseMcp({
+      isAuthenticated: ctx.isAuthenticated,
+      isPaidActive: ctx.isPaidActive,
+      isPastDue: ctx.isPastDue,
+    }).allowed
+  ) {
     return {
       sync: false,
       export: false,

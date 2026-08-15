@@ -14,6 +14,8 @@ export function isCommercialFreeWindow(): boolean {
 export type CommercialAuth = {
   isAuthenticated: boolean;
   isPaidActive: boolean;
+  /** When true, MCP stays locked even during free window (billing past due). */
+  isPastDue?: boolean;
 };
 
 export type CommercialGateResult =
@@ -49,6 +51,9 @@ export function canUseMcp(
 ): CommercialGateResult {
   if (!auth.isAuthenticated) {
     return { allowed: false, reason: 'AUTH_REQUIRED' };
+  }
+  if (auth.isPastDue) {
+    return { allowed: false, reason: 'PAID_REQUIRED' };
   }
   const freeWindow = opts?.freeWindow ?? isCommercialFreeWindow();
   if (freeWindow || auth.isPaidActive) {

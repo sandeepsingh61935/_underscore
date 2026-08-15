@@ -63,14 +63,18 @@ export function useConfigureAiProvidersGate(
   );
 }
 
-export function useMcpGate(isAuthenticated: boolean, isPaidActive: boolean): ModeFeatureResult {
+export function useMcpGate(
+  isAuthenticated: boolean,
+  isPaidActive: boolean,
+  isPastDue = false,
+): ModeFeatureResult {
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
   return useMemo(
     () => {
-      const gate = canUseMcp({ isAuthenticated, isPaidActive });
+      const gate = canUseMcp({ isAuthenticated, isPaidActive, isPastDue });
       return { allowed: gate.allowed, reason: gate.reason, capabilities };
     },
-    [currentMode, capabilities, isAuthenticated, isPaidActive],
+    [currentMode, capabilities, isAuthenticated, isPaidActive, isPastDue],
   );
 }

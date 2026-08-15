@@ -129,7 +129,11 @@ export function SettingsPage({
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
-  const mcpGate = useMcpGate(isAuthenticated, isPaidActive);
+  const mcpGate = useMcpGate(
+    isAuthenticated,
+    isPaidActive,
+    billing?.snapshot.entitlement.status === 'past_due',
+  );
 
   const planPill = resolveAccountPillLabel({
     modeId: currentMode,

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertPaidCloudMcpAccess, isPaidEntitlement } from '../paid-gate.js';
+import {
+  assertPaidCloudMcpAccess,
+  isCloudMcpEntitlementAllowed,
+  isPaidEntitlement,
+} from '../paid-gate.js';
 
 function fakeClient(opts: {
   user?: { id: string } | null;
@@ -38,6 +42,20 @@ describe('isPaidEntitlement', () => {
   });
 });
 
+describe('isCloudMcpEntitlementAllowed', () => {
+  it('allows free users during free window; denies past_due', () => {
+    expect(
+      isCloudMcpEntitlementAllowed({ plan: 'free', status: 'none' }, true),
+    ).toBe(true);
+    expect(
+      isCloudMcpEntitlementAllowed({ plan: 'paid', status: 'past_due' }, true),
+    ).toBe(false);
+    expect(
+      isCloudMcpEntitlementAllowed({ plan: 'free', status: 'none' }, false),
+    ).toBe(false);
+  });
+});
+
 describe('assertPaidCloudMcpAccess', () => {
   it('rejects invalid sessions with 401', async () => {
     const result = await assertPaidCloudMcpAccess(
@@ -47,16 +65,12 @@ describe('assertPaidCloudMcpAccess', () => {
     expect(result).toEqual({ ok: false, status: 401, error: 'Invalid session' });
   });
 
-  it('rejects free and past_due with 403', async () => {
+  it('allows free plan during free window; rejects past_due with 403', async () => {
     const free = await assertPaidCloudMcpAccess(
       fakeClient({ user: { id: 'u1' }, row: { plan: 'free', status: 'none' } }) as never,
       'tok',
     );
-    expect(free).toEqual({
-      ok: false,
-      status: 403,
-      error: 'Cloud MCP requires an active paid plan',
-    });
+    expect(free).toEqual({ ok: true, userId: 'u1' });
 
     const pastDue = await assertPaidCloudMcpAccess(
       fakeClient({ user: { id: 'u1' }, row: { plan: 'paid', status: 'past_due' } }) as never,
