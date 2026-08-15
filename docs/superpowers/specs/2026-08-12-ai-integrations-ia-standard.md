@@ -139,3 +139,10 @@ Phase 1–4 shipped settings + prefs + Ask chip **without** web stream. That cut
 - MCP snippets via shared `CodeSnippetBlock`; steps via `mcpSetupStepLabels`  
 - `webLlmKeys`: pure `reduce` + `checkedAt` required for “configured”; Ask reads default label  
 - Plaintext localStorage keys = known debt until vault ADR  
+
+
+---
+
+## Superseded product surface (2026-08-14)
+
+**Models & providers / in-app Ask** are **retired** as product. See [free-window Integrations-only PRD](./2026-08-14-free-window-integrations-only-prd.md). Integrations (MCP) remains the only AI surface; free window unlocks MCP for signed-in users.

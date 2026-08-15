@@ -65,10 +65,10 @@ function planSub(opts: {
   if (opts.isPaidActive) {
     return opts.currentPeriodEnd
       ? `Renews ${formatPeriodEnd(opts.currentPeriodEnd)}`
-      : 'Paid · AI & agents';
+      : 'Paid · Integrations';
   }
-  if (opts.isPastDue) return 'Fix payment in Polar to restore AI';
-  return 'Free is your Starter account · Sync & export';
+  if (opts.isPastDue) return 'Fix payment in Polar to restore Integrations';
+  return 'Free is your Starter account · Sync & export · Integrations early access';
 }
 
 function planPillClass(label: WebPlanLabel): string {
@@ -219,7 +219,7 @@ export function AccountPanel({
           <div className="setting-row">
             <div className="grow">
               <div className="title">Sign in to upgrade</div>
-              <div className="sub">Free sync after sign-in · Account (Paid) for AI</div>
+              <div className="sub">Free sync after sign-in · Integrations after early access</div>
             </div>
             <Link to="/sign-in" className="btn primary sm">
               Sign in
@@ -232,8 +232,7 @@ export function AccountPanel({
         <div className="cap-list" data-od-id="mode-caps">
           <span className={`cap ${caps.flags.sync ? 'on' : 'off'}`}>Sync</span>
           <span className={`cap ${caps.flags.export ? 'on' : 'off'}`}>Export</span>
-          <span className={`cap ${caps.flags.ai ? 'on' : 'off'}`}>AI</span>
-          <span className={`cap ${caps.flags.mcp ? 'on' : 'off'}`}>MCP</span>
+          <span className={`cap ${caps.flags.mcp ? 'on' : 'off'}`}>Integrations</span>
         </div>
       </div>
     </div>
@@ -328,9 +327,7 @@ export function PlanPanel({
             <h3>Account (Paid)</h3>
             <ul>
               <li>Everything Free</li>
-              <li>Chat · Summarize</li>
-              <li>Models &amp; providers (BYOK)</li>
-              <li>Integrations (MCP)</li>
+              <li>Integrations (MCP) — after early access</li>
             </ul>
             {isAuthenticated && !caps.isPaidActive ? (
               <button

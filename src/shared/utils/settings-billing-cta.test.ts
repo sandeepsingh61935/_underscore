@@ -12,7 +12,7 @@ describe('resolveSettingsBillingCta', () => {
     expect(cta.ctaLabel).toBe('Upgrade');
     expect(cta.action).toBe('checkout');
     expect(cta.showSync).toBe(true);
-    expect(cta.sub).toBe('AI & agents');
+    expect(cta.sub).toBe('Agent access (Integrations) — after early access');
   });
 
   it('Paid active: Manage → portal, no Refresh', () => {

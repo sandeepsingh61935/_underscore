@@ -118,37 +118,8 @@ export function libraryHref(domain: string, path?: string | null): string {
 }
 
 /**
- * Ask URL with optional grounding scope (domain / section).
- * Whole-library when domain omitted; root path omits section.
- */
-export function askHref(domain?: string | null, path?: string | null): string {
-  if (!domain) return '/ask';
-  const section = path && path !== '/' ? path : null;
-  const search = buildLibrarySearch({ domain, section });
-  return search ? `/ask?${search}` : '/ask';
-}
-
-function HomeLockIcon(): React.ReactElement {
-  return (
-    <svg
-      className="g-stat-lock-ico"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      aria-hidden="true"
-    >
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
-/**
  * Product Home — OD viewHome parity.
- * Guest is always empty (useWebLibrary); Chat CTAs only when caps.ai.
+ * Guest is always empty (useWebLibrary). Chat/Ask product removed.
  */
 export function HomePage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();
@@ -173,8 +144,8 @@ export function HomePage(): React.ReactElement {
   const { updateMetadata } = useUpdateHighlightMetadata();
 
   const empty = lib.highlights.length === 0;
-  const ai = caps.flags.ai;
   const guest = caps.isGuest;
+  const showIntegrationsCta = caps.flags.mcp;
 
   const patchHighlight = lib.patchHighlight;
 
@@ -378,14 +349,14 @@ export function HomePage(): React.ReactElement {
               <div className="home-current-empty">No highlights on this page yet</div>
             )}
           </button>
-          {ai && pageHls.length > 0 && cp ? (
+          {showIntegrationsCta && pageHls.length > 0 && cp ? (
             <div className="home-current-actions">
               <Link
-                to={askHref(cp.domain, cp.path)}
+                to="/settings?tab=ai"
                 className="btn-text"
-                data-od-id="home-ask-page"
+                data-od-id="home-integrations"
               >
-                Chat this page
+                Connect agent
               </Link>
             </div>
           ) : null}
@@ -484,35 +455,6 @@ export function HomePage(): React.ReactElement {
             <div className="g-stat" data-od-id="stat-sources">
               <span className="g-stat-label">Sources</span>
               <span className="g-stat-val">{fmt(lib.domains.length)}</span>
-            </div>
-          </section>
-          <section className="stats-group" data-od-id="stats-asks">
-            <h3 className="stats-group-title">Chats</h3>
-            <div
-              className={`g-stat${guest || !ai ? ' is-locked' : ''}`}
-              data-od-id={guest || !ai ? 'stat-ai-week-lock' : 'stat-ai-week'}
-            >
-              <span className="g-stat-label">This week</span>
-              {guest || !ai ? (
-                <span className="g-stat-val g-stat-lock">
-                  <HomeLockIcon />
-                </span>
-              ) : (
-                <span className="g-stat-val">0</span>
-              )}
-            </div>
-            <div
-              className={`g-stat${guest || !ai ? ' is-locked' : ''}`}
-              data-od-id={guest || !ai ? 'stat-ai-total-lock' : 'stat-ai-total'}
-            >
-              <span className="g-stat-label">Total</span>
-              {guest || !ai ? (
-                <span className="g-stat-val g-stat-lock">
-                  <HomeLockIcon />
-                </span>
-              ) : (
-                <span className="g-stat-val">0</span>
-              )}
             </div>
           </section>
         </div>

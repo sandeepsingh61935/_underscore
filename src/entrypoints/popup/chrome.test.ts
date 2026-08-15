@@ -9,8 +9,6 @@ const makeHandlers = (): ChromeHandlers => ({
   onSwitch: vi.fn(),
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
-  onBackFromApiKeySetup: vi.fn(),
-  onBackFromLlmStreaming: vi.fn(),
   subDomainBackLabel: vi.fn(() => 'anthropic.com'),
   getModeId: vi.fn(() => 'local'),
   getAccountPill: vi.fn((): AccountPillLabel | null => 'Free'),
@@ -159,42 +157,12 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.SETTINGS.onSwitch).toBeUndefined();
   });
 
-  it('primary tab roots have no onBack (ASK/SETTINGS/COLLECTIONS/DASHBOARD)', () => {
+  it('primary tab roots have no onBack (SETTINGS/COLLECTIONS/DASHBOARD)', () => {
     const map = buildChrome(makeHandlers());
-    for (const key of ['ASK', 'SETTINGS', 'COLLECTIONS', 'DASHBOARD'] as const) {
+    for (const key of ['SETTINGS', 'COLLECTIONS', 'DASHBOARD'] as const) {
       expect(map[key].onBack).toBeUndefined();
       expect(map[key].backLabel).toBeUndefined();
     }
-  });
-
-  it('ActiveTab ask is available on ASK view', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.ASK.activeTab).toBe('ask');
-    expect(map.ASK.place).toBe('Ask');
-    expect(map.ASK.brand).toBe('_underscore');
-    expect(map.ASK.showTabBar).toBe(true);
-  });
-
-  it('API_KEY_SETUP has title, ModeHeader, back button, no TabBar', () => {
-    const handlers = makeHandlers();
-    const map = buildChrome(handlers);
-    expect(map.API_KEY_SETUP.title).toBe('_underscore · models');
-    expect(map.API_KEY_SETUP.showModeHeader).toBe(true);
-    expect(map.API_KEY_SETUP.showTabBar).toBe(false);
-    expect(map.API_KEY_SETUP.onBack).toBe(handlers.onBackFromApiKeySetup);
-    expect(map.API_KEY_SETUP.backLabel).toBe('Settings');
-    expect(map.API_KEY_SETUP.onSwitch).toBeUndefined();
-  });
-
-  it('LLM_STREAMING has title, ModeHeader, back button, no TabBar', () => {
-    const handlers = makeHandlers();
-    const map = buildChrome(handlers);
-    expect(map.LLM_STREAMING.title).toBe('_underscore · summary');
-    expect(map.LLM_STREAMING.showModeHeader).toBe(true);
-    expect(map.LLM_STREAMING.showTabBar).toBe(false);
-    expect(map.LLM_STREAMING.onBack).toBe(handlers.onBackFromLlmStreaming);
-    expect(map.LLM_STREAMING.backLabel).toBe('Close');
-    expect(map.LLM_STREAMING.onSwitch).toBeUndefined();
   });
 
   it('forwards getAccountPill into accountPill on chrome screens', () => {
@@ -204,7 +172,6 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.DASHBOARD.accountPill).toBe('Paid');
     expect(map.COLLECTIONS.accountPill).toBe('Paid');
     expect(map.SETTINGS.accountPill).toBe('Paid');
-    expect(map.ASK.accountPill).toBe('Paid');
     expect(handlers.getAccountPill).toHaveBeenCalled();
   });
 });

@@ -21,7 +21,6 @@ function renderShell(initialPath = '/home') {
         <Route element={<WebAppShell />}>
           <Route path="/home" element={<h1>Home</h1>} />
           <Route path="/library" element={<h1>Library</h1>} />
-          <Route path="/ask" element={<h1>Ask</h1>} />
           <Route path="/settings" element={<h1>Settings</h1>} />
           <Route path="/sign-in" element={<h1>Sign in page</h1>} />
         </Route>

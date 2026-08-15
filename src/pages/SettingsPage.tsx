@@ -30,7 +30,7 @@ import {
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import {
-  useConfigureAiProvidersGate,
+
   useMcpGate,
   useModeFeature,
 } from '@/ui-system/hooks/useModeFeature';
@@ -42,7 +42,6 @@ export interface SettingsPageProps {
   onBack?: () => void;
   /** @deprecated Mode is inline on Settings; kept for callers. */
   onChangeMode?: () => void;
-  onConfigureAIProviders?: () => void;
   onSignIn?: () => void;
   onLogout?: () => Promise<void>;
 }
@@ -50,12 +49,11 @@ export interface SettingsPageProps {
 /**
  * Settings — Open Design extension mockup order:
  * head → local card (guest) → Mode segments → Typography → Appearance/Theme →
- * Account/billing (signed-in) → Library (pulse + tools) → AI → Sign out
+ * Account/billing (signed-in) → Library (pulse + tools) → Integrations → Sign out
  */
 export function SettingsPage({
   onBack: _onBack,
   onChangeMode: _onChangeMode,
-  onConfigureAIProviders,
   onSignIn,
   onLogout,
 }: SettingsPageProps): React.ReactElement {
@@ -131,7 +129,6 @@ export function SettingsPage({
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
-  const aiSetupGate = useConfigureAiProvidersGate(isAuthenticated, isPaidActive);
   const mcpGate = useMcpGate(isAuthenticated, isPaidActive);
 
   const planPill = resolveAccountPillLabel({
@@ -579,40 +576,17 @@ export function SettingsPage({
           </>
         ) : null}
 
-        {/* 7. AI — Models & providers | Integrations (IA standard 2026-08-12) */}
+        {/* 7. Integrations (MCP) — Models/Ask product retired */}
         <div
           className="u-caps"
           data-testid="settings-section-ai"
           style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
         >
-          AI
+          Integrations
         </div>
         <Row
-          title="Models & providers"
-          sub="Keys for Ask"
-          right={
-            <BtnText
-              aria-label={
-                aiSetupGate.allowed
-                  ? 'Open Models & providers'
-                  : 'Models & providers locked'
-              }
-              disabled={!aiSetupGate.allowed}
-              muted={!aiSetupGate.allowed}
-              onClick={() => {
-                if (aiSetupGate.allowed) onConfigureAIProviders?.();
-              }}
-            >
-              <SettingsStatusGlyph
-                kind={aiSetupGate.allowed ? 'chevron' : 'lock'}
-                label={aiSetupGate.allowed ? 'Open' : 'Locked'}
-              />
-            </BtnText>
-          }
-        />
-        <Row
           title="Integrations"
-          sub="Let agents use your library"
+          sub="Let agents use your library (MCP)"
           right={
             <BtnText
               aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}

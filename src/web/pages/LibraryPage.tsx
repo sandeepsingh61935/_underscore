@@ -661,18 +661,7 @@ export function LibraryPage(): React.ReactElement {
               ) : null}
             </div>
           ) : null}
-          {selection.domain && caps.flags.ai ? (
-            <Link
-              to={`/ask?${buildLibrarySearch({
-                domain: selection.domain,
-                section: selection.section,
-              })}`}
-              className="btn sm accent"
-              data-od-id="library-ask"
-            >
-              Chat
-            </Link>
-          ) : null}
+
         </div>
         <div className="lib-search-wrap" data-od-id="library-search">
           <HighlightSearchBar

@@ -21,10 +21,22 @@ const BOOLEAN_FEATURES: FeatureKey[] = [
 
 const MODES: ModeType[] = ['basic', 'pro', 'pro_xai'];
 
-/** Independent spec: which boolean features each mode advertises. */
+/**
+ * Independent spec: which boolean features each mode allows under happy-path
+ * commercial free window (signed-in free gets MCP; in-app AI never).
+ */
 const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
   basic: new Set(['undo', 'collections', 'tags', 'search']),
-  pro: new Set(['undo', 'sync', 'collections', 'tags', 'export', 'search', 'multiSelector']),
+  pro: new Set([
+    'undo',
+    'sync',
+    'collections',
+    'tags',
+    'export',
+    'search',
+    'multiSelector',
+    'mcp',
+  ]),
   pro_xai: new Set([
     'undo',
     'sync',
@@ -33,7 +45,6 @@ const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
     'export',
     'search',
     'multiSelector',
-    'ai',
     'mcp',
   ]),
 };

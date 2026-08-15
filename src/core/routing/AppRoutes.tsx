@@ -19,11 +19,9 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
-import { WebLlmRuntimeProvider } from '@/web/components/WebLlmRuntimeProvider';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
-import { AskPage } from '@/web/pages/AskPage';
 import { WebSettingsPage } from '@/web/pages/WebSettingsPage';
 import { resolveLegacyRedirect } from '@/web/routing/legacyRedirects';
 
@@ -70,7 +68,6 @@ export function AppRoutes() {
   return (
     <WebAuthProvider>
       <AppProvider dataProvider={dataProvider}>
-        <WebLlmRuntimeProvider>
         <BrowserRouter>
           <IntentCatcher>
             <Routes>
@@ -88,9 +85,12 @@ export function AppRoutes() {
               <Route element={<WebAppShell />}>
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/library" element={<LibraryPage />} />
-                <Route path="/ask" element={<AskPage />} />
                 <Route path="/settings" element={<WebSettingsPage />} />
               </Route>
+
+              {/* Retired Ask product — land on Integrations settings */}
+              <Route path="/ask" element={<Navigate to="/settings?tab=ai" replace />} />
+              <Route path="/ask/*" element={<Navigate to="/settings?tab=ai" replace />} />
 
               {/* Legacy redirects */}
               <Route path="/collections" element={<Navigate to="/library" replace />} />
@@ -105,7 +105,6 @@ export function AppRoutes() {
             </Routes>
           </IntentCatcher>
         </BrowserRouter>
-        </WebLlmRuntimeProvider>
       </AppProvider>
     </WebAuthProvider>
   );

@@ -1,9 +1,14 @@
-import { isCommercialUnlocked } from '@/shared/entitlement/commercial';
+import {
+  isCommercialFreeWindow,
+  isCommercialUnlocked,
+} from '@/shared/entitlement/commercial';
 
 export type WebCapFlags = {
   sync: boolean;
   export: boolean;
+  /** In-app Ask/Models — always false (product retired). */
   ai: boolean;
+  /** Integrations (MCP). */
   mcp: boolean;
 };
 
@@ -15,20 +20,31 @@ export type WebCaps = {
   isGuest: boolean;
   isPastDue: boolean;
   isPaidActive: boolean;
+  /** Early-access free window active for this resolution. */
+  freeWindow: boolean;
 };
 
 export function resolveWebCaps(input: {
   isAuthenticated: boolean;
   isPaidActive: boolean;
   billingStatus?: string | null;
+  /** Test override; default isCommercialFreeWindow(). */
+  freeWindow?: boolean;
 }): WebCaps {
   const isGuest = !input.isAuthenticated;
   const isPastDue = !isGuest && input.billingStatus === 'past_due';
+  const freeWindow = input.freeWindow ?? isCommercialFreeWindow();
   const isPaidActive = isCommercialUnlocked({
     isAuthenticated: input.isAuthenticated,
     isPaidActive: input.isPaidActive && !isPastDue,
   });
-  const commercial = { ai: isPaidActive, mcp: isPaidActive };
+
+  // Ask/Models product removed — never unlock in-app AI.
+  const ai = false;
+  // MCP: signed-in, not past due, and (paid OR free window).
+  const mcp = !isGuest && !isPastDue && (isPaidActive || freeWindow);
+
+  const flags = { sync: false, export: false, ai, mcp };
 
   if (isGuest) {
     return {
@@ -36,7 +52,8 @@ export function resolveWebCaps(input: {
       isPastDue: false,
       isPaidActive: false,
       planLabel: 'Guest',
-      flags: { sync: false, export: false, ...commercial },
+      freeWindow,
+      flags: { ...flags, sync: false, export: false },
     };
   }
 
@@ -46,7 +63,8 @@ export function resolveWebCaps(input: {
       isPastDue: true,
       isPaidActive: false,
       planLabel: 'Past due',
-      flags: { sync: true, export: true, ...commercial },
+      freeWindow,
+      flags: { ...flags, sync: true, export: true, mcp: false },
     };
   }
 
@@ -56,7 +74,8 @@ export function resolveWebCaps(input: {
       isPastDue: false,
       isPaidActive: true,
       planLabel: 'Paid',
-      flags: { sync: true, export: true, ...commercial },
+      freeWindow,
+      flags: { ...flags, sync: true, export: true },
     };
   }
 
@@ -65,6 +84,7 @@ export function resolveWebCaps(input: {
     isPastDue: false,
     isPaidActive: false,
     planLabel: 'Free',
-    flags: { sync: true, export: true, ...commercial },
+    freeWindow,
+    flags: { ...flags, sync: true, export: true },
   };
 }

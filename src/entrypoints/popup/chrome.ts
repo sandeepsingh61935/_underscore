@@ -2,7 +2,7 @@
 
 import type { AccountPillLabel } from '@/shared/utils/account-pill';
 
-export type ActiveTab = 'home' | 'collections' | 'ask' | 'settings';
+export type ActiveTab = 'home' | 'collections' | 'settings';
 export type ViewKey =
   | 'LOADING'
   | 'WELCOME'
@@ -12,10 +12,7 @@ export type ViewKey =
   | 'SUB_DOMAIN'
   | 'AUTH'
   | 'SETTINGS'
-  | 'ASK'
-  | 'DASHBOARD'
-  | 'API_KEY_SETUP'
-  | 'LLM_STREAMING';
+  | 'DASHBOARD';
 
 export interface PopupChrome {
   title: string;
@@ -41,8 +38,6 @@ export interface ChromeHandlers {
   onSwitch?: () => void;
   onBackToCollections: () => void;
   onBackToDomain: () => void;
-  onBackFromApiKeySetup: () => void;
-  onBackFromLlmStreaming: () => void;
   subDomainBackLabel: () => string;
   getModeId: () => string;
   getAccountPill: () => AccountPillLabel | null;
@@ -150,19 +145,6 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       accountPill,
       onAccountPillClick,
     },
-    ASK: {
-      title: `${BRAND} · ask`,
-      place: 'Ask',
-      brand: BRAND,
-      showTitleStrip: true,
-      showModeHeader: true,
-      showTabBar: true,
-      modeId: handlers.getModeId(),
-      activeTab: 'ask',
-      onTabChange: handlers.onTabChange,
-      accountPill,
-      onAccountPillClick,
-    },
     DASHBOARD: {
       title: BRAND,
       place: 'Home',
@@ -173,32 +155,6 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'home',
       onTabChange: handlers.onTabChange,
-      accountPill,
-      onAccountPillClick,
-    },
-    API_KEY_SETUP: {
-      title: `${BRAND} · models`,
-      place: 'Models',
-      brand: BRAND,
-      showTitleStrip: true,
-      showModeHeader: true,
-      showTabBar: false,
-      modeId: handlers.getModeId(),
-      onBack: handlers.onBackFromApiKeySetup,
-      backLabel: 'Settings',
-      accountPill,
-      onAccountPillClick,
-    },
-    LLM_STREAMING: {
-      title: `${BRAND} · summary`,
-      place: 'Summary',
-      brand: BRAND,
-      showTitleStrip: true,
-      showModeHeader: true,
-      showTabBar: false,
-      modeId: handlers.getModeId(),
-      onBack: handlers.onBackFromLlmStreaming,
-      backLabel: 'Close',
       accountPill,
       onAccountPillClick,
     },

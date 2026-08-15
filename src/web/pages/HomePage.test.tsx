@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { HomePage, askHref, libraryHref } from './HomePage';
+import { HomePage, libraryHref } from './HomePage';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -74,12 +74,4 @@ describe('HomePage', () => {
     );
   });
 
-  it('askHref: library-wide bare /ask; page scope passes domain/section', () => {
-    expect(askHref()).toBe('/ask');
-    expect(askHref(null)).toBe('/ask');
-    expect(askHref('example.com', '/')).toBe('/ask?domain=example.com');
-    expect(askHref('example.com', '/docs/guide')).toBe(
-      '/ask?domain=example.com&section=%2Fdocs%2Fguide',
-    );
-  });
 });

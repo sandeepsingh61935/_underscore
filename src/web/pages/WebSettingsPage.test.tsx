@@ -199,36 +199,18 @@ describe('WebSettingsPage', () => {
     expect(startCheckout).not.toHaveBeenCalled();
   });
 
-  it('AI tab locked when !caps.ai', () => {
+  it('AI tab is Integrations-only; guest locked with sign-in', () => {
     renderSettings('/settings?tab=ai', false);
 
     expect(document.querySelector('[data-od-id="settings-ai"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ai-lock-banner"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="settings-ai-see-plan"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="ai-seg-models"]')?.textContent?.trim()).toBe(
-      'Models',
+    expect(document.querySelector('[data-od-id="settings-ai-see-plan"]')?.textContent).toMatch(
+      /Sign in/i,
     );
-    expect(
-      document.querySelector('[data-od-id="ai-seg-integrations"]')?.textContent?.trim(),
-    ).toBe('Integrations');
-    // Guest: catalog is visible, no setup actions (sign-in only).
-    expect(document.querySelector('[data-od-id="provider-openai"]')).toBeTruthy();
-    expect(
-      document.querySelectorAll('[data-od-id^="provider-"][data-od-id$="-action"]').length,
-    ).toBe(0);
-
-    // Integrations: status row (no fake toggle); catalog locked
-    fireEvent.click(document.querySelector('[data-od-id="ai-seg-integrations"]')!);
-    expect(document.querySelector('[data-od-id="settings-mcp"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="settings-mcp-status"]')?.textContent).toMatch(
-      /Off|Ready|Connected|Paid/i,
-    );
-    expect(document.querySelectorAll('[data-od-id^="mcp-app-"]').length).toBeGreaterThan(0);
-    expect(
-      Array.from(document.querySelectorAll('[data-od-id^="mcp-app-"]')).every(
-        (el) => (el as HTMLButtonElement).disabled,
-      ),
-    ).toBe(true);
+    expect(document.querySelector('[data-od-id="ai-seg-models"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="provider-openai"]')).toBeNull();
+    // Integrations catalog may still render locked for guest
+    expect(document.querySelector('[data-od-id="settings-connect-ai"], [data-od-id="settings-mcp"]')).toBeTruthy();
   });
 
   it('AI tab past_due: lock CTA is Update and opens portal', () => {

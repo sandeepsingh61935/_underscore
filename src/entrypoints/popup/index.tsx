@@ -6,8 +6,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
-import { APIKeySetupView } from '../../features/ai/views/APIKeySetupView';
-import { LLMStreamingView } from '../../features/ai/views/LLMStreamingView';
 import { AuthProvider, useAuth as useExtensionAuth } from '../../ui-system/providers/AuthProvider';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
@@ -24,9 +22,7 @@ import {
   persistPendingAuthMode,
   persistPopupView,
 } from '../../shared/constants/popup-navigation-storage';
-import type { PromptContext } from '../../shared/llm/prompts';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
-import type { ProviderName } from '../../shared/interfaces/i-llm-service';
 import {
   postLoginViewForMode,
   resolvePopupInitialRoute,
@@ -35,18 +31,14 @@ import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
 
 import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
-import { AskView } from './views/AskView';
 import { AuthView } from './views/AuthView';
 import { DashboardView } from './views/DashboardView';
 
 import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
-import { useActiveLLMProvider } from '@/features/ai/hooks/useActiveLLMProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
-import { resolveAskLockReason } from '@/shared/utils/ask-lock';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
-import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 import '../../ui-system/theme/global.css';
@@ -61,10 +53,7 @@ enum View {
   SUB_DOMAIN = 'SUB_DOMAIN',
   AUTH = 'AUTH',
   SETTINGS = 'SETTINGS',
-  ASK = 'ASK',
   DASHBOARD = 'DASHBOARD',
-  API_KEY_SETUP = 'API_KEY_SETUP',
-  LLM_STREAMING = 'LLM_STREAMING',
 }
 
 class ErrorBoundary extends Component<
@@ -120,13 +109,9 @@ function PopupApp(): React.ReactElement {
   const [previousView, setPreviousView] = useState<View | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
-  /** Library domain chat icon → Ask tab with this hostname. */
-  const [askLibraryDomain, setAskLibraryDomain] = useState<string | null>(null);
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
-  const [llmContext, setLlmContext] = useState<PromptContext | null>(null);
-  const [lastLlmSetupProvider, setLastLlmSetupProvider] = useState<ProviderName | undefined>();
 
   // Authentication & Mode Notification / Swapping Effect
   useEffect(() => {
@@ -186,10 +171,6 @@ function PopupApp(): React.ReactElement {
         ]);
         const hasSeenWelcome = onboarding['underscore_seen_welcome'] === 'true';
         const hasSeenModeSelection = onboarding['underscore_seen_mode_selection'] === 'true';
-
-        if (nav.lastLlmSetupProvider) {
-          setLastLlmSetupProvider(nav.lastLlmSetupProvider);
-        }
 
         const resolved = resolvePopupInitialRoute({
           isAuthenticated: Boolean(user),
@@ -325,33 +306,15 @@ function PopupApp(): React.ReactElement {
   const handleTabChange = (tab: ActiveTab): void => {
     switch (tab) {
       case 'home':
-        setAskLibraryDomain(null);
         setCurrentView(View.DASHBOARD);
         break;
       case 'collections':
-        setAskLibraryDomain(null);
         setCurrentView(View.COLLECTIONS);
         break;
-      case 'ask':
-        setCurrentView(View.ASK);
+      case 'settings':
+        handleSettingsClick();
         break;
-      case 'settings':    handleSettingsClick(); break;
     }
-  };
-
-  const handleConfigureAIProviders = (): void => {
-    setPreviousView(currentView);
-    setCurrentView(View.API_KEY_SETUP);
-  };
-
-  const handleBackFromApiKeySetup = (): void => {
-    setCurrentView(View.SETTINGS);
-  };
-
-  const handleBackFromLlmStreaming = (): void => {
-    setLlmContext(null);
-    setCurrentView(previousView ?? View.COLLECTIONS);
-    setPreviousView(null);
   };
 
   const modeId = typeof currentMode === 'string' ? currentMode : 'basic';
@@ -363,23 +326,11 @@ function PopupApp(): React.ReactElement {
       : modeId === 'pro_xai' || billing.snapshot.isPaidActive
     : modeId === 'pro_xai';
   const billingStatus = billing?.snapshot.entitlement.status ?? null;
-  const { provider: activeLlmProvider } = useActiveLLMProvider();
-  const aiCapability = getCapabilitiesForMode(modeId as ModeType).ai;
-  const askLockReason = resolveAskLockReason({
-    isAuthenticated: Boolean(user),
-    isPaidActive,
-    billingStatus,
-    hasModel: activeLlmProvider !== null,
-    aiCapability,
-  });
-
   const chromeHandlers: ChromeHandlers = {
     onTabChange: handleTabChange,
     onSwitch: handleSettingsChangeMode,
     onBackToCollections: handleBackToCollections,
     onBackToDomain: handleBackToDomain,
-    onBackFromApiKeySetup: handleBackFromApiKeySetup,
-    onBackFromLlmStreaming: handleBackFromLlmStreaming,
     subDomainBackLabel: () => selectedDomain,
     getModeId: () => modeId,
     getAccountPill: () =>
@@ -424,10 +375,6 @@ function PopupApp(): React.ReactElement {
         <CollectionsView
           onCollectionClick={handleCollectionClick}
           onSectionClick={handleSectionClick}
-          onAskDomain={(domain) => {
-            setAskLibraryDomain(domain);
-            setCurrentView(View.ASK);
-          }}
           isAuthenticated={!!user}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
@@ -437,10 +384,6 @@ function PopupApp(): React.ReactElement {
           domain={selectedDomain}
           onBack={handleBackToCollections}
           onSectionClick={handleSectionClick}
-          onAskDomain={(domain) => {
-            setAskLibraryDomain(domain);
-            setCurrentView(View.ASK);
-          }}
         />
       )}
       {currentView === View.SUB_DOMAIN && (
@@ -461,35 +404,8 @@ function PopupApp(): React.ReactElement {
         <SettingsPage
           onBack={handleBackToCollections}
           onChangeMode={handleSettingsChangeMode}
-          onConfigureAIProviders={handleConfigureAIProviders}
           onSignIn={() => setCurrentView(View.AUTH)}
           onLogout={handleLogout}
-        />
-      )}
-      {currentView === View.ASK && (
-        <AskView
-          lockReason={askLockReason}
-          libraryDomain={askLibraryDomain}
-          onSignIn={() => setCurrentView(View.AUTH)}
-          onUpgrade={() => {
-            if (billing?.startCheckout) {
-              void billing.startCheckout().catch(() => {
-                setCurrentView(View.SETTINGS);
-              });
-              return;
-            }
-            setCurrentView(View.SETTINGS);
-          }}
-          onUpdatePayment={() => {
-            if (billing?.openPortal) {
-              void billing.openPortal().catch(() => {
-                setCurrentView(View.SETTINGS);
-              });
-              return;
-            }
-            setCurrentView(View.SETTINGS);
-          }}
-          onConnectAi={handleConfigureAIProviders}
         />
       )}
       {currentView === View.DASHBOARD && (
@@ -498,20 +414,7 @@ function PopupApp(): React.ReactElement {
           onSectionClick={handleSectionClick}
           onSignIn={() => setCurrentView(View.AUTH)}
           isPaidActive={isPaidActive}
-          onAskPage={() => {
-            setAskLibraryDomain(null);
-            setCurrentView(View.ASK);
-          }}
         />
-      )}
-      {currentView === View.API_KEY_SETUP && (
-        <APIKeySetupView
-          initialProvider={lastLlmSetupProvider}
-          onClose={handleBackFromApiKeySetup}
-        />
-      )}
-      {currentView === View.LLM_STREAMING && llmContext && (
-        <LLMStreamingView ctx={llmContext} onClose={handleBackFromLlmStreaming} />
       )}
     </PopupShell>
   );

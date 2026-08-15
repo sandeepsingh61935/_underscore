@@ -66,8 +66,8 @@ function proXaiContext(overrides: Partial<FeatureGateContext> = {}): FeatureGate
   };
 }
 
-describe('registerAiHandlers AI feature gate', () => {
-  it('denies IPC_AI_CHAT when gate resolver reports Account Free (not Paid)', async () => {
+describe('registerAiHandlers AI feature gate (product retired)', () => {
+  it('denies IPC_AI_CHAT when unpaid', async () => {
     const bus = makeMessageBus();
     registerAiHandlers({
       bus: bus as never,
@@ -86,7 +86,7 @@ describe('registerAiHandlers AI feature gate', () => {
     expect(result).toEqual({ success: false, error: 'Available with Account (Paid)' });
   });
 
-  it('allows IPC_AI_SET_API_KEY on pro_xai', async () => {
+  it('denies IPC_AI_SET_API_KEY even when paid (Models product retired)', async () => {
     const bus = makeMessageBus();
     registerAiHandlers({
       bus: bus as never,
@@ -99,10 +99,10 @@ describe('registerAiHandlers AI feature gate', () => {
     const handler = bus.handlers.get(IPC_AI_SET_API_KEY)!;
     const result = await handler({ provider: 'anthropic', key: 'sk-x' });
 
-    expect(result).toEqual({ success: true, data: { ok: true } });
+    expect(result).toEqual({ success: false, error: 'Available with Account (Paid)' });
   });
 
-  it('allows IPC_AI_CHAT when gate resolver reports pro_xai', async () => {
+  it('denies IPC_AI_CHAT even when paid (Ask product retired)', async () => {
     const bus = makeMessageBus();
     const chatResult: LLMResult = { text: 'ok', inputTokens: 1, outputTokens: 1, durationMs: 1 };
     const anthropic: ILLMService = {
@@ -132,7 +132,7 @@ describe('registerAiHandlers AI feature gate', () => {
       request: { systemPrompt: 's', messages: [{ role: 'user', content: 'hi' }], maxTokens: 10 },
     });
 
-    expect(anthropic.chat).toHaveBeenCalled();
-    expect(result).toEqual({ success: true, data: chatResult });
+    expect(anthropic.chat).not.toHaveBeenCalled();
+    expect(result).toEqual({ success: false, error: 'Available with Account (Paid)' });
   });
 });

@@ -99,7 +99,7 @@ describe('mode-capabilities', () => {
       expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
     });
 
-    it('allows AI when paid even if stored mode is pro', () => {
+    it('denies in-app AI even when paid (Ask product retired)', () => {
       const result = canUseFeature('ai', {
         mode: 'pro',
         capabilities: getCapabilitiesForMode('pro'),
@@ -107,10 +107,10 @@ describe('mode-capabilities', () => {
         storageScope: 'pro',
         isPaidActive: true,
       });
-      expect(result).toEqual({ allowed: true });
+      expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
     });
 
-    it('allows AI in pro_xai when authenticated and paid', () => {
+    it('denies in-app AI in pro_xai when authenticated and paid', () => {
       const result = canUseFeature('ai', {
         mode: 'pro_xai',
         capabilities: getCapabilitiesForMode('pro_xai'),
@@ -118,7 +118,19 @@ describe('mode-capabilities', () => {
         storageScope: 'pro',
         isPaidActive: true,
       });
-      expect(result).toEqual({ allowed: true });
+      expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
+    });
+
+    it('allows MCP when free window covers signed-in unpaid', () => {
+      const result = canUseFeature('mcp', {
+        mode: 'pro',
+        capabilities: getCapabilitiesForMode('pro'),
+        isAuthenticated: true,
+        storageScope: 'pro',
+        isPaidActive: false,
+      });
+      // Default free window is on in commercial.ts
+      expect(result.allowed).toBe(true);
     });
 
     it('allows export in pro when authenticated', () => {
@@ -156,12 +168,12 @@ describe('mode-capabilities', () => {
   });
 
   describe('canConfigureAiProviders', () => {
-    it('allows provider setup when paid', () => {
+    it('denies provider setup when paid (Models product retired)', () => {
       const result = canConfigureAiProviders({
         isAuthenticated: true,
         isPaidActive: true,
       });
-      expect(result).toEqual({ allowed: true });
+      expect(result).toEqual({ allowed: false, reason: 'PAID_REQUIRED' });
     });
 
     it('denies provider setup when not paid', () => {

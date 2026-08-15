@@ -13,7 +13,7 @@ import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { PlanPill } from '@/web/components/PlanPill';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 
-type ProductRoute = 'home' | 'library' | 'ask' | 'settings';
+type ProductRoute = 'home' | 'library' | 'settings';
 
 const ROUTE_META: Record<
   ProductRoute,
@@ -29,21 +29,15 @@ const ROUTE_META: Record<
     hint: 'Search & filter highlights',
     path: '/library',
   },
-  ask: {
-    label: 'Chat',
-    hint: 'Grounded on your library',
-    path: '/ask',
-  },
   settings: {
     label: 'Settings',
-    hint: 'Account · plan · type · data',
+    hint: 'Account · plan · type · data · Integrations',
     path: '/settings',
   },
 };
 
 function routeFromPathname(pathname: string): ProductRoute {
   if (pathname.startsWith('/library')) return 'library';
-  if (pathname.startsWith('/ask')) return 'ask';
   if (pathname.startsWith('/settings')) return 'settings';
   return 'home';
 }
@@ -70,12 +64,6 @@ const IconLibrary = () => (
   </svg>
 );
 
-const IconAsk = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-    <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7A2.5 2.5 0 0 1 16.5 16H10l-4 3v-3.2A2.5 2.5 0 0 1 5 13.5v-7z" />
-  </svg>
-);
-
 const IconSettings = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
     <circle cx="12" cy="12" r="3" />
@@ -90,7 +78,6 @@ const NAV_ITEMS: Array<{
 }> = [
   { route: 'home', odId: 'nav-home', icon: <IconHome /> },
   { route: 'library', odId: 'nav-library', icon: <IconLibrary /> },
-  { route: 'ask', odId: 'nav-ask', icon: <IconAsk /> },
   { route: 'settings', odId: 'nav-settings', icon: <IconSettings /> },
 ];
 
@@ -126,9 +113,8 @@ export function WebAppShell(): React.ReactElement {
   const activeRoute = routeFromPathname(location.pathname);
   const meta = ROUTE_META[activeRoute];
 
-  /** OD: library always flush; ask flush when AI is allowed. */
-  const workspaceFlush =
-    activeRoute === 'library' || (activeRoute === 'ask' && caps.flags.ai);
+  /** OD: library always flush. */
+  const workspaceFlush = activeRoute === 'library';
 
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'
@@ -146,9 +132,12 @@ export function WebAppShell(): React.ReactElement {
     if (caps.isPaidActive) {
       return null;
     }
-    // Free or past due → upgrade path
+    // Free window: no aggressive Upgrade CTA for unpaid signed-in users.
+    if (caps.freeWindow && !caps.isPastDue) {
+      return null;
+    }
     return { label: 'Upgrade', to: '/settings?tab=plan' as const };
-  }, [caps.isGuest, caps.isPaidActive]);
+  }, [caps.isGuest, caps.isPaidActive, caps.freeWindow, caps.isPastDue]);
 
   const shellClass = [
     'app',

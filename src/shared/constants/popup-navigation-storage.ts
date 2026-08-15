@@ -15,14 +15,12 @@ export const PERSISTED_POPUP_VIEWS = [
   'DOMAIN_DETAILS',
   'SUB_DOMAIN',
   'SETTINGS',
-  'ASK',
   'DASHBOARD',
-  'API_KEY_SETUP',
   'MODE_SELECTION',
 ] as const;
 
 /** Transient views — never persisted or restored (auth gates, loaders). */
-export const TRANSIENT_POPUP_VIEWS = ['AUTH', 'LOADING', 'WELCOME', 'LLM_STREAMING'] as const;
+export const TRANSIENT_POPUP_VIEWS = ['AUTH', 'LOADING', 'WELCOME'] as const;
 
 export type PersistedPopupView = (typeof PERSISTED_POPUP_VIEWS)[number];
 

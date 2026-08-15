@@ -58,7 +58,7 @@ export function resolveSettingsBillingCta(input: {
   return {
     kind: 'upgrade',
     title: 'Upgrade to Paid',
-    sub: 'AI & agents',
+    sub: 'Agent access (Integrations) — after early access',
     ctaLabel: 'Upgrade',
     action: 'checkout',
     showSync: true,

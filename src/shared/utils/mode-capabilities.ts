@@ -8,7 +8,7 @@
 
 import type { ModeCapabilities } from '@/content/modes/mode-interfaces';
 import { AUTH_REQUIRED_MODES } from '@/shared/constants/mode-storage';
-import { canUseMcp, commercialGate } from '@/shared/entitlement/commercial';
+import { canUseMcp } from '@/shared/entitlement/commercial';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export { canConfigureAiProviders, canUseMcp } from '@/shared/entitlement/commercial';
@@ -117,8 +117,15 @@ export function canUseFeature(
   feature: FeatureKey,
   ctx: FeatureGateContext,
 ): FeatureGateResult {
-  if (feature === 'ai' || feature === 'mcp') {
-    return commercialGate({
+  // In-app Ask/Models retired — never unlock via mode feature.
+  if (feature === 'ai') {
+    if (!ctx.isAuthenticated) {
+      return { allowed: false, reason: 'AUTH_REQUIRED' };
+    }
+    return { allowed: false, reason: 'PAID_REQUIRED' };
+  }
+  if (feature === 'mcp') {
+    return canUseMcp({
       isAuthenticated: ctx.isAuthenticated,
       isPaidActive: ctx.isPaidActive,
     });

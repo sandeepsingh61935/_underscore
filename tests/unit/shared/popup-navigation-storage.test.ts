@@ -43,7 +43,9 @@ describe('popup-navigation-storage', () => {
 
   it('isPersistedPopupView accepts navigable views only', () => {
     expect(isPersistedPopupView('SETTINGS')).toBe(true);
-    expect(isPersistedPopupView('API_KEY_SETUP')).toBe(true);
+    expect(isPersistedPopupView('DASHBOARD')).toBe(true);
+    expect(isPersistedPopupView('API_KEY_SETUP')).toBe(false);
+    expect(isPersistedPopupView('ASK')).toBe(false);
     expect(isPersistedPopupView('AUTH')).toBe(false);
     expect(isPersistedPopupView('LOADING')).toBe(false);
     expect(isPersistedPopupView('WELCOME')).toBe(false);

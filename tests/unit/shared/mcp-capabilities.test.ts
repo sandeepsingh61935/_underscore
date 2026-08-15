@@ -27,7 +27,7 @@ describe('buildMcpCapabilities', () => {
     });
   });
 
-  it('zeros all flags for signed-in Pro (mcp paid-only)', () => {
+  it('allows library MCP flags for signed-in free during free window (ai stays false)', () => {
     const caps = buildMcpCapabilities({
       mode: 'pro',
       capabilities: getCapabilitiesForMode('pro'),
@@ -36,17 +36,15 @@ describe('buildMcpCapabilities', () => {
       isPaidActive: false,
     });
 
-    expect(caps).toEqual<McpCapabilityFlags>({
-      sync: false,
-      export: false,
-      ai: false,
-      collections: false,
-      search: false,
-      metadataWrite: false,
-    });
+    // Free window defaults on — MCP session may expose library ops; no in-app AI.
+    expect(caps.sync).toBe(true);
+    expect(caps.export).toBe(true);
+    expect(caps.search).toBe(true);
+    expect(caps.metadataWrite).toBe(true);
+    expect(caps.ai).toBe(false);
   });
 
-  it('allows sync/export/ai/search for signed-in Account (Paid)', () => {
+  it('allows sync/export/search for signed-in Account (Paid); ai always false', () => {
     const caps = buildMcpCapabilities({
       mode: 'pro_xai',
       capabilities: getCapabilitiesForMode('pro_xai'),
@@ -59,20 +57,35 @@ describe('buildMcpCapabilities', () => {
     expect(caps.export).toBe(true);
     expect(caps.search).toBe(true);
     expect(caps.metadataWrite).toBe(true);
-    expect(caps.ai).toBe(true);
+    expect(caps.ai).toBe(false);
   });
 });
 
 describe('canUseMcp', () => {
-  it('denies guests and unpaid', () => {
-    expect(canUseMcp({ isAuthenticated: false, isPaidActive: false }).allowed).toBe(false);
-    expect(canUseMcp({ isAuthenticated: true, isPaidActive: false })).toEqual({
+  it('denies guests always', () => {
+    expect(
+      canUseMcp({ isAuthenticated: false, isPaidActive: false }, { freeWindow: true }).allowed,
+    ).toBe(false);
+  });
+
+  it('allows signed-in unpaid when free window on', () => {
+    expect(
+      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: true }),
+    ).toEqual({ allowed: true });
+  });
+
+  it('denies signed-in unpaid when free window off', () => {
+    expect(
+      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: false }),
+    ).toEqual({
       allowed: false,
       reason: 'PAID_REQUIRED',
     });
   });
 
   it('allows signed-in paid without a mode string', () => {
-    expect(canUseMcp({ isAuthenticated: true, isPaidActive: true }).allowed).toBe(true);
+    expect(
+      canUseMcp({ isAuthenticated: true, isPaidActive: true }, { freeWindow: false }).allowed,
+    ).toBe(true);
   });
 });
