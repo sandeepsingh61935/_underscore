@@ -18,10 +18,12 @@ Step-by-step setup for ChatGPT and other MCP OAuth clients. See [ADR-024](../../
 2. **Authentication** → **OAuth Server** (under Manage)
 3. Enable **OAuth 2.1 server**
 4. Set **Authorization path** to `/oauth/consent` (path only — combined with Site URL)
-5. Set **Site URL** to your deployed web app:
-   - Dev preview: `https://feature-mcp.underscore-web-3i0.pages.dev`
+5. Set **Site URL** to your deployed web app (pick one canonical host):
+   - Production (resume): `https://underscore-web.vercel.app`
+   - Cloudflare Pages: `https://underscore-web-3i0.pages.dev`
    - Local: `http://localhost:3000`
-6. **Redirect URLs:** add `https://feature-mcp.underscore-web-3i0.pages.dev/**`, `http://localhost:3000/**`, and Supabase callback
+6. **Redirect URLs:** add `https://underscore-web.vercel.app/**`, `https://underscore-web-3i0.pages.dev/**`, `http://localhost:3000/**`, and Supabase callback
+   - Do **not** use retired branch previews (e.g. `feature-mcp.*.pages.dev`) — those deployments are deleted.
 7. Enable **Dynamic client registration** when testing ChatGPT (allows DCR)
 
 Until enabled, discovery returns:
@@ -81,7 +83,7 @@ Alternatively enable **Dynamic client registration** and skip manual registratio
 1. ChatGPT → Settings → Developer mode → Create connector
 2. **MCP URL:** `https://YOUR-WORKER/mcp`
 3. **Auth:** OAuth (ChatGPT discovers metadata from worker `401` / protected-resource document)
-4. Complete sign-in → approve consent at `https://feature-mcp.underscore-web-3i0.pages.dev/oauth/consent`
+4. Complete sign-in → approve consent at `https://underscore-web.vercel.app/oauth/consent` (or your Site URL + `/oauth/consent`)
 
 ## 6. Dev fallback (Bearer JWT)
 
