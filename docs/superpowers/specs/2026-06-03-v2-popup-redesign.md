@@ -383,15 +383,15 @@ Phase 0 itself can be split into two parallel sub-streams:
 
 #### WS-C: Peripherals (depends on Phase 1)
 
-**Wireframe sources**: `screens-nav.jsx`, plus existing page mockups in `docs/07-design/v2/pages/`
+**Wireframe sources**: `screens-nav.jsx` (page mockups formerly in `docs/07-design/` were removed 2026-08-17; implemented components are now the truth)
 
 | Task | Wireframe Reference | Target File |
 |---|---|---|
 | C1: SettingsPage | `Settings` in `screens-nav.jsx` | `src/pages/SettingsPage.tsx` |
-| C2: WelcomePage | `docs/07-design/v2/pages/welcome.html` | `src/pages/WelcomePage.tsx` |
-| C3: PrivacyPage | `docs/07-design/v2/pages/privacy.html` | `src/pages/PrivacyPage.tsx` |
-| C4: NotFoundPage | `docs/07-design/v2/pages/404.html` | `src/pages/NotFoundPage.tsx` |
-| C5: AuthView | `docs/07-design/v2/pages/sign-in.html` | `src/entrypoints/popup/views/AuthView.tsx` |
+| C2: WelcomePage | implemented | `src/pages/WelcomePage.tsx` |
+| C3: PrivacyPage | implemented | `src/pages/PrivacyPage.tsx` |
+| C4: NotFoundPage | implemented | `src/pages/NotFoundPage.tsx` |
+| C5: AuthView | implemented | `src/entrypoints/popup/views/AuthView.tsx` |
 
 **Backend integration**: SettingsPage uses `usePersistedMode`, `useCurrentUser`. AuthView uses existing Google OAuth flow (unchanged). WelcomePage uses `onStartClick` callback (unchanged).
 

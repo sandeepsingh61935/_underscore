@@ -16,6 +16,7 @@ history only (`git log --all -- docs/`).
 | Security (threat model, RLS, schema) | `06-security/` |
 | Feature PRDs & design specs (dated) | `superpowers/specs/` |
 | Implementation plans (dated) | `superpowers/plans/` |
+| Design mockups & wireframes | `mockups/` |
 
 ## Where New Documents Go
 

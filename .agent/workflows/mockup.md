@@ -53,13 +53,13 @@ Same layout, dark mode palette. Same review process.
 ## Step 5: Save to Project
 
 After approval:
-1. Save images to `docs/07-design/v2/[page-name]/`
+1. Save images to `docs/mockups/[page-name]/`
 2. Name format: `[page-name]-light.png`, `[page-name]-dark.png`
 
 ## Step 6: Create HTML Prototype (Optional)
 
 If requested, build a working HTML/CSS prototype matching the approved mockup.
-Save to `docs/07-design/v2/[page-name]/[page-name]-code.html`
+Save to `docs/mockups/[page-name]/[page-name]-code.html`
 
 ---
 
