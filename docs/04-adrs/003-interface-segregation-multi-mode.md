@@ -303,8 +303,6 @@ interface IHighlightMode {
 ## References
 
 - [Quality Framework: Interface Segregation Principle](../05-quality-framework/03-architecture-principles.md#interface-segregation-principle)
-- [Mode Architecture Analysis](../02-architecture/mode_architecture_analysis.md)
-- [Quality Framework Compliance Analysis](../02-architecture/quality_framework_compliance_analysis.md)
 - [SOLID Principles - ISP](https://en.wikipedia.org/wiki/Interface_segregation_principle)
 
 ---

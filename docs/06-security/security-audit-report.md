@@ -22,11 +22,11 @@ This audit addresses three user concerns:
 
 **Documentation Claims:**
 
-- [sprint-mode.ts](file:///home/sandy/projects/_underscore/src/content/modes/sprint-mode.ts)
+- [sprint-mode.ts](../../src/content/modes/sprint-mode.ts)
   line 8: "Local storage with per-domain encryption"
-- [storage-service.ts](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts)
+- [storage-service.ts](../../src/shared/services/storage-service.ts)
   line 26: "Per-domain encryption"
-- [security-architecture.md](file:///home/sandy/projects/_underscore/docs/06-security/security-architecture.md):
+- [security-architecture.md](./security-architecture.md):
   Mentions encryption for Vault Mode (future)
 
 **Actual Implementation:**
@@ -120,7 +120,7 @@ class DomainEncryptionService {
 
 1. ❌ Implement `DomainEncryptionService`
 2. ❌ Integrate into
-   [StorageService](file:///home/sandy/projects/_underscore/src/shared/services/storage-service.ts#41-268)
+   [StorageService](../../src/shared/services/storage-service.ts#41-268)
 3. ❌ Add encryption tests
 4. ❌ Update documentation to reflect actual status
 
@@ -223,15 +223,15 @@ production since initial implementation.
 
 **Test Files Created (No Changes to Existing):**
 
-1. [tests/unit/content/modes/walk-mode.test.ts](file:///home/sandy/projects/_underscore/tests/unit/content/modes/walk-mode.test.ts)
+1. [tests/unit/content/modes/walk-mode.test.ts](../../tests/unit/content/modes/walk-mode.test.ts)
    (NEW)
-2. [tests/unit/content/modes/sprint-mode-ttl.test.ts](file:///home/sandy/projects/_underscore/tests/unit/content/modes/sprint-mode-ttl.test.ts)
+2. [tests/unit/content/modes/sprint-mode-ttl.test.ts](../../tests/unit/content/modes/sprint-mode-ttl.test.ts)
    (NEW)
-3. [tests/unit/content/modes/sprint-mode.test.ts](file:///home/sandy/projects/_underscore/tests/unit/content/modes/sprint-mode.test.ts)
+3. [tests/unit/content/modes/sprint-mode.test.ts](../../tests/unit/content/modes/sprint-mode.test.ts)
    (NEW)
-4. [tests/unit/content/modes/vault-mode.test.ts](file:///home/sandy/projects/_underscore/tests/unit/content/modes/vault-mode.test.ts)
+4. [tests/unit/content/modes/vault-mode.test.ts](../../tests/unit/content/modes/vault-mode.test.ts)
    (NEW)
-5. [tests/integration/mode-integration.test.ts](file:///home/sandy/projects/_underscore/tests/integration/mode-integration.test.ts)
+5. [tests/integration/mode-integration.test.ts](../../tests/integration/mode-integration.test.ts)
    (NEW)
 
 **Conclusion:** ✅ No test expectations changed - only new tests added
@@ -243,7 +243,7 @@ production since initial implementation.
 ### Current Status
 
 **2 Tests Skipped in
-[sprint-mode.test.ts](file:///home/sandy/projects/_underscore/tests/unit/content/modes/sprint-mode.test.ts):**
+[sprint-mode.test.ts](../../tests/unit/content/modes/sprint-mode.test.ts):**
 
 1. **Line 55**: `should persist highlight creation via event sourcing`
    - **Reason**: Test expects direct `storage.saveEvent()` call

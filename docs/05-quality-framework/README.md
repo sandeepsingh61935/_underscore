@@ -94,7 +94,6 @@
 **Related**:
 
 - [ADR-003: Interface Segregation](../04-adrs/003-interface-segregation-multi-mode.md)
-- [Mode Architecture Pattern](../02-architecture/mode_interface_segregation_pattern.md)
 
 ---
 

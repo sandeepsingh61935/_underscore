@@ -407,7 +407,6 @@ function requiresAI(mode: IBasicMode): mode is IBasicMode & IAIMode {
 
 ## References
 
-- [Mode Architecture](./mode_interface_segregation_pattern.md)
 - [ADR-003: Interface Segregation](../04-adrs/003-interface-segregation-multi-mode.md)
 - [Feature Flag Pattern](https://martinfowler.com/articles/feature-toggles.html)
 - [Capability-Based Security](https://en.wikipedia.org/wiki/Capability-based_security)

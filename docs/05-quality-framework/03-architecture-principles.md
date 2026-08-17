@@ -814,4 +814,4 @@ export class CachingRepository implements IHighlightRepository {
 ---
 
 **Next Document**:
-[Error Handling & Logging Framework](./03-error-logging-framework.md)
+[Error Handling & Logging Framework](./04-error-logging-framework.md)
