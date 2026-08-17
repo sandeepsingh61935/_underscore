@@ -15,6 +15,15 @@
 
 ---
 
+## Documentation (Single Source of Truth)
+
+`docs/README.md` is the index and routing table — read it before searching docs. Quick rules:
+- Decisions → `docs/04-adrs/`; feature PRDs/designs → `docs/superpowers/specs/`; plans → `docs/superpowers/plans/`; standards → `docs/05-quality-framework/`; policies → `docs/00-policies/`, `docs/01-development/`; security → `docs/06-security/`
+- Architecture truth = codebase + ADRs + specs. There is no monolithic architecture doc (purged 2026-08-17; history recoverable via git).
+- Never create version-suffixed (`_v2`, `.resolved`) or root-level docs.
+
+---
+
 ## Universal Rules (All Roles)
 
 - TypeScript strict mode; no `any` except documented escape hatches
@@ -177,3 +186,14 @@ Follow `docs/01-development/git-commit-strategy.md`:
 | Architecture decisions, patterns, ADRs | `.agent/skills/system-architect/SKILL.md` |
 | New component | Use wireframe JSX spec |
 | Web app pages, routing | `.agent/skills/full-stack-developer/sub-skills/web-app-patterns.md` |
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If the user explicitly asks to grep, ripgrep, find, or search files, do that. Graph-first is the default, not a ban.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
