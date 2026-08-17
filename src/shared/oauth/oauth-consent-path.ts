@@ -35,16 +35,30 @@ export function buildSignInReturnUrl(authorizationId: string, origin = ''): stri
   return `${origin}/sign-in?${params.toString()}`;
 }
 
+/** Default post-auth landing (retired /mode selection flow). */
+export const DEFAULT_AUTH_REDIRECT_PATH = '/home' as const;
+
+/** Map retired web paths still present in bookmarks / old returnTo values. */
+function rewriteLegacyAuthPath(path: string): string {
+  if (path === '/mode' || path.startsWith('/mode?')) {
+    return `/home${path.slice('/mode'.length)}`;
+  }
+  if (path === '/collections' || path.startsWith('/collections?')) {
+    return `/library${path.slice('/collections'.length)}`;
+  }
+  return path;
+}
+
 /** Resolve post-auth redirect target from sign-in query params. */
 export function resolveAuthRedirectTarget(
   returnTo: string | null,
-  fallbackPath = '/mode',
+  fallbackPath: string = DEFAULT_AUTH_REDIRECT_PATH,
 ): string {
   if (!returnTo?.trim()) {
     return fallbackPath;
   }
   if (returnTo.startsWith('/') && !returnTo.startsWith('//')) {
-    return returnTo;
+    return rewriteLegacyAuthPath(returnTo);
   }
   return fallbackPath;
 }

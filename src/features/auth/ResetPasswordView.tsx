@@ -78,7 +78,7 @@ export function ResetPasswordView(): React.ReactElement {
             await syncSessionToExtension(session);
         }
 
-        navigate('/mode');
+        navigate('/home');
     };
 
     const handleResend = async (): Promise<void> => {

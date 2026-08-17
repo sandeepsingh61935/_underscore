@@ -75,7 +75,7 @@ export function DomainDetailsView({
 
   useEffect(() => {
     if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-      navigate('/mode');
+      navigate('/home');
     }
   }, [isAuthenticated, mode, navigate]);
 
@@ -169,7 +169,7 @@ export function DomainDetailsView({
       if (_onBack) {
         _onBack();
       } else {
-        navigate('/collections');
+        navigate('/library');
       }
     }
   }, [highlights.length, isLoading, navigate, _onBack]);
@@ -192,7 +192,7 @@ export function DomainDetailsView({
       if (_onBack) {
         _onBack();
       } else {
-        navigate('/collections');
+        navigate('/library');
       }
     } finally {
       setIsDeletingDomain(false);

@@ -66,7 +66,8 @@ export function SignInView(): React.ReactElement {
             returnTo,
             resolveReturnTo: (value) => resolveAuthRedirectTarget(value),
             navigate: (path) => {
-                if (returnTo && path !== '/mode') {
+                // Only persist OAuth pending id when returnTo was accepted (not open-redirect fallback).
+                if (returnTo && path !== '/home') {
                     stashPendingAuthorizationIdFromReturnTo(returnTo);
                 }
                 navigate(path);
@@ -134,7 +135,7 @@ export function SignInView(): React.ReactElement {
             } else if (intendedMode === 'pro' || intendedMode === 'pro_xai') {
                 window.location.href = `/?intendedMode=${intendedMode}`;
             } else {
-                navigate('/mode');
+                navigate('/home');
             }
         } catch (err) {
             const mappable = err instanceof Error
@@ -158,7 +159,7 @@ export function SignInView(): React.ReactElement {
 
             if (returnTo) {
                 stashPendingAuthorizationIdFromReturnTo(returnTo);
-                const target = resolveAuthRedirectTarget(returnTo, '/mode');
+                const target = resolveAuthRedirectTarget(returnTo);
                 const parsed = new URL(target, window.location.origin);
                 redirectUrl.pathname = parsed.pathname;
                 redirectUrl.search = parsed.search;

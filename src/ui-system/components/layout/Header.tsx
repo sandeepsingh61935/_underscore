@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               type="button"
-              onClick={() => navigate('/collections')}
+              onClick={() => navigate('/library')}
               className="hidden sm:inline-flex min-h-[44px] items-center rounded px-3 transition-colors duration-step-0 ease-standard hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
               style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)' }}
             >

@@ -24,6 +24,20 @@ describe('oauth-consent-path', () => {
   });
 
   it('rejects protocol-relative return paths', () => {
-    expect(resolveAuthRedirectTarget('//evil.example.com')).toBe('/mode');
+    expect(resolveAuthRedirectTarget('//evil.example.com')).toBe('/home');
+  });
+
+  it('defaults empty returnTo to /home', () => {
+    expect(resolveAuthRedirectTarget(null)).toBe('/home');
+    expect(resolveAuthRedirectTarget('')).toBe('/home');
+  });
+
+  it('rewrites retired /mode and /collections return paths', () => {
+    expect(resolveAuthRedirectTarget('/mode')).toBe('/home');
+    expect(resolveAuthRedirectTarget('/mode?x=1')).toBe('/home?x=1');
+    expect(resolveAuthRedirectTarget('/collections')).toBe('/library');
+    expect(resolveAuthRedirectTarget('/collections?domain=a.com')).toBe(
+      '/library?domain=a.com',
+    );
   });
 });

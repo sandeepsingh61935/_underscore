@@ -58,7 +58,7 @@ export function VerifyEmailView(): React.ReactElement {
         } else if (intendedMode === 'pro' || intendedMode === 'pro_xai') {
             window.location.href = `/?intendedMode=${intendedMode}`;
         } else {
-            navigate('/mode');
+            navigate('/home');
         }
     };
 

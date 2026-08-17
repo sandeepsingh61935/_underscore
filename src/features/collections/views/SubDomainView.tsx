@@ -61,7 +61,7 @@ export function SubDomainView({
 
   useEffect(() => {
     if (!isAuthenticated && AUTH_REQUIRED_MODES.includes(mode)) {
-      navigate('/mode');
+      navigate('/home');
     }
   }, [isAuthenticated, mode, navigate]);
 
@@ -125,7 +125,7 @@ export function SubDomainView({
       if (onDomainEmpty) {
         onDomainEmpty();
       } else {
-        navigate('/collections');
+        navigate('/library');
       }
     }
   }, [domain, highlights.length, isLoading, navigate, onDomainEmpty]);
