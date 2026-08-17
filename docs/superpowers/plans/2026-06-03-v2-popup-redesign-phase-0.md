@@ -319,7 +319,7 @@ git commit -am "refactor(ui): update view components to use v2 mode keys"
 ### Task 13: Rewrite AI Assistant Guardrails
 
 **Files:**
-- Modify: `GEMINI.md`
+- Modify: `GEMINI.md` (file subsequently removed)
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Replace MD3 rules with V2 rules**

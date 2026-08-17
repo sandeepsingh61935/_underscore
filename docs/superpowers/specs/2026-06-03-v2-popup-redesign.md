@@ -45,7 +45,7 @@
 - `src/ui-system/tokens/` directory (if MD3-specific)
 
 ### Agent Rule Files — rewrite for v2
-- `GEMINI.md` — rewrite MD3 rules to v2 rules
+- `GEMINI.md` — rewrite MD3 rules to v2 rules (file removed 2026-08-17; rules consolidated into CLAUDE.md)
 - `CLAUDE.md` — rewrite MD3 rules to v2 rules
 - `.agent/workflows/md3-ui.md` — replace with v2-ui workflow
 - `.agent/workflows/md3-tokens-reference.md` — replace with v2 token reference
@@ -309,7 +309,7 @@ Phase 0 itself can be split into two parallel sub-streams:
 
 #### P0-B: Mode Rename & Agent Rules (parallelizable with P0-A) ✅ DONE
 - [x] Rename mode IDs in all files listed in Section 4.2
-- [x] Rewrite `GEMINI.md` with v2 design rules
+- [x] Rewrite `GEMINI.md` with v2 design rules (file subsequently removed; rules consolidated into CLAUDE.md)
 - [x] Rewrite `CLAUDE.md` with v2 design rules
 - [x] Update `.agent/workflows/` — replace MD3 references with v2
 - [x] Archive `docs/redesign/` into `docs/archive/redesign-ink-and-glass/`
@@ -435,7 +435,7 @@ P0-B (modes/rules) ------+                    P1-B (lists) ---+
 
 ## 7. Agent Rules (New V2)
 
-These replace the MD3 rules in `GEMINI.md` and `CLAUDE.md`:
+These replace the MD3 rules previously in `GEMINI.md` and the corresponding rules in `CLAUDE.md`:
 
 ### Hard Rules — Never Violate
 1. **Never** use hardcoded hex colors in `.tsx` files — use `var(--paper)`, `var(--ink)`, `var(--accent)`, etc.
