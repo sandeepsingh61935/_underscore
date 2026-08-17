@@ -8,7 +8,7 @@
 
 ## Context
 
-ADR-012 (commit `5d31650`, "refactor(auth): derive master key from user passphrase per ADR-012") shipped PBKDF2 over a user-supplied passphrase as the input to the master key that encrypts every user's RSA private key. The cryptographic side of the change is complete: `KeyManager.unlock(userId, passphrase)` derives a per-user AES-GCM master key from a per-user salt, wipes the input string, and caches the CryptoKey in service-worker memory until `lock()` is called or the worker restarts.
+Commit `5d31650` ("refactor(auth): derive master key from user passphrase") shipped PBKDF2 over a user-supplied passphrase as the input to the master key that encrypts every user's RSA private key. The cryptographic side of the change is complete: `KeyManager.unlock(userId, passphrase)` derives a per-user AES-GCM master key from a per-user salt, wipes the input string, and caches the CryptoKey in service-worker memory until `lock()` is called or the worker restarts.
 
 The UI side of that change is missing. There is no prompt that asks the user to enter their vault passphrase, and the only caller of `KeyManager.unlock()` is a no-op bootstrap on first login. The result is a recoverable deadlock:
 
@@ -16,17 +16,17 @@ The UI side of that change is missing. There is no prompt that asks the user to 
 - Without a UI to re-enter the passphrase, the user has no way to unlock the vault after the first restart.
 - Vault-gated features — encrypted highlight text decryption, cloud-sync encryption, future E2E exports — are silently broken in a way that surfaces only on the next SW restart.
 
-`src/entrypoints/background.ts` already wires up GET_AUTH_STATE / LOGIN / LOGOUT handlers but no IPC channel for vault unlock exists. `src/shared/schemas/message-schemas.ts` defines `IPC_HIGHLIGHT_*` constants (ADR-013) but no `IPC_VAULT_*` constant.
+`src/entrypoints/background.ts` already wires up GET_AUTH_STATE / LOGIN / LOGOUT handlers but no IPC channel for vault unlock exists. `src/shared/schemas/message-schemas.ts` defines `IPC_HIGHLIGHT_*` constants but no `IPC_VAULT_*` constant.
 
 ### Why now
 
-The Stage 2 work (ADR-012) is functionally complete in the cryptographic layer; the unlock prompt is the user-facing follow-up that closes the loop. Without it, the security upgrade from hardcoded constants to PBKDF2 over a passphrase has no UX-side counterpart — the user's encrypted data is just as inaccessible as before.
+The Stage 2 work (commit `5d31650`) is functionally complete in the cryptographic layer; the unlock prompt is the user-facing follow-up that closes the loop. Without it, the security upgrade from hardcoded constants to PBKDF2 over a passphrase has no UX-side counterpart — the user's encrypted data is just as inaccessible as before.
 
 ---
 
 ## Decision
 
-Ship the missing UI side as a thin IPC + hook + view + popup-routing change, mirroring the existing `LOGIN` / `LOGIN_EMAIL` patterns in `useCurrentUser` and the `IPC_HIGHLIGHT_*` channel pattern from ADR-013.
+Ship the missing UI side as a thin IPC + hook + view + popup-routing change, mirroring the existing `LOGIN` / `LOGIN_EMAIL` patterns in `useCurrentUser` and the existing `IPC_HIGHLIGHT_*` channel pattern.
 
 ### IPC channel `IPC_VAULT_UNLOCK`
 
@@ -43,7 +43,7 @@ The background handler in `src/entrypoints/background.ts`:
 
 ### Hook `useUnlockVault`
 
-Lives in `src/features/auth/hooks/useUnlockVault.ts`. Follows the `useIpcAction` pattern (ADR-009). Returns:
+Lives in `src/features/auth/hooks/useUnlockVault.ts`. Follows the shared `useIpcAction` hook pattern (`src/shared/hooks/useIpcAction.ts`). Returns:
 
 ```ts
 {
@@ -64,7 +64,7 @@ Lives in `src/entrypoints/popup/views/UnlockVaultView.tsx`. V2 Editorial styling
 - 44px minimum touch targets on every interactive element.
 - `var(--paper)` / `var(--ink)` / `var(--rule)` for surfaces and borders.
 - `.u-serif` heading, `.u-sans` body, `.u-mono` label.
-- Props: `onUnlock(passphrase)`, `onUnlockSuccess()`, `onCancel()`, optional `isUnlocking`. The view does not call IPC; it delegates to `useUnlockVault` (which lives in the popup entry, not the view) per the ADR-009 boundary.
+- Props: `onUnlock(passphrase)`, `onUnlockSuccess()`, `onCancel()`, optional `isUnlocking`. The view does not call IPC; it delegates to `useUnlockVault` (which lives in the popup entry, not the view), keeping the view/IPC boundary intact.
 
 ### V2 popup chrome entry `UNLOCK_VAULT`
 
@@ -90,7 +90,7 @@ The decision to skip `UNLOCK_VAULT` for non-cloud/ai modes (ephemeral, local) is
 
 ### Positive
 
-- **Closes the UI side of ADR-012.** Vault-gated features are reachable again after the first SW restart, instead of silently breaking.
+- **Closes the UI side of the PBKDF2 master-key change (commit `5d31650`).** Vault-gated features are reachable again after the first SW restart, instead of silently breaking.
 - **One IPC surface for unlock.** Future improvements (rate-limited retries, biometric unlock, "remember me" within an SW lifetime) plug in behind the same channel without touching the view.
 - **Mirrors the existing auth IPC pattern.** A developer who knows `LOGIN` / `LOGIN_EMAIL` already knows `IPC_VAULT_UNLOCK`. The error code envelope matches the wire format used elsewhere in the system.
 - **View is body-only.** No width/height declarations, no `position: absolute` motion wrapper. `PopupShell` keeps ownership of the chrome and the single `AnimatePresence` (per the V2 popup chrome contract enforced 2026-06-03).
@@ -116,7 +116,7 @@ Have the existing `AuthView` accept an optional "unlock after login" step and ro
 
 ### Alternative 2: Auto-unlock on first sign-in, never prompt again
 
-Skip the prompt entirely and derive the master key from a value the popup already has (e.g. the auth token). Rejected: that recreates the exact problem ADR-012 was written to fix — the master key would still be derivable from a value the bundle exposes. The whole point of PBKDF2 over a passphrase is that the passphrase is *not* derivable from anything the bundle has.
+Skip the prompt entirely and derive the master key from a value the popup already has (e.g. the auth token). Rejected: that recreates the exact problem the PBKDF2 change was written to fix — the master key would still be derivable from a value the bundle exposes. The whole point of PBKDF2 over a passphrase is that the passphrase is *not* derivable from anything the bundle has.
 
 ### Alternative 3: Lock the vault behind a settings page
 
@@ -165,11 +165,10 @@ The decrypt channel already crosses the encryption boundary. Rejected: it expect
 
 ## References
 
-- ADR-012: Master key derived from user passphrase via PBKDF2 (parent decision)
-- ADR-013: Encryption boundary on the background side (defines the in-memory master key lifetime this ADR inherits)
-- ADR-009: `useIpcAction` generic hook (the pattern `useUnlockVault` follows)
-- ADR-011: `IPC_HIGHLIGHT_BATCH_ADD_MANY` (the pattern the `IPC_VAULT_UNLOCK` constant follows in `message-schemas.ts`)
-- `src/background/auth/key-manager.ts:72-120` — `unlock()` implementation this UI side wraps
+- Commit `5d31650`: master key derived from user passphrase via PBKDF2 (parent change; predates ADR record-keeping)
+- `src/background/auth/key-manager.ts:72-120` — `unlock()` implementation and in-memory master key lifetime this ADR inherits
+- `src/shared/hooks/useIpcAction.ts` — generic IPC hook pattern `useUnlockVault` follows
+- `IPC_HIGHLIGHT_BATCH_ADD_MANY` in `src/shared/schemas/message-schemas.ts` — the pattern the `IPC_VAULT_UNLOCK` constant follows
 - `src/features/auth/hooks/useCurrentUser.ts` — sibling hook that uses the same `useIpcAction` pattern
 
 ---

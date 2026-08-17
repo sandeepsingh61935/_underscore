@@ -27,7 +27,7 @@ export interface IDataProvider {
 - `src/core/data/ExtensionDataProviderAdapter.ts` — production implementation (chrome.runtime IPC).
 - `src/core/data/WebDataProviderAdapter.ts` — web app implementation (REST API).
 
-The interface enables the popup and web app to share a single component tree (`CollectionsView`) while binding to different data sources. This is the **same pattern** that ADR-005 applied to highlight repositories: narrow interface, two adapters (extension + web), shared UI.
+The interface enables the popup and web app to share a single component tree (`CollectionsView`) while binding to different data sources. This is the **same pattern** previously applied to highlight repositories (`IHighlightRepository` split into `IWritable` and `IReadable`): narrow interface, two adapters (extension + web), shared UI.
 
 ## Decision
 
@@ -58,7 +58,7 @@ The interface enables the popup and web app to share a single component tree (`C
 ## References
 
 - Original plan: `/home/sandy/.claude/plans/explore-the-codebase-deeply-velvety-sundae.md` (line 154)
-- ADR-005: `IHighlightRepository` is split into `IWritable` and `IReadable` (sister decision)
+- Sister decision (predates ADR record-keeping): `IHighlightRepository` split into `IWritable` and `IReadable`
 - `src/shared/interfaces/i-data-provider.ts`
 - `src/core/data/ExtensionDataProviderAdapter.ts`
 - `src/core/data/WebDataProviderAdapter.ts`
@@ -69,4 +69,4 @@ The interface enables the popup and web app to share a single component tree (`C
 
 | Date       | Author | Changes      |
 | ---------- | ------ | ------------ |
-| 2026-06-18 | Claude | Accepted. Keep decision recorded with four live consumers and an Adapter pattern parallel to ADR-005. |
+| 2026-06-18 | Claude | Accepted. Keep decision recorded with four live consumers and an Adapter pattern parallel to the `IHighlightRepository` writable/readable split. |

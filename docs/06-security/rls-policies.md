@@ -3,7 +3,7 @@
 **Status**: Required (production deployment)
 **Owner**: Backend
 **Last Updated**: 2026-07-11
-**Related**: [ADR-016](../04-adrs/016-rls-verification-strategy.md), [security-architecture.md](security-architecture.md), [highlights-schema.md](highlights-schema.md)
+**Related**: [security-architecture.md](security-architecture.md), [highlights-schema.md](highlights-schema.md)
 
 ---
 
@@ -22,7 +22,7 @@ This document is the source of truth for the RLS policies that must exist in Sup
 - All tables use a `user_id uuid not null` column populated by the application. RLS policies compare it to `auth.uid()`.
 - All policies are `PERMISSIVE` (Postgres default) and apply to the `authenticated` and `anon` roles. The `service_role` role bypasses RLS by design — it is used only from trusted server contexts (Cloudflare Workers, migrations, admin scripts) and is never exposed to the extension.
 - Policies use `auth.uid()` rather than reading a value from a function or join, so they remain cheap on the hot path.
-- Tables that store encrypted payload fields (see [ADR-013](../04-adrs/013-encryption-boundary.md)) still rely on RLS for **access control**. Encryption protects confidentiality against a Supabase operator or a leak of the database; RLS protects against cross-tenant access by authenticated clients.
+- Tables that store encrypted payload fields (client-side AES-GCM; keys never leave the client — see `src/background/auth/key-manager.ts`) still rely on RLS for **access control**. Encryption protects confidentiality against a Supabase operator or a leak of the database; RLS protects against cross-tenant access by authenticated clients.
 
 ---
 
