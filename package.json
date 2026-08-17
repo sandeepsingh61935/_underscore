@@ -50,7 +50,8 @@
     "test:visual:ui": "playwright test --project=visual --ui",
     "test:visual:report": "playwright show-report",
     "mcp:build": "npm run build --prefix packages/mcp-server",
-    "mcp:dev": "npm run dev --prefix packages/mcp-server"
+    "mcp:dev": "npm run dev --prefix packages/mcp-server",
+    "web:deploy:vercel": "bash scripts/deploy-vercel-web.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
