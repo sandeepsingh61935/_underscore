@@ -342,7 +342,7 @@ describe('Highlight Creation Flow', () => {
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
 
   // Timeout
   timeout: 30000,
@@ -651,4 +651,4 @@ const criticalPaths = [
 
 ---
 
-**Next**: [Implementation Plan Template](./06-implementation-plan-template.md)
+**Next**: [Material Design Guidelines](./06-material-design-guidelines.md)
