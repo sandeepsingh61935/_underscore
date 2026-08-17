@@ -21,6 +21,67 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist-web',
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          /**
+           * Split heavy vendors so the entry chunk stays under the 500 kB warning
+           * and browsers can cache stable deps independently of app code.
+           */
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return;
+            }
+            if (
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/scheduler')
+            ) {
+              return 'react-vendor';
+            }
+            if (id.includes('@supabase') || id.includes('supabase-js')) {
+              return 'supabase';
+            }
+            if (id.includes('node_modules/xlsx')) {
+              return 'xlsx';
+            }
+            if (
+              id.includes('framer-motion') ||
+              id.includes('motion-dom') ||
+              id.includes('motion-utils')
+            ) {
+              return 'motion';
+            }
+            if (
+              id.includes('react-markdown') ||
+              id.includes('node_modules/remark') ||
+              id.includes('node_modules/unified') ||
+              id.includes('node_modules/mdast') ||
+              id.includes('node_modules/micromark') ||
+              id.includes('node_modules/unist') ||
+              id.includes('node_modules/hast') ||
+              id.includes('node_modules/vfile')
+            ) {
+              return 'markdown';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'radix';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            if (id.includes('node_modules/zod')) {
+              return 'zod';
+            }
+            if (id.includes('node_modules/dexie') || id.includes('node_modules/idb')) {
+              return 'idb';
+            }
+            if (id.includes('dompurify')) {
+              return 'dompurify';
+            }
+          },
+        },
+      },
     },
     resolve: {
       alias: {
