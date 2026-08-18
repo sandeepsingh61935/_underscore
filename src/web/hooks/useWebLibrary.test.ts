@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
-import { useWebLibrary, type WebHighlight } from './useWebLibrary';
+import {
+  clearWebLibrarySessionMemory,
+  useWebLibrary,
+  type WebHighlight,
+} from './useWebLibrary';
 
 function hl(
   partial: Partial<WebHighlight> & Pick<WebHighlight, 'id' | 'domain' | 'path' | 'savedAt'>,
@@ -17,6 +21,7 @@ function hl(
 describe('useWebLibrary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWebLibrarySessionMemory();
   });
 
   it('guest: ready empty state and never calls fetchHighlights', async () => {
@@ -230,6 +235,45 @@ describe('useWebLibrary', () => {
     expect(result.current.domains).toEqual([]);
     expect(result.current.currentPage).toBeNull();
     expect(result.current.stats.highlightCount).toBe(0);
+  });
+
+  it('second mount: paints session memory immediately without waiting on fetch', async () => {
+    const rows = [hl({ id: '1', domain: 'a.com', path: '/', savedAt: 1 })];
+    const fetchHighlights = vi.fn().mockResolvedValue(rows);
+
+    const first = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(first.result.current.status).toBe('ready');
+    });
+    expect(fetchHighlights).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    const fetch2 = vi.fn().mockResolvedValue(rows);
+    const second = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights: fetch2,
+      }),
+    );
+
+    // Session memory: ready with data on first paint (no loading flash).
+    expect(second.result.current.status).toBe('ready');
+    expect(second.result.current.highlights).toHaveLength(1);
+    // Fresh memory (< 60s) skips network until refresh or stale.
+    expect(fetch2).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await second.result.current.refresh();
+    });
+    expect(fetch2).toHaveBeenCalledTimes(1);
   });
 
   it('sequential refresh: only latest response wins', async () => {

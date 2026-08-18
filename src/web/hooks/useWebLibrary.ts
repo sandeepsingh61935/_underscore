@@ -1,6 +1,7 @@
 /**
  * @file useWebLibrary.ts
  * @description Web library data hook: Supabase (or injected) fetch + pure aggregation.
+ * Session memory + IDB hydrate before network so route changes and reloads paint fast.
  * Never uses extension runtime messaging or MessageBus.
  */
 
@@ -57,6 +58,26 @@ export type UseWebLibraryOpts = {
   fetchHighlights?: () => Promise<WebHighlight[]>;
 };
 
+/** Skip network when session memory is fresher than this (ms). */
+const SESSION_STALE_MS = 60_000;
+
+/** Memory key when fetch is injected (tests / no Supabase session). */
+const INJECTED_CACHE_KEY = '__injected__';
+
+type SessionSnapshot = {
+  key: string;
+  highlights: WebHighlight[];
+  savedAt: number;
+};
+
+/** Survives route unmount within the SPA JS heap. */
+let sessionSnapshot: SessionSnapshot | null = null;
+
+/** Test helper: drop in-memory library snapshot between cases. */
+export function clearWebLibrarySessionMemory(): void {
+  sessionSnapshot = null;
+}
+
 function emptyStats(planLabel: string): WebLibraryStats {
   return {
     highlightCount: 0,
@@ -105,6 +126,17 @@ export function mapSupabaseRowToWebHighlight(row: {
     tags,
     savedAt: highlightTimestampMs(row.updated_at, row.created_at),
   };
+}
+
+async function getSessionUserId(): Promise<string | null> {
+  try {
+    const supabase = getWebSupabaseClient();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return null;
+    return data.session?.user.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function defaultFetchHighlights(): Promise<WebHighlight[]> {
@@ -158,26 +190,21 @@ async function defaultFetchHighlights(): Promise<WebHighlight[]> {
   return out;
 }
 
-async function readCachedHighlights(): Promise<WebHighlight[] | null> {
-  try {
-    const supabase = getWebSupabaseClient();
-    const { data } = await supabase.auth.getSession();
-    const userId = data.session?.user.id;
-    if (!userId) return null;
-    const cached = await readWebLibraryCache(userId);
-    return cached?.highlights ?? null;
-  } catch {
-    return null;
-  }
+function rememberSession(key: string, highlights: WebHighlight[]): void {
+  sessionSnapshot = { key, highlights, savedAt: Date.now() };
+}
+
+function readSession(key: string): SessionSnapshot | null {
+  if (sessionSnapshot?.key === key) return sessionSnapshot;
+  return null;
 }
 
 /**
  * Library data for the web product shell.
  * Guest is always empty (no seed). Signed-in uses injected fetch or Supabase.
  *
- * In-flight fetches are generation-gated: only the latest load/refresh/auth
- * generation may apply results, so logout and overlapping refresh cannot
- * leak prior-session data.
+ * Load order: session memory → IDB → network. Warm data paints as ready;
+ * network revalidates without wiping. In-flight work is generation-gated.
  */
 export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   const { isAuthenticated, planLabel, fetchHighlights: fetchHighlightsOpt } = opts;
@@ -191,14 +218,22 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   const isAuthenticatedRef = useRef(isAuthenticated);
   isAuthenticatedRef.current = isAuthenticated;
 
-  const [status, setStatus] = useState<WebLibraryState['status']>(
-    isAuthenticated ? 'loading' : 'ready',
+  // Optimistic paint from SPA session memory (survives route unmount).
+  const boot = isAuthenticated && sessionSnapshot ? sessionSnapshot : null;
+  const bootAgg = boot ? aggregateLibrary(boot.highlights) : null;
+
+  const [status, setStatus] = useState<WebLibraryState['status']>(() =>
+    !isAuthenticated ? 'ready' : boot ? 'ready' : 'loading',
   );
-  const [highlights, setHighlights] = useState<WebHighlight[]>([]);
-  const [domains, setDomains] = useState<WebDomainNode[]>([]);
-  const [stats, setStats] = useState<WebLibraryStats>(() => emptyStats(planLabel));
-  const [recent, setRecent] = useState<WebHighlight[]>([]);
-  const [currentPage, setCurrentPage] = useState<WebCurrentPage>(null);
+  const [highlights, setHighlights] = useState<WebHighlight[]>(() => boot?.highlights ?? []);
+  const [domains, setDomains] = useState<WebDomainNode[]>(() => bootAgg?.domains ?? []);
+  const [stats, setStats] = useState<WebLibraryStats>(() =>
+    bootAgg
+      ? { ...bootAgg.stats, planLabel }
+      : emptyStats(planLabel),
+  );
+  const [recent, setRecent] = useState<WebHighlight[]>(() => bootAgg?.recent ?? []);
+  const [currentPage, setCurrentPage] = useState<WebCurrentPage>(() => bootAgg?.currentPage ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const applyEmpty = useCallback((readyStatus: 'ready' | 'error' = 'ready', err: string | null = null) => {
@@ -222,64 +257,121 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     setStatus('ready');
   }, []);
 
-  const load = useCallback(async () => {
-    if (!isAuthenticatedRef.current) {
-      loadGenRef.current += 1;
-      applyEmpty('ready', null);
-      return;
-    }
+  const load = useCallback(
+    async (loadOpts?: { force?: boolean }) => {
+      const force = loadOpts?.force === true;
 
-    const gen = ++loadGenRef.current;
-    // Clear prior session aggregate before fetch so re-login never flashes old data.
-    setHighlights([]);
-    setDomains([]);
-    setRecent([]);
-    setCurrentPage(null);
-    setError(null);
-    setStats(emptyStats(planLabelRef.current));
-    setStatus('loading');
+      if (!isAuthenticatedRef.current) {
+        loadGenRef.current += 1;
+        sessionSnapshot = null;
+        applyEmpty('ready', null);
+        return;
+      }
 
-    try {
-      const fetchFn = fetchRef.current ?? defaultFetchHighlights;
-      const rows = await fetchFn();
-      if (gen !== loadGenRef.current) {
-        return;
+      const gen = ++loadGenRef.current;
+      const injected = Boolean(fetchRef.current);
+      let cacheKey: string;
+
+      if (injected) {
+        cacheKey = INJECTED_CACHE_KEY;
+      } else {
+        const userId = await getSessionUserId();
+        if (gen !== loadGenRef.current) return;
+        if (!isAuthenticatedRef.current) return;
+        if (!userId) {
+          sessionSnapshot = null;
+          applyEmpty('ready', null);
+          return;
+        }
+        // Drop foreign-user optimistic paint if session memory belonged to someone else.
+        if (sessionSnapshot && sessionSnapshot.key !== userId) {
+          sessionSnapshot = null;
+        }
+        cacheKey = userId;
       }
-      if (!isAuthenticatedRef.current) {
-        return;
+
+      let paintedWarm = false;
+
+      const mem = readSession(cacheKey);
+      if (mem) {
+        applyRows(mem.highlights);
+        paintedWarm = true;
+        if (!force && Date.now() - mem.savedAt < SESSION_STALE_MS) {
+          return;
+        }
+      } else if (!injected) {
+        try {
+          const cached = await readWebLibraryCache(cacheKey);
+          if (gen !== loadGenRef.current || !isAuthenticatedRef.current) return;
+          if (cached?.highlights) {
+            rememberSession(cacheKey, cached.highlights);
+            applyRows(cached.highlights);
+            paintedWarm = true;
+          }
+        } catch {
+          // IDB optional
+        }
       }
-      applyRows(rows);
-    } catch (err) {
-      if (gen !== loadGenRef.current) {
-        return;
+
+      if (!paintedWarm) {
+        setHighlights([]);
+        setDomains([]);
+        setRecent([]);
+        setCurrentPage(null);
+        setError(null);
+        setStats(emptyStats(planLabelRef.current));
+        setStatus('loading');
       }
-      if (!isAuthenticatedRef.current) {
-        return;
-      }
-      const message = err instanceof Error ? err.message : 'Failed to load library';
-      if (fetchRef.current) {
+
+      try {
+        const fetchFn = fetchRef.current ?? defaultFetchHighlights;
+        const rows = await fetchFn();
+        if (gen !== loadGenRef.current) return;
+        if (!isAuthenticatedRef.current) return;
+        rememberSession(cacheKey, rows);
+        applyRows(rows);
+      } catch (err) {
+        if (gen !== loadGenRef.current) return;
+        if (!isAuthenticatedRef.current) return;
+        const message = err instanceof Error ? err.message : 'Failed to load library';
+
+        if (paintedWarm) {
+          setError(message);
+          setStatus('ready');
+          return;
+        }
+
+        if (fetchRef.current) {
+          applyEmpty('error', message);
+          return;
+        }
+
+        try {
+          const cached = await readWebLibraryCache(cacheKey);
+          if (gen !== loadGenRef.current || !isAuthenticatedRef.current) return;
+          if (cached?.highlights) {
+            rememberSession(cacheKey, cached.highlights);
+            applyRows(cached.highlights);
+            setError(message);
+            return;
+          }
+        } catch {
+          // fall through
+        }
         applyEmpty('error', message);
-        return;
       }
-      const cached = await readCachedHighlights();
-      if (gen !== loadGenRef.current || !isAuthenticatedRef.current) return;
-      if (cached) {
-        applyRows(cached);
-        setError(message);
-        return;
-      }
-      applyEmpty('error', message);
-    }
-  }, [applyEmpty, applyRows]);
+    },
+    [applyEmpty, applyRows],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
-      // Invalidate any in-flight signed-in fetch, then clear.
       loadGenRef.current += 1;
+      sessionSnapshot = null;
       applyEmpty('ready', null);
       return;
     }
-    void load();
+    void load({ force: false });
   }, [isAuthenticated, load, applyEmpty]);
 
   // Keep planLabel in stats when only the label changes (no re-fetch)
@@ -288,32 +380,34 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   }, [planLabel]);
 
   const refresh = useCallback(async () => {
-    await load();
+    await load({ force: true });
   }, [load]);
 
-  const patchHighlight = useCallback(
-    (id: string, patch: WebHighlightPatch) => {
-      setHighlights((prev) => {
-        const next = prev.map((h) => {
-          if (h.id !== id) return h;
-          return {
-            ...h,
-            ...(patch.note !== undefined ? { note: patch.note } : {}),
-            ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
-          };
-        });
-        const agg = aggregateLibrary(next);
-        setDomains(agg.domains);
-        setStats({ ...agg.stats, planLabel: planLabelRef.current });
-        setRecent(agg.recent);
-        setCurrentPage(agg.currentPage);
-        return next;
+  const patchHighlight = useCallback((id: string, patch: WebHighlightPatch) => {
+    setHighlights((prev) => {
+      const next = prev.map((h) => {
+        if (h.id !== id) return h;
+        return {
+          ...h,
+          ...(patch.note !== undefined ? { note: patch.note } : {}),
+          ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
+        };
       });
-    },
-    [],
-  );
+      const agg = aggregateLibrary(next);
+      setDomains(agg.domains);
+      setStats({ ...agg.stats, planLabel: planLabelRef.current });
+      setRecent(agg.recent);
+      setCurrentPage(agg.currentPage);
+      if (sessionSnapshot) {
+        sessionSnapshot = {
+          ...sessionSnapshot,
+          highlights: next,
+        };
+      }
+      return next;
+    });
+  }, []);
 
-  // Guest: initial state is already ready+empty; load() never calls fetch.
   return {
     status: isAuthenticated ? status : 'ready',
     isGuest: !isAuthenticated,

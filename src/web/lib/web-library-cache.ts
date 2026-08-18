@@ -1,5 +1,6 @@
 /**
- * Per-origin web library cache (ADR-029). Not shared with the extension IDB.
+ * Per-origin web library cache (page origin IndexedDB).
+ * Separate from the extension's IndexedDB — different browser storage partitions.
  */
 
 import type { WebHighlight } from '@/web/lib/aggregateLibrary';
