@@ -13,7 +13,6 @@ export interface LibrarySectionRowProps {
   count: number;
   onOpen: () => void;
   showActions?: boolean;
-  onAsk?: () => void;
   onDelete?: () => void;
 }
 
@@ -22,7 +21,6 @@ export function LibrarySectionRow({
   count,
   onOpen,
   showActions = false,
-  onAsk,
   onDelete,
 }: LibrarySectionRowProps): React.ReactElement {
   return (
@@ -34,7 +32,6 @@ export function LibrarySectionRow({
       <ScopeRowActions
         kind="section"
         show={showActions}
-        onAsk={onAsk}
         onDelete={onDelete}
       />
     </div>

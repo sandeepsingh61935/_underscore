@@ -92,7 +92,7 @@ export function ModelsProviderSetup({
         });
         onStateChange(next);
         setOk(true);
-        setMessage('Connection ok · ready for Chat on this device');
+        setMessage('Connection ok · ready on this device');
       } else {
         setOk(false);
         setMessage(result.error ?? 'Check failed');

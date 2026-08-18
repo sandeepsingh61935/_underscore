@@ -1096,265 +1096,6 @@ button.sr-icon.is-delete:active {
   background: color-mix(in oklch, #8a2a1a 8%, var(--paper));
 }
 
-/* ─── Ask tab (v3 shell) ─── */
-.ask-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  --ask-bubble-r: 4px;
-}
-.ask-layout .ask-scroll {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  display: flex;
-  flex-direction: column;
-}
-.ask-chrome {
-  flex-shrink: 0;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid var(--rule-soft);
-  background: var(--paper);
-}
-.ask-scope-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.ask-scope-bar button.scope-chip {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 6px 10px;
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--rule-soft);
-  color: var(--ink-2);
-  background: transparent;
-  border-radius: 999px;
-}
-.ask-scope-bar button.scope-chip:hover {
-  border-color: var(--rule);
-  color: var(--ink);
-}
-.ask-scope-bar button.scope-chip.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-tint-08);
-}
-.ask-scope-bar button.scope-chip:disabled {
-  opacity: 0.38;
-  cursor: default;
-}
-.ask-chrome .ag-crumb .ag-sep {
-  color: var(--ink-4);
-  font-weight: 400;
-}
-.ask-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 24px 16px 12px;
-  min-height: 160px;
-}
-.ask-empty.ae-center {
-  text-align: center;
-  align-items: center;
-}
-.ask-empty .ae-hello {
-  margin: 0;
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 500;
-  font-size: var(--step-1);
-  letter-spacing: -0.015em;
-  color: var(--ink);
-  line-height: 1.25;
-}
-.ask-empty .ae-line {
-  margin: 6px 0 0;
-  font-size: var(--step--1);
-  color: var(--ink-3);
-  line-height: 1.45;
-  max-width: 240px;
-}
-.ask-empty .ae-cta {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-}
-.ask-empty.ae-center .ae-cta {
-  align-items: center;
-  width: 100%;
-  max-width: 280px;
-}
-.ask-thread {
-  flex: 1;
-  padding: 12px 14px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.ask-turn {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ask-turn .at-user {
-  align-self: flex-end;
-  max-width: 88%;
-  padding: 10px 14px;
-  background: var(--paper-2);
-  border: 1px solid var(--rule-soft);
-  border-radius: var(--ask-bubble-r) var(--ask-bubble-r) 4px var(--ask-bubble-r);
-  font-size: var(--step-0);
-  line-height: 1.45;
-  color: var(--ink);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.ask-turn .at-assistant {
-  align-self: stretch;
-  max-width: 100%;
-  padding: 2px 2px 0;
-  font-size: var(--step-0);
-  line-height: 1.55;
-  color: var(--ink);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.ask-turn .at-thinking {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--ink-3);
-  letter-spacing: 0.06em;
-}
-.ask-turn .at-thinking .at-dots {
-  display: inline-flex;
-  gap: 3px;
-}
-.ask-turn .at-thinking .at-dots span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--ink-4);
-}
-.ask-composer {
-  flex-shrink: 0;
-  padding: 10px 12px 8px;
-  background: var(--paper);
-  border-top: 1px solid var(--rule-soft);
-}
-.ask-composer .ac-shell {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 8px 8px 8px 12px;
-  border: 1px solid var(--rule-soft);
-  background: var(--paper);
-  border-radius: var(--radius);
-}
-.ask-composer .ac-shell:focus-within {
-  border-color: var(--ink-3);
-}
-.ask-composer .ac-shell input {
-  flex: 1;
-  min-width: 0;
-  min-height: 28px;
-  padding: 6px 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--step-0);
-  color: var(--ink);
-  line-height: 1.4;
-  outline: none;
-}
-.ask-composer .ac-shell input::placeholder {
-  color: var(--ink-4);
-}
-.ask-composer .ac-shell input:disabled {
-  opacity: 0.55;
-}
-.ask-composer .ac-send {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 14px;
-  line-height: 1;
-}
-.ask-composer .ac-send:hover:not(:disabled) {
-  background: var(--ink-2);
-}
-.ask-composer .ac-send:disabled {
-  opacity: 0.28;
-  cursor: default;
-  background: var(--ink-4);
-}
-.ask-composer .ac-send:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.ask-ground {
-  flex-shrink: 0;
-  padding: 0 14px 10px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
-}
-.ask-lock-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  text-align: center;
-}
-.ask-lock-page .al-title {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: var(--step-2);
-  font-weight: 500;
-  margin: 0;
-  color: var(--ink);
-}
-.ask-lock-page .al-body {
-  margin: 8px 0 0;
-  font-size: var(--step--1);
-  color: var(--ink-3);
-  line-height: 1.4;
-  max-width: 220px;
-}
-.ask-lock-page .al-actions {
-  margin-top: 18px;
-}
-
 /* ─── A11y: focus-visible (story 75) ───
    Lives after `all: unset` chrome so outline is restored for keyboard users.
    !important wins over `all: unset` on TabBar, ModeHeader, account pill, chips. */
@@ -1365,8 +1106,7 @@ button.sr-icon.is-delete:active {
 
 /* Shell fields: ring the container only — never the bare input (avoids double outline). */
 .search-input-row:focus-within,
-.tag-find-row:focus-within,
-.ask-composer .ac-shell:focus-within {
+.tag-find-row:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-color: var(--rule-soft);
@@ -1374,9 +1114,7 @@ button.sr-icon.is-delete:active {
 .search-input-row input:focus,
 .search-input-row input:focus-visible,
 .tag-find-row input:focus,
-.tag-find-row input:focus-visible,
-.ask-composer .ac-shell input:focus,
-.ask-composer .ac-shell input:focus-visible {
+.tag-find-row input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
@@ -1393,8 +1131,6 @@ button.sr-icon.is-delete:active {
     scroll-behavior: auto !important;
   }
 
-  .ask-scope-bar button.scope-chip,
-  .ask-composer .ac-send,
   .u-card-row,
   .u-icon-btn {
     transition: none !important;

@@ -13,7 +13,6 @@ export interface LibraryDomainRowProps {
   count: number;
   onOpen: () => void;
   showActions?: boolean;
-  onAsk?: () => void;
   onDelete?: () => void;
   /** Optional secondary line (e.g. last active date). */
   sub?: string;
@@ -24,7 +23,6 @@ export function LibraryDomainRow({
   count,
   onOpen,
   showActions = false,
-  onAsk,
   onDelete,
   sub,
 }: LibraryDomainRowProps): React.ReactElement {
@@ -45,7 +43,6 @@ export function LibraryDomainRow({
       <ScopeRowActions
         kind="domain"
         show={showActions}
-        onAsk={onAsk}
         onDelete={onDelete}
       />
     </div>

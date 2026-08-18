@@ -35,7 +35,7 @@ export function ModelsList({
     >
       <p className="block-label">Models &amp; providers</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        Keys stay on this device (not synced). Used for web Chat on this browser;
+        Keys stay on this device (not synced). Used for AI features on this browser;
         the extension has its own device keys.
       </p>
       {!isAuthenticated ? (

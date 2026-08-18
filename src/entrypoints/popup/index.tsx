@@ -413,7 +413,6 @@ function PopupApp(): React.ReactElement {
           onLogout={handleLogout}
           onSectionClick={handleSectionClick}
           onSignIn={() => setCurrentView(View.AUTH)}
-          isPaidActive={isPaidActive}
         />
       )}
     </PopupShell>

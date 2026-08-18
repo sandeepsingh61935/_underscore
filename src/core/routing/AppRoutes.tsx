@@ -88,11 +88,9 @@ export function AppRoutes() {
                 <Route path="/settings" element={<WebSettingsPage />} />
               </Route>
 
-              {/* Retired Ask product — land on Integrations settings */}
-              <Route path="/ask" element={<Navigate to="/settings?tab=ai" replace />} />
-              <Route path="/ask/*" element={<Navigate to="/settings?tab=ai" replace />} />
-
               {/* Legacy redirects */}
+              <Route path="/ask" element={<Navigate to="/home" replace />} />
+              <Route path="/ask/*" element={<Navigate to="/home" replace />} />
               <Route path="/collections" element={<Navigate to="/library" replace />} />
               <Route path="/mode" element={<Navigate to="/home" replace />} />
               <Route path="/domain/:domain" element={<LegacyDomainRedirect />} />

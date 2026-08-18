@@ -174,20 +174,9 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.queryByText(/Good morning/i)).toBeNull();
   });
 
-  it('shows Ask about this page when Paid', () => {
+  it('does not show Ask about this page', () => {
     mockWithHighlights({ mode: 'pro_xai' });
-    const onAskPage = vi.fn();
-    render(<DashboardView isPaidActive onAskPage={onAskPage} />);
-
-    const ask = screen.getByRole('button', { name: /Ask about this page/i });
-    expect(ask).toBeTruthy();
-    ask.click();
-    expect(onAskPage).toHaveBeenCalledTimes(1);
-  });
-
-  it('hides Ask about this page when not Paid', () => {
-    mockWithHighlights({ mode: 'pro' });
-    render(<DashboardView isPaidActive={false} onAskPage={vi.fn()} />);
+    render(<DashboardView />);
 
     expect(screen.queryByRole('button', { name: /Ask about this page/i })).toBeNull();
   });

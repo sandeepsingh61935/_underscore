@@ -31,7 +31,6 @@ import {
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
-import { getEntitlementPaidActive } from '@/shared/billing';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
@@ -41,8 +40,6 @@ export interface CollectionsViewProps {
   onCollectionClick?: (domain: string) => void;
   /** Drill into a specific result's domain/section (search results can span domains). */
   onSectionClick?: (domain: string, section: string) => void;
-  /** Open Ask tab scoped to this library domain (Paid). */
-  onAskDomain?: (domain: string) => void;
   isAuthenticated?: boolean;
   onSignIn?: () => void;
 }
@@ -50,7 +47,6 @@ export interface CollectionsViewProps {
 export function CollectionsView({
   onCollectionClick,
   onSectionClick,
-  onAskDomain,
   isAuthenticated: propIsAuthenticated,
   onSignIn,
 }: CollectionsViewProps): React.ReactElement {
@@ -61,7 +57,6 @@ export function CollectionsView({
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
 
   const { collections, isLoading } = useCollections(mode);
-  const aiGate = useModeFeature('ai', isAuthenticated, getEntitlementPaidActive());
   const exportGate = useModeFeature('export', isAuthenticated);
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const { deleteScope } = useHighlightDelete();
@@ -299,11 +294,6 @@ export function CollectionsView({
               sub={c.lastActive ? new Date(c.lastActive).toLocaleDateString() : undefined}
               onOpen={() => handleCollectionClick(c.domain)}
               showActions={isAuthenticated}
-              onAsk={
-                aiGate.allowed && onAskDomain
-                  ? () => onAskDomain(c.domain)
-                  : undefined
-              }
               onDelete={
                 isAuthenticated
                   ? () => setDeleteDomain({ domain: c.domain, count: c.highlightCount })

@@ -26,10 +26,6 @@ export interface DashboardViewProps {
   /** Open domain section (popup view state — not React Router). */
   onSectionClick?: (domain: string, section: string) => void;
   onSignIn?: () => void;
-  /** Navigate to Ask scoped to current page (Paid only). */
-  onAskPage?: () => void;
-  /** Paid entitlement active — gates Ask affordance on current page. */
-  isPaidActive?: boolean;
 }
 
 function formatPath(path: string | null | undefined): string {
@@ -84,17 +80,13 @@ function CurrentPageBand({
   path,
   count,
   canOpen,
-  showAsk,
   onOpen,
-  onAsk,
 }: {
   domain: string | null;
   path: string;
   count: number;
   canOpen: boolean;
-  showAsk: boolean;
   onOpen?: () => void;
-  onAsk?: () => void;
 }): React.ReactElement {
   const empty = !domain;
 
@@ -240,37 +232,6 @@ function CurrentPageBand({
               </span>
             </div>
           </button>
-          {showAsk && onAsk ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 16px 12px',
-                marginTop: -2,
-              }}
-            >
-              <button
-                type="button"
-                onClick={onAsk}
-                className="u-mono"
-                style={{
-                  all: 'unset',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  minHeight: 28,
-                  fontSize: 'var(--step--2)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--ink-2)',
-                  textDecoration: 'underline',
-                  textUnderlineOffset: 2,
-                }}
-              >
-                Ask about this page
-              </button>
-            </div>
-          ) : null}
         </>
       )}
     </div>
@@ -468,8 +429,6 @@ export function DashboardView({
   onLogout: _onLogout,
   onSectionClick,
   onSignIn,
-  onAskPage,
-  isPaidActive = false,
 }: DashboardViewProps): React.ReactElement {
   const { currentMode, user, isAuthenticated } = useApp();
   const tabContext = useCurrentTabContext();
@@ -505,7 +464,6 @@ export function DashboardView({
 
   const pathDisplay = formatPath(tabContext.path);
   const canOpenSection = Boolean(tabContext.domain && onSectionClick);
-  const showAsk = Boolean(isPaidActive && tabContext.domain && onAskPage);
 
   const openCurrentPage = (): void => {
     if (!tabContext.domain || !onSectionClick) return;
@@ -553,9 +511,7 @@ export function DashboardView({
           path={pathDisplay}
           count={currentPageHighlightsCount}
           canOpen={canOpenSection}
-          showAsk={showAsk}
           onOpen={openCurrentPage}
-          onAsk={onAskPage}
         />
       </div>
 

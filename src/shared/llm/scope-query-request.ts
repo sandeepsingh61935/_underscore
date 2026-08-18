@@ -1,7 +1,7 @@
 /**
  * One-shot grounded ask request (MCP / legacy).
  * Same prompt + user content shape as empty-history assembleChatRequest
- * (shared/chat context-assembler). Kept named for MCP without importing chat.
+ * Kept for MCP one-shot grounded questions.
  */
 
 import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';

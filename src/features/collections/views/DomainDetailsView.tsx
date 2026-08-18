@@ -36,7 +36,6 @@ import {
   deleteDomainCopy,
   deleteSectionCopy,
 } from '@/shared/utils/confirm-dialog-copy';
-import { getEntitlementPaidActive } from '@/shared/billing';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
@@ -44,8 +43,6 @@ export interface DomainDetailsViewProps {
   domain?: string;
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
-  /** Open Ask tab scoped to this domain (Paid). */
-  onAskDomain?: (domain: string) => void;
 }
 
 function IconTrash(): React.ReactElement {
@@ -65,7 +62,6 @@ export function DomainDetailsView({
   domain: propDomain,
   onBack: _onBack,
   onSectionClick,
-  onAskDomain,
 }: DomainDetailsViewProps): React.ReactElement {
   const params = useParams<{ domain: string }>();
   const domain = propDomain ?? params.domain ?? '';
@@ -83,7 +79,6 @@ export function DomainDetailsView({
 
   const { highlights, isLoading } = useHighlightsByDomain(domain, isAuthenticated);
   const exportGate = useModeFeature('export', isAuthenticated);
-  const aiGate = useModeFeature('ai', isAuthenticated, getEntitlementPaidActive());
   const tagsGate = useModeFeature('tags', isAuthenticated);
   const exportDisabled = !exportGate.allowed;
   const { deleteScope } = useHighlightDelete();
@@ -335,11 +330,6 @@ export function DomainDetailsView({
                 count={s.count}
                 onOpen={() => handleSectionClick(s.path)}
                 showActions={isAuthenticated}
-                onAsk={
-                  aiGate.allowed && onAskDomain
-                    ? () => onAskDomain(domain)
-                    : undefined
-                }
                 onDelete={
                   isAuthenticated
                     ? () => setDeleteSection({ path: s.path, count: s.count })
