@@ -50,6 +50,8 @@ export type WebLibraryState = {
   refresh: () => Promise<void>;
   /** Optimistically patch a highlight in local aggregate (after note/tag save). */
   patchHighlight: (id: string, patch: WebHighlightPatch) => void;
+  /** Drop highlights from local aggregate after a successful soft-delete. */
+  removeHighlights: (ids: readonly string[]) => void;
 };
 
 export type UseWebLibraryOpts = {
@@ -466,6 +468,40 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     });
   }, []);
 
+  const removeHighlights = useCallback((ids: readonly string[]) => {
+    if (ids.length === 0) return;
+    const drop = new Set(ids);
+    setHighlights((prev) => {
+      const next = prev.filter((h) => !drop.has(h.id));
+      if (next.length === prev.length) return prev;
+      const now = Date.now();
+      const agg = aggregateLibrary(next);
+      setDomains(agg.domains);
+      setStats({ ...agg.stats, planLabel: planLabelRef.current });
+      setRecent(agg.recent);
+      setCurrentPage(agg.currentPage);
+      if (sessionSnapshot) {
+        sessionSnapshot = {
+          ...sessionSnapshot,
+          highlights: next,
+          savedAt: now,
+        };
+        if (sessionSnapshot.key && sessionSnapshot.key !== INJECTED_CACHE_KEY) {
+          void writeWebLibraryCache(sessionSnapshot.key, next);
+        }
+      } else if (!fetchRef.current) {
+        // Still remember local removal for SPA navigation even without prior session key.
+        void getSessionUserId().then((uid) => {
+          if (uid) {
+            rememberSession(uid, next);
+            void writeWebLibraryCache(uid, next);
+          }
+        });
+      }
+      return next;
+    });
+  }, []);
+
   return {
     status: isAuthenticated ? status : 'ready',
     isGuest: !isAuthenticated,
@@ -477,5 +513,6 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     error: isAuthenticated ? error : null,
     refresh,
     patchHighlight,
+    removeHighlights,
   };
 }

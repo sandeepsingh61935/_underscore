@@ -9,9 +9,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import type { ExportFormat } from '@/shared/highlight-export';
+import {
+  deleteDomainCopy,
+  deleteSectionCopy,
+} from '@/shared/utils/confirm-dialog-copy';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
@@ -34,6 +39,7 @@ import {
   useRelatednessService,
   useRelatedTags,
 } from '@/web/hooks/useRelatedness';
+import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import {
   useWebLibrary,
   type WebHighlight,
@@ -75,6 +81,19 @@ function ChevDown(): React.ReactElement {
         strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIco(): React.ReactElement {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -162,6 +181,10 @@ export function LibraryPage(): React.ReactElement {
   });
   const { updateMetadata } = useUpdateHighlightMetadata();
   const patchHighlight = lib.patchHighlight;
+  const { deleteScope } = useWebHighlightDelete({
+    highlights: lib.highlights,
+    removeHighlights: lib.removeHighlights,
+  });
 
   const selection = useMemo(
     () => parseLibrarySelection(location.search),
@@ -185,6 +208,16 @@ export function LibraryPage(): React.ReactElement {
   const [sortOpen, setSortOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [deleteDomainTarget, setDeleteDomainTarget] = useState<{
+    domain: string;
+    count: number;
+  } | null>(null);
+  const [deleteSectionTarget, setDeleteSectionTarget] = useState<{
+    domain: string;
+    path: string;
+    count: number;
+  } | null>(null);
+  const [isDeletingScope, setIsDeletingScope] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const seededTagRef = useRef<string | null>(initialTagFromUrl);
@@ -310,6 +343,59 @@ export function LibraryPage(): React.ReactElement {
     },
     [updateMetadata, patchHighlight],
   );
+
+  const handleHighlightDelete = useCallback(
+    async (id: string): Promise<boolean> => {
+      const result = await deleteScope({ scope: 'highlight', id });
+      if (result.success && selection.highlight === id) {
+        setSelection(selection.domain, selection.section, null);
+      }
+      return result.success;
+    },
+    [deleteScope, selection.domain, selection.highlight, selection.section, setSelection],
+  );
+
+  const confirmDeleteDomain = useCallback(async (): Promise<void> => {
+    if (!deleteDomainTarget || isDeletingScope) return;
+    setIsDeletingScope(true);
+    try {
+      const result = await deleteScope({
+        scope: 'domain',
+        domain: deleteDomainTarget.domain,
+      });
+      if (result.success) {
+        setDeleteDomainTarget(null);
+        if (selection.domain === deleteDomainTarget.domain) {
+          setSelection(null, null, null);
+        }
+      }
+    } finally {
+      setIsDeletingScope(false);
+    }
+  }, [deleteDomainTarget, deleteScope, isDeletingScope, selection.domain, setSelection]);
+
+  const confirmDeleteSection = useCallback(async (): Promise<void> => {
+    if (!deleteSectionTarget || isDeletingScope) return;
+    setIsDeletingScope(true);
+    try {
+      const result = await deleteScope({
+        scope: 'section',
+        domain: deleteSectionTarget.domain,
+        sectionKey: deleteSectionTarget.path,
+      });
+      if (result.success) {
+        setDeleteSectionTarget(null);
+        if (
+          selection.domain === deleteSectionTarget.domain &&
+          selection.section === deleteSectionTarget.path
+        ) {
+          setSelection(deleteSectionTarget.domain, null, null);
+        }
+      }
+    } finally {
+      setIsDeletingScope(false);
+    }
+  }, [deleteScope, deleteSectionTarget, isDeletingScope, selection.domain, selection.section, setSelection]);
 
   const handleToggleTagFilter = useCallback((tag: string) => {
     setTagFilters((prev) => toggleTagFilter(prev, tag));
@@ -488,6 +574,7 @@ export function LibraryPage(): React.ReactElement {
       onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
       onNoteSave={caps.isGuest ? undefined : handleNoteSave}
       onTagsChange={caps.isGuest ? undefined : handleTagsChange}
+      onDelete={caps.isGuest ? undefined : handleHighlightDelete}
     />
   ) : filtered.length > 0 ? (
       <>
@@ -546,6 +633,7 @@ export function LibraryPage(): React.ReactElement {
                 onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
                 onNoteSave={caps.isGuest ? undefined : handleNoteSave}
                 onTagsChange={caps.isGuest ? undefined : handleTagsChange}
+                onDelete={caps.isGuest ? undefined : handleHighlightDelete}
               />
             );
           })}
@@ -665,6 +753,22 @@ export function LibraryPage(): React.ReactElement {
                     </span>
                     <span className="tree-label">{d.domain}</span>
                   </button>
+                  {!caps.isGuest && d.count > 0 ? (
+                    <button
+                      type="button"
+                      className="tree-delete sr-icon is-delete"
+                      data-od-id={`lib-domain-delete-${d.domain.replace(/\./g, '-')}`}
+                      aria-label={`Delete site ${d.domain}`}
+                      title="Delete site"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteDomainTarget({ domain: d.domain, count: d.count });
+                      }}
+                    >
+                      <TrashIco />
+                    </button>
+                  ) : null}
                 </div>
                 <div
                   className={`tree-children${open ? ' is-open' : ''}`}
@@ -676,15 +780,36 @@ export function LibraryPage(): React.ReactElement {
                         selection.domain === d.domain &&
                         selection.section === s.path;
                       return (
-                        <button
-                          key={s.path}
-                          type="button"
-                          className={`tree-item is-child${activeSec ? ' active' : ''}`}
-                          data-od-id={sectionOdId(s.path)}
-                          onClick={() => selectSection(d.domain, s.path)}
-                        >
-                          <span className="tree-label">{s.path}</span>
-                        </button>
+                        <div key={s.path} className="tree-row is-child">
+                          <button
+                            type="button"
+                            className={`tree-item is-child${activeSec ? ' active' : ''}`}
+                            data-od-id={sectionOdId(s.path)}
+                            onClick={() => selectSection(d.domain, s.path)}
+                          >
+                            <span className="tree-label">{s.path}</span>
+                          </button>
+                          {!caps.isGuest && s.count > 0 ? (
+                            <button
+                              type="button"
+                              className="tree-delete sr-icon is-delete"
+                              data-od-id={`lib-sec-delete-${s.path.replace(/[^a-z0-9]+/gi, '-')}`}
+                              aria-label={`Delete page ${s.path}`}
+                              title="Delete page"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeleteSectionTarget({
+                                  domain: d.domain,
+                                  path: s.path,
+                                  count: s.count,
+                                });
+                              }}
+                            >
+                              <TrashIco />
+                            </button>
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>
@@ -709,6 +834,38 @@ export function LibraryPage(): React.ReactElement {
         ) : null}
         <div className="lib-main-head">
           <h2 data-od-id="library-scope-title">{title}</h2>
+          <div className="lib-main-head-actions">
+          {!caps.isGuest && selection.domain && !selection.highlight ? (
+            <button
+              type="button"
+              className="sr-icon is-delete"
+              data-od-id="library-scope-delete"
+              aria-label={
+                selection.section
+                  ? `Delete page ${selection.section}`
+                  : `Delete site ${selection.domain}`
+              }
+              title={selection.section ? 'Delete page' : 'Delete site'}
+              disabled={scoped.length === 0}
+              onClick={() => {
+                if (!selection.domain) return;
+                if (selection.section) {
+                  setDeleteSectionTarget({
+                    domain: selection.domain,
+                    path: selection.section,
+                    count: scoped.length,
+                  });
+                } else {
+                  setDeleteDomainTarget({
+                    domain: selection.domain,
+                    count: scoped.length,
+                  });
+                }
+              }}
+            >
+              <TrashIco />
+            </button>
+          ) : null}
           {caps.flags.export ? (
             <div className="export-menu" data-od-id="library-export" ref={exportRef}>
               <button
@@ -756,7 +913,7 @@ export function LibraryPage(): React.ReactElement {
               ) : null}
             </div>
           ) : null}
-
+          </div>
         </div>
         <div className="lib-search-wrap" data-od-id="library-search">
           <HighlightSearchBar
@@ -776,6 +933,60 @@ export function LibraryPage(): React.ReactElement {
         </div>
         <div className="lib-main-body">{listBody}</div>
       </div>
+
+      {(() => {
+        const copy = deleteDomainTarget
+          ? deleteDomainCopy(deleteDomainTarget.domain, deleteDomainTarget.count)
+          : null;
+        return (
+          <DeleteConfirmDialog
+            open={deleteDomainTarget !== null}
+            onClose={() => {
+              if (!isDeletingScope) setDeleteDomainTarget(null);
+            }}
+            severity={copy?.severity}
+            title={copy?.title ?? 'Delete this site?'}
+            message={copy?.message ?? ''}
+            note={copy?.note}
+            strongNames={copy?.strongNames}
+            confirmLabel={copy?.confirmLabel}
+            cancelLabel={copy?.cancelLabel}
+            onConfirm={() => {
+              void confirmDeleteDomain();
+            }}
+            isConfirming={isDeletingScope}
+          />
+        );
+      })()}
+
+      {(() => {
+        const copy = deleteSectionTarget
+          ? deleteSectionCopy(
+              deleteSectionTarget.domain,
+              deleteSectionTarget.path,
+              deleteSectionTarget.count,
+            )
+          : null;
+        return (
+          <DeleteConfirmDialog
+            open={deleteSectionTarget !== null}
+            onClose={() => {
+              if (!isDeletingScope) setDeleteSectionTarget(null);
+            }}
+            severity={copy?.severity}
+            title={copy?.title ?? 'Delete this page?'}
+            message={copy?.message ?? ''}
+            note={copy?.note}
+            strongNames={copy?.strongNames}
+            confirmLabel={copy?.confirmLabel}
+            cancelLabel={copy?.cancelLabel}
+            onConfirm={() => {
+              void confirmDeleteSection();
+            }}
+            isConfirming={isDeletingScope}
+          />
+        );
+      })()}
     </div>
   );
 }

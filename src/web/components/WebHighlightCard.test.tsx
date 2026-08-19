@@ -145,4 +145,34 @@ describe('WebHighlightCard', () => {
     fireEvent.click(document.querySelector('[data-od-id="hl-main-h1"]')!);
     expect(onOpenPage).toHaveBeenCalledWith('example.com', '/docs');
   });
+
+  it('delete icon opens confirm dialog and calls onDelete on confirm', async () => {
+    const onDelete = vi.fn().mockResolvedValue(true);
+    render(
+      <WebHighlightCard
+        highlight={base}
+        onDelete={onDelete}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+      />,
+    );
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-delete-h1"]')!);
+    expect(screen.getByTestId('confirm-dialog-message')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+    await waitFor(() => {
+      expect(onDelete).toHaveBeenCalledWith('h1');
+    });
+  });
+
+  it('readOnly hides delete control', () => {
+    render(
+      <WebHighlightCard
+        highlight={base}
+        readOnly
+        onDelete={vi.fn().mockResolvedValue(true)}
+      />,
+    );
+    expect(document.querySelector('[data-od-id="hl-delete-h1"]')).toBeNull();
+  });
 });

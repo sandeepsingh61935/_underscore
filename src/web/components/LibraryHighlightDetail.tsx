@@ -25,6 +25,7 @@ export type LibraryHighlightDetailProps = {
   onToggleTagFilter?: (tag: string) => void;
   onNoteSave?: (id: string, note: string) => Promise<boolean>;
   onTagsChange?: (id: string, tags: string[]) => Promise<boolean>;
+  onDelete?: (id: string) => Promise<boolean>;
 };
 
 export function LibraryHighlightDetail({
@@ -39,6 +40,7 @@ export function LibraryHighlightDetail({
   onToggleTagFilter,
   onNoteSave,
   onTagsChange,
+  onDelete,
 }: LibraryHighlightDetailProps): React.ReactElement {
   return (
     <div
@@ -66,6 +68,7 @@ export function LibraryHighlightDetail({
         onToggleTagFilter={onToggleTagFilter}
         onNoteSave={onNoteSave}
         onTagsChange={onTagsChange}
+        onDelete={onDelete}
       />
       <RelatedHighlightsSection
         items={related}

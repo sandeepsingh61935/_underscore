@@ -7,6 +7,8 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
@@ -28,6 +30,8 @@ export type WebHighlightCardProps = {
   onToggleTagFilter?: (tag: string) => void;
   onNoteSave?: (id: string, note: string) => Promise<boolean>;
   onTagsChange?: (id: string, tags: string[]) => Promise<boolean>;
+  /** Soft-delete this highlight after confirm. */
+  onDelete?: (id: string) => Promise<boolean>;
 };
 
 function relativeTime(ts: number, now = Date.now()): string {
@@ -66,6 +70,19 @@ function PlusIco(): React.ReactElement {
   );
 }
 
+function TrashIco(): React.ReactElement {
+  return (
+    <svg className="ico" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function WebHighlightCard({
   highlight: h,
   showDomain = true,
@@ -78,6 +95,7 @@ export function WebHighlightCard({
   onToggleTagFilter,
   onNoteSave,
   onTagsChange,
+  onDelete,
 }: WebHighlightCardProps): React.ReactElement {
   const [noteEditing, setNoteEditing] = useState(false);
   const [tagEditing, setTagEditing] = useState(false);
@@ -90,15 +108,19 @@ export function WebHighlightCard({
   const [tagError, setTagError] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const [savingTags, setSavingTags] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const tagsRowRef = useRef<HTMLDivElement>(null);
+  const isDeletingRef = useRef(false);
   const noteFieldId = useId();
   const tagFieldId = useId();
   const tagsBusyRef = useRef(false);
 
   const activeSet = new Set(activeTagFilters.map(tagKey));
   const canEdit = !readOnly && Boolean(onNoteSave || onTagsChange);
+  const canDelete = !readOnly && Boolean(onDelete);
 
   // Sync drafts when highlight id or server values change while not editing.
   useEffect(() => {
@@ -256,25 +278,57 @@ export function WebHighlightCard({
 
   const note = h.note.trim();
   const tags = localTags;
+  const deleteCopy = deleteHighlightCopy();
+
+  const handleConfirmDelete = useCallback(async (): Promise<void> => {
+    if (!onDelete || isDeletingRef.current) return;
+    isDeletingRef.current = true;
+    setIsDeleting(true);
+    try {
+      const ok = await onDelete(h.id);
+      if (ok) setDeleteOpen(false);
+    } finally {
+      isDeletingRef.current = false;
+      setIsDeleting(false);
+    }
+  }, [h.id, onDelete]);
 
   return (
     <div className="hl" data-od-id={`hl-${h.id}`}>
-      <button
-        type="button"
-        className="hl-main"
-        data-od-id={`hl-main-${h.id}`}
-        onClick={openMain}
-      >
-        <p className="hl-quote">“{h.quote}”</p>
-        {showMeta ? (
-          <div className="hl-meta">
-            {showDomain ? <span className="src">{h.domain}</span> : null}
-            <span>{h.path}</span>
-            <span>{relativeTime(h.savedAt)}</span>
-          </div>
+      <div className="hl-top">
+        <button
+          type="button"
+          className="hl-main"
+          data-od-id={`hl-main-${h.id}`}
+          onClick={openMain}
+        >
+          <p className="hl-quote">“{h.quote}”</p>
+          {showMeta ? (
+            <div className="hl-meta">
+              {showDomain ? <span className="src">{h.domain}</span> : null}
+              <span>{h.path}</span>
+              <span>{relativeTime(h.savedAt)}</span>
+            </div>
+          ) : null}
+          {matchBadge ? <div className="match-badge">{matchBadge}</div> : null}
+        </button>
+        {canDelete ? (
+          <button
+            type="button"
+            className="hl-delete sr-icon is-delete"
+            data-od-id={`hl-delete-${h.id}`}
+            aria-label="Delete highlight"
+            title="Delete highlight"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDeleteOpen(true);
+            }}
+          >
+            <TrashIco />
+          </button>
         ) : null}
-        {matchBadge ? <div className="match-badge">{matchBadge}</div> : null}
-      </button>
+      </div>
 
       <div className="hl-foot">
         <div
@@ -456,6 +510,26 @@ export function WebHighlightCard({
           </div>
         ) : null}
       </div>
+
+      {canDelete ? (
+        <DeleteConfirmDialog
+          open={deleteOpen}
+          onClose={() => {
+            if (!isDeleting) setDeleteOpen(false);
+          }}
+          severity={deleteCopy.severity}
+          title={deleteCopy.title}
+          message={deleteCopy.message}
+          note={deleteCopy.note}
+          strongNames={deleteCopy.strongNames}
+          confirmLabel={deleteCopy.confirmLabel}
+          cancelLabel={deleteCopy.cancelLabel}
+          onConfirm={() => {
+            void handleConfirmDelete();
+          }}
+          isConfirming={isDeleting}
+        />
+      ) : null}
     </div>
   );
 }

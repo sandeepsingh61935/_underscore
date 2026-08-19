@@ -124,6 +124,37 @@ describe('useWebLibrary', () => {
     expect(result.current.recent[0]?.note).toBe('hello note');
   });
 
+  it('signed-in: removeHighlights drops rows and re-aggregates', async () => {
+    const now = Date.now();
+    const fetchHighlights = vi.fn().mockResolvedValue([
+      hl({ id: '1', domain: 'a.com', path: '/docs', savedAt: now }),
+      hl({ id: '2', domain: 'a.com', path: '/docs', savedAt: now - 1 }),
+      hl({ id: '3', domain: 'b.com', path: '/', savedAt: now - 2 }),
+    ]);
+
+    const { result } = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready');
+      expect(result.current.highlights).toHaveLength(3);
+    });
+
+    act(() => {
+      result.current.removeHighlights(['1', '3']);
+    });
+
+    expect(result.current.highlights.map((h) => h.id)).toEqual(['2']);
+    expect(result.current.domains).toHaveLength(1);
+    expect(result.current.domains[0]?.domain).toBe('a.com');
+    expect(result.current.stats.highlightCount).toBe(1);
+  });
+
   it('mergeLibraryRowsWithLocal keeps fresher local tags over stale server row', () => {
     const server = [hl({ id: '1', domain: 'a.com', path: '/', savedAt: 100, tags: [] })];
     const local = [

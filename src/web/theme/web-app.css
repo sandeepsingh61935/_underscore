@@ -1021,6 +1021,30 @@ button.nav-item,
   background: var(--card-hover);
 }
 
+.hl-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.hl-top .hl-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.hl-delete {
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.55;
+  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.hl:hover .hl-delete,
+.hl:focus-within .hl-delete,
+.hl-delete:focus-visible {
+  opacity: 1;
+}
+
 .hl-main {
   all: unset;
   display: block;
@@ -1641,6 +1665,14 @@ div.hl-note-btn:hover {
   flex-wrap: wrap;
 }
 
+.lib-main-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .lib-main-head h2 {
   margin: 0;
   font-family: var(--serif);
@@ -2062,10 +2094,27 @@ div.hl-note-btn:hover {
   --tree-chev: 24px;
   --tree-ico: 24px;
   display: grid;
-  grid-template-columns: var(--tree-chev) minmax(0, 1fr);
+  grid-template-columns: var(--tree-chev) minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 2px;
   min-height: var(--tree-row-h);
+}
+
+.tree-row.is-child {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 34px;
+}
+
+.tree-delete {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.tree-row:hover .tree-delete,
+.tree-row:focus-within .tree-delete,
+.tree-delete:focus-visible {
+  opacity: 1;
 }
 
 .tree-chev-slot {
@@ -2164,6 +2213,11 @@ div.hl-note-btn:hover {
   min-height: 34px;
   border-radius: 8px;
   gap: 8px;
+  width: 100%;
+}
+
+.tree-row.is-child > .tree-item.is-child {
+  padding-left: calc(24px + 2px + 24px + 8px);
 }
 
 .tree-item.is-child .tree-label {
