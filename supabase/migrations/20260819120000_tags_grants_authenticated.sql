@@ -1,9 +1,18 @@
 -- Ensure authenticated clients can dual-write tags + highlight_tags under RLS.
--- Policies already exist (20260713180000); some projects lacked table GRANTs,
--- which surfaces as opaque "Failed to save tags" from the web app.
+-- Requires tables from 20260713180000_tags_and_highlight_tags.sql.
+-- If you see: relation "public.tags" does not exist — run the full manual script first:
+--   supabase/migrations/apply-tags-and-highlight-tags-manual.sql
+--
+-- Guarded so empty projects do not fail CLI migrate before the create migration runs.
 
-GRANT SELECT, INSERT, DELETE ON TABLE public.tags TO authenticated;
-GRANT SELECT, INSERT, DELETE ON TABLE public.highlight_tags TO authenticated;
+DO $$
+BEGIN
+  IF to_regclass('public.tags') IS NOT NULL THEN
+    EXECUTE 'GRANT SELECT, INSERT, DELETE ON TABLE public.tags TO authenticated';
+  END IF;
+  IF to_regclass('public.highlight_tags') IS NOT NULL THEN
+    EXECUTE 'GRANT SELECT, INSERT, DELETE ON TABLE public.highlight_tags TO authenticated';
+  END IF;
+END $$;
 
--- Sequences not used (uuid defaults), but keep table privileges explicit.
 NOTIFY pgrst, 'reload schema';
