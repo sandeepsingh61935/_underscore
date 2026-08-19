@@ -70,12 +70,40 @@ describe('WebHighlightCard', () => {
     const input = document.querySelector(
       '[data-od-id="hl-tag-edit-h1"] input',
     ) as HTMLInputElement;
+    expect(input).toBeTruthy();
     fireEvent.change(input, { target: { value: 'Tokens' } });
     fireEvent.click(document.querySelector('[data-od-id="hl-tag-addbtn-h1"]')!);
 
     await waitFor(() => {
       expect(onTagsChange).toHaveBeenCalledWith('h1', ['craft', 'tokens']);
     });
+    // Optimistic UI shows the new tag immediately
+    expect(document.querySelector('[data-od-id="hl-tag-chip-h1-tokens"]')).toBeTruthy();
+  });
+
+  it('shows inline error and rolls back when tag save fails', async () => {
+    const onTagsChange = vi.fn().mockResolvedValue(false);
+    render(
+      <WebHighlightCard
+        highlight={base}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={onTagsChange}
+      />,
+    );
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-add-h1"]')!);
+    const input = document.querySelector(
+      '[data-od-id="hl-tag-edit-h1"] input',
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'failme' } });
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-addbtn-h1"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-error-h1"]')?.textContent).toMatch(
+        /Could not save tag/,
+      );
+    });
+    expect(document.querySelector('[data-od-id="hl-tag-chip-h1-failme"]')).toBeNull();
   });
 
   it('toggles tag filter on chip click without opening page', () => {

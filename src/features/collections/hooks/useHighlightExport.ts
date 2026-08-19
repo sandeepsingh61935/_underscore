@@ -29,8 +29,26 @@ export type ExportViewScope =
   | { kind: 'domain'; domain: string }
   | { kind: 'section'; domain: string; sectionKey: string };
 
+/**
+ * True only inside an extension page (popup/sidepanel/options) where IPC works.
+ * Plain web app origins must return false even if a chrome stub is injected.
+ */
 export function isExtensionContext(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined' && chrome.runtime.id !== undefined;
+  try {
+    if (typeof window !== 'undefined') {
+      const proto = window.location?.protocol ?? '';
+      // Web app (http/https) always uses Supabase paths — never chrome.runtime IPC.
+      if (proto === 'http:' || proto === 'https:') return false;
+    }
+    return (
+      typeof chrome !== 'undefined' &&
+      typeof chrome.runtime !== 'undefined' &&
+      chrome.runtime.id !== undefined &&
+      typeof chrome.runtime.sendMessage === 'function'
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** Copies plain highlight text to the clipboard (per-highlight action). */

@@ -83,6 +83,11 @@ export function WebHighlightCard({
   const [tagEditing, setTagEditing] = useState(false);
   const [noteDraft, setNoteDraft] = useState(h.note);
   const [tagInput, setTagInput] = useState('');
+  /** Local tag list so add/remove feels instant; synced from props when idle. */
+  const [localTags, setLocalTags] = useState<string[]>(() =>
+    normalizeHighlightTags(h.tags),
+  );
+  const [tagError, setTagError] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const [savingTags, setSavingTags] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -90,6 +95,7 @@ export function WebHighlightCard({
   const tagsRowRef = useRef<HTMLDivElement>(null);
   const noteFieldId = useId();
   const tagFieldId = useId();
+  const tagsBusyRef = useRef(false);
 
   const activeSet = new Set(activeTagFilters.map(tagKey));
   const canEdit = !readOnly && Boolean(onNoteSave || onTagsChange);
@@ -98,6 +104,13 @@ export function WebHighlightCard({
   useEffect(() => {
     if (!noteEditing) setNoteDraft(h.note);
   }, [h.id, h.note, noteEditing]);
+
+  useEffect(() => {
+    // Don't clobber in-flight optimistic tags.
+    if (tagsBusyRef.current || tagEditing) return;
+    setLocalTags(normalizeHighlightTags(h.tags));
+    setTagError(null);
+  }, [h.id, h.tags, tagEditing]);
 
   useEffect(() => {
     if (noteEditing) {
@@ -115,18 +128,27 @@ export function WebHighlightCard({
     return undefined;
   }, [tagEditing]);
 
-  // Click outside tag editor closes it (OD parity).
+  // Click outside tag editor closes it. Delay attach so the opening click
+  // cannot immediately dismiss the editor.
   useEffect(() => {
     if (!tagEditing) return undefined;
-    const onDoc = (e: MouseEvent): void => {
-      const el = tagsRowRef.current;
-      if (el && !el.contains(e.target as Node)) {
-        setTagEditing(false);
-        setTagInput('');
-      }
+    let remove: (() => void) | undefined;
+    const attachTimer = window.setTimeout(() => {
+      const onDoc = (e: MouseEvent): void => {
+        const el = tagsRowRef.current;
+        if (el && !el.contains(e.target as Node)) {
+          setTagEditing(false);
+          setTagInput('');
+          setTagError(null);
+        }
+      };
+      document.addEventListener('mousedown', onDoc);
+      remove = () => document.removeEventListener('mousedown', onDoc);
+    }, 0);
+    return () => {
+      window.clearTimeout(attachTimer);
+      remove?.();
     };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
   }, [tagEditing]);
 
   const openMain = useCallback(() => {
@@ -154,51 +176,86 @@ export function WebHighlightCard({
     setNoteEditing(false);
   }, [h.note]);
 
-  const addTag = useCallback(async () => {
-    if (!onTagsChange) return;
-    const clean = normalizeTagInput(tagInput);
-    if (!clean) {
-      tagInputRef.current?.focus();
-      return;
-    }
-    // Match server normalization so UI and persistence stay in sync.
-    const next = normalizeHighlightTags([...h.tags, clean]);
-    if (next.length === h.tags.length && h.tags.some((t) => tagKey(t) === tagKey(clean))) {
-      setTagInput('');
-      return;
-    }
-    if (next.length === h.tags.length) {
-      // Cap hit or empty after normalize — nothing to write.
-      setTagInput('');
-      return;
-    }
-    setSavingTags(true);
-    try {
-      const ok = await onTagsChange(h.id, next);
-      if (ok) setTagInput('');
-    } finally {
-      setSavingTags(false);
-    }
-  }, [h.id, h.tags, onTagsChange, tagInput]);
-
-  const removeTag = useCallback(
-    async (tag: string) => {
-      if (!onTagsChange) return;
-      const next = normalizeHighlightTags(
-        h.tags.filter((t) => tagKey(t) !== tagKey(tag)),
-      );
+  const persistTags = useCallback(
+    async (next: string[], previous: string[]): Promise<boolean> => {
+      if (!onTagsChange) return false;
+      tagsBusyRef.current = true;
       setSavingTags(true);
+      setTagError(null);
+      setLocalTags(next);
       try {
-        await onTagsChange(h.id, next);
+        const ok = await onTagsChange(h.id, next);
+        if (!ok) {
+          setLocalTags(previous);
+          setTagError('Could not save tag. Try again.');
+          return false;
+        }
+        return true;
+      } catch {
+        setLocalTags(previous);
+        setTagError('Could not save tag. Try again.');
+        return false;
       } finally {
+        tagsBusyRef.current = false;
         setSavingTags(false);
       }
     },
-    [h.id, h.tags, onTagsChange],
+    [h.id, onTagsChange],
+  );
+
+  const addTag = useCallback(async () => {
+    if (!onTagsChange || savingTags) return;
+    const clean = normalizeTagInput(tagInput);
+    if (!clean) {
+      setTagError('Type a tag name first.');
+      tagInputRef.current?.focus();
+      return;
+    }
+    const previous = localTags;
+    const next = normalizeHighlightTags([...localTags, clean]);
+    if (next.length === previous.length) {
+      if (previous.some((t) => tagKey(t) === tagKey(clean))) {
+        setTagInput('');
+        setTagError(null);
+        return;
+      }
+      setTagError('Tag limit reached (10).');
+      return;
+    }
+    const ok = await persistTags(next, previous);
+    if (ok) {
+      setTagInput('');
+      setTagError(null);
+      // Keep editor open for another tag; focus input again.
+      window.setTimeout(() => tagInputRef.current?.focus(), 0);
+    }
+  }, [localTags, onTagsChange, persistTags, savingTags, tagInput]);
+
+  const removeTag = useCallback(
+    async (tag: string) => {
+      if (!onTagsChange || savingTags) return;
+      const previous = localTags;
+      const next = normalizeHighlightTags(
+        localTags.filter((t) => tagKey(t) !== tagKey(tag)),
+      );
+      await persistTags(next, previous);
+    },
+    [localTags, onTagsChange, persistTags, savingTags],
+  );
+
+  const startTagEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!canEdit || !onTagsChange) return;
+      setTagError(null);
+      setTagEditing(true);
+    },
+    [canEdit, onTagsChange],
   );
 
   const note = h.note.trim();
-  const tags = h.tags;
+  const tags = localTags;
 
   return (
     <div className="hl" data-od-id={`hl-${h.id}`}>
@@ -220,7 +277,13 @@ export function WebHighlightCard({
       </button>
 
       <div className="hl-foot">
-        <div className="hl-tags" data-od-id={`hl-tags-${h.id}`} ref={tagsRowRef}>
+        <div
+          className="hl-tags"
+          data-od-id={`hl-tags-${h.id}`}
+          ref={tagsRowRef}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           {tags.map((t) => {
             const active = activeSet.has(tagKey(t));
             const slug = tagKey(t).replace(/[^a-z0-9]+/g, '-');
@@ -237,7 +300,11 @@ export function WebHighlightCard({
                     className="hl-tag-rm"
                     aria-label={`Remove tag ${t}`}
                     disabled={savingTags}
-                    onClick={() => void removeTag(t)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void removeTag(t);
+                    }}
                   >
                     ×
                   </button>
@@ -251,7 +318,11 @@ export function WebHighlightCard({
                 className={`hl-tag${active ? ' active' : ''}`}
                 data-od-id={`hl-tag-${h.id}-${slug}`}
                 aria-pressed={active}
-                onClick={() => onToggleTagFilter?.(t)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleTagFilter?.(t);
+                }}
               >
                 {t}
               </button>
@@ -268,15 +339,21 @@ export function WebHighlightCard({
                 autoComplete="off"
                 value={tagInput}
                 disabled={savingTags}
-                onChange={(e) => setTagInput(e.target.value)}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  if (tagError) setTagError(null);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation();
                     void addTag();
                   }
                   if (e.key === 'Escape') {
+                    e.preventDefault();
                     setTagEditing(false);
                     setTagInput('');
+                    setTagError(null);
                   }
                 }}
               />
@@ -285,9 +362,18 @@ export function WebHighlightCard({
                 className="btn sm"
                 data-od-id={`hl-tag-addbtn-${h.id}`}
                 disabled={savingTags}
-                onClick={() => void addTag()}
+                onMouseDown={(e) => {
+                  // Keep focus path stable; don't let document handlers steal the click.
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void addTag();
+                }}
               >
-                Add
+                {savingTags ? 'Saving…' : 'Add'}
               </button>
             </span>
           ) : canEdit && onTagsChange ? (
@@ -296,12 +382,21 @@ export function WebHighlightCard({
               className="hl-tag-add"
               data-od-id={`hl-tag-add-${h.id}`}
               aria-label="Add tag"
-              onClick={() => setTagEditing(true)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={startTagEdit}
             >
               <PlusIco />
             </button>
           ) : null}
         </div>
+        {tagError ? (
+          <p className="hl-tag-error" data-od-id={`hl-tag-error-${h.id}`} role="alert">
+            {tagError}
+          </p>
+        ) : null}
 
         {noteEditing && canEdit && onNoteSave ? (
           <div className="hl-note-edit" data-od-id={`hl-note-edit-${h.id}`}>

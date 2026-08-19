@@ -6,6 +6,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
@@ -312,6 +313,21 @@ export function WebAppShell(): React.ReactElement {
         onClick={closeMobileSidebar}
         onKeyDown={(e) => {
           if (e.key === 'Escape') closeMobileSidebar();
+        }}
+      />
+
+      <Toaster
+        position="bottom-center"
+        theme="light"
+        richColors
+        closeButton
+        toastOptions={{
+          style: {
+            fontFamily: 'var(--sans)',
+            background: 'var(--paper)',
+            color: 'var(--ink)',
+            border: '1px solid var(--rule-soft)',
+          },
         }}
       />
     </>
