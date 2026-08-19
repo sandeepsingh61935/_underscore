@@ -1791,7 +1791,6 @@ div.hl-note-btn:hover {
 }
 
 .related-hl-row {
-  all: unset;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1806,6 +1805,7 @@ div.hl-note-btn:hover {
   color: inherit;
   font: inherit;
   text-align: left;
+  text-decoration: none;
   transition: border-color 140ms var(--ease), background 140ms var(--ease);
 }
 

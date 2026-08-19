@@ -262,12 +262,31 @@ export function LibraryPage(): React.ReactElement {
     [setSelection],
   );
 
+  const highlightDetailHref = useCallback(
+    (id: string) => {
+      // Prefer the related highlight's own domain/path so detail lands in its page context.
+      const row = lib.highlights.find((h) => h.id === id);
+      const search = buildLibrarySearch({
+        domain: row?.domain ?? selection.domain,
+        section: row ? row.path || null : selection.section,
+        highlight: id,
+      });
+      return search ? `/library?${search}` : `/library?highlight=${encodeURIComponent(id)}`;
+    },
+    [lib.highlights, selection.domain, selection.section],
+  );
+
   const openHighlightDetail = useCallback(
     (id: string) => {
-      // Keep domain/section filters; detail is an overlay on current browse context.
-      setSelection(selection.domain, selection.section, id);
+      const row = lib.highlights.find((h) => h.id === id);
+      // Navigate into the target highlight's page context + detail.
+      setSelection(
+        row?.domain ?? selection.domain,
+        row ? row.path || null : selection.section,
+        id,
+      );
     },
-    [selection.domain, selection.section, setSelection],
+    [lib.highlights, selection.domain, selection.section, setSelection],
   );
 
   const closeHighlightDetail = useCallback(() => {
@@ -373,11 +392,11 @@ export function LibraryPage(): React.ReactElement {
   }, [lib.highlights, relatedHighlightResults]);
 
   const handleOpenRelatedHighlight = useCallback(
-    (id: string, rank: number, reason: string) => {
+    (_id: string, rank: number, reason: string) => {
+      // Navigation is handled by the <Link href>; this only records analytics.
       trackEvent('related_highlight_clicked', { rank, reason });
-      openHighlightDetail(id);
     },
-    [openHighlightDetail],
+    [],
   );
 
   const title = selection.section
@@ -457,11 +476,13 @@ export function LibraryPage(): React.ReactElement {
 
   const listBody = detailHighlight ? (
     <LibraryHighlightDetail
+      key={detailHighlight.id}
       highlight={detailHighlight}
       related={relatedHighlightRows}
       readOnly={caps.isGuest}
       activeTagFilters={tagFilters}
       onBack={closeHighlightDetail}
+      relatedHrefFor={highlightDetailHref}
       onOpenRelated={handleOpenRelatedHighlight}
       onOpenPage={openPage}
       onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}

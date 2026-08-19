@@ -74,7 +74,7 @@ describe('WebHighlightCard', () => {
     fireEvent.click(document.querySelector('[data-od-id="hl-tag-addbtn-h1"]')!);
 
     await waitFor(() => {
-      expect(onTagsChange).toHaveBeenCalledWith('h1', ['craft', 'Tokens']);
+      expect(onTagsChange).toHaveBeenCalledWith('h1', ['craft', 'tokens']);
     });
   });
 

@@ -94,28 +94,48 @@ export class SupabaseTagRepository implements ITagRepository {
 
     const tagIds: string[] = [];
     for (const name of normalized) {
-      const { data, error } = await client
+      // Select-then-insert: `tags` has no UPDATE RLS policy, so upsert-on-conflict fails.
+      const { data: existing, error: findError } = await client
         .from('tags')
-        .upsert({ user_id: userId, name }, { onConflict: 'user_id,name', ignoreDuplicates: false })
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', name)
+        .maybeSingle();
+
+      if (findError) {
+        this.logger.error('[SupabaseTagRepo] find tag failed', findError);
+        throw findError;
+      }
+
+      if (existing?.id) {
+        tagIds.push(existing.id);
+        continue;
+      }
+
+      const { data: inserted, error: insertError } = await client
+        .from('tags')
+        .insert({ user_id: userId, name })
         .select('id')
         .single();
 
-      if (error) {
-        const { data: existing, error: findError } = await client
-          .from('tags')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('name', name)
-          .maybeSingle();
-
-        if (findError || !existing) {
-          this.logger.error('[SupabaseTagRepo] upsert tag failed', error);
-          throw error;
-        }
-        tagIds.push(existing.id);
-      } else if (data) {
-        tagIds.push(data.id);
+      if (!insertError && inserted?.id) {
+        tagIds.push(inserted.id);
+        continue;
       }
+
+      const { data: raced, error: raceError } = await client
+        .from('tags')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', name)
+        .maybeSingle();
+
+      if (raceError || !raced?.id) {
+        const err = insertError ?? raceError ?? new Error(`Failed to ensure tag: ${name}`);
+        this.logger.error('[SupabaseTagRepo] insert tag failed', err as Error);
+        throw err;
+      }
+      tagIds.push(raced.id);
     }
 
     const { error: deleteError } = await client

@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
@@ -160,11 +161,17 @@ export function WebHighlightCard({
       tagInputRef.current?.focus();
       return;
     }
-    if (h.tags.some((t) => tagKey(t) === tagKey(clean))) {
+    // Match server normalization so UI and persistence stay in sync.
+    const next = normalizeHighlightTags([...h.tags, clean]);
+    if (next.length === h.tags.length && h.tags.some((t) => tagKey(t) === tagKey(clean))) {
       setTagInput('');
       return;
     }
-    const next = [...h.tags, clean];
+    if (next.length === h.tags.length) {
+      // Cap hit or empty after normalize — nothing to write.
+      setTagInput('');
+      return;
+    }
     setSavingTags(true);
     try {
       const ok = await onTagsChange(h.id, next);
@@ -177,7 +184,9 @@ export function WebHighlightCard({
   const removeTag = useCallback(
     async (tag: string) => {
       if (!onTagsChange) return;
-      const next = h.tags.filter((t) => tagKey(t) !== tagKey(tag));
+      const next = normalizeHighlightTags(
+        h.tags.filter((t) => tagKey(t) !== tagKey(tag)),
+      );
       setSavingTags(true);
       try {
         await onTagsChange(h.id, next);

@@ -18,6 +18,8 @@ export type LibraryHighlightDetailProps = {
   readOnly?: boolean;
   activeTagFilters?: string[];
   onBack: () => void;
+  /** Build `/library?…&highlight=` href for a related row. */
+  relatedHrefFor: (id: string) => string;
   onOpenRelated: (id: string, rank: number, reason: string) => void;
   onOpenPage?: (domain: string, path: string) => void;
   onToggleTagFilter?: (tag: string) => void;
@@ -31,6 +33,7 @@ export function LibraryHighlightDetail({
   readOnly = false,
   activeTagFilters,
   onBack,
+  relatedHrefFor,
   onOpenRelated,
   onOpenPage,
   onToggleTagFilter,
@@ -38,7 +41,11 @@ export function LibraryHighlightDetail({
   onTagsChange,
 }: LibraryHighlightDetailProps): React.ReactElement {
   return (
-    <div className="lib-detail" data-od-id="library-highlight-detail">
+    <div
+      className="lib-detail"
+      data-od-id="library-highlight-detail"
+      data-highlight-id={highlight.id}
+    >
       <div className="lib-detail-bar">
         <button
           type="button"
@@ -60,7 +67,11 @@ export function LibraryHighlightDetail({
         onNoteSave={onNoteSave}
         onTagsChange={onTagsChange}
       />
-      <RelatedHighlightsSection items={related} onOpen={onOpenRelated} />
+      <RelatedHighlightsSection
+        items={related}
+        hrefFor={relatedHrefFor}
+        onOpen={onOpenRelated}
+      />
     </div>
   );
 }

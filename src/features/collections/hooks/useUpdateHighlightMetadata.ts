@@ -98,7 +98,19 @@ export async function updateHighlightMetadataWeb(
     }
 
     if (input.tags !== undefined) {
-      await setHighlightLabelsWeb(supabase, session.user.id, id, input.tags);
+      try {
+        await setHighlightLabelsWeb(supabase, session.user.id, id, input.tags);
+      } catch (junctionError) {
+        // Metadata.tags already persisted — surface junction failure so the UI
+        // does not claim success when labels may not list via junction reads.
+        return {
+          success: false,
+          error:
+            junctionError instanceof Error
+              ? junctionError.message
+              : 'Failed to save tags',
+        };
+      }
     }
 
     return { success: true };

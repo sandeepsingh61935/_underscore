@@ -14,6 +14,7 @@ import {
   mapCloudBodyText,
   resolveCloudHighlightTags,
 } from '@/shared/library/cloud-highlight-mapper';
+import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { highlightTimestampMs } from '@/shared/utils/supabase-highlight-row';
 import { readWebLibraryCache, writeWebLibraryCache } from '@/web/lib/web-library-cache';
@@ -201,6 +202,29 @@ function readSession(key: string): SessionSnapshot | null {
 }
 
 /**
+ * Prefer fresher local note/tag patches over a concurrent network response
+ * that started before the user saved (same id, older savedAt).
+ */
+export function mergeLibraryRowsWithLocal(
+  server: readonly WebHighlight[],
+  local: readonly WebHighlight[],
+): WebHighlight[] {
+  if (local.length === 0) return [...server];
+  const localById = new Map(local.map((h) => [h.id, h]));
+  return server.map((s) => {
+    const l = localById.get(s.id);
+    if (!l || l.savedAt <= s.savedAt) return s;
+    return {
+      ...s,
+      note: l.note,
+      tags: l.tags,
+      savedAt: l.savedAt,
+    };
+  });
+}
+
+
+/**
  * Library data for the web product shell.
  * Guest is always empty (no seed). Signed-in uses injected fetch or Supabase.
  *
@@ -247,16 +271,36 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
     setStatus(readyStatus);
   }, []);
 
-  const applyRows = useCallback((rows: WebHighlight[]) => {
-    const agg = aggregateLibrary(rows);
-    setHighlights(rows);
-    setDomains(agg.domains);
-    setStats({ ...agg.stats, planLabel: planLabelRef.current });
-    setRecent(agg.recent);
-    setCurrentPage(agg.currentPage);
-    setError(null);
-    setStatus('ready');
-  }, []);
+  const applyRows = useCallback(
+    (
+      rows: WebHighlight[],
+      opts?: {
+        mergeLocal?: boolean;
+        /** Persist session/IDB after merge (network refresh). */
+        cacheKey?: string;
+      },
+    ) => {
+      setHighlights((prev) => {
+        const next =
+          opts?.mergeLocal === true ? mergeLibraryRowsWithLocal(rows, prev) : [...rows];
+        const agg = aggregateLibrary(next);
+        setDomains(agg.domains);
+        setStats({ ...agg.stats, planLabel: planLabelRef.current });
+        setRecent(agg.recent);
+        setCurrentPage(agg.currentPage);
+        setError(null);
+        setStatus('ready');
+        if (opts?.cacheKey) {
+          rememberSession(opts.cacheKey, next);
+          if (opts.cacheKey !== INJECTED_CACHE_KEY) {
+            void writeWebLibraryCache(opts.cacheKey, next);
+          }
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const load = useCallback(
     async (loadOpts?: { force?: boolean }) => {
@@ -329,8 +373,11 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         const rows = await fetchFn();
         if (gen !== loadGenRef.current) return;
         if (!isAuthenticatedRef.current) return;
-        rememberSession(cacheKey, rows);
-        applyRows(rows);
+        // Merge so in-flight saves are not wiped by a slower list response.
+        applyRows(rows, {
+          mergeLocal: paintedWarm,
+          cacheKey,
+        });
       } catch (err) {
         if (gen !== loadGenRef.current) return;
         if (!isAuthenticatedRef.current) return;
@@ -386,12 +433,18 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
 
   const patchHighlight = useCallback((id: string, patch: WebHighlightPatch) => {
     setHighlights((prev) => {
+      const now = Date.now();
       const next = prev.map((h) => {
         if (h.id !== id) return h;
+        const tags =
+          patch.tags !== undefined ? normalizeHighlightTags(patch.tags) : h.tags;
+        const note = patch.note !== undefined ? patch.note : h.note;
+        // Bump savedAt so concurrent network applyRows keeps this patch.
         return {
           ...h,
-          ...(patch.note !== undefined ? { note: patch.note } : {}),
-          ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
+          note,
+          tags,
+          savedAt: now,
         };
       });
       const agg = aggregateLibrary(next);
@@ -403,7 +456,11 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         sessionSnapshot = {
           ...sessionSnapshot,
           highlights: next,
+          savedAt: now,
         };
+        if (sessionSnapshot.key && sessionSnapshot.key !== INJECTED_CACHE_KEY) {
+          void writeWebLibraryCache(sessionSnapshot.key, next);
+        }
       }
       return next;
     });

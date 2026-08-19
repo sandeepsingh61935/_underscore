@@ -57,6 +57,47 @@ export async function fetchHighlightLabelsWeb(
   return result;
 }
 
+/**
+ * Ensure a tag row exists and return its id.
+ * Avoids upsert-UPDATE: `tags` has no UPDATE RLS policy (names are immutable).
+ */
+async function ensureTagIdWeb(
+  supabase: SupabaseClient,
+  userId: string,
+  name: string,
+): Promise<string> {
+  const { data: existing, error: findError } = await supabase
+    .from('tags')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('name', name)
+    .maybeSingle();
+
+  if (findError) throw findError;
+  if (existing?.id) return existing.id as string;
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('tags')
+    .insert({ user_id: userId, name })
+    .select('id')
+    .single();
+
+  if (!insertError && inserted?.id) return inserted.id as string;
+
+  // Race: another writer inserted the same name — re-select.
+  const { data: raced, error: raceError } = await supabase
+    .from('tags')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('name', name)
+    .maybeSingle();
+
+  if (raceError) throw raceError;
+  if (raced?.id) return raced.id as string;
+
+  throw insertError ?? new Error(`Failed to ensure tag: ${name}`);
+}
+
 export async function setHighlightLabelsWeb(
   supabase: SupabaseClient,
   userId: string,
@@ -67,24 +108,7 @@ export async function setHighlightLabelsWeb(
   const tagIds: string[] = [];
 
   for (const name of normalized) {
-    const { data, error } = await supabase
-      .from('tags')
-      .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
-      .select('id')
-      .single();
-
-    if (error || !data) {
-      const { data: existing, error: findError } = await supabase
-        .from('tags')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('name', name)
-        .maybeSingle();
-      if (findError || !existing) throw error ?? findError;
-      tagIds.push(existing.id);
-    } else {
-      tagIds.push(data.id);
-    }
+    tagIds.push(await ensureTagIdWeb(supabase, userId, name));
   }
 
   const { error: deleteError } = await supabase

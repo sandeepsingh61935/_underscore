@@ -3,6 +3,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 import {
   clearWebLibrarySessionMemory,
+  mergeLibraryRowsWithLocal,
   useWebLibrary,
   type WebHighlight,
 } from './useWebLibrary';
@@ -121,6 +122,60 @@ describe('useWebLibrary', () => {
     expect(result.current.highlights[0]?.note).toBe('hello note');
     expect(result.current.highlights[0]?.tags).toEqual(['x']);
     expect(result.current.recent[0]?.note).toBe('hello note');
+  });
+
+  it('mergeLibraryRowsWithLocal keeps fresher local tags over stale server row', () => {
+    const server = [hl({ id: '1', domain: 'a.com', path: '/', savedAt: 100, tags: [] })];
+    const local = [
+      hl({ id: '1', domain: 'a.com', path: '/', savedAt: 200, tags: ['kept'], note: 'n' }),
+    ];
+    const merged = mergeLibraryRowsWithLocal(server, local);
+    expect(merged[0]?.tags).toEqual(['kept']);
+    expect(merged[0]?.note).toBe('n');
+    expect(merged[0]?.savedAt).toBe(200);
+  });
+
+  it('signed-in: delayed network refresh does not wipe a fresher tag patch', async () => {
+    const now = Date.now();
+    let release!: (rows: WebHighlight[]) => void;
+    const gate = new Promise<WebHighlight[]>((resolve) => {
+      release = resolve;
+    });
+    const fetchHighlights = vi.fn().mockReturnValue(gate);
+
+    const { result } = renderHook(() =>
+      useWebLibrary({
+        isAuthenticated: true,
+        planLabel: 'Free',
+        fetchHighlights,
+      }),
+    );
+
+    // Warm session first so subsequent force refresh merges.
+    await act(async () => {
+      release([hl({ id: '1', domain: 'a.com', path: '/', savedAt: now, tags: [] })]);
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready');
+    });
+
+    act(() => {
+      result.current.patchHighlight('1', { tags: ['saved-tag'] });
+    });
+    expect(result.current.highlights[0]?.tags).toEqual(['saved-tag']);
+
+    // Stale list response (older savedAt, empty tags) must not clobber the patch.
+    const staleGate = new Promise<WebHighlight[]>((resolve) => {
+      release = resolve;
+    });
+    fetchHighlights.mockReturnValue(staleGate);
+    const refreshPromise = result.current.refresh();
+    await act(async () => {
+      release([hl({ id: '1', domain: 'a.com', path: '/', savedAt: now, tags: [] })]);
+      await refreshPromise;
+    });
+
+    expect(result.current.highlights[0]?.tags).toEqual(['saved-tag']);
   });
 
   it('signed-in: surfaces error from fetch', async () => {
