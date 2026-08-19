@@ -57,6 +57,22 @@ export async function fetchHighlightLabelsWeb(
   return result;
 }
 
+/** Normalize PostgREST / unknown throwables into Error (they are often plain objects). */
+export function toTagError(err: unknown, fallback = 'Failed to save tags'): Error {
+  if (err instanceof Error) return err;
+  if (err && typeof err === 'object') {
+    const o = err as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    const message = typeof o.message === 'string' ? o.message : null;
+    const code = typeof o.code === 'string' ? o.code : null;
+    const details = typeof o.details === 'string' ? o.details : null;
+    const hint = typeof o.hint === 'string' ? o.hint : null;
+    const parts = [message, code ? `[${code}]` : null, details, hint].filter(Boolean);
+    if (parts.length > 0) return new Error(parts.join(' '));
+  }
+  if (typeof err === 'string' && err.trim()) return new Error(err);
+  return new Error(fallback);
+}
+
 /**
  * Ensure a tag row exists and return its id.
  * Avoids upsert-UPDATE: `tags` has no UPDATE RLS policy (names are immutable).
@@ -73,7 +89,7 @@ async function ensureTagIdWeb(
     .eq('name', name)
     .maybeSingle();
 
-  if (findError) throw findError;
+  if (findError) throw toTagError(findError, `Failed to look up tag: ${name}`);
   if (existing?.id) return existing.id as string;
 
   const { data: inserted, error: insertError } = await supabase
@@ -92,10 +108,10 @@ async function ensureTagIdWeb(
     .eq('name', name)
     .maybeSingle();
 
-  if (raceError) throw raceError;
+  if (raceError) throw toTagError(raceError, `Failed to look up tag: ${name}`);
   if (raced?.id) return raced.id as string;
 
-  throw insertError ?? new Error(`Failed to ensure tag: ${name}`);
+  throw toTagError(insertError, `Failed to create tag: ${name}`);
 }
 
 export async function setHighlightLabelsWeb(
@@ -116,18 +132,20 @@ export async function setHighlightLabelsWeb(
     .delete()
     .eq('highlight_id', highlightId)
     .eq('user_id', userId);
-  if (deleteError) throw deleteError;
+  if (deleteError) throw toTagError(deleteError, 'Failed to clear highlight tags');
 
   if (tagIds.length === 0) return;
 
+  // Dedupe ids in case of rare double-ensure.
+  const uniqueIds = [...new Set(tagIds)];
   const { error: insertError } = await supabase.from('highlight_tags').insert(
-    tagIds.map((tagId) => ({
+    uniqueIds.map((tagId) => ({
       highlight_id: highlightId,
       tag_id: tagId,
       user_id: userId,
     })),
   );
-  if (insertError) throw insertError;
+  if (insertError) throw toTagError(insertError, 'Failed to link highlight tags');
 }
 
 export function mergeLabelsForHighlight(

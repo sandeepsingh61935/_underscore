@@ -15,7 +15,7 @@ import {
   type HighlightMetadataInput,
 } from '@/shared/utils/highlight-metadata';
 import { serializeHighlightMetadataForCloud } from '@/shared/utils/supabase-highlight-row';
-import { setHighlightLabelsWeb } from '@/shared/services/tag-query-web';
+import { setHighlightLabelsWeb, toTagError } from '@/shared/services/tag-query-web';
 
 export type { HighlightMetadataInput };
 
@@ -101,15 +101,15 @@ export async function updateHighlightMetadataWeb(
       try {
         await setHighlightLabelsWeb(supabase, session.user.id, id, input.tags);
       } catch (junctionError) {
-        // Metadata.tags already persisted — surface junction failure so the UI
-        // does not claim success when labels may not list via junction reads.
-        return {
-          success: false,
-          error:
-            junctionError instanceof Error
-              ? junctionError.message
-              : 'Failed to save tags',
-        };
+        // Metadata.tags is already persisted above and is a supported read fallback
+        // (resolveCloudHighlightTags). Do not fail the whole save if the optional
+        // junction dual-write is missing/misconfigured (common when tags migration
+        // is not applied). Log the real PostgREST message for debugging.
+        const detail = toTagError(junctionError).message;
+        console.warn(
+          '[web] highlight_tags dual-write failed; metadata.tags saved:',
+          detail,
+        );
       }
     }
 
@@ -117,7 +117,7 @@ export async function updateHighlightMetadataWeb(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to save highlight metadata',
+      error: toTagError(error, 'Failed to save highlight metadata').message,
     };
   }
 }
