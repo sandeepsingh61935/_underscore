@@ -30,4 +30,11 @@ describe('mapCloudBodyText', () => {
       encrypted: true,
     });
   });
+
+  it('treats ADR013 envelopes in text as encrypted (no plaintext leak)', () => {
+    expect(mapCloudBodyText({ text: '[ADR013:{"iv":"x","ct":"y"}]' })).toEqual({
+      text: '',
+      encrypted: true,
+    });
+  });
 });

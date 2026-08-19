@@ -125,6 +125,7 @@ export function mapSupabaseRowToWebHighlight(row: {
     note,
     tags,
     savedAt: highlightTimestampMs(row.updated_at, row.created_at),
+    encrypted: body.encrypted ? true : undefined,
   };
 }
 

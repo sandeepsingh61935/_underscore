@@ -11,6 +11,8 @@ export type WebHighlight = {
   note: string;
   tags: string[];
   savedAt: number; // ms
+  /** True when body is ciphertext-only client-side (skip BM25 plaintext). */
+  encrypted?: boolean;
 };
 
 export type WebDomainNode = {

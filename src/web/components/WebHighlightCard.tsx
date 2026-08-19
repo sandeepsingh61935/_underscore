@@ -21,6 +21,8 @@ export type WebHighlightCardProps = {
   /** Active tag filters (lowercased compare) for chip active state. */
   activeTagFilters?: string[];
   onOpenPage?: (domain: string, path: string) => void;
+  /** Prefer over onOpenPage when opening highlight detail. */
+  onOpenHighlight?: (id: string) => void;
   /** Toggle a tag into the Library filter set. */
   onToggleTagFilter?: (tag: string) => void;
   onNoteSave?: (id: string, note: string) => Promise<boolean>;
@@ -71,6 +73,7 @@ export function WebHighlightCard({
   readOnly = false,
   activeTagFilters = [],
   onOpenPage,
+  onOpenHighlight,
   onToggleTagFilter,
   onNoteSave,
   onTagsChange,
@@ -125,9 +128,13 @@ export function WebHighlightCard({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [tagEditing]);
 
-  const openPage = useCallback(() => {
+  const openMain = useCallback(() => {
+    if (onOpenHighlight) {
+      onOpenHighlight(h.id);
+      return;
+    }
     onOpenPage?.(h.domain, h.path || '/');
-  }, [h.domain, h.path, onOpenPage]);
+  }, [h.domain, h.id, h.path, onOpenHighlight, onOpenPage]);
 
   const saveNote = useCallback(async () => {
     if (!onNoteSave) return;
@@ -190,7 +197,7 @@ export function WebHighlightCard({
         type="button"
         className="hl-main"
         data-od-id={`hl-main-${h.id}`}
-        onClick={openPage}
+        onClick={openMain}
       >
         <p className="hl-quote">“{h.quote}”</p>
         {showMeta ? (

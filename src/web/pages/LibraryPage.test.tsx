@@ -43,6 +43,7 @@ vi.mock('@/web/hooks/useWebLibrary', async () => {
 });
 
 import { useApp } from '@/core/context/AppProvider';
+import { clearWebLibrarySessionMemory } from '@/web/hooks/useWebLibrary';
 
 const SAMPLE: WebHighlight[] = [
   {
@@ -74,6 +75,64 @@ const SAMPLE: WebHighlight[] = [
   },
 ];
 
+/** Library large enough for related-tags gates (df≥2, co-occur, not ultra-common). */
+const RELATED_SAMPLE: WebHighlight[] = [
+  {
+    id: 'r1',
+    domain: 'ml.org',
+    path: '/a',
+    quote: 'gradient descent learning rate schedule alpha',
+    note: '',
+    tags: ['ml', 'python'],
+    savedAt: Date.now() - 1000,
+  },
+  {
+    id: 'r2',
+    domain: 'ml.org',
+    path: '/a',
+    quote: 'gradient descent batch size beta gamma',
+    note: '',
+    tags: ['ml', 'python'],
+    savedAt: Date.now() - 2000,
+  },
+  {
+    id: 'r3',
+    domain: 'ml.org',
+    path: '/b',
+    quote: 'unrelated wording about databases only',
+    note: '',
+    tags: ['ml'],
+    savedAt: Date.now() - 3000,
+  },
+  {
+    id: 'r4',
+    domain: 'news.org',
+    path: '/x',
+    quote: 'politics and weather filler content here',
+    note: '',
+    tags: ['news'],
+    savedAt: Date.now() - 4000,
+  },
+  {
+    id: 'r5',
+    domain: 'news.org',
+    path: '/y',
+    quote: 'more politics weather filler content there',
+    note: '',
+    tags: ['sports'],
+    savedAt: Date.now() - 5000,
+  },
+  {
+    id: 'r6',
+    domain: 'other.org',
+    path: '/z',
+    quote: 'completely different corpus entry omega',
+    note: '',
+    tags: ['misc'],
+    savedAt: Date.now() - 6000,
+  },
+];
+
 function renderLibrary(initialPath: string, authenticated = true) {
   (useApp as ReturnType<typeof vi.fn>).mockReturnValue({
     isAuthenticated: authenticated,
@@ -92,6 +151,7 @@ function renderLibrary(initialPath: string, authenticated = true) {
 describe('LibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWebLibrarySessionMemory();
     mockFetch.mockResolvedValue(SAMPLE);
   });
 
@@ -201,5 +261,61 @@ describe('LibraryPage', () => {
       expect(document.querySelectorAll('.hl-quote').length).toBe(1);
       expect(screen.getByText(/Hello library/)).toBeTruthy();
     });
+  });
+
+  it('shows Related tags when single-tag filter gate passes', async () => {
+    mockFetch.mockResolvedValue(RELATED_SAMPLE);
+    renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-r1-ml"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-r1-ml"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="related-tags"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="related-tag-python"]')).toBeTruthy();
+    });
+  });
+
+  it('hides Related tags when multi-tag filters are active', async () => {
+    mockFetch.mockResolvedValue(RELATED_SAMPLE);
+    renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-r1-ml"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-r1-ml"]')!);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="related-tags"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-r1-python"]')!);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="related-tags"]')).toBeNull();
+    });
+  });
+
+  it('opens highlight detail with related rows from list click', async () => {
+    mockFetch.mockResolvedValue(RELATED_SAMPLE);
+    const { router } = renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-main-r1"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-main-r1"]')!);
+
+    await waitFor(() => {
+      expect(router.state.location.search).toContain('highlight=r1');
+      expect(document.querySelector('[data-od-id="library-highlight-detail"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="related-highlights"]')).toBeTruthy();
+    });
+
+    // Sibling on same URL should appear with a reason pill
+    expect(document.querySelector('[data-od-id="related-hl-r2"]')).toBeTruthy();
+    expect(document.querySelector('.related-reason-pill')).toBeTruthy();
   });
 });

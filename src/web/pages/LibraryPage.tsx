@@ -26,11 +26,19 @@ import {
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { GuestBanner } from '@/web/components/GuestBanner';
+import { LibraryHighlightDetail } from '@/web/components/LibraryHighlightDetail';
+import { RelatedTagsSection } from '@/web/components/RelatedTagsSection';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
+import {
+  useRelatedHighlights,
+  useRelatednessService,
+  useRelatedTags,
+} from '@/web/hooks/useRelatedness';
 import {
   useWebLibrary,
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
+import { trackEvent } from '@/web/lib/analytics';
 import {
   exportScopeFromSelection,
   exportWebHighlights,
@@ -219,8 +227,12 @@ export function LibraryPage(): React.ReactElement {
   }, [sortOpen, exportOpen]);
 
   const setSelection = useCallback(
-    (domain: string | null, section: string | null) => {
-      const search = buildLibrarySearch({ domain, section });
+    (
+      domain: string | null,
+      section: string | null,
+      highlight: string | null = null,
+    ) => {
+      const search = buildLibrarySearch({ domain, section, highlight });
       void navigate(
         { pathname: '/library', search: search ? `?${search}` : '' },
         { replace: false },
@@ -233,22 +245,34 @@ export function LibraryPage(): React.ReactElement {
   );
 
   const selectAll = useCallback(() => {
-    setSelection(null, null);
+    setSelection(null, null, null);
   }, [setSelection]);
 
   const selectDomain = useCallback(
     (domain: string) => {
-      setSelection(domain, null);
+      setSelection(domain, null, null);
     },
     [setSelection],
   );
 
   const selectSection = useCallback(
     (domain: string, path: string) => {
-      setSelection(domain, path);
+      setSelection(domain, path, null);
     },
     [setSelection],
   );
+
+  const openHighlightDetail = useCallback(
+    (id: string) => {
+      // Keep domain/section filters; detail is an overlay on current browse context.
+      setSelection(selection.domain, selection.section, id);
+    },
+    [selection.domain, selection.section, setSelection],
+  );
+
+  const closeHighlightDetail = useCallback(() => {
+    setSelection(selection.domain, selection.section, null);
+  }, [selection.domain, selection.section, setSelection]);
 
   const handleNoteSave = useCallback(
     async (id: string, note: string): Promise<boolean> => {
@@ -270,6 +294,12 @@ export function LibraryPage(): React.ReactElement {
 
   const handleToggleTagFilter = useCallback((tag: string) => {
     setTagFilters((prev) => toggleTagFilter(prev, tag));
+  }, []);
+
+  /** Related tag click = replace single-tag filter (normal tag navigation). */
+  const handleRelatedTag = useCallback((tag: string, rank: number) => {
+    trackEvent('related_tag_clicked', { rank, reason: 'co-occur' });
+    setTagFilters([tag]);
   }, []);
 
   const openPage = useCallback(
@@ -320,6 +350,35 @@ export function LibraryPage(): React.ReactElement {
   }, [selection.domain, selection.section, query, refine, tagFilters, sort]);
 
   const tags = useMemo(() => corpusTags(scoped), [scoped]);
+
+  const relatedness = useRelatednessService(lib.highlights);
+  const relatedTagResults = useRelatedTags(relatedness, tagFilters);
+  const relatedHighlightResults = useRelatedHighlights(
+    relatedness,
+    selection.highlight,
+  );
+
+  const detailHighlight = useMemo(() => {
+    if (!selection.highlight) return null;
+    return lib.highlights.find((h) => h.id === selection.highlight) ?? null;
+  }, [lib.highlights, selection.highlight]);
+
+  const relatedHighlightRows = useMemo(() => {
+    const byId = new Map(lib.highlights.map((h) => [h.id, h]));
+    return relatedHighlightResults.flatMap((r) => {
+      const highlight = byId.get(r.id);
+      if (!highlight) return [];
+      return [{ ...r, highlight }];
+    });
+  }, [lib.highlights, relatedHighlightResults]);
+
+  const handleOpenRelatedHighlight = useCallback(
+    (id: string, rank: number, reason: string) => {
+      trackEvent('related_highlight_clicked', { rank, reason });
+      openHighlightDetail(id);
+    },
+    [openHighlightDetail],
+  );
 
   const title = selection.section
     ? shortPath(selection.section)
@@ -396,9 +455,22 @@ export function LibraryPage(): React.ReactElement {
     );
   }
 
-  const listBody =
-    filtered.length > 0 ? (
+  const listBody = detailHighlight ? (
+    <LibraryHighlightDetail
+      highlight={detailHighlight}
+      related={relatedHighlightRows}
+      readOnly={caps.isGuest}
+      activeTagFilters={tagFilters}
+      onBack={closeHighlightDetail}
+      onOpenRelated={handleOpenRelatedHighlight}
+      onOpenPage={openPage}
+      onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
+      onNoteSave={caps.isGuest ? undefined : handleNoteSave}
+      onTagsChange={caps.isGuest ? undefined : handleTagsChange}
+    />
+  ) : filtered.length > 0 ? (
       <>
+        <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
         <div className="lib-toolbar" data-od-id="library-toolbar">
           <span className="lib-toolbar-meta" data-od-id="library-result-count">
             {filtered.length} highlight{filtered.length === 1 ? '' : 's'}
@@ -448,6 +520,7 @@ export function LibraryPage(): React.ReactElement {
                 matchBadge={badge}
                 readOnly={caps.isGuest}
                 activeTagFilters={tagFilters}
+                onOpenHighlight={openHighlightDetail}
                 onOpenPage={openPage}
                 onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
                 onNoteSave={caps.isGuest ? undefined : handleNoteSave}
@@ -484,6 +557,7 @@ export function LibraryPage(): React.ReactElement {
       </>
     ) : (
       <div className="state-box" data-od-id="library-empty">
+        <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
         <h3>{filtering ? 'No matches' : 'No highlights'}</h3>
         <p>
           {filtering
