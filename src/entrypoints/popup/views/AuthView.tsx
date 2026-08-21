@@ -8,6 +8,7 @@ import { ForgotPasswordView } from './ForgotPasswordView';
 import { ResetPasswordView } from './ResetPasswordView';
 import { VerificationView } from './VerificationView';
 
+import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { EXISTING_ACCOUNT_CODE, mapAuthError } from '@/shared/auth/auth-error-messages';
 import { openLegalDoc, resolveLegalDocUrl } from '@/shared/auth/web-legal-urls';
 import { Button } from '@/ui-system/components/primitives/Button';
@@ -60,6 +61,7 @@ export function AuthView({
     } = useCurrentUser();
 
     const clearVerification = useClearVerificationState();
+    const emailUi = isAuthEmailUiEnabled();
 
     const [loginError, setLoginError] = useState<string | null>(null);
     const [isRegistering, setIsRegistering] = useState(true);
@@ -127,7 +129,8 @@ export function AuthView({
         );
     }
 
-    if (step === 'forgot-password') {
+    // Email recovery steps only when email UI is enabled (or mid-session after flag-on start).
+    if (emailUi && step === 'forgot-password') {
         return (
             <ForgotPasswordView
                 onCodeSent={(sentEmail) => {
@@ -139,7 +142,7 @@ export function AuthView({
         );
     }
 
-    if (step === 'reset-password') {
+    if (emailUi && step === 'reset-password') {
         return (
             <ResetPasswordView
                 email={resetEmail}
@@ -210,7 +213,11 @@ export function AuthView({
                             lineHeight: 1.2,
                         }}
                     >
-                        {isRegistering ? 'Create your account' : 'Welcome back'}
+                        {emailUi
+                            ? isRegistering
+                                ? 'Create your account'
+                                : 'Welcome back'
+                            : 'Sign in'}
                     </h1>
                     <p
                         className="u-sans"
@@ -222,9 +229,11 @@ export function AuthView({
                             lineHeight: 1.45,
                         }}
                     >
-                        {isRegistering
-                            ? 'Save highlights to your library.'
-                            : 'Open your synced collections.'}
+                        {emailUi
+                            ? isRegistering
+                                ? 'Save highlights to your library.'
+                                : 'Open your synced collections.'
+                            : 'Save highlights to your library.'}
                     </p>
                 </div>
 
@@ -257,145 +266,151 @@ export function AuthView({
                     onClick={() => void handleProviderClick('google')}
                     disabled={isLoading || activeProvider !== null}
                     style={{ width: '100%' }}
+                    data-testid="auth-continue-google"
                 >
                     {activeProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
                 </Button>
 
-                <div
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                    }}
-                >
-                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
-                    <span
-                        className="u-mono"
-                        style={{
-                            fontSize: 'var(--step--2)',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: 'var(--ink-3)',
-                        }}
-                    >
-                        or email
-                    </span>
-                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
-                </div>
-
-                <form
-                    onSubmit={(e) => void handleEmailSubmit(e)}
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 10,
-                    }}
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor="popup-email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                            Email
-                        </label>
-                        <Input
-                            id="popup-email"
-                            type="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            disabled={isLoading}
-                            autoComplete="email"
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {emailUi ? (
+                    <>
                         <div
                             style={{
+                                width: '100%',
                                 display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'baseline',
+                                alignItems: 'center',
+                                gap: 12,
                             }}
                         >
-                            <label
-                                htmlFor="popup-password"
-                                className="u-kicker"
-                                style={{ color: 'var(--ink-3)' }}
-                            >
-                                Password
-                            </label>
-                            {!isRegistering ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setStep('forgot-password')}
-                                    style={{
-                                        ...quietLinkStyle,
-                                        fontSize: 'var(--step--2)',
-                                        minHeight: 32,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    Forgot password?
-                                </button>
-                            ) : null}
-                        </div>
-                        <Input
-                            id="popup-password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={isLoading}
-                            autoComplete={isRegistering ? 'new-password' : 'current-password'}
-                        />
-                        {showPasswordHelper ? (
-                            <p
-                                className="u-sans"
+                            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
+                            <span
+                                className="u-mono"
                                 style={{
-                                    margin: 0,
                                     fontSize: 'var(--step--2)',
+                                    letterSpacing: '0.12em',
+                                    textTransform: 'uppercase',
                                     color: 'var(--ink-3)',
                                 }}
                             >
-                                At least 8 characters
-                            </p>
-                        ) : null}
-                    </div>
+                                or email
+                            </span>
+                            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--rule-soft)' }} />
+                        </div>
 
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        isLoading={isLoading && activeProvider === null}
-                        disabled={isLoading || !email || !password}
-                        style={{ width: '100%' }}
-                    >
-                        {isRegistering ? 'Create account' : 'Sign in'}
-                    </Button>
-                </form>
+                        <form
+                            onSubmit={(e) => void handleEmailSubmit(e)}
+                            data-testid="auth-email-form"
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 10,
+                            }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <label htmlFor="popup-email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                                    Email
+                                </label>
+                                <Input
+                                    id="popup-email"
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    disabled={isLoading}
+                                    autoComplete="email"
+                                />
+                            </div>
 
-                <p
-                    className="u-sans"
-                    style={{
-                        fontSize: 'var(--step--1)',
-                        color: 'var(--ink-3)',
-                        textAlign: 'center',
-                        margin: 0,
-                    }}
-                >
-                    {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsRegistering(!isRegistering);
-                            setLoginError(null);
-                        }}
-                        style={textLinkStyle}
-                    >
-                        {isRegistering ? 'Sign in' : 'Create one'}
-                    </button>
-                </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'baseline',
+                                    }}
+                                >
+                                    <label
+                                        htmlFor="popup-password"
+                                        className="u-kicker"
+                                        style={{ color: 'var(--ink-3)' }}
+                                    >
+                                        Password
+                                    </label>
+                                    {!isRegistering ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep('forgot-password')}
+                                            style={{
+                                                ...quietLinkStyle,
+                                                fontSize: 'var(--step--2)',
+                                                minHeight: 32,
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            Forgot password?
+                                        </button>
+                                    ) : null}
+                                </div>
+                                <Input
+                                    id="popup-password"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    disabled={isLoading}
+                                    autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                                />
+                                {showPasswordHelper ? (
+                                    <p
+                                        className="u-sans"
+                                        style={{
+                                            margin: 0,
+                                            fontSize: 'var(--step--2)',
+                                            color: 'var(--ink-3)',
+                                        }}
+                                    >
+                                        At least 8 characters
+                                    </p>
+                                ) : null}
+                            </div>
+
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                isLoading={isLoading && activeProvider === null}
+                                disabled={isLoading || !email || !password}
+                                style={{ width: '100%' }}
+                            >
+                                {isRegistering ? 'Create account' : 'Sign in'}
+                            </Button>
+                        </form>
+
+                        <p
+                            className="u-sans"
+                            style={{
+                                fontSize: 'var(--step--1)',
+                                color: 'var(--ink-3)',
+                                textAlign: 'center',
+                                margin: 0,
+                            }}
+                        >
+                            {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsRegistering(!isRegistering);
+                                    setLoginError(null);
+                                }}
+                                style={textLinkStyle}
+                            >
+                                {isRegistering ? 'Sign in' : 'Create one'}
+                            </button>
+                        </p>
+                    </>
+                ) : null}
             </main>
 
             <footer

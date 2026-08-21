@@ -8,6 +8,10 @@ vi.mock('@/features/auth/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(),
 }));
 
+vi.mock('@/shared/auth/auth-email-ui', () => ({
+  isAuthEmailUiEnabled: vi.fn(() => true),
+}));
+
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 
 /**

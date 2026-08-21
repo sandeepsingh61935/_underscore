@@ -14,6 +14,8 @@ interface ImportMeta {
     readonly VITE_SUPABASE_ANON_KEY?: string;
     readonly VITE_GOOGLE_CLIENT_ID?: string;
     readonly VITE_WEB_APP_URL?: string;
+    /** When "true", show email/password on auth landings. Default: Google-only UI. */
+    readonly VITE_AUTH_EMAIL_UI?: string;
     [key: string]: string | boolean | undefined;
   };
 }

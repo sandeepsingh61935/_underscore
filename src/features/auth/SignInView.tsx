@@ -6,6 +6,7 @@ import { useApp } from '@/core/context/AppProvider';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { syncSessionToExtension } from '@/shared/auth/session-bridge';
 import { stashIntendedMode } from '@/shared/auth/pending-intent';
+import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { mapAuthError, isExistingAccountSignup } from '@/shared/auth/auth-error-messages';
 import { navigateAuthLandingBack } from '@/shared/auth/navigate-auth-landing-back';
 import { resolveAuthRedirectTarget, stashPendingAuthorizationId } from '@/shared/oauth/oauth-consent-path';
@@ -53,6 +54,7 @@ const quietLinkStyle: React.CSSProperties = {
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
     const { login, setIsLoading, isLoading } = useApp();
+    const emailUi = isAuthEmailUiEnabled();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -252,7 +254,11 @@ export function SignInView(): React.ReactElement {
                                 lineHeight: 1.2,
                             }}
                         >
-                            {isSignIn ? 'Welcome back' : 'Create your account'}
+                            {emailUi
+                                ? isSignIn
+                                    ? 'Welcome back'
+                                    : 'Create your account'
+                                : 'Sign in'}
                         </h1>
                         <p
                             className="u-sans"
@@ -264,8 +270,10 @@ export function SignInView(): React.ReactElement {
                                 lineHeight: 1.45,
                             }}
                         >
-                            {isSignIn
-                                ? 'Open your synced collections.'
+                            {emailUi
+                                ? isSignIn
+                                    ? 'Open your synced collections.'
+                                    : 'Save highlights to your library.'
                                 : 'Save highlights to your library.'}
                         </p>
                     </div>
@@ -298,135 +306,141 @@ export function SignInView(): React.ReactElement {
                         onClick={() => void handleSocialAuth()}
                         disabled={isLoading}
                         style={{ width: '100%' }}
+                        data-testid="auth-continue-google"
                     >
                         Continue with Google
                     </Button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                        <span
-                            className="u-mono"
-                            style={{
-                                color: 'var(--ink-3)',
-                                fontSize: 'var(--step--2)',
-                                letterSpacing: '0.12em',
-                                textTransform: 'uppercase',
-                            }}
-                        >
-                            or email
-                        </span>
-                        <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                    </div>
-
-                    <form
-                        onSubmit={(e) => void handleSubmit(e)}
-                        style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                                Email
-                            </label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                placeholder="you@example.com"
-                                autoComplete="email"
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'baseline',
-                                }}
-                            >
-                                <label
-                                    htmlFor="password"
-                                    className="u-kicker"
-                                    style={{ color: 'var(--ink-3)' }}
-                                >
-                                    Password
-                                </label>
-                                {isSignIn ? (
-                                    <Link
-                                        to="/forgot-password"
-                                        className="u-sans"
-                                        style={{
-                                            fontSize: 'var(--step--2)',
-                                            color: 'var(--ink-3)',
-                                            textDecoration: 'underline',
-                                            textUnderlineOffset: 2,
-                                        }}
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                ) : null}
-                            </div>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="••••••••"
-                                autoComplete={isSignIn ? 'current-password' : 'new-password'}
-                            />
-                            {showPasswordHelper ? (
-                                <p
-                                    className="u-sans"
+                    {emailUi ? (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
+                                <span
+                                    className="u-mono"
                                     style={{
-                                        margin: 0,
-                                        fontSize: 'var(--step--2)',
                                         color: 'var(--ink-3)',
+                                        fontSize: 'var(--step--2)',
+                                        letterSpacing: '0.12em',
+                                        textTransform: 'uppercase',
                                     }}
                                 >
-                                    At least 8 characters
-                                </p>
-                            ) : null}
-                        </div>
+                                    or email
+                                </span>
+                                <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
+                            </div>
 
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            isLoading={isLoading}
-                            style={{ width: '100%' }}
-                        >
-                            {isSignIn ? 'Sign in' : 'Create account'}
-                        </Button>
-                    </form>
+                            <form
+                                onSubmit={(e) => void handleSubmit(e)}
+                                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                                data-testid="auth-email-form"
+                            >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                                        Email
+                                    </label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        placeholder="you@example.com"
+                                        autoComplete="email"
+                                    />
+                                </div>
 
-                    <div
-                        className="u-sans"
-                        style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                            textAlign: 'center',
-                            fontSize: 'var(--step--1)',
-                            color: 'var(--ink-3)',
-                        }}
-                    >
-                        <span>
-                            {isSignIn ? "Don't have an account?" : 'Already have an account?'}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsSignIn(!isSignIn);
-                                setAuthError(null);
-                            }}
-                            style={textLinkStyle}
-                        >
-                            {isSignIn ? 'Create one' : 'Sign in'}
-                        </button>
-                    </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'baseline',
+                                        }}
+                                    >
+                                        <label
+                                            htmlFor="password"
+                                            className="u-kicker"
+                                            style={{ color: 'var(--ink-3)' }}
+                                        >
+                                            Password
+                                        </label>
+                                        {isSignIn ? (
+                                            <Link
+                                                to="/forgot-password"
+                                                className="u-sans"
+                                                style={{
+                                                    fontSize: 'var(--step--2)',
+                                                    color: 'var(--ink-3)',
+                                                    textDecoration: 'underline',
+                                                    textUnderlineOffset: 2,
+                                                }}
+                                            >
+                                                Forgot password?
+                                            </Link>
+                                        ) : null}
+                                    </div>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        placeholder="••••••••"
+                                        autoComplete={isSignIn ? 'current-password' : 'new-password'}
+                                    />
+                                    {showPasswordHelper ? (
+                                        <p
+                                            className="u-sans"
+                                            style={{
+                                                margin: 0,
+                                                fontSize: 'var(--step--2)',
+                                                color: 'var(--ink-3)',
+                                            }}
+                                        >
+                                            At least 8 characters
+                                        </p>
+                                    ) : null}
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    isLoading={isLoading}
+                                    style={{ width: '100%' }}
+                                >
+                                    {isSignIn ? 'Sign in' : 'Create account'}
+                                </Button>
+                            </form>
+
+                            <div
+                                className="u-sans"
+                                style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                    textAlign: 'center',
+                                    fontSize: 'var(--step--1)',
+                                    color: 'var(--ink-3)',
+                                }}
+                            >
+                                <span>
+                                    {isSignIn ? "Don't have an account?" : 'Already have an account?'}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSignIn(!isSignIn);
+                                        setAuthError(null);
+                                    }}
+                                    style={textLinkStyle}
+                                >
+                                    {isSignIn ? 'Create one' : 'Sign in'}
+                                </button>
+                            </div>
+                        </>
+                    ) : null}
 
                     <p
                         className="u-sans"
