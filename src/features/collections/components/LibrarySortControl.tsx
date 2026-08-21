@@ -12,11 +12,14 @@ import {
 export type LibrarySortControlProps = {
   value: LibrarySortKey;
   onChange: (next: LibrarySortKey) => void;
+  /** Full-width row under search (domain/section sticky chrome). */
+  fullWidth?: boolean;
 };
 
 export function LibrarySortControl({
   value,
   onChange,
+  fullWidth = false,
 }: LibrarySortControlProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -32,7 +35,11 @@ export function LibrarySortControl({
   }, [open]);
 
   return (
-    <div ref={ref} data-testid="library-sort" style={{ position: 'relative' }}>
+    <div
+      ref={ref}
+      data-testid="library-sort"
+      style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}
+    >
       <button
         type="button"
         className="u-mono"
@@ -44,8 +51,11 @@ export function LibrarySortControl({
           cursor: 'pointer',
           display: 'inline-flex',
           alignItems: 'center',
-          minHeight: 28,
-          padding: '0 8px',
+          justifyContent: fullWidth ? 'space-between' : undefined,
+          width: fullWidth ? '100%' : undefined,
+          boxSizing: 'border-box',
+          minHeight: 32,
+          padding: fullWidth ? '0 10px' : '0 8px',
           border: '1px solid var(--rule-soft)',
           fontSize: 'var(--step--2)',
           letterSpacing: '0.06em',
@@ -54,7 +64,14 @@ export function LibrarySortControl({
           background: 'var(--paper)',
         }}
       >
-        Sort: {LIBRARY_SORT_LABELS[value]}
+        <span>
+          Sort: {LIBRARY_SORT_LABELS[value]}
+        </span>
+        {fullWidth ? (
+          <span aria-hidden style={{ color: 'var(--ink-4)' }}>
+            ▾
+          </span>
+        ) : null}
       </button>
       {open ? (
         <div

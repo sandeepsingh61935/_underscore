@@ -51,7 +51,7 @@ export type PopupHomeModel = {
   emptyKind: HomeEmptyKind;
   /** Primary title: Local library | Library (no greeting theater). */
   title: string;
-  /** Mono status under title. */
+  /** @deprecated Status kicker removed from Home UI; kept empty for callers. */
   statusLine: string;
   planKicker: string;
   showCurrentPage: boolean;
@@ -115,7 +115,8 @@ export function buildPopupHomeModel(input: PopupHomeModelInput): PopupHomeModel 
     input.totalHighlights === 0 && input.recentCount === 0 ? 'first_run' : null;
   const title = isGuest ? 'Local library' : 'Library';
   const planKicker = isGuest ? 'Local only' : 'Account';
-  const statusLine = `${planKicker} · ${input.totalHighlights} highlights · ${input.totalDomains} domains`;
+  // Status kicker removed (AI-slop) — counts live in 2×2 stats only.
+  const statusLine = '';
 
   return {
     isGuest,

@@ -102,7 +102,7 @@ describe('SubDomainView basic mode boundaries', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText('Export section as Markdown')).toBeDisabled();
+    expect(screen.getByTestId('export-menu-trigger')).toBeDisabled();
   });
 
   it('hides summarize and ask footer; keeps export/delete toolbar for a guest in Basic', () => {

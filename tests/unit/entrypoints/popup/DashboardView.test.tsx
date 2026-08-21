@@ -206,12 +206,13 @@ describe('DashboardView home product cleanup', () => {
     expect(screen.queryByText('css')).toBeNull();
   });
 
-  it('shows Local library title and local-only status for guest with highlights', () => {
+  it('shows Local library title for guest with highlights (no status kicker)', () => {
     mockWithHighlights({ mode: 'basic', isAuthenticated: false, recentCount: 2 });
     render(<DashboardView />);
 
     expect(screen.getByTestId('home-title').textContent).toBe('Local library');
-    expect(screen.getByText(/Local only/i)).toBeTruthy();
+    expect(screen.queryByText(/Local only/i)).toBeNull();
+    expect(screen.getByTestId('home-stats')).toBeTruthy();
   });
 });
 

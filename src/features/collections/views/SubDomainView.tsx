@@ -222,71 +222,103 @@ export function SubDomainView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
-      <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      {/* Sticky chrome: title · actions · search · sort */}
+      <div
+        data-testid="section-sticky-chrome"
+        style={{
+          flexShrink: 0,
+          borderBottom: '1px solid var(--rule-soft)',
+          background: 'var(--paper)',
+        }}
+      >
         <div style={{ padding: '10px 16px 6px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{ minWidth: 0 }}>
-              <div className="u-sans" style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-                {section === '/' ? 'HOME' : section}
-              </div>
-              <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                {sectionHighlights.length} {sectionHighlights.length === 1 ? 'highlight' : 'highlights'}
-              </div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              className="u-sans"
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={section === '/' ? 'HOME' : section}
+            >
+              {section === '/' ? 'HOME' : section}
             </div>
-            {sectionHighlights.length > 0 ? (
-              <div className="scope-toolbar" data-testid="section-scope-toolbar">
-                <ExportActions
-                  scope={{ kind: 'section', domain, sectionKey: section }}
-                  highlightCount={sectionHighlights.length}
-                  disabled={exportDisabled}
-                />
-                <button
-                  type="button"
-                  className="sr-icon is-delete"
-                  aria-label="Delete section"
-                  title="Delete section"
-                  onClick={() => setDeleteSectionOpen(true)}
-                >
-                  <IconTrash />
-                </button>
-              </div>
-            ) : null}
+            <div
+              className="u-mono"
+              style={{
+                fontSize: 10,
+                color: 'var(--ink-3)',
+                marginTop: 2,
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+              }}
+            >
+              {sectionHighlights.length}{' '}
+              {sectionHighlights.length === 1 ? 'highlight' : 'highlights'}
+            </div>
           </div>
+          {sectionHighlights.length > 0 ? (
+            <div
+              className="scope-toolbar"
+              data-testid="section-scope-toolbar"
+              style={{
+                marginTop: 8,
+                paddingTop: 8,
+                borderTop: '1px solid var(--rule-soft)',
+                width: '100%',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <ExportActions
+                scope={{ kind: 'section', domain, sectionKey: section }}
+                highlightCount={sectionHighlights.length}
+                disabled={exportDisabled}
+                variant="menu"
+              />
+              <button
+                type="button"
+                className="sr-icon is-delete"
+                aria-label="Delete section"
+                title="Delete section"
+                onClick={() => setDeleteSectionOpen(true)}
+              >
+                <IconTrash />
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div style={{ padding: '0 16px 8px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <HighlightSearchBar
-                query={searchQuery}
-                onQueryChange={setSearchQuery}
-                fields={searchFields}
-                onFieldsChange={setSearchFields}
-                refine={refine}
-                onRefineChange={setRefine}
-                tagFilters={tagFilters}
-                onTagFiltersChange={setTagFilters}
-                availableTags={availableTags}
-                resultCount={
-                  isSearching
-                    ? sortedSearchResults.length
-                    : hasRefineOrTags
-                      ? sortedSectionHighlights.length
-                      : undefined
-                }
-              />
-            </div>
-            <LibrarySortControl value={sort} onChange={setSort} />
+          <HighlightSearchBar
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            fields={searchFields}
+            onFieldsChange={setSearchFields}
+            refine={refine}
+            onRefineChange={setRefine}
+            tagFilters={tagFilters}
+            onTagFiltersChange={setTagFilters}
+            availableTags={availableTags}
+            resultCount={
+              isSearching
+                ? sortedSearchResults.length
+                : hasRefineOrTags
+                  ? sortedSectionHighlights.length
+                  : undefined
+            }
+          />
+          <div style={{ marginTop: 8 }}>
+            <LibrarySortControl value={sort} onChange={setSort} fullWidth />
           </div>
         </div>
+      </div>
+
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 
         <LibraryRelatedTags
           tags={relatedTagResults}

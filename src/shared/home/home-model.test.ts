@@ -77,7 +77,7 @@ describe('buildPopupHomeModel', () => {
     expect(m.emptyKind).toBeNull();
     expect(m.title).toBe('Library');
     expect(m.title).not.toMatch(/Good /);
-    expect(m.statusLine).toContain('12 highlights');
+    expect(m.statusLine).toBe('');
     expect(m.stats).toEqual({
       highlightCount: 12,
       domainCount: 3,

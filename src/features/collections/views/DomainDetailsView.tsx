@@ -212,55 +212,92 @@ export function DomainDetailsView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
-      <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        <div style={{ padding: '10px 16px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{ minWidth: 0 }}>
-              <div className="u-serif" style={{ fontSize: 22, fontStyle: 'italic', letterSpacing: '-0.015em' }}>
-                {domain}
-              </div>
-              <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: 4 }}>
-                Sections
-              </div>
-            </div>
-            {highlights.length > 0 ? (
-              <div className="scope-toolbar">
-                <ExportActions
-                  scope={{ kind: 'domain', domain }}
-                  highlightCount={highlights.length}
-                  disabled={exportDisabled}
-                />
-                <button
-                  type="button"
-                  className="sr-icon is-delete"
-                  aria-label="Delete domain"
-                  title="Delete domain"
-                  onClick={() => setDeleteDomainOpen(true)}
-                >
-                  <IconTrash />
-                </button>
-              </div>
-            ) : null}
+      <div
+        data-testid="domain-sticky-chrome"
+        style={{
+          flexShrink: 0,
+          borderBottom: '1px solid var(--rule-soft)',
+          background: 'var(--paper)',
+          padding: '10px 16px 10px',
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div
+            className="u-serif"
+            style={{
+              fontSize: 22,
+              fontStyle: 'italic',
+              letterSpacing: '-0.015em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={domain}
+          >
+            {domain}
           </div>
-
-          <div style={{ marginTop: 10 }}>
-            <HighlightSearchBar
-              query={searchQuery}
-              onQueryChange={setSearchQuery}
-              fields={searchFields}
-              onFieldsChange={setSearchFields}
-              refine={refine}
-              onRefineChange={setRefine}
-              tagFilters={tagFilters}
-              onTagFiltersChange={setTagFilters}
-              availableTags={availableTags}
-              resultCount={isSearching ? searchResultCount : undefined}
-              placeholder="Search…"
-            />
+          <div
+            className="u-mono"
+            style={{
+              fontSize: 10,
+              color: 'var(--ink-3)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.14em',
+              marginTop: 4,
+            }}
+          >
+            {highlights.length} {highlights.length === 1 ? 'highlight' : 'highlights'}
           </div>
         </div>
+        {highlights.length > 0 ? (
+          <div
+            className="scope-toolbar"
+            data-testid="domain-scope-toolbar"
+            style={{
+              marginTop: 8,
+              paddingTop: 8,
+              borderTop: '1px solid var(--rule-soft)',
+              width: '100%',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <ExportActions
+              scope={{ kind: 'domain', domain }}
+              highlightCount={highlights.length}
+              disabled={exportDisabled}
+              variant="menu"
+            />
+            <button
+              type="button"
+              className="sr-icon is-delete"
+              aria-label="Delete domain"
+              title="Delete domain"
+              onClick={() => setDeleteDomainOpen(true)}
+            >
+              <IconTrash />
+            </button>
+          </div>
+        ) : null}
 
         <div style={{ marginTop: 10 }}>
+          <HighlightSearchBar
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            fields={searchFields}
+            onFieldsChange={setSearchFields}
+            refine={refine}
+            onRefineChange={setRefine}
+            tagFilters={tagFilters}
+            onTagFiltersChange={setTagFilters}
+            availableTags={availableTags}
+            resultCount={isSearching ? searchResultCount : undefined}
+            placeholder="Search…"
+          />
+        </div>
+      </div>
+
+      <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div style={{ marginTop: 4 }}>
           {isLoading ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>

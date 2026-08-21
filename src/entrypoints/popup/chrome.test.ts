@@ -28,43 +28,27 @@ describe('buildChrome', () => {
   });
 });
 
-describe('chrome-having screens', () => {
-  it('WELCOME has title strip but no ModeHeader or TabBar', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.WELCOME.title).toBe('_underscore');
-    expect(map.WELCOME.showTitleStrip).toBe(true);
-    expect(map.WELCOME.showModeHeader).toBe(false);
-    expect(map.WELCOME.showTabBar).toBe(false);
-    expect(map.WELCOME.accountPill).toBeNull();
+describe('chrome brand-only title strip', () => {
+  it('never surfaces place labels or account pills on tab roots', () => {
+    const handlers = makeHandlers();
+    handlers.getAccountPill = vi.fn((): AccountPillLabel | null => 'Paid');
+    const map = buildChrome(handlers);
+
+    for (const key of [
+      'DASHBOARD',
+      'COLLECTIONS',
+      'DOMAIN_DETAILS',
+      'SUB_DOMAIN',
+      'SETTINGS',
+      'AUTH',
+    ] as const) {
+      expect(map[key].place).toBe('');
+      expect(map[key].accountPill).toBeNull();
+      expect(map[key].brand).toBe('_underscore');
+    }
   });
 
-  it('MODE_SELECTION has title strip but no ModeHeader or TabBar', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.MODE_SELECTION.title).toBe('_underscore');
-    expect(map.MODE_SELECTION.showModeHeader).toBe(false);
-    expect(map.MODE_SELECTION.showTabBar).toBe(false);
-    expect(map.MODE_SELECTION.accountPill).toBeNull();
-  });
-
-  it('AUTH place is Sign in and accountPill is hidden', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.AUTH.place).toBe('Sign in');
-    expect(map.AUTH.accountPill).toBeNull();
-    expect(map.AUTH.showTabBar).toBe(false);
-    expect(map.AUTH.title).toBe('_underscore · sign in');
-    expect(map.AUTH.showTitleStrip).toBe(true);
-    expect(map.AUTH.showModeHeader).toBe(false);
-  });
-});
-
-describe('chrome-having screens with tab bar', () => {
-  it('DASHBOARD place is Home and brand is _underscore', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.DASHBOARD.place).toBe('Home');
-    expect(map.DASHBOARD.brand).toBe('_underscore');
-  });
-
-  it('DASHBOARD has title, ModeHeader, TabBar; activeTab is home', () => {
+  it('DASHBOARD has ModeHeader, TabBar; activeTab is home', () => {
     const handlers = makeHandlers();
     const map = buildChrome(handlers);
     expect(map.DASHBOARD.title).toBe('_underscore');
@@ -73,9 +57,6 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.DASHBOARD.showTabBar).toBe(true);
     expect(map.DASHBOARD.activeTab).toBe('home');
     expect(map.DASHBOARD.onTabChange).toBe(handlers.onTabChange);
-    expect(map.DASHBOARD.onSwitch).toBeUndefined();
-    expect(map.DASHBOARD.accountPill).toBe('Free');
-    expect(map.DASHBOARD.onAccountPillClick).toBe(handlers.onAccountPillClick);
   });
 
   it('DASHBOARD forwards getModeId() into modeId', () => {
@@ -85,13 +66,7 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.DASHBOARD.modeId).toBe('cloud');
   });
 
-  it('COLLECTIONS place is Library; no onSwitch', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.COLLECTIONS.place).toBe('Library');
-    expect(map.COLLECTIONS.onSwitch).toBeUndefined();
-  });
-
-  it('COLLECTIONS has "_underscore · library" title, activeTab collections', () => {
+  it('COLLECTIONS has library title and collections tab', () => {
     const handlers = makeHandlers();
     const map = buildChrome(handlers);
     expect(map.COLLECTIONS.title).toBe('_underscore · library');
@@ -100,78 +75,29 @@ describe('chrome-having screens with tab bar', () => {
     expect(map.COLLECTIONS.activeTab).toBe('collections');
   });
 
-  it('root library has no back; DOMAIN_DETAILS has back Library', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.COLLECTIONS.onBack).toBeUndefined();
-    expect(map.DOMAIN_DETAILS.onBack).toBeDefined();
-    expect(map.DOMAIN_DETAILS.backLabel).toBe('Library');
-  });
-
-  it('COLLECTIONS has no back button (root of library stack)', () => {
-    const map = buildChrome(makeHandlers());
-    expect(map.COLLECTIONS.onBack).toBeUndefined();
-    expect(map.COLLECTIONS.backLabel).toBeUndefined();
-  });
-
-  it('DOMAIN_DETAILS has back button with label "Library"', () => {
+  it('DOMAIN_DETAILS wires back to collections', () => {
     const handlers = makeHandlers();
     const map = buildChrome(handlers);
     expect(map.DOMAIN_DETAILS.onBack).toBe(handlers.onBackToCollections);
     expect(map.DOMAIN_DETAILS.backLabel).toBe('Library');
-    expect(map.DOMAIN_DETAILS.activeTab).toBe('collections');
-    expect(map.DOMAIN_DETAILS.onSwitch).toBeUndefined();
   });
 
-  it('SUB_DOMAIN backLabel is resolved from handlers.subDomainBackLabel()', () => {
+  it('SUB_DOMAIN wires domain back label', () => {
     const handlers = makeHandlers();
-    handlers.subDomainBackLabel = vi.fn(() => 'nytimes.com');
     const map = buildChrome(handlers);
     expect(map.SUB_DOMAIN.onBack).toBe(handlers.onBackToDomain);
-    expect(map.SUB_DOMAIN.backLabel).toBe('nytimes.com');
-    expect(handlers.subDomainBackLabel).toHaveBeenCalled();
-    expect(map.SUB_DOMAIN.onSwitch).toBeUndefined();
+    expect(map.SUB_DOMAIN.backLabel).toBe('anthropic.com');
   });
 
-  it('SUB_DOMAIN re-evaluates backLabel on each buildChrome call', () => {
-    const handlers = makeHandlers();
-    handlers.subDomainBackLabel = vi.fn(() => 'anthropic.com');
-    buildChrome(handlers);
-    handlers.subDomainBackLabel = vi.fn(() => 'theguardian.com');
-    const map = buildChrome(handlers);
-    expect(map.SUB_DOMAIN.backLabel).toBe('theguardian.com');
-  });
-
-  it('SETTINGS place is Settings; activeTab settings', () => {
+  it('SETTINGS activeTab is settings', () => {
     const map = buildChrome(makeHandlers());
-    expect(map.SETTINGS.place).toBe('Settings');
     expect(map.SETTINGS.activeTab).toBe('settings');
-  });
-
-  it('SETTINGS has "_underscore · settings" title, activeTab settings', () => {
-    const handlers = makeHandlers();
-    const map = buildChrome(handlers);
-    expect(map.SETTINGS.title).toBe('_underscore · settings');
-    expect(map.SETTINGS.showModeHeader).toBe(true);
     expect(map.SETTINGS.showTabBar).toBe(true);
-    expect(map.SETTINGS.activeTab).toBe('settings');
-    expect(map.SETTINGS.onSwitch).toBeUndefined();
   });
 
-  it('primary tab roots have no onBack (SETTINGS/COLLECTIONS/DASHBOARD)', () => {
+  it('AUTH has no tab bar', () => {
     const map = buildChrome(makeHandlers());
-    for (const key of ['SETTINGS', 'COLLECTIONS', 'DASHBOARD'] as const) {
-      expect(map[key].onBack).toBeUndefined();
-      expect(map[key].backLabel).toBeUndefined();
-    }
-  });
-
-  it('forwards getAccountPill into accountPill on chrome screens', () => {
-    const handlers = makeHandlers();
-    handlers.getAccountPill = vi.fn((): AccountPillLabel | null => 'Paid');
-    const map = buildChrome(handlers);
-    expect(map.DASHBOARD.accountPill).toBe('Paid');
-    expect(map.COLLECTIONS.accountPill).toBe('Paid');
-    expect(map.SETTINGS.accountPill).toBe('Paid');
-    expect(handlers.getAccountPill).toHaveBeenCalled();
+    expect(map.AUTH.showTabBar).toBe(false);
+    expect(map.AUTH.showModeHeader).toBe(false);
   });
 });

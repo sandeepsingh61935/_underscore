@@ -188,18 +188,11 @@ export function CollectionsView({
     );
   }
 
-  const kicker = isAuthenticated
-    ? `${collections.length} domains · ${totalHighlights} highlights`
-    : `Guest · ${collections.length} domains · ${totalHighlights} highlights`;
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div style={{ padding: '10px 16px 0' }}>
         <div className="u-serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: '-0.025em' }}>
           Library
-        </div>
-        <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: 4 }}>
-          {kicker}
         </div>
       </div>
 

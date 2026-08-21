@@ -51,8 +51,9 @@ describe('CollectionsView guest/account policy', () => {
     render(<CollectionsView />);
 
     expect(screen.getByText('example.com')).toBeTruthy();
-    expect(screen.getByText(/Guest · 1 domains · 2 highlights/)).toBeTruthy();
-    expect(screen.getByText(/Local only/)).toBeTruthy();
+    // Domain/highlights kicker removed — guest local banner remains.
+    expect(screen.queryByText(/domains · .* highlights/i)).toBeNull();
+    expect(screen.getByTestId('library-guest-local-banner')).toBeTruthy();
   });
 
   it('shows LibraryStarters for signed-in users with empty library', () => {

@@ -49,8 +49,9 @@ export type ChromeMap = Record<ViewKey, PopupChrome>;
 const BRAND = '_underscore';
 
 export function buildChrome(handlers: ChromeHandlers): ChromeMap {
-  const accountPill = handlers.getAccountPill();
-  const onAccountPillClick = handlers.onAccountPillClick;
+  // Title strip is brand-only (no place label, no PAID/Guest pill).
+  void handlers.getAccountPill;
+  void handlers.onAccountPillClick;
 
   return {
     LOADING: {
@@ -82,7 +83,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     COLLECTIONS: {
       title: `${BRAND} · library`,
-      place: 'Library',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -90,12 +91,11 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'collections',
       onTabChange: handlers.onTabChange,
-      accountPill,
-      onAccountPillClick,
+      accountPill: null,
     },
     DOMAIN_DETAILS: {
       title: `${BRAND} · library`,
-      place: 'Library',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -105,12 +105,11 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToCollections,
       backLabel: 'Library',
-      accountPill,
-      onAccountPillClick,
+      accountPill: null,
     },
     SUB_DOMAIN: {
       title: `${BRAND} · library`,
-      place: 'Library',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -120,12 +119,11 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToDomain,
       backLabel: handlers.subDomainBackLabel(),
-      accountPill,
-      onAccountPillClick,
+      accountPill: null,
     },
     AUTH: {
       title: `${BRAND} · sign in`,
-      place: 'Sign in',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
@@ -134,7 +132,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     SETTINGS: {
       title: `${BRAND} · settings`,
-      place: 'Settings',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -142,12 +140,11 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'settings',
       onTabChange: handlers.onTabChange,
-      accountPill,
-      onAccountPillClick,
+      accountPill: null,
     },
     DASHBOARD: {
       title: BRAND,
-      place: 'Home',
+      place: '',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -155,8 +152,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       modeId: handlers.getModeId(),
       activeTab: 'home',
       onTabChange: handlers.onTabChange,
-      accountPill,
-      onAccountPillClick,
+      accountPill: null,
     },
   };
 }

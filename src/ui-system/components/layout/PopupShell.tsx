@@ -27,57 +27,28 @@ export interface PopupShellProps {
   dark?: boolean;
 }
 
-function PopupTitleStrip({
-  place,
-  brand,
-  accountPill,
-  onAccountPillClick,
-}: {
-  place: string;
-  brand: string;
-  accountPill?: string | null;
-  onAccountPillClick?: () => void;
-}): React.ReactElement {
+/** Brand-only title strip — no place label, no plan pill (tab bar owns location). */
+function PopupTitleStrip({ brand }: { brand: string }): React.ReactElement {
   return (
     <div
+      data-testid="popup-title-strip"
       style={{
         background: 'var(--paper-2)',
         borderLeft: '1px solid var(--rule)',
         borderRight: '1px solid var(--rule)',
         borderTop: '1px solid var(--rule)',
         padding: '8px 14px',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         fontFamily: 'var(--mono)',
         fontSize: 'var(--step--2)',
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
-        color: 'var(--ink-3)',
+        color: 'var(--ink)',
       }}
     >
-      <span style={{ justifySelf: 'start' }}>{place}</span>
-      <span style={{ justifySelf: 'center', color: 'var(--ink)' }}>{brand}</span>
-      <span style={{ justifySelf: 'end' }}>
-        {accountPill ? (
-          <button
-            type="button"
-            onClick={onAccountPillClick}
-            aria-label={accountPill}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              fontFamily: 'var(--mono)',
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--ink-2)',
-            }}
-          >
-            {accountPill}
-          </button>
-        ) : null}
-      </span>
+      <span>{brand}</span>
     </div>
   );
 }
@@ -100,14 +71,7 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         flexDirection: 'column',
       }}
     >
-      {chrome.showTitleStrip && (
-        <PopupTitleStrip
-          place={chrome.place}
-          brand={chrome.brand}
-          accountPill={chrome.accountPill}
-          onAccountPillClick={chrome.onAccountPillClick}
-        />
-      )}
+      {chrome.showTitleStrip && <PopupTitleStrip brand={chrome.brand} />}
       <div
         className="popup"
         style={{

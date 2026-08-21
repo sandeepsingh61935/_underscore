@@ -220,12 +220,14 @@ describe('SettingsPage account signed-in', () => {
     mockBilling(true);
   });
 
-  it('shows Integrations open; Billing Upcoming; no Polar Manage CTA', () => {
+  it('shows Integrations open; Billing Upcoming; no plan pill or Polar CTAs', () => {
     const { openPortal, startCheckout, syncFromPolar } = mockBilling(true);
     render(<SettingsPage />);
     expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
     expect(screen.getByText(/Let agents use your library/)).toBeTruthy();
-    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
+    expect(screen.queryByTestId('account-plan-pill')).toBeNull();
+    expect(screen.queryByTestId('settings-plan-kicker')).toBeNull();
+    expect(screen.getByText('Synced')).toBeTruthy();
     expect(screen.getByTestId('settings-section-billing').textContent).toContain(
       BILLING_UPCOMING_SUB,
     );
@@ -233,7 +235,6 @@ describe('SettingsPage account signed-in', () => {
     expect(screen.queryByTestId('billing-sync-cta')).toBeNull();
     expect(screen.queryByText(/Polar/i)).toBeNull();
 
-    // Code still wired in provider mock — UI must not call it
     expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
     expect(syncFromPolar).not.toHaveBeenCalled();
@@ -277,10 +278,11 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     mockBilling(false);
   });
 
-  it('shows Free pill and Upcoming billing without Upgrade CTAs', () => {
+  it('shows Upcoming billing without Free pill or Upgrade CTAs', () => {
     const { startCheckout, openPortal, syncFromPolar } = mockBilling(false);
     render(<SettingsPage />);
-    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
+    expect(screen.queryByTestId('account-plan-pill')).toBeNull();
+    expect(screen.getByText('Synced')).toBeTruthy();
     expect(screen.getByTestId('settings-section-billing').textContent).toMatch(
       /Upcoming/i,
     );
@@ -296,7 +298,6 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     render(<SettingsPage />);
     expect(screen.queryByText(/Starter/)).toBeNull();
     expect(screen.queryByText(/^Pro$/)).toBeNull();
-    expect(screen.getAllByText(/Account \(Free\)/).length).toBeGreaterThan(0);
   });
 
   it('selecting Account while signed-in does not start checkout', () => {
@@ -331,7 +332,7 @@ describe('SettingsPage past_due billing', () => {
     });
   });
 
-  it('shows Past due pill without Polar Update payment CTA', () => {
+  it('shows no Past due pill and no Polar Update payment CTA', () => {
     const { openPortal, startCheckout } = mockBilling(false, {
       plan: 'paid',
       status: 'past_due',
@@ -340,7 +341,7 @@ describe('SettingsPage past_due billing', () => {
       manageUrlAvailable: true,
     });
     render(<SettingsPage />);
-    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Past due');
+    expect(screen.queryByTestId('account-plan-pill')).toBeNull();
     expect(screen.queryByTestId('billing-cta')).toBeNull();
     expect(screen.getByTestId('settings-section-billing').textContent).toMatch(
       /Upcoming/i,

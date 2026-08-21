@@ -19,14 +19,12 @@ import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg'
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
-import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
 import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { resolveProductCaps } from '@/shared/entitlement/resolveProductCaps';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveSettingsActionGates } from '@/shared/settings/settings-topic-ia';
-import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import {
   deleteLibraryCopy,
   signOutCopy,
@@ -120,15 +118,7 @@ export function SettingsPage({
     caps: productCaps,
   });
 
-  const planPill = resolveAccountPillLabel({
-    modeId: currentMode,
-    isAuthenticated,
-    isPaidActive,
-    billingStatus: billingEntitlement.status,
-  });
-
   const upcoming = billingUpcomingCopy();
-  const modeBranding = getModeBranding(currentMode);
 
   const handleSignOut = async (): Promise<void> => {
     if (isSigningOut) return;
@@ -215,20 +205,6 @@ export function SettingsPage({
         <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>
           Settings
         </div>
-        <div
-          className="u-mono"
-          data-testid="settings-plan-kicker"
-          style={{
-            marginTop: 4,
-            fontSize: 'var(--step--2)',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--ink-3)',
-          }}
-        >
-          {isAuthenticated ? 'Account' : 'Guest'}
-          {settingsGates.canUseIntegrations ? ' · Integrations on' : ''}
-        </div>
       </div>
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
@@ -254,26 +230,7 @@ export function SettingsPage({
               </div>
               <Row
                 title={user.email || 'Signed in'}
-                sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
-                right={
-                  planPill === 'Guest' ? null : (
-                    <span
-                      className="u-mono"
-                      data-testid="account-plan-pill"
-                      style={{
-                        fontSize: 'var(--step--2)',
-                        padding: '2px 8px',
-                        border: '1px solid var(--rule-soft)',
-                        color:
-                          planPill === 'Paid' || planPill === 'Past due'
-                            ? 'var(--accent)'
-                            : 'var(--ink-3)',
-                      }}
-                    >
-                      {planPill}
-                    </span>
-                  )
-                }
+                sub="Synced"
               />
             </>
           ) : (

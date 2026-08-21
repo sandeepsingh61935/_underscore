@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -25,7 +25,7 @@ const noopHandlers = {
 };
 
 describe('PopupShell', () => {
-  it('renders place left, brand center, account pill right', () => {
+  it('renders brand-only title strip (no place, no plan pill)', () => {
     render(
       <PopupShell
         chrome={{
@@ -43,52 +43,8 @@ describe('PopupShell', () => {
         <div>body</div>
       </PopupShell>
     );
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('_underscore')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guest/i })).toBeInTheDocument();
-  });
-
-  it('hides account pill when accountPill is null', () => {
-    render(
-      <PopupShell
-        chrome={{
-          title: '_underscore',
-          place: 'Sign in',
-          brand: '_underscore',
-          accountPill: null,
-          showTitleStrip: true,
-          showModeHeader: false,
-          showTabBar: false,
-        }}
-        viewKey="AUTH"
-      >
-        <div>body</div>
-      </PopupShell>
-    );
-    expect(screen.queryByRole('button', { name: /guest|free|paid|past due/i })).not.toBeInTheDocument();
-  });
-
-  it('invokes onAccountPillClick when pill clicked', () => {
-    const onAccountPillClick = vi.fn();
-    render(
-      <PopupShell
-        chrome={{
-          title: '_underscore',
-          place: 'Home',
-          brand: '_underscore',
-          accountPill: 'Free',
-          onAccountPillClick,
-          showTitleStrip: true,
-          showModeHeader: false,
-          showTabBar: false,
-        }}
-        viewKey="DASHBOARD"
-      >
-        <div>body</div>
-      </PopupShell>
-    );
-    fireEvent.click(screen.getByRole('button', { name: /free/i }));
-    expect(onAccountPillClick).toHaveBeenCalled();
+    expect(screen.getByTestId('popup-title-strip').textContent).toBe('_underscore');
+    expect(screen.queryByRole('button', { name: /guest|free|paid/i })).not.toBeInTheDocument();
   });
 
   it('renders the title strip with the chrome brand when showTitleStrip is true', () => {

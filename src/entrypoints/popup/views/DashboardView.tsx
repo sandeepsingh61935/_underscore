@@ -44,11 +44,9 @@ const STAT_CELLS: Array<{ key: keyof PopupHomeStats; label: string }> = [
 
 function HomeHeader({
   title,
-  statusLine,
   stats,
 }: {
   title: string;
-  statusLine: string;
   stats: PopupHomeStats;
 }): React.ReactElement {
   return (
@@ -66,20 +64,6 @@ function HomeHeader({
       >
         {title}
       </h1>
-      <p
-        className="u-mono"
-        style={{
-          margin: '6px 0 0',
-          fontSize: 'var(--step--2)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: 'var(--ink-3)',
-          lineHeight: 1.45,
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {statusLine}
-      </p>
       <div
         data-testid="home-stats"
         style={{
@@ -395,11 +379,7 @@ export function DashboardView({
       }}
     >
       <div style={{ flexShrink: 0 }}>
-        <HomeHeader
-          title={homeModel.title}
-          statusLine={homeModel.statusLine}
-          stats={homeModel.stats}
-        />
+        <HomeHeader title={homeModel.title} stats={homeModel.stats} />
         <ThisPageLine
           domain={tabContext.domain}
           path={pathDisplay}
