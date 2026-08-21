@@ -1,232 +1,227 @@
 # Privacy Policy
 
-**Underscore Web Highlighter Extension**
+**Underscore Highlighter** (browser extension and web app)
 
-_Last Updated: December 27, 2025_
+**Last updated:** 21 August 2026
 
----
+This policy describes how Underscore Highlighter (“Underscore”, “we”, “the
+product”) handles information when you use the browser extension and the
+related web app.
 
-## Overview
-
-Underscore Web Highlighter ("we", "our", or "the Extension") is committed to
-protecting your privacy. This policy explains how we handle your data across our
-different highlighting modes.
-
----
-
-## Data Collection by Mode
-
-### Sprint Mode (Current - Privacy-First)
-
-**What We Store Locally**:
-
-- **Highlighted text and positions**: Per website, in encrypted form
-- **Highlight colors and timestamps**: Metadata for your highlights
-- **Undo history**: Last 50 actions (in memory only, not persisted)
-
-**Where It's Stored**:
-
-- **Chrome extension storage** (chrome.storage.local)
-- **Encrypted**: Per-website encryption using Web Crypto API
-- **Local only**: Never sent to servers
-- **Not synced**: Does not sync across devices
-
-**How Long We Keep It**:
-
-- **Active session**: Up to 4 hours from last activity
-- **Automatic cleanup**: Every 5 minutes, expired data deleted
-- **Browser restart**: Highlights survive if < 4 hours old
-- **Undo history**: Lost on page reload (industry standard)
-
-**Your Control**:
-
-- **Clear current website**: Ctrl+Shift+U
-- **Clear selection**: Double-click highlighted text
-- **Undo**: Ctrl+Z (works during current session)
-- **Switch to Vault Mode**: Explicit migration preserves data
-
-**Privacy Guarantees**:
-
-- ✅ No tracking or analytics
-- ✅ No third-party data sharing
-- ✅ Data never leaves your device
-- ✅ Automatic expiration (4 hours)
-- ✅ You control all deletions
-
-### Vault Mode (Future Feature)
-
-When Vault Mode is implemented, it will include:
-
-**Data Stored Locally**:
-
-- Highlighted text snippets
-- Page URLs where highlights were created
-- Highlight colors and notes
-- Creation/modification timestamps
-
-**Data Synchronized (Optional)**:
-
-- If you enable sync: highlights will be encrypted and stored in your chosen
-  cloud provider
-- You control: whether to enable sync, which provider to use
-- Encryption: End-to-end encryption for all synchronized data
-
-**Data Retention**:
-
-- You own your data
-- You can export all data at any time
-- You can delete all data at any time
-
-### Gen Mode (Future Feature)
-
-When Gen Mode is implemented:
-
-**AI Processing**:
-
-- Highlights may be processed for insights (only if you enable AI features)
-- Processing happens locally when possible
-- If cloud AI is used, data is anonymized and not stored
-
----
-
-## Permissions Explained
-
-### Required Permissions
-
-**`activeTab`**:
-
-- **Why**: To detect and highlight text on the current webpage
-- **What We Do**: Read and modify page content to render highlights
-- **What We Don't Do**: Access tabs you're not actively using
-
-**`storage`**:
-
-- **Why**: To save your settings and preferences
-- **What We Do**: Store highlight color preferences, keyboard shortcuts
-- **What We Don't Do**: Store your browsing history or personal data
-
-### Future Permissions (Vault Mode)
-
-**`storage.sync`** (optional):
-
-- **Why**: To synchronize highlights across devices
-- **What We Do**: Sync your highlights via your chosen cloud provider
-- **What We Don't Do**: Access data from other extensions or browsers
-
----
-
-## Third-Party Services
-
-### Current (Sprint Mode)
-
-- **None**: Sprint Mode uses zero third-party services
-
-### Future (Vault Mode)
-
-- **Supabase** (optional): For syncing highlights if you enable this feature
-  - Open-source, privacy-focused backend
-  - End-to-end encryption for your data
-  - You can self-host if preferred
-
-### Future (Gen Mode)
-
-- **AI Services** (optional): For generating insights
-  - Only if you explicitly enable AI features
-  - Data anonymized before processing
-  - You choose which AI provider to use
-
----
-
-## Your Rights
-
-You have the right to:
-
-✅ **Access**: Export all your data at any time  
-✅ **Delete**: Permanently delete all your data  
-✅ **Portability**: Take your data to another service  
-✅ **Transparency**: Know exactly what data we collect  
-✅ **Control**: Enable/disable any data collection features
-
----
-
-## Security
-
-We take security seriously:
-
-- **Content Security Policy**: Prevents XSS attacks
-- **DOMPurify**: Sanitizes all user input
-- **No Tracking Scripts**: Zero third-party analytics
-- **Open Source**: Code is publicly auditable
-- **Regular Updates**: Security patches released promptly
-
----
-
-## Children's Privacy
-
-This extension is not directed at children under 13. We do not knowingly collect
-data from children.
-
----
-
-## Changes to This Policy
-
-We will notify users of any changes to this privacy policy through:
-
-- Extension update notes
-- In-app notification
-- GitHub repository changelog
-
----
-
-## Data Breach Policy
-
-In the unlikely event of a data breach:
-
-1. We will notify affected users within 72 hours
-2. We will provide details of what data was affected
-3. We will outline steps taken to prevent future breaches
-
----
-
-## Contact
-
-Questions about privacy?
-
-- **GitHub**: [Open an issue](https://github.com/your-repo/issues)
-- **Email**: privacy@example.com
-
----
-
-## Open Source
-
-This extension is open source:
-
-- **Code**: Publicly available for audit
-- **Issues**: Report security concerns via GitHub
-- **Contributions**: Privacy improvements welcome
+For store listings, the canonical public URL should point at the hosted copy of
+this policy (web app `/privacy` once deployed), not only this repository file.
 
 ---
 
 ## Summary
 
-**Sprint Mode** (Current):
-
-- ✅ Zero data collection
-- ✅ Complete privacy
-- ✅ No tracking
-- ✅ Local-only
-
-**Vault Mode** (Future):
-
-- ⚠️ Optional cloud sync
-- ✅ End-to-end encryption
-- ✅ You control your data
-- ✅ Export/delete anytime
-
-**Our Commitment**: Your privacy is our priority. We collect only what's
-necessary and never more than you explicitly allow.
+- **Guest (signed out):** highlights and preferences stay in the browser on your
+  device. They are not uploaded to our servers.
+- **Signed in:** account email (and related auth data) and library data you
+  choose to sync are processed by our backend so you can sign in, sync, and use
+  paid features.
+- **Optional AI:** only if you connect a provider. Cloud providers receive what
+  you send in that request (using **your** API key or local runtime). We do not
+  sell your highlights.
+- **No third-party ad trackers.** We do not sell personal information.
 
 ---
 
-_This is a draft privacy policy for the initial Sprint Mode release. It will be
-updated when Vault Mode and Gen Mode are implemented._
+## Who this applies to
+
+- The **browser extension** (Chrome, Firefox, and other Chromium builds we
+  distribute)
+- The **web app** served from our Cloudflare Pages project (and any custom
+  domain we point at it)
+
+---
+
+## Information we process
+
+### 1. Highlights and page context (core product)
+
+When you create a highlight, the product may store:
+
+- Selected text and surrounding context needed to restore the highlight
+- Page URL, domain, and path
+- Timestamps, colors, notes, tags, and similar metadata you add
+- Presentation preferences (for example type presets)
+
+**Guest / device-local use:** this data is stored in extension or browser
+storage on your device (for example `storage.local` / IndexedDB). It is not
+sent to Underscore servers for sync while you remain signed out.
+
+**Signed-in sync:** when your account and mode support cloud sync, library data
+is transmitted to and stored on our backend (Supabase) so it can appear across
+devices and in the web app. Highlight text is stored for sync as product data;
+it is protected by account authentication and transport encryption (HTTPS). It
+is **not** described here as end-to-end encrypted client-side before upload.
+
+### 2. Account and authentication
+
+If you create or use an account, we process:
+
+- Email address
+- Authentication identifiers and session tokens
+- Optional profile fields provided by the identity provider (for example
+  display name or avatar URL from Google sign-in)
+- Security-related signals needed to prevent abuse (for example rate limits on
+  auth attempts)
+
+Sign-in may use:
+
+- Email and password / one-time codes via **Supabase Auth**
+- Google OAuth via the browser **identity** API and Supabase
+
+### 3. Billing (paid plans)
+
+If you start a paid plan, payment is handled by **Polar** (our merchant of
+record). We receive subscription status and related entitlement signals needed
+to unlock paid features. Card numbers are handled by the payment provider, not
+stored in the extension.
+
+### 4. Optional AI features
+
+AI is optional and user-configured:
+
+- **Bring-your-own-key (BYOK)** providers (for example OpenAI, Anthropic,
+  Google, xAI, OpenRouter): API keys you enter are stored in extension storage
+  on your device. Requests go to those providers (or via our web app proxy
+  where documented) with content needed for the feature you invoked.
+- **Local Ollama:** if you enable it, the extension may contact
+  `localhost` / `127.0.0.1` on the Ollama port you use. Data stays on your
+  machine except as your local stack is configured.
+- **MCP bridge:** if you enable a local agent bridge, the extension may open a
+  connection to a local bridge port on your machine.
+
+We do not require AI for core highlighting or the local library.
+
+### 5. Product analytics
+
+The web app may emit **in-process** product events (feature names and
+non-content properties) on an internal event bus for future sinks. **As of this
+policy date, we do not send those events to a third-party analytics vendor.**
+We do not put highlight text into analytics events.
+
+### 6. What we do not do
+
+- We do not sell your personal information
+- We do not run third-party advertising trackers in the extension
+- We do not read your full browsing history; we process pages in context of
+  highlighting, the active tab you use with the product, and library URLs you
+  save
+- We do not require an account for guest highlighting on the extension
+
+---
+
+## Permissions (extension)
+
+| Permission / access | Purpose |
+|---------------------|---------|
+| `activeTab` | Work with the page you are using when you highlight or open the popup |
+| `storage` | Save library data, preferences, sessions, and optional API keys on device |
+| `alarms` | Maintenance tasks (for example session / verification timing) |
+| `identity` | Complete browser OAuth (Google) securely |
+| Host access to our Supabase project | Auth, sync, and account APIs |
+| Host access to Polar | Paid checkout |
+| Host access to optional LLM APIs | Only for providers you configure |
+| `localhost` / `127.0.0.1` (Ollama, MCP bridge) | Optional local AI / agent features you enable |
+
+Firefox listings also declare built-in **data collection permissions** for
+website content, website activity (URLs tied to highlights), and contact info
+(account email). Those declarations match this policy.
+
+---
+
+## Third parties
+
+| Party | Role |
+|-------|------|
+| **Supabase** | Auth, database, and related backend APIs for signed-in features |
+| **Cloudflare** | Hosting the web app and edge functions |
+| **Polar** | Payments and subscriptions |
+| **Google** | Optional OAuth sign-in |
+| **LLM providers you choose** | Optional AI requests under their policies and your keys |
+| **Browser vendors** | Extension distribution and browser identity APIs |
+
+Each provider has its own privacy policy. Optional providers are only used when
+you enable the related feature.
+
+---
+
+## Retention
+
+- **Guest / device data:** until you delete it, clear site data, or uninstall
+  the extension (subject to browser storage limits)
+- **Account library data:** until you delete items, clear account data in
+  product controls, or delete the account
+- **Auth sessions:** until sign-out, expiry, or revocation
+- **Billing records:** retained as required for accounting and the payment
+  provider’s obligations
+
+---
+
+## Your choices and rights
+
+Depending on your region, you may have rights to access, correct, export,
+delete, or restrict processing of personal data.
+
+In product:
+
+- Use **Guest** without an account (extension)
+- **Export** library data where the export feature is available for your plan
+- **Delete** highlights, clear local highlight data, or sign out
+- Disconnect optional AI providers and remove stored API keys
+- Disable optional local bridges
+
+To request account deletion or privacy help, contact us (below). We will
+respond within a reasonable period and as required by law.
+
+---
+
+## Children
+
+The product is not directed at children under 13 (or the minimum age required
+in your jurisdiction). Do not use the product if you are under that age.
+
+---
+
+## International transfers
+
+Our infrastructure may process data in the United States or other countries
+where our providers operate. Where required, we rely on appropriate safeguards
+offered by those providers.
+
+---
+
+## Security
+
+We use industry-standard transport encryption (HTTPS), account authentication,
+browser extension isolation, input sanitization for rendered content, and
+least-privilege host permissions. No method of transmission or storage is
+perfectly secure.
+
+---
+
+## Changes
+
+We may update this policy as the product changes. We will update the “Last
+updated” date and, for material changes, provide additional notice in the
+product or store listing when appropriate.
+
+---
+
+## Contact
+
+- **Email:** privacy@underscore.dev
+- **Source / issues:** https://github.com/sandeepsingh61935/_underscore
+
+If you need a postal address for a regulatory request, contact the email above
+and we will provide one.
+
+---
+
+## License note
+
+The project source is distributed under the terms in the repository `LICENSE`
+file (GNU GPL v3). Licensing is separate from this privacy policy.

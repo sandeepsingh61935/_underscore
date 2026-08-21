@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/shared/constants/support-contact';
 import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /**
- * Privacy Policy Page — article-style layout with editorial typography.
- * AppHeader (standalone) provides the centered Logo header; body is a
- * V2-styled long-form article (640px max width, generous leading).
+ * Privacy Policy — article-style layout with editorial typography.
+ * Reflects Guest (local), Account (cloud sync), billing, and optional AI use.
  */
 export function PrivacyPage(): React.ReactElement {
   return (
@@ -53,10 +53,9 @@ export function PrivacyPage(): React.ReactElement {
             letterSpacing: '0.04em',
           }}
         >
-          Last updated: February 2026
+          Last updated: August 2026
         </p>
 
-        {/* Callout — V2 uses var(--accent-tint-08) for soft emphasis, no glass */}
         <div
           style={{
             padding: 16,
@@ -75,68 +74,154 @@ export function PrivacyPage(): React.ReactElement {
               color: 'var(--ink)',
             }}
           >
-            <strong style={{ color: 'var(--accent)' }}>TL;DR</strong> — Your data stays
-            on your device. We don&apos;t track, sell, or share your browsing activity
-            or highlights with anyone. Period.
+            <strong style={{ color: 'var(--accent)' }}>TL;DR</strong> — Guest mode keeps
+            highlights on your device. When you create an account and use cloud features,
+            we store the data you save so it can sync across devices. We do not sell your
+            highlights or browsing history. You can export or delete your data.
           </p>
         </div>
 
-        <PolicySection title="What we collect">
-          <p>We collect the minimum data necessary to provide the service:</p>
-          <ul>
-            <li>Account information (email, display name) when you create an account</li>
-            <li>Highlight data you explicitly save in Guest, Account (Free), or Account (Paid) mode</li>
-            <li>Basic usage analytics (page views, feature usage) — no personal data</li>
-          </ul>
-        </PolicySection>
-
-        <PolicySection title="What we don't collect">
-          <ul>
-            <li>Browsing history outside of your explicit highlights</li>
-            <li>Personal information beyond what you provide at signup</li>
-            <li>Data from Guest mode — it lives only on your device until you delete it</li>
-          </ul>
-        </PolicySection>
-
-        <PolicySection title="Data storage">
+        <PolicySection title="Who we are">
           <p>
-            All data is stored locally in your browser using IndexedDB. When you enable
-            cloud sync, highlights are stored in your account and protected by login —
-            we do not encrypt highlight text before upload.
+            Underscore (&ldquo;we&rdquo;) provides a browser extension and web app for
+            highlighting and saving passages from the web. This policy describes what we
+            collect and how we use it when you use our products.
           </p>
         </PolicySection>
 
-        <PolicySection title="Your rights">
+        <PolicySection title="What we collect">
+          <p>We collect only what we need to run the product:</p>
+          <ul>
+            <li>
+              <strong>Account data</strong> — email and profile fields you provide when you
+              register or sign in (handled by our auth provider).
+            </li>
+            <li>
+              <strong>Highlight and library data you save</strong> — selected text, notes,
+              page URLs/titles, collections/metadata, and related timestamps when you use
+              persistence beyond pure on-device Guest use.
+            </li>
+            <li>
+              <strong>Billing data</strong> — if you subscribe, payment is processed by our
+              payment provider. We receive subscription status and related account identifiers,
+              not your full card number.
+            </li>
+            <li>
+              <strong>Support messages</strong> — if you email us, the content of that
+              correspondence.
+            </li>
+            <li>
+              <strong>Basic operational logs</strong> — technical signals needed to keep the
+              service reliable and secure (for example error and request diagnostics). We do
+              not build advertising profiles from your browsing history.
+            </li>
+          </ul>
+        </PolicySection>
+
+        <PolicySection title="Modes and where data lives">
+          <ul>
+            <li>
+              <strong>Guest</strong> — highlights can live only in local browser storage on
+              your device until you clear them or the storage is removed.
+            </li>
+            <li>
+              <strong>Account</strong> — when you sign in and use cloud sync or the web
+              library, highlights and related library data are stored in your account so you
+              can access them across sessions and devices.
+            </li>
+            <li>
+              <strong>Paid features</strong> — optional paid plans may unlock additional
+              capabilities (for example higher limits or AI-related features). Using those
+              features may send the inputs you choose (such as selected highlights or prompts)
+              to the providers required to fulfill the request.
+            </li>
+          </ul>
+        </PolicySection>
+
+        <PolicySection title="What we do not do">
+          <ul>
+            <li>We do not sell your personal data or highlight library.</li>
+            <li>
+              We do not collect your full browsing history — only pages and passages you
+              explicitly save or actions you take in the product.
+            </li>
+            <li>
+              We do not claim end-to-end encryption of highlight text before upload. Cloud
+              data is protected by account authentication and our infrastructure controls;
+              treat synced text as stored content, not a zero-knowledge vault.
+            </li>
+          </ul>
+        </PolicySection>
+
+        <PolicySection title="Service providers">
+          <p>
+            We use processors to operate Underscore, which may include authentication and
+            database hosting, payment/subscription processing, hosting/CDN, and (when you use
+            AI features) model or API providers. They process data only to provide their
+            services to us, under appropriate agreements.
+          </p>
+        </PolicySection>
+
+        <PolicySection title="Your choices and rights">
           <p>You can:</p>
           <ul>
-            <li>Export all your data at any time (Settings → Data)</li>
-            <li>Delete your account and all associated data</li>
             <li>Use Guest mode without creating an account</li>
+            <li>Export your data from product controls where available (Settings → Data)</li>
+            <li>Delete highlights or close/delete your account through product or support paths</li>
+            <li>
+              Contact us to ask questions about this policy or your data at{' '}
+              <ContactLink />
+            </li>
           </ul>
+          <p>
+            Depending on where you live, you may have additional rights under local law (access,
+            correction, deletion, objection). Email us to exercise them.
+          </p>
+        </PolicySection>
+
+        <PolicySection title="Children">
+          <p>
+            Underscore is not directed at children under 13 (or the minimum age required in
+            your jurisdiction). Do not create an account if you are under that age.
+          </p>
+        </PolicySection>
+
+        <PolicySection title="Changes">
+          <p>
+            We may update this policy as the product evolves. We will revise the &ldquo;Last
+            updated&rdquo; date above. Continued use after changes means you accept the updated
+            policy.
+          </p>
         </PolicySection>
 
         <PolicySection title="Contact">
           <p>
-            Questions? Email us at{' '}
-            <a
-              href="mailto:privacy@underscore.dev"
-              className="u-sans"
-              style={{
-                display: 'inline-flex',
-                minHeight: 44,
-                alignItems: 'center',
-                padding: '0 4px',
-                color: 'var(--accent)',
-                textDecoration: 'underline',
-                textUnderlineOffset: 3,
-              }}
-            >
-              privacy@underscore.dev
-            </a>
+            Privacy questions: email{' '}
+            <ContactLink />.
           </p>
         </PolicySection>
       </article>
     </div>
+  );
+}
+
+function ContactLink(): React.ReactElement {
+  return (
+    <a
+      href={SUPPORT_MAILTO}
+      className="u-sans"
+      style={{
+        display: 'inline-flex',
+        minHeight: 44,
+        alignItems: 'center',
+        padding: '0 4px',
+        color: 'var(--accent)',
+        textDecoration: 'underline',
+        textUnderlineOffset: 3,
+      }}
+    >
+      {SUPPORT_EMAIL}
+    </a>
   );
 }
 
