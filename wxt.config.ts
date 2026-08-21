@@ -54,11 +54,8 @@ export default defineConfig({
         polyfill: false,
         resolveDependencies: () => [],
       },
-      rollupOptions: {
-        output: {
-          // manualChunks removed
-        },
-      },
+      // Content scripts use inlineDynamicImports — never set manualChunks here.
+      // Vendor splits applied via hooks.vite:build:extendConfig for popup only.
       minify: 'terser',
       terserOptions: {
         format: {
@@ -68,4 +65,75 @@ export default defineConfig({
       },
     },
   }),
+  hooks: {
+    /**
+     * Split heavy popup vendors (react, supabase, xlsx, motion, …).
+     * Must not run for content-script builds (IIFE + inlineDynamicImports).
+     */
+    'vite:build:extendConfig': (entrypoints, config) => {
+      const isPopup = entrypoints.some(
+        (e) => e.type === 'popup' || e.name === 'popup',
+      );
+      if (!isPopup) return;
+
+      config.build ??= {};
+      config.build.chunkSizeWarningLimit = 600;
+      config.build.rollupOptions ??= {};
+      const output = config.build.rollupOptions.output;
+      const outputObj = Array.isArray(output) ? output[0] : output;
+      const target = outputObj ?? {};
+      if (Array.isArray(config.build.rollupOptions.output)) {
+        config.build.rollupOptions.output[0] = target;
+      } else {
+        config.build.rollupOptions.output = target;
+      }
+
+      target.manualChunks = (id: string): string | undefined => {
+        if (!id.includes('node_modules')) return;
+        if (
+          id.includes('node_modules/react-dom') ||
+          id.includes('node_modules/react-router') ||
+          id.includes('node_modules/react/') ||
+          id.includes('node_modules/scheduler')
+        ) {
+          return 'react-vendor';
+        }
+        if (id.includes('@supabase') || id.includes('supabase-js')) {
+          return 'supabase';
+        }
+        if (id.includes('node_modules/xlsx')) {
+          return 'xlsx';
+        }
+        if (
+          id.includes('framer-motion') ||
+          id.includes('motion-dom') ||
+          id.includes('motion-utils')
+        ) {
+          return 'motion';
+        }
+        if (
+          id.includes('react-markdown') ||
+          id.includes('node_modules/remark') ||
+          id.includes('node_modules/unified') ||
+          id.includes('node_modules/mdast') ||
+          id.includes('node_modules/micromark') ||
+          id.includes('node_modules/unist') ||
+          id.includes('node_modules/hast') ||
+          id.includes('node_modules/vfile')
+        ) {
+          return 'markdown';
+        }
+        if (id.includes('lucide-react')) {
+          return 'icons';
+        }
+        if (id.includes('node_modules/zod')) {
+          return 'zod';
+        }
+        if (id.includes('dompurify')) {
+          return 'dompurify';
+        }
+        return undefined;
+      };
+    },
+  },
 });
