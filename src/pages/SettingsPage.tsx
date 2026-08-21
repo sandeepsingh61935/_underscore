@@ -195,13 +195,10 @@ export function SettingsPage({
           </button>
         </div>
         <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
-          <div style={{ padding: '12px 16px 4px' }}>
-            <div
-              className="u-serif"
-              style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}
-            >
+          <div className="popup-page-title-wrap" style={{ paddingBottom: 4 }}>
+            <h1 className="popup-page-title">
               Keyboard
-            </div>
+            </h1>
             <p
               className="u-sans"
               style={{
@@ -236,10 +233,10 @@ export function SettingsPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <div style={{ padding: '12px 16px 6px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>
+      <div className="popup-page-title-wrap">
+        <h1 className="popup-page-title" data-testid="settings-title">
           Settings
-        </div>
+        </h1>
       </div>
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">

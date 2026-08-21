@@ -178,10 +178,10 @@ export function CollectionsView({
   if (libraryAccess.showSignInPrompt && !isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-        <div style={{ padding: '12px 16px 6px' }}>
-          <div className="u-serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: '-0.025em' }}>
+        <div className="popup-page-title-wrap">
+          <h1 className="popup-page-title" data-testid="library-title">
             Library
-          </div>
+          </h1>
         </div>
         <LibraryEmptyGuest onSignIn={onSignIn} />
       </div>
@@ -190,10 +190,10 @@ export function CollectionsView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <div style={{ padding: '10px 16px 0' }}>
-        <div className="u-serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: '-0.025em' }}>
+      <div className="popup-page-title-wrap">
+        <h1 className="popup-page-title" data-testid="library-title">
           Library
-        </div>
+        </h1>
       </div>
 
       {!isAuthenticated && totalHighlights > 0 && (

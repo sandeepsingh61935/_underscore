@@ -1,7 +1,6 @@
 /**
  * Home — locked product cleanup:
- * Local library | Library title · 2×2 stats · This page line ·
- * 50/50 Active | Recent columns (compact rows).
+ * 2×2 stats · This page line · 50/50 Active | Recent columns (compact rows).
  */
 import React, { useMemo, useState } from 'react';
 
@@ -43,34 +42,18 @@ const STAT_CELLS: Array<{ key: keyof PopupHomeStats; label: string }> = [
 ];
 
 function HomeHeader({
-  title,
   stats,
 }: {
-  title: string;
   stats: PopupHomeStats;
 }): React.ReactElement {
   return (
     <div data-testid="home-status" style={{ padding: '12px 16px 10px' }}>
-      <h1
-        className="u-serif"
-        data-testid="home-title"
-        style={{
-          margin: 0,
-          fontSize: 'var(--step-3)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.15,
-          color: 'var(--ink)',
-        }}
-      >
-        {title}
-      </h1>
       <div
         data-testid="home-stats"
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 0,
-          marginTop: 12,
           border: '1px solid var(--rule-soft)',
         }}
       >
@@ -379,7 +362,7 @@ export function DashboardView({
       }}
     >
       <div style={{ flexShrink: 0 }}>
-        <HomeHeader title={homeModel.title} stats={homeModel.stats} />
+        <HomeHeader stats={homeModel.stats} />
         <ThisPageLine
           domain={tabContext.domain}
           path={pathDisplay}
