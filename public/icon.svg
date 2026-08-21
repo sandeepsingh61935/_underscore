@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="_underscore">
+  <!-- Canvas (matches exported PNG backdrop) -->
+  <rect width="512" height="512" fill="#000000"/>
+  <!-- Editorial plate — ~22% corner radius squircle stand-in -->
+  <rect x="15" y="15" width="482" height="482" rx="106" ry="106" fill="#F7F5F0"/>
+  <!-- Underscore mark — capsule, slightly below center -->
+  <rect x="82" y="256" width="348" height="62" rx="31" ry="31" fill="#111110"/>
+</svg>
