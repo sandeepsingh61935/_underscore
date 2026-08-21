@@ -18,6 +18,7 @@ import { ResetPasswordView } from '@/features/auth/ResetPasswordView';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
+import { HelpPage } from '@/pages/HelpPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
@@ -80,6 +81,7 @@ export function AppRoutes() {
               <Route path="/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
+              <Route path="/help" element={<HelpPage />} />
 
               {/* Product shell — guest-allowed (no ProtectedRoute) */}
               <Route element={<WebAppShell />}>
