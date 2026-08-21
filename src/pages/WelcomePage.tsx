@@ -71,9 +71,9 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
         <Link to="/terms" className="u-mono welcome__footer-link">
           Terms
         </Link>
-        <a href="#help" className="u-mono welcome__footer-link">
+        <Link to="/help" className="u-mono welcome__footer-link">
           Help
-        </a>
+        </Link>
       </div>
     </div>
   );
