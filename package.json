@@ -18,7 +18,7 @@
     "build:web": "vite build --config vite.config.web.ts",
     "web:build": "node --env-file=.env.development ./node_modules/vite/bin/vite.js build --config vite.config.web.ts",
     "web:pages-dev": "npm run web:build && npx wrangler pages dev dist-web --project-name=underscore-web --compatibility-date=2024-12-01",
-    "web:deploy": "npm run web:build && npx wrangler pages deploy dist-web --project-name=underscore-web",
+    "web:deploy": "node --env-file=.env.production ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production && npx wrangler pages deploy dist-web --project-name=underscore-web --branch=main --commit-dirty=true",
     "supabase:link": "npx supabase link --project-ref cuzwaukxagefyvtxbqmi",
     "supabase:push": "npx supabase db push --linked --yes",
     "supabase:migrate": "npm run supabase:link && npm run supabase:push",

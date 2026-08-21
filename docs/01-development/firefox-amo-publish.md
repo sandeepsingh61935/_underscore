@@ -24,7 +24,7 @@ Do **not** change the gecko `id` after the first AMO submission.
 | OAuth redirect allowlist (Supabase + Google) | **Open** — do after first temp install |
 | Firefox manual QA | **Open** |
 | Screenshots + AMO developer listing | **Open** |
-| Public privacy URL on web app | **Open** — deploy web, set `VITE_WEB_APP_URL` |
+| Public privacy URL on web app | **Live** — https://underscore-web-3i0.pages.dev/privacy |
 
 ---
 
@@ -83,16 +83,16 @@ No optional `technicalAndInteraction` until a real telemetry sink ships.
 - [ ] **Description:** guest device library, signed-in sync, optional BYOK AI, export on eligible plans
 - [ ] **Categories:** Search Tools and/or Bookmarks (pick best fit at submit time)
 - [ ] **Support email:** e.g. privacy@underscore.dev or a support inbox you monitor
-- [ ] **Homepage:** deployed web app origin
+- [ ] **Homepage:** https://underscore-web-3i0.pages.dev
 - [ ] **License:** GNU GPL v3.0
-- [ ] **Privacy policy URL:** `https://<web-app-origin>/privacy`
+- [x] **Privacy policy URL:** https://underscore-web-3i0.pages.dev/privacy
 
 ### Privacy
 
 - [x] Rewrite policy for guest / account / BYOK / Polar / Supabase (`PRIVACY.md`)
 - [x] In-app page matches policy (`PrivacyPage`)
-- [ ] **Deploy web app** so `https://…/privacy` is publicly reachable
-- [ ] Set `VITE_WEB_APP_URL` in extension env so popup legal links open the hosted page
+- [x] **Deploy web app** — https://underscore-web-3i0.pages.dev/privacy
+- [x] Set `VITE_WEB_APP_URL=https://underscore-web-3i0.pages.dev` in local `.env.production`
 - [ ] AMO privacy questionnaire matches `data_collection_permissions` + host permissions
 - [ ] Reviewer notes explain localhost Ollama (`11434`) and MCP bridge (`17342`)
 
@@ -209,13 +209,12 @@ Sources zip excludes `.env*` and build output. Verified: no `.env` entries in th
 
 ## Still open (human / ops)
 
-1. Deploy privacy URL and set `VITE_WEB_APP_URL`  
-2. Temp-install Firefox → allowlist identity redirect  
-3. Full Firefox QA pass  
-4. Screenshots  
-5. AMO account + first upload  
-6. Bump `package.json` version before each store upload (versions are immutable on AMO)  
-7. Optionally refresh root `README.md` product language (still mentions older mode names in places)
+1. Temp-install Firefox → allowlist identity redirect  
+2. Full Firefox QA pass  
+3. Screenshots  
+4. AMO account + first upload (privacy URL: https://underscore-web-3i0.pages.dev/privacy)  
+5. Bump `package.json` version before each store upload (versions are immutable on AMO)  
+6. Optionally refresh root `README.md` product language (still mentions older mode names in places)
 
 Chrome Web Store is separate: `npm run zip:chrome`.
 
