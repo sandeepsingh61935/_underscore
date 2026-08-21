@@ -110,11 +110,10 @@ describe('SettingsPage action click targets', () => {
     expect(screen.getByText(/Delete entire library/i)).toBeTruthy();
   });
 
-  it('Paid→Free and Free→Paid when entitled; Free→Paid unpaid opens checkout', () => {
+  it('Guest|Account mode only; never starts Polar checkout from mode chips', () => {
     const setMode = vi.fn();
     const startCheckout = vi.fn().mockResolvedValue(undefined);
 
-    // Entitled, currently Paid mode
     vi.mocked(useApp).mockReturnValue({
       theme: 'system',
       setTheme: vi.fn(),
@@ -151,68 +150,16 @@ describe('SettingsPage action click targets', () => {
       openPortal: vi.fn(),
     });
 
-    const { rerender } = render(<SettingsPage />);
-    expect(screen.getByTestId('settings-mode-paid')).toHaveAttribute('aria-checked', 'true');
-    fireEvent.click(screen.getByTestId('settings-mode-free'));
-    expect(setMode).toHaveBeenCalledWith('pro');
-    expect(startCheckout).not.toHaveBeenCalled();
+    render(<SettingsPage />);
+    expect(screen.getByTestId('settings-mode-account')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.queryByTestId('settings-mode-free')).toBeNull();
+    expect(screen.queryByTestId('settings-mode-paid')).toBeNull();
+    expect(screen.queryByTestId('billing-cta')).toBeNull();
 
-    // Entitled, currently Free mode → back to Paid is setMode not checkout
-    setMode.mockClear();
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
-      currentMode: 'pro',
-      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
-      isAuthenticated: true,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode,
-      availableModes: ['pro', 'pro_xai'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-    } as ReturnType<typeof useApp>);
-    rerender(<SettingsPage />);
-    fireEvent.click(screen.getByTestId('settings-mode-paid'));
-    expect(setMode).toHaveBeenCalledWith('pro_xai');
+    // Guest while signed-in opens sign-out confirm — not checkout
+    fireEvent.click(screen.getByTestId('settings-mode-guest'));
     expect(startCheckout).not.toHaveBeenCalled();
-
-    // Unpaid Free user → Paid triggers checkout
-    setMode.mockClear();
-    vi.mocked(useApp).mockReturnValue({
-      theme: 'system',
-      setTheme: vi.fn(),
-      currentMode: 'pro',
-      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
-      isAuthenticated: true,
-      login: vi.fn(),
-      logout: vi.fn(),
-      modeReady: true,
-      setMode,
-      availableModes: ['pro'],
-      isLoading: false,
-      setIsLoading: vi.fn(),
-      dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
-    } as ReturnType<typeof useApp>);
-    vi.mocked(useBillingContextOptional).mockReturnValue({
-      snapshot: {
-        loadState: 'ready',
-        entitlement: freeEntitlement(),
-        error: null,
-        isPaidActive: false,
-      },
-      busy: false,
-      refresh: vi.fn(),
-      syncFromPolar: vi.fn(),
-      startCheckout,
-      openPortal: vi.fn(),
-    });
-    rerender(<SettingsPage />);
-    fireEvent.click(screen.getByTestId('settings-mode-paid'));
-    expect(setMode).not.toHaveBeenCalled();
-    expect(startCheckout).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText(/Sign out/i).length).toBeGreaterThan(0);
   });
 
   it('changes theme from Appearance segments only', () => {

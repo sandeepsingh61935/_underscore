@@ -25,36 +25,41 @@ export type HomeCurrentPageRef = {
 
 export type PopupHomeModelInput = {
   isAuthenticated: boolean;
-  /** Display name or email local-part */
+  /** Display name or email local-part (status only; not title). */
   displayName: string | null;
   totalHighlights: number;
   totalDomains: number;
+  thisWeekCount: number;
+  todayCount: number;
   /** Tab context domain when available (popup). */
   tabDomain: string | null;
   tabPath: string | null;
   currentPageHighlightCount: number;
   recentCount: number;
-  /** Hour 0–23 for greeting; inject in tests. */
-  hour?: number;
   nowMs?: number;
+};
+
+export type PopupHomeStats = {
+  highlightCount: number;
+  domainCount: number;
+  thisWeekCount: number;
+  todayCount: number;
 };
 
 export type PopupHomeModel = {
   isGuest: boolean;
   emptyKind: HomeEmptyKind;
-  /** Primary title line (greeting or Local Library). */
+  /** Primary title: Local library | Library (no greeting theater). */
   title: string;
   /** Mono status under title. */
   statusLine: string;
   planKicker: string;
   showCurrentPage: boolean;
   currentPageEmpty: boolean;
-  stats: {
-    highlightCount: number;
-    domainCount: number;
-  };
+  stats: PopupHomeStats;
 };
 
+/** @deprecated Greeting theater removed from product Home — kept for any residual callers. */
 export function homeGreeting(input: {
   name: string | null;
   hour: number;
@@ -108,10 +113,7 @@ export function buildPopupHomeModel(input: PopupHomeModelInput): PopupHomeModel 
   const isGuest = !input.isAuthenticated;
   const emptyKind: HomeEmptyKind =
     input.totalHighlights === 0 && input.recentCount === 0 ? 'first_run' : null;
-  const hour = input.hour ?? new Date().getHours();
-  const title = isGuest
-    ? 'Local Library'
-    : homeGreeting({ name: input.displayName, hour });
+  const title = isGuest ? 'Local library' : 'Library';
   const planKicker = isGuest ? 'Local only' : 'Account';
   const statusLine = `${planKicker} · ${input.totalHighlights} highlights · ${input.totalDomains} domains`;
 
@@ -126,6 +128,8 @@ export function buildPopupHomeModel(input: PopupHomeModelInput): PopupHomeModel 
     stats: {
       highlightCount: input.totalHighlights,
       domainCount: input.totalDomains,
+      thisWeekCount: input.thisWeekCount,
+      todayCount: input.todayCount,
     },
   };
 }

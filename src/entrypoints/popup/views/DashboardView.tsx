@@ -1,34 +1,31 @@
 /**
- * Home — web product parity compressed for popup.
- * Layout: greeting/status → stats → Current page (tab) → Active pages → Recent.
- * Wireframe: ui_kits/extension/v3/screens-home.jsx + web Home IA
+ * Home — locked product cleanup:
+ * Local library | Library title · 2×2 stats · This page line ·
+ * 50/50 Active | Recent columns (compact rows).
  */
 import React, { useMemo, useState } from 'react';
 
 import { useApp } from '@/core/context/PopupAppProvider';
-import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import {
   buildActivePages,
   buildPopupHomeModel,
+  type PopupHomeStats,
 } from '@/shared/home/home-model';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { FirstRunEmpty } from '@/ui-system/components/empty-states/FirstRunEmpty';
-import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
-import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
-/** Collapsed Recent length (web uses 6; popup starts lean). */
-const RECENT_COLLAPSE_COUNT = 6;
-const ACTIVE_PAGES_CAP = 6;
+const RECENT_COLLAPSE_COUNT = 8;
+const ACTIVE_PAGES_CAP = 8;
+const COLUMN_VISIBLE_HINT = 5;
 
 export interface DashboardViewProps {
   onLogout?: () => void;
-  /** Open domain section (popup view state — not React Router). */
   onSectionClick?: (domain: string, section: string) => void;
   onSignIn?: () => void;
 }
@@ -38,16 +35,21 @@ function formatPath(path: string | null | undefined): string {
   return path;
 }
 
+const STAT_CELLS: Array<{ key: keyof PopupHomeStats; label: string }> = [
+  { key: 'highlightCount', label: 'Highlights' },
+  { key: 'domainCount', label: 'Domains' },
+  { key: 'thisWeekCount', label: 'This week' },
+  { key: 'todayCount', label: 'Today' },
+];
+
 function HomeHeader({
   title,
   statusLine,
-  highlightCount,
-  domainCount,
+  stats,
 }: {
   title: string;
   statusLine: string;
-  highlightCount: number;
-  domainCount: number;
+  stats: PopupHomeStats;
 }): React.ReactElement {
   return (
     <div data-testid="home-status" style={{ padding: '12px 16px 10px' }}>
@@ -81,123 +83,54 @@ function HomeHeader({
       <div
         data-testid="home-stats"
         style={{
-          display: 'flex',
-          gap: 16,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 0,
           marginTop: 12,
+          border: '1px solid var(--rule-soft)',
         }}
       >
-        <div>
+        {STAT_CELLS.map((cell, i) => (
           <div
-            className="u-mono"
+            key={cell.key}
+            data-testid={`home-stat-${cell.key}`}
             style={{
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--ink-4)',
+              padding: '10px 12px',
+              borderRight: i % 2 === 0 ? '1px solid var(--rule-soft)' : undefined,
+              borderBottom: i < 2 ? '1px solid var(--rule-soft)' : undefined,
+              minWidth: 0,
             }}
           >
-            Highlights
+            <div
+              className="u-mono"
+              style={{
+                fontSize: 'var(--step--2)',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--ink-4)',
+              }}
+            >
+              {cell.label}
+            </div>
+            <div
+              className="u-serif"
+              style={{
+                fontSize: 'var(--step-2)',
+                color: 'var(--ink)',
+                marginTop: 2,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {stats[cell.key]}
+            </div>
           </div>
-          <div
-            className="u-serif"
-            style={{ fontSize: 'var(--step-2)', color: 'var(--ink)', marginTop: 2 }}
-          >
-            {highlightCount}
-          </div>
-        </div>
-        <div>
-          <div
-            className="u-mono"
-            style={{
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--ink-4)',
-            }}
-          >
-            Domains
-          </div>
-          <div
-            className="u-serif"
-            style={{ fontSize: 'var(--step-2)', color: 'var(--ink)', marginTop: 2 }}
-          >
-            {domainCount}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function ActivePagesList({
-  pages,
-  onSectionClick,
-}: {
-  pages: Array<{ domain: string; path: string; count: number }>;
-  onSectionClick?: (domain: string, section: string) => void;
-}): React.ReactElement | null {
-  if (pages.length === 0) return null;
-  return (
-    <section data-testid="home-active-pages" style={{ padding: '10px 16px 4px' }}>
-      <div
-        className="u-mono"
-        style={{
-          fontSize: 'var(--step--2)',
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'var(--ink-3)',
-          marginBottom: 8,
-        }}
-      >
-        Active pages
-      </div>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {pages.map((p) => {
-          const sectionKey = p.path || '/';
-          const label = `${p.domain}${p.path && p.path !== '/' ? p.path : ''}`;
-          return (
-            <li key={`${p.domain}\0${p.path}`}>
-              <button
-                type="button"
-                className="u-mono"
-                disabled={!onSectionClick}
-                onClick={() => onSectionClick?.(p.domain, sectionKey)}
-                style={{
-                  all: 'unset',
-                  cursor: onSectionClick ? 'pointer' : 'default',
-                  display: 'flex',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  padding: '8px 0',
-                  borderBottom: '1px solid var(--rule-soft)',
-                  fontSize: 'var(--step--2)',
-                  letterSpacing: '0.04em',
-                  color: 'var(--ink-2)',
-                }}
-              >
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                  }}
-                >
-                  {label}
-                </span>
-                <span style={{ color: 'var(--ink-4)', flexShrink: 0 }}>{p.count}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-function CurrentPageBand({
+function ThisPageLine({
   domain,
   path,
   count,
@@ -211,340 +144,143 @@ function CurrentPageBand({
   onOpen?: () => void;
 }): React.ReactElement {
   const empty = !domain;
+  const label = empty
+    ? 'This page · none open'
+    : `This page · ${domain}${path !== '/' ? path : ''} · ${count}`;
 
-  return (
-    <div
+  const inner = (
+    <span
+      className="u-mono"
+      data-testid="home-this-page"
       style={{
-        background: 'var(--paper-2)',
+        display: 'block',
+        padding: '8px 16px',
+        fontSize: 'var(--step--2)',
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        color: 'var(--ink-3)',
+        fontVariantNumeric: 'tabular-nums',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
         borderTop: '1px solid var(--rule-soft)',
         borderBottom: '1px solid var(--rule)',
+        background: 'var(--paper-2)',
       }}
     >
-      {/* Visually hidden section label for a11y / tests */}
-      <div
-        className="u-caps"
-        style={{
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0,
-        }}
-      >
-        Current page
-      </div>
-      {empty ? (
-        <div style={{ padding: '14px 16px', cursor: 'default' }}>
-          <h2
-            className="u-serif"
-            style={{
-              fontSize: 'var(--step-2)',
-              lineHeight: 1.2,
-              letterSpacing: '-0.015em',
-              margin: 0,
-              color: 'var(--ink)',
-            }}
-          >
-            No page open
-          </h2>
-          <div
-            className="u-mono"
-            style={{
-              marginTop: 5,
-              fontSize: 'var(--step--2)',
-              color: 'var(--ink-4)',
-              letterSpacing: '0.06em',
-            }}
-          >
-            Open a page with highlights to pin it
-          </div>
-        </div>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={canOpen ? onOpen : undefined}
-            disabled={!canOpen}
-            style={{
-              all: 'unset',
-              cursor: canOpen ? 'pointer' : 'default',
-              display: 'block',
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '14px 16px',
-              textAlign: 'left',
-              background: 'transparent',
-            }}
-            aria-label={`Open ${domain}${path !== '/' ? path : ''}`}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: 10,
-                minWidth: 0,
-              }}
-            >
-              <h2
-                className="u-serif"
-                style={{
-                  fontSize: 'var(--step-2)',
-                  lineHeight: 1.2,
-                  letterSpacing: '-0.015em',
-                  margin: 0,
-                  color: 'var(--ink)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
-                {domain}
-              </h2>
-              {canOpen ? (
-                <span
-                  className="u-mono"
-                  style={{
-                    fontSize: 'var(--step--1)',
-                    letterSpacing: '0.04em',
-                    color: 'var(--accent)',
-                    flexShrink: 0,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Open →
-                </span>
-              ) : null}
-            </div>
-            <div
-              className="u-mono"
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                marginTop: 5,
-                fontSize: 'var(--step--2)',
-                color: 'var(--ink-3)',
-                letterSpacing: '0.04em',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  minWidth: 0,
-                  maxWidth: '100%',
-                }}
-              >
-                {path}
-              </span>
-              <span style={{ margin: '0 0.45em', color: 'var(--ink-4)' }} aria-hidden>
-                ·
-              </span>
-              <span>
-                {count} on this page
-              </span>
-            </div>
-          </button>
-        </>
-      )}
-    </div>
+      {label}
+      {canOpen && !empty ? (
+        <span style={{ color: 'var(--accent)', marginLeft: 8 }}>Open</span>
+      ) : null}
+    </span>
   );
-}
 
-interface RecentItem {
-  id: string;
-  text: string;
-  url: string;
-  path: string;
-  domain: string;
-  notes?: string;
-  tags?: string[];
-  sourceKind?: 'code';
-  language?: string;
-  presentation?: HighlightPresentation;
-}
-
-function IconCopySmall(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="5.5" y="5.5" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M3.5 10.5V3.5h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function HomeRecentCard({
-  item,
-  onSectionClick,
-}: {
-  item: RecentItem;
-  onSectionClick?: (domain: string, section: string) => void;
-}): React.ReactElement {
-  const notes = (item.notes ?? '').trim();
-  const tags = item.tags ?? [];
-  const visibleTags = tags.slice(0, 2);
-  const tagOverflow = Math.max(0, tags.length - 2);
-  const pathLabel = !item.path || item.path === '/' ? '' : item.path;
-  const sectionKey = getSectionKey({ url: item.url, path: item.path || '/' });
-  const locationLabel = `${item.domain}${pathLabel}`;
+  if (!canOpen || empty) return inner;
 
   return (
-    <article
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open ${domain}${path !== '/' ? path : ''}`}
       style={{
-        padding: '14px 16px',
-        borderBottom: '1px solid var(--rule-soft)',
+        all: 'unset',
+        cursor: 'pointer',
+        display: 'block',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <div style={{ display: 'flex', gap: 6 }}>
-        <span
-          aria-hidden
-          style={{
-            fontFamily: 'var(--serif)',
-            fontSize: 'var(--step-1)',
-            lineHeight: 1.2,
-            color: 'var(--ink-4)',
-            flexShrink: 0,
-          }}
-        >
-          &ldquo;
-        </span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <HighlightMarkdownBody
-            source={item.text}
-            clamp
-            sourceKind={item.sourceKind}
-            language={item.language}
-            presentation={item.presentation}
-          />
-        </div>
-      </div>
+      {inner}
+    </button>
+  );
+}
 
-      {notes ? (
-        <div
-          style={{
-            fontSize: 'var(--step--1)',
-            fontStyle: 'italic',
-            color: 'var(--ink-3)',
-            marginTop: 6,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {notes}
-        </div>
-      ) : null}
+function ColumnHeader({ label }: { label: string }): React.ReactElement {
+  return (
+    <div
+      className="u-mono"
+      style={{
+        fontSize: 'var(--step--2)',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        color: 'var(--ink-3)',
+        padding: '8px 10px 6px',
+        borderBottom: '1px solid var(--rule-soft)',
+        position: 'sticky',
+        top: 0,
+        background: 'var(--paper)',
+        zIndex: 1,
+      }}
+    >
+      {label}
+    </div>
+  );
+}
 
-      {tags.length > 0 ? (
-        <div
-          aria-label="Tags"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}
-        >
-          {visibleTags.map((t) => (
-            <span
-              key={t}
-              className="u-mono"
-              style={{
-                display: 'inline-flex',
-                height: 18,
-                padding: '0 6px',
-                alignItems: 'center',
-                border: '1px solid var(--rule-soft)',
-                borderRadius: 99,
-                fontSize: 'var(--step--2)',
-                letterSpacing: '0.04em',
-                color: 'var(--ink-3)',
-              }}
-            >
-              {t}
-            </span>
-          ))}
-          {tagOverflow > 0 ? (
-            <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-4)' }}>
-              +{tagOverflow}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div
+function CompactRow({
+  primary,
+  meta,
+  onClick,
+  disabled,
+}: {
+  primary: string;
+  meta: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}): React.ReactElement {
+  const body = (
+    <>
+      <span
+        className="u-sans"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          marginTop: 10,
-          paddingTop: 8,
-          borderTop: '1px solid var(--rule-soft)',
+          display: 'block',
+          fontSize: 'var(--step--1)',
+          color: 'var(--ink)',
+          lineHeight: 1.35,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}
       >
-        {onSectionClick ? (
-          <button
-            type="button"
-            onClick={() => onSectionClick(item.domain, sectionKey)}
-            className="u-mono"
-            aria-label={`Open highlight in ${locationLabel}`}
-            title="Open in library"
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.04em',
-              color: 'var(--ink-3)',
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              textDecoration: 'underline',
-              textUnderlineOffset: 2,
-              textDecorationColor: 'var(--rule-soft)',
-            }}
-          >
-            {locationLabel}
-          </button>
-        ) : (
-          <span
-            className="u-mono"
-            style={{
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.04em',
-              color: 'var(--ink-3)',
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {locationLabel}
-          </span>
-        )}
-        {item.text ? (
-          <button
-            type="button"
-            className="hl-icon"
-            aria-label="Copy highlight text"
-            title="Copy"
-            onClick={() => {
-              void copyHighlightPlainText(item.text);
-            }}
-          >
-            <IconCopySmall />
-          </button>
-        ) : null}
-      </div>
-    </article>
+        {primary}
+      </span>
+      <span
+        className="u-mono"
+        style={{
+          display: 'block',
+          marginTop: 2,
+          fontSize: 'var(--step--2)',
+          letterSpacing: '0.04em',
+          color: 'var(--ink-4)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {meta}
+      </span>
+    </>
   );
+
+  const style: React.CSSProperties = {
+    all: 'unset',
+    display: 'block',
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '8px 10px',
+    borderBottom: '1px solid var(--rule-soft)',
+    cursor: onClick && !disabled ? 'pointer' : 'default',
+    minWidth: 0,
+  };
+
+  if (onClick && !disabled) {
+    return (
+      <button type="button" onClick={onClick} style={style}>
+        {body}
+      </button>
+    );
+  }
+  return <div style={style}>{body}</div>;
 }
 
 export function DashboardView({
@@ -579,6 +315,8 @@ export function DashboardView({
 
   const totalHighlights = dashboardData?.totalHighlights ?? 0;
   const totalDomains = dashboardData?.totalDomains ?? 0;
+  const thisWeekCount = dashboardData?.thisWeekCount ?? 0;
+  const todayCount = dashboardData?.todayCount ?? 0;
   const recentHighlights = dashboardData?.recentHighlights ?? [];
   const libraryAccess = resolveLibraryAccess(isAuthenticated, totalHighlights);
   const isGuest = !isAuthenticated || mode === 'basic';
@@ -593,6 +331,8 @@ export function DashboardView({
     displayName,
     totalHighlights,
     totalDomains,
+    thisWeekCount,
+    todayCount,
     tabDomain: tabContext.domain,
     tabPath: tabContext.path,
     currentPageHighlightCount: currentPageHighlightsCount,
@@ -609,10 +349,9 @@ export function DashboardView({
         createdAt: h.createdAt,
       }),
     }));
-    const current =
-      tabContext.domain
-        ? { domain: tabContext.domain, path: currentSectionKey }
-        : null;
+    const current = tabContext.domain
+      ? { domain: tabContext.domain, path: currentSectionKey }
+      : null;
     return buildActivePages(rows, current, {
       excludeCurrent: true,
       cap: ACTIVE_PAGES_CAP,
@@ -627,7 +366,6 @@ export function DashboardView({
     onSectionClick(tabContext.domain, currentSectionKey);
   };
 
-  // First-run: calm empty only (no status / anchor inventing a page).
   if (homeModel.emptyKind === 'first_run') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
@@ -656,114 +394,145 @@ export function DashboardView({
         background: 'var(--paper)',
       }}
     >
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flexShrink: 0 }}>
         <HomeHeader
           title={homeModel.title}
           statusLine={homeModel.statusLine}
-          highlightCount={homeModel.stats.highlightCount}
-          domainCount={homeModel.stats.domainCount}
+          stats={homeModel.stats}
         />
-        <CurrentPageBand
+        <ThisPageLine
           domain={tabContext.domain}
           path={pathDisplay}
           count={currentPageHighlightsCount}
           canOpen={canOpenSection}
           onOpen={openCurrentPage}
         />
-        <ActivePagesList pages={activePages} onSectionClick={onSectionClick} />
       </div>
 
       <div
-        className="list-scroll"
+        data-testid="home-two-col"
         style={{
           flex: '1 1 0',
           minHeight: 0,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          background: 'var(--paper)',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          borderTop: '1px solid var(--rule-soft)',
         }}
       >
-        <div
+        <section
+          data-testid="home-active-pages"
           style={{
+            minWidth: 0,
+            minHeight: 0,
             display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: 12,
-            padding: '12px 16px 8px',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1,
-            background: 'var(--paper)',
+            flexDirection: 'column',
+            borderRight: '1px solid var(--rule)',
           }}
         >
-          <span
-            className="u-mono"
-            style={{
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--ink-3)',
-            }}
-          >
-            Recent
-          </span>
-          <span
-            className="u-mono"
-            style={{
-              fontSize: 'var(--step--2)',
-              color: 'var(--ink-4)',
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '0.04em',
-            }}
-          >
-            {totalHighlights}
-          </span>
-        </div>
+          <ColumnHeader label="Active" />
+          <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {activePages.length === 0 ? (
+              <div
+                className="u-mono"
+                style={{
+                  padding: '12px 10px',
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-4)',
+                }}
+              >
+                No other pages yet
+              </div>
+            ) : (
+              activePages.map((p) => {
+                const sectionKey = p.path || '/';
+                const primary = `${p.domain}${p.path && p.path !== '/' ? p.path : ''}`;
+                return (
+                  <CompactRow
+                    key={`${p.domain}\0${p.path}`}
+                    primary={primary}
+                    meta={`${p.count}`}
+                    disabled={!onSectionClick}
+                    onClick={
+                      onSectionClick
+                        ? () => onSectionClick(p.domain, sectionKey)
+                        : undefined
+                    }
+                  />
+                );
+              })
+            )}
+          </div>
+        </section>
 
-        {visibleRecent.map((hl) => (
-          <HomeRecentCard
-            key={hl.id}
-            item={{
-              id: hl.id,
-              text: hl.text,
-              url: hl.url,
-              path: hl.path,
-              domain: hl.domain,
-              notes: hl.notes,
-              tags: hl.tags,
-              sourceKind: hl.sourceKind,
-              language: hl.language,
-              presentation: hl.presentation,
-            }}
-            onSectionClick={onSectionClick}
-          />
-        ))}
-
-        {showRecentToggle ? (
-          <button
-            type="button"
-            onClick={() => setRecentExpanded((v) => !v)}
-            className="u-mono"
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              boxSizing: 'border-box',
-              minHeight: 44,
-              padding: '12px 16px',
-              fontSize: 'var(--step--2)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--ink-3)',
-              borderTop: '1px solid var(--rule-soft)',
-            }}
-          >
-            {recentExpanded ? 'Show less' : `Show more · ${hiddenCount}`}
-          </button>
-        ) : null}
+        <section
+          data-testid="home-recent"
+          style={{
+            minWidth: 0,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <ColumnHeader label="Recent" />
+          <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {visibleRecent.map((hl) => {
+              const sectionKey = getSectionKey({ url: hl.url, path: hl.path || '/' });
+              const pathLabel = !hl.path || hl.path === '/' ? '' : hl.path;
+              const quote =
+                hl.text.length > 72 ? `${hl.text.slice(0, 72).trimEnd()}…` : hl.text;
+              return (
+                <CompactRow
+                  key={hl.id}
+                  primary={quote || '(empty)'}
+                  meta={`${hl.domain}${pathLabel}`}
+                  onClick={
+                    onSectionClick
+                      ? () => onSectionClick(hl.domain, sectionKey)
+                      : undefined
+                  }
+                />
+              );
+            })}
+            {showRecentToggle ? (
+              <button
+                type="button"
+                onClick={() => setRecentExpanded((v) => !v)}
+                className="u-mono"
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  display: 'block',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '10px',
+                  fontSize: 'var(--step--2)',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ink-3)',
+                  textAlign: 'center',
+                }}
+              >
+                {recentExpanded ? 'Show less' : `Show more · ${hiddenCount}`}
+              </button>
+            ) : null}
+            {visibleRecent.length === 0 ? (
+              <div
+                className="u-mono"
+                style={{
+                  padding: '12px 10px',
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-4)',
+                }}
+              >
+                No recent highlights
+              </div>
+            ) : null}
+            {/* density hint for layout tests / future virtualization */}
+            <span data-testid="home-col-hint" hidden>
+              {COLUMN_VISIBLE_HINT}
+            </span>
+          </div>
+        </section>
       </div>
     </div>
   );

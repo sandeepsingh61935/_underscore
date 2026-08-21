@@ -131,7 +131,7 @@ function mockWithHighlights(opts?: {
   });
 }
 
-describe('DashboardView v3 home anchor + stream', () => {
+describe('DashboardView home product cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGuestEmpty();
@@ -143,35 +143,35 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.getByText('No highlights yet')).toBeTruthy();
     expect(screen.getByText(/Select text on a page to save it/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Sign in to sync/i })).toBeTruthy();
-    expect(screen.queryByText('Current page')).toBeNull();
-    expect(screen.queryByText('Recent')).toBeNull();
+    expect(screen.queryByTestId('home-this-page')).toBeNull();
+    expect(screen.queryByTestId('home-two-col')).toBeNull();
   });
 
-  it('with highlights, Current page band and Recent labels appear', () => {
+  it('with highlights shows this-page line, two columns, Library title', () => {
     mockWithHighlights({ recentCount: 2, pageCount: 1 });
     render(<DashboardView onSectionClick={vi.fn()} />);
 
-    expect(screen.getByText('Current page')).toBeTruthy();
-    expect(screen.getByText('en.wikipedia.org')).toBeTruthy();
-    expect(screen.getByText('/wiki/Article')).toBeTruthy();
-    expect(screen.getByText(/1 on this page/)).toBeTruthy();
-    expect(screen.getByText('Recent')).toBeTruthy();
+    expect(screen.getByTestId('home-title').textContent).toBe('Library');
+    expect(screen.getByTestId('home-title').textContent).not.toMatch(/Good /);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
+    expect(screen.getByTestId('home-two-col')).toBeTruthy();
+    expect(screen.getByTestId('home-active-pages')).toBeTruthy();
+    expect(screen.getByTestId('home-recent')).toBeTruthy();
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
   });
 
-  it('shows greeting/title, status, and compact stats (web Home parity)', () => {
+  it('shows 2x2 stats including this week and today', () => {
     mockWithHighlights({ recentCount: 2 });
     render(<DashboardView />);
 
-    expect(screen.getByTestId('home-status')).toBeTruthy();
-    expect(screen.getByTestId('home-title')).toBeTruthy();
-    expect(screen.getByTestId('home-status').textContent).toMatch(/2 highlights/i);
-    expect(screen.getByTestId('home-status').textContent).toMatch(/1 domains/i);
     expect(screen.getByTestId('home-stats')).toBeTruthy();
-    expect(screen.queryByTestId('library-pulse')).toBeNull();
-    expect(screen.queryByText('This week')).toBeNull();
-    expect(screen.queryByText('Resume')).toBeNull();
-    expect(screen.queryByText('Needs')).toBeNull();
+    expect(screen.getByTestId('home-stat-highlightCount').textContent).toMatch(/2/);
+    expect(screen.getByTestId('home-stat-domainCount').textContent).toMatch(/1/);
+    expect(screen.getByTestId('home-stat-thisWeekCount')).toBeTruthy();
+    expect(screen.getByTestId('home-stat-todayCount')).toBeTruthy();
+    expect(screen.getByText('This week')).toBeTruthy();
+    expect(screen.getByText('Today')).toBeTruthy();
   });
 
   it('does not show Ask about this page', () => {
@@ -181,38 +181,37 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.queryByRole('button', { name: /Ask about this page/i })).toBeNull();
   });
 
-  it('collapses Recent behind Show more when more than six items', () => {
-    mockWithHighlights({ recentCount: 8 });
+  it('collapses Recent behind Show more when more than eight items', () => {
+    mockWithHighlights({ recentCount: 10 });
     render(<DashboardView />);
 
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
-    expect(screen.getByText('Highlight quote 6')).toBeTruthy();
-    expect(screen.queryByText('Highlight quote 7')).toBeNull();
+    expect(screen.getByText('Highlight quote 8')).toBeTruthy();
+    expect(screen.queryByText('Highlight quote 9')).toBeNull();
 
     const toggle = screen.getByRole('button', { name: /Show more/i });
     expect(toggle.textContent).toMatch(/2/);
     fireEvent.click(toggle);
 
-    expect(screen.getByText('Highlight quote 7')).toBeTruthy();
-    expect(screen.getByText('Highlight quote 8')).toBeTruthy();
+    expect(screen.getByText('Highlight quote 9')).toBeTruthy();
+    expect(screen.getByText('Highlight quote 10')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Show less/i })).toBeTruthy();
   });
 
-  it('shows optional note on recent cards when present', () => {
+  it('compact recent rows do not show notes/tags chips', () => {
     mockWithHighlights({ recentCount: 1 });
     render(<DashboardView />);
 
-    expect(screen.getByText('A note')).toBeTruthy();
-    expect(screen.getByText('css')).toBeTruthy();
+    expect(screen.queryByText('A note')).toBeNull();
+    expect(screen.queryByText('css')).toBeNull();
   });
 
-  it('shows status line with local-only for guest with highlights', () => {
+  it('shows Local library title and local-only status for guest with highlights', () => {
     mockWithHighlights({ mode: 'basic', isAuthenticated: false, recentCount: 2 });
-    const { container } = render(<DashboardView />);
+    render(<DashboardView />);
 
+    expect(screen.getByTestId('home-title').textContent).toBe('Local library');
     expect(screen.getByText(/Local only/i)).toBeTruthy();
-    const status = container.querySelector('p.u-mono');
-    expect(status?.textContent?.replace(/\s+/g, ' ')).toMatch(/Local only.*2.*highlights/i);
   });
 });
 
@@ -222,20 +221,18 @@ describe('DashboardView guest sign-out UX', () => {
     mockGuestEmpty();
   });
 
-  it('hides current-page block for empty guest storage after sign-out', () => {
+  it('hides two-col home for empty guest storage after sign-out', () => {
     render(<DashboardView onSignIn={vi.fn()} />);
 
-    expect(screen.queryByText('Current page')).toBeNull();
-    expect(screen.queryByText(/en\.wikipedia\.org/)).toBeNull();
+    expect(screen.queryByTestId('home-two-col')).toBeNull();
     expect(screen.getByText('No highlights yet')).toBeTruthy();
   });
 
-  it('shows current-page block when guest has local highlights on the active tab', () => {
+  it('shows this-page line when guest has local highlights on the active tab', () => {
     mockWithHighlights({ mode: 'basic', isAuthenticated: false, recentCount: 2, pageCount: 1 });
     render(<DashboardView />);
 
-    expect(screen.getByText('Current page')).toBeTruthy();
-    expect(screen.getByText(/1 on this page/)).toBeTruthy();
-    expect(screen.getAllByText(/en\.wikipedia\.org/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
   });
 });

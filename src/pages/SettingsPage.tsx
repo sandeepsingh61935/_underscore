@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { useApp } from '@/core/context/AppProvider';
 import { ExportActions } from '@/features/collections/components/ExportActions';
@@ -13,30 +13,26 @@ import {
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
+import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
 import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
-import { SettingsTopicNav } from '@/features/settings/components/SettingsTopicNav';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
+import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { resolveProductCaps } from '@/shared/entitlement/resolveProductCaps';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import {
-  resolveSettingsActionGates,
-  settingsTopicsForSurface,
-} from '@/shared/settings/settings-topic-ia';
+import { resolveSettingsActionGates } from '@/shared/settings/settings-topic-ia';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import {
   deleteLibraryCopy,
   signOutCopy,
 } from '@/shared/utils/confirm-dialog-copy';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
-import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import {
-
   useMcpGate,
   useModeFeature,
 } from '@/ui-system/hooks/useModeFeature';
@@ -53,9 +49,10 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings — Open Design extension mockup order:
- * head → local card (guest) → Mode segments → Typography → Appearance/Theme →
- * Account/billing (signed-in) → Library (pulse + tools) → Integrations → Sign out
+ * Settings — stacked IA (no topic chips):
+ * Account → Mode (Guest|Account) → Billing Upcoming → Appearance →
+ * Data → Integrations → Session → Legal footer.
+ * Billing code remains; Polar CTAs are not exposed.
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -85,34 +82,7 @@ export function SettingsPage({
       ? billing.snapshot.isPaidActive
       : currentMode === 'pro_xai' || billing.snapshot.isPaidActive
     : currentMode === 'pro_xai';
-  const billingBusy = billing?.busy ?? false;
-  const billingError = billing?.snapshot.error ?? null;
-  const startCheckout = billing?.startCheckout;
-  const openBillingPortal = billing?.openPortal;
-  type BillingReturnBanner =
-    | { kind: 'success_pending' }
-    | { kind: 'success_active' }
-    | { kind: 'cancel' }
-    | null;
-  const [billingReturn, setBillingReturn] = useState<BillingReturnBanner>(null);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const flag = new URLSearchParams(window.location.search).get('billing');
-    if (flag === 'success') {
-      setBillingReturn(
-        isPaidActive ? { kind: 'success_active' } : { kind: 'success_pending' }
-      );
-      return;
-    }
-    if (flag === 'cancel') {
-      setBillingReturn({ kind: 'cancel' });
-      return;
-    }
-    if (isPaidActive && billingReturn?.kind === 'success_pending') {
-      setBillingReturn({ kind: 'success_active' });
-    }
-  }, [isPaidActive, billingReturn?.kind]);
   const logout = onLogout ?? appLogout;
   const {
     sync,
@@ -125,14 +95,12 @@ export function SettingsPage({
   } = useSyncLibrary();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [billingActionError, setBillingActionError] = useState<string | null>(null);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
   const [libraryStatsOpen, setLibraryStatsOpen] = useState(false);
   const { deleteScope } = useHighlightDelete();
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
-  const [activeTopic, setActiveTopic] = useState<string>('account');
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
@@ -151,16 +119,6 @@ export function SettingsPage({
     isAuthenticated,
     caps: productCaps,
   });
-  const settingsTopics = settingsTopicsForSurface('popup');
-
-  const scrollToTopic = (id: string): void => {
-    setActiveTopic(id);
-    if (typeof document === 'undefined') return;
-    const el = document.querySelector(`[data-settings-topic="${id}"]`);
-    if (el instanceof HTMLElement) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   const planPill = resolveAccountPillLabel({
     modeId: currentMode,
@@ -169,13 +127,8 @@ export function SettingsPage({
     billingStatus: billingEntitlement.status,
   });
 
-  const billingCta = billing
-    ? resolveSettingsBillingCta({
-        isPaidActive,
-        status: billingEntitlement.status,
-        cancelAtPeriodEnd: billingEntitlement.cancelAtPeriodEnd,
-      })
-    : null;
+  const upcoming = billingUpcomingCopy();
+  const modeBranding = getModeBranding(currentMode);
 
   const handleSignOut = async (): Promise<void> => {
     if (isSigningOut) return;
@@ -223,58 +176,24 @@ export function SettingsPage({
     }
   };
 
-  const handleBillingCta = (): void => {
-    if (!billingCta) return;
-    setBillingActionError(null);
-    const action =
-      billingCta.action === 'portal' ? openBillingPortal : startCheckout;
-    if (!action) return;
-    void action().catch((e: unknown) => {
-      setBillingActionError(
-        e instanceof Error ? e.message : 'Billing action failed'
-      );
-    });
-  };
-
   const handleSelectGuest = (): void => {
-    if (!isAuthenticated) return;
-    // Guest while signed-in → sign-out confirm (transition kind: sign_out)
+    if (!isAuthenticated) {
+      setMode('basic' as ModeType);
+      return;
+    }
     setSignOutOpen(true);
   };
 
-  const handleSelectFree = (): void => {
+  const handleSelectAccount = (): void => {
     if (!isAuthenticated) {
       onSignIn?.();
       return;
     }
-    // Paid → Free allowed; Free stays Free
-    setMode('pro' as ModeType);
+    // Account mode: cloud pro (paid entitlement is separate / upcoming billing)
+    if (currentMode === 'basic') {
+      setMode('pro' as ModeType);
+    }
   };
-
-  const handleSelectPaid = (): void => {
-    if (!isAuthenticated) {
-      onSignIn?.();
-      return;
-    }
-    // Entitled paid: Free → Paid is a mode write (not checkout)
-    if (isPaidActive) {
-      setMode('pro_xai' as ModeType);
-      return;
-    }
-    // Free user: Free → Paid requires billing upgrade
-    setBillingActionError(null);
-    if (startCheckout) {
-      void startCheckout().catch((e: unknown) => {
-        setBillingActionError(
-          e instanceof Error ? e.message : 'Billing action failed'
-        );
-      });
-      return;
-    }
-    handleBillingCta();
-  };
-
-  const modeBranding = getModeBranding(currentMode);
 
   if (connectOpen) {
     return (
@@ -307,170 +226,83 @@ export function SettingsPage({
             color: 'var(--ink-3)',
           }}
         >
-          {productCaps.planLabel}
+          {isAuthenticated ? 'Account' : 'Guest'}
           {settingsGates.canUseIntegrations ? ' · Integrations on' : ''}
         </div>
       </div>
 
-      <SettingsTopicNav
-        topics={settingsTopics}
-        activeId={activeTopic}
-        onSelect={scrollToTopic}
-      />
-
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
         {/* Account */}
-        <div data-settings-topic="account" data-testid="settings-section-account-wrap">
-        {!user ? (
-          <div data-testid="settings-guest-card">
-            <SettingsLocalCard
-              onSignIn={onSignIn}
-              onChooseFree={onSignIn}
-            />
-          </div>
-        ) : null}
-
-        {user ? (
-          <>
-            <div
-              className="u-caps"
-              data-testid="settings-section-account"
-              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-            >
-              Account
+        <div data-testid="settings-section-account-wrap">
+          {!user ? (
+            <div data-testid="settings-guest-card">
+              <SettingsLocalCard
+                onSignIn={onSignIn}
+                onChooseFree={onSignIn}
+              />
             </div>
-            <Row
-              title={user.email || 'Signed in'}
-              sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
-              right={
-                planPill === 'Guest' ? null : (
-                  <span
-                    className="u-mono"
-                    data-testid="account-plan-pill"
-                    style={{
-                      fontSize: 'var(--step--2)',
-                      padding: '2px 8px',
-                      border: '1px solid var(--rule-soft)',
-                      color:
-                        planPill === 'Paid' || planPill === 'Past due'
-                          ? 'var(--accent)'
-                          : 'var(--ink-3)',
-                    }}
-                  >
-                    {planPill}
-                  </span>
-                )
-              }
-            />
-            {billing && billingCta ? (
-              <>
-                <Row
-                  title={billingCta.title}
-                  sub={
-                    billingActionError || billingError
-                      ? billingActionError || billingError || undefined
-                      : billingCta.sub
-                  }
-                  right={
-                    billingBusy ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <button
-                        type="button"
-                        className={
-                          billingCta.kind === 'upgrade'
-                            ? 'btn accent sm'
-                            : 'btn ghost sm'
-                        }
-                        data-testid="billing-cta"
-                        data-billing-kind={billingCta.kind}
-                        onClick={handleBillingCta}
-                      >
-                        {billingCta.ctaLabel}
-                      </button>
-                    )
-                  }
-                />
-                {billingCta.showSync ? (
-                  <Row
-                    title="Refresh status"
-                    sub={undefined}
-                    right={
-                      billingBusy ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn ghost sm"
-                          data-testid="billing-sync-cta"
-                          onClick={() => {
-                            setBillingActionError(null);
-                            void billing.syncFromPolar().catch((e: unknown) => {
-                              setBillingActionError(
-                                e instanceof Error ? e.message : 'Refresh failed'
-                              );
-                            });
-                          }}
-                        >
-                          Refresh
-                        </button>
-                      )
-                    }
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </>
-        ) : (
-          /* Anchor for section-order tests when guest: account region is local card */
-          <div data-testid="settings-section-account" hidden aria-hidden="true" />
-        )}
+          ) : null}
+
+          {user ? (
+            <>
+              <div
+                className="u-caps"
+                data-testid="settings-section-account"
+                style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+              >
+                Account
+              </div>
+              <Row
+                title={user.email || 'Signed in'}
+                sub={`${modeBranding.displayName} · ${modeBranding.tagline.toLowerCase()}`}
+                right={
+                  planPill === 'Guest' ? null : (
+                    <span
+                      className="u-mono"
+                      data-testid="account-plan-pill"
+                      style={{
+                        fontSize: 'var(--step--2)',
+                        padding: '2px 8px',
+                        border: '1px solid var(--rule-soft)',
+                        color:
+                          planPill === 'Paid' || planPill === 'Past due'
+                            ? 'var(--accent)'
+                            : 'var(--ink-3)',
+                      }}
+                    >
+                      {planPill}
+                    </span>
+                  )
+                }
+              />
+            </>
+          ) : (
+            <div data-testid="settings-section-account" hidden aria-hidden="true" />
+          )}
         </div>
 
-        {/* Mode (extension-native) */}
-        <div data-settings-topic="mode">
+        {/* Mode — Guest | Account */}
+        <SettingsModeSeg
+          currentMode={currentMode}
+          isAuthenticated={isAuthenticated}
+          isPaidActive={isPaidActive}
+          onSelectGuest={handleSelectGuest}
+          onSelectAccount={handleSelectAccount}
+        />
+
+        {/* Billing — Upcoming stub (no Polar CTAs) */}
+        <div data-testid="settings-section-billing">
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
           >
-            Mode
+            {upcoming.title}
           </div>
-          <SettingsModeSeg
-            currentMode={currentMode}
-            isAuthenticated={isAuthenticated}
-            isPaidActive={isPaidActive}
-            onSelectGuest={handleSelectGuest}
-            onSelectFree={handleSelectFree}
-            onSelectPaid={handleSelectPaid}
-          />
-        </div>
-
-        {/* Plan */}
-        <div data-settings-topic="plan" data-testid="settings-section-plan">
-          <div
-            className="u-caps"
-            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-          >
-            Plan
-          </div>
-          <Row
-            title={productCaps.planLabel}
-            sub={
-              productCaps.isGuest
-                ? 'Sign in for Free sync and export'
-                : productCaps.isPastDue
-                  ? 'Update billing to restore Integrations'
-                  : productCaps.isPaidActive
-                    ? 'Paid · Integrations unlocked'
-                    : productCaps.freeWindow
-                      ? 'Free · Integrations early access'
-                      : 'Free · sync and export on'
-            }
-          />
+          <Row title={upcoming.title} sub={upcoming.sub} />
         </div>
 
         {/* Appearance */}
-        <div data-settings-topic="appearance">
+        <div>
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
@@ -489,82 +321,9 @@ export function SettingsPage({
           />
         </div>
 
-        {user && billingReturn ? (
-          <div
-            data-testid="billing-return-banner"
-            role="status"
-            style={{
-              margin: '0 16px 10px',
-              padding: '14px 16px',
-              border: '1px solid var(--rule)',
-              background: 'var(--paper-2)',
-            }}
-          >
-            <div
-              className="u-serif"
-              style={{
-                fontSize: 'var(--step-1)',
-                color:
-                  billingReturn.kind === 'cancel' ? 'var(--ink)' : 'var(--accent)',
-                marginBottom: 6,
-              }}
-            >
-              {billingReturn.kind === 'cancel'
-                ? 'Checkout canceled'
-                : 'Payment successful'}
-            </div>
-            <div
-              className="u-sans"
-              style={{
-                fontSize: 'var(--step--1)',
-                color: 'var(--ink-3)',
-                lineHeight: 1.5,
-              }}
-            >
-              {billingReturn.kind === 'cancel'
-                ? 'No charge was made. You can upgrade anytime from above.'
-                : billingReturn.kind === 'success_active'
-                  ? 'Your account is upgraded to Account (Paid). Integrations are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
-                  : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Use Sync above if status stays Free, then reopen the extension with the same account.'}
-            </div>
-            {billingReturn.kind === 'success_pending' ? (
-              <div
-                className="u-mono"
-                style={{
-                  marginTop: 10,
-                  fontSize: 'var(--step--2)',
-                  color: 'var(--ink-3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <Spinner size="sm" />
-                Confirming subscription…
-              </div>
-            ) : null}
-            {billingReturn.kind === 'success_active' ? (
-              <div
-                className="u-mono"
-                data-testid="account-plan-pill-banner"
-                style={{
-                  marginTop: 10,
-                  display: 'inline-block',
-                  fontSize: 'var(--step--2)',
-                  padding: '2px 8px',
-                  border: '1px solid var(--rule-soft)',
-                  color: 'var(--accent)',
-                }}
-              >
-                Account (Paid)
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* Data (library tools) */}
+        {/* Data */}
         {isAuthenticated ? (
-          <div data-settings-topic="data" data-testid="settings-section-data">
+          <div data-testid="settings-section-data">
             <div
               className="u-caps"
               data-testid="settings-section-library"
@@ -667,40 +426,41 @@ export function SettingsPage({
             ) : null}
           </div>
         ) : (
-          <div data-settings-topic="data" data-testid="settings-section-data" hidden aria-hidden="true" />
+          <div data-testid="settings-section-data" hidden aria-hidden="true" />
         )}
 
-        {/* Integrations (MCP) — Models/Ask product retired */}
-        <div data-settings-topic="integrations" data-testid="settings-section-integrations">
-        <div
-          className="u-caps"
-          data-testid="settings-section-ai"
-          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-        >
-          Integrations
-        </div>
-        <Row
-          title="Integrations"
-          sub={
-            settingsGates.canUseIntegrations
-              ? 'Let agents use your library (MCP)'
-              : settingsGates.integrationsLockReason ?? 'Let agents use your library (MCP)'
-          }
-          right={
-            <BtnText
-              aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}
-              onClick={() => setConnectOpen(true)}
-            >
-              <SettingsStatusGlyph
-                kind={mcpGate.allowed ? 'chevron' : 'lock'}
-                label={mcpGate.allowed ? 'Open' : 'Locked'}
-              />
-            </BtnText>
-          }
-        />
+        {/* Integrations */}
+        <div data-testid="settings-section-integrations">
+          <div
+            className="u-caps"
+            data-testid="settings-section-ai"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Integrations
+          </div>
+          <Row
+            title="Integrations"
+            sub={
+              settingsGates.canUseIntegrations
+                ? 'Let agents use your library (MCP)'
+                : settingsGates.integrationsLockReason ??
+                  'Sign in to use account features'
+            }
+            right={
+              <BtnText
+                aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}
+                onClick={() => setConnectOpen(true)}
+              >
+                <SettingsStatusGlyph
+                  kind={mcpGate.allowed ? 'chevron' : 'lock'}
+                  label={mcpGate.allowed ? 'Open' : 'Locked'}
+                />
+              </BtnText>
+            }
+          />
         </div>
 
-        {/* 8. Session */}
+        {/* Session */}
         {user ? (
           <>
             <div
@@ -731,6 +491,8 @@ export function SettingsPage({
         ) : null}
       </div>
 
+      <SettingsLegalFooter />
+
       {(() => {
         const copy = deleteLibraryCopy(Boolean(user));
         return (
@@ -744,7 +506,9 @@ export function SettingsPage({
             strongNames={copy.strongNames}
             confirmLabel={copy.confirmLabel}
             cancelLabel={copy.cancelLabel}
-            onConfirm={() => { void handleDeleteLibrary(); }}
+            onConfirm={() => {
+              void handleDeleteLibrary();
+            }}
             isConfirming={isDeletingLibrary}
             exportFooter={
               <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
@@ -766,7 +530,9 @@ export function SettingsPage({
             strongNames={copy.strongNames}
             confirmLabel={copy.confirmLabel}
             cancelLabel={copy.cancelLabel}
-            onConfirm={() => { void handleSignOut(); }}
+            onConfirm={() => {
+              void handleSignOut();
+            }}
             isConfirming={isSigningOut}
           />
         );

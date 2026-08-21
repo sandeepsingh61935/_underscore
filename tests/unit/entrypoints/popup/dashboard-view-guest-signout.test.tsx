@@ -114,8 +114,8 @@ describe('DashboardView guest sign-out UX', () => {
 
     render(<DashboardView />);
 
-    expect(screen.getByText('Current page')).toBeTruthy();
-    expect(screen.getByText('1 on this page')).toBeTruthy();
-    expect(screen.getAllByText(/en\.wikipedia\.org/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
+    expect(screen.getByTestId('home-two-col')).toBeTruthy();
   });
 });

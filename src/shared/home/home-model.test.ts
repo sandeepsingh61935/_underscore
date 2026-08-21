@@ -7,12 +7,8 @@ import {
 } from './home-model';
 
 describe('homeGreeting', () => {
-  it('morning with name', () => {
+  it('morning with name (legacy helper)', () => {
     expect(homeGreeting({ name: 'Sam', hour: 9 })).toBe('Good morning, Sam');
-  });
-
-  it('evening without name', () => {
-    expect(homeGreeting({ name: null, hour: 20 })).toBe('Good evening');
   });
 });
 
@@ -41,54 +37,66 @@ describe('buildActivePages', () => {
 });
 
 describe('buildPopupHomeModel', () => {
-  it('first-run guest', () => {
+  const base = {
+    displayName: null as string | null,
+    totalHighlights: 0,
+    totalDomains: 0,
+    thisWeekCount: 0,
+    todayCount: 0,
+    tabDomain: 'example.com' as string | null,
+    tabPath: '/',
+    currentPageHighlightCount: 0,
+    recentCount: 0,
+  };
+
+  it('first-run guest uses Local library title', () => {
     const m = buildPopupHomeModel({
+      ...base,
       isAuthenticated: false,
-      displayName: null,
-      totalHighlights: 0,
-      totalDomains: 0,
-      tabDomain: 'example.com',
-      tabPath: '/',
-      currentPageHighlightCount: 0,
-      recentCount: 0,
-      hour: 10,
     });
     expect(m.emptyKind).toBe('first_run');
     expect(m.isGuest).toBe(true);
-    expect(m.title).toBe('Local Library');
+    expect(m.title).toBe('Local library');
     expect(m.showCurrentPage).toBe(false);
   });
 
-  it('signed-in with data shows greeting and current page', () => {
+  it('signed-in with data uses Library title — no greeting theater', () => {
     const m = buildPopupHomeModel({
+      ...base,
       isAuthenticated: true,
       displayName: 'Ada',
       totalHighlights: 12,
       totalDomains: 3,
+      thisWeekCount: 4,
+      todayCount: 1,
       tabDomain: 'news.com',
       tabPath: '/a',
       currentPageHighlightCount: 2,
       recentCount: 5,
-      hour: 14,
     });
     expect(m.emptyKind).toBeNull();
-    expect(m.title).toBe('Good afternoon, Ada');
+    expect(m.title).toBe('Library');
+    expect(m.title).not.toMatch(/Good /);
     expect(m.statusLine).toContain('12 highlights');
+    expect(m.stats).toEqual({
+      highlightCount: 12,
+      domainCount: 3,
+      thisWeekCount: 4,
+      todayCount: 1,
+    });
     expect(m.showCurrentPage).toBe(true);
     expect(m.currentPageEmpty).toBe(false);
   });
 
   it('current page empty when no tab domain', () => {
     const m = buildPopupHomeModel({
+      ...base,
       isAuthenticated: true,
-      displayName: null,
       totalHighlights: 1,
       totalDomains: 1,
       tabDomain: null,
       tabPath: null,
-      currentPageHighlightCount: 0,
       recentCount: 1,
-      hour: 9,
     });
     expect(m.currentPageEmpty).toBe(true);
   });

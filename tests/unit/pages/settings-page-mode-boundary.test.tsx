@@ -7,6 +7,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
+import { BILLING_UPCOMING_SUB } from '@/shared/billing/billing-upcoming-copy';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -59,6 +60,11 @@ vi.mock('@/features/settings/components/TypographySettings', () => ({
   ),
 }));
 
+vi.mock('@/shared/auth/web-legal-urls', () => ({
+  resolveLegalDocUrl: (path: string) => `https://app.example${path}`,
+  openLegalDoc: vi.fn(),
+}));
+
 function mockApp(partial: Record<string, unknown>) {
   vi.mocked(useApp).mockReturnValue({
     theme: 'system',
@@ -80,7 +86,7 @@ function mockApp(partial: Record<string, unknown>) {
 
 function mockBilling(
   isPaidActive: boolean,
-  entitlementOverrides?: Partial<ReturnType<typeof freeEntitlement>>
+  entitlementOverrides?: Partial<ReturnType<typeof freeEntitlement>>,
 ) {
   const startCheckout = vi.fn().mockResolvedValue(undefined);
   const openPortal = vi.fn().mockResolvedValue(undefined);
@@ -111,7 +117,6 @@ function mockBilling(
   return { startCheckout, openPortal, syncFromPolar };
 }
 
-/** DOM order of primary section anchors (product PRD order). */
 function assertSectionOrder(ids: string[]): void {
   const nodes = ids.map((id) => screen.getByTestId(id));
   for (let i = 1; i < nodes.length; i++) {
@@ -140,29 +145,32 @@ describe('SettingsPage basic mode boundaries', () => {
     expect(screen.queryByText('Sync library')).toBeNull();
   });
 
-  it('shows local card, Mode segments, and Appearance for guests', () => {
+  it('shows local card, Guest|Account mode, no topic nav, no Polar CTAs', () => {
     render(<SettingsPage onSignIn={vi.fn()} />);
 
     const guest = screen.getByTestId('settings-guest-card');
     expect(within(guest).getByText('Local only')).toBeTruthy();
-    expect(within(guest).getByText(/Highlights stay on this device/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
     expect(screen.getByTestId('settings-section-mode')).toBeTruthy();
-    expect(screen.getByTestId('settings-mode-seg')).toBeTruthy();
+    expect(screen.getByTestId('settings-mode-guest')).toBeTruthy();
+    expect(screen.getByTestId('settings-mode-account')).toBeTruthy();
+    expect(screen.queryByTestId('settings-mode-free')).toBeNull();
+    expect(screen.queryByTestId('settings-mode-paid')).toBeNull();
+    expect(screen.queryByTestId('settings-topic-nav')).toBeNull();
     expect(screen.getByTestId('settings-section-appearance')).toBeTruthy();
-    expect(screen.getByTestId('settings-theme-system')).toBeTruthy();
-    expect(screen.queryByTestId('account-plan-pill')).toBeNull();
     expect(screen.queryByTestId('billing-cta')).toBeNull();
+    expect(screen.queryByTestId('billing-sync-cta')).toBeNull();
+    expect(screen.getByTestId('settings-section-billing').textContent).toMatch(
+      /Upcoming/i,
+    );
   });
 
-  it('orders Mode → Appearance → Integrations for guests (web topic IA)', () => {
+  it('orders Mode → Appearance → Integrations for guests', () => {
     render(<SettingsPage />);
     assertSectionOrder([
       'settings-section-mode',
       'settings-section-appearance',
       'settings-section-ai',
     ]);
-    expect(screen.getByTestId('settings-topic-nav')).toBeTruthy();
     expect(screen.getByTestId('settings-section-typography')).toBeTruthy();
   });
 
@@ -170,12 +178,16 @@ describe('SettingsPage basic mode boundaries', () => {
     render(<SettingsPage />);
 
     expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
-    expect(screen.getAllByText(/Integrations/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Sign in to use account features/i)).toBeTruthy();
     expect(screen.queryByText('Models & providers')).toBeNull();
-    expect(screen.queryByText('Keys for Ask')).toBeNull();
     expect(screen.getByLabelText('Locked')).toBeTruthy();
-    expect(screen.queryByTestId('connect-to-ai-flow-mock')).toBeNull();
+  });
+
+  it('renders Privacy and Terms legal footer', () => {
+    render(<SettingsPage />);
+    expect(screen.getByTestId('settings-legal-footer')).toBeTruthy();
+    expect(screen.getByTestId('settings-legal-privacy')).toBeTruthy();
+    expect(screen.getByTestId('settings-legal-terms')).toBeTruthy();
   });
 
   it('does not show Retention settings after TTL removal', () => {
@@ -192,7 +204,7 @@ describe('SettingsPage basic mode boundaries', () => {
   });
 });
 
-describe('SettingsPage pro_xai mode boundaries', () => {
+describe('SettingsPage account signed-in', () => {
   beforeEach(() => {
     vi.mocked(usePersistedMode).mockReturnValue({
       currentMode: 'pro_xai',
@@ -208,56 +220,44 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     mockBilling(true);
   });
 
-  it('shows Integrations open for signed-in Account (Paid); Models/Ask retired', () => {
+  it('shows Integrations open; Billing Upcoming; no Polar Manage CTA', () => {
+    const { openPortal, startCheckout, syncFromPolar } = mockBilling(true);
     render(<SettingsPage />);
     expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
     expect(screen.getByText(/Let agents use your library/)).toBeTruthy();
-    expect(screen.queryByText('Models & providers')).toBeNull();
-    expect(screen.queryByText('Keys for Ask')).toBeNull();
-    expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
-    expect(screen.getByText('Billing')).toBeTruthy();
-    expect(screen.getByTestId('billing-cta').textContent).toBe('Manage');
+    expect(screen.getByTestId('settings-section-billing').textContent).toContain(
+      BILLING_UPCOMING_SUB,
+    );
+    expect(screen.queryByTestId('billing-cta')).toBeNull();
     expect(screen.queryByTestId('billing-sync-cta')).toBeNull();
-  });
+    expect(screen.queryByText(/Polar/i)).toBeNull();
 
-  it('shows cancel-at-period-end copy while still Paid', () => {
-    mockBilling(true, { cancelAtPeriodEnd: true });
-    render(<SettingsPage />);
-    expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
-    expect(screen.getByText('Cancels at period end')).toBeTruthy();
-  });
-
-  it('Paid Manage CTA opens portal from trailing button only', () => {
-    const { openPortal, startCheckout } = mockBilling(true);
-    render(<SettingsPage />);
-    fireEvent.click(screen.getByText('Billing'));
+    // Code still wired in provider mock — UI must not call it
     expect(openPortal).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('billing-cta'));
-    expect(openPortal).toHaveBeenCalledTimes(1);
     expect(startCheckout).not.toHaveBeenCalled();
+    expect(syncFromPolar).not.toHaveBeenCalled();
   });
 
-  it('orders Account → Mode → Appearance → Data → Integrations → Session', () => {
+  it('orders Account → Mode → Billing → Appearance → Data → Integrations → Session', () => {
     render(<SettingsPage />);
     assertSectionOrder([
       'settings-section-account',
       'settings-section-mode',
+      'settings-section-billing',
       'settings-section-appearance',
       'settings-section-library',
       'settings-section-ai',
       'settings-section-session',
     ]);
-    const account = screen.getByTestId('settings-section-account');
-    const billingCta = screen.getByTestId('billing-cta');
-    const typography = screen.getByTestId('settings-section-typography');
-    // Billing trails account header; Appearance/typography trail Account.
-    expect(
-      account.compareDocumentPosition(billingCta) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      account.compareDocumentPosition(typography) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+  });
+
+  it('Guest|Account mode chips only', () => {
+    render(<SettingsPage />);
+    expect(screen.getByTestId('settings-mode-guest')).toBeTruthy();
+    expect(screen.getByTestId('settings-mode-account')).toBeTruthy();
+    expect(screen.queryByTestId('settings-mode-free')).toBeNull();
+    expect(screen.queryByTestId('settings-mode-paid')).toBeNull();
   });
 });
 
@@ -277,31 +277,19 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     mockBilling(false);
   });
 
-  it('shows Free pill, Upgrade CTA, and Refresh recovery row', () => {
+  it('shows Free pill and Upcoming billing without Upgrade CTAs', () => {
     const { startCheckout, openPortal, syncFromPolar } = mockBilling(false);
     render(<SettingsPage />);
-    expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
-    expect(screen.queryByText('Models & providers')).toBeNull();
-    expect(screen.queryByText('Keys for Ask')).toBeNull();
-    // Free-window may unlock Integrations for Free users — do not require Locked.
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
-    expect(screen.getByText('Upgrade to Paid')).toBeTruthy();
-    expect(screen.getByTestId('billing-cta').textContent).toBe('Upgrade');
-    expect(screen.getByTestId('billing-cta').getAttribute('data-billing-kind')).toBe(
-      'upgrade'
+    expect(screen.getByTestId('settings-section-billing').textContent).toMatch(
+      /Upcoming/i,
     );
-    expect(screen.getByTestId('billing-sync-cta').textContent).toBe('Refresh');
-
-    fireEvent.click(screen.getByText('Upgrade to Paid'));
+    expect(screen.queryByText('Upgrade to Paid')).toBeNull();
+    expect(screen.queryByTestId('billing-cta')).toBeNull();
+    expect(screen.queryByTestId('billing-sync-cta')).toBeNull();
     expect(startCheckout).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('billing-cta'));
-    expect(startCheckout).toHaveBeenCalledTimes(1);
     expect(openPortal).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByText('Refresh status'));
     expect(syncFromPolar).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('billing-sync-cta'));
-    expect(syncFromPolar).toHaveBeenCalledTimes(1);
   });
 
   it('does not use Starter/Pro toy SKU labels', () => {
@@ -309,7 +297,22 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
     expect(screen.queryByText(/Starter/)).toBeNull();
     expect(screen.queryByText(/^Pro$/)).toBeNull();
     expect(screen.getAllByText(/Account \(Free\)/).length).toBeGreaterThan(0);
-    expect(screen.getByText('Upgrade to Paid')).toBeTruthy();
+  });
+
+  it('selecting Account while signed-in does not start checkout', () => {
+    const setMode = vi.fn();
+    const { startCheckout } = mockBilling(false);
+    mockApp({
+      currentMode: 'pro',
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Test User' },
+      isAuthenticated: true,
+      availableModes: ['pro'],
+      setMode,
+    });
+    render(<SettingsPage />);
+    // Account already active for pro — click is no-op for mode write
+    fireEvent.click(screen.getByTestId('settings-mode-account'));
+    expect(startCheckout).not.toHaveBeenCalled();
   });
 });
 
@@ -328,7 +331,7 @@ describe('SettingsPage past_due billing', () => {
     });
   });
 
-  it('shows Past due pill and Update payment → portal', () => {
+  it('shows Past due pill without Polar Update payment CTA', () => {
     const { openPortal, startCheckout } = mockBilling(false, {
       plan: 'paid',
       status: 'past_due',
@@ -338,17 +341,11 @@ describe('SettingsPage past_due billing', () => {
     });
     render(<SettingsPage />);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Past due');
-    expect(screen.getByText('Payment past due')).toBeTruthy();
-    expect(screen.getByTestId('billing-cta').textContent).toBe('Update');
-    expect(screen.getByTestId('billing-cta').getAttribute('data-billing-kind')).toBe(
-      'update_payment'
+    expect(screen.queryByTestId('billing-cta')).toBeNull();
+    expect(screen.getByTestId('settings-section-billing').textContent).toMatch(
+      /Upcoming/i,
     );
-    expect(screen.getByTestId('billing-sync-cta')).toBeTruthy();
-
-    fireEvent.click(screen.getByText('Payment past due'));
     expect(openPortal).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('billing-cta'));
-    expect(openPortal).toHaveBeenCalledTimes(1);
     expect(startCheckout).not.toHaveBeenCalled();
   });
 });

@@ -113,12 +113,14 @@ describe('WebSettingsPage', () => {
     expect(document.querySelector('[data-od-id="settings-plan"]')).toBeTruthy();
   });
 
-  it('guest plan tab: Sign in CTA, no upgrade without auth', () => {
+  it('guest plan tab: Upcoming billing, no Polar upgrade CTA', () => {
     renderSettings('/settings?tab=plan', false);
 
     expect(document.querySelector('[data-od-id="settings-plan"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="billing-upcoming"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="billing-upgrade-row"]')).toBeNull();
-    expect(document.querySelector('a[href="/sign-in"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="billing-cta"]')).toBeNull();
+    expect(document.body.textContent).toMatch(/Upcoming/i);
   });
 
   function mockBilling(opts: {
@@ -152,18 +154,22 @@ describe('WebSettingsPage', () => {
     return { startCheckout, openPortal };
   }
 
-  it('free signed-in: shows Upgrade billing CTA', () => {
-    mockBilling({ isPaidActive: false, status: 'none' });
+  it('free signed-in: Billing Upcoming only — no Upgrade CTA', () => {
+    const { startCheckout, openPortal } = mockBilling({
+      isPaidActive: false,
+      status: 'none',
+    });
 
     renderSettings('/settings?tab=plan', true);
 
-    const cta = document.querySelector('[data-testid="billing-cta"]');
-    expect(cta).toBeTruthy();
-    expect(cta?.getAttribute('data-billing-kind')).toBe('upgrade');
-    expect(cta?.textContent?.trim()).toBe('Upgrade');
+    expect(document.querySelector('[data-od-id="billing-upcoming"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="billing-cta"]')).toBeNull();
+    expect(document.body.textContent).toMatch(/Upcoming/i);
+    expect(startCheckout).not.toHaveBeenCalled();
+    expect(openPortal).not.toHaveBeenCalled();
   });
 
-  it('paid active: Manage CTA opens portal', () => {
+  it('paid active: no Manage portal CTA in UI', () => {
     const { startCheckout, openPortal } = mockBilling({
       isPaidActive: true,
       status: 'active',
@@ -171,17 +177,13 @@ describe('WebSettingsPage', () => {
 
     renderSettings('/settings?tab=plan', true);
 
-    const cta = document.querySelector('[data-testid="billing-cta"]');
-    expect(cta).toBeTruthy();
-    expect(cta?.getAttribute('data-billing-kind')).toBe('manage');
-    expect(cta?.textContent?.trim()).toBe('Manage');
-
-    fireEvent.click(cta!);
-    expect(openPortal).toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="billing-cta"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="billing-upcoming"]')).toBeTruthy();
+    expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
   });
 
-  it('past_due: Update CTA opens portal', () => {
+  it('past_due: no Polar Update CTA — Upcoming stub', () => {
     const { startCheckout, openPortal } = mockBilling({
       isPaidActive: false,
       status: 'past_due',
@@ -189,13 +191,9 @@ describe('WebSettingsPage', () => {
 
     renderSettings('/settings?tab=plan', true);
 
-    const cta = document.querySelector('[data-testid="billing-cta"]');
-    expect(cta).toBeTruthy();
-    expect(cta?.getAttribute('data-billing-kind')).toBe('update_payment');
-    expect(cta?.textContent?.trim()).toBe('Update');
-
-    fireEvent.click(cta!);
-    expect(openPortal).toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="billing-cta"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="billing-upcoming"]')).toBeTruthy();
+    expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
   });
 
@@ -213,7 +211,7 @@ describe('WebSettingsPage', () => {
     expect(document.querySelector('[data-od-id="settings-connect-ai"], [data-od-id="settings-mcp"]')).toBeTruthy();
   });
 
-  it('AI tab past_due: lock CTA is Update and opens portal', () => {
+  it('AI tab past_due: no Polar lock CTA — shows Upcoming copy', () => {
     const { startCheckout, openPortal } = mockBilling({
       isPaidActive: false,
       status: 'past_due',
@@ -221,13 +219,11 @@ describe('WebSettingsPage', () => {
 
     renderSettings('/settings?tab=ai', true);
 
-    const aiCta = document.querySelector('[data-testid="settings-ai-billing-cta"]');
-    expect(aiCta).toBeTruthy();
-    expect(aiCta?.getAttribute('data-billing-kind')).toBe('update_payment');
-    expect(aiCta?.textContent?.trim()).toBe('Update');
-
-    fireEvent.click(aiCta!);
-    expect(openPortal).toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="settings-ai-billing-cta"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="ai-lock-banner"]')?.textContent).toMatch(
+      /Upcoming/i,
+    );
+    expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
   });
 });

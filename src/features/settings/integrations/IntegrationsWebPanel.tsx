@@ -198,7 +198,7 @@ export function IntegrationsWebSetup({
       {mcpAllowed ? (
         <HostTipBody app={app} remoteUrl={remoteUrl} />
       ) : (
-        <p className="type-sub">Upgrade to Account (Paid) to connect agents.</p>
+        <p className="type-sub">Account access required to connect agents. Billing is upcoming.</p>
       )}
     </div>
   );

@@ -690,16 +690,19 @@ button.hl-icon.is-danger:active {
   margin-top: 12px;
 }
 
-/* Tab bar in popup */
+/* Tab bar in popup — three equal tracks (Home · Library · Settings) */
 .tabbar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid var(--rule);
   background: var(--paper);
+  flex-shrink: 0;
 }
 .tabbar button {
   all: unset;
-  padding: 12px 0;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 4px;
   text-align: center;
   font-family: var(--mono);
   font-size: var(--step--2);

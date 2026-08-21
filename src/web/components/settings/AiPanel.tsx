@@ -12,6 +12,7 @@ import {
 } from '@/features/settings/integrations/IntegrationsWebPanel';
 import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
+import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import type { WebCaps } from '@/web/caps/resolveWebCaps';
 
@@ -35,8 +36,10 @@ export function AiPanel({
 }): React.ReactElement {
   const mcpAllowed = caps.flags.mcp;
   const freeWindow = caps.freeWindow;
-  const lockLabel = billingCta?.ctaLabel ?? 'Upgrade';
-  const lockKind = billingCta?.kind ?? 'upgrade';
+  const upcoming = billingUpcomingCopy();
+  // billingCta / onBillingAction kept for call-site compat; Polar UI not exposed.
+  void billingCta;
+  void onBillingAction;
   const [view, setView] = useState<AiView>(INITIAL_VIEW);
 
   const goList = useCallback(() => {
@@ -67,26 +70,11 @@ export function AiPanel({
             <strong>{isAuthenticated ? 'Integrations locked' : 'Sign in required'}</strong>
             <div className="sub" style={{ marginTop: 4 }}>
               {isAuthenticated
-                ? caps.isPastDue
-                  ? 'Update billing to restore Integrations.'
-                  : 'Upgrade when free window ends to use Integrations.'
+                ? `${upcoming.title}: ${upcoming.sub}`
                 : 'Sign in so agents can read your cloud library.'}
             </div>
           </div>
-          {isAuthenticated ? (
-            caps.isPastDue || !freeWindow ? (
-              <button
-                type="button"
-                className="btn accent sm"
-                data-od-id="settings-ai-upgrade"
-                data-billing-kind={lockKind}
-                data-testid="settings-ai-billing-cta"
-                onClick={onBillingAction}
-              >
-                {lockLabel}
-              </button>
-            ) : null
-          ) : (
+          {!isAuthenticated ? (
             <Link
               to="/sign-in"
               className="btn accent sm"
@@ -94,7 +82,7 @@ export function AiPanel({
             >
               Sign in
             </Link>
-          )}
+          ) : null}
         </div>
       ) : null}
 

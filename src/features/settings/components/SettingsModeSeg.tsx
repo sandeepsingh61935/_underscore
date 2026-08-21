@@ -1,30 +1,32 @@
 /**
- * Mode plan segments for Settings — Open Design .seg pattern.
- * Labels: Guest · Free · Paid (production branding, not Starter/Pro toys).
+ * Mode segments — Guest | Account only.
+ * Paid is not a mode chip (billing Upcoming; entitlement stays code-side).
  */
 import React from 'react';
 
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
-export type SettingsPlanSeg = 'guest' | 'free' | 'paid';
+export type SettingsIdentitySeg = 'guest' | 'account';
 
 export interface SettingsModeSegProps {
   currentMode: ModeType;
   isAuthenticated: boolean;
-  isPaidActive: boolean;
+  /** @deprecated Paid is not shown as a mode; kept for call-site compatibility. */
+  isPaidActive?: boolean;
   onSelectGuest: () => void;
-  onSelectFree: () => void;
-  onSelectPaid: () => void;
+  onSelectAccount: () => void;
+  /** @deprecated Use onSelectAccount */
+  onSelectFree?: () => void;
+  /** @deprecated Paid mode chip removed */
+  onSelectPaid?: () => void;
 }
 
 function resolveActive(
   currentMode: ModeType,
   isAuthenticated: boolean,
-  isPaidActive: boolean,
-): SettingsPlanSeg {
+): SettingsIdentitySeg {
   if (!isAuthenticated || currentMode === 'basic') return 'guest';
-  if (currentMode === 'pro_xai' && isPaidActive) return 'paid';
-  return 'free';
+  return 'account';
 }
 
 function LockGlyph(): React.ReactElement {
@@ -48,18 +50,15 @@ function LockGlyph(): React.ReactElement {
 export function SettingsModeSeg({
   currentMode,
   isAuthenticated,
-  isPaidActive,
   onSelectGuest,
+  onSelectAccount,
   onSelectFree,
-  onSelectPaid,
 }: SettingsModeSegProps): React.ReactElement {
-  const active = resolveActive(currentMode, isAuthenticated, isPaidActive);
+  const active = resolveActive(currentMode, isAuthenticated);
+  const selectAccount = onSelectAccount ?? onSelectFree ?? (() => undefined);
 
-  // Locks: Guest free for everyone; Free needs sign-in; Paid needs sign-in
-  // (upgrade vs mode-switch is decided by onSelectPaid / transition util).
-  // When entitled, neither Free nor Paid is locked — user may flip either.
   const options: Array<{
-    id: SettingsPlanSeg;
+    id: SettingsIdentitySeg;
     label: string;
     gated: boolean;
     onSelect: () => void;
@@ -71,18 +70,10 @@ export function SettingsModeSeg({
       onSelect: onSelectGuest,
     },
     {
-      id: 'free',
-      label: 'Free',
-      gated: !isAuthenticated,
-      onSelect: onSelectFree,
-    },
-    {
-      id: 'paid',
-      label: 'Paid',
-      // Lock only when guest; free users can open upgrade path (no lock).
-      // Entitled paid: unlocked so Free↔Paid is free.
-      gated: !isAuthenticated,
-      onSelect: onSelectPaid,
+      id: 'account',
+      label: 'Account',
+      gated: false,
+      onSelect: selectAccount,
     },
   ];
 
@@ -96,9 +87,14 @@ export function SettingsModeSeg({
         className="u-caps"
         style={{ color: 'var(--ink-3)', marginBottom: 8 }}
       >
-        Plan
+        Mode
       </div>
-      <div className="seg" role="radiogroup" aria-label="Plan" data-testid="settings-mode-seg">
+      <div
+        className="seg"
+        role="radiogroup"
+        aria-label="Mode"
+        data-testid="settings-mode-seg"
+      >
         {options.map((opt) => {
           const isActive = active === opt.id;
           return (
@@ -107,11 +103,7 @@ export function SettingsModeSeg({
               type="button"
               role="radio"
               aria-checked={isActive}
-              aria-label={
-                opt.gated && !isActive
-                  ? `${opt.label}, requires account`
-                  : opt.label
-              }
+              aria-label={opt.label}
               className={`${isActive ? 'active' : ''} ${opt.gated && !isActive ? 'gated' : ''}`}
               data-testid={`settings-mode-${opt.id}`}
               onClick={() => {
@@ -119,7 +111,7 @@ export function SettingsModeSeg({
                 opt.onSelect();
               }}
             >
-              {opt.label}
+              <span>{opt.label}</span>
               {opt.gated && !isActive ? <LockGlyph /> : null}
             </button>
           );

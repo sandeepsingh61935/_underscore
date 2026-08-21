@@ -6,11 +6,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import {
-  BillingReturnBanners,
-  type BillingReturnKind,
-} from './BillingReturnBanners';
-import { BillingRows } from './BillingRows';
+import { type BillingReturnKind } from './BillingReturnBanners';
 
 import {
   BUILTIN_TYPE_PRESET_LIST,
@@ -18,6 +14,7 @@ import {
   type BuiltinTypePresetId,
 } from '@/shared/constants/type-presets';
 import type { ThemeType } from '@/shared/types/theme';
+import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { useTypePreset } from '@/ui-system/hooks/useTypePreset';
 import type { WebCaps, WebPlanLabel } from '@/web/caps/resolveWebCaps';
@@ -58,17 +55,29 @@ function planSub(opts: {
   cancelAtPeriodEnd?: boolean;
   currentPeriodEnd?: string | null;
 }): string {
-  if (opts.isGuest) return 'Sign in to sync, export, and upgrade';
+  if (opts.isGuest) return 'Sign in to sync and export';
   if (opts.cancelAtPeriodEnd) {
     return `Access until ${formatPeriodEnd(opts.currentPeriodEnd)} · cancel scheduled`;
   }
   if (opts.isPaidActive) {
     return opts.currentPeriodEnd
       ? `Renews ${formatPeriodEnd(opts.currentPeriodEnd)}`
-      : 'Paid · Integrations';
+      : 'Account · Integrations';
   }
-  if (opts.isPastDue) return 'Fix payment in Polar to restore Integrations';
-  return 'Free is your Starter account · Sync & export · Integrations early access';
+  if (opts.isPastDue) return 'Payment issue — Integrations may be limited';
+  return 'Account · Sync & export · Integrations early access';
+}
+
+function BillingUpcomingBlock(): React.ReactElement {
+  const upcoming = billingUpcomingCopy();
+  return (
+    <div className="setting-row" data-od-id="billing-upcoming">
+      <div className="grow">
+        <div className="title">{upcoming.title}</div>
+        <div className="sub">{upcoming.sub}</div>
+      </div>
+    </div>
+  );
 }
 
 function planPillClass(label: WebPlanLabel): string {
@@ -95,52 +104,6 @@ export type SharedBillingProps = {
   onDismissReturn: () => void;
 };
 
-function BillingChrome({
-  returnKind,
-  cancelAtPeriodEnd,
-  currentPeriodEnd,
-  busy,
-  handoff,
-  onSync,
-  onDismissReturn,
-}: Pick<
-  SharedBillingProps,
-  | 'returnKind'
-  | 'cancelAtPeriodEnd'
-  | 'currentPeriodEnd'
-  | 'busy'
-  | 'handoff'
-  | 'onSync'
-  | 'onDismissReturn'
->): React.ReactElement {
-  return (
-    <>
-      <BillingReturnBanners
-        returnKind={returnKind}
-        cancelAtPeriodEnd={cancelAtPeriodEnd && returnKind === null}
-        currentPeriodEnd={currentPeriodEnd}
-        busy={busy}
-        onSync={onSync}
-        onDismiss={onDismissReturn}
-      />
-      {handoff === 'checkout' ? (
-        <div className="billing-handoff" data-od-id="billing-handoff-checkout">
-          <p className="bh-title">Opening Polar checkout…</p>
-          <p className="bh-body">
-            Secure payment runs on Polar. No card details are collected in _underscore.
-          </p>
-        </div>
-      ) : null}
-      {handoff === 'portal' ? (
-        <div className="billing-handoff" data-od-id="billing-handoff-portal">
-          <p className="bh-title">Opening Polar portal…</p>
-          <p className="bh-body">Invoices, payment method, and cancel live in Polar.</p>
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 export function AccountPanel({
   email,
   planLabel,
@@ -152,15 +115,12 @@ export function AccountPanel({
   billing: SharedBillingProps;
   onSignOut?: () => void;
 }): React.ReactElement {
-  const { isAuthenticated, caps, cta, busy, error, loadError, loadState } = billing;
+  const { isAuthenticated, caps } = billing;
 
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-account">
       <h2>Account</h2>
-      <p className="lead">
-        Identity and plan at a glance. Billing opens Polar — never a card form here.
-      </p>
-      <BillingChrome {...billing} />
+      <p className="lead">Identity, sync, and capabilities. Billing is upcoming.</p>
       <div className="block">
         <p className="block-label">Profile</p>
         <div className="setting-row" data-od-id="settings-account-row">
@@ -204,28 +164,7 @@ export function AccountPanel({
       </div>
       <div className="block" data-od-id="settings-billing-block">
         <p className="block-label">Billing</p>
-        {isAuthenticated && cta ? (
-          <BillingRows
-            cta={cta}
-            busy={busy}
-            error={error}
-            loadError={loadError}
-            loadState={loadState}
-            onAction={billing.onBillingAction}
-            onSync={billing.onSync}
-            onRetry={billing.onRetry}
-          />
-        ) : (
-          <div className="setting-row">
-            <div className="grow">
-              <div className="title">Sign in to upgrade</div>
-              <div className="sub">Free sync after sign-in · Integrations after early access</div>
-            </div>
-            <Link to="/sign-in" className="btn primary sm">
-              Sign in
-            </Link>
-          </div>
-        )}
+        <BillingUpcomingBlock />
       </div>
       <div className="block">
         <p className="block-label">Capabilities</p>
@@ -244,26 +183,12 @@ export function PlanPanel({
 }: {
   billing: SharedBillingProps;
 }): React.ReactElement {
-  const {
-    isAuthenticated,
-    caps,
-    cta,
-    busy,
-    error,
-    loadError,
-    loadState,
-    cancelAtPeriodEnd,
-    currentPeriodEnd,
-  } = billing;
+  const { caps, cancelAtPeriodEnd, currentPeriodEnd } = billing;
 
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-plan">
       <h2>Plan</h2>
-      <p className="lead">
-        Free vs Account (Paid) via Polar. Upgrade opens checkout; manage opens the customer portal.
-        No prices invented here.
-      </p>
-      <BillingChrome {...billing} />
+      <p className="lead">Guest vs Account. Paid billing is upcoming — not offered here yet.</p>
       <div
         className="setting-row plan-current"
         data-od-id="plan-current"
@@ -290,71 +215,27 @@ export function PlanPanel({
           <span className={planPillClass(caps.planLabel)}>{caps.planLabel}</span>
         ) : null}
       </div>
-      {isAuthenticated && cta ? (
-        <BillingRows
-          cta={cta}
-          busy={busy}
-          error={error}
-          loadError={loadError}
-          loadState={loadState}
-          onAction={billing.onBillingAction}
-          onSync={billing.onSync}
-          onRetry={billing.onRetry}
-        />
-      ) : (
-        <div className="setting-row">
-          <div className="grow">
-            <div className="title">Sign in required</div>
-            <div className="sub">Then Upgrade to Account (Paid) via Polar</div>
-          </div>
-          <Link to="/sign-in" className="btn primary sm">
-            Sign in
-          </Link>
-        </div>
-      )}
+      <div className="block" data-od-id="settings-billing-block" style={{ marginTop: 16 }}>
+        <p className="block-label">Billing</p>
+        <BillingUpcomingBlock />
+      </div>
       <div className="block" style={{ marginTop: 24 }}>
         <p className="block-label">Compare</p>
         <div className="plan-cards" data-od-id="plan-compare">
           <div className="plan-card">
-            <h3>Free</h3>
+            <h3>Guest</h3>
             <ul>
-              <li>Sync</li>
-              <li>Export</li>
-              <li>Permanent library</li>
+              <li>Local highlights</li>
+              <li>Device only</li>
             </ul>
           </div>
           <div className="plan-card featured">
-            <h3>Account (Paid)</h3>
+            <h3>Account</h3>
             <ul>
-              <li>Everything Free</li>
-              <li>Integrations (MCP) — after early access</li>
+              <li>Sync &amp; export</li>
+              <li>Integrations (MCP) when unlocked</li>
+              <li>Billing — upcoming</li>
             </ul>
-            {isAuthenticated && !caps.isPaidActive ? (
-              <button
-                type="button"
-                className="btn accent sm"
-                data-od-id="upgrade-paid"
-                disabled={busy}
-                onClick={billing.onBillingAction}
-              >
-                Continue to Polar →
-              </button>
-            ) : caps.isPaidActive ? (
-              <button
-                type="button"
-                className="btn sm"
-                data-od-id="manage-portal"
-                disabled={busy}
-                onClick={billing.onBillingAction}
-              >
-                Manage
-              </button>
-            ) : (
-              <Link to="/sign-in" className="btn accent sm">
-                Sign in to upgrade
-              </Link>
-            )}
-            <div className="plan-card-note">Cancel anytime in the billing portal</div>
           </div>
         </div>
       </div>
