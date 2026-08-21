@@ -4,7 +4,7 @@
 **Package name:** Underscore Highlighter  
 **Firefox extension ID:** `underscore-highlighter@underscore`  
 **Manifest:** MV3 (WXT emits Firefox background as `scripts[]`)  
-**Min Firefox:** 115.0  
+**Min Firefox:** 140.0  
 **License on AMO:** GNU GPL v3 (repo `LICENSE` / `package.json` `GPL-3.0-only`)  
 
 Do **not** change the gecko `id` after the first AMO submission.
@@ -57,13 +57,15 @@ Load unpacked for manual QA: `.output/firefox-mv3/` → select `manifest.json`.
 | npm scripts | `build:firefox`, `zip:firefox`, `zip:chrome` |
 | Privacy copy | `PRIVACY.md`, `src/pages/PrivacyPage.tsx` |
 
-Data collection declared (required):
+Data collection declared (required) — must use AMO enum names only:
 
 - `websiteContent` — highlighted page text  
 - `websiteActivity` — page URLs associated with highlights  
-- `contactInfo` — account email when the user signs in  
+- `personallyIdentifyingInfo` — account email (not `contactInfo`)  
+- `authenticationInfo` — sign-in / session  
 
-No optional `technicalAndInteraction` until a real telemetry sink ships.
+No optional `technicalAndInteraction` until a real telemetry sink ships.  
+`strict_min_version` is **140.0** so `data_collection_permissions` is valid.
 
 ---
 

@@ -128,8 +128,9 @@ We do not put highlight text into analytics events.
 | `localhost` / `127.0.0.1` (Ollama, MCP bridge) | Optional local AI / agent features you enable |
 
 Firefox listings also declare built-in **data collection permissions** for
-website content, website activity (URLs tied to highlights), and contact info
-(account email). Those declarations match this policy.
+website content, website activity (URLs tied to highlights), personally
+identifying info (account email), and authentication info. Those declarations
+match this policy.
 
 ---
 

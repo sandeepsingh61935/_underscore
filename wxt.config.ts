@@ -48,13 +48,19 @@ export default defineConfig({
         browser_specific_settings: {
           gecko: {
             id: FIREFOX_EXTENSION_ID,
-            // Firefox 115 ESR baseline — solid MV3 + identity support.
-            strict_min_version: '115.0',
-            // Required for new AMO listings (Nov 2025+ data consent).
+            // data_collection_permissions requires Firefox 140+ (AMO linter).
+            strict_min_version: '140.0',
+            // Allowed enum: mozilla addons-linter CommonDataCollectionPermission.
             // websiteContent / websiteActivity: highlight text + page URLs.
-            // contactInfo: account email when the user signs in.
+            // personallyIdentifyingInfo: account email (not legacy "contactInfo").
+            // authenticationInfo: sign-in / session.
             data_collection_permissions: {
-              required: ['websiteContent', 'websiteActivity', 'contactInfo'],
+              required: [
+                'websiteContent',
+                'websiteActivity',
+                'personallyIdentifyingInfo',
+                'authenticationInfo',
+              ],
             },
           },
         },
