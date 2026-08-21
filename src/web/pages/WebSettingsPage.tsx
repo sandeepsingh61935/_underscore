@@ -16,6 +16,7 @@ import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import type { BillingReturnKind } from '@/web/components/settings/BillingReturnBanners';
+import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import {
   AccountPanel,
   AiPanel,
@@ -36,7 +37,8 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'account', label: 'Account' },
   { id: 'plan', label: 'Plan' },
   { id: 'appearance', label: 'Appearance' },
-  { id: 'ai', label: 'AI' },
+  { id: 'keyboard', label: 'Keyboard' },
+  { id: 'ai', label: 'Integrations' },
   { id: 'data', label: 'Data' },
 ];
 
@@ -179,6 +181,15 @@ export function WebSettingsPage(): React.ReactElement {
           theme={theme}
           onThemeChange={(t: ThemeType) => setTheme(t)}
         />
+      );
+      break;
+    case 'keyboard':
+      panel = (
+        <div className="settings-panel is-tab-enter" data-od-id="settings-keyboard">
+          <h2>Keyboard</h2>
+          <p className="lead">Extension shortcuts on pages you highlight.</p>
+          <SettingsKeyboardSection />
+        </div>
       );
       break;
     case 'ai':

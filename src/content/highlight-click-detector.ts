@@ -4,7 +4,7 @@
  *
  * - Plain click on highlight: toggle delete-icon pin
  * - Ctrl/Cmd+click: delete (existing)
- * - Click outside highlight (and not on delete icon): dismiss pin
+ * - Click outside highlight (and not on delete icon / safe pad): dismiss pin
  */
 
 import { EventName } from '@/shared/types/events';
@@ -12,6 +12,10 @@ import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
 import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
+import {
+  collectDeleteIconRects,
+  isPointNearDeleteIcon,
+} from '@/content/ui/delete-icon-geometry';
 
 /** Event: user toggled delete-icon pin on a highlight. */
 export const HIGHLIGHT_DELETE_ICON_TOGGLE = 'highlight:delete-icon:toggle';
@@ -23,7 +27,7 @@ export class HighlightClickDetector {
 
   constructor(
     private eventBus: EventBus,
-    private hitTester: HighlightDOMHitTester
+    private hitTester: HighlightDOMHitTester,
   ) {
     this.logger = LoggerFactory.getLogger('HighlightClickDetector');
   }
@@ -42,6 +46,13 @@ export class HighlightClickDetector {
     const target = e.target as Element | null;
     if (target?.closest?.('.underscore-delete-icon')) {
       // Icon handles its own click (delete). Do not toggle/dismiss here.
+      return;
+    }
+
+    // Bridge: clicks near the exterior icon must not dismiss the pin.
+    const iconRects = collectDeleteIconRects(document);
+    if (isPointNearDeleteIcon(e.clientX, e.clientY, iconRects)) {
+      this.logger.debug('Click near delete icon — ignore for dismiss');
       return;
     }
 

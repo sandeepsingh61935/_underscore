@@ -1,81 +1,58 @@
 /**
- * Delete Icon - Finnish Material Design 3
- * 
- * Purpose: Hover delete icon for highlights with mode-aware behavior
- * Design: Finnish minimalism + M3 error palette
+ * Delete icon — high-contrast exterior control (colors set inline from page sample).
  */
 
-/* === Base Icon Styles === */
 .underscore-delete-icon {
-  /* Sizing - Compact, non-intrusive */
-  width: 20px;
-  height: 20px;
-  padding: 4px;
-  border-radius: 10px;
-  /* Fully rounded (M3) */
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: #1a1a1a;
+  color: #f5f5f5;
 
-  /* M3 Error Colors - Berry red */
-  background: var(--md-sys-color-error-container, #ffdad6);
-  color: var(--md-sys-color-on-error-container, #410002);
-  border: none;
-
-  /* Positioning - Top-right of highlight */
   position: absolute;
-  z-index: 9999;
+  z-index: 2147483646;
 
-  /* M3 Motion - Standard easing, medium duration */
   opacity: 1;
-  /* Changed: visible by default */
   transform: scale(1);
-  /* Changed: normal scale by default */
   transition:
-    opacity 250ms cubic-bezier(0.2, 0, 0, 1),
-    transform 200ms cubic-bezier(0.2, 0, 0, 1),
-    box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+    opacity 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 
-  /* Layout */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-
-  /* Accessibility */
   outline: none;
+  /* Expand hit without layout shift for bridge clicks */
+  touch-action: manipulation;
 }
 
-/* SVG Icon Sizing */
 .underscore-delete-icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--delete-icon-visual, 24px);
+  height: var(--delete-icon-visual, 24px);
   fill: currentColor;
+  pointer-events: none;
 }
 
-/* === Hover States === */
-
-/* M3 State Layer: Hover */
 .underscore-delete-icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  /* M3 elevation level 2 */
+  transform: scale(1.06);
 }
 
-/* M3 State Layer: Pressed */
 .underscore-delete-icon:active {
-  transform: scale(0.95);
-  box-shadow: none;
+  transform: scale(0.96);
 }
-
-/* === Focus States (WCAG AAA) === */
 
 .underscore-delete-icon:focus-visible {
-  outline: 2px solid var(--md-sys-color-primary, #5b8db8);
+  outline: 2px solid currentColor;
   outline-offset: 2px;
-  border-radius: 12px;
 }
 
-/* === Batch Selection === */
-
-/* Selection badge (shows count) */
 .underscore-delete-icon--selected::after {
   content: attr(data-selection-count);
   position: absolute;
@@ -85,115 +62,18 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: var(--md-sys-color-primary, #5b8db8);
-  color: var(--md-sys-color-on-primary, #ffffff);
+  background: #f5f5f5;
+  color: #141414;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
-
-.underscore-delete-icon--selected {
-  background: var(--md-sys-color-primary-container, #d4e4f0);
-  color: var(--md-sys-color-on-primary-container, #1a3a4f);
-}
-
-/* === Custom Colors (Match Highlight) === */
-
-/* Sunshine yellow */
-.underscore-delete-icon--yellow {
-  background: var(--highlight-sunshine-container, #fff8dc);
-  color: var(--on-highlight-sunshine, #2d2600);
-}
-
-/* Lake blue */
-.underscore-delete-icon--blue {
-  background: var(--highlight-lake-container, #e3f2fd);
-  color: var(--on-highlight-lake, #001f2e);
-}
-
-/* Forest green */
-.underscore-delete-icon--green {
-  background: var(--highlight-forest-container, #e8f5e9);
-  color: var(--on-highlight-forest, #1b5e20);
-}
-
-/* Sunset orange */
-.underscore-delete-icon--orange {
-  background: var(--highlight-sunset-container, #fff3e0);
-  color: var(--on-highlight-sunset, #4a2800);
-}
-
-/* Aurora purple */
-.underscore-delete-icon--purple {
-  background: var(--highlight-aurora-container, #f3e5f5);
-  color: var(--on-highlight-aurora, #311b92);
-}
-
-/* === Dark Mode === */
-
-@media (prefers-color-scheme: dark) {
-  .underscore-delete-icon {
-    background: var(--md-sys-color-error-container, #93000a);
-    color: var(--md-sys-color-on-error-container, #ffdad6);
-  }
-
-  .underscore-delete-icon:hover {
-    box-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
-  }
-
-  /* Custom colors - adjusted for dark mode */
-  .underscore-delete-icon--yellow {
-    background: rgba(253, 216, 53, 0.2);
-    color: #fdd835;
-  }
-
-  .underscore-delete-icon--blue {
-    background: rgba(117, 160, 200, 0.2);
-    color: #75a0c8;
-  }
-
-  .underscore-delete-icon--green {
-    background: rgba(129, 199, 132, 0.2);
-    color: #81c784;
-  }
-
-  .underscore-delete-icon--orange {
-    background: rgba(255, 183, 77, 0.2);
-    color: #ffb74d;
-  }
-
-  .underscore-delete-icon--purple {
-    background: rgba(179, 157, 219, 0.2);
-    color: #b39ddb;
-  }
-}
-
-/* === Reduced Motion === */
 
 @media (prefers-reduced-motion: reduce) {
   .underscore-delete-icon {
     transition-duration: 0.01ms !important;
   }
-}
-
-/* === Mode-Specific Variations === */
-
-/* Walk Mode - Lighter, less prominent */
-.underscore-mode-walk .underscore-delete-icon {
-  opacity: 0.8;
-}
-
-/* Sprint Mode - Standard (default) */
-
-/* Vault Mode - More prominent, warning color */
-.underscore-mode-vault .underscore-delete-icon {
-  background: var(--md-sys-color-error, #ba1a1a);
-  color: var(--md-sys-color-on-error, #ffffff);
-}
-
-.underscore-mode-vault .underscore-delete-icon:hover {
-  box-shadow: 0 4px 12px rgba(186, 26, 26, 0.3);
 }

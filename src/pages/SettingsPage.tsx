@@ -13,6 +13,7 @@ import {
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
+import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
 import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
@@ -277,6 +278,8 @@ export function SettingsPage({
             onChange={(t) => setTheme(t)}
           />
         </div>
+
+        <SettingsKeyboardSection />
 
         {/* Data */}
         {isAuthenticated ? (

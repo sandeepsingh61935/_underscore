@@ -12,6 +12,15 @@ import { ContentHighlightDeleteClient } from '@/content/services/content-highlig
 import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
 import { positionExteriorIcon } from '@/content/paint/first-line-geometry';
 import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
+import {
+  resolveDeleteIconChrome,
+  samplePageBackgroundAt,
+} from '@/content/ui/delete-icon-contrast';
+import {
+  DELETE_ICON_GAP_PX,
+  DELETE_ICON_HIT_PX,
+  DELETE_ICON_VISUAL_PX,
+} from '@/content/ui/delete-icon-geometry';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
@@ -23,6 +32,7 @@ export class DeleteIconOverlay {
   private pinnedId: string | null = null;
   private readonly deleteClient: ContentHighlightDeleteClient;
   private scrollListening = false;
+  private escapeListening = false;
 
   constructor(
     private modeManager: ModeManager,
@@ -60,6 +70,7 @@ export class DeleteIconOverlay {
     this.pinnedId = highlightId;
     this.renderPinnedIcon(highlightId);
     this.ensureScrollListener();
+    this.ensureEscapeListener();
     this.logger.info('Delete icon pinned', { id: highlightId });
   }
 
@@ -70,6 +81,7 @@ export class DeleteIconOverlay {
     this.pinnedId = null;
     this.hideIcon(id);
     this.teardownScrollListener();
+    this.teardownEscapeListener();
     this.logger.info('Delete icon dismissed', { id });
   }
 
@@ -131,6 +143,7 @@ export class DeleteIconOverlay {
     this.activeIcons.clear();
     this.pinnedId = null;
     this.teardownScrollListener();
+    this.teardownEscapeListener();
   }
 
   clearSelection(): void {
@@ -155,17 +168,25 @@ export class DeleteIconOverlay {
     this.hideIconOnly(highlightId);
 
     const edges = getHighlightPainter().getFirstLineEdges(highlightId);
-    const icon = this.createIconElement(highlightId, highlight, config);
-    if (edges) {
-      this.applyExteriorPosition(icon, edges.start, edges.end);
-    } else {
-      const fallback = getHighlightPainter().getBoundingClientRect(highlightId);
-      if (!fallback) {
-        this.logger.warn('No geometry for pinned delete icon', { highlightId });
-        return;
-      }
-      this.applyExteriorPosition(icon, fallback, fallback);
+    const fallback = edges
+      ? null
+      : getHighlightPainter().getBoundingClientRect(highlightId);
+    if (!edges && !fallback) {
+      // Keep pin; retry on next scroll/resize rather than dropping chrome.
+      this.logger.warn('No geometry for pinned delete icon — will retry', {
+        highlightId,
+      });
+      return;
     }
+    const start = edges?.start ?? fallback!;
+    const end = edges?.end ?? fallback!;
+    const sampleX = end.right + DELETE_ICON_GAP_PX + DELETE_ICON_HIT_PX / 2;
+    const sampleY = end.top + end.height / 2;
+    const icon = this.createIconElement(highlightId, highlight, config, {
+      x: Math.min(Math.max(0, sampleX), window.innerWidth - 1),
+      y: Math.min(Math.max(0, sampleY), window.innerHeight - 1),
+    });
+    this.applyExteriorPosition(icon, start, end);
     document.body.appendChild(icon);
     this.activeIcons.set(highlightId, icon);
   }
@@ -182,20 +203,26 @@ export class DeleteIconOverlay {
   private createIconElement(
     id: string,
     highlight: HighlightDataV2,
-    config: DeletionConfig
+    config: DeletionConfig,
+    samplePoint?: { x: number; y: number },
   ): HTMLElement {
     const button = document.createElement('button');
+    button.type = 'button';
     button.className = 'underscore-delete-icon';
     button.setAttribute('aria-label', 'Delete highlight');
     button.setAttribute('data-highlight-id', id);
 
-    const colorClass = this.getColorClass(highlight.colorRole);
-    if (colorClass) {
-      button.classList.add(colorClass);
-    }
+    // Dynamic contrast from page (not pastel highlight-role tints).
+    const sx = samplePoint?.x ?? window.innerWidth / 2;
+    const sy = samplePoint?.y ?? 24;
+    const chrome = resolveDeleteIconChrome(samplePageBackgroundAt(sx, sy));
+    button.style.background = chrome.background;
+    button.style.color = chrome.color;
+    button.style.border = chrome.border;
+    button.style.boxShadow = chrome.boxShadow;
+    button.dataset['chromeTone'] = chrome.tone;
+    void highlight.colorRole;
 
-    const modeName = this.modeManager.getCurrentMode().name;
-    button.classList.add(`underscore-mode-${modeName}`);
     button.innerHTML = this.getIconSVG(config.iconType || 'trash');
 
     button.addEventListener('click', async (e) => {
@@ -317,17 +344,23 @@ export class DeleteIconOverlay {
   private applyExteriorPosition(
     icon: HTMLElement,
     firstLineStart: DOMRect,
-    firstLineEnd: DOMRect
+    firstLineEnd: DOMRect,
   ): void {
     const pos = positionExteriorIcon(firstLineStart, firstLineEnd, {
-      iconSize: 20,
-      gap: 4,
+      iconSize: DELETE_ICON_HIT_PX,
+      gap: DELETE_ICON_GAP_PX,
       scrollX: window.scrollX || window.pageXOffset || 0,
       scrollY: window.scrollY || window.pageYOffset || 0,
       viewportWidth: window.innerWidth,
     });
     icon.style.top = `${pos.top}px`;
     icon.style.left = `${pos.left}px`;
+    icon.style.width = `${DELETE_ICON_HIT_PX}px`;
+    icon.style.height = `${DELETE_ICON_HIT_PX}px`;
+    icon.style.minWidth = `${DELETE_ICON_HIT_PX}px`;
+    icon.style.minHeight = `${DELETE_ICON_HIT_PX}px`;
+    // Visual glyph scale inside hit box
+    icon.style.setProperty('--delete-icon-visual', `${DELETE_ICON_VISUAL_PX}px`);
   }
 
   private ensureScrollListener(): void {
@@ -344,21 +377,29 @@ export class DeleteIconOverlay {
     this.scrollListening = false;
   }
 
+  private ensureEscapeListener(): void {
+    if (this.escapeListening) return;
+    document.addEventListener('keydown', this.onDocumentKeydown, true);
+    this.escapeListening = true;
+  }
+
+  private teardownEscapeListener(): void {
+    if (!this.escapeListening) return;
+    document.removeEventListener('keydown', this.onDocumentKeydown, true);
+    this.escapeListening = false;
+  }
+
+  private onDocumentKeydown = (e: KeyboardEvent): void => {
+    if (e.key !== 'Escape' || !this.pinnedId) return;
+    e.stopPropagation();
+    this.clearSelection();
+    this.dismissPin();
+  };
+
   private onScrollOrResize = (): void => {
     if (!this.pinnedId) return;
     this.renderPinnedIcon(this.pinnedId);
   };
-
-  private getColorClass(colorRole: string): string | null {
-    const colorMap: Record<string, string> = {
-      yellow: 'underscore-delete-icon--yellow',
-      blue: 'underscore-delete-icon--blue',
-      green: 'underscore-delete-icon--green',
-      orange: 'underscore-delete-icon--orange',
-      purple: 'underscore-delete-icon--purple',
-    };
-    return colorMap[colorRole] || null;
-  }
 
   private getIconSVG(iconType: 'trash' | 'remove' | 'clear'): string {
     const icons = {

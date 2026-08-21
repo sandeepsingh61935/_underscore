@@ -70,7 +70,11 @@ export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
     title: 'No highlights yet',
     body: 'Read anything lately? Highlight a phrase to begin — or sign in to load your cloud library.',
     signInLabel: 'Sign in',
-    keyboardHint: 'Select text · press ⌘↩',
+    // Real chord is Ctrl/⌘+U (see shared/keyboard/shortcuts-table).
+    keyboardHint:
+      typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? 'Select text · press ⌘+U'
+        : 'Select text · press Ctrl+U',
   };
 }
 

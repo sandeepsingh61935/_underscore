@@ -1,9 +1,16 @@
-export type SettingsTab = 'account' | 'plan' | 'appearance' | 'ai' | 'data';
+export type SettingsTab =
+  | 'account'
+  | 'plan'
+  | 'appearance'
+  | 'keyboard'
+  | 'ai'
+  | 'data';
 
 const VALID_TABS: readonly SettingsTab[] = [
   'account',
   'plan',
   'appearance',
+  'keyboard',
   'ai',
   'data',
 ] as const;

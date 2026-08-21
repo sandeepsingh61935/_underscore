@@ -43,7 +43,8 @@ describe('product-surface-copy', () => {
     expect(c.title).toBe('No highlights yet');
     expect(c.body).toMatch(/Highlight/i);
     expect(c.signInLabel).toBe('Sign in');
-    expect(c.keyboardHint).toMatch(/⌘↩|Ctrl/);
+    expect(c.keyboardHint).toMatch(/⌘\+U|Ctrl\+U/);
+    expect(c.keyboardHint).not.toMatch(/↩/);
   });
 
   it('no matches copy offers reset', () => {
