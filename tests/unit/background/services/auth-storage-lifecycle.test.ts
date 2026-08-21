@@ -50,10 +50,17 @@ describe('handleAuthStorageEvent', () => {
 
     const syncCursor = { clear: vi.fn().mockResolvedValue(undefined) };
     const echoTracker = { clear: vi.fn() };
+    const persistGuestMode = vi.fn().mockResolvedValue(undefined);
 
     await handleAuthStorageEvent(
       { type: 'SIGNED_OUT' },
-      { scopedRepository: scoped, repositoryFacade: facade, syncCursor, echoTracker },
+      {
+        scopedRepository: scoped,
+        repositoryFacade: facade,
+        syncCursor,
+        echoTracker,
+        persistGuestMode,
+      },
     );
 
     expect(await pro.count()).toBe(0);
@@ -63,6 +70,7 @@ describe('handleAuthStorageEvent', () => {
     expect(facade.getAll()[0]?.id).toBe('basic-guest');
     expect(syncCursor.clear).toHaveBeenCalled();
     expect(echoTracker.clear).toHaveBeenCalled();
+    expect(persistGuestMode).toHaveBeenCalled();
     expect(notifyLibraryDataChanged).toHaveBeenCalledWith({
       source: 'auth_sign_out',
       deletedCount: 1,

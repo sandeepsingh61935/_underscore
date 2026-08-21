@@ -9,7 +9,7 @@ import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-d
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibraryRelatedHighlights } from '@/features/collections/components/LibraryRelatedHighlights';
 import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
-import { LibrarySortControl } from '@/features/collections/components/LibrarySortControl';
+import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
@@ -44,19 +44,6 @@ export interface SubDomainViewProps {
   onBack?: () => void;
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
-}
-
-function IconTrash(): React.ReactElement {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 export function SubDomainView({
@@ -220,80 +207,22 @@ export function SubDomainView({
     );
   }
 
+  const sectionTitle = section === '/' ? '/' : section;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
-      {/* Sticky chrome: title · actions · search · sort */}
-      <div
-        data-testid="section-sticky-chrome"
-        style={{
-          flexShrink: 0,
-          borderBottom: '1px solid var(--rule-soft)',
-          background: 'var(--paper)',
-        }}
-      >
-        <div style={{ padding: '10px 16px 6px' }}>
-          <div style={{ minWidth: 0 }}>
-            <div
-              className="u-sans"
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-              title={section === '/' ? 'HOME' : section}
-            >
-              {section === '/' ? 'HOME' : section}
-            </div>
-            <div
-              className="u-mono"
-              style={{
-                fontSize: 10,
-                color: 'var(--ink-3)',
-                marginTop: 2,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-              }}
-            >
-              {sectionHighlights.length}{' '}
-              {sectionHighlights.length === 1 ? 'highlight' : 'highlights'}
-            </div>
-          </div>
-          {sectionHighlights.length > 0 ? (
-            <div
-              className="scope-toolbar"
-              data-testid="section-scope-toolbar"
-              style={{
-                marginTop: 8,
-                paddingTop: 8,
-                borderTop: '1px solid var(--rule-soft)',
-                width: '100%',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <ExportActions
-                scope={{ kind: 'section', domain, sectionKey: section }}
-                highlightCount={sectionHighlights.length}
-                disabled={exportDisabled}
-                variant="menu"
-              />
-              <button
-                type="button"
-                className="sr-icon is-delete"
-                aria-label="Delete section"
-                title="Delete section"
-                onClick={() => setDeleteSectionOpen(true)}
-              >
-                <IconTrash />
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        <div style={{ padding: '0 16px 8px' }}>
+      <LibraryScopeChrome
+        testId="section-sticky-chrome"
+        toolbarTestId="section-scope-toolbar"
+        title={sectionTitle}
+        highlightCount={sectionHighlights.length}
+        exportScope={{ kind: 'section', domain, sectionKey: section }}
+        exportDisabled={exportDisabled}
+        onDelete={() => setDeleteSectionOpen(true)}
+        deleteAriaLabel="Delete section"
+        sort={sort}
+        onSortChange={setSort}
+        searchSlot={
           <HighlightSearchBar
             query={searchQuery}
             onQueryChange={setSearchQuery}
@@ -312,11 +241,8 @@ export function SubDomainView({
                   : undefined
             }
           />
-          <div style={{ marginTop: 8 }}>
-            <LibrarySortControl value={sort} onChange={setSort} fullWidth />
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 

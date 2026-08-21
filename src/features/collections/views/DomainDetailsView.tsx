@@ -6,6 +6,7 @@ import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlight
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
@@ -17,6 +18,7 @@ import { LibrarySectionRow } from '@/features/collections/components/LibrarySect
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import type { LibrarySortKey } from '@/shared/library/library-sort';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { displaySectionTitle } from '@/shared/services/section-label-store';
 import { getSectionKey } from '@/shared/utils/section-key';
@@ -43,19 +45,6 @@ export interface DomainDetailsViewProps {
   domain?: string;
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
-}
-
-function IconTrash(): React.ReactElement {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 export function DomainDetailsView({
@@ -92,6 +81,7 @@ export function DomainDetailsView({
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
+  const [sort, setSort] = useState<LibrarySortKey>('newest');
   const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   useEffect(() => {
@@ -138,10 +128,20 @@ export function DomainDetailsView({
         });
       }
     });
-    return Array.from(map.entries())
-      .map(([path, { count, lastActivity }]) => ({ path, count, lastActivity }))
-      .sort((a, b) => b.lastActivity - a.lastActivity || b.count - a.count);
-  }, [highlights]);
+    const list = Array.from(map.entries()).map(([path, { count, lastActivity }]) => ({
+      path,
+      count,
+      lastActivity,
+    }));
+    list.sort((a, b) => {
+      if (sort === 'oldest') {
+        return a.lastActivity - b.lastActivity || b.count - a.count;
+      }
+      // newest + other keys: recency first for section list
+      return b.lastActivity - a.lastActivity || b.count - a.count;
+    });
+    return list;
+  }, [highlights, sort]);
 
   const searchSectionGroups = useMemo(() => {
     if (!isSearching) return [];
@@ -212,74 +212,18 @@ export function DomainDetailsView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
-      <div
-        data-testid="domain-sticky-chrome"
-        style={{
-          flexShrink: 0,
-          borderBottom: '1px solid var(--rule-soft)',
-          background: 'var(--paper)',
-          padding: '10px 16px 10px',
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div
-            className="u-serif"
-            style={{
-              fontSize: 22,
-              fontStyle: 'italic',
-              letterSpacing: '-0.015em',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={domain}
-          >
-            {domain}
-          </div>
-          <div
-            className="u-mono"
-            style={{
-              fontSize: 10,
-              color: 'var(--ink-3)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.14em',
-              marginTop: 4,
-            }}
-          >
-            {highlights.length} {highlights.length === 1 ? 'highlight' : 'highlights'}
-          </div>
-        </div>
-        {highlights.length > 0 ? (
-          <div
-            className="scope-toolbar"
-            data-testid="domain-scope-toolbar"
-            style={{
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: '1px solid var(--rule-soft)',
-              width: '100%',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <ExportActions
-              scope={{ kind: 'domain', domain }}
-              highlightCount={highlights.length}
-              disabled={exportDisabled}
-              variant="menu"
-            />
-            <button
-              type="button"
-              className="sr-icon is-delete"
-              aria-label="Delete domain"
-              title="Delete domain"
-              onClick={() => setDeleteDomainOpen(true)}
-            >
-              <IconTrash />
-            </button>
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 10 }}>
+      <LibraryScopeChrome
+        testId="domain-sticky-chrome"
+        toolbarTestId="domain-scope-toolbar"
+        title={domain}
+        highlightCount={highlights.length}
+        exportScope={{ kind: 'domain', domain }}
+        exportDisabled={exportDisabled}
+        onDelete={() => setDeleteDomainOpen(true)}
+        deleteAriaLabel="Delete domain"
+        sort={sort}
+        onSortChange={setSort}
+        searchSlot={
           <HighlightSearchBar
             query={searchQuery}
             onQueryChange={setSearchQuery}
@@ -293,8 +237,8 @@ export function DomainDetailsView({
             resultCount={isSearching ? searchResultCount : undefined}
             placeholder="Search…"
           />
-        </div>
-      </div>
+        }
+      />
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ marginTop: 4 }}>

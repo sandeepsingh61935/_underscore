@@ -16,12 +16,10 @@ import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
-import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { freeEntitlement } from '@/shared/billing';
-import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { resolveProductCaps } from '@/shared/entitlement/resolveProductCaps';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
@@ -48,10 +46,9 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings — stacked IA (no topic chips):
- * Account → Mode (Guest|Account) → Billing Upcoming → Appearance →
- * Data → Integrations → Session → Legal footer.
- * Billing code remains; Polar CTAs are not exposed.
+ * Settings — stacked IA:
+ * Account → Appearance → Keyboard (subpage) → Data → Integrations → Session → Legal.
+ * No Mode control (sign-in / sign-out only). No Billing UI.
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -63,7 +60,6 @@ export function SettingsPage({
     theme,
     setTheme,
     currentMode,
-    setMode,
     user,
     logout: appLogout,
     isAuthenticated: appAuthenticated,
@@ -100,6 +96,7 @@ export function SettingsPage({
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
@@ -118,8 +115,6 @@ export function SettingsPage({
     isAuthenticated,
     caps: productCaps,
   });
-
-  const upcoming = billingUpcomingCopy();
 
   const handleSignOut = async (): Promise<void> => {
     if (isSigningOut) return;
@@ -167,24 +162,63 @@ export function SettingsPage({
     }
   };
 
-  const handleSelectGuest = (): void => {
-    if (!isAuthenticated) {
-      setMode('basic' as ModeType);
-      return;
-    }
-    setSignOutOpen(true);
-  };
-
-  const handleSelectAccount = (): void => {
-    if (!isAuthenticated) {
-      onSignIn?.();
-      return;
-    }
-    // Account mode: cloud pro (paid entitlement is separate / upcoming billing)
-    if (currentMode === 'basic') {
-      setMode('pro' as ModeType);
-    }
-  };
+  if (keyboardOpen) {
+    return (
+      <div
+        style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+        data-testid="settings-keyboard-page"
+      >
+        <div
+          style={{
+            padding: '10px 16px',
+            borderBottom: '1px solid var(--rule-soft)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <button
+            type="button"
+            className="u-mono"
+            data-testid="settings-keyboard-back"
+            onClick={() => setKeyboardOpen(false)}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              fontSize: 'var(--step--2)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-3)',
+            }}
+          >
+            ← Settings
+          </button>
+        </div>
+        <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
+          <div style={{ padding: '12px 16px 4px' }}>
+            <div
+              className="u-serif"
+              style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}
+            >
+              Keyboard
+            </div>
+            <p
+              className="u-sans"
+              style={{
+                margin: '6px 0 0',
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+                lineHeight: 1.45,
+              }}
+            >
+              Shortcuts while highlighting on a page.
+            </p>
+          </div>
+          <SettingsKeyboardSection hideHeading />
+        </div>
+      </div>
+    );
+  }
 
   if (connectOpen) {
     return (
@@ -239,26 +273,6 @@ export function SettingsPage({
           )}
         </div>
 
-        {/* Mode — Guest | Account */}
-        <SettingsModeSeg
-          currentMode={currentMode}
-          isAuthenticated={isAuthenticated}
-          isPaidActive={isPaidActive}
-          onSelectGuest={handleSelectGuest}
-          onSelectAccount={handleSelectAccount}
-        />
-
-        {/* Billing — Upcoming stub (no Polar CTAs) */}
-        <div data-testid="settings-section-billing">
-          <div
-            className="u-caps"
-            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-          >
-            {upcoming.title}
-          </div>
-          <Row title={upcoming.title} sub={upcoming.sub} />
-        </div>
-
         {/* Appearance */}
         <div>
           <div
@@ -279,7 +293,28 @@ export function SettingsPage({
           />
         </div>
 
-        <SettingsKeyboardSection />
+        {/* Keyboard — row opens dedicated page */}
+        <div data-testid="settings-section-keyboard-entry">
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Help
+          </div>
+          <Row
+            title="Keyboard"
+            sub="Shortcuts on pages you highlight"
+            right={
+              <BtnText
+                aria-label="Open keyboard shortcuts"
+                data-testid="settings-open-keyboard"
+                onClick={() => setKeyboardOpen(true)}
+              >
+                <SettingsStatusGlyph kind="chevron" label="Open" />
+              </BtnText>
+            }
+          />
+        </div>
 
         {/* Data */}
         {isAuthenticated ? (

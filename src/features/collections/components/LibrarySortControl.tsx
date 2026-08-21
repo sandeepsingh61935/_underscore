@@ -1,5 +1,5 @@
 /**
- * Compact sort control for popup library lists (web parity keys).
+ * Library list sort — boxed (legacy) or quiet mono text (ledger chrome).
  */
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -12,15 +12,19 @@ import {
 export type LibrarySortControlProps = {
   value: LibrarySortKey;
   onChange: (next: LibrarySortKey) => void;
-  /** Full-width row under search (domain/section sticky chrome). */
+  /** @deprecated Prefer variant="text" for section/domain chrome */
   fullWidth?: boolean;
+  /** text = mono Newest ▾ (no slab); boxed = bordered control */
+  variant?: 'text' | 'boxed';
 };
 
 export function LibrarySortControl({
   value,
   onChange,
   fullWidth = false,
+  variant,
 }: LibrarySortControlProps): React.ReactElement {
+  const mode = variant ?? (fullWidth ? 'boxed' : 'text');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,51 +38,52 @@ export function LibrarySortControl({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
+  const label = LIBRARY_SORT_LABELS[value];
+  const isText = mode === 'text';
+
   return (
     <div
       ref={ref}
       data-testid="library-sort"
-      style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}
+      style={{ position: 'relative', width: isText ? undefined : '100%' }}
     >
       <button
         type="button"
         className="u-mono"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={`Sort by ${label}`}
         onClick={() => setOpen((v) => !v)}
         style={{
           all: 'unset',
           cursor: 'pointer',
           display: 'inline-flex',
           alignItems: 'center',
-          justifyContent: fullWidth ? 'space-between' : undefined,
-          width: fullWidth ? '100%' : undefined,
+          gap: 4,
+          justifyContent: isText ? undefined : 'space-between',
+          width: isText ? undefined : '100%',
           boxSizing: 'border-box',
-          minHeight: 32,
-          padding: fullWidth ? '0 10px' : '0 8px',
-          border: '1px solid var(--rule-soft)',
+          minHeight: isText ? 28 : 32,
+          padding: isText ? '0 2px' : '0 10px',
+          border: isText ? 'none' : '1px solid var(--rule-soft)',
           fontSize: 'var(--step--2)',
-          letterSpacing: '0.06em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: 'var(--ink-2)',
-          background: 'var(--paper)',
+          color: 'var(--ink-3)',
+          background: 'transparent',
         }}
       >
-        <span>
-          Sort: {LIBRARY_SORT_LABELS[value]}
+        <span>{label}</span>
+        <span aria-hidden style={{ color: 'var(--ink-4)' }}>
+          ▾
         </span>
-        {fullWidth ? (
-          <span aria-hidden style={{ color: 'var(--ink-4)' }}>
-            ▾
-          </span>
-        ) : null}
       </button>
       {open ? (
         <div
           role="menu"
           style={{
             position: 'absolute',
-            right: 0,
+            left: 0,
             top: '100%',
             marginTop: 4,
             zIndex: 20,

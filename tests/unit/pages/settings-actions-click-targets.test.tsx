@@ -110,8 +110,7 @@ describe('SettingsPage action click targets', () => {
     expect(screen.getByText(/Delete entire library/i)).toBeTruthy();
   });
 
-  it('Guest|Account mode only; never starts Polar checkout from mode chips', () => {
-    const setMode = vi.fn();
+  it('has no Mode chips or billing CTAs; Keyboard opens subpage', () => {
     const startCheckout = vi.fn().mockResolvedValue(undefined);
 
     vi.mocked(useApp).mockReturnValue({
@@ -123,7 +122,7 @@ describe('SettingsPage action click targets', () => {
       login: vi.fn(),
       logout: vi.fn(),
       modeReady: true,
-      setMode,
+      setMode: vi.fn(),
       availableModes: ['pro', 'pro_xai'],
       isLoading: false,
       setIsLoading: vi.fn(),
@@ -151,15 +150,12 @@ describe('SettingsPage action click targets', () => {
     });
 
     render(<SettingsPage />);
-    expect(screen.getByTestId('settings-mode-account')).toHaveAttribute('aria-checked', 'true');
-    expect(screen.queryByTestId('settings-mode-free')).toBeNull();
-    expect(screen.queryByTestId('settings-mode-paid')).toBeNull();
+    expect(screen.queryByTestId('settings-mode-seg')).toBeNull();
     expect(screen.queryByTestId('billing-cta')).toBeNull();
-
-    // Guest while signed-in opens sign-out confirm — not checkout
-    fireEvent.click(screen.getByTestId('settings-mode-guest'));
+    expect(screen.queryByTestId('settings-section-billing')).toBeNull();
+    fireEvent.click(screen.getByTestId('settings-open-keyboard'));
+    expect(screen.getByTestId('settings-keyboard-page')).toBeTruthy();
     expect(startCheckout).not.toHaveBeenCalled();
-    expect(screen.getAllByText(/Sign out/i).length).toBeGreaterThan(0);
   });
 
   it('changes theme from Appearance segments only', () => {

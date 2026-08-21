@@ -8,7 +8,11 @@ import {
   detectShortcutPlatform,
 } from '@/shared/keyboard/shortcuts-table';
 
-export function SettingsKeyboardSection(): React.ReactElement {
+export function SettingsKeyboardSection(props?: {
+  /** Hide outer “Keyboard” kicker when parent page already titles it. */
+  hideHeading?: boolean;
+}): React.ReactElement {
+  const hideHeading = props?.hideHeading ?? false;
   const rows = useMemo(
     () => buildShortcutsTable(detectShortcutPlatform()),
     [],
@@ -16,12 +20,14 @@ export function SettingsKeyboardSection(): React.ReactElement {
 
   return (
     <div data-testid="settings-section-keyboard">
-      <div
-        className="u-caps"
-        style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-      >
-        Keyboard
-      </div>
+      {!hideHeading ? (
+        <div
+          className="u-caps"
+          style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+        >
+          Keyboard
+        </div>
+      ) : null}
       <div
         style={{
           margin: '0 16px 12px',
