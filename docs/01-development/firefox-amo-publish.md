@@ -23,7 +23,8 @@ Do **not** change the gecko `id` after the first AMO submission.
 | package license aligned to GPL-3.0-only | Done |
 | OAuth redirect allowlist (Supabase + Google) | **Open** — do after first temp install |
 | Firefox manual QA | **Open** |
-| Screenshots + AMO developer listing | **Open** |
+| Screenshots + listing creative | **Ready** — `store/amo/screenshots/out/` + `LISTING-COPY.md` |
+| AMO developer listing submit | **Open** |
 | Public privacy URL on web app | **Live** — https://underscore-web-3i0.pages.dev/privacy |
 
 ---
@@ -99,8 +100,10 @@ No optional `technicalAndInteraction` until a real telemetry sink ships.
 ### Listing assets
 
 - [x] Icon assets in package (`icon-128.png`, `icon-512.png`, …)
-- [ ] Screenshots (min 1; recommend 3–5) from **Firefox**: Home, Library, Settings, highlight on a page  
-  - 1280×800 or 640×400 preferred
+- [x] Marketing screenshots (5) — strategy + frames in `store/amo/`  
+  - Retina: `store/amo/screenshots/out/01–05.png` (2560×1600)  
+  - AMO canonical: `store/amo/screenshots/out/amo-1280/` (1280×800)  
+  - Regenerate: `npm run store:amo-screenshots`  
 - [ ] Optional promo tile later
 
 ### Permissions justification (paste into reviewer notes)
@@ -211,10 +214,13 @@ Sources zip excludes `.env*` and build output. Verified: no `.env` entries in th
 
 1. Temp-install Firefox → allowlist identity redirect  
 2. Full Firefox QA pass  
-3. Screenshots  
-4. AMO account + first upload (privacy URL: https://underscore-web-3i0.pages.dev/privacy)  
-5. Bump `package.json` version before each store upload (versions are immutable on AMO)  
-6. Optionally refresh root `README.md` product language (still mentions older mode names in places)
+3. AMO account + first upload  
+   - Privacy: https://underscore-web-3i0.pages.dev/privacy  
+   - Copy: `store/amo/LISTING-COPY.md`  
+   - Screenshots: `store/amo/screenshots/out/amo-1280/` (01→05)  
+   - Package: `npm run zip:firefox`  
+4. Bump `package.json` version before each store upload (versions are immutable on AMO)  
+5. Optionally refresh root `README.md` product language (still mentions older mode names in places)
 
 Chrome Web Store is separate: `npm run zip:chrome`.
 

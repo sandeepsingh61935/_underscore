@@ -27,6 +27,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip --browser firefox",
     "zip:chrome": "wxt zip --browser chrome",
+    "store:amo-screenshots": "node scripts/generate-amo-screenshots.mjs",
     "clean": "rm -rf .wxt dist .output",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
