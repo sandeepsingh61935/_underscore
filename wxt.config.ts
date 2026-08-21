@@ -1,50 +1,105 @@
 import { defineConfig } from 'wxt';
 import react from '@vitejs/plugin-react';
 
+/**
+ * Stable Firefox / AMO extension ID.
+ * MUST NOT change after the first AMO submission (updates bind to this id).
+ */
+const FIREFOX_EXTENSION_ID = 'underscore-highlighter@underscore';
+
+/** Shared host permissions (Chrome host_permissions / Firefox MV2 permissions). */
+const HOST_PERMISSIONS = [
+  'https://generativelanguage.googleapis.com/*',
+  'https://api.anthropic.com/*',
+  'https://api.openai.com/*',
+  'https://api.x.ai/*',
+  'https://openrouter.ai/*',
+  // Pin this Supabase project only (auth + billing edge)
+  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
+  // Polar checkout tabs (navigation; host also validated in openBillingUrl)
+  'https://polar.sh/*',
+  'https://sandbox.polar.sh/*',
+  'https://buy.polar.sh/*',
+  // Local Ollama + MCP bridge only — agent hosts use MCP, not in-app LLM.
+  'http://localhost:11434/*',
+  'http://127.0.0.1:11434/*',
+  'http://127.0.0.1:17342/*',
+  'ws://127.0.0.1:17342/*',
+] as const;
+
 export default defineConfig({
   srcDir: 'src',
-  // Ponytail: WXT's CLI --mode flag is ignored for env loading; build
-  // always resolves to production mode and skips .env.development.
-  // Single Supabase project; keep dev vars in .env.development and
-  // hardcode mode here so both `wxt` and `wxt build` load them.
-  // Side effect: output dir is .output/chrome-mv3-development instead of
-  // chrome-mv3. Update any deploy / load paths accordingly.
-  mode: 'development',
-    manifest: {
-    name: 'Underscore Highlighter',
-    description: 'Intelligent web highlighting with Basic, Pro, and 10x-Pro modes',
-    permissions: ['activeTab', 'storage', 'alarms', 'identity'],
-    externally_connectable: {
-      // WP-3: pin to our app origin only (no project-wide Pages wildcard)
-      matches: [
-        'http://localhost/*',
-        'http://127.0.0.1/*',
-        'https://underscore-web.pages.dev/*',
-      ],
-    },
-    host_permissions: [
-      'https://generativelanguage.googleapis.com/*',
-      'https://api.anthropic.com/*',
-      'https://api.openai.com/*',
-      'https://api.x.ai/*',
-      'https://openrouter.ai/*',
-      // WP-3: pin this Supabase project only (auth + billing edge)
-      'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
-      // Polar checkout tabs (navigation; host also validated in openBillingUrl)
-      'https://polar.sh/*',
-      'https://sandbox.polar.sh/*',
-      'https://buy.polar.sh/*',
-      // Local Ollama + MCP bridge only — agent hosts (Cursor, etc.) use MCP, not in-app LLM.
-      'http://localhost:11434/*',
-      'http://127.0.0.1:11434/*',
-      'http://127.0.0.1:17342/*',
-      'ws://127.0.0.1:17342/*',
+  // Chrome MV3 + Firefox MV3 (WXT emits Firefox background as scripts[]).
+  // Override per CLI with --mv2 if ever needed.
+  manifestVersion: 3,
+  manifest: ({ browser }) => {
+    const base = {
+      name: 'Underscore Highlighter',
+      // Chrome/AMO short description — product job, no internal mode names.
+      description:
+        'Highlight the web. Save passages to a library you can search, export, and sync.',
+      permissions: ['activeTab', 'storage', 'alarms', 'identity'] as string[],
+      host_permissions: [...HOST_PERMISSIONS],
+    };
+
+    if (browser === 'firefox') {
+      return {
+        ...base,
+        browser_specific_settings: {
+          gecko: {
+            id: FIREFOX_EXTENSION_ID,
+            // Firefox 115 ESR baseline — solid MV3 + identity support.
+            strict_min_version: '115.0',
+            // Required for new AMO listings (Nov 2025+ data consent).
+            // websiteContent / websiteActivity: highlight text + page URLs.
+            // contactInfo: account email when the user signs in.
+            data_collection_permissions: {
+              required: ['websiteContent', 'websiteActivity', 'contactInfo'],
+            },
+          },
+        },
+      };
+    }
+
+    // Chrome / Chromium — keep chrome-only identity + web-app bridge fields.
+    return {
+      ...base,
+      externally_connectable: {
+        // WP-3: pin to our app origin only (no project-wide Pages wildcard)
+        matches: [
+          'http://localhost/*',
+          'http://127.0.0.1/*',
+          'https://underscore-web.pages.dev/*',
+        ],
+      },
+      // Stable Chrome extension ID across installs (public key only).
+      key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAscBF885yu+HLeXanKa1oI4xU54hpAIWJcW5hq66TDiXinG2zELpD450LeV3sFI9aBwdhK1yALi/avAoaDhMqgH4z5LEMIZ22QYA2oJ4sQWcY69LHd06EzFY5mW3ToILHoFEs8U6xe/yvO6Jy2DevRmzIpo36x6Ij2orFBfnWzW2oBQaZSbTos3x8a1TO8MtniTulLk1D7mbp9Fa4ynTadydVopcw0HmzzGl7ZwxSUpkMgP0P3KxzHFQBD4VlEzvwXew13HtL2gQ8JR8I5SniLQ54M9z028+zqKRghbJXecbSRtkuJRxFejN1Zx8K0fzVrd2QCaQGYO9Qv6xz/scecwIDAQAB',
+      oauth2: {
+        client_id:
+          '753957667832-vmlcua87mf5umcbkbj93e4uu8qdfa9rj.apps.googleusercontent.com',
+        scopes: ['openid', 'email', 'profile'],
+      },
+    };
+  },
+  zip: {
+    name: 'underscore-highlighter',
+    // AMO requires readable sources when the package is minified.
+    zipSources: true,
+    excludeSources: [
+      '.output/**',
+      'dist/**',
+      'dist-web/**',
+      'graphify-out/**',
+      'src/graphify-out/**',
+      '.worktrees/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      '.env',
+      '.env.*',
+      '!.env.production.example',
+      '!.env.example',
     ],
-    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAscBF885yu+HLeXanKa1oI4xU54hpAIWJcW5hq66TDiXinG2zELpD450LeV3sFI9aBwdhK1yALi/avAoaDhMqgH4z5LEMIZ22QYA2oJ4sQWcY69LHd06EzFY5mW3ToILHoFEs8U6xe/yvO6Jy2DevRmzIpo36x6Ij2orFBfnWzW2oBQaZSbTos3x8a1TO8MtniTulLk1D7mbp9Fa4ynTadydVopcw0HmzzGl7ZwxSUpkMgP0P3KxzHFQBD4VlEzvwXew13HtL2gQ8JR8I5SniLQ54M9z028+zqKRghbJXecbSRtkuJRxFejN1Zx8K0fzVrd2QCaQGYO9Qv6xz/scecwIDAQAB',
-    oauth2: {
-      client_id: '753957667832-vmlcua87mf5umcbkbj93e4uu8qdfa9rj.apps.googleusercontent.com',
-      scopes: ['openid', 'email', 'profile'],
-    },
   },
   vite: () => ({
     plugins: [react()],

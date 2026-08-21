@@ -67,11 +67,20 @@ export class McpBridgeClientService {
     };
     browser.storage.onChanged.addListener(this.storageListener);
 
-    this.suspendListener = () => {
-      this.logger.info('[McpBridge] Service worker suspending — closing bridge');
-      this.stop();
+    // Chrome service workers expose onSuspend; Firefox MV3 event pages may not.
+    const runtimeWithSuspend = browser.runtime as typeof browser.runtime & {
+      onSuspend?: {
+        addListener: (cb: () => void) => void;
+        removeListener: (cb: () => void) => void;
+      };
     };
-    browser.runtime.onSuspend.addListener(this.suspendListener);
+    if (typeof runtimeWithSuspend.onSuspend?.addListener === 'function') {
+      this.suspendListener = () => {
+        this.logger.info('[McpBridge] Background suspending — closing bridge');
+        this.stop();
+      };
+      runtimeWithSuspend.onSuspend.addListener(this.suspendListener);
+    }
   }
 
   /** Re-check Paid gate after auth changes (logout / mode no longer eligible). */
@@ -87,7 +96,10 @@ export class McpBridgeClientService {
       this.storageListener = null;
     }
     if (this.suspendListener) {
-      browser.runtime.onSuspend.removeListener(this.suspendListener);
+      const runtimeWithSuspend = browser.runtime as typeof browser.runtime & {
+        onSuspend?: { removeListener: (cb: () => void) => void };
+      };
+      runtimeWithSuspend.onSuspend?.removeListener?.(this.suspendListener);
       this.suspendListener = null;
     }
     this.clearStartupTimer();

@@ -1,9 +1,9 @@
 {
   "name": "underscore-web-highlighter",
   "version": "0.1.0",
-  "description": "Web Highlighter Extension - Sprint Mode: Ephemeral highlighting for focused reading",
+  "description": "Underscore Highlighter — highlight the web and save passages to a searchable library",
   "author": "Sandeep Singh",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "keywords": [
     "browser-extension",
     "highlighter",
@@ -25,6 +25,8 @@
     "build": "wxt build",
     "build:firefox": "wxt build --browser firefox",
     "zip": "wxt zip",
+    "zip:firefox": "wxt zip --browser firefox",
+    "zip:chrome": "wxt zip --browser chrome",
     "clean": "rm -rf .wxt dist .output",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
