@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+import { guestBannerCopy } from '@/shared/copy/product-surface-copy';
+
 export interface GuestBannerProps {
   /** Optional override for the sign-in destination. Default /sign-in. */
   signInTo?: string;
@@ -13,13 +15,14 @@ export interface GuestBannerProps {
 export function GuestBanner({
   signInTo = '/sign-in',
 }: GuestBannerProps): React.ReactElement {
+  const copy = guestBannerCopy();
   return (
     <div className="banner" data-od-id="guest-banner">
       <div style={{ flex: 1, minWidth: 0 }} data-od-id="guest-passive">
-        Local only — sync, export, and Chat after sign-in.
+        {copy.body}
       </div>
       <Link to={signInTo} className="btn sm">
-        Sign in
+        {copy.signInLabel ?? 'Sign in'}
       </Link>
     </div>
   );

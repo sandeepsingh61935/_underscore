@@ -162,10 +162,10 @@ describe('CollectionsView search wiring', () => {
     await waitFor(() => {
       expect(screen.getByText('No matches')).toBeTruthy();
     });
-    // Empty-state CTA text (distinct from the input × with aria-label only).
+    // Empty-state CTA text (shared product copy: Clear search).
     const emptyClear = screen
-      .getAllByRole('button', { name: 'Clear' })
-      .find((el) => el.textContent?.includes('Clear'));
+      .getAllByRole('button')
+      .find((el) => el.textContent?.trim() === 'Clear search' || el.textContent?.trim() === 'Clear');
     expect(emptyClear).toBeTruthy();
   });
 

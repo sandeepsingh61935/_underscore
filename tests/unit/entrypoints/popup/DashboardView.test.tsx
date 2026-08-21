@@ -159,19 +159,19 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
   });
 
-  it('shows lean status only — no stats grid (pulse lives in Settings)', () => {
+  it('shows greeting/title, status, and compact stats (web Home parity)', () => {
     mockWithHighlights({ recentCount: 2 });
     render(<DashboardView />);
 
     expect(screen.getByTestId('home-status')).toBeTruthy();
+    expect(screen.getByTestId('home-title')).toBeTruthy();
     expect(screen.getByTestId('home-status').textContent).toMatch(/2 highlights/i);
     expect(screen.getByTestId('home-status').textContent).toMatch(/1 domains/i);
-    expect(screen.queryByTestId('home-stats')).toBeNull();
+    expect(screen.getByTestId('home-stats')).toBeTruthy();
     expect(screen.queryByTestId('library-pulse')).toBeNull();
     expect(screen.queryByText('This week')).toBeNull();
     expect(screen.queryByText('Resume')).toBeNull();
     expect(screen.queryByText('Needs')).toBeNull();
-    expect(screen.queryByText(/Good morning/i)).toBeNull();
   });
 
   it('does not show Ask about this page', () => {
@@ -181,20 +181,20 @@ describe('DashboardView v3 home anchor + stream', () => {
     expect(screen.queryByRole('button', { name: /Ask about this page/i })).toBeNull();
   });
 
-  it('collapses Recent behind Show more when more than three items', () => {
-    mockWithHighlights({ recentCount: 5 });
+  it('collapses Recent behind Show more when more than six items', () => {
+    mockWithHighlights({ recentCount: 8 });
     render(<DashboardView />);
 
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
-    expect(screen.getByText('Highlight quote 3')).toBeTruthy();
-    expect(screen.queryByText('Highlight quote 4')).toBeNull();
+    expect(screen.getByText('Highlight quote 6')).toBeTruthy();
+    expect(screen.queryByText('Highlight quote 7')).toBeNull();
 
     const toggle = screen.getByRole('button', { name: /Show more/i });
     expect(toggle.textContent).toMatch(/2/);
     fireEvent.click(toggle);
 
-    expect(screen.getByText('Highlight quote 4')).toBeTruthy();
-    expect(screen.getByText('Highlight quote 5')).toBeTruthy();
+    expect(screen.getByText('Highlight quote 7')).toBeTruthy();
+    expect(screen.getByText('Highlight quote 8')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Show less/i })).toBeTruthy();
   });
 

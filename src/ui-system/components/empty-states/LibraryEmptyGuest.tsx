@@ -1,20 +1,23 @@
 import React from 'react';
 
+import { libraryEmptyGuestCopy } from '@/shared/copy/product-surface-copy';
+
 export interface LibraryEmptyGuestProps {
   onSignIn?: () => void;
 }
 
 export function LibraryEmptyGuest({ onSignIn }: LibraryEmptyGuestProps): React.ReactElement {
+  const copy = libraryEmptyGuestCopy();
   return (
     <div style={{ flex: 1, padding: '6px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ padding: 12, border: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
-        <div className="u-kicker">No highlights yet</div>
+        <div className="u-kicker">{copy.title}</div>
         <div className="u-serif" style={{ fontSize: 14, marginTop: 6, lineHeight: 1.45 }}>
-          Read anything lately? Highlight a phrase to begin — or sign in to load your cloud library.
+          {copy.body}
         </div>
         {onSignIn && (
           <button type="button" className="btn accent sm" style={{ marginTop: 10 }} onClick={onSignIn}>
-            Sign in
+            {copy.signInLabel}
           </button>
         )}
       </div>
@@ -23,7 +26,7 @@ export function LibraryEmptyGuest({ onSignIn }: LibraryEmptyGuestProps): React.R
           Keyboard
         </div>
         <div className="u-serif" style={{ fontSize: 13, marginTop: 4 }}>
-          Select text · press <span className="u-mono">⌘↩</span>
+          {copy.keyboardHint}
         </div>
       </div>
     </div>

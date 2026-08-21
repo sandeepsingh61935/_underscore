@@ -4,6 +4,10 @@
  */
 
 import type { RelatednessDoc } from '@/shared/relatedness';
+import {
+  toRelatednessDoc as toDoc,
+  toRelatednessDocs as toDocs,
+} from '@/shared/relatedness/to-relatedness-doc';
 import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 
 /** Stable URL for same-page / same-domain signals (matches Library search shape). */
@@ -13,17 +17,27 @@ export function webHighlightUrl(h: Pick<WebHighlight, 'domain' | 'path'>): strin
 }
 
 export function toRelatednessDoc(h: WebHighlight): RelatednessDoc {
-  return {
+  return toDoc({
     id: h.id,
-    text: h.quote ?? '',
-    notes: h.note ?? '',
-    url: webHighlightUrl(h),
-    domain: h.domain ?? '',
-    tags: Array.isArray(h.tags) ? h.tags : [],
-    encrypted: h.encrypted === true,
-  };
+    quote: h.quote,
+    note: h.note,
+    domain: h.domain,
+    path: h.path,
+    tags: h.tags,
+    encrypted: h.encrypted,
+  });
 }
 
 export function toRelatednessDocs(rows: readonly WebHighlight[]): RelatednessDoc[] {
-  return rows.map(toRelatednessDoc);
+  return toDocs(
+    rows.map((h) => ({
+      id: h.id,
+      quote: h.quote,
+      note: h.note,
+      domain: h.domain,
+      path: h.path,
+      tags: h.tags,
+      encrypted: h.encrypted,
+    })),
+  );
 }

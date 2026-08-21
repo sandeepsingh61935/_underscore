@@ -7,11 +7,25 @@ import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import { LibraryRelatedHighlights } from '@/features/collections/components/LibraryRelatedHighlights';
+import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
+import { LibrarySortControl } from '@/features/collections/components/LibrarySortControl';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import {
+  useLibraryRelatednessService,
+  useRelatedHighlights,
+  useRelatedTags,
+} from '@/features/collections/hooks/useLibraryRelatedness';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import {
+  sortLibraryHighlights,
+  type LibrarySortKey,
+} from '@/shared/library/library-sort';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
+import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
@@ -83,12 +97,14 @@ export function SubDomainView({
   const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [sort, setSort] = useState<LibrarySortKey>('newest');
 
   useEffect(() => {
     setSearchQuery('');
     setRefine([]);
     setTagFilters([]);
     setSearchFields([...DEFAULT_SEARCH_FIELDS]);
+    setSort('newest');
   }, [domain, section]);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
@@ -110,6 +126,51 @@ export function SubDomainView({
     () => labelSuggestions.map((name) => ({ label: name })),
     [labelSuggestions],
   );
+
+  const relatedness = useLibraryRelatednessService(sectionHighlights);
+  const relatedTagResults = useRelatedTags(relatedness, tagFilters);
+  const relatedHighlightResults = useRelatedHighlights(
+    relatedness,
+    expandedHighlightId,
+  );
+
+  const sortedSectionHighlights = useMemo(() => {
+    const rows = filteredSectionHighlights.map((h) => ({
+      ...h,
+      activityMs: highlightActivityMs({
+        updatedAt: h.updatedAt,
+        createdAt: h.createdAt,
+      }),
+      domain,
+    }));
+    return sortLibraryHighlights(rows, sort);
+  }, [filteredSectionHighlights, sort, domain]);
+
+  const sortedSearchResults = useMemo(() => {
+    const rows = filteredSearchResults.map((r) => ({
+      ...r,
+      activityMs: highlightActivityMs({
+        createdAt: r.createdAt,
+      }),
+      text: r.text,
+      domain: r.domain,
+    }));
+    return sortLibraryHighlights(rows, sort);
+  }, [filteredSearchResults, sort]);
+
+  const relatedHighlightRows = useMemo(() => {
+    return relatedHighlightResults.map((r) => {
+      const h = sectionHighlights.find((x) => x.id === r.id);
+      return {
+        ...r,
+        text: h?.text ?? '',
+        domain: domain,
+        path: h ? getSectionKey({ url: h.url, path: h.path }) : section,
+      };
+    });
+  }, [relatedHighlightResults, sectionHighlights, domain, section]);
+
+  const noMatches = libraryNoMatchesCopy();
 
   const clearSearchAndFilters = (): void => {
     setSearchQuery('');
@@ -194,25 +255,43 @@ export function SubDomainView({
         </div>
 
         <div style={{ padding: '0 16px 8px' }}>
-          <HighlightSearchBar
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            fields={searchFields}
-            onFieldsChange={setSearchFields}
-            refine={refine}
-            onRefineChange={setRefine}
-            tagFilters={tagFilters}
-            onTagFiltersChange={setTagFilters}
-            availableTags={availableTags}
-            resultCount={
-              isSearching
-                ? filteredSearchResults.length
-                : hasRefineOrTags
-                  ? filteredSectionHighlights.length
-                  : undefined
-            }
-          />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <HighlightSearchBar
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                fields={searchFields}
+                onFieldsChange={setSearchFields}
+                refine={refine}
+                onRefineChange={setRefine}
+                tagFilters={tagFilters}
+                onTagFiltersChange={setTagFilters}
+                availableTags={availableTags}
+                resultCount={
+                  isSearching
+                    ? sortedSearchResults.length
+                    : hasRefineOrTags
+                      ? sortedSectionHighlights.length
+                      : undefined
+                }
+              />
+            </div>
+            <LibrarySortControl value={sort} onChange={setSort} />
+          </div>
         </div>
+
+        <LibraryRelatedTags
+          tags={relatedTagResults}
+          onSelectTag={(tag) => setTagFilters([tag])}
+        />
 
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
@@ -223,83 +302,97 @@ export function SubDomainView({
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
               <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
             </div>
-          ) : filteredSearchResults.length === 0 ? (
+          ) : sortedSearchResults.length === 0 ? (
             <EmptyState
               variant="no-results"
               size="sm"
-              title="No matches"
-              description="Try a different query"
-              action={{ label: 'Clear', onClick: clearSearchAndFilters }}
+              title={noMatches.title}
+              description={noMatches.body}
+              action={{ label: noMatches.resetLabel, onClick: clearSearchAndFilters }}
             />
           ) : (
-            filteredSearchResults.map((r) => (
+            sortedSearchResults.map((r) => (
+              <React.Fragment key={r.id}>
+                <LibraryHighlightTile
+                  highlight={{
+                    id: r.id,
+                    text: r.text,
+                    domain: r.domain,
+                    path: r.path,
+                    notes: r.notes,
+                    tags: r.tags,
+                    sourceKind: r.sourceKind,
+                    language: r.language,
+                    presentation: r.presentation,
+                  }}
+                  showLocationMeta={false}
+                  allowMarginalia={tagsGate.allowed}
+                  isExpanded={expandedHighlightId === r.id}
+                  onToggleExpand={() => {
+                    setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                  }}
+                  suggestions={labelSuggestions}
+                  onDelete={async () => {
+                    const result = await deleteScope({ scope: 'highlight', id: r.id });
+                    if (!result?.success) {
+                      throw new Error(result?.error ?? 'Delete failed');
+                    }
+                  }}
+                  matchBadge={formatMatchBadge(r.matchedFields)}
+                />
+                {expandedHighlightId === r.id ? (
+                  <LibraryRelatedHighlights
+                    items={relatedHighlightRows}
+                    onOpen={(id) => setExpandedHighlightId(id)}
+                  />
+                ) : null}
+              </React.Fragment>
+            ))
+          )
+        ) : hasRefineOrTags && sortedSectionHighlights.length === 0 ? (
+          <EmptyState
+            variant="no-results"
+            size="sm"
+            title={noMatches.title}
+            description={noMatches.body}
+            action={{ label: noMatches.resetLabel, onClick: clearSearchAndFilters }}
+          />
+        ) : (
+          sortedSectionHighlights.map((h) => (
+            <React.Fragment key={h.id}>
               <LibraryHighlightTile
-                key={r.id}
                 highlight={{
-                  id: r.id,
-                  text: r.text,
-                  domain: r.domain,
-                  path: r.path,
-                  notes: r.notes,
-                  tags: r.tags,
-                  sourceKind: r.sourceKind,
-                  language: r.language,
-                  presentation: r.presentation,
+                  id: h.id,
+                  text: h.text,
+                  domain,
+                  path: section,
+                  notes: h.notes,
+                  tags: h.tags,
+                  sourceKind: h.sourceKind,
+                  language: h.language,
+                  presentation: h.presentation,
                 }}
                 showLocationMeta={false}
                 allowMarginalia={tagsGate.allowed}
-                isExpanded={expandedHighlightId === r.id}
+                isExpanded={expandedHighlightId === h.id}
                 onToggleExpand={() => {
-                  setExpandedHighlightId((prev) => (prev === r.id ? null : r.id));
+                  setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
                 }}
                 suggestions={labelSuggestions}
                 onDelete={async () => {
-                  const result = await deleteScope({ scope: 'highlight', id: r.id });
+                  const result = await deleteScope({ scope: 'highlight', id: h.id });
                   if (!result?.success) {
                     throw new Error(result?.error ?? 'Delete failed');
                   }
                 }}
-                matchBadge={formatMatchBadge(r.matchedFields)}
               />
-            ))
-          )
-        ) : hasRefineOrTags && filteredSectionHighlights.length === 0 ? (
-          <EmptyState
-            variant="no-results"
-            size="sm"
-            title="No matches"
-            description="Try a different query"
-            action={{ label: 'Clear', onClick: clearSearchAndFilters }}
-          />
-        ) : (
-          filteredSectionHighlights.map((h) => (
-            <LibraryHighlightTile
-              key={h.id}
-              highlight={{
-                id: h.id,
-                text: h.text,
-                domain,
-                path: section,
-                notes: h.notes,
-                tags: h.tags,
-                sourceKind: h.sourceKind,
-                language: h.language,
-                presentation: h.presentation,
-              }}
-              showLocationMeta={false}
-              allowMarginalia={tagsGate.allowed}
-              isExpanded={expandedHighlightId === h.id}
-              onToggleExpand={() => {
-                setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
-              }}
-              suggestions={labelSuggestions}
-              onDelete={async () => {
-                const result = await deleteScope({ scope: 'highlight', id: h.id });
-                if (!result?.success) {
-                  throw new Error(result?.error ?? 'Delete failed');
-                }
-              }}
-            />
+              {expandedHighlightId === h.id ? (
+                <LibraryRelatedHighlights
+                  items={relatedHighlightRows}
+                  onOpen={(id) => setExpandedHighlightId(id)}
+                />
+              ) : null}
+            </React.Fragment>
           ))
         )}
       </div>

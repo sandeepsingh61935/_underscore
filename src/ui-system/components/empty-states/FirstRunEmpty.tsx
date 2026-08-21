@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { homeFirstRunCopy } from '@/shared/copy/product-surface-copy';
+
 export interface FirstRunEmptyProps {
   /** Guest local storage vs signed-in library. */
   guest?: boolean;
@@ -14,6 +16,7 @@ export function FirstRunEmpty({
   guest = true,
   onSignIn,
 }: FirstRunEmptyProps): React.ReactElement {
+  const copy = homeFirstRunCopy({ guest });
   return (
     <div
       style={{
@@ -39,7 +42,7 @@ export function FirstRunEmpty({
           margin: 0,
         }}
       >
-        No highlights yet
+        {copy.title}
       </p>
       <p
         style={{
@@ -50,9 +53,9 @@ export function FirstRunEmpty({
           margin: 0,
         }}
       >
-        Select text on a page to save it {guest ? 'on this device' : 'to your library'}.
+        {copy.body}
       </p>
-      {guest && onSignIn ? (
+      {guest && onSignIn && copy.signInLabel ? (
         <button
           type="button"
           onClick={onSignIn}
@@ -72,7 +75,7 @@ export function FirstRunEmpty({
             textUnderlineOffset: 3,
           }}
         >
-          Sign in to sync
+          {copy.signInLabel}
         </button>
       ) : null}
     </div>

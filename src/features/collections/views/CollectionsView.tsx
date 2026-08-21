@@ -32,6 +32,15 @@ import {
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
+import {
+  useLibraryRelatednessService,
+  useRelatedTags,
+} from '@/features/collections/hooks/useLibraryRelatedness';
+import {
+  guestLibraryLocalBannerCopy,
+  libraryNoMatchesCopy,
+} from '@/shared/copy/product-surface-copy';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
@@ -110,6 +119,24 @@ export function CollectionsView({
     [userTags],
   );
 
+  const relatednessInputs = useMemo(
+    () =>
+      filteredResults.map((r) => ({
+        id: r.id,
+        text: r.text,
+        notes: r.notes,
+        url: r.url,
+        domain: r.domain,
+        path: r.path,
+        tags: r.tags,
+      })),
+    [filteredResults],
+  );
+  const relatedness = useLibraryRelatednessService(relatednessInputs);
+  const relatedTagResults = useRelatedTags(relatedness, tagFilters);
+  const noMatches = libraryNoMatchesCopy();
+  const guestLocalBanner = guestLibraryLocalBannerCopy();
+
   const clearSearchAndFilters = (): void => {
     setSearchQuery('');
     setSearchFields([...DEFAULT_SEARCH_FIELDS]);
@@ -179,6 +206,7 @@ export function CollectionsView({
       {!isAuthenticated && totalHighlights > 0 && (
         <div
           className="u-sans"
+          data-testid="library-guest-local-banner"
           style={{
             margin: '10px 16px 0',
             padding: 12,
@@ -189,7 +217,17 @@ export function CollectionsView({
             lineHeight: 1.45,
           }}
         >
-          Local only. Sign in to sync across devices and unlock export and AI.
+          {guestLocalBanner.body}
+          {onSignIn ? (
+            <button
+              type="button"
+              className="btn accent sm"
+              style={{ marginTop: 10, display: 'block' }}
+              onClick={onSignIn}
+            >
+              {guestLocalBanner.signInLabel ?? 'Sign in'}
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -209,6 +247,10 @@ export function CollectionsView({
       </div>
 
       <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <LibraryRelatedTags
+          tags={relatedTagResults}
+          onSelectTag={(tag) => setTagFilters([tag])}
+        />
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
@@ -222,9 +264,9 @@ export function CollectionsView({
             <EmptyState
               variant="no-results"
               size="sm"
-              title="No matches"
-              description="Try a different query"
-              action={{ label: 'Clear', onClick: clearSearchAndFilters }}
+              title={noMatches.title}
+              description={noMatches.body}
+              action={{ label: noMatches.resetLabel, onClick: clearSearchAndFilters }}
             />
           ) : (
             searchGroups.map((group) => (

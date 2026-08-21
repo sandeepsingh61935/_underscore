@@ -155,25 +155,26 @@ describe('SettingsPage basic mode boundaries', () => {
     expect(screen.queryByTestId('billing-cta')).toBeNull();
   });
 
-  it('orders Mode → Typography → Appearance → AI for guests', () => {
+  it('orders Mode → Appearance → Integrations for guests (web topic IA)', () => {
     render(<SettingsPage />);
     assertSectionOrder([
       'settings-section-mode',
-      'settings-section-typography',
       'settings-section-appearance',
       'settings-section-ai',
     ]);
+    expect(screen.getByTestId('settings-topic-nav')).toBeTruthy();
+    expect(screen.getByTestId('settings-section-typography')).toBeTruthy();
   });
 
-  it('shows Models & providers and Integrations with lock status for guest', () => {
+  it('shows Integrations locked for guest (Models/Ask retired)', () => {
     render(<SettingsPage />);
 
-    expect(screen.getByText('Integrations')).toBeTruthy();
-    expect(screen.getByText('Let agents use your library')).toBeTruthy();
-    expect(screen.getByText('Models & providers')).toBeTruthy();
-    expect(screen.getByText('Keys for Ask')).toBeTruthy();
-    expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
-    expect(screen.queryByText(/OpenAI, Claude, Gemini/)).toBeNull();
+    expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
+    expect(screen.getAllByText(/Integrations/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Sign in to use account features/i)).toBeTruthy();
+    expect(screen.queryByText('Models & providers')).toBeNull();
+    expect(screen.queryByText('Keys for Ask')).toBeNull();
+    expect(screen.getByLabelText('Locked')).toBeTruthy();
     expect(screen.queryByTestId('connect-to-ai-flow-mock')).toBeNull();
   });
 
@@ -207,13 +208,13 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     mockBilling(true);
   });
 
-  it('shows Integrations and Models & providers open for signed-in Account (Paid)', () => {
+  it('shows Integrations open for signed-in Account (Paid); Models/Ask retired', () => {
     render(<SettingsPage />);
-    expect(screen.getByText('Integrations')).toBeTruthy();
-    expect(screen.getByText('Let agents use your library')).toBeTruthy();
-    expect(screen.getByText('Models & providers')).toBeTruthy();
-    expect(screen.getByText('Keys for Ask')).toBeTruthy();
-    expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
+    expect(screen.getByText(/Let agents use your library/)).toBeTruthy();
+    expect(screen.queryByText('Models & providers')).toBeNull();
+    expect(screen.queryByText('Keys for Ask')).toBeNull();
+    expect(screen.getAllByLabelText('Open').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Paid');
     expect(screen.getByText('Billing')).toBeTruthy();
     expect(screen.getByTestId('billing-cta').textContent).toBe('Manage');
@@ -237,13 +238,12 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     expect(startCheckout).not.toHaveBeenCalled();
   });
 
-  it('orders Mode → Typography → Appearance → Account → Library → AI → Session', () => {
+  it('orders Account → Mode → Appearance → Data → Integrations → Session', () => {
     render(<SettingsPage />);
     assertSectionOrder([
-      'settings-section-mode',
-      'settings-section-typography',
-      'settings-section-appearance',
       'settings-section-account',
+      'settings-section-mode',
+      'settings-section-appearance',
       'settings-section-library',
       'settings-section-ai',
       'settings-section-session',
@@ -251,12 +251,12 @@ describe('SettingsPage pro_xai mode boundaries', () => {
     const account = screen.getByTestId('settings-section-account');
     const billingCta = screen.getByTestId('billing-cta');
     const typography = screen.getByTestId('settings-section-typography');
-    // Billing trails account; Mode/Typography come before Account.
+    // Billing trails account header; Appearance/typography trail Account.
     expect(
       account.compareDocumentPosition(billingCta) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      typography.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING
+      account.compareDocumentPosition(typography) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 });
@@ -280,10 +280,10 @@ describe('SettingsPage Pro (non-AI) mode boundaries', () => {
   it('shows Free pill, Upgrade CTA, and Refresh recovery row', () => {
     const { startCheckout, openPortal, syncFromPolar } = mockBilling(false);
     render(<SettingsPage />);
-    expect(screen.getByText('Integrations')).toBeTruthy();
-    expect(screen.getByText('Models & providers')).toBeTruthy();
-    expect(screen.getByText('Keys for Ask')).toBeTruthy();
-    expect(screen.getAllByLabelText('Locked').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
+    expect(screen.queryByText('Models & providers')).toBeNull();
+    expect(screen.queryByText('Keys for Ask')).toBeNull();
+    // Free-window may unlock Integrations for Free users — do not require Locked.
     expect(screen.getByTestId('account-plan-pill').textContent).toBe('Free');
     expect(screen.getByText('Upgrade to Paid')).toBeTruthy();
     expect(screen.getByTestId('billing-cta').textContent).toBe('Upgrade');

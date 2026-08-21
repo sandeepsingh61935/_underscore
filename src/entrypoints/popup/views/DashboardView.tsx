@@ -1,8 +1,7 @@
 /**
- * Home — Anchor + Stream (v3).
- * Layout: lean status → Current page → Recent stream.
- * Full library stats live in Settings (LibraryPulse), not here.
- * Wireframe: ui_kits/extension/v3/screens-home.jsx
+ * Home — web product parity compressed for popup.
+ * Layout: greeting/status → stats → Current page (tab) → Active pages → Recent.
+ * Wireframe: ui_kits/extension/v3/screens-home.jsx + web Home IA
  */
 import React, { useMemo, useState } from 'react';
 
@@ -11,6 +10,11 @@ import { copyHighlightPlainText } from '@/features/collections/hooks/useHighligh
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import {
+  buildActivePages,
+  buildPopupHomeModel,
+} from '@/shared/home/home-model';
+import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { FirstRunEmpty } from '@/ui-system/components/empty-states/FirstRunEmpty';
@@ -18,8 +22,9 @@ import { HighlightMarkdownBody } from '@/ui-system/components/primitives/Highlig
 import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
-/** Default collapsed Recent length (v3 mock HomeGuest). */
-const RECENT_COLLAPSE_COUNT = 3;
+/** Collapsed Recent length (web uses 6; popup starts lean). */
+const RECENT_COLLAPSE_COUNT = 6;
+const ACTIVE_PAGES_CAP = 6;
 
 export interface DashboardViewProps {
   onLogout?: () => void;
@@ -33,24 +38,36 @@ function formatPath(path: string | null | undefined): string {
   return path;
 }
 
-function StatusLine({
-  guest,
-  displayName,
-  totalHighlights,
-  totalDomains,
+function HomeHeader({
+  title,
+  statusLine,
+  highlightCount,
+  domainCount,
 }: {
-  guest: boolean;
-  displayName?: string | null;
-  totalHighlights: number;
-  totalDomains: number;
+  title: string;
+  statusLine: string;
+  highlightCount: number;
+  domainCount: number;
 }): React.ReactElement {
-  const who = guest ? 'Local only' : (displayName?.split(' ')[0] || 'Account');
   return (
-    <div data-testid="home-status" style={{ padding: '10px 16px 8px' }}>
+    <div data-testid="home-status" style={{ padding: '12px 16px 10px' }}>
+      <h1
+        className="u-serif"
+        data-testid="home-title"
+        style={{
+          margin: 0,
+          fontSize: 'var(--step-3)',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.15,
+          color: 'var(--ink)',
+        }}
+      >
+        {title}
+      </h1>
       <p
         className="u-mono"
         style={{
-          margin: 0,
+          margin: '6px 0 0',
           fontSize: 'var(--step--2)',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
@@ -59,19 +76,124 @@ function StatusLine({
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {who}
-        <span style={{ margin: '0 0.35em', color: 'var(--ink-4)', letterSpacing: 0 }} aria-hidden>
-          ·
-        </span>
-        <span style={{ color: 'var(--ink-2)' }}>{totalHighlights}</span>
-        {' highlights'}
-        <span style={{ margin: '0 0.35em', color: 'var(--ink-4)', letterSpacing: 0 }} aria-hidden>
-          ·
-        </span>
-        <span style={{ color: 'var(--ink-2)' }}>{totalDomains}</span>
-        {' domains'}
+        {statusLine}
       </p>
+      <div
+        data-testid="home-stats"
+        style={{
+          display: 'flex',
+          gap: 16,
+          marginTop: 12,
+        }}
+      >
+        <div>
+          <div
+            className="u-mono"
+            style={{
+              fontSize: 'var(--step--2)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-4)',
+            }}
+          >
+            Highlights
+          </div>
+          <div
+            className="u-serif"
+            style={{ fontSize: 'var(--step-2)', color: 'var(--ink)', marginTop: 2 }}
+          >
+            {highlightCount}
+          </div>
+        </div>
+        <div>
+          <div
+            className="u-mono"
+            style={{
+              fontSize: 'var(--step--2)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-4)',
+            }}
+          >
+            Domains
+          </div>
+          <div
+            className="u-serif"
+            style={{ fontSize: 'var(--step-2)', color: 'var(--ink)', marginTop: 2 }}
+          >
+            {domainCount}
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function ActivePagesList({
+  pages,
+  onSectionClick,
+}: {
+  pages: Array<{ domain: string; path: string; count: number }>;
+  onSectionClick?: (domain: string, section: string) => void;
+}): React.ReactElement | null {
+  if (pages.length === 0) return null;
+  return (
+    <section data-testid="home-active-pages" style={{ padding: '10px 16px 4px' }}>
+      <div
+        className="u-mono"
+        style={{
+          fontSize: 'var(--step--2)',
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'var(--ink-3)',
+          marginBottom: 8,
+        }}
+      >
+        Active pages
+      </div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {pages.map((p) => {
+          const sectionKey = p.path || '/';
+          const label = `${p.domain}${p.path && p.path !== '/' ? p.path : ''}`;
+          return (
+            <li key={`${p.domain}\0${p.path}`}>
+              <button
+                type="button"
+                className="u-mono"
+                disabled={!onSectionClick}
+                onClick={() => onSectionClick?.(p.domain, sectionKey)}
+                style={{
+                  all: 'unset',
+                  cursor: onSectionClick ? 'pointer' : 'default',
+                  display: 'flex',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '8px 0',
+                  borderBottom: '1px solid var(--rule-soft)',
+                  fontSize: 'var(--step--2)',
+                  letterSpacing: '0.04em',
+                  color: 'var(--ink-2)',
+                }}
+              >
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    minWidth: 0,
+                  }}
+                >
+                  {label}
+                </span>
+                <span style={{ color: 'var(--ink-4)', flexShrink: 0 }}>{p.count}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -460,7 +582,42 @@ export function DashboardView({
   const recentHighlights = dashboardData?.recentHighlights ?? [];
   const libraryAccess = resolveLibraryAccess(isAuthenticated, totalHighlights);
   const isGuest = !isAuthenticated || mode === 'basic';
-  const isFirstRun = totalHighlights === 0 && recentHighlights.length === 0;
+
+  const displayName =
+    user?.displayName?.trim()?.split(/\s+/)[0] ||
+    user?.email?.split('@')[0] ||
+    null;
+
+  const homeModel = buildPopupHomeModel({
+    isAuthenticated: Boolean(isAuthenticated) && mode !== 'basic',
+    displayName,
+    totalHighlights,
+    totalDomains,
+    tabDomain: tabContext.domain,
+    tabPath: tabContext.path,
+    currentPageHighlightCount: currentPageHighlightsCount,
+    recentCount: recentHighlights.length,
+  });
+
+  const activePages = useMemo(() => {
+    const rows = recentHighlights.map((h) => ({
+      id: h.id,
+      domain: h.domain,
+      path: h.path || '/',
+      savedAt: highlightActivityMs({
+        updatedAt: h.updatedAt,
+        createdAt: h.createdAt,
+      }),
+    }));
+    const current =
+      tabContext.domain
+        ? { domain: tabContext.domain, path: currentSectionKey }
+        : null;
+    return buildActivePages(rows, current, {
+      excludeCurrent: true,
+      cap: ACTIVE_PAGES_CAP,
+    });
+  }, [recentHighlights, tabContext.domain, currentSectionKey]);
 
   const pathDisplay = formatPath(tabContext.path);
   const canOpenSection = Boolean(tabContext.domain && onSectionClick);
@@ -471,7 +628,7 @@ export function DashboardView({
   };
 
   // First-run: calm empty only (no status / anchor inventing a page).
-  if (isFirstRun) {
+  if (homeModel.emptyKind === 'first_run') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
         <FirstRunEmpty
@@ -500,11 +657,11 @@ export function DashboardView({
       }}
     >
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <StatusLine
-          guest={isGuest}
-          displayName={user?.displayName}
-          totalHighlights={totalHighlights}
-          totalDomains={totalDomains}
+        <HomeHeader
+          title={homeModel.title}
+          statusLine={homeModel.statusLine}
+          highlightCount={homeModel.stats.highlightCount}
+          domainCount={homeModel.stats.domainCount}
         />
         <CurrentPageBand
           domain={tabContext.domain}
@@ -513,6 +670,7 @@ export function DashboardView({
           canOpen={canOpenSection}
           onOpen={openCurrentPage}
         />
+        <ActivePagesList pages={activePages} onSectionClick={onSectionClick} />
       </div>
 
       <div

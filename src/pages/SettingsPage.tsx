@@ -17,11 +17,17 @@ import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalC
 import { SettingsModeSeg } from '@/features/settings/components/SettingsModeSeg';
 import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
+import { SettingsTopicNav } from '@/features/settings/components/SettingsTopicNav';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { getModeBranding } from '@/shared/constants/mode-branding';
 import { freeEntitlement } from '@/shared/billing';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import { resolveProductCaps } from '@/shared/entitlement/resolveProductCaps';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import {
+  resolveSettingsActionGates,
+  settingsTopicsForSurface,
+} from '@/shared/settings/settings-topic-ia';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import {
   deleteLibraryCopy,
@@ -126,6 +132,7 @@ export function SettingsPage({
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [activeTopic, setActiveTopic] = useState<string>('account');
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
@@ -134,6 +141,26 @@ export function SettingsPage({
     isPaidActive,
     billing?.snapshot.entitlement.status === 'past_due',
   );
+  const productCaps = resolveProductCaps({
+    isAuthenticated,
+    isPaidActive,
+    billingStatus: billingEntitlement.status,
+  });
+  const settingsGates = resolveSettingsActionGates({
+    surface: 'popup',
+    isAuthenticated,
+    caps: productCaps,
+  });
+  const settingsTopics = settingsTopicsForSurface('popup');
+
+  const scrollToTopic = (id: string): void => {
+    setActiveTopic(id);
+    if (typeof document === 'undefined') return;
+    const el = document.querySelector(`[data-settings-topic="${id}"]`);
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const planPill = resolveAccountPillLabel({
     modeId: currentMode,
@@ -269,10 +296,31 @@ export function SettingsPage({
         <div className="u-serif" style={{ fontSize: 'var(--step-3)', letterSpacing: '-0.02em' }}>
           Settings
         </div>
+        <div
+          className="u-mono"
+          data-testid="settings-plan-kicker"
+          style={{
+            marginTop: 4,
+            fontSize: 'var(--step--2)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-3)',
+          }}
+        >
+          {productCaps.planLabel}
+          {settingsGates.canUseIntegrations ? ' · Integrations on' : ''}
+        </div>
       </div>
 
+      <SettingsTopicNav
+        topics={settingsTopics}
+        activeId={activeTopic}
+        onSelect={scrollToTopic}
+      />
+
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
-        {/* 1. Local card (guest) — Open Design mockup */}
+        {/* Account */}
+        <div data-settings-topic="account" data-testid="settings-section-account-wrap">
         {!user ? (
           <div data-testid="settings-guest-card">
             <SettingsLocalCard
@@ -282,31 +330,6 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {/* 2. Mode / Plan segments — always */}
-        <SettingsModeSeg
-          currentMode={currentMode}
-          isAuthenticated={isAuthenticated}
-          isPaidActive={isPaidActive}
-          onSelectGuest={handleSelectGuest}
-          onSelectFree={handleSelectFree}
-          onSelectPaid={handleSelectPaid}
-        />
-
-        {/* 3. Typography */}
-        <div data-testid="settings-section-typography">
-          <TypographySettings
-            expanded={typographyExpanded}
-            onToggle={() => setTypographyExpanded((v) => !v)}
-          />
-        </div>
-
-        {/* 4. Appearance / Theme segments */}
-        <SettingsThemeSeg
-          theme={theme}
-          onChange={(t) => setTheme(t)}
-        />
-
-        {/* 5. Account + billing (signed-in) */}
         {user ? (
           <>
             <div
@@ -402,6 +425,69 @@ export function SettingsPage({
           /* Anchor for section-order tests when guest: account region is local card */
           <div data-testid="settings-section-account" hidden aria-hidden="true" />
         )}
+        </div>
+
+        {/* Mode (extension-native) */}
+        <div data-settings-topic="mode">
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Mode
+          </div>
+          <SettingsModeSeg
+            currentMode={currentMode}
+            isAuthenticated={isAuthenticated}
+            isPaidActive={isPaidActive}
+            onSelectGuest={handleSelectGuest}
+            onSelectFree={handleSelectFree}
+            onSelectPaid={handleSelectPaid}
+          />
+        </div>
+
+        {/* Plan */}
+        <div data-settings-topic="plan" data-testid="settings-section-plan">
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Plan
+          </div>
+          <Row
+            title={productCaps.planLabel}
+            sub={
+              productCaps.isGuest
+                ? 'Sign in for Free sync and export'
+                : productCaps.isPastDue
+                  ? 'Update billing to restore Integrations'
+                  : productCaps.isPaidActive
+                    ? 'Paid · Integrations unlocked'
+                    : productCaps.freeWindow
+                      ? 'Free · Integrations early access'
+                      : 'Free · sync and export on'
+            }
+          />
+        </div>
+
+        {/* Appearance */}
+        <div data-settings-topic="appearance">
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Appearance
+          </div>
+          <div data-testid="settings-section-typography">
+            <TypographySettings
+              expanded={typographyExpanded}
+              onToggle={() => setTypographyExpanded((v) => !v)}
+            />
+          </div>
+          <SettingsThemeSeg
+            theme={theme}
+            onChange={(t) => setTheme(t)}
+          />
+        </div>
 
         {user && billingReturn ? (
           <div
@@ -438,7 +524,7 @@ export function SettingsPage({
               {billingReturn.kind === 'cancel'
                 ? 'No charge was made. You can upgrade anytime from above.'
                 : billingReturn.kind === 'success_active'
-                  ? 'Your account is upgraded to Account (Paid). AI and agent connections are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
+                  ? 'Your account is upgraded to Account (Paid). Integrations are unlocked. You can close this tab and reopen the extension — it will show Paid for the same login.'
                   : 'Your payment went through. We are activating Account (Paid) now — this usually takes a few seconds. Use Sync above if status stays Free, then reopen the extension with the same account.'}
             </div>
             {billingReturn.kind === 'success_pending' ? (
@@ -476,15 +562,15 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {/* 6. Library pulse + tools */}
+        {/* Data (library tools) */}
         {isAuthenticated ? (
-          <>
+          <div data-settings-topic="data" data-testid="settings-section-data">
             <div
               className="u-caps"
               data-testid="settings-section-library"
               style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
             >
-              Library
+              Data
             </div>
             <LibraryPulse
               totalHighlights={dashboardData?.totalHighlights ?? 0}
@@ -563,24 +649,29 @@ export function SettingsPage({
                 <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
               }
             />
-            <Row
-              title="Delete library"
-              sub={undefined}
-              right={
-                <button
-                  type="button"
-                  className="btn ghost sm danger"
-                  aria-label="Delete library"
-                  onClick={() => setDeleteLibraryOpen(true)}
-                >
-                  Delete
-                </button>
-              }
-            />
-          </>
-        ) : null}
+            {settingsGates.canDeleteLibrary ? (
+              <Row
+                title="Delete library"
+                sub={undefined}
+                right={
+                  <button
+                    type="button"
+                    className="btn ghost sm danger"
+                    aria-label="Delete library"
+                    onClick={() => setDeleteLibraryOpen(true)}
+                  >
+                    Delete
+                  </button>
+                }
+              />
+            ) : null}
+          </div>
+        ) : (
+          <div data-settings-topic="data" data-testid="settings-section-data" hidden aria-hidden="true" />
+        )}
 
-        {/* 7. Integrations (MCP) — Models/Ask product retired */}
+        {/* Integrations (MCP) — Models/Ask product retired */}
+        <div data-settings-topic="integrations" data-testid="settings-section-integrations">
         <div
           className="u-caps"
           data-testid="settings-section-ai"
@@ -590,7 +681,11 @@ export function SettingsPage({
         </div>
         <Row
           title="Integrations"
-          sub="Let agents use your library (MCP)"
+          sub={
+            settingsGates.canUseIntegrations
+              ? 'Let agents use your library (MCP)'
+              : settingsGates.integrationsLockReason ?? 'Let agents use your library (MCP)'
+          }
           right={
             <BtnText
               aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}
@@ -603,6 +698,7 @@ export function SettingsPage({
             </BtnText>
           }
         />
+        </div>
 
         {/* 8. Session */}
         {user ? (
