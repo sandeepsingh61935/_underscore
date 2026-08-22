@@ -162,6 +162,11 @@ export class AuthManager implements IAuthManager {
         let redirectUrl: string | undefined;
 
         try {
+            const { ensureSupabaseOrigin } = await import('@/shared/permissions/ensure-origins');
+            if (!(await ensureSupabaseOrigin())) {
+                throw new Error('Permission to access the account service was denied');
+            }
+
             redirectUrl = chrome.identity.getRedirectURL();
 
             if (provider !== 'google') {

@@ -7,20 +7,23 @@ import react from '@vitejs/plugin-react';
  */
 const FIREFOX_EXTENSION_ID = 'underscore-highlighter@underscore';
 
-/** Shared host permissions (Chrome host_permissions / Firefox MV2 permissions). */
-const HOST_PERMISSIONS = [
+/** Account/sync backend — required so session restore works after restart. */
+const REQUIRED_HOST_PERMISSIONS = [
+  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
+] as const;
+
+/**
+ * Optional hosts — requested only when the user enables the feature.
+ * Keeps install/AMO from implying AI/localhost access is mandatory.
+ */
+const OPTIONAL_HOST_PERMISSIONS = [
   'https://generativelanguage.googleapis.com/*',
   'https://api.anthropic.com/*',
   'https://api.openai.com/*',
   'https://api.x.ai/*',
   'https://openrouter.ai/*',
-  // Pin this Supabase project only (auth + billing edge)
-  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
-  // Polar checkout tabs (navigation; host also validated in openBillingUrl)
   'https://polar.sh/*',
-  'https://sandbox.polar.sh/*',
   'https://buy.polar.sh/*',
-  // Local Ollama + MCP bridge only — agent hosts use MCP, not in-app LLM.
   'http://localhost:11434/*',
   'http://127.0.0.1:11434/*',
   'http://127.0.0.1:17342/*',
@@ -39,7 +42,8 @@ export default defineConfig({
       description:
         'Highlight the web. Save passages to a library you can search, export, and sync.',
       permissions: ['activeTab', 'storage', 'alarms', 'identity'] as string[],
-      host_permissions: [...HOST_PERMISSIONS],
+      host_permissions: [...REQUIRED_HOST_PERMISSIONS],
+      optional_host_permissions: [...OPTIONAL_HOST_PERMISSIONS],
     };
 
     if (browser === 'firefox') {
@@ -50,17 +54,11 @@ export default defineConfig({
             id: FIREFOX_EXTENSION_ID,
             // data_collection_permissions: desktop 140+, Android 142+ (AMO linter).
             strict_min_version: '140.0',
-            // Allowed enum: mozilla addons-linter CommonDataCollectionPermission.
-            // websiteContent / websiteActivity: highlight text + page URLs.
-            // personallyIdentifyingInfo: account email (not legacy "contactInfo").
-            // authenticationInfo: sign-in / session.
+            // Guest-first: only page highlight data required at install.
+            // Account/auth types are optional until the user signs in.
             data_collection_permissions: {
-              required: [
-                'websiteContent',
-                'websiteActivity',
-                'personallyIdentifyingInfo',
-                'authenticationInfo',
-              ],
+              required: ['websiteContent', 'websiteActivity'],
+              optional: ['personallyIdentifyingInfo', 'authenticationInfo'],
             },
           },
           // Silence AMO warning when Android min lags desktop data-consent support.

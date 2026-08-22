@@ -54,7 +54,9 @@ const logger = LoggerFactory.getLogger('ContentScript');
 
 // Main content script initialization
 export default defineContentScript({
-  matches: ['<all_urls>'],
+  // http(s) only — avoids file/ftp and slightly clearer than bare <all_urls>.
+  // A highlighter still needs broad site access to paint + restore on pages.
+  matches: ['http://*/*', 'https://*/*'],
   // ADR-015: run in the ISOLATED world so page scripts cannot reach
   // content-script state. Defense-in-depth for ADR-013's content-script
   // = courier contract: even if a future change accidentally exposes a

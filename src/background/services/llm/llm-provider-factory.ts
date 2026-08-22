@@ -31,6 +31,15 @@ export async function buildProvider(
     throw new Error(NO_PROVIDER_MESSAGE);
   }
 
+  const { ensureLlmOrigin, ensureOllamaOrigins } = await import(
+    '@/shared/permissions/ensure-origins'
+  );
+  const originOk =
+    provider === 'ollama' ? await ensureOllamaOrigins() : await ensureLlmOrigin(provider);
+  if (!originOk) {
+    throw new Error('Permission to reach this AI provider was denied');
+  }
+
   const model = modelOverride ?? await keyStore.getModel(provider);
   const resolvedApiBase = apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
   const apiKey = provider === 'ollama' ? undefined : (await keyStore.get(provider)) ?? undefined;

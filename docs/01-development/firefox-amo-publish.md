@@ -216,13 +216,57 @@ Sources zip excludes `.env*` and build output. Verified: no `.env` entries in th
 
 1. Temp-install Firefox → allowlist identity redirect  
 2. Full Firefox QA pass  
-3. AMO account + first upload  
-   - Privacy: https://underscore-web-3i0.pages.dev/privacy  
-   - Copy: `store/amo/LISTING-COPY.md`  
-   - Screenshots: `store/amo/screenshots/out/amo-1280/` (01→05)  
-   - Package: `npm run zip:firefox`  
+3. AMO listing → **Submit for review** until status is **Approved** (see Public listing below)  
 4. Bump `package.json` version before each store upload (versions are immutable on AMO)  
 5. Optionally refresh root `README.md` product language (still mentions older mode names in places)
+
+---
+
+## Public listing vs “Download failed”
+
+### Banner: “This is not a public listing…”
+
+You only see the page because you are logged in as the developer (elevated
+permissions). **It will not appear in AMO search** until the listing is:
+
+1. Distribution: **On this site** (listed), not unlisted / self-distributed only  
+2. Listing **complete** (name, summary, description, category, privacy URL, screenshots)  
+3. Version **submitted for review**  
+4. Status becomes **Approved** (after automated + human review)
+
+Until then, strangers cannot find or install it from search.
+
+### “Add to Firefox” → Download failed. Please check your connection.
+
+Usually **not** your home network. Common causes:
+
+| Cause | What to do |
+|-------|------------|
+| Listing incomplete / not fully submitted | Finish all required listing fields → Save → Submit for review |
+| Version not signed yet | Developer Hub → product → **Versions** → wait until file shows signed; or re-upload |
+| Unlisted channel | Switch listing to **On this site** if you want public install |
+| Testing before approval | Do **not** rely on Add to Firefox; use temporary install (below) |
+| Firefox &lt; `strict_min_version` (140) | Update Firefox |
+
+### Install for QA without AMO download
+
+```bash
+npm run build:firefox
+# Firefox → about:debugging → This Firefox → Load Temporary Add-on
+# → select .output/firefox-mv3/manifest.json
+```
+
+Or Developer Hub → your version → **Download** signed XPI if Mozilla already signed it.
+
+### Permission copy (honest, less scary)
+
+After the softer manifest:
+
+- **Required:** access web pages you visit (highlight/restore) + our Supabase project (account/sync when used)  
+- **Optional:** AI providers + localhost — only if the user connects those features  
+- Content scripts match `http(s)` only (not `file://`)  
+
+You cannot remove “all websites” entirely for a universal highlighter that restores on load; explain it in the listing description.
 
 Chrome Web Store is separate: `npm run zip:chrome`.
 

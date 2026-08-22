@@ -130,6 +130,14 @@ export class McpBridgeClientService {
       return;
     }
 
+    const { ensureMcpBridgeOrigins } = await import('@/shared/permissions/ensure-origins');
+    if (!(await ensureMcpBridgeOrigins())) {
+      this.logger.warn('[McpBridge] localhost bridge permission denied — not connecting');
+      this.activeToken = '';
+      this.disconnect();
+      return;
+    }
+
     this.activeToken = token;
     this.scheduleConnect(token, STARTUP_CONNECT_DELAY_MS);
   }
