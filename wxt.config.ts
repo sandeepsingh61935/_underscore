@@ -48,7 +48,7 @@ export default defineConfig({
         browser_specific_settings: {
           gecko: {
             id: FIREFOX_EXTENSION_ID,
-            // data_collection_permissions requires Firefox 140+ (AMO linter).
+            // data_collection_permissions: desktop 140+, Android 142+ (AMO linter).
             strict_min_version: '140.0',
             // Allowed enum: mozilla addons-linter CommonDataCollectionPermission.
             // websiteContent / websiteActivity: highlight text + page URLs.
@@ -62,6 +62,10 @@ export default defineConfig({
                 'authenticationInfo',
               ],
             },
+          },
+          // Silence AMO warning when Android min lags desktop data-consent support.
+          gecko_android: {
+            strict_min_version: '142.0',
           },
         },
       };
