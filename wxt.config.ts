@@ -7,16 +7,18 @@ import react from '@vitejs/plugin-react';
  */
 const FIREFOX_EXTENSION_ID = 'underscore-highlighter@underscore';
 
-/** Account/sync backend — required so session restore works after restart. */
-const REQUIRED_HOST_PERMISSIONS = [
-  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
-] as const;
-
 /**
- * Optional hosts — requested only when the user enables the feature.
- * Keeps install/AMO from implying AI/localhost access is mandatory.
+ * Host access is optional and requested at use-time.
+ * Firefox/AMO always display the literal host string — we cannot rename it.
+ * Prefer a first-party API host later (Supabase custom domain or proxy) so the
+ * UI does not show the raw project ref. Until then: request only on sign-in / AI.
+ *
+ * No required host_permissions — guest highlight works with content_scripts only.
  */
 const OPTIONAL_HOST_PERMISSIONS = [
+  // Account / sync — prompted on sign-in (see ensureSupabaseOrigin)
+  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
+  // BYOK providers — prompted when connecting that provider
   'https://generativelanguage.googleapis.com/*',
   'https://api.anthropic.com/*',
   'https://api.openai.com/*',
@@ -42,7 +44,6 @@ export default defineConfig({
       description:
         'Highlight the web. Save passages to a library you can search, export, and sync.',
       permissions: ['activeTab', 'storage', 'alarms', 'identity'] as string[],
-      host_permissions: [...REQUIRED_HOST_PERMISSIONS],
       optional_host_permissions: [...OPTIONAL_HOST_PERMISSIONS],
     };
 

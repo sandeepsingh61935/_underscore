@@ -85,6 +85,24 @@ export class AuthManager implements IAuthManager {
             // Setup Alarm Listener for Token Refresh
             chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
 
+            // Supabase host is optional — only hydrate session if already granted
+            // (request happens on explicit sign-in; no permission prompt at SW start).
+            const { ORIGIN_SUPABASE } = await import('@/shared/permissions/ensure-origins');
+            let canReachAccount = false;
+            try {
+                canReachAccount = Boolean(
+                    await chrome.permissions?.contains?.({ origins: [ORIGIN_SUPABASE] }),
+                );
+            } catch {
+                canReachAccount = false;
+            }
+
+            if (!canReachAccount) {
+                this.logger.debug('Account host not granted yet — guest until sign-in');
+                await this.restoreVerificationState();
+                return;
+            }
+
             // Listen for Supabase auth state changes
             this.supabase.auth.onAuthStateChange((_event, session) => {
                 this.handleSupabaseAuthStateChange(session);
@@ -96,7 +114,6 @@ export class AuthManager implements IAuthManager {
                 this.handleSupabaseAuthStateChange(session);
             } else {
                 this.logger.debug('No active session found on init');
-                // Check if we are awaiting verification
                 await this.restoreVerificationState();
             }
         })();

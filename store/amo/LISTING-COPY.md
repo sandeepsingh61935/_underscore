@@ -46,6 +46,31 @@ PRIVACY
 Underscore is for readers, researchers, and anyone who highlights faster than they can file.
 ```
 
+## Permissions (plain language — paste into description or reviewer notes)
+
+Firefox shows technical host names; we cannot rename them. Use this copy so humans understand:
+
+```
+PERMISSIONS (WHAT AND WHY)
+
+• Web pages you visit — Required to underline text you select and restore
+  highlights when you return to a page. We do not sell browsing data.
+
+• Account service (optional) — Only when you sign in, so library sync and
+  account features can reach our backend. Guest mode never needs this.
+
+• AI provider sites (optional) — Only if you connect your own API keys
+  (OpenAI, Anthropic, Gemini, etc.).
+
+• localhost (optional) — Only if you enable local Ollama or a local agent bridge.
+
+Guest highlighting works with page access + on-device storage alone.
+```
+
+**Longer-term (hide ugly project hosts):** put API on a first-party domain
+(Supabase custom domain or `api.yourdomain.com` proxy). Firefox will then show
+that domain instead of `….supabase.co`.
+
 ## Categories
 
 Primary: **Search Tools**  
