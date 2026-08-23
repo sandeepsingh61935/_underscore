@@ -47,6 +47,24 @@ describe('extension-presence', () => {
     expect(r.via).toBe('dom');
   });
 
+  it('includes debug when missing', async () => {
+    const r = await pingExtensionPresence({
+      sendPing: async () => ({
+        ok: false,
+        debug: {
+          attr: null,
+          hasRuntimeSend: false,
+          extensionIdTried: null,
+          pingError: null,
+          pingResponse: null,
+          postMessageHeard: false,
+        },
+      }),
+    });
+    expect(r.presence).toBe('missing');
+    expect(r.debug?.hasRuntimeSend).toBe(false);
+  });
+
   it('shouldBlockGuestProductAccess: guest missing blocked, installed ok', () => {
     expect(
       shouldBlockGuestProductAccess({ isAuthenticated: false, presence: 'missing' }),

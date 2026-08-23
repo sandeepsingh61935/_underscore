@@ -86,7 +86,7 @@ describe('InstallPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /I've installed it/i }));
     await vi.waitFor(() => {
       expect(document.querySelector('[data-od-id="install-check-error"]')?.textContent).toMatch(
-        /Rebuild|Reload|not answer|bridge/i,
+        /bridge|answer|unpacked|Load/i,
       );
     });
     expect(document.querySelector('[data-od-id="home-stub"]')).toBeNull();

@@ -480,6 +480,14 @@ body {
   color: var(--ink);
 }
 
+.install__verify-debug {
+  margin: 0;
+  font-size: var(--step--2);
+  line-height: 1.4;
+  color: var(--ink-4);
+  word-break: break-word;
+}
+
 .install__links {
   display: flex;
   flex-wrap: wrap;

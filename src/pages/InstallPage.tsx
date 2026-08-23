@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
+  formatPresenceDebug,
   pingExtensionPresence,
   type ExtensionPingDeps,
+  type PresenceDebug,
 } from '@/shared/extension/extension-presence';
 import {
   detectInstallBrowser,
@@ -41,41 +43,50 @@ export function InstallPage({
   const [downloaded, setDownloaded] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
+  const [debugLine, setDebugLine] = useState<string | null>(null);
 
   const onDownloadClick = useCallback(() => {
     setDownloaded(true);
     setCheckError(null);
   }, []);
 
+  const applyMissing = useCallback((debug?: PresenceDebug) => {
+    const line = formatPresenceDebug(debug);
+    setDebugLine(line || null);
+    if (debug?.attr) {
+      setCheckError('Extension marker is on the page — try Open app again.');
+      return;
+    }
+    if (debug?.hasRuntimeSend) {
+      setCheckError(
+        'Extension bridge is available but underscore did not answer. Load unpacked from .output/chrome-mv3, click Reload, then hard-refresh this page.',
+      );
+      return;
+    }
+    setCheckError(
+      'No extension bridge on this page. Load unpacked from .output/chrome-mv3 and ensure the extension can access this site.',
+    );
+  }, []);
+
   const onCheckInstalled = useCallback(async () => {
     setChecking(true);
     setCheckError(null);
+    setDebugLine(null);
     try {
       const result = await ping();
       if (result.presence === 'installed') {
         navigate('/home', { replace: true });
         return;
       }
-      const dom = typeof document !== 'undefined'
-        ? document.documentElement.getAttribute('data-underscore-ext')
-        : null;
-      const hasRuntime =
-        typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
-      setCheckError(
-        dom
-          ? 'Extension marker found but gate still failed — try Open app again.'
-          : hasRuntime
-            ? 'Browser can reach extensions, but underscore did not answer. Rebuild and Reload the extension, then hard-refresh this page.'
-            : 'No extension bridge on this page. Rebuild/Reload underscore, confirm it is enabled for this site, then hard-refresh.',
-      );
+      applyMissing(result.debug);
     } catch {
       setCheckError(
-        'Extension not detected. Rebuild and Reload the extension from chrome://extensions, then hard-refresh this page.',
+        'Extension not detected. Load unpacked from .output/chrome-mv3, Reload, then hard-refresh.',
       );
     } finally {
       setChecking(false);
     }
-  }, [navigate, ping]);
+  }, [applyMissing, navigate, ping]);
 
   // Already installed from a prior session: detect on open and enter the app.
   useEffect(() => {
@@ -176,6 +187,11 @@ export function InstallPage({
                 role="alert"
               >
                 {checkError}
+              </p>
+            ) : null}
+            {debugLine ? (
+              <p className="u-mono install__verify-debug" data-od-id="install-check-debug">
+                {debugLine}
               </p>
             ) : null}
           </div>

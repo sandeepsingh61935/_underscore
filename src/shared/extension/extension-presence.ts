@@ -1,7 +1,9 @@
 /**
- * Best-effort web → extension presence detection (PRD 2026-08-23 hard gate).
- * Order: DOM marker from content script → runtime EXTENSION_PING.
- * Not cryptographic proof; SPA gate only. Fail closed on timeout/error.
+ * Best-effort web → extension presence detection (install gate).
+ * Channels (any success = installed):
+ *  1) DOM attribute data-underscore-ext (content script)
+ *  2) window postMessage from presence content script
+ *  3) chrome.runtime EXTENSION_PING (externally_connectable)
  */
 
 import { EXTENSION_PING } from '@/shared/auth/constants';
@@ -11,24 +13,37 @@ export type ExtensionPresence = 'installed' | 'missing' | 'unknown';
 export type ExtensionPingResult = {
   presence: ExtensionPresence;
   version?: string;
-  via?: 'dom' | 'ping';
+  via?: 'dom' | 'postMessage' | 'ping';
+  /** Structured debug for install UI (safe to show). */
+  debug?: PresenceDebug;
+};
+
+export type PresenceDebug = {
+  attr: string | null;
+  hasRuntimeSend: boolean;
+  extensionIdTried: string | null;
+  pingError: string | null;
+  pingResponse: unknown;
+  postMessageHeard: boolean;
 };
 
 export type ExtensionPingDeps = {
-  sendPing?: () => Promise<{ ok: boolean; version?: string; via?: 'dom' | 'ping' }>;
+  sendPing?: () => Promise<{
+    ok: boolean;
+    version?: string;
+    via?: ExtensionPingResult['via'];
+    debug?: PresenceDebug;
+  }>;
   timeoutMs?: number;
-  /** Skip short DOM poll (tests). */
   skipDomPoll?: boolean;
 };
 
-const DEFAULT_TIMEOUT_MS = 1200;
-const DOM_POLL_MS = 400;
+const DEFAULT_TIMEOUT_MS = 2000;
+const DOM_POLL_MS = 800;
 const DOM_POLL_STEP_MS = 50;
+const MSG_SOURCE = 'underscore-extension';
 
-/**
- * Stable Chrome extension id derived from the public key in the Chrome manifest
- * (wxt.config.ts `key`). Used when VITE_EXTENSION_ID is unset.
- */
+/** Stable Chrome id from wxt.config.ts public key. */
 const DEFAULT_CHROME_EXTENSION_ID = 'hecejpjekcgpifnemddfmkjmphmgljlm';
 
 const EXT_ATTR = 'data-underscore-ext';
@@ -55,7 +70,7 @@ function getRuntime(): RuntimeLike | null {
   return runtime;
 }
 
-function getTargetExtensionId(runtime: RuntimeLike): string | undefined {
+function getTargetExtensionId(runtime: RuntimeLike): string {
   const fromEnv = import.meta.env['VITE_EXTENSION_ID'] as string | undefined;
   if (fromEnv?.trim()) {
     return fromEnv.trim();
@@ -66,57 +81,54 @@ function getTargetExtensionId(runtime: RuntimeLike): string | undefined {
   return DEFAULT_CHROME_EXTENSION_ID;
 }
 
-function readDomPresence(): { ok: true; version: string; via: 'dom' } | { ok: false } {
+function readDomAttr(): string | null {
   try {
-    if (typeof document === 'undefined') {
-      return { ok: false };
-    }
-    const v = document.documentElement.getAttribute(EXT_ATTR)?.trim();
-    if (v) {
-      return { ok: true, version: v, via: 'dom' };
-    }
+    if (typeof document === 'undefined') return null;
+    return document.documentElement.getAttribute(EXT_ATTR)?.trim() || null;
   } catch {
-    /* ignore */
+    return null;
   }
-  return { ok: false };
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function pollDomPresence(
-  budgetMs: number,
-): Promise<{ ok: true; version: string; via: 'dom' } | { ok: false }> {
-  const deadline = Date.now() + budgetMs;
-  let hit = readDomPresence();
-  while (!hit.ok && Date.now() < deadline) {
-    await sleep(DOM_POLL_STEP_MS);
-    hit = readDomPresence();
+function waitForPostMessage(budgetMs: number): Promise<string | null> {
+  if (typeof window === 'undefined') {
+    return Promise.resolve(null);
   }
-  return hit;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v: string | null) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('message', onMsg);
+      resolve(v);
+    };
+    const onMsg = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      const d = data as Record<string, unknown>;
+      if (d['source'] !== MSG_SOURCE) return;
+      if (d['type'] !== 'EXTENSION_PRESENT') return;
+      const version = typeof d['version'] === 'string' ? d['version'] : '1';
+      finish(version);
+    };
+    window.addEventListener('message', onMsg);
+    window.setTimeout(() => finish(null), budgetMs);
+  });
 }
 
 function runtimeSend(
   runtime: RuntimeLike,
-  extensionId: string | undefined,
+  extensionId: string,
   message: unknown,
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     try {
-      if (extensionId) {
-        runtime.sendMessage(extensionId, message, (response: unknown) => {
-          if (runtime.lastError?.message) {
-            reject(new Error(runtime.lastError.message));
-            return;
-          }
-          resolve(response);
-        });
-        return;
-      }
-      runtime.sendMessage(message, (response: unknown) => {
+      runtime.sendMessage(extensionId, message, (response: unknown) => {
         if (runtime.lastError?.message) {
           reject(new Error(runtime.lastError.message));
           return;
@@ -150,39 +162,70 @@ function parsePingResponse(response: unknown): { ok: boolean; version?: string }
 
 async function defaultSendPing(opts: {
   skipDomPoll?: boolean;
-}): Promise<{ ok: boolean; version?: string; via?: 'dom' | 'ping' }> {
-  // 1) Content-script DOM marker (works without externally_connectable).
-  const immediate = readDomPresence();
-  if (immediate.ok) {
-    return immediate;
+}): Promise<{
+  ok: boolean;
+  version?: string;
+  via?: ExtensionPingResult['via'];
+  debug: PresenceDebug;
+}> {
+  const debug: PresenceDebug = {
+    attr: readDomAttr(),
+    hasRuntimeSend: false,
+    extensionIdTried: null,
+    pingError: null,
+    pingResponse: null,
+    postMessageHeard: false,
+  };
+
+  // 1) DOM attribute
+  if (debug.attr) {
+    return { ok: true, version: debug.attr, via: 'dom', debug };
   }
   if (!opts.skipDomPoll) {
-    const polled = await pollDomPresence(DOM_POLL_MS);
-    if (polled.ok) {
-      return polled;
+    const deadline = Date.now() + DOM_POLL_MS;
+    while (Date.now() < deadline) {
+      await sleep(DOM_POLL_STEP_MS);
+      debug.attr = readDomAttr();
+      if (debug.attr) {
+        return { ok: true, version: debug.attr, via: 'dom', debug };
+      }
     }
   }
 
-  // 2) Runtime ping (requires rebuilt extension + matching extension id).
+  // 2) postMessage (parallel short wait — presence re-announces)
+  const pm = await waitForPostMessage(400);
+  if (pm) {
+    debug.postMessageHeard = true;
+    debug.attr = readDomAttr();
+    return { ok: true, version: pm, via: 'postMessage', debug };
+  }
+
+  // 3) runtime ping
   const runtime = getRuntime();
+  debug.hasRuntimeSend = Boolean(runtime);
   if (!runtime) {
-    return { ok: false };
+    return { ok: false, debug };
   }
   const extensionId = getTargetExtensionId(runtime);
-  if (!extensionId) {
-    return { ok: false };
+  debug.extensionIdTried = extensionId;
+  try {
+    const response = await runtimeSend(runtime, extensionId, {
+      type: EXTENSION_PING,
+      payload: {},
+      timestamp: Date.now(),
+    });
+    debug.pingResponse = response;
+    const parsed = parsePingResponse(response);
+    if (parsed.ok) {
+      return { ok: true, version: parsed.version, via: 'ping', debug };
+    }
+    debug.pingError = 'invalid_ping_response';
+  } catch (e) {
+    debug.pingError = e instanceof Error ? e.message : String(e);
   }
-  const message = {
-    type: EXTENSION_PING,
-    payload: {},
-    timestamp: Date.now(),
-  };
-  const response = await runtimeSend(runtime, extensionId, message);
-  const parsed = parsePingResponse(response);
-  if (parsed.ok) {
-    return { ok: true, version: parsed.version, via: 'ping' };
-  }
-  return { ok: false };
+
+  debug.attr = readDomAttr();
+  return { ok: false, debug };
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -215,11 +258,22 @@ export async function pingExtensionPresence(
         presence: 'installed',
         version: result.version,
         via: result.via,
+        debug: result.debug,
       };
     }
-    return { presence: 'missing' };
-  } catch {
-    return { presence: 'missing' };
+    return { presence: 'missing', debug: result.debug };
+  } catch (e) {
+    return {
+      presence: 'missing',
+      debug: {
+        attr: readDomAttr(),
+        hasRuntimeSend: Boolean(getRuntime()),
+        extensionIdTried: null,
+        pingError: e instanceof Error ? e.message : String(e),
+        pingResponse: null,
+        postMessageHeard: false,
+      },
+    };
   }
 }
 
@@ -231,4 +285,15 @@ export function shouldBlockGuestProductAccess(input: {
     return false;
   }
   return input.presence !== 'installed';
+}
+
+export function formatPresenceDebug(debug: PresenceDebug | undefined): string {
+  if (!debug) return '';
+  return [
+    `attr=${debug.attr ?? 'null'}`,
+    `runtimeSend=${debug.hasRuntimeSend ? 'yes' : 'no'}`,
+    `id=${debug.extensionIdTried ?? 'null'}`,
+    `pingErr=${debug.pingError ?? 'null'}`,
+    `postMessage=${debug.postMessageHeard ? 'yes' : 'no'}`,
+  ].join(' · ');
 }
