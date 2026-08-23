@@ -5,8 +5,10 @@ import {
   guestLibraryLocalBannerCopy,
   homeFirstRunCopy,
   libraryEmptyGuestCopy,
+  libraryEmptyInstallCopy,
   libraryNoMatchesCopy,
   productSurfaceCopyHasRetiredChat,
+  webHomeEmptyInstallCopy,
 } from './product-surface-copy';
 
 describe('product-surface-copy', () => {
@@ -27,14 +29,26 @@ describe('product-surface-copy', () => {
     expect(c.body.toLowerCase()).not.toContain(' ai');
   });
 
-  it('home first-run guest vs signed-in', () => {
+  it('home first-run guest vs signed-in stays capture-focused for popup', () => {
     const guest = homeFirstRunCopy({ guest: true });
     expect(guest.title).toBe('No highlights yet');
     expect(guest.body).toMatch(/this device/i);
     expect(guest.signInLabel).toBe('Sign in to sync');
+    expect(guest.installHref).toBeUndefined();
 
     const signedIn = homeFirstRunCopy({ guest: false });
     expect(signedIn.body).toMatch(/your library/i);
+    expect(signedIn.signInLabel).toBeUndefined();
+  });
+
+  it('web home empty points at install hub', () => {
+    const guest = webHomeEmptyInstallCopy({ guest: true });
+    expect(guest.body).toMatch(/extension/i);
+    expect(guest.installHref).toBe('/install');
+    expect(guest.installLabel).toMatch(/Install/i);
+
+    const signedIn = webHomeEmptyInstallCopy({ guest: false });
+    expect(signedIn.installHref).toBe('/install');
     expect(signedIn.signInLabel).toBeUndefined();
   });
 
@@ -45,6 +59,18 @@ describe('product-surface-copy', () => {
     expect(c.signInLabel).toBe('Sign in');
     expect(c.keyboardHint).toMatch(/⌘\+U|Ctrl\+U/);
     expect(c.keyboardHint).not.toMatch(/↩/);
+  });
+
+  it('library empty install copy is role-aware', () => {
+    const guest = libraryEmptyInstallCopy({ guest: true });
+    expect(guest.installHref).toBe('/install');
+    expect(guest.signInLabel).toBe('Sign in');
+    expect(guest.body).toMatch(/extension/i);
+
+    const signedIn = libraryEmptyInstallCopy({ guest: false });
+    expect(signedIn.installHref).toBe('/install');
+    expect(signedIn.signInLabel).toBeUndefined();
+    expect(signedIn.body).toMatch(/extension/i);
   });
 
   it('no matches copy offers reset', () => {

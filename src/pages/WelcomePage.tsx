@@ -47,13 +47,24 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
         <Button
           variant="primary"
           className="welcome__cta"
+          data-od-id="welcome-get-started"
           onClick={() => {
             if (onStartClick) onStartClick();
-            else navigate('/home');
+            else navigate('/install');
           }}
         >
           Get started →
         </Button>
+
+        {isWeb ? (
+          <Link
+            to="/home"
+            className="u-mono welcome__already"
+            data-od-id="welcome-already-setup"
+          >
+            Already set up? Open library
+          </Link>
+        ) : null}
 
         <div className="u-mono welcome__trust">
           <span>Free forever</span>

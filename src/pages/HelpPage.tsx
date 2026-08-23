@@ -79,11 +79,74 @@ export function HelpPage(): React.ReactElement {
           </p>
         </div>
 
+        <section id="install" style={{ marginBottom: 28, scrollMarginTop: 24 }}>
+          <h2
+            className="u-serif"
+            style={{
+              margin: '0 0 12px',
+              fontSize: 'var(--step-2)',
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+            }}
+          >
+            Install the extension
+          </h2>
+          <p
+            className="u-sans"
+            style={{
+              margin: '0 0 16px',
+              fontSize: 'var(--step-0)',
+              lineHeight: 1.65,
+              color: 'var(--ink-2)',
+            }}
+          >
+            Capture happens in the desktop browser extension. The web app is your library.
+            Store listings may still be rolling out — use manual install from the{' '}
+            <Link to="/install" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+              install page
+            </Link>{' '}
+            when needed. Works in desktop Chrome or Firefox only.
+          </p>
+          <FaqItem q="Chrome (load unpacked)">
+            <ol style={{ margin: '0 0 0 1.1rem', padding: 0, lineHeight: 1.65 }}>
+              <li>Open the install page and download the Chrome zip.</li>
+              <li>Unzip the download on your computer.</li>
+              <li>
+                Go to <span className="u-mono">chrome://extensions</span>.
+              </li>
+              <li>Turn on Developer mode.</li>
+              <li>Choose Load unpacked and select the unzipped folder.</li>
+              <li>Pin underscore from the extensions menu.</li>
+            </ol>
+          </FaqItem>
+          <FaqItem q="Firefox (temporary add-on)">
+            <ol style={{ margin: '0 0 0 1.1rem', padding: 0, lineHeight: 1.65 }}>
+              <li>Open the install page and download the Firefox package.</li>
+              <li>
+                Go to{' '}
+                <span className="u-mono">about:debugging#/runtime/this-firefox</span>.
+              </li>
+              <li>Choose Load Temporary Add-on…</li>
+              <li>Select the zip or <span className="u-mono">manifest.json</span> from the package.</li>
+              <li>
+                Keep this Firefox profile open — temporary add-ons are removed when Firefox
+                quits.
+              </li>
+            </ol>
+          </FaqItem>
+        </section>
+
         <FaqSection title="Getting started">
           <FaqItem q="How do I save a highlight?">
             With the extension installed, select text on a supported page and use the
             highlight control or shortcut. Saved items appear in your library according to
-            your current mode (Guest local storage or Account cloud library).
+            your current mode (Guest local storage or Account cloud library). Need the
+            extension first? See{' '}
+            <a href="#install" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+              Install the extension
+            </a>
+            .
           </FaqItem>
           <FaqItem q="Where is the web app?">
             Sign in at this site to open Home, Library, and Settings. The extension popup is

@@ -61,8 +61,9 @@ describe('HomePage', () => {
     expect(document.querySelector('[data-od-id="home-cta"]')).toBeNull();
     expect(document.querySelector('[data-od-id="home-ask-page"]')).toBeNull();
 
-    expect(screen.getByText('Nothing saved')).toBeTruthy();
-    expect(screen.getByText(/Select text in the extension/i)).toBeTruthy();
+    expect(screen.getByText('No highlights yet')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="home-empty-install"]')).toBeTruthy();
+    expect(screen.getByText(/Install the extension/i)).toBeTruthy();
     expect(screen.getByText('No page open')).toBeTruthy();
   });
 

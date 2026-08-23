@@ -209,6 +209,12 @@ describe('LibraryPage', () => {
     expect(document.querySelector('[data-od-id="library-export"]')).toBeNull();
     expect(document.querySelectorAll('.hl-quote').length).toBe(0);
     expect(screen.getByText('No highlights')).toBeTruthy();
+    const install = document.querySelector(
+      '[data-od-id="library-empty-install"]',
+    ) as HTMLAnchorElement | null;
+    expect(install).toBeTruthy();
+    expect(install?.getAttribute('href')).toBe('/install');
+    expect(document.querySelector('[data-od-id="library-guest-signin"]')).toBeTruthy();
     // useWebLibrary guest path never calls fetch — rail stays domain-empty
     expect(document.querySelector('[data-od-id="lib-all"]')).toBeTruthy();
     expect(screen.getByText('No domains')).toBeTruthy();

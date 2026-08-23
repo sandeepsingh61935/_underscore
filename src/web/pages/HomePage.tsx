@@ -6,6 +6,7 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
+import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import {
@@ -98,14 +99,23 @@ function highlightsOnPage(
 function EmptyInline({
   title,
   body,
+  action,
 }: {
   title: string;
   body?: string;
+  action?: { label: string; to: string; odId?: string };
 }): React.ReactElement {
   return (
     <div className="state-box" style={{ minHeight: 140, padding: '28px 16px' }}>
       <h3>{title}</h3>
       {body ? <p>{body}</p> : null}
+      {action ? (
+        <div className="actions" style={{ marginTop: 12 }}>
+          <Link to={action.to} className="btn primary sm" data-od-id={action.odId}>
+            {action.label}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -401,10 +411,20 @@ export function HomePage(): React.ReactElement {
     </>
   );
 
+  const firstRun = webHomeEmptyInstallCopy({ guest });
   const recentBody = empty ? (
     <EmptyInline
-      title="Nothing saved"
-      body="Select text in the extension to capture a highlight."
+      title={firstRun.title}
+      body={firstRun.body}
+      action={
+        firstRun.installHref && firstRun.installLabel
+          ? {
+              label: firstRun.installLabel,
+              to: firstRun.installHref,
+              odId: 'home-empty-install',
+            }
+          : undefined
+      }
     />
   ) : (
     recent.map((h) => (

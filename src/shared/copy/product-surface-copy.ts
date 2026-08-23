@@ -12,6 +12,9 @@ export type FirstRunCopy = {
   title: string;
   body: string;
   signInLabel?: string;
+  /** Web empty-state path to extension install hub. */
+  installLabel?: string;
+  installHref?: string;
 };
 
 export type LibraryEmptyGuestCopy = {
@@ -19,6 +22,17 @@ export type LibraryEmptyGuestCopy = {
   body: string;
   signInLabel: string;
   keyboardHint: string;
+  installLabel?: string;
+  installHref?: string;
+};
+
+/** Web library empty when signed-in (or non-filtering empty). */
+export type LibraryEmptyInstallCopy = {
+  title: string;
+  body: string;
+  installLabel: string;
+  installHref: string;
+  signInLabel?: string;
 };
 
 export type NoMatchesCopy = {
@@ -51,6 +65,7 @@ export function guestLibraryLocalBannerCopy(): SurfaceCtaCopy {
   };
 }
 
+/** Popup / in-extension first-run (user already has the extension). */
 export function homeFirstRunCopy(input: { guest: boolean }): FirstRunCopy {
   if (input.guest) {
     return {
@@ -65,6 +80,26 @@ export function homeFirstRunCopy(input: { guest: boolean }): FirstRunCopy {
   };
 }
 
+/** Web Home empty — points at /install hub. */
+export function webHomeEmptyInstallCopy(input: { guest: boolean }): FirstRunCopy {
+  if (input.guest) {
+    return {
+      title: 'No highlights yet',
+      body: 'Install the extension to capture text on pages. This library shows what you save.',
+      signInLabel: 'Sign in to sync',
+      installLabel: 'Install extension',
+      installHref: '/install',
+    };
+  }
+  return {
+    title: 'No highlights yet',
+    body: 'Install the extension (or open it) and highlight text on any page to fill this library.',
+    installLabel: 'Install extension',
+    installHref: '/install',
+  };
+}
+
+/** Popup library empty (guest). Web library uses libraryEmptyInstallCopy. */
 export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
   return {
     title: 'No highlights yet',
@@ -75,6 +110,25 @@ export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
       typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
         ? 'Select text · press ⌘+U'
         : 'Select text · press Ctrl+U',
+  };
+}
+
+/** Web library empty (not filtering) — guest vs signed-in. */
+export function libraryEmptyInstallCopy(input: { guest: boolean }): LibraryEmptyInstallCopy {
+  if (input.guest) {
+    return {
+      title: 'No highlights',
+      body: 'Install the extension to capture text, or sign in to load a cloud library.',
+      installLabel: 'Install extension',
+      installHref: '/install',
+      signInLabel: 'Sign in',
+    };
+  }
+  return {
+    title: 'No highlights',
+    body: 'Capture text with the extension to fill this view.',
+    installLabel: 'Install extension',
+    installHref: '/install',
   };
 }
 

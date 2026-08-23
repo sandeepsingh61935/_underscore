@@ -19,6 +19,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
 import { HelpPage } from '@/pages/HelpPage';
+import { InstallPage } from '@/pages/InstallPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
@@ -82,6 +83,7 @@ export function AppRoutes() {
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route path="/install" element={<InstallPage />} />
 
               {/* Product shell — guest-allowed (no ProtectedRoute) */}
               <Route element={<WebAppShell />}>

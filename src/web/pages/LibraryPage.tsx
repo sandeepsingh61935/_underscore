@@ -28,6 +28,7 @@ import {
   searchHighlights,
   type SearchField,
 } from '@/shared/utils/highlight-search';
+import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { GuestBanner } from '@/web/components/GuestBanner';
@@ -158,6 +159,30 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
  * Library master-detail. Guest is always empty (useWebLibrary).
  * Selection lives in the URL (`?domain=&section=`).
  */
+function LibraryEmptyInstall({ isGuest }: { isGuest: boolean }): React.ReactElement {
+  const copy = libraryEmptyInstallCopy({ guest: isGuest });
+  return (
+    <>
+      <h3>{copy.title}</h3>
+      <p>{copy.body}</p>
+      <div className="actions">
+        <Link
+          to={copy.installHref}
+          className="btn primary sm"
+          data-od-id="library-empty-install"
+        >
+          {copy.installLabel}
+        </Link>
+        {copy.signInLabel ? (
+          <Link to="/sign-in" className="btn sm" data-od-id="library-guest-signin">
+            {copy.signInLabel}
+          </Link>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
 export function LibraryPage(): React.ReactElement {
   const { isAuthenticated } = useApp();
   const billing = useBillingContextOptional();
@@ -667,21 +692,14 @@ export function LibraryPage(): React.ReactElement {
     ) : (
       <div className="state-box" data-od-id="library-empty">
         <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
-        <h3>{filtering ? 'No matches' : 'No highlights'}</h3>
-        <p>
-          {filtering
-            ? 'Clear filters or try another query.'
-            : caps.isGuest
-              ? 'Sign in and capture text with the extension to fill this view.'
-              : 'Capture text with the extension to fill this view.'}
-        </p>
-        {caps.isGuest ? (
-          <div className="actions">
-            <Link to="/sign-in" className="btn primary sm" data-od-id="library-guest-signin">
-              Sign in
-            </Link>
-          </div>
-        ) : null}
+        {filtering ? (
+          <>
+            <h3>No matches</h3>
+            <p>Clear filters or try another query.</p>
+          </>
+        ) : (
+          <LibraryEmptyInstall isGuest={caps.isGuest} />
+        )}
       </div>
     );
 
