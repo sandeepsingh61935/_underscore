@@ -75,10 +75,11 @@ Now we tell Supabase about both of the Google Clients we just made.
 2.  Paste the **Chrome extension** Client ID from Step 2B (`753957667832-vmlcu...`) into the box.
 3.  Click **Save**.
 
-#### C. Enable Email/Password (Optional but Recommended)
+#### C. Enable Email/Password (backend; UI optional)
 1.  Go to **Supabase Dashboard > Authentication > Providers > Email**.
-2.  Ensure "Enable Email/Password Sign in" is ON.
-3.  (Optional) If you want users to log in immediately without verifying their email first, turn OFF "Confirm email".
+2.  Ensure "Enable Email/Password Sign in" is ON (APIs + OTP routes stay available).
+3.  Product UI defaults to **Google-only** landings. Set `VITE_AUTH_EMAIL_UI=true` to show email/password forms again. See `docs/01-development/supabase-smtp-email-setup.md`.
+4.  (Optional) If you want users to log in immediately without verifying their email first, turn OFF "Confirm email".
 
 ### Step 4: Finalize Extension Code (`auth-manager.ts`)
 
