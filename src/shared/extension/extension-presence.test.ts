@@ -38,6 +38,15 @@ describe('extension-presence', () => {
     expect(r.presence).toBe('missing');
   });
 
+  it('detects DOM marker without runtime ping', async () => {
+    document.documentElement.setAttribute('data-underscore-ext', '9.9.9');
+    const r = await pingExtensionPresence({ skipDomPoll: true });
+    document.documentElement.removeAttribute('data-underscore-ext');
+    expect(r.presence).toBe('installed');
+    expect(r.version).toBe('9.9.9');
+    expect(r.via).toBe('dom');
+  });
+
   it('shouldBlockGuestProductAccess: guest missing blocked, installed ok', () => {
     expect(
       shouldBlockGuestProductAccess({ isAuthenticated: false, presence: 'missing' }),

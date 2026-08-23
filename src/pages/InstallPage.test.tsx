@@ -71,10 +71,9 @@ describe('InstallPage', () => {
     expect(document.querySelector('[data-od-id="install-store-chrome"]')).toBeNull();
   });
 
-  it('check button pings and navigates home when installed', async () => {
+  it('auto-navigates home when extension already installed', async () => {
     const ping = vi.fn(async () => ({ presence: 'installed' as const, version: '0.1.1' }));
     renderInstall(<InstallPage detectedBrowser="chrome" ping={ping} />);
-    fireEvent.click(screen.getByRole('button', { name: /I've installed it/i }));
     await vi.waitFor(() => {
       expect(ping).toHaveBeenCalled();
       expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();

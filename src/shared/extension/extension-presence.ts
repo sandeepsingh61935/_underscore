@@ -1,7 +1,7 @@
 /**
- * Best-effort web → extension presence ping (PRD 2026-08-23 hard gate).
+ * Best-effort web → extension presence detection (PRD 2026-08-23 hard gate).
+ * Order: DOM marker from content script → runtime EXTENSION_PING.
  * Not cryptographic proof; SPA gate only. Fail closed on timeout/error.
- * Lives under shared/ (not src/web) because it touches the extension runtime API.
  */
 
 import { EXTENSION_PING } from '@/shared/auth/constants';
@@ -11,21 +11,27 @@ export type ExtensionPresence = 'installed' | 'missing' | 'unknown';
 export type ExtensionPingResult = {
   presence: ExtensionPresence;
   version?: string;
+  via?: 'dom' | 'ping';
 };
 
 export type ExtensionPingDeps = {
-  sendPing?: () => Promise<{ ok: boolean; version?: string }>;
+  sendPing?: () => Promise<{ ok: boolean; version?: string; via?: 'dom' | 'ping' }>;
   timeoutMs?: number;
+  /** Skip short DOM poll (tests). */
+  skipDomPoll?: boolean;
 };
 
-const DEFAULT_TIMEOUT_MS = 800;
+const DEFAULT_TIMEOUT_MS = 1200;
+const DOM_POLL_MS = 400;
+const DOM_POLL_STEP_MS = 50;
 
 /**
  * Stable Chrome extension id derived from the public key in the Chrome manifest
- * (wxt.config.ts `key`). Used when VITE_EXTENSION_ID is unset so web→extension
- * ping works for production/dev builds that embed that key.
+ * (wxt.config.ts `key`). Used when VITE_EXTENSION_ID is unset.
  */
 const DEFAULT_CHROME_EXTENSION_ID = 'hecejpjekcgpifnemddfmkjmphmgljlm';
+
+const EXT_ATTR = 'data-underscore-ext';
 
 type RuntimeLike = {
   id?: string;
@@ -38,8 +44,11 @@ type RuntimeLike = {
 };
 
 function getRuntime(): RuntimeLike | null {
-  const g = globalThis as typeof globalThis & { chrome?: { runtime?: RuntimeLike } };
-  const runtime = g.chrome?.runtime;
+  const g = globalThis as typeof globalThis & {
+    chrome?: { runtime?: RuntimeLike };
+    browser?: { runtime?: RuntimeLike };
+  };
+  const runtime = g.chrome?.runtime ?? g.browser?.runtime;
   if (!runtime || typeof runtime.sendMessage !== 'function') {
     return null;
   }
@@ -55,6 +64,39 @@ function getTargetExtensionId(runtime: RuntimeLike): string | undefined {
     return runtime.id;
   }
   return DEFAULT_CHROME_EXTENSION_ID;
+}
+
+function readDomPresence(): { ok: true; version: string; via: 'dom' } | { ok: false } {
+  try {
+    if (typeof document === 'undefined') {
+      return { ok: false };
+    }
+    const v = document.documentElement.getAttribute(EXT_ATTR)?.trim();
+    if (v) {
+      return { ok: true, version: v, via: 'dom' };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { ok: false };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function pollDomPresence(
+  budgetMs: number,
+): Promise<{ ok: true; version: string; via: 'dom' } | { ok: false }> {
+  const deadline = Date.now() + budgetMs;
+  let hit = readDomPresence();
+  while (!hit.ok && Date.now() < deadline) {
+    await sleep(DOM_POLL_STEP_MS);
+    hit = readDomPresence();
+  }
+  return hit;
 }
 
 function runtimeSend(
@@ -106,13 +148,27 @@ function parsePingResponse(response: unknown): { ok: boolean; version?: string }
   return { ok: false };
 }
 
-async function defaultSendPing(): Promise<{ ok: boolean; version?: string }> {
+async function defaultSendPing(opts: {
+  skipDomPoll?: boolean;
+}): Promise<{ ok: boolean; version?: string; via?: 'dom' | 'ping' }> {
+  // 1) Content-script DOM marker (works without externally_connectable).
+  const immediate = readDomPresence();
+  if (immediate.ok) {
+    return immediate;
+  }
+  if (!opts.skipDomPoll) {
+    const polled = await pollDomPresence(DOM_POLL_MS);
+    if (polled.ok) {
+      return polled;
+    }
+  }
+
+  // 2) Runtime ping (requires rebuilt extension + matching extension id).
   const runtime = getRuntime();
   if (!runtime) {
     return { ok: false };
   }
   const extensionId = getTargetExtensionId(runtime);
-  // From a normal web page, runtime.id is unset — must have VITE_EXTENSION_ID.
   if (!extensionId) {
     return { ok: false };
   }
@@ -122,7 +178,11 @@ async function defaultSendPing(): Promise<{ ok: boolean; version?: string }> {
     timestamp: Date.now(),
   };
   const response = await runtimeSend(runtime, extensionId, message);
-  return parsePingResponse(response);
+  const parsed = parsePingResponse(response);
+  if (parsed.ok) {
+    return { ok: true, version: parsed.version, via: 'ping' };
+  }
+  return { ok: false };
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -145,11 +205,17 @@ export async function pingExtensionPresence(
   deps: ExtensionPingDeps = {},
 ): Promise<ExtensionPingResult> {
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const send = deps.sendPing ?? defaultSendPing;
+  const send =
+    deps.sendPing ??
+    (() => defaultSendPing({ skipDomPoll: deps.skipDomPoll }));
   try {
     const result = await withTimeout(send(), timeoutMs);
     if (result.ok) {
-      return { presence: 'installed', version: result.version };
+      return {
+        presence: 'installed',
+        version: result.version,
+        via: result.via,
+      };
     }
     return { presence: 'missing' };
   } catch {

@@ -68,6 +68,22 @@ export default defineContentScript({
       'Initializing Web Highlighter Extension (Strategy Pattern + Basic Mode)...'
     );
 
+    // Early presence mark for web install gate (before heavy DI init).
+    try {
+      const { announceExtensionPresence } = await import(
+        '@/content/extension-presence-announce'
+      );
+      let version = '1';
+      try {
+        version = browser.runtime.getManifest().version;
+      } catch {
+        /* ignore */
+      }
+      announceExtensionPresence(version);
+    } catch {
+      /* non-fatal */
+    }
+
     try {
       // Check Custom Highlight API support (legacy manager still used for feature flag)
       const useCustomHighlightAPI = HighlightManager.isSupported();

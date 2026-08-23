@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
@@ -57,15 +57,30 @@ export function InstallPage({
         return;
       }
       setCheckError(
-        'Extension not detected yet. Load it in your browser, then try again.',
+        'Extension not detected. Reload this page after enabling underscore on this site, or re-load the extension from chrome://extensions, then try again.',
       );
     } catch {
       setCheckError(
-        'Extension not detected yet. Load it in your browser, then try again.',
+        'Extension not detected. Reload this page after enabling underscore on this site, or re-load the extension from chrome://extensions, then try again.',
       );
     } finally {
       setChecking(false);
     }
+  }, [navigate, ping]);
+
+  // Already installed from a prior session: detect on open and enter the app.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await ping();
+      if (cancelled) return;
+      if (result.presence === 'installed') {
+        navigate('/home', { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate, ping]);
 
   const byId = useMemo(() => {
