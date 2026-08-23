@@ -61,46 +61,49 @@ export function InstallPage({
   const otherLabel =
     primaryId === 'chrome' ? 'Firefox' : primaryId === 'firefox' ? 'Chrome' : null;
 
+  const isSingle = visible.length === 1;
+
   return (
     <div className="install" data-od-id="install" data-platform="web">
       <main className="install__main">
-        <header className="install__intro">
-          <h1 className="u-serif install__title">Install the extension</h1>
-          <p className="u-sans install__lede" data-od-id="install-lede">
-            You must download and load the extension to use the app. It captures
-            highlights on the page; this site is your library.
-          </p>
-        </header>
+        <div className="install__panel">
+          <header className="install__intro">
+            <h1 className="u-serif install__title">Install the extension</h1>
+            <p className="u-sans install__lede" data-od-id="install-lede">
+              You must download and load the extension to use the app.
+            </p>
+            <p className="u-sans install__sub">
+              It captures highlights on the page. This site is your library.
+            </p>
+          </header>
 
-        <div
-          className={`install__browsers${visible.length === 1 ? ' install__browsers--single' : ''}`}
-          data-od-id="install-browsers"
-          role="list"
-        >
-          {visible.map((browser) => (
-            <BrowserChoice key={browser.id} browser={browser} />
-          ))}
+          <section
+            className={`install__downloads${isSingle ? ' install__downloads--single' : ''}`}
+            data-od-id="install-browsers"
+            aria-label="Download"
+          >
+            {visible.map((browser) => (
+              <BrowserChoice key={browser.id} browser={browser} />
+            ))}
+          </section>
+
+          <div className="install__links">
+            <Link to={config.helpHref} className="install__link" data-od-id="install-help">
+              How to load it
+            </Link>
+            {primaryId && otherLabel ? (
+              <button
+                type="button"
+                className="install__link install__link--btn"
+                data-od-id="install-wrong-browser"
+                aria-expanded={showOther}
+                onClick={() => setShowOther((v) => !v)}
+              >
+                {showOther ? 'Hide other browser' : `Need ${otherLabel}?`}
+              </button>
+            ) : null}
+          </div>
         </div>
-
-        {primaryId && otherLabel ? (
-          <p className="install__wrong">
-            <button
-              type="button"
-              className="install__wrong-btn"
-              data-od-id="install-wrong-browser"
-              aria-expanded={showOther}
-              onClick={() => setShowOther((v) => !v)}
-            >
-              {showOther ? 'Hide other browser' : `Wrong browser? Get ${otherLabel}`}
-            </button>
-          </p>
-        ) : null}
-
-        <nav className="install__nav" aria-label="Install help">
-          <Link to={config.helpHref} className="install__help-link" data-od-id="install-help">
-            How to load it
-          </Link>
-        </nav>
       </main>
 
       <footer className="install__footer">
@@ -126,13 +129,15 @@ function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.
     <div
       className="install-choice"
       data-od-id={`install-browser-${browser.id}`}
-      role="listitem"
     >
-      <h2 className="u-serif install-choice__name">{browser.label}</h2>
+      <div className="install-choice__copy">
+        <h2 className="u-serif install-choice__name">{browser.label}</h2>
+        {browser.availability === 'unavailable' ? (
+          <p className="u-sans install-choice__unavailable">Not available yet</p>
+        ) : null}
+      </div>
 
-      {browser.availability === 'unavailable' ? (
-        <p className="u-sans install-choice__unavailable">Not available yet</p>
-      ) : (
+      {browser.availability !== 'unavailable' ? (
         <div className="install-choice__actions">
           {manual ? (
             <a
@@ -141,7 +146,7 @@ function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.
               data-od-id={`install-download-${browser.id}`}
               download
             >
-              Download for {browser.label}
+              Download
             </a>
           ) : null}
           {store && browser.storeUrl ? (
@@ -156,7 +161,7 @@ function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.
             </a>
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

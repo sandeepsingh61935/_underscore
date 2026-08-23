@@ -29,6 +29,7 @@ describe('InstallPage', () => {
     expect(document.querySelector('[data-od-id="install-lede"]')?.textContent).toMatch(
       /must download and load the extension/i,
     );
+    expect(screen.getByText(/This site is your library/i)).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-status"]')).toBeNull();
     expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeNull();
@@ -52,7 +53,7 @@ describe('InstallPage', () => {
 
   it('Wrong browser? reveals the other package', () => {
     renderInstall(<InstallPage detectedBrowser="chrome" />);
-    fireEvent.click(screen.getByRole('button', { name: /Wrong browser/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Need Firefox/i }));
     expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
   });
