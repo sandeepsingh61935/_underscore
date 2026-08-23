@@ -69,17 +69,6 @@ export function InstallPage({
           <p className="u-sans install__lede">
             Capture on the page. Open this site for your library.
           </p>
-          <p className="u-mono install__meta" data-od-id="install-status">
-            <span data-od-id="install-desktop-note">Desktop only</span>
-            <span className="install__meta-sep" aria-hidden="true">
-              ·
-            </span>
-            <span>{config.statusLine}</span>
-            <span className="install__meta-sep" aria-hidden="true">
-              ·
-            </span>
-            <span>v{config.version}</span>
-          </p>
         </header>
 
         <div
