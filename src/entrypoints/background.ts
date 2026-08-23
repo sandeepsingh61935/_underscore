@@ -63,10 +63,42 @@ import type { TagService } from '@/background/services/tag-service';
 
 const logger = LoggerFactory.getLogger('Background');
 
+function registerExternalPingListener(): void {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessageExternal) {
+    return;
+  }
+  chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+    if (!isAllowedExternalAuthOrigin(sender.url)) {
+      sendResponse({ success: false, error: 'Forbidden origin', code: 'FORBIDDEN_ORIGIN' });
+      return false;
+    }
+    const type =
+      message && typeof message === 'object' && 'type' in message
+        ? String((message as { type: unknown }).type)
+        : '';
+    if (type === EXTENSION_PING) {
+      let version = '0';
+      try {
+        version = chrome.runtime.getManifest().version;
+      } catch {
+        /* ignore */
+      }
+      sendResponse({ success: true, data: { ok: true, version } });
+      return false;
+    }
+    sendResponse({ success: false, error: 'Unsupported external message', code: 'UNSUPPORTED' });
+    return false;
+  });
+  logger.info('onMessageExternal listener registered (EXTENSION_PING)');
+}
+
 export default defineBackground({
   type: 'module',
   async main() {
     logger.info('Background service worker started');
+
+    // Register before heavy init so web install gate works even if DI is slow.
+    registerExternalPingListener();
 
     let container: Container;
     let messageBus: IMessageBus;
@@ -701,36 +733,6 @@ export default defineBackground({
       });
 
       logger.info('Auth IPC handlers registered');
-
-      // Web app presence ping (and future external auth) via externally_connectable.
-      if (typeof chrome !== 'undefined' && chrome.runtime?.onMessageExternal) {
-        chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-          if (!isAllowedExternalAuthOrigin(sender.url)) {
-            sendResponse({ success: false, error: 'Forbidden origin', code: 'FORBIDDEN_ORIGIN' });
-            return false;
-          }
-          const type =
-            message && typeof message === 'object' && 'type' in message
-              ? String((message as { type: unknown }).type)
-              : '';
-          if (type === EXTENSION_PING) {
-            let version = '0';
-            try {
-              version = chrome.runtime.getManifest().version;
-            } catch {
-              /* ignore */
-            }
-            sendResponse({ success: true, data: { ok: true, version } });
-            return false;
-          }
-          // SYNC_AUTH_SESSION from web still uses internal bus when same-extension;
-          // external session sync can be added here later if needed.
-          sendResponse({ success: false, error: 'Unsupported external message', code: 'UNSUPPORTED' });
-          return false;
-        });
-        logger.info('onMessageExternal listener registered (EXTENSION_PING)');
-      }
-
       logger.info('Background services initialized successfully');
     } catch (error) {
       const err = error as Error;

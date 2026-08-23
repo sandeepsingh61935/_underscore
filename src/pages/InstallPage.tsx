@@ -56,12 +56,21 @@ export function InstallPage({
         navigate('/home', { replace: true });
         return;
       }
+      const dom = typeof document !== 'undefined'
+        ? document.documentElement.getAttribute('data-underscore-ext')
+        : null;
+      const hasRuntime =
+        typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
       setCheckError(
-        'Extension not detected. Reload this page after enabling underscore on this site, or re-load the extension from chrome://extensions, then try again.',
+        dom
+          ? 'Extension marker found but gate still failed — try Open app again.'
+          : hasRuntime
+            ? 'Browser can reach extensions, but underscore did not answer. Rebuild and Reload the extension, then hard-refresh this page.'
+            : 'No extension bridge on this page. Rebuild/Reload underscore, confirm it is enabled for this site, then hard-refresh.',
       );
     } catch {
       setCheckError(
-        'Extension not detected. Reload this page after enabling underscore on this site, or re-load the extension from chrome://extensions, then try again.',
+        'Extension not detected. Rebuild and Reload the extension from chrome://extensions, then hard-refresh this page.',
       );
     } finally {
       setChecking(false);

@@ -80,6 +80,8 @@ export default defineConfig({
           'http://127.0.0.1/*',
           'https://underscore-web.pages.dev/*',
           'https://underscore-web-3i0.pages.dev/*',
+          'https://underscore-web.vercel.app/*',
+          'https://*.vercel.app/*',
         ],
       },
       // Stable Chrome extension ID across installs (public key only).
