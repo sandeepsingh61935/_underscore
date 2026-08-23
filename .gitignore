@@ -103,3 +103,5 @@ storybook-static
 /worktrees/
 .worktrees/
 .vercel
+
+.tmp-diagnose-chrome-profile/
