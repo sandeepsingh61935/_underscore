@@ -7,8 +7,14 @@
 html,
 body,
 #root {
-  min-height: 100%;
   height: 100%;
+  margin: 0;
+}
+
+/* Document scroll only when a page needs it (legal/install/app).
+   Welcome locks itself to 100% height with overflow:hidden. */
+body {
+  overflow-x: hidden;
 }
 
 /* ── Welcome: shared structure ─────────────────────────── */
@@ -18,8 +24,7 @@ body,
   flex-direction: column;
   width: 100%;
   position: relative;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   background-color: var(--paper);
   color: var(--ink);
   background-image: radial-gradient(
@@ -151,20 +156,26 @@ body,
   right: 0;
 }
 
-/* ── Web: fluid desktop-first public landing ───────────── */
+/* ── Web: single viewport, no page scroll ──────────────── */
 
 .welcome--web {
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* Lock to #root height (html/body/#root are height: 100%).
+     Avoid min-height: 100dvh — it can exceed the layout viewport and force a scrollbar. */
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .welcome--web .welcome__main {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   justify-content: center;
   width: min(100%, 28rem);
   margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 4rem) clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1.25rem, 3vw, 2rem);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .welcome--web .welcome__logo {
