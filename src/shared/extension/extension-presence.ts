@@ -141,9 +141,13 @@ function runtimeSend(
   });
 }
 
-function parsePingResponse(response: unknown): { ok: boolean; version?: string } {
+function parsePingResponse(response: unknown): {
+  ok: boolean;
+  version?: string;
+  error?: string;
+} {
   if (!response || typeof response !== 'object') {
-    return { ok: false };
+    return { ok: false, error: 'empty_response' };
   }
   const r = response as Record<string, unknown>;
   if (r['success'] === true && r['data'] && typeof r['data'] === 'object') {
@@ -152,12 +156,22 @@ function parsePingResponse(response: unknown): { ok: boolean; version?: string }
     if (data['ok'] === true) {
       return { ok: true, version };
     }
+    return { ok: false, error: 'success_without_ok' };
+  }
+  if (r['success'] === false) {
+    const err =
+      typeof r['error'] === 'string'
+        ? r['error']
+        : typeof r['code'] === 'string'
+          ? r['code']
+          : 'success_false';
+    return { ok: false, error: err };
   }
   if (r['ok'] === true) {
     const version = typeof r['version'] === 'string' ? r['version'] : undefined;
     return { ok: true, version };
   }
-  return { ok: false };
+  return { ok: false, error: 'unrecognized_response' };
 }
 
 async function defaultSendPing(opts: {
@@ -219,7 +233,7 @@ async function defaultSendPing(opts: {
     if (parsed.ok) {
       return { ok: true, version: parsed.version, via: 'ping', debug };
     }
-    debug.pingError = 'invalid_ping_response';
+    debug.pingError = parsed.error ?? 'invalid_ping_response';
   } catch (e) {
     debug.pingError = e instanceof Error ? e.message : String(e);
   }

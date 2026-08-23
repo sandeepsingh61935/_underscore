@@ -68,15 +68,25 @@ function registerExternalPingListener(): void {
     return;
   }
   chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-    if (!isAllowedExternalAuthOrigin(sender.url)) {
-      sendResponse({ success: false, error: 'Forbidden origin', code: 'FORBIDDEN_ORIGIN' });
-      return false;
-    }
     const type =
       message && typeof message === 'object' && 'type' in message
         ? String((message as { type: unknown }).type)
         : '';
+
+    // Presence probe only returns version. Allow when origin is known-good OR
+    // when Chrome omits sender.url (seen on some external-message paths).
+    // Do not use this relaxed check for auth/session messages.
     if (type === EXTENSION_PING) {
+      const originOk =
+        !sender.url || isAllowedExternalAuthOrigin(sender.url);
+      if (!originOk) {
+        sendResponse({
+          success: false,
+          error: `Forbidden origin: ${sender.url}`,
+          code: 'FORBIDDEN_ORIGIN',
+        });
+        return false;
+      }
       let version = '0';
       try {
         version = chrome.runtime.getManifest().version;
@@ -84,6 +94,11 @@ function registerExternalPingListener(): void {
         /* ignore */
       }
       sendResponse({ success: true, data: { ok: true, version } });
+      return false;
+    }
+
+    if (!isAllowedExternalAuthOrigin(sender.url)) {
+      sendResponse({ success: false, error: 'Forbidden origin', code: 'FORBIDDEN_ORIGIN' });
       return false;
     }
     sendResponse({ success: false, error: 'Unsupported external message', code: 'UNSUPPORTED' });

@@ -58,8 +58,9 @@ export function InstallPage({
       return;
     }
     if (debug?.hasRuntimeSend) {
+      const detail = debug.pingError ? ` (${debug.pingError})` : '';
       setCheckError(
-        'Extension bridge is available but underscore did not answer. Load unpacked from .output/chrome-mv3, click Reload, then hard-refresh this page.',
+        `Extension bridge is available but underscore did not answer${detail}. Remove other underscore copies, Load unpacked from .output/chrome-mv3, Reload, hard-refresh this page.`,
       );
       return;
     }
