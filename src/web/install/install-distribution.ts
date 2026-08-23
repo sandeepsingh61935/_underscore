@@ -184,6 +184,6 @@ export function getInstallDistributionConfig(
     version,
     browsers,
     helpHref: '/help#install',
-    statusLine: 'Store listings are not public yet. Download below to install now.',
+    statusLine: 'Not in stores yet',
   };
 }

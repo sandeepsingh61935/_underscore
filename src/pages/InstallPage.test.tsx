@@ -28,29 +28,29 @@ describe('InstallPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders thesis, status, both browser downloads, help link, continue — no back link or steps', () => {
+  it('renders tight hierarchy: title, lede, meta, downloads, nav — no boxed cards or steps', () => {
     renderInstall();
-    expect(
-      screen.getByRole('heading', { name: /You need the extension to capture highlights/i }),
-    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Install the extension/i })).toBeTruthy();
+    expect(screen.getByText(/Capture on the page/i)).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-status"]')?.textContent).toMatch(
-      /Store listings are not public yet/i,
+      /Not in stores yet/i,
+    );
+    expect(document.querySelector('[data-od-id="install-desktop-note"]')?.textContent).toMatch(
+      /Desktop Chrome/i,
     );
     expect(document.querySelector('[data-od-id="install-browser-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-browser-firefox"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
-    // Steps live on Help — not duplicated on install cards
-    expect(document.querySelector('.install-browser__steps')).toBeNull();
+    expect(document.querySelector('.install-browser')).toBeNull();
     expect(document.querySelector('ol')).toBeNull();
     expect(document.querySelector('[data-od-id="install-back-welcome"]')).toBeNull();
-    expect(document.querySelector('.install__rail')).toBeNull();
     const help = document.querySelector('[data-od-id="install-help"]') as HTMLAnchorElement;
     expect(help?.getAttribute('href')).toBe('/help#install');
     expect(screen.getByRole('button', { name: /Continue without installing/i })).toBeTruthy();
   });
 
-  it('keeps Chrome | Firefox column order and marks detected browser', () => {
+  it('keeps Chrome | Firefox order and marks detected browser', () => {
     renderInstall(<InstallPage detectedBrowser="firefox" />);
     const cards = [
       ...document.querySelectorAll('[data-od-id^="install-browser-"]'),

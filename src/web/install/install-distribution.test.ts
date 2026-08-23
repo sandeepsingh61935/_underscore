@@ -23,7 +23,7 @@ describe('install-distribution', () => {
       expect(b.downloadHref).toMatch(/\/downloads\//);
     }
     expect(cfg.helpHref).toBe('/help#install');
-    expect(cfg.statusLine).toMatch(/Store listings are not public yet/i);
+    expect(cfg.statusLine).toMatch(/Not in stores yet/i);
   });
 
   it('stores mode hides manual and requires store URL', () => {
