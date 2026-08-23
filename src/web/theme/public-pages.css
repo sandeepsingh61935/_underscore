@@ -1,0 +1,555 @@
+/**
+ * Public web routes — fluid canvas (Welcome, auth, legal).
+ * Product shell lives under .app in web-app.css; keep these page-rooted.
+ */
+
+/* Viewport root so public + product pages can fill the browser */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Document scroll only when a page needs it (legal/install/app).
+   Welcome locks itself to 100% height with overflow:hidden. */
+body {
+  overflow-x: hidden;
+}
+
+/* ── Welcome: shared structure ─────────────────────────── */
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--paper);
+  color: var(--ink);
+  background-image: radial-gradient(
+    ellipse at 50% -5%,
+    color-mix(in srgb, var(--ink) 8%, transparent) 0%,
+    transparent 55%
+  );
+  box-sizing: border-box;
+}
+
+.welcome__main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.welcome__logo {
+  margin-bottom: 28px;
+}
+
+.welcome__title {
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  margin: 0 0 16px;
+  color: var(--ink);
+}
+
+.welcome__lede {
+  line-height: 1.5;
+  margin: 0 0 40px;
+  color: var(--ink-2);
+}
+
+.welcome__cta {
+  margin-bottom: 16px;
+  padding: 10px 32px;
+  min-height: 44px;
+}
+
+.welcome__already {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-bottom: 24px;
+  font-size: var(--step--2);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.welcome__already:hover {
+  color: var(--ink);
+}
+
+.welcome__trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.welcome__trust-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.welcome__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule-soft);
+  box-sizing: border-box;
+}
+
+.welcome__footer-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 8px;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.welcome__footer-link:hover {
+  color: var(--ink);
+}
+
+/* ── Popup: compact (extension) ────────────────────────── */
+
+.welcome--popup {
+  height: 100%;
+  min-height: 100%;
+}
+
+.welcome--popup .welcome__main {
+  margin: auto;
+  max-width: 360px;
+  padding: 48px 24px;
+}
+
+.welcome--popup .welcome__title {
+  font-size: var(--step-6, 48px);
+}
+
+.welcome--popup .welcome__lede {
+  font-size: var(--step--1);
+  max-width: 200px;
+}
+
+.welcome--popup .welcome__footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* ── Web: single viewport, no page scroll ──────────────── */
+
+.welcome--web {
+  /* Lock to #root height (html/body/#root are height: 100%).
+     Avoid min-height: 100dvh — it can exceed the layout viewport and force a scrollbar. */
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.welcome--web .welcome__main {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: center;
+  width: min(100%, 28rem);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1.25rem, 3vw, 2rem);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.welcome--web .welcome__logo {
+  margin-bottom: clamp(1.25rem, 2.5vw, 2.25rem);
+}
+
+.welcome--web .welcome__title {
+  font-size: clamp(2rem, 4vw + 1rem, 3.5rem);
+  margin-bottom: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.welcome--web .welcome__lede {
+  font-size: clamp(0.9375rem, 1.2vw + 0.7rem, 1.125rem);
+  max-width: 32ch;
+  margin-bottom: clamp(1.75rem, 3vw, 2.75rem);
+  line-height: 1.55;
+}
+
+.welcome--web .welcome__cta {
+  margin-bottom: clamp(0.75rem, 1.5vw, 1rem);
+  padding: clamp(10px, 1.2vw, 14px) clamp(28px, 4vw, 40px);
+  font-size: clamp(0.875rem, 0.5vw + 0.8rem, 1rem);
+}
+
+.welcome--web .welcome__already {
+  margin-bottom: clamp(1.25rem, 2vw, 2rem);
+  font-size: clamp(0.625rem, 0.3vw + 0.55rem, 0.75rem);
+}
+
+.welcome--web .welcome__trust {
+  font-size: clamp(0.625rem, 0.3vw + 0.55rem, 0.75rem);
+  gap: clamp(6px, 1vw, 10px);
+}
+
+.welcome--web .welcome__footer {
+  position: static;
+  flex-shrink: 0;
+  width: 100%;
+  padding: clamp(12px, 1.5vw, 20px) clamp(1rem, 3vw, 2rem);
+  margin-top: auto;
+}
+
+.welcome--web .welcome__footer-link {
+  font-size: clamp(0.625rem, 0.3vw + 0.55rem, 0.75rem);
+}
+
+@media (min-width: 1024px) {
+  .welcome--web .welcome__main {
+    width: min(100%, 36rem);
+  }
+}
+
+@media (min-width: 1440px) {
+  .welcome--web .welcome__title {
+    font-size: 3.5rem;
+  }
+
+  .welcome--web .welcome__lede {
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .welcome--web .welcome__main {
+    padding: 1.5rem 1rem;
+  }
+
+  .welcome--web .welcome__trust {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .welcome--web .welcome__trust-dot {
+    display: none;
+  }
+}
+
+/* ── Legal / long-form public articles ─────────────────── */
+
+.public-legal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--paper);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+/* Web article measure — not a mobile-app sheet */
+.public-legal__article {
+  width: 100%;
+  max-width: min(100%, 44rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 2.5rem) clamp(3rem, 6vw, 4.5rem);
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.public-legal__title {
+  margin: 0 0 8px;
+  font-size: clamp(1.75rem, 2vw + 1rem, 2.25rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.public-legal__meta {
+  margin: 0 0 clamp(1.75rem, 3vw, 2.5rem);
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* Install guide blocks on Help */
+.help-install-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 0 0 1.5rem;
+}
+
+.help-install-card {
+  border: 1px solid var(--rule-soft);
+  padding: 1.1rem 1.15rem 1.2rem;
+  box-sizing: border-box;
+}
+
+.help-install-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: var(--step-1);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.help-install-card ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.help-install-card li + li {
+  margin-top: 0.4rem;
+}
+
+@media (min-width: 720px) {
+  .help-install-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+/* ── Install hub ─────────────────────────────────────────
+   Centered editorial panel: title → requirement → explain →
+   download action row → quiet text links. No boxed cards. */
+
+.install {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: var(--paper);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.install__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 4vw, 2rem);
+  box-sizing: border-box;
+}
+
+.install__panel {
+  width: min(100%, 28rem);
+}
+
+.install__intro {
+  margin: 0 0 1.75rem;
+}
+
+.install__title {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.85rem, 2.5vw + 1rem, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.install__lede {
+  margin: 0 0 0.5rem;
+  font-size: clamp(0.95rem, 0.35vw + 0.88rem, 1.0625rem);
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: 36ch;
+}
+
+.install__sub {
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--ink-3);
+  max-width: 36ch;
+}
+
+/* Download strip — name + button on one rule */
+.install__downloads {
+  margin: 0 0 1.25rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.install-choice {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
+  padding: 1.15rem 0;
+  box-sizing: border-box;
+}
+
+.install-choice + .install-choice {
+  border-top: 1px solid var(--rule-soft);
+}
+
+.install-choice__copy {
+  min-width: 0;
+}
+
+.install-choice__name {
+  margin: 0;
+  font-size: clamp(1.25rem, 1vw + 1rem, 1.5rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.install-choice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.install-choice__download,
+.install-choice__store {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+  min-width: 7.5rem;
+}
+
+.install-choice__unavailable {
+  margin: 0.25rem 0 0;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+.install__downloads--single .install-choice {
+  padding: 1.35rem 0;
+}
+
+.install__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.5rem;
+}
+
+.install__link {
+  font-family: var(--sans);
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.install__link:hover {
+  color: var(--ink);
+}
+
+.install__link[href],
+.install__link--btn {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-soft);
+}
+
+.install__link[href]:hover,
+.install__link--btn:hover {
+  text-decoration-color: var(--ink-3);
+}
+
+.install__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Match Welcome footer rhythm (gap + touch targets) */
+.install__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  flex-shrink: 0;
+  width: 100%;
+  padding: clamp(12px, 1.5vw, 20px) clamp(1rem, 3vw, 2rem);
+  border-top: 1px solid var(--rule-soft);
+  box-sizing: border-box;
+}
+
+.install__footer-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 8px;
+  font-size: var(--step--2);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.install__footer-link:hover {
+  color: var(--ink);
+}
+
+@media (min-width: 520px) {
+  .install__panel {
+    width: min(100%, 30rem);
+  }
+
+  .install__downloads:not(.install__downloads--single) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .install__downloads:not(.install__downloads--single) .install-choice {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem 1rem 1.25rem 0;
+  }
+
+  .install__downloads:not(.install__downloads--single) .install-choice + .install-choice {
+    border-top: 0;
+    border-left: 1px solid var(--rule-soft);
+    padding-left: 1.25rem;
+    padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install * {
+    transition: none !important;
+  }
+}
