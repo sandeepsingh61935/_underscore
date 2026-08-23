@@ -1,0 +1,164 @@
+/* _underscore v3 — design tokens
+ * Source of truth: Web-Prototype underscore-extension-prototype.html
+ * Adopts production editorial language with prototype-evolved roles.
+ *
+ * REPLACE vs v2:
+ *   - Modes: Guest · Starter · Pro (not Ephemeral/Local/Cloud/AI)
+ *   - Semantic type roles (--type-label/meta/sub/body/title-row)
+ *   - Control geometry (--icon-size, --control-h*)
+ *   - Motion ease (--ease)
+ *   - 4-tab IA including Ask
+ * KEEP from v2:
+ *   - paper / ink / single terracotta accent
+ *   - serif · sans · mono triad
+ *   - 400×600 popup, hairline rules, 2px radius
+ */
+
+:root {
+  /* Paper + ink */
+  --paper: #f7f5f0;
+  --paper-2: #efece4;
+  --rule: #1a1a1a;
+  --rule-soft: #cfc9bd;
+  --ink: #111110;
+  --ink-2: #3a3835;
+  --ink-3: #6b6760;
+  --ink-4: #a39e94;
+
+  /* Single accent */
+  --accent: oklch(62% 0.12 45);
+  --accent-ink: #2a1208;
+  --accent-tint-08: color-mix(in oklch, var(--accent) 8%, transparent);
+  --accent-tint-18: color-mix(in oklch, var(--accent) 18%, transparent);
+  --accent-tint-35: color-mix(in oklch, var(--accent) 35%, transparent);
+  --accent-tint-65: color-mix(in oklch, var(--accent) 65%, transparent);
+
+  /* Utility */
+  --utility-overlay-05: rgba(0, 0, 0, 0.05);
+  --utility-overlay-06: rgba(0, 0, 0, 0.06);
+  --utility-overlay-08: rgba(0, 0, 0, 0.08);
+  --utility-overlay-12: rgba(0, 0, 0, 0.12);
+  --utility-overlay-15: rgba(0, 0, 0, 0.15);
+  --utility-overlay-25: rgba(0, 0, 0, 0.25);
+  --utility-surface-elevated: #fff;
+  --utility-ok: #34c759;
+  --synced: #2c8a3a;
+
+  /* Modes — single accent; distinguished by glyph + label */
+  --mode-basic: var(--accent);
+  --mode-pro: var(--accent);
+  --mode-pro-xai: var(--accent);
+
+  /* Type families */
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  /* Scale */
+  --step--2: 10px;
+  --step--1: 11px;
+  --step-0: 13px;
+  --step-1: 15px;
+  --step-2: 18px;
+  --step-3: 22px;
+  --step-4: 28px;
+
+  /* Semantic type roles */
+  --type-label: var(--step--2);
+  --type-meta: var(--step--1);
+  --type-sub: 12px;
+  --type-body: var(--step-0);
+  --type-title-row: 14px;
+  --type-display-lh: 1.0;
+  --type-body-lh: 1.45;
+  --type-display-track: -0.025em;
+  --type-section-track: 0.16em;
+  --type-row-height: 44px;
+
+  /* Icon + control geometry */
+  --icon-size: 16px;
+  --icon-size-sm: 12px;
+  --icon-hit: 36px;
+  --control-h-sm: 32px;
+  --control-h-md: 36px;
+  --control-h: 44px;
+  --dialog-max: 300px;
+
+  /* Geometry */
+  --radius: 2px;
+  --pop-w: 400px;
+  --pop-h: 600px;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Ask radii (chat surface — intentional softness) */
+  --ask-bubble-r: 4px;
+  --ask-composer-r: 2px;
+
+  /* Design canvas chrome */
+  --dc-bg: #f0eee9;
+  --dc-label: rgba(60, 50, 40, 0.70);
+  --dc-title: rgba(40, 30, 20, 0.85);
+  --dc-subtitle: rgba(60, 50, 40, 0.60);
+  --dc-postit-text: #5a4a2a;
+  --dc-ink: #2a251f;
+  --dc-backdrop: rgba(24, 20, 16, 0.60);
+
+  /* Tweaks */
+  --tweak-paper: rgba(250, 249, 247, 0.78);
+  --tweak-border: rgba(255, 255, 255, 0.60);
+  --tweak-ink: #29261b;
+  --tweak-ink-72: rgba(41, 38, 27, 0.72);
+  --tweak-ink-60: rgba(41, 38, 27, 0.60);
+  --tweak-ink-55: rgba(41, 38, 27, 0.55);
+  --tweak-ink-50: rgba(41, 38, 27, 0.50);
+  --tweak-ink-45: rgba(41, 38, 27, 0.45);
+}
+
+/* Dark — artboards opt in via .dark or [data-theme="dark"] */
+.dark,
+[data-theme="dark"] {
+  --paper: #1c1b19;
+  --paper-2: #252320;
+  --rule: #e8e4db;
+  --rule-soft: #3f3c36;
+  --ink: #f3f0e8;
+  --ink-2: #cfc9bd;
+  --ink-3: #9a948a;
+  --ink-4: #6b6760;
+  --accent: oklch(72% 0.11 45);
+  --accent-ink: #f7e8df;
+  --accent-tint-08: color-mix(in oklch, var(--accent) 14%, transparent);
+  --accent-tint-18: color-mix(in oklch, var(--accent) 24%, transparent);
+  --utility-overlay-06: rgba(255, 255, 255, 0.06);
+  --utility-overlay-08: rgba(255, 255, 255, 0.08);
+  --utility-surface-elevated: #2a2824;
+  --dc-bg: #121110;
+  --synced: #5dce6e;
+}
+
+/* Type helpers */
+.u-serif { font-family: var(--serif); letter-spacing: -0.015em; }
+.u-mono  { font-family: var(--mono); letter-spacing: 0; }
+.u-sans  { font-family: var(--sans); }
+.u-caps  {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: var(--step--2);
+}
+.u-kicker {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ue *,
+  .ue *::before,
+  .ue *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

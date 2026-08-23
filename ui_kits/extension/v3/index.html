@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>_underscore v3 — extension design canvas (Web-Prototype adopt)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="tokens.css" />
+<link rel="stylesheet" href="product.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #f2efe8; }
+  body { font-family: "Inter", sans-serif; color: #111; }
+  .doc-head {
+    padding: 28px 40px 18px;
+    border-bottom: 1px solid #1a1a1a;
+    background: #f2efe8;
+  }
+  .doc-head .masthead {
+    font-family: "Source Serif 4", serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .doc-head .sub {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6b6760;
+    margin-top: 10px;
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .doc-intro {
+    padding: 20px 40px 8px;
+    border-bottom: 1px solid #cfc9bd;
+    background: #f2efe8;
+    font-family: "Source Serif 4", serif;
+  }
+  .doc-intro .col {
+    display: grid; grid-template-columns: 180px 1fr; gap: 18px; padding: 10px 0;
+    border-bottom: 1px dotted #cfc9bd;
+  }
+  .doc-intro .col:last-child { border-bottom: none; }
+  .doc-intro .col .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6b6760;
+    padding-top: 4px;
+  }
+  .doc-intro .col .v {
+    font-size: 15px; line-height: 1.5; color: #222;
+  }
+  .doc-intro .col .v em { font-style: italic; color: #444; }
+  #canvas-host { height: calc(100vh - 0px); }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<script src="type-presets.js"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="screens-system.jsx"></script>
+<script type="text/babel" src="screens-home.jsx"></script>
+<script type="text/babel" src="screens-library.jsx"></script>
+<script type="text/babel" src="screens-ask.jsx"></script>
+<script type="text/babel" src="screens-settings.jsx"></script>
+<script type="text/babel" src="screens-typography.jsx"></script>
+<script type="text/babel" src="screens-billing.jsx"></script>
+<script type="text/babel" src="screens-dialogs.jsx"></script>
+<script type="text/babel" src="screens-ai.jsx"></script>
+
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+
+const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#c96442",
+  "typeface": "editorial",
+  "density": "comfortable",
+  "showFrames": true,
+  "darkSample": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweaks] = useTweaks(TWEAKS_DEFAULTS);
+
+  React.useEffect(() => {
+    const r = document.documentElement.style;
+    r.setProperty("--accent", tweaks.accent);
+    r.setProperty("--mode-basic", tweaks.accent);
+    r.setProperty("--mode-pro", tweaks.accent);
+    r.setProperty("--mode-pro-xai", tweaks.accent);
+  }, [tweaks.accent]);
+
+  React.useEffect(() => {
+    if (window.applyTypePreset) window.applyTypePreset(tweaks.typeface);
+  }, [tweaks.typeface]);
+
+  const S = window.V3System;
+  const H = window.V3Home;
+  const L = window.V3Library;
+  const A = window.V3Ask;
+  const St = window.V3Settings;
+  const Ty = window.V3Typography;
+  const Bi = window.V3Billing;
+  const Dg = window.V3Dialogs;
+  const Ai = window.V3Ai;
+
+  return (
+    <>
+      <div className="doc-head">
+        <div className="masthead">_underscore extension · v3</div>
+        <div className="sub">
+          <span>400×600 popup</span>
+          <span>Web-Prototype adopt</span>
+          <span>vs ui_kits/extension/v2</span>
+        </div>
+      </div>
+
+      <div className="doc-intro">
+        <div className="col">
+          <div className="k">Job</div>
+          <div className="v">
+            Review surfaces before production port. Paper / ink / accent stay; IA and chrome follow the prototype.
+          </div>
+        </div>
+        <div className="col">
+          <div className="k">Delta from v2</div>
+          <div className="v">
+            Guest · Free · Paid · Ask tab · Home as current page + recent · place | brand | account header ·
+            Polar billing · full typography panel · search filters.
+          </div>
+        </div>
+      </div>
+
+      <div id="canvas-host">
+        <DesignCanvas>
+          <DCSection id="system" title="System" subtitle="Tokens, chrome slots, replace map.">
+            <DCArtboard id="sys-map" label="Replace / keep map" width={560} height={420}>
+              <S.ReplaceMap />
+            </DCArtboard>
+            <DCArtboard id="sys-tokens" label="Tokens" width={440} height={480}>
+              <S.TokenSwatches />
+            </DCArtboard>
+            <DCArtboard id="sys-chrome" label="Chrome contract" width={480} height={400}>
+              <S.ChromeRules />
+            </DCArtboard>
+            <DCArtboard id="sys-controls" label="Controls" width={440} height={400}>
+              <S.ControlsSpecimen />
+            </DCArtboard>
+            <DCArtboard id="sys-pills" label="Mode pills + 4-tab" width={440} height={280}>
+              <S.ModePillsSpecimen />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="home" title="Home" subtitle="Current page pinned. Recent scrolls under it.">
+            <DCArtboard id="home-first" label="First run · Guest" width={440} height={680}>
+              <H.HomeFirstRun guest modeId="basic" />
+            </DCArtboard>
+            <DCArtboard id="home-guest" label="Guest · populated" width={440} height={680}>
+              <H.HomeGuest />
+            </DCArtboard>
+            <DCArtboard id="home-starter" label="Starter" width={440} height={680}>
+              <H.HomeStarter />
+            </DCArtboard>
+            <DCArtboard id="home-pro" label="Pro · Ask on page" width={440} height={680}>
+              <H.HomePro />
+            </DCArtboard>
+            <DCArtboard id="home-dark" label="Dark · Starter" width={440} height={680}>
+              <H.HomeDark />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="library" title="Library" subtitle="Domains, sections, search, filters, highlight notes and tags.">
+            <DCArtboard id="lib-controls" label="Control language" width={440} height={520}>
+              <L.ControlsConsistencySpec />
+            </DCArtboard>
+            <DCArtboard id="lib-list" label="Library · domains" width={440} height={680}>
+              <L.LibraryList modeId="pro_xai" />
+            </DCArtboard>
+            <DCArtboard id="lib-empty" label="Library empty" width={440} height={680}>
+              <L.LibraryEmpty />
+            </DCArtboard>
+            <DCArtboard id="lib-filter" label="Filters open · popular tags" width={440} height={720}>
+              <L.LibraryFilterOpen />
+            </DCArtboard>
+            <DCArtboard id="lib-filter-browse" label="Filters · browse all tags" width={440} height={720}>
+              <L.LibraryFilterBrowseTags />
+            </DCArtboard>
+            <DCArtboard id="lib-results" label="Search results + badges" width={440} height={680}>
+              <L.LibrarySearchResults />
+            </DCArtboard>
+            <DCArtboard id="lib-none" label="No matches" width={440} height={680}>
+              <L.LibraryNoMatches />
+            </DCArtboard>
+            <DCArtboard id="lib-domain" label="Domain · sections" width={440} height={680}>
+              <L.DomainView modeId="pro_xai" />
+            </DCArtboard>
+            <DCArtboard id="lib-section" label="Section · highlight list" width={440} height={680}>
+              <L.SectionView modeId="pro_xai" />
+            </DCArtboard>
+            <DCArtboard id="lib-hl-states" label="Highlight · notes/tags states" width={440} height={720}>
+              <L.HighlightStatesGallery />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="ask" title="Ask" subtitle="Paid only. Scope: page, domain, or library.">
+            <DCArtboard id="ask-lock" label="Locked · Guest" width={440} height={680}>
+              <A.AskLocked modeId="basic" />
+            </DCArtboard>
+            <DCArtboard id="ask-lock-starter" label="Locked · Starter" width={440} height={680}>
+              <A.AskLocked modeId="pro" />
+            </DCArtboard>
+            <DCArtboard id="ask-empty" label="Empty welcome · Pro" width={440} height={680}>
+              <A.AskEmpty />
+            </DCArtboard>
+            <DCArtboard id="ask-thread" label="Thread" width={440} height={680}>
+              <A.AskThread />
+            </DCArtboard>
+            <DCArtboard id="ask-stream" label="Streaming" width={440} height={680}>
+              <A.AskStreaming />
+            </DCArtboard>
+            <DCArtboard id="ask-model" label="No model connected" width={440} height={680}>
+              <A.AskNoModel />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="settings" title="Settings · Auth" subtitle="Account shell and sign-in. Billing and type are separate sections.">
+            <DCArtboard id="set-guest" label="Settings · Guest" width={440} height={680}>
+              <St.SettingsGuest />
+            </DCArtboard>
+            <DCArtboard id="set-starter" label="Settings · Starter (legacy shell)" width={440} height={680}>
+              <St.SettingsStarter />
+            </DCArtboard>
+            <DCArtboard id="set-pro" label="Settings · Pro (legacy shell)" width={440} height={680}>
+              <St.SettingsPro />
+            </DCArtboard>
+            <DCArtboard id="auth-in" label="Sign in" width={440} height={680}>
+              <St.AuthSignIn />
+            </DCArtboard>
+            <DCArtboard id="auth-reg" label="Create account" width={440} height={680}>
+              <St.AuthRegister />
+            </DCArtboard>
+            <DCArtboard id="auth-reset" label="Reset password" width={440} height={680}>
+              <St.AuthReset />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="typography" title="Typography" subtitle="Presets, fonts, scale, spacing, margins, import.">
+            <DCArtboard id="type-hierarchy" label="Roles · scale · families" width={440} height={560}>
+              <Ty.TypographyHierarchySpec />
+            </DCArtboard>
+            <DCArtboard id="type-collapsed" label="Settings row collapsed" width={440} height={680}>
+              <Ty.TypographyCollapsedRow />
+            </DCArtboard>
+            <DCArtboard id="type-presets" label="Panel · Presets open" width={440} height={720}>
+              <Ty.TypographyPanelFull openSec="presets" />
+            </DCArtboard>
+            <DCArtboard id="type-fonts" label="Panel · Fonts open" width={440} height={720}>
+              <Ty.TypographyFontsOpen />
+            </DCArtboard>
+            <DCArtboard id="type-scale" label="Panel · Scale open" width={440} height={720}>
+              <Ty.TypographyScaleOpen />
+            </DCArtboard>
+            <DCArtboard id="type-modern" label="Preset · Modern" width={440} height={720}>
+              <Ty.TypographyModernPreset />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="billing" title="Billing" subtitle="Polar checkout and portal. Free / Paid / Past due. No card forms here.">
+            <DCArtboard id="bill-matrix" label="State matrix" width={560} height={400}>
+              <Bi.BillingStateMatrix />
+            </DCArtboard>
+            <DCArtboard id="bill-guest" label="Guest · no billing" width={440} height={680}>
+              <Bi.BillingGuest />
+            </DCArtboard>
+            <DCArtboard id="bill-free" label="Free · Upgrade + Sync" width={440} height={680}>
+              <Bi.BillingFree />
+            </DCArtboard>
+            <DCArtboard id="bill-paid" label="Paid · Manage Portal" width={440} height={680}>
+              <Bi.BillingPaid />
+            </DCArtboard>
+            <DCArtboard id="bill-cancel" label="Cancel scheduled" width={440} height={680}>
+              <Bi.BillingCancelScheduled />
+            </DCArtboard>
+            <DCArtboard id="bill-past" label="Past due" width={440} height={680}>
+              <Bi.BillingPastDue />
+            </DCArtboard>
+            <DCArtboard id="bill-load" label="Loading" width={440} height={680}>
+              <Bi.BillingLoading />
+            </DCArtboard>
+            <DCArtboard id="bill-err" label="Error · no demote" width={440} height={680}>
+              <Bi.BillingError />
+            </DCArtboard>
+            <DCArtboard id="bill-compare" label="Upgrade compare stack" width={440} height={680}>
+              <Bi.BillingUpgradeCompare />
+            </DCArtboard>
+            <DCArtboard id="bill-ret-ok" label="Return · success active" width={440} height={680}>
+              <Bi.BillingReturnSuccess />
+            </DCArtboard>
+            <DCArtboard id="bill-ret-pend" label="Return · pending + handoff" width={440} height={680}>
+              <Bi.BillingReturnPending />
+            </DCArtboard>
+            <DCArtboard id="bill-ret-cancel" label="Return · checkout canceled" width={440} height={680}>
+              <Bi.BillingReturnCancel />
+            </DCArtboard>
+            <DCArtboard id="bill-ask-lock" label="Ask lock · Upgrade" width={440} height={680}>
+              <Bi.AskLockedBilling />
+            </DCArtboard>
+            <DCArtboard id="bill-ask-past" label="Ask lock · Past due" width={440} height={680}>
+              <Bi.AskLockedBilling pastDue />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="dialogs" title="Dialogs · caution" subtitle="Destructive deletes and high-cost account changes. One step. Name the object.">
+            <DCArtboard id="dlg-spec" label="Tone matrix" width={480} height={360}>
+              <Dg.DialogSeveritySpec />
+            </DCArtboard>
+            <DCArtboard id="dlg-chrome-d" label="Chrome · danger" width={440} height={360}>
+              <Dg.DialogChromeDanger />
+            </DCArtboard>
+            <DCArtboard id="dlg-chrome-c" label="Chrome · caution" width={440} height={320}>
+              <Dg.DialogChromeCaution />
+            </DCArtboard>
+            <DCArtboard id="dlg-domain" label="Delete domain" width={440} height={680}>
+              <Dg.DialogDeleteDomain />
+            </DCArtboard>
+            <DCArtboard id="dlg-section" label="Delete section" width={440} height={680}>
+              <Dg.DialogDeleteSection />
+            </DCArtboard>
+            <DCArtboard id="dlg-hl" label="Delete highlight" width={440} height={680}>
+              <Dg.DialogDeleteHighlight />
+            </DCArtboard>
+            <DCArtboard id="dlg-lib-guest" label="Delete library · guest" width={440} height={680}>
+              <Dg.DialogDeleteLibraryGuest />
+            </DCArtboard>
+            <DCArtboard id="dlg-lib-auth" label="Delete library · signed in" width={440} height={680}>
+              <Dg.DialogDeleteLibrarySignedIn />
+            </DCArtboard>
+            <DCArtboard id="dlg-busy" label="Delete · busy" width={440} height={680}>
+              <Dg.DialogDeleteBusy />
+            </DCArtboard>
+            <DCArtboard id="dlg-signout" label="Sign out" width={440} height={680}>
+              <Dg.DialogSignOut />
+            </DCArtboard>
+            <DCArtboard id="dlg-key" label="Remove API key" width={440} height={680}>
+              <Dg.DialogClearProviderKey />
+            </DCArtboard>
+            <DCArtboard id="dlg-discard" label="Discard edits" width={440} height={680}>
+              <Dg.DialogDiscardEdit />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="ai" title="Connect AI" subtitle="Providers, models, MCP. Keys stay in the browser.">
+            <DCArtboard id="ai-lock" label="Hub · Starter locked" width={440} height={680}>
+              <Ai.ConnectHubLocked />
+            </DCArtboard>
+            <DCArtboard id="ai-hub" label="Hub · Pro ready" width={440} height={680}>
+              <Ai.ConnectHubPro />
+            </DCArtboard>
+            <DCArtboard id="ai-setup" label="Provider setup · xAI" width={440} height={680}>
+              <Ai.ConnectSetup />
+            </DCArtboard>
+            <DCArtboard id="ai-models" label="Models" width={440} height={680}>
+              <Ai.ModelsView />
+            </DCArtboard>
+            <DCArtboard id="ai-insights" label="Domain insights card" width={440} height={680}>
+              <Ai.InsightsCardDemo />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      </div>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="System">
+          <TweakColor label="Accent color" value={tweaks.accent} onChange={(v) => setTweaks({ accent: v })} />
+          <TweakSelect
+            label="Typography"
+            value={tweaks.typeface}
+            options={[
+              { value: "editorial", label: "Editorial — Source Serif / Inter" },
+              { value: "classic", label: "Classic — Playfair / Source Sans" },
+              { value: "modern", label: "Modern — Fraunces / Manrope" },
+              { value: "humanist", label: "Humanist — Lora / Work Sans" },
+            ]}
+            onChange={(v) => setTweaks({ typeface: v })}
+          />
+          <TweakRadio
+            label="Density"
+            value={tweaks.density}
+            options={[
+              { value: "comfortable", label: "Comfortable" },
+              { value: "compact", label: "Compact" },
+            ]}
+            onChange={(v) => setTweaks({ density: v })}
+          />
+        </TweakSection>
+        <TweakSection title="Notes">
+          <div style={{ fontSize: 11, color: "#8a857c", lineHeight: 1.5, fontFamily: "JetBrains Mono, monospace" }}>
+            v3 adopts Web-Prototype: Guest/Starter/Pro · 4 tabs with Ask · Home Anchor+Stream · mode pill → Settings.
+            Brand: paper / ink / accent. Header: place · brand · account.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
