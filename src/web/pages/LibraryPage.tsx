@@ -29,6 +29,7 @@ import {
   type SearchField,
 } from '@/shared/utils/highlight-search';
 import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
+import { useExtensionPresence } from '@/web/extension-presence-context';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { GuestBanner } from '@/web/components/GuestBanner';
@@ -160,25 +161,32 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
  * Selection lives in the URL (`?domain=&section=`).
  */
 function LibraryEmptyInstall({ isGuest }: { isGuest: boolean }): React.ReactElement {
-  const copy = libraryEmptyInstallCopy({ guest: isGuest });
+  const extPresence = useExtensionPresence();
+  const extensionInstalled = extPresence === 'installed';
+  const copy = libraryEmptyInstallCopy({ guest: isGuest, extensionInstalled });
+  const showInstall = Boolean(copy.installHref && copy.installLabel);
   return (
     <>
       <h3>{copy.title}</h3>
       <p>{copy.body}</p>
-      <div className="actions">
-        <Link
-          to={copy.installHref}
-          className="btn primary sm"
-          data-od-id="library-empty-install"
-        >
-          {copy.installLabel}
-        </Link>
-        {copy.signInLabel ? (
-          <Link to="/sign-in" className="btn sm" data-od-id="library-guest-signin">
-            {copy.signInLabel}
-          </Link>
-        ) : null}
-      </div>
+      {showInstall || copy.signInLabel ? (
+        <div className="actions">
+          {showInstall ? (
+            <Link
+              to={copy.installHref}
+              className="btn primary sm"
+              data-od-id="library-empty-install"
+            >
+              {copy.installLabel}
+            </Link>
+          ) : null}
+          {copy.signInLabel ? (
+            <Link to="/sign-in" className="btn sm" data-od-id="library-guest-signin">
+              {copy.signInLabel}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }

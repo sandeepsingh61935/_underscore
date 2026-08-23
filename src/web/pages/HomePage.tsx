@@ -7,6 +7,7 @@ import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpda
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
+import { useExtensionPresence } from '@/web/extension-presence-context';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import {
@@ -411,13 +412,15 @@ export function HomePage(): React.ReactElement {
     </>
   );
 
-  const firstRun = webHomeEmptyInstallCopy({ guest });
+  const extPresence = useExtensionPresence();
+  const extensionInstalled = extPresence === 'installed';
+  const firstRun = webHomeEmptyInstallCopy({ guest, extensionInstalled });
   const recentBody = empty ? (
     <EmptyInline
       title={firstRun.title}
       body={firstRun.body}
       action={
-        firstRun.installHref && firstRun.installLabel
+        !extensionInstalled && firstRun.installHref && firstRun.installLabel
           ? {
               label: firstRun.installLabel,
               to: firstRun.installHref,

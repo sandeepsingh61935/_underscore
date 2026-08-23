@@ -41,7 +41,7 @@ describe('product-surface-copy', () => {
     expect(signedIn.signInLabel).toBeUndefined();
   });
 
-  it('web home empty points at install hub', () => {
+  it('web home empty points at install hub when extension missing', () => {
     const guest = webHomeEmptyInstallCopy({ guest: true });
     expect(guest.body).toMatch(/extension/i);
     expect(guest.installHref).toBe('/install');
@@ -50,6 +50,13 @@ describe('product-surface-copy', () => {
     const signedIn = webHomeEmptyInstallCopy({ guest: false });
     expect(signedIn.installHref).toBe('/install');
     expect(signedIn.signInLabel).toBeUndefined();
+  });
+
+  it('web home empty is capture-focused when extension installed', () => {
+    const guest = webHomeEmptyInstallCopy({ guest: true, extensionInstalled: true });
+    expect(guest.body).toMatch(/Select text/i);
+    expect(guest.installHref).toBeUndefined();
+    expect(guest.installLabel).toBeUndefined();
   });
 
   it('library empty guest includes capture path', () => {
@@ -71,6 +78,10 @@ describe('product-surface-copy', () => {
     expect(signedIn.installHref).toBe('/install');
     expect(signedIn.signInLabel).toBeUndefined();
     expect(signedIn.body).toMatch(/extension/i);
+
+    const withExt = libraryEmptyInstallCopy({ guest: true, extensionInstalled: true });
+    expect(withExt.installHref).toBe('');
+    expect(withExt.body).toMatch(/Select text/i);
   });
 
   it('no matches copy offers reset', () => {

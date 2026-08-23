@@ -58,6 +58,13 @@ describe('GuestExtensionGate', () => {
     });
   });
 
+  it('signed-in + missing presence still allows product', async () => {
+    renderGate({ auth: true, presenceOverride: 'missing', initial: '/home' });
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-ok"]')).toBeTruthy();
+    });
+  });
+
   it('signed-in + missing → product still renders', async () => {
     renderGate({ auth: true, presenceOverride: 'missing', initial: '/home' });
     await waitFor(() => {

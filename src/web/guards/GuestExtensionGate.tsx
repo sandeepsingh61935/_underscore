@@ -7,6 +7,7 @@ import {
   shouldBlockGuestProductAccess,
   type ExtensionPresence,
 } from '@/shared/extension/extension-presence';
+import { ExtensionPresenceProvider } from '@/web/extension-presence-context';
 
 export interface GuestExtensionGateProps {
   /** Test seam: skip network ping. */
@@ -18,6 +19,7 @@ export interface GuestExtensionGateProps {
 /**
  * Guest hard gate (PRD 2026-08-23): product shell requires extension ping.
  * Signed-in users pass through (library viewer). Fail closed while checking.
+ * Provides ExtensionPresence to empty states (no "Install extension" when present).
  */
 export function GuestExtensionGate({
   presenceOverride,
@@ -26,7 +28,7 @@ export function GuestExtensionGate({
   const { isAuthenticated } = useApp();
   const location = useLocation();
   const [presence, setPresence] = useState<ExtensionPresence | null>(
-    presenceOverride ?? (isAuthenticated ? 'installed' : null),
+    presenceOverride ?? null,
   );
 
   useEffect(() => {
@@ -34,15 +36,12 @@ export function GuestExtensionGate({
       setPresence(presenceOverride);
       return;
     }
-    if (isAuthenticated) {
-      setPresence('installed');
-      return;
-    }
     let cancelled = false;
     setPresence(null);
     void ping().then((r) => {
       if (!cancelled) {
-        setPresence(r.presence);
+        // Signed-in may use the app without extension; record real presence for UI.
+        setPresence(r.presence === 'installed' ? 'installed' : isAuthenticated ? 'missing' : r.presence);
       }
     });
     return () => {
@@ -50,12 +49,16 @@ export function GuestExtensionGate({
     };
   }, [isAuthenticated, presenceOverride, ping]);
 
-  if (isAuthenticated) {
-    return <Outlet />;
-  }
-
-  // Fail closed while resolving
+  // Fail closed for guests while resolving
   if (presence === null) {
+    if (isAuthenticated) {
+      // Allow shell; empty states treat null as unknown (no install CTA spam until known)
+      return (
+        <ExtensionPresenceProvider value="unknown">
+          <Outlet />
+        </ExtensionPresenceProvider>
+      );
+    }
     return (
       <div
         className="install"
@@ -66,7 +69,7 @@ export function GuestExtensionGate({
     );
   }
 
-  if (shouldBlockGuestProductAccess({ isAuthenticated: false, presence })) {
+  if (shouldBlockGuestProductAccess({ isAuthenticated, presence })) {
     return (
       <Navigate
         to="/install"
@@ -76,5 +79,9 @@ export function GuestExtensionGate({
     );
   }
 
-  return <Outlet />;
+  return (
+    <ExtensionPresenceProvider value={presence}>
+      <Outlet />
+    </ExtensionPresenceProvider>
+  );
 }

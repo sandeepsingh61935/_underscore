@@ -62,6 +62,7 @@ describe('HomePage', () => {
     expect(document.querySelector('[data-od-id="home-ask-page"]')).toBeNull();
 
     expect(screen.getByText('No highlights yet')).toBeTruthy();
+    // Without presence provider, extensionInstalled is false → install CTA
     expect(document.querySelector('[data-od-id="home-empty-install"]')).toBeTruthy();
     expect(screen.getByText(/Install the extension/i)).toBeTruthy();
     expect(screen.getByText('No page open')).toBeTruthy();

@@ -80,8 +80,28 @@ export function homeFirstRunCopy(input: { guest: boolean }): FirstRunCopy {
   };
 }
 
-/** Web Home empty — points at /install hub. */
-export function webHomeEmptyInstallCopy(input: { guest: boolean }): FirstRunCopy {
+/**
+ * Web Home empty.
+ * extensionInstalled: true → capture guidance (no Install CTA).
+ * false/undefined → point at /install when extension is not known present.
+ */
+export function webHomeEmptyInstallCopy(input: {
+  guest: boolean;
+  extensionInstalled?: boolean;
+}): FirstRunCopy {
+  if (input.extensionInstalled) {
+    if (input.guest) {
+      return {
+        title: 'No highlights yet',
+        body: 'Select text on any page and save a highlight. It will show up here.',
+        signInLabel: 'Sign in to sync',
+      };
+    }
+    return {
+      title: 'No highlights yet',
+      body: 'Select text on any page and save a highlight to fill your library.',
+    };
+  }
   if (input.guest) {
     return {
       title: 'No highlights yet',
@@ -113,8 +133,28 @@ export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
   };
 }
 
-/** Web library empty (not filtering) — guest vs signed-in. */
-export function libraryEmptyInstallCopy(input: { guest: boolean }): LibraryEmptyInstallCopy {
+/** Web library empty (not filtering) — guest vs signed-in; optional extension-aware. */
+export function libraryEmptyInstallCopy(input: {
+  guest: boolean;
+  extensionInstalled?: boolean;
+}): LibraryEmptyInstallCopy {
+  if (input.extensionInstalled) {
+    if (input.guest) {
+      return {
+        title: 'No highlights',
+        body: 'Select text on a page and save a highlight — or sign in to load a cloud library.',
+        installLabel: '',
+        installHref: '',
+        signInLabel: 'Sign in',
+      };
+    }
+    return {
+      title: 'No highlights',
+      body: 'Select text on a page and save a highlight to fill this view.',
+      installLabel: '',
+      installHref: '',
+    };
+  }
   if (input.guest) {
     return {
       title: 'No highlights',
