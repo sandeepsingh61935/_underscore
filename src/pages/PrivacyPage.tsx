@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/shared/constants/support-contact';
 import { AppHeader } from '@/ui-system/components/layout/AppHeader';
@@ -14,47 +13,8 @@ export function PrivacyPage(): React.ReactElement {
       <AppHeader variant="standalone" />
 
       <article className="public-legal__article">
-        <Link
-          to="/"
-          className="u-mono"
-          style={{
-            display: 'inline-flex',
-            minHeight: 44,
-            alignItems: 'center',
-            gap: 6,
-            padding: '0 8px',
-            margin: '20px 0 8px -8px',
-            color: 'var(--ink-2)',
-            textDecoration: 'none',
-            fontSize: 'var(--step--1)',
-          }}
-        >
-          ← Back
-        </Link>
-
-        <h1
-          className="u-serif"
-          style={{
-            margin: '0 0 8px',
-            fontSize: 'var(--step-5)',
-            fontWeight: 400,
-            letterSpacing: '-0.02em',
-            color: 'var(--ink)',
-          }}
-        >
-          Privacy Policy
-        </h1>
-        <p
-          className="u-mono"
-          style={{
-            margin: '0 0 32px',
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            letterSpacing: '0.04em',
-          }}
-        >
-          Last updated: August 2026
-        </p>
+        <h1 className="u-serif public-legal__title">Privacy Policy</h1>
+        <p className="u-mono public-legal__meta">Last updated: August 2026</p>
 
         <div
           style={{

@@ -255,16 +255,72 @@ body,
   box-sizing: border-box;
 }
 
+/* Web article measure — not a mobile-app sheet */
 .public-legal__article {
   width: 100%;
-  max-width: min(100%, 65ch);
+  max-width: min(100%, 44rem);
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 2rem) clamp(2rem, 5vw, 3rem);
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 2.5rem) clamp(3rem, 6vw, 4.5rem);
   box-sizing: border-box;
   flex: 1;
 }
 
-/* ── Install onboarding (public folio) ─────────────────── */
+.public-legal__title {
+  margin: 0 0 8px;
+  font-size: clamp(1.75rem, 2vw + 1rem, 2.25rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.public-legal__meta {
+  margin: 0 0 clamp(1.75rem, 3vw, 2.5rem);
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* Install guide blocks on Help */
+.help-install-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 0 0 1.5rem;
+}
+
+.help-install-card {
+  border: 1px solid var(--rule-soft);
+  padding: 1.1rem 1.15rem 1.2rem;
+  box-sizing: border-box;
+}
+
+.help-install-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: var(--step-1);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.help-install-card ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.help-install-card li + li {
+  margin-top: 0.4rem;
+}
+
+@media (min-width: 720px) {
+  .help-install-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+/* ── Install hub ───────────────────────────────────────── */
 
 .install {
   display: flex;
@@ -272,134 +328,89 @@ body,
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  position: relative;
   overflow-x: hidden;
   overflow-y: auto;
   background-color: var(--paper);
   color: var(--ink);
-  background-image: radial-gradient(
-    ellipse at 50% -5%,
-    color-mix(in srgb, var(--ink) 8%, transparent) 0%,
-    transparent 55%
-  );
   box-sizing: border-box;
 }
 
-.install__column {
-  flex: 1;
-  width: min(100%, 40rem);
+.install__top {
+  width: min(100%, 48rem);
   margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2rem) clamp(2rem, 4vw, 3rem);
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.5rem, 4vw, 2.5rem) 0;
   box-sizing: border-box;
-  text-align: left;
 }
 
-.install__brand {
-  margin-bottom: clamp(1.25rem, 2vw, 1.75rem);
+.install__logo-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: none;
+  color: inherit;
 }
 
-.install__kicker {
-  margin: 0 0 10px;
-  font-size: var(--step--2);
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
-}
-
-.install__title-rule {
-  width: 100%;
-  height: 0;
-  border-top: 1px solid var(--rule-soft);
-  margin: 0 0 clamp(1.25rem, 2.5vw, 1.75rem);
+.install__main {
+  flex: 1;
+  width: min(100%, 48rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem) clamp(2rem, 4vw, 3rem);
+  box-sizing: border-box;
 }
 
 .install__title {
-  margin: 0 0 clamp(0.85rem, 1.5vw, 1.15rem);
-  font-size: clamp(1.75rem, 3vw + 0.75rem, 2.5rem);
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.65rem, 2.2vw + 0.9rem, 2.35rem);
   font-weight: 400;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--ink);
-}
-
-.install__title-mark {
-  text-decoration: underline;
-  text-decoration-color: var(--accent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.12em;
+  max-width: 22ch;
 }
 
 .install__lede {
-  margin: 0 0 clamp(1.25rem, 2.5vw, 1.75rem);
-  font-size: clamp(0.9375rem, 0.8vw + 0.75rem, 1.0625rem);
-  line-height: 1.55;
+  margin: 0 0 0.5rem;
+  font-size: clamp(0.95rem, 0.4vw + 0.85rem, 1.0625rem);
+  line-height: 1.5;
   color: var(--ink-2);
-  max-width: 42ch;
-}
-
-.install__rail {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 0 clamp(1.75rem, 3vw, 2.25rem);
-}
-
-.install__rail-cap {
-  font-size: var(--step--2);
-  color: var(--ink-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.install__rail-line {
-  flex: 1;
-  height: 0;
-  border-top: 1px solid var(--rule);
-  opacity: 0.35;
-  min-width: 2rem;
-}
-
-.install__section {
-  margin: 0 0 clamp(1.75rem, 3vw, 2.25rem);
-}
-
-.install__section-kicker {
-  margin: 0 0 10px;
-  font-size: var(--step--2);
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
+  max-width: 40ch;
 }
 
 .install__status {
-  margin: 0;
-  font-size: var(--step-0);
-  line-height: 1.55;
-  color: var(--ink-2);
+  margin: 0 0 0.35rem;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--ink-3);
+  max-width: 42ch;
 }
 
 .install__desktop-note {
-  margin: 0 0 16px;
+  margin: 0 0 1.5rem;
   font-size: var(--step--1);
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--ink-3);
 }
 
 .install__browsers {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
 }
 
 .install-browser {
   border: 1px solid var(--rule-soft);
   background: var(--paper);
-  padding: clamp(1rem, 2vw, 1.25rem);
+  padding: 1.15rem 1.2rem 1.25rem;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 100%;
 }
 
 .install-browser--suggested {
   border-color: var(--rule);
-  box-shadow: inset 3px 0 0 0 var(--accent);
 }
 
 .install-browser__head {
@@ -407,22 +418,14 @@ body,
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px 16px;
-  margin-bottom: 14px;
+  gap: 6px 12px;
 }
 
 .install-browser__name {
   margin: 0;
-  font-size: var(--step-1);
+  font-size: var(--step-2);
   font-weight: 600;
   color: var(--ink);
-}
-
-.install-browser__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
 }
 
 .install-browser__version {
@@ -431,19 +434,18 @@ body,
 }
 
 .install-browser__chip {
+  margin: 0;
   font-size: var(--step--2);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-2);
-  border: 1px solid var(--rule-soft);
-  padding: 2px 8px;
+  color: var(--ink-3);
 }
 
 .install-browser__ctas {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-top: auto;
 }
 
 .install-browser__download,
@@ -456,18 +458,6 @@ body,
   box-sizing: border-box;
 }
 
-.install-browser__steps {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: var(--ink-2);
-  font-size: var(--step--1);
-  line-height: 1.55;
-}
-
-.install-browser__steps li + li {
-  margin-top: 6px;
-}
-
 .install-browser__unavailable {
   margin: 0;
   font-size: var(--step--1);
@@ -475,13 +465,13 @@ body,
 }
 
 .install__help-line {
-  margin: 14px 0 0;
+  margin: 0 0 1.5rem;
 }
 
 .install__help-link {
   font-family: var(--sans);
-  font-size: var(--step--1);
-  color: var(--accent);
+  font-size: var(--step-0);
+  color: var(--ink-2);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -493,29 +483,15 @@ body,
 .install__actions {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 14px;
-  padding-top: clamp(0.5rem, 1.5vw, 1rem);
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--rule-soft);
 }
 
 .install__continue {
-  width: 100%;
-}
-
-.install__back {
-  align-self: center;
-  font-size: var(--step--2);
-  color: var(--ink-3);
-  text-decoration: none;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  letter-spacing: 0.04em;
-}
-
-.install__back:hover {
-  color: var(--ink);
+  width: auto;
+  min-width: 12rem;
 }
 
 .install__footer {
@@ -546,14 +522,9 @@ body,
 }
 
 @media (min-width: 640px) {
-  .install-browser__ctas {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .install-browser__download,
-  .install-browser__store {
-    width: auto;
+  .install__browsers {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.15rem;
   }
 }
 

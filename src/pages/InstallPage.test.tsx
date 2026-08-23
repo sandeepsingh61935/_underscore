@@ -28,30 +28,37 @@ describe('InstallPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders why, status, both browsers, help, and continue', () => {
+  it('renders thesis, status, both browser downloads, help link, continue — no back link or steps', () => {
     renderInstall();
-    expect(screen.getByRole('heading', { name: /Capture lives in the/i })).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-status"]')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: /You need the extension to capture highlights/i }),
+    ).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-status"]')?.textContent).toMatch(
-      /store listings are in progress/i,
+      /Store listings are not public yet/i,
     );
     expect(document.querySelector('[data-od-id="install-browser-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-browser-firefox"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
+    // Steps live on Help — not duplicated on install cards
+    expect(document.querySelector('.install-browser__steps')).toBeNull();
+    expect(document.querySelector('ol')).toBeNull();
+    expect(document.querySelector('[data-od-id="install-back-welcome"]')).toBeNull();
+    expect(document.querySelector('.install__rail')).toBeNull();
     const help = document.querySelector('[data-od-id="install-help"]') as HTMLAnchorElement;
     expect(help?.getAttribute('href')).toBe('/help#install');
     expect(screen.getByRole('button', { name: /Continue without installing/i })).toBeTruthy();
   });
 
-  it('marks detected browser as suggested and orders it first', () => {
+  it('keeps Chrome | Firefox column order and marks detected browser', () => {
     renderInstall(<InstallPage detectedBrowser="firefox" />);
     const cards = [
       ...document.querySelectorAll('[data-od-id^="install-browser-"]'),
     ] as HTMLElement[];
-    expect(cards[0]?.getAttribute('data-od-id')).toBe('install-browser-firefox');
-    expect(cards[0]?.getAttribute('data-suggested')).toBe('true');
-    expect(cards[1]?.getAttribute('data-suggested')).toBe('false');
+    expect(cards[0]?.getAttribute('data-od-id')).toBe('install-browser-chrome');
+    expect(cards[1]?.getAttribute('data-od-id')).toBe('install-browser-firefox');
+    expect(cards[1]?.getAttribute('data-suggested')).toBe('true');
+    expect(cards[0]?.getAttribute('data-suggested')).toBe('false');
   });
 
   it('continue navigates to /home', () => {
@@ -78,6 +85,5 @@ describe('InstallPage', () => {
     ) as HTMLAnchorElement;
     expect(store).toBeTruthy();
     expect(store.href).toContain('chrome.example');
-    expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
   });
 });

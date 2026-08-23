@@ -184,7 +184,6 @@ export function getInstallDistributionConfig(
     version,
     browsers,
     helpHref: '/help#install',
-    statusLine:
-      'Browser store listings are in progress. You can install manually today.',
+    statusLine: 'Store listings are not public yet. Download below to install now.',
   };
 }

@@ -13,140 +13,73 @@ export function HelpPage(): React.ReactElement {
       <AppHeader variant="standalone" />
 
       <article className="public-legal__article">
-        <Link
-          to="/"
-          className="u-mono"
-          style={{
-            display: 'inline-flex',
-            minHeight: 44,
-            alignItems: 'center',
-            gap: 6,
-            padding: '0 8px',
-            margin: '20px 0 8px -8px',
-            color: 'var(--ink-2)',
-            textDecoration: 'none',
-            fontSize: 'var(--step--1)',
-          }}
-        >
-          ← Back
-        </Link>
+        <h1 className="u-serif public-legal__title">Help</h1>
+        <p className="u-mono public-legal__meta">Last updated: August 2026</p>
 
-        <h1
-          className="u-serif"
-          style={{
-            margin: '0 0 8px',
-            fontSize: 'var(--step-5)',
-            fontWeight: 400,
-            letterSpacing: '-0.02em',
-            color: 'var(--ink)',
-          }}
-        >
-          Help
-        </h1>
-        <p
-          className="u-mono"
-          style={{
-            margin: '0 0 32px',
-            fontSize: 'var(--step--2)',
-            color: 'var(--ink-3)',
-            letterSpacing: '0.04em',
-          }}
-        >
-          Last updated: August 2026
-        </p>
-
-        <div
-          style={{
-            padding: 16,
-            marginBottom: 32,
-            backgroundColor: 'var(--accent-tint-08)',
-            border: '1px solid var(--rule-soft)',
-            borderRadius: 'var(--radius)',
-          }}
-        >
-          <p
-            className="u-sans"
-            style={{
-              margin: 0,
-              fontSize: 'var(--step-0)',
-              lineHeight: 1.6,
-              color: 'var(--ink)',
-            }}
-          >
-            <strong style={{ color: 'var(--accent)' }}>Quick start</strong> — Install the
-            extension, select text on any page, and save a highlight. Open the web app to
-            browse your library when you are signed in.
-          </p>
-        </div>
-
-        <section id="install" style={{ marginBottom: 28, scrollMarginTop: 24 }}>
+        <section id="install" style={{ marginBottom: 36, scrollMarginTop: 24 }}>
           <h2
             className="u-serif"
             style={{
-              margin: '0 0 12px',
+              margin: '0 0 8px',
               fontSize: 'var(--step-2)',
               fontWeight: 500,
               letterSpacing: '-0.01em',
               color: 'var(--ink)',
             }}
           >
-            Install the extension
+            Load the extension
           </h2>
           <p
             className="u-sans"
             style={{
               margin: '0 0 16px',
               fontSize: 'var(--step-0)',
-              lineHeight: 1.65,
+              lineHeight: 1.6,
               color: 'var(--ink-2)',
             }}
           >
-            Capture happens in the desktop browser extension. The web app is your library.
-            Store listings may still be rolling out — use manual install from the{' '}
+            Download a build from the{' '}
             <Link to="/install" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
               install page
-            </Link>{' '}
-            when needed. Works in desktop Chrome or Firefox only.
+            </Link>
+            , then load it in your browser. Desktop Chrome or Firefox only.
           </p>
-          <FaqItem q="Chrome (load unpacked)">
-            <ol style={{ margin: '0 0 0 1.1rem', padding: 0, lineHeight: 1.65 }}>
-              <li>Open the install page and download the Chrome zip.</li>
-              <li>Unzip the download on your computer.</li>
-              <li>
-                Go to <span className="u-mono">chrome://extensions</span>.
-              </li>
-              <li>Turn on Developer mode.</li>
-              <li>Choose Load unpacked and select the unzipped folder.</li>
-              <li>Pin underscore from the extensions menu.</li>
-            </ol>
-          </FaqItem>
-          <FaqItem q="Firefox (temporary add-on)">
-            <ol style={{ margin: '0 0 0 1.1rem', padding: 0, lineHeight: 1.65 }}>
-              <li>Open the install page and download the Firefox package.</li>
-              <li>
-                Go to{' '}
-                <span className="u-mono">about:debugging#/runtime/this-firefox</span>.
-              </li>
-              <li>Choose Load Temporary Add-on…</li>
-              <li>Select the zip or <span className="u-mono">manifest.json</span> from the package.</li>
-              <li>
-                Keep this Firefox profile open — temporary add-ons are removed when Firefox
-                quits.
-              </li>
-            </ol>
-          </FaqItem>
+
+          <div className="help-install-grid">
+            <div className="help-install-card">
+              <h3 className="u-sans">Chrome</h3>
+              <ol className="u-sans">
+                <li>Download and unzip the Chrome package.</li>
+                <li>
+                  Open <span className="u-mono">chrome://extensions</span>.
+                </li>
+                <li>Enable Developer mode.</li>
+                <li>Load unpacked → select the unzipped folder.</li>
+                <li>Pin underscore from the extensions menu.</li>
+              </ol>
+            </div>
+            <div className="help-install-card">
+              <h3 className="u-sans">Firefox</h3>
+              <ol className="u-sans">
+                <li>Download the Firefox package.</li>
+                <li>
+                  Open{' '}
+                  <span className="u-mono">about:debugging#/runtime/this-firefox</span>.
+                </li>
+                <li>Load Temporary Add-on…</li>
+                <li>
+                  Choose the zip or <span className="u-mono">manifest.json</span>.
+                </li>
+                <li>Keep Firefox open — temporary add-ons clear on quit.</li>
+              </ol>
+            </div>
+          </div>
         </section>
 
         <FaqSection title="Getting started">
           <FaqItem q="How do I save a highlight?">
-            With the extension installed, select text on a supported page and use the
-            highlight control or shortcut. Saved items appear in your library according to
-            your current mode (Guest local storage or Account cloud library). Need the
-            extension first? See{' '}
-            <a href="#install" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-              Install the extension
-            </a>
-            .
+            With the extension installed, select text on a page and use the highlight control
+            or shortcut. Items show in your library (local as Guest, cloud when signed in).
           </FaqItem>
           <FaqItem q="Where is the web app?">
             Sign in at this site to open Home, Library, and Settings. The extension popup is

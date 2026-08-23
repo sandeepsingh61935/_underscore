@@ -6,7 +6,6 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 import {
   detectInstallBrowser,
   getInstallDistributionConfig,
-  orderInstallBrowsers,
   showManualDownload,
   showStoreCta,
   type InstallBrowserArtifact,
@@ -22,8 +21,8 @@ export interface InstallPageProps {
 }
 
 /**
- * Public install onboarding — Welcome → /install → home (soft gate).
- * Design: V2 editorial folio (PRD 2026-08-23 + frontend-design pass).
+ * Public install hub — Welcome → /install → home (soft gate).
+ * Downloads only; load steps live on Help (#install).
  */
 export function InstallPage({
   config: configProp,
@@ -35,70 +34,46 @@ export function InstallPage({
     [configProp],
   );
   const detected = detectedProp ?? detectInstallBrowser();
-  const browsers = useMemo(
-    () => orderInstallBrowsers(config.browsers, detected),
-    [config.browsers, detected],
-  );
+  // Stable two-column order: Chrome | Firefox (detect only marks Suggested).
+  const browsers = config.browsers;
 
   return (
     <div className="install" data-od-id="install" data-platform="web">
-      <div className="install__column">
-        <div className="install__brand">
+      <header className="install__top">
+        <Link to="/" className="install__logo-link" aria-label="underscore home">
           <Logo size="md" showText={false} />
-        </div>
+        </Link>
+      </header>
 
-        <p className="u-mono u-caps install__kicker">Install</p>
-        <div className="install__title-rule" aria-hidden="true" />
-
+      <main className="install__main">
         <h1 className="u-serif install__title">
-          Capture lives in the{' '}
-          <span className="install__title-mark">extension</span>
+          You need the extension to capture highlights
         </h1>
-
         <p className="u-sans install__lede">
-          underscore saves highlights from pages you browse. This web app is your library
-          — it shows what the extension captures.
+          The extension saves text on the pages you browse. This site is your library.
+        </p>
+        <p className="u-sans install__status" data-od-id="install-status">
+          {config.statusLine}
+        </p>
+        <p className="u-sans install__desktop-note" data-od-id="install-desktop-note">
+          Desktop Chrome or Firefox only.
         </p>
 
-        <div className="install__rail" aria-hidden="true">
-          <span className="u-mono install__rail-cap">Browser</span>
-          <span className="install__rail-line" />
-          <span className="u-mono install__rail-cap">Library</span>
+        <div className="install__browsers" data-od-id="install-browsers">
+          {browsers.map((browser) => (
+            <BrowserCard
+              key={browser.id}
+              browser={browser}
+              suggested={detected !== 'unknown' && browser.id === detected}
+            />
+          ))}
         </div>
 
-        <section className="install__section" aria-labelledby="install-status-heading">
-          <h2 id="install-status-heading" className="u-mono u-caps install__section-kicker">
-            Status
-          </h2>
-          <p className="u-sans install__status" data-od-id="install-status">
-            {config.statusLine}
-          </p>
-        </section>
-
-        <section className="install__section" aria-labelledby="install-browsers-heading">
-          <h2 id="install-browsers-heading" className="u-mono u-caps install__section-kicker">
-            Install
-          </h2>
-          <p className="u-sans install__desktop-note" data-od-id="install-desktop-note">
-            Works in desktop Chrome or Firefox. Mobile browsers can&apos;t run the extension.
-          </p>
-
-          <div className="install__browsers">
-            {browsers.map((browser) => (
-              <BrowserCard
-                key={browser.id}
-                browser={browser}
-                suggested={detected !== 'unknown' && browser.id === detected}
-              />
-            ))}
-          </div>
-
-          <p className="install__help-line">
-            <Link to={config.helpHref} className="install__help-link" data-od-id="install-help">
-              Full install steps
-            </Link>
-          </p>
-        </section>
+        <p className="install__help-line">
+          <Link to={config.helpHref} className="install__help-link" data-od-id="install-help">
+            How to load the extension
+          </Link>
+        </p>
 
         <div className="install__actions">
           <Button
@@ -109,13 +84,10 @@ export function InstallPage({
           >
             Continue without installing
           </Button>
-          <Link to="/" className="u-mono install__back" data-od-id="install-back-welcome">
-            Back to welcome
-          </Link>
         </div>
-      </div>
+      </main>
 
-      <div className="install__footer">
+      <footer className="install__footer">
         <Link to="/privacy" className="u-mono install__footer-link">
           Privacy
         </Link>
@@ -125,7 +97,7 @@ export function InstallPage({
         <Link to="/help" className="u-mono install__footer-link">
           Help
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }
@@ -147,55 +119,40 @@ function BrowserCard({
       data-suggested={suggested ? 'true' : 'false'}
     >
       <header className="install-browser__head">
-        <h3 className="u-sans install-browser__name">{browser.label}</h3>
-        <div className="install-browser__meta">
-          <span className="u-mono install-browser__version">v{browser.version}</span>
-          {suggested ? (
-            <span className="u-mono install-browser__chip">Suggested</span>
-          ) : null}
-        </div>
+        <h2 className="u-sans install-browser__name">{browser.label}</h2>
+        <span className="u-mono install-browser__version">v{browser.version}</span>
       </header>
 
-      {browser.availability === 'unavailable' ? (
-        <p className="u-sans install-browser__unavailable">
-          Install for {browser.label} is not available yet.
-        </p>
-      ) : (
-        <>
-          <div className="install-browser__ctas">
-            {manual ? (
-              <a
-                className="btn primary install-browser__download"
-                href={browser.downloadHref}
-                data-od-id={`install-download-${browser.id}`}
-                download
-              >
-                {browser.downloadLabel}
-              </a>
-            ) : null}
-            {store && browser.storeUrl ? (
-              <a
-                className={`btn${manual ? '' : ' primary'} install-browser__store`}
-                href={browser.storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-od-id={`install-store-${browser.id}`}
-              >
-                {browser.storeLabel ?? `Get it for ${browser.label}`}
-              </a>
-            ) : null}
-          </div>
+      {suggested ? (
+        <p className="u-mono install-browser__chip">Your browser</p>
+      ) : null}
 
+      {browser.availability === 'unavailable' ? (
+        <p className="u-sans install-browser__unavailable">Not available yet.</p>
+      ) : (
+        <div className="install-browser__ctas">
           {manual ? (
-            <ol className="install-browser__steps">
-              {browser.steps.map((step) => (
-                <li key={step} className="u-sans">
-                  {step}
-                </li>
-              ))}
-            </ol>
+            <a
+              className="btn primary install-browser__download"
+              href={browser.downloadHref}
+              data-od-id={`install-download-${browser.id}`}
+              download
+            >
+              {browser.downloadLabel}
+            </a>
           ) : null}
-        </>
+          {store && browser.storeUrl ? (
+            <a
+              className={`btn${manual ? '' : ' primary'} install-browser__store`}
+              href={browser.storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-od-id={`install-store-${browser.id}`}
+            >
+              {browser.storeLabel ?? `Chrome Web Store`}
+            </a>
+          ) : null}
+        </div>
       )}
     </article>
   );
