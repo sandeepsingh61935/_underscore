@@ -3,7 +3,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 yarn.lock
 
 # Build outputs
@@ -22,10 +21,12 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+tests/**/*-report.json
 
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -48,9 +49,29 @@ packages/mcp-server/.wrangler/
 packages/mcp-server/.dev.vars
 packages/mcp-server/package-lock.json
 
+# Cloudflare Workers local state
+.wrangler/
+
+# Graphify (generated knowledge graph + cache)
+graphify-out/
+**/graphify-out/
+
+# Playwright MCP dumps
+.playwright-mcp/
+
+# Superpowers session scratch
+.superpowers/brainstorm/
+
+# Local non-product trees
+system-design-teach/
+GEMINI.md
+/development
+/generate-key
+
 # Logs
 logs/
 *.log
+*.pid
 
 # Temporary files
 tmp/
@@ -74,23 +95,7 @@ Thumbs.db
 *storybook.log
 storybook-static
 
-
-#docs
-/docs
-
-#github
-.github
-
-GEMINI.md
-
-#development
-/development
-
 # Git worktrees
 /worktrees/
-/generate-key
-
-
-
 .worktrees/
 .vercel
