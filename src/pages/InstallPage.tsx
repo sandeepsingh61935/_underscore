@@ -1,6 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
+import {
+  pingExtensionPresence,
+  type ExtensionPingDeps,
+} from '@/shared/extension/extension-presence';
 import {
   detectInstallBrowser,
   getInstallDistributionConfig,
@@ -15,6 +19,8 @@ import {
 export interface InstallPageProps {
   config?: InstallDistributionConfig;
   detectedBrowser?: InstallBrowserDetect;
+  /** Test seam for extension presence ping. */
+  ping?: (deps?: ExtensionPingDeps) => ReturnType<typeof pingExtensionPresence>;
 }
 
 /**
@@ -23,13 +29,44 @@ export interface InstallPageProps {
 export function InstallPage({
   config: configProp,
   detectedBrowser: detectedProp,
+  ping = pingExtensionPresence,
 }: InstallPageProps = {}): React.ReactElement {
+  const navigate = useNavigate();
   const config = useMemo(
     () => configProp ?? getInstallDistributionConfig(),
     [configProp],
   );
   const detected = detectedProp ?? detectInstallBrowser();
   const [showOther, setShowOther] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+
+  const onDownloadClick = useCallback(() => {
+    setDownloaded(true);
+    setCheckError(null);
+  }, []);
+
+  const onCheckInstalled = useCallback(async () => {
+    setChecking(true);
+    setCheckError(null);
+    try {
+      const result = await ping();
+      if (result.presence === 'installed') {
+        navigate('/home', { replace: true });
+        return;
+      }
+      setCheckError(
+        'Extension not detected yet. Load it in your browser, then try again.',
+      );
+    } catch {
+      setCheckError(
+        'Extension not detected yet. Load it in your browser, then try again.',
+      );
+    } finally {
+      setChecking(false);
+    }
+  }, [navigate, ping]);
 
   const byId = useMemo(() => {
     const map = new Map<InstallBrowserId, InstallBrowserArtifact>();
@@ -83,9 +120,41 @@ export function InstallPage({
             aria-label="Download"
           >
             {visible.map((browser) => (
-              <BrowserChoice key={browser.id} browser={browser} />
+              <BrowserChoice
+                key={browser.id}
+                browser={browser}
+                onDownloadClick={onDownloadClick}
+              />
             ))}
           </section>
+
+          <div className="install__verify" data-od-id="install-verify">
+            <p className="u-sans install__verify-hint">
+              {downloaded
+                ? 'Load the extension in your browser, then open the app.'
+                : 'After you download and load it, check below to open the app.'}
+            </p>
+            <button
+              type="button"
+              className="btn primary install__verify-btn"
+              data-od-id="install-check"
+              disabled={checking}
+              onClick={() => {
+                void onCheckInstalled();
+              }}
+            >
+              {checking ? 'Checking…' : "I've installed it — open app"}
+            </button>
+            {checkError ? (
+              <p
+                className="u-sans install__verify-error"
+                data-od-id="install-check-error"
+                role="alert"
+              >
+                {checkError}
+              </p>
+            ) : null}
+          </div>
 
           <div className="install__links">
             <Link to={config.helpHref} className="install__link" data-od-id="install-help">
@@ -121,7 +190,13 @@ export function InstallPage({
   );
 }
 
-function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.ReactElement {
+function BrowserChoice({
+  browser,
+  onDownloadClick,
+}: {
+  browser: InstallBrowserArtifact;
+  onDownloadClick: () => void;
+}): React.ReactElement {
   const manual = showManualDownload(browser.availability);
   const store = showStoreCta(browser.availability) && Boolean(browser.storeUrl);
 
@@ -145,6 +220,7 @@ function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.
               href={browser.downloadHref}
               data-od-id={`install-download-${browser.id}`}
               download
+              onClick={onDownloadClick}
             >
               Download
             </a>

@@ -12,6 +12,7 @@ function renderInstall(ui: React.ReactElement = <InstallPage detectedBrowser="ch
     <MemoryRouter initialEntries={['/install']}>
       <Routes>
         <Route path="/install" element={ui} />
+        <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
         <Route path="/help" element={<div data-od-id="help-stub">Help</div>} />
       </Routes>
     </MemoryRouter>,
@@ -68,5 +69,33 @@ describe('InstallPage', () => {
     const cfg = getInstallDistributionConfig({} as ImportMetaEnv);
     renderInstall(<InstallPage config={cfg} detectedBrowser="chrome" />);
     expect(document.querySelector('[data-od-id="install-store-chrome"]')).toBeNull();
+  });
+
+  it('check button pings and navigates home when installed', async () => {
+    const ping = vi.fn(async () => ({ presence: 'installed' as const, version: '0.1.1' }));
+    renderInstall(<InstallPage detectedBrowser="chrome" ping={ping} />);
+    fireEvent.click(screen.getByRole('button', { name: /I've installed it/i }));
+    await vi.waitFor(() => {
+      expect(ping).toHaveBeenCalled();
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
+  });
+
+  it('check button shows error when extension missing', async () => {
+    const ping = vi.fn(async () => ({ presence: 'missing' as const }));
+    renderInstall(<InstallPage detectedBrowser="chrome" ping={ping} />);
+    fireEvent.click(screen.getByRole('button', { name: /I've installed it/i }));
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-od-id="install-check-error"]')?.textContent).toMatch(
+        /not detected/i,
+      );
+    });
+    expect(document.querySelector('[data-od-id="home-stub"]')).toBeNull();
+  });
+
+  it('download click updates verify hint', () => {
+    renderInstall(<InstallPage detectedBrowser="chrome" />);
+    fireEvent.click(document.querySelector('[data-od-id="install-download-chrome"]')!);
+    expect(screen.getByText(/Load the extension in your browser/i)).toBeTruthy();
   });
 });
