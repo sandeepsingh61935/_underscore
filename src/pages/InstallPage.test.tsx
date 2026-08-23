@@ -26,6 +26,9 @@ describe('InstallPage', () => {
   it('chrome UA: only Chrome download; no Continue', () => {
     renderInstall(<InstallPage detectedBrowser="chrome" />);
     expect(screen.getByRole('heading', { name: /Install the extension/i })).toBeTruthy();
+    expect(document.querySelector('[data-od-id="install-lede"]')?.textContent).toMatch(
+      /must download and load the extension/i,
+    );
     expect(document.querySelector('[data-od-id="install-status"]')).toBeNull();
     expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeNull();

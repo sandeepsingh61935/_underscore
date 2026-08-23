@@ -66,8 +66,9 @@ export function InstallPage({
       <main className="install__main">
         <header className="install__intro">
           <h1 className="u-serif install__title">Install the extension</h1>
-          <p className="u-sans install__lede">
-            Capture on the page. Open this site for your library.
+          <p className="u-sans install__lede" data-od-id="install-lede">
+            You must download and load the extension to use the app. It captures
+            highlights on the page; this site is your library.
           </p>
         </header>
 
