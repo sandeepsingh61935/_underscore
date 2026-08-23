@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/ui-system/components/primitives/Button';
-import { Logo } from '@/ui-system/components/primitives/Logo';
 import {
   detectInstallBrowser,
   getInstallDistributionConfig,
@@ -39,12 +38,6 @@ export function InstallPage({
 
   return (
     <div className="install" data-od-id="install" data-platform="web">
-      <header className="install__top">
-        <Link to="/" className="install__logo-link" aria-label="underscore home">
-          <Logo size="md" showText={false} />
-        </Link>
-      </header>
-
       <main className="install__main">
         <h1 className="u-serif install__title">
           You need the extension to capture highlights

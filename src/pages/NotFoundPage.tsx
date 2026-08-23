@@ -1,11 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { Logo } from '@/ui-system/components/primitives/Logo';
-
 /**
- * 404 Not Found Page — editorial split: dimmed logo + serif 404 numeral +
- * message + V2 link back home.
+ * 404 Not Found Page — serif 404 numeral + message + link home.
  */
 export function NotFoundPage(): React.ReactElement {
   return (
@@ -23,11 +20,6 @@ export function NotFoundPage(): React.ReactElement {
         textAlign: 'center',
       }}
     >
-      {/* Logo (small, dimmed) */}
-      <div style={{ marginBottom: 32, opacity: 0.4 }}>
-        <Logo size="sm" showText={false} />
-      </div>
-
       {/* 404 heading — serif display */}
       <h1
         className="u-serif"

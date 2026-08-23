@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { Logo } from '@/ui-system/components/primitives/Logo';
-
 export interface AuthLandingChromeProps {
   /** Page label in the strip (e.g. "Sign in"). */
   pageLabel?: string;
@@ -36,7 +34,6 @@ export function AuthLandingChrome({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-        <Logo size="sm" showText={false} />
         <span
           className="u-serif"
           style={{

@@ -1,7 +1,6 @@
 import React from 'react';
 
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/shared/constants/support-contact';
-import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /**
  * Privacy Policy — article-style layout with editorial typography.
@@ -10,8 +9,6 @@ import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 export function PrivacyPage(): React.ReactElement {
   return (
     <div className="public-legal">
-      <AppHeader variant="standalone" />
-
       <article className="public-legal__article">
         <h1 className="u-serif public-legal__title">Privacy Policy</h1>
         <p className="u-mono public-legal__meta">Last updated: August 2026</p>

@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { Logo } from '@/ui-system/components/primitives/Logo';
-
 export interface AuthScreenShellProps {
     /** 'web' = full-viewport centered card. 'popup' = body-only, fills the 400x600 popup shell. */
     variant: 'web' | 'popup';
@@ -145,10 +143,6 @@ export function AuthScreenShell({
     return (
         <div style={CONTAINER_STYLE[variant]}>
             <div style={INNER_STYLE[variant]}>
-                <div style={{ display: 'flex', justifyContent: showRail ? 'flex-start' : 'center', marginBottom: variant === 'web' ? 32 : 28 }}>
-                    <Logo size={variant === 'web' ? 'md' : 'sm'} showText={variant === 'web'} />
-                </div>
-
                 {showRail ? (
                     <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
                         <div

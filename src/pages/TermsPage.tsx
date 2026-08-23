@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/shared/constants/support-contact';
-import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 
 /**
  * Terms of Service — short editorial page matching Privacy layout family.
@@ -10,8 +9,6 @@ import { AppHeader } from '@/ui-system/components/layout/AppHeader';
 export function TermsPage(): React.ReactElement {
   return (
     <div className="public-legal">
-      <AppHeader variant="standalone" />
-
       <article className="public-legal__article">
         <h1 className="u-serif public-legal__title">Terms of Service</h1>
         <p className="u-mono public-legal__meta">Last updated: August 2026</p>
