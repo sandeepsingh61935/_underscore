@@ -163,7 +163,8 @@
   color-scheme: dark;
   --paper:     #111110;
   --paper-2:   #1a1918;
-  --rule:      #f2eee6;
+  /* Borders stay muted charcoal — never near-white (cards/buttons use --rule). */
+  --rule:      #3a3732;
   --rule-soft: #2a2826;
   --ink:       #f2eee6;
   --ink-2:     #cfc9bd;

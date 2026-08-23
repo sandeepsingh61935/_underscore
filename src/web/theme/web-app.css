@@ -10,7 +10,8 @@
 :root {
   --paper-3: color-mix(in srgb, var(--ink) 6%, var(--paper-2));
   --border: var(--rule-soft);
-  --border-strong: color-mix(in srgb, var(--ink) 18%, var(--rule-soft));
+  /* Prefer rule tokens (dark-safe). Avoid mixing light ink into borders. */
+  --border-strong: var(--rule);
   --overlay-06: var(--utility-overlay-06);
   --overlay-08: var(--utility-overlay-08);
   --card-hover: color-mix(in srgb, var(--accent) 6%, var(--paper-2));
