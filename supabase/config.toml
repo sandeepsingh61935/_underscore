@@ -239,15 +239,31 @@ otp_length = 6
 # window for OTP brute-force / interception (recovery OTP grants a session on verification).
 otp_expiry = 600
 
-# Use a production-ready SMTP server
+# Use a production-ready SMTP server for LOCAL real delivery (optional).
+# Default local stack uses Inbucket ([local_smtp]) — check http://127.0.0.1:54324
+# instead of a real inbox. Hosted projects: configure SMTP in the Supabase
+# Dashboard (config.toml does not auto-apply). See:
+# docs/01-development/supabase-smtp-email-setup.md
+#
+# Example (Resend) — set RESEND_API_KEY in the environment, never commit secrets:
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp.resend.com"
+# port = 587
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "auth@yourdomain.com"
+# sender_name = "underscore"
+#
+# Example (SendGrid):
 # [auth.email.smtp]
 # enabled = true
 # host = "smtp.sendgrid.net"
 # port = 587
 # user = "apikey"
 # pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# admin_email = "auth@yourdomain.com"
+# sender_name = "underscore"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
