@@ -2,6 +2,8 @@
 export const AUTH_STATE_CHANGED = 'AUTH_STATE_CHANGED' as const;
 export const AUTH_SESSION_CLEARED = 'AUTH_SESSION_CLEARED' as const;
 export const SYNC_AUTH_SESSION = 'SYNC_AUTH_SESSION' as const;
+/** Web page → extension presence probe (externally_connectable). */
+export const EXTENSION_PING = 'EXTENSION_PING' as const;
 export const CLEAR_VERIFICATION_STATE = 'CLEAR_VERIFICATION_STATE' as const;
 
 /** Verify the 6-digit code emailed after REGISTER_EMAIL. Payload: { email, token }. */

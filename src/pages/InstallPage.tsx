@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   detectInstallBrowser,
@@ -8,32 +8,58 @@ import {
   showStoreCta,
   type InstallBrowserArtifact,
   type InstallBrowserDetect,
+  type InstallBrowserId,
   type InstallDistributionConfig,
 } from '@/web/install/install-distribution';
 
 export interface InstallPageProps {
-  /** Test seam: inject distribution config. */
   config?: InstallDistributionConfig;
-  /** Test seam: inject browser detect result. */
   detectedBrowser?: InstallBrowserDetect;
 }
 
 /**
- * Public install hub — Welcome → /install → home (soft gate).
- * Downloads only; load steps live on Help (#install).
+ * Install hub — single-browser download when UA known; guest hard gate (no continue).
  */
 export function InstallPage({
   config: configProp,
   detectedBrowser: detectedProp,
 }: InstallPageProps = {}): React.ReactElement {
-  const navigate = useNavigate();
   const config = useMemo(
     () => configProp ?? getInstallDistributionConfig(),
     [configProp],
   );
   const detected = detectedProp ?? detectInstallBrowser();
-  const browsers = config.browsers;
-  const version = config.version;
+  const [showOther, setShowOther] = useState(false);
+
+  const byId = useMemo(() => {
+    const map = new Map<InstallBrowserId, InstallBrowserArtifact>();
+    for (const b of config.browsers) {
+      map.set(b.id, b);
+    }
+    return map;
+  }, [config.browsers]);
+
+  const primaryId: InstallBrowserId | null =
+    detected === 'chrome' || detected === 'firefox' ? detected : null;
+
+  const visible: InstallBrowserArtifact[] = (() => {
+    if (!primaryId) {
+      return [...config.browsers];
+    }
+    const primary = byId.get(primaryId);
+    const otherId: InstallBrowserId = primaryId === 'chrome' ? 'firefox' : 'chrome';
+    const other = byId.get(otherId);
+    if (!primary) {
+      return [...config.browsers];
+    }
+    if (showOther && other) {
+      return [primary, other];
+    }
+    return [primary];
+  })();
+
+  const otherLabel =
+    primaryId === 'chrome' ? 'Firefox' : primaryId === 'firefox' ? 'Chrome' : null;
 
   return (
     <div className="install" data-od-id="install" data-platform="web">
@@ -44,7 +70,7 @@ export function InstallPage({
             Capture on the page. Open this site for your library.
           </p>
           <p className="u-mono install__meta" data-od-id="install-status">
-            <span data-od-id="install-desktop-note">Desktop Chrome &amp; Firefox</span>
+            <span data-od-id="install-desktop-note">Desktop only</span>
             <span className="install__meta-sep" aria-hidden="true">
               ·
             </span>
@@ -52,32 +78,38 @@ export function InstallPage({
             <span className="install__meta-sep" aria-hidden="true">
               ·
             </span>
-            <span>v{version}</span>
+            <span>v{config.version}</span>
           </p>
         </header>
 
-        <div className="install__browsers" data-od-id="install-browsers" role="list">
-          {browsers.map((browser) => (
-            <BrowserChoice
-              key={browser.id}
-              browser={browser}
-              suggested={detected !== 'unknown' && browser.id === detected}
-            />
+        <div
+          className={`install__browsers${visible.length === 1 ? ' install__browsers--single' : ''}`}
+          data-od-id="install-browsers"
+          role="list"
+        >
+          {visible.map((browser) => (
+            <BrowserChoice key={browser.id} browser={browser} />
           ))}
         </div>
 
-        <nav className="install__nav" aria-label="Install options">
+        {primaryId && otherLabel ? (
+          <p className="install__wrong">
+            <button
+              type="button"
+              className="install__wrong-btn"
+              data-od-id="install-wrong-browser"
+              aria-expanded={showOther}
+              onClick={() => setShowOther((v) => !v)}
+            >
+              {showOther ? 'Hide other browser' : `Wrong browser? Get ${otherLabel}`}
+            </button>
+          </p>
+        ) : null}
+
+        <nav className="install__nav" aria-label="Install help">
           <Link to={config.helpHref} className="install__help-link" data-od-id="install-help">
             How to load it
           </Link>
-          <button
-            type="button"
-            className="install__continue-text"
-            data-od-id="install-continue"
-            onClick={() => navigate('/home')}
-          >
-            Continue without installing
-          </button>
         </nav>
       </main>
 
@@ -96,29 +128,17 @@ export function InstallPage({
   );
 }
 
-function BrowserChoice({
-  browser,
-  suggested,
-}: {
-  browser: InstallBrowserArtifact;
-  suggested: boolean;
-}): React.ReactElement {
+function BrowserChoice({ browser }: { browser: InstallBrowserArtifact }): React.ReactElement {
   const manual = showManualDownload(browser.availability);
   const store = showStoreCta(browser.availability) && Boolean(browser.storeUrl);
 
   return (
     <div
-      className={`install-choice${suggested ? ' install-choice--active' : ''}`}
+      className="install-choice"
       data-od-id={`install-browser-${browser.id}`}
-      data-suggested={suggested ? 'true' : 'false'}
       role="listitem"
     >
-      <div className="install-choice__label">
-        <h2 className="u-serif install-choice__name">{browser.label}</h2>
-        {suggested ? (
-          <span className="u-mono install-choice__hint">Detected</span>
-        ) : null}
-      </div>
+      <h2 className="u-serif install-choice__name">{browser.label}</h2>
 
       {browser.availability === 'unavailable' ? (
         <p className="u-sans install-choice__unavailable">Not available yet</p>
@@ -131,7 +151,7 @@ function BrowserChoice({
               data-od-id={`install-download-${browser.id}`}
               download
             >
-              Download
+              Download for {browser.label}
             </a>
           ) : null}
           {store && browser.storeUrl ? (
@@ -142,7 +162,7 @@ function BrowserChoice({
               rel="noopener noreferrer"
               data-od-id={`install-store-${browser.id}`}
             >
-              {browser.storeLabel ?? 'Store'}
+              {browser.storeLabel ?? 'Open store'}
             </a>
           ) : null}
         </div>

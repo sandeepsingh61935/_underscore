@@ -74,11 +74,12 @@ export default defineConfig({
     return {
       ...base,
       externally_connectable: {
-        // WP-3: pin to our app origin only (no project-wide Pages wildcard)
+        // Web install gate + session bridge — pin to app origins only.
         matches: [
           'http://localhost/*',
           'http://127.0.0.1/*',
           'https://underscore-web.pages.dev/*',
+          'https://underscore-web-3i0.pages.dev/*',
         ],
       },
       // Stable Chrome extension ID across installs (public key only).

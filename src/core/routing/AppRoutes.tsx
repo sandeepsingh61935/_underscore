@@ -21,6 +21,7 @@ import { TermsPage } from '@/pages/TermsPage';
 import { HelpPage } from '@/pages/HelpPage';
 import { InstallPage } from '@/pages/InstallPage';
 import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
+import { GuestExtensionGate } from '@/web/guards/GuestExtensionGate';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
@@ -85,11 +86,13 @@ export function AppRoutes() {
               <Route path="/help" element={<HelpPage />} />
               <Route path="/install" element={<InstallPage />} />
 
-              {/* Product shell — guest-allowed (no ProtectedRoute) */}
-              <Route element={<WebAppShell />}>
-                <Route path="/home" element={<HomePage />} />
-                <Route path="/library" element={<LibraryPage />} />
-                <Route path="/settings" element={<WebSettingsPage />} />
+              {/* Product shell — guests require extension ping (SPA gate only) */}
+              <Route element={<GuestExtensionGate />}>
+                <Route element={<WebAppShell />}>
+                  <Route path="/home" element={<HomePage />} />
+                  <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/settings" element={<WebSettingsPage />} />
+                </Route>
               </Route>
 
               {/* Legacy redirects */}

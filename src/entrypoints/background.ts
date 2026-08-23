@@ -14,6 +14,7 @@ import { authStateResponseData } from '@/shared/auth/auth-state-payload';
 import { broadcastAuthSessionCleared, broadcastAuthStateChange } from '@/shared/auth/broadcast-auth-state';
 import {
   CLEAR_VERIFICATION_STATE,
+  EXTENSION_PING,
   SYNC_AUTH_SESSION,
   VERIFY_EMAIL_OTP,
   RESEND_EMAIL_OTP,
@@ -27,6 +28,7 @@ import {
   VerifyOtpPayloadSchema,
   UpdatePasswordPayloadSchema,
 } from '@/shared/schemas/auth-schemas';
+import { isAllowedExternalAuthOrigin } from '@/shared/auth/external-origin';
 import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
 import { LoggerFactory } from '@/shared/utils/logger';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
@@ -699,6 +701,36 @@ export default defineBackground({
       });
 
       logger.info('Auth IPC handlers registered');
+
+      // Web app presence ping (and future external auth) via externally_connectable.
+      if (typeof chrome !== 'undefined' && chrome.runtime?.onMessageExternal) {
+        chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+          if (!isAllowedExternalAuthOrigin(sender.url)) {
+            sendResponse({ success: false, error: 'Forbidden origin', code: 'FORBIDDEN_ORIGIN' });
+            return false;
+          }
+          const type =
+            message && typeof message === 'object' && 'type' in message
+              ? String((message as { type: unknown }).type)
+              : '';
+          if (type === EXTENSION_PING) {
+            let version = '0';
+            try {
+              version = chrome.runtime.getManifest().version;
+            } catch {
+              /* ignore */
+            }
+            sendResponse({ success: true, data: { ok: true, version } });
+            return false;
+          }
+          // SYNC_AUTH_SESSION from web still uses internal bus when same-extension;
+          // external session sync can be added here later if needed.
+          sendResponse({ success: false, error: 'Unsupported external message', code: 'UNSUPPORTED' });
+          return false;
+        });
+        logger.info('onMessageExternal listener registered (EXTENSION_PING)');
+      }
+
       logger.info('Background services initialized successfully');
     } catch (error) {
       const err = error as Error;
