@@ -73,11 +73,8 @@ export function CollectionsView({
         {/* Mode Switcher (New Navigation Fix) */}
         {mode && onModeChange && (
           <button
-            onClick={() => onModeChange('basic')} // Simplest way to go back to selection or just use a dedicated back handler?
-            // Actually, the user wants "Change Mode".
-            // In PopupRouter, we might want to go back to ModeSelectionView
-            // But here we just have onModeChange.
-            // Let's use a explicit "Back" button style if we are in a mode.
+            onClick={() => onModeChange('basic')}
+            // Mode selection page removed — fallback to collections/home
             className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Change mode"
             title="Change mode"

@@ -6,7 +6,6 @@ export type ActiveTab = 'home' | 'collections' | 'settings';
 export type ViewKey =
   | 'LOADING'
   | 'WELCOME'
-  | 'MODE_SELECTION'
   | 'COLLECTIONS'
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
@@ -72,18 +71,9 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       showTabBar: false,
       accountPill: null,
     },
-    MODE_SELECTION: {
-      title: BRAND,
-      place: '',
-      brand: BRAND,
-      showTitleStrip: true,
-      showModeHeader: false,
-      showTabBar: false,
-      accountPill: null,
-    },
     COLLECTIONS: {
       title: `${BRAND} · library`,
-      place: '',
+      place: 'library',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -95,7 +85,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     DOMAIN_DETAILS: {
       title: `${BRAND} · library`,
-      place: '',
+      place: 'library',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -109,7 +99,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     SUB_DOMAIN: {
       title: `${BRAND} · library`,
-      place: '',
+      place: 'library',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,
@@ -123,7 +113,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     AUTH: {
       title: `${BRAND} · sign in`,
-      place: '',
+      place: 'sign in',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: false,
@@ -132,7 +122,7 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
     },
     SETTINGS: {
       title: `${BRAND} · settings`,
-      place: '',
+      place: 'settings',
       brand: BRAND,
       showTitleStrip: true,
       showModeHeader: true,

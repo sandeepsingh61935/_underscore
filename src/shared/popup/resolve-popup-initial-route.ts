@@ -8,7 +8,6 @@ import { normalizeMode } from '@/shared/utils/normalize-mode';
 
 export type PopupInitialView =
   | 'WELCOME'
-  | 'MODE_SELECTION'
   | 'COLLECTIONS'
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
@@ -18,7 +17,6 @@ export type PopupInitialView =
 
 export interface PopupOnboardingState {
   hasSeenWelcome: boolean;
-  hasSeenModeSelection: boolean;
 }
 
 export interface PopupRouteInput {
@@ -106,21 +104,16 @@ export function resolvePopupInitialRoute(input: PopupRouteInput): PopupRouteResu
     return { view: 'COLLECTIONS' };
   }
 
-  if (!onboarding.hasSeenModeSelection) {
-    return { view: 'MODE_SELECTION' };
-  }
-
-  // Interrupted sign-in: user picked Pro/10x and clicked Sign In but closed
-  // the popup before completing auth. Resume on AUTH rather than bouncing
-  // back to Mode Selection.
+  // Interrupted sign-in: user picked a mode and clicked Sign In but closed
+  // the popup before completing auth. Resume on AUTH.
   if (nav.pendingAuthMode) {
     return { view: 'AUTH' };
   }
 
   // Guest home is Collections (Basic has library). Restore last library /
-  // settings view; never force Mode Selection again after first pick.
+  // settings view.
   const restored = restoredPersistedView(nav);
-  if (restored && restored.view !== 'MODE_SELECTION') {
+  if (restored) {
     return restored;
   }
 

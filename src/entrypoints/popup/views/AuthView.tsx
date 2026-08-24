@@ -18,7 +18,7 @@ type AuthStep = 'auth' | 'forgot-password' | 'reset-password';
 
 interface AuthViewProps {
     onLoginSuccess: () => void;
-    onBackToModeSelection?: () => void;
+    onBack?: () => void;
 }
 
 const textLinkStyle: React.CSSProperties = {
@@ -53,7 +53,7 @@ const quietLinkStyle: React.CSSProperties = {
  */
 export function AuthView({
     onLoginSuccess,
-    onBackToModeSelection,
+    onBack,
 }: AuthViewProps): React.ReactElement {
     const {
         login, loginWithEmail, registerWithEmail, isLoading, error,
@@ -180,12 +180,12 @@ export function AuthView({
                     boxSizing: 'border-box',
                 }}
             >
-                {onBackToModeSelection ? (
+                {onBack ? (
                     <button
                         type="button"
-                        onClick={onBackToModeSelection}
+                        onClick={onBack}
                         className="u-sans"
-                        aria-label="Back to settings"
+                        aria-label="Back"
                         style={{
                             ...quietLinkStyle,
                             alignSelf: 'flex-start',
@@ -199,6 +199,29 @@ export function AuthView({
                         ←
                     </button>
                 ) : null}
+
+                <div
+                    aria-hidden
+                    style={{
+                        width: 44,
+                        height: 44,
+                        margin: '0 auto 18px',
+                        border: '1px solid var(--ink)',
+                        borderRadius: 'var(--radius)',
+                        background: 'var(--ink)',
+                        color: 'var(--paper)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--serif)',
+                        fontSize: 22,
+                        fontWeight: 500,
+                        lineHeight: 1,
+                        letterSpacing: '-0.04em',
+                    }}
+                >
+                    _
+                </div>
 
                 <div style={{ textAlign: 'center', width: '100%' }}>
                     <h1

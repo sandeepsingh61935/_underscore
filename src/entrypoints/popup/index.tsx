@@ -10,7 +10,6 @@ import { AuthProvider, useAuth as useExtensionAuth } from '../../ui-system/provi
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
 import { SubDomainView } from '../../features/collections/views/SubDomainView';
-import { ModeSelectionView } from '../../features/modes/ModeSelectionView';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
 import {
@@ -19,7 +18,6 @@ import {
   loadPopupNavigationSnapshot,
   persistPopupDomain,
   persistPopupSection,
-  persistPendingAuthMode,
   persistPopupView,
 } from '../../shared/constants/popup-navigation-storage';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
@@ -47,7 +45,6 @@ import './base.css';
 enum View {
   LOADING = 'LOADING',
   WELCOME = 'WELCOME',
-  MODE_SELECTION = 'MODE_SELECTION',
   COLLECTIONS = 'COLLECTIONS',
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
   SUB_DOMAIN = 'SUB_DOMAIN',
@@ -106,7 +103,6 @@ function PopupApp(): React.ReactElement {
   // Auth sync is now handled by PopupAppProvider via props
 
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
-  const [previousView, setPreviousView] = useState<View | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [isStorageReady, setIsStorageReady] = useState(false);
@@ -163,18 +159,14 @@ function PopupApp(): React.ReactElement {
     async function initStorage(): Promise<void> {
       try {
         const [onboarding, nav] = await Promise.all([
-          browser.storage.local.get([
-            'underscore_seen_welcome',
-            'underscore_seen_mode_selection',
-          ]),
+          browser.storage.local.get(['underscore_seen_welcome']),
           loadPopupNavigationSnapshot(),
         ]);
         const hasSeenWelcome = onboarding['underscore_seen_welcome'] === 'true';
-        const hasSeenModeSelection = onboarding['underscore_seen_mode_selection'] === 'true';
 
         const resolved = resolvePopupInitialRoute({
           isAuthenticated: Boolean(user),
-          onboarding: { hasSeenWelcome, hasSeenModeSelection },
+          onboarding: { hasSeenWelcome },
           nav,
           currentMode,
           verificationStatus,
@@ -217,25 +209,8 @@ function PopupApp(): React.ReactElement {
 
   const handleStartWelcome = async (): Promise<void> => {
     await browser.storage.local.set({ underscore_seen_welcome: 'true' });
-    setCurrentView(View.MODE_SELECTION);
-  };
-
-  const handleModeSelect = async (modeId: string): Promise<void> => {
-    // Mark mode selection as seen
-    await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
-
-    // Update global mode state
-    setMode(modeId as ModeType);
-
-    // Note: Mode gets set via contexts/hooks within the view or globally
+    setMode('basic');
     setCurrentView(View.COLLECTIONS);
-  };
-
-  const handleSignInClick = async (modeId: ModeType): Promise<void> => {
-    setPendingMode(modeId);
-    await browser.storage.local.set({ underscore_seen_mode_selection: 'true' });
-    await persistPendingAuthMode(modeId);
-    setCurrentView(View.AUTH);
   };
 
   const handleLoginSuccess = async (): Promise<void> => {
@@ -250,15 +225,11 @@ function PopupApp(): React.ReactElement {
     await logout();
     await clearPendingAuthMode();
     await clearPopupDomainSection();
-    await persistPopupView('MODE_SELECTION');
+    await persistPopupView('COLLECTIONS');
     setSelectedDomain('');
     setSelectedSection('');
     setPendingMode(null);
-    setCurrentView(View.MODE_SELECTION);
-  };
-
-  const handleBackToModeSelection = (): void => {
-    setCurrentView(View.MODE_SELECTION);
+    setCurrentView(View.COLLECTIONS);
   };
 
   const handleCollectionClick = (domain: string): void => {
@@ -285,22 +256,12 @@ function PopupApp(): React.ReactElement {
   };
 
   const handleSettingsClick = (): void => {
-    setPreviousView(currentView);
     setCurrentView(View.SETTINGS);
   };
 
   const handleSettingsChangeMode = (): void => {
-    setPreviousView(currentView);
-    setCurrentView(View.MODE_SELECTION);
-  };
-
-  const handleModeSelectionBack = (): void => {
-    if (previousView && previousView !== View.MODE_SELECTION) {
-      setCurrentView(previousView);
-      setPreviousView(null);
-    } else {
-      setCurrentView(View.COLLECTIONS);
-    }
+    // Mode selection page removed — settings "change mode" now goes to Collections
+    setCurrentView(View.COLLECTIONS);
   };
 
   const handleTabChange = (tab: ActiveTab): void => {
@@ -361,16 +322,6 @@ function PopupApp(): React.ReactElement {
       {currentView === View.WELCOME && (
         <WelcomePage onStartClick={handleStartWelcome} />
       )}
-      {currentView === View.MODE_SELECTION && (
-        <ModeSelectionView
-          onModeSelect={handleModeSelect}
-          onSignInClick={handleSignInClick}
-          onBack={previousView ? handleModeSelectionBack : undefined}
-          onNavigateToCollections={() => setCurrentView(View.COLLECTIONS)}
-          initialMode={currentMode}
-          isAuthenticated={!!user}
-        />
-      )}
       {currentView === View.COLLECTIONS && (
         <CollectionsView
           onCollectionClick={handleCollectionClick}
@@ -397,7 +348,7 @@ function PopupApp(): React.ReactElement {
       {currentView === View.AUTH && (
         <AuthView
           onLoginSuccess={handleLoginSuccess}
-          onBackToModeSelection={handleBackToModeSelection}
+          onBack={() => setCurrentView(View.COLLECTIONS)}
         />
       )}
       {currentView === View.SETTINGS && (

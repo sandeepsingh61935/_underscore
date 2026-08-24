@@ -52,24 +52,36 @@ describe('V2 EmptyState', () => {
         expect(onClick).toHaveBeenCalledOnce();
     });
 
-    it('uses V2 --paper for the icon wrapper background and --ink-3 for the icon', () => {
-        const { baseElement } = render(<EmptyState variant="no-results" />);
-        const html = baseElement.innerHTML;
-        expect(html).toContain('var(--paper-2)');
-        expect(html).toContain('var(--ink-3)');
+    it('has role status and aria-live polite', () => {
+        render(<EmptyState variant="no-results" />);
+        const el = screen.getByRole('status');
+        expect(el).toBeInTheDocument();
+        expect(el).toHaveAttribute('aria-live', 'polite');
     });
 
-    it('primary action button uses V2 --accent surface and --paper text', () => {
-        const { baseElement } = render(
+    it('primary action button uses .btn.primary.sm classes', () => {
+        render(
             <EmptyState
                 title="Empty"
                 description="Do something"
                 action={{ label: 'Add', onClick: vi.fn() }}
             />
         );
-        const html = baseElement.innerHTML;
-        expect(html).toContain('var(--accent)');
-        expect(html).toContain('var(--accent-ink)');
+        const button = screen.getByRole('button', { name: 'Add' });
+        expect(button).toHaveClass('btn', 'primary', 'sm');
+    });
+
+    it('secondary action button uses .btn.sm classes', () => {
+        render(
+            <EmptyState
+                title="Empty"
+                description="Do something"
+                secondaryAction={{ label: 'Skip', onClick: vi.fn() }}
+            />
+        );
+        const button = screen.getByRole('button', { name: 'Skip' });
+        expect(button).toHaveClass('btn', 'sm');
+        expect(button).not.toHaveClass('primary');
     });
 
     it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -96,17 +108,5 @@ describe('V2 EmptyState', () => {
         expect(html).not.toMatch(/text-label-large/);
         expect(html).not.toMatch(/rounded-lg/);
         expect(html).not.toMatch(/duration-short/);
-    });
-
-    it('action buttons have 44px minimum touch target', () => {
-        const { baseElement } = render(
-            <EmptyState
-                title="Empty"
-                description="Do something"
-                action={{ label: 'Add', onClick: vi.fn() }}
-            />
-        );
-        const html = baseElement.innerHTML;
-        expect(html).toMatch(/min-h-\[44px\]/);
     });
 });

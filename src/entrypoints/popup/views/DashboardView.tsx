@@ -396,14 +396,40 @@ export function DashboardView({
           <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {activePages.length === 0 ? (
               <div
-                className="u-mono"
                 style={{
-                  padding: '12px 10px',
-                  fontSize: 'var(--step--2)',
-                  color: 'var(--ink-4)',
+                  padding: '28px 14px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                No other pages yet
+                <p
+                  style={{
+                    fontFamily: 'var(--serif)',
+                    fontSize: 'var(--step-1)',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.25,
+                    color: 'var(--ink)',
+                    margin: 0,
+                  }}
+                >
+                  No other pages
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--sans)',
+                    fontSize: 'var(--step-0)',
+                    color: 'var(--ink-3)',
+                    lineHeight: 1.45,
+                    maxWidth: '22ch',
+                    margin: 0,
+                  }}
+                >
+                  More sites appear as you save.
+                </p>
               </div>
             ) : (
               activePages.map((p) => {
@@ -480,14 +506,40 @@ export function DashboardView({
             ) : null}
             {visibleRecent.length === 0 ? (
               <div
-                className="u-mono"
                 style={{
-                  padding: '12px 10px',
-                  fontSize: 'var(--step--2)',
-                  color: 'var(--ink-4)',
+                  padding: '28px 14px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                No recent highlights
+                <p
+                  style={{
+                    fontFamily: 'var(--serif)',
+                    fontSize: 'var(--step-1)',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.25,
+                    color: 'var(--ink)',
+                    margin: 0,
+                  }}
+                >
+                  No highlights yet
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--sans)',
+                    fontSize: 'var(--step-0)',
+                    color: 'var(--ink-3)',
+                    lineHeight: 1.45,
+                    maxWidth: '22ch',
+                    margin: 0,
+                  }}
+                >
+                  Select text on any page and save a highlight.
+                </p>
               </div>
             ) : null}
             {/* density hint for layout tests / future virtualization */}

@@ -19,14 +19,7 @@ export function SettingsThemeSeg({
   const value = (OPTIONS.includes(theme as ThemePref) ? theme : 'system') as ThemePref;
 
   return (
-    <div data-testid="settings-section-appearance">
-      <div
-        className="u-caps"
-        style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-      >
-        Appearance
-      </div>
-      <div style={{ padding: '8px 16px 12px' }} data-testid="settings-theme">
+    <div style={{ padding: '8px 16px 12px' }} data-testid="settings-theme" data-od-id="settings-theme">
         <div
           style={{
             display: 'flex',
@@ -56,6 +49,8 @@ export function SettingsThemeSeg({
               aria-checked={value === t}
               className={value === t ? 'active' : ''}
               data-testid={`settings-theme-${t}`}
+              data-action="set-theme"
+              data-theme={t}
               onClick={() => onChange(t)}
             >
               {t}
@@ -63,6 +58,5 @@ export function SettingsThemeSeg({
           ))}
         </div>
       </div>
-    </div>
   );
 }

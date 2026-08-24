@@ -12,7 +12,8 @@ export interface SettingsLocalCardProps {
 
 export function SettingsLocalCard({
   onSignIn,
-  onChooseFree,
+  // onChooseFree kept for callers but prototype has single Sign in button only
+  onChooseFree: _onChooseFree,
 }: SettingsLocalCardProps): React.ReactElement {
   return (
     <div
@@ -27,21 +28,13 @@ export function SettingsLocalCard({
       <div className="ls-actions">
         <button
           type="button"
-          className="btn accent sm"
+          className="btn primary sm"
           data-testid="settings-local-signin"
+          data-od-id="settings-local-signin"
           aria-label="Sign in"
           onClick={() => onSignIn?.()}
         >
           Sign in
-        </button>
-        <button
-          type="button"
-          className="btn ghost sm"
-          data-testid="settings-local-free"
-          aria-label="Get Free account"
-          onClick={() => (onChooseFree ?? onSignIn)?.()}
-        >
-          Free
         </button>
       </div>
     </div>

@@ -32,7 +32,7 @@ describe('product-surface-copy', () => {
   it('home first-run guest vs signed-in stays capture-focused for popup', () => {
     const guest = homeFirstRunCopy({ guest: true });
     expect(guest.title).toBe('No highlights yet');
-    expect(guest.body).toMatch(/this device/i);
+    expect(guest.body).toMatch(/save a highlight/i);
     expect(guest.signInLabel).toBe('Sign in to sync');
     expect(guest.installHref).toBeUndefined();
 
@@ -61,8 +61,8 @@ describe('product-surface-copy', () => {
 
   it('library empty guest includes capture path', () => {
     const c = libraryEmptyGuestCopy();
-    expect(c.title).toBe('No highlights yet');
-    expect(c.body).toMatch(/Highlight/i);
+    expect(c.title).toBe('No highlights');
+    expect(c.body).toMatch(/Select text/i);
     expect(c.signInLabel).toBe('Sign in');
     expect(c.keyboardHint).toMatch(/⌘\+U|Ctrl\+U/);
     expect(c.keyboardHint).not.toMatch(/↩/);

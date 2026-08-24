@@ -29,11 +29,19 @@ describe('buildChrome', () => {
 });
 
 describe('chrome brand-only title strip', () => {
-  it('never surfaces place labels or account pills on tab roots', () => {
+  it('surfaces place left + brand centre (no account pills)', () => {
     const handlers = makeHandlers();
     handlers.getAccountPill = vi.fn((): AccountPillLabel | null => 'Paid');
     const map = buildChrome(handlers);
 
+    const expectedPlace: Record<string, string> = {
+      DASHBOARD: '',
+      COLLECTIONS: 'library',
+      DOMAIN_DETAILS: 'library',
+      SUB_DOMAIN: 'library',
+      SETTINGS: 'settings',
+      AUTH: 'sign in',
+    };
     for (const key of [
       'DASHBOARD',
       'COLLECTIONS',
@@ -42,7 +50,7 @@ describe('chrome brand-only title strip', () => {
       'SETTINGS',
       'AUTH',
     ] as const) {
-      expect(map[key].place).toBe('');
+      expect(map[key].place).toBe(expectedPlace[key]);
       expect(map[key].accountPill).toBeNull();
       expect(map[key].brand).toBe('_underscore');
     }

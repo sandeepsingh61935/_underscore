@@ -99,7 +99,6 @@ export function AppRoutes() {
               <Route path="/ask" element={<Navigate to="/home" replace />} />
               <Route path="/ask/*" element={<Navigate to="/home" replace />} />
               <Route path="/collections" element={<Navigate to="/library" replace />} />
-              <Route path="/mode" element={<Navigate to="/home" replace />} />
               <Route path="/domain/:domain" element={<LegacyDomainRedirect />} />
               <Route
                 path="/domain/:domain/section/:section"

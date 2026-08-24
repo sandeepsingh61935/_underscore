@@ -6,10 +6,6 @@ describe('resolveLegacyRedirect', () => {
     expect(resolveLegacyRedirect('/collections')).toBe('/library');
   });
 
-  it('redirects /mode to /home', () => {
-    expect(resolveLegacyRedirect('/mode')).toBe('/home');
-  });
-
   it('redirects /domain/:domain to library with domain query', () => {
     expect(resolveLegacyRedirect('/domain/example.com')).toBe(
       '/library?domain=example.com',

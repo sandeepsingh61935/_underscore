@@ -14,11 +14,12 @@ export interface FirstRunEmptyProps {
  */
 export function FirstRunEmpty({
   guest = true,
-  onSignIn,
 }: FirstRunEmptyProps): React.ReactElement {
   const copy = homeFirstRunCopy({ guest });
   return (
     <div
+      role="status"
+      aria-live="polite"
       style={{
         flex: 1,
         display: 'flex',
@@ -26,58 +27,37 @@ export function FirstRunEmpty({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        padding: '48px 24px',
+        padding: '40px 24px',
         minHeight: '100%',
-        gap: 10,
+        gap: 8,
         boxSizing: 'border-box',
       }}
     >
-      <p
-        className="u-serif"
+      <h3
         style={{
-          fontSize: 'var(--step-3)',
+          fontFamily: 'var(--serif)',
+          fontSize: 'var(--step-2)',
+          fontWeight: 500,
           letterSpacing: '-0.02em',
-          lineHeight: 1.15,
+          lineHeight: 1.2,
           color: 'var(--ink)',
           margin: 0,
         }}
       >
         {copy.title}
-      </p>
+      </h3>
       <p
         style={{
-          fontSize: 'var(--step--1)',
+          fontFamily: 'var(--sans)',
+          fontSize: 'var(--step-0)',
           color: 'var(--ink-3)',
           lineHeight: 1.45,
-          maxWidth: '28ch',
+          maxWidth: '32ch',
           margin: 0,
         }}
       >
         {copy.body}
       </p>
-      {guest && onSignIn && copy.signInLabel ? (
-        <button
-          type="button"
-          onClick={onSignIn}
-          className="u-mono"
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            marginTop: 6,
-            minHeight: 32,
-            fontSize: 'var(--step--2)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-            textDecoration: 'underline',
-            textUnderlineOffset: 3,
-          }}
-        >
-          {copy.signInLabel}
-        </button>
-      ) : null}
     </div>
   );
 }

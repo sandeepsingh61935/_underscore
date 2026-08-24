@@ -216,12 +216,13 @@
   letter-spacing: -0.005em;
 }
 
-/* Popup chrome */
+/* Popup chrome — no outer right rule (user-reported vertical bar top→bottom) */
 .popup {
   width: var(--pop-w);
   height: var(--pop-h);
   background: var(--paper);
   border: 1px solid var(--rule);
+  border-right: none;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -329,9 +330,19 @@
 }
 .btn:disabled,
 .btn[aria-disabled="true"] {
-  opacity: 0.42;
-  cursor: default;
+  background: var(--paper-2);
+  color: var(--ink-4);
+  border-color: var(--rule-soft);
+  opacity: 1;
+  cursor: not-allowed;
   pointer-events: none;
+}
+.btn.primary:disabled,
+.btn.accent:disabled {
+  background: color-mix(in oklch, var(--accent) 45%, var(--paper-2));
+  color: var(--paper);
+  border-color: transparent;
+  opacity: 1;
 }
 
 .btn.primary {
@@ -347,6 +358,23 @@
 .btn.primary:active:not(:disabled) {
   background: var(--ink);
   border-color: var(--ink);
+}
+
+/* Dark: primary CTA must stay light-on-dark (white/cream), not muted charcoal.
+   After 955efe softened --rule to charcoal, .btn.primary in .dark became
+   dark-on-dark (charcoal bg + #111 text). Flip to ink (light) on paper. */
+.dark .btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.dark .btn.primary:hover:not(:disabled) {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+.dark .btn.primary:active:not(:disabled) {
+  background: color-mix(in oklch, var(--ink) 92%, var(--paper));
+  border-color: color-mix(in oklch, var(--ink) 92%, var(--paper));
 }
 
 /* Primary commercial CTA (Upgrade, Continue) */
@@ -468,6 +496,77 @@
   color: var(--ink);
   background: var(--utility-overlay-06);
 }
+
+/* Settings head — prototype viewSettings() .settings-head */
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 6px;
+  flex-shrink: 0;
+}
+.settings-head .settings-title {
+  font-family: var(--serif);
+  font-size: var(--step-3);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+/* Prototype .row primitive — used by Settings for all rows (title/sub/trail) */
+.row {
+  all: unset;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  min-height: 44px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.row:hover { background: var(--utility-overlay-06); }
+.row .title { font-size: 14px; font-weight: 500; color: var(--ink); }
+.row .sub { font-size: 10px; color: var(--ink-3); margin-top: 2px; line-height: 1.4; font-family: var(--mono); letter-spacing: 0.04em; }
+.row .trail {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-4);
+  white-space: nowrap;
+  letter-spacing: 0;
+  text-transform: none;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+.row .trail.accent { color: var(--ink-3); }
+.row .row-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.row.compact { padding: 10px 0; border-bottom: none; min-height: 40px; }
+
+/* Screen scroll — prototype .screen-scroll / .list-scroll: Settings list container */
+.screen-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 0;
+  min-height: 0;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+}
+.screen-scroll::-webkit-scrollbar { width: 6px; }
+.screen-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }
 
 /* Settings disclosure rows (Typography, Library stats) */
 .settings-disclose {
@@ -1155,3 +1254,162 @@ button.sr-icon.is-delete:active {
     transition: none !important;
   }
 }
+
+/* ─── Welcome Page (Popup & Web) ─── */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--paper);
+  color: var(--ink);
+  background-image: radial-gradient(
+    ellipse at 50% -5%,
+    color-mix(in srgb, var(--ink) 8%, transparent) 0%,
+    transparent 55%
+  );
+  box-sizing: border-box;
+  flex: 1 1 0;
+}
+
+.welcome__main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: auto;
+  max-width: 360px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.welcome--popup .welcome__main {
+  padding: 40px 24px 72px;
+}
+
+.welcome__logo {
+  margin-bottom: 28px;
+}
+
+.welcome__logo-mark {
+  width: 56px;
+  height: 56px;
+  position: relative;
+  border-radius: 22%;
+  background: var(--ink);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.welcome__logo-mark::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 28%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 8%, transparent);
+  pointer-events: none;
+}
+
+.welcome__logo-mark::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  bottom: 22%;
+  left: 18%;
+  right: 18%;
+  height: 13%;
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.welcome__title {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  margin: 0 0 16px;
+  color: var(--ink);
+  font-size: var(--step-6, 40px);
+}
+
+.welcome__lede {
+  font-family: var(--sans);
+  line-height: 1.5;
+  margin: 0 0 36px;
+  color: var(--ink-2);
+  font-size: var(--step--1, 13px);
+  max-width: 22ch;
+}
+
+.welcome__cta {
+  margin-bottom: 20px;
+  min-height: 44px;
+  padding: 10px 32px;
+}
+
+.welcome__trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: var(--step--2, 10px);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.welcome__trust-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.welcome__footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  background: var(--paper);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.welcome__footer-link {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: var(--step--2, 10px);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  box-sizing: border-box;
+}
+
+.welcome__footer-link:hover {
+  color: var(--ink);
+}
+
+.body-slot > .welcome {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+}
+

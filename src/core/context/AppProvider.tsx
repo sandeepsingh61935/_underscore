@@ -112,7 +112,7 @@ function AppProviderInner({
         if (decision.kind === 'persist' && decision.mode) {
             void persistMode(decision.mode);
         }
-        // sign_in / upgrade / sign_out are handled by Settings / ModeSelection UI
+        // sign_in / upgrade / sign_out are handled by Settings UI (mode selection removed)
     }, [isAuthenticated, persistMode, currentMode]);
 
     const setTheme = useCallback((newTheme: Theme) => {

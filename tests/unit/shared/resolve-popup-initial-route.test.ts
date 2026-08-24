@@ -9,7 +9,7 @@ import {
 function route(overrides: Partial<PopupRouteInput> = {}) {
   const base: PopupRouteInput = {
     isAuthenticated: false,
-    onboarding: { hasSeenWelcome: true, hasSeenModeSelection: true },
+    onboarding: { hasSeenWelcome: true },
     nav: {},
     currentMode: 'basic',
   };
@@ -18,9 +18,7 @@ function route(overrides: Partial<PopupRouteInput> = {}) {
 
 describe('resolvePopupInitialRoute', () => {
   it('routes first-time users to Welcome', () => {
-    expect(
-      route({ onboarding: { hasSeenWelcome: false, hasSeenModeSelection: false } }),
-    ).toEqual({ view: 'WELCOME' });
+    expect(route({ onboarding: { hasSeenWelcome: false } })).toEqual({ view: 'WELCOME' });
   });
 
   it('routes authenticated users to Collections when last view was sign-in (legacy)', () => {
@@ -71,13 +69,7 @@ describe('resolvePopupInitialRoute', () => {
     });
   });
 
-  it('routes guests who have not picked a mode to Mode Selection', () => {
-    expect(
-      route({ onboarding: { hasSeenWelcome: true, hasSeenModeSelection: false } }),
-    ).toEqual({ view: 'MODE_SELECTION' });
-  });
-
-  it('routes guests with stale AUTH lastView to Collections (mode already chosen)', () => {
+  it('routes guests with stale AUTH lastView to Collections', () => {
     expect(
       route({
         nav: { lastView: 'AUTH' },
@@ -85,7 +77,7 @@ describe('resolvePopupInitialRoute', () => {
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
-  it('restores Collections for signed-out guests who already picked a mode', () => {
+  it('restores Collections for signed-out guests', () => {
     expect(
       route({
         nav: { lastView: 'COLLECTIONS' },
@@ -93,7 +85,7 @@ describe('resolvePopupInitialRoute', () => {
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
-  it('restores domain drill-down for signed-out guests who already picked a mode', () => {
+  it('restores domain drill-down for signed-out guests', () => {
     expect(
       route({
         nav: {
@@ -107,7 +99,7 @@ describe('resolvePopupInitialRoute', () => {
     });
   });
 
-  it('defaults guests who picked a mode to Collections when no last view', () => {
+  it('defaults guests to Collections when no last view', () => {
     expect(route()).toEqual({ view: 'COLLECTIONS' });
   });
 

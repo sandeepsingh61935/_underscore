@@ -81,7 +81,6 @@
   width: var(--side);
   min-width: 0;
   background: var(--paper);
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   z-index: 40;
@@ -1612,7 +1611,6 @@ div.hl-note-btn:hover {
 
 .lib-rail {
   background: var(--paper);
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   min-height: 0;

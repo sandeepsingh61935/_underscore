@@ -57,35 +57,39 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
         </Button>
 
         {isWeb ? (
-          <Link
-            to="/home"
-            className="u-mono welcome__already"
-            data-od-id="welcome-already-setup"
-          >
-            Already set up? Open library
-          </Link>
+          <>
+            <Link
+              to="/home"
+              className="u-mono welcome__already"
+              data-od-id="welcome-already-setup"
+            >
+              Already set up? Open library
+            </Link>
+
+            <div className="u-mono welcome__trust">
+              <span>Free forever</span>
+              <span className="welcome__trust-dot" aria-hidden />
+              <span>No ads</span>
+              <span className="welcome__trust-dot" aria-hidden />
+              <span>Private by default</span>
+            </div>
+          </>
         ) : null}
+      </div>
 
-        <div className="u-mono welcome__trust">
-          <span>Free forever</span>
-          <span className="welcome__trust-dot" aria-hidden />
-          <span>No ads</span>
-          <span className="welcome__trust-dot" aria-hidden />
-          <span>Private by default</span>
+      {isWeb ? (
+        <div className="welcome__footer">
+          <Link to="/privacy" className="u-mono welcome__footer-link">
+            Privacy
+          </Link>
+          <Link to="/terms" className="u-mono welcome__footer-link">
+            Terms
+          </Link>
+          <Link to="/help" className="u-mono welcome__footer-link">
+            Help
+          </Link>
         </div>
-      </div>
-
-      <div className="welcome__footer">
-        <Link to="/privacy" className="u-mono welcome__footer-link">
-          Privacy
-        </Link>
-        <Link to="/terms" className="u-mono welcome__footer-link">
-          Terms
-        </Link>
-        <Link to="/help" className="u-mono welcome__footer-link">
-          Help
-        </Link>
-      </div>
+      ) : null}
     </div>
   );
 }

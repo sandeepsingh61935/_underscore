@@ -25,7 +25,7 @@ const noopHandlers = {
 };
 
 describe('PopupShell', () => {
-  it('renders brand-only title strip (no place, no plan pill)', () => {
+  it('renders brand centre + place left (no plan pill)', () => {
     render(
       <PopupShell
         chrome={{
@@ -43,7 +43,9 @@ describe('PopupShell', () => {
         <div>body</div>
       </PopupShell>
     );
-    expect(screen.getByTestId('popup-title-strip').textContent).toBe('_underscore');
+    const strip = screen.getByTestId('popup-title-strip');
+    expect(strip.textContent).toContain('_underscore');
+    expect(strip.textContent).toContain('· Home');
     expect(screen.queryByRole('button', { name: /guest|free|paid/i })).not.toBeInTheDocument();
   });
 

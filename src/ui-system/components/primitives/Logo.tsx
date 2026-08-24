@@ -10,10 +10,10 @@ interface LogoProps {
   size?: LogoSize;
 }
 
-const sizeMap: Record<LogoSize, { badge: string; text: string; gap: string; textSize: string }> = {
-  sm: { badge: 'w-7 h-7', text: '', gap: 'gap-2', textSize: 'var(--step-1)' },
-  md: { badge: 'w-9 h-9', text: '', gap: 'gap-[10px]', textSize: 'var(--step-3)' },
-  lg: { badge: 'w-16 h-16', text: '', gap: 'gap-3', textSize: 'var(--step-4)' },
+const sizeMap: Record<LogoSize, { sizePx: number; textSize: string }> = {
+  sm: { sizePx: 28, textSize: 'var(--step-1)' },
+  md: { sizePx: 36, textSize: 'var(--step-3)' },
+  lg: { sizePx: 56, textSize: 'var(--step-4)' },
 };
 
 /**
@@ -34,37 +34,60 @@ export function Logo({
 }: LogoProps): React.ReactElement {
   const s = sizeMap[size];
   return (
-    <div className={cn('flex items-center', s.gap, className)}>
+    <div
+      className={cn('flex items-center', className)}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: size === 'sm' ? 8 : size === 'md' ? 10 : 12 }}
+    >
       <div
-        className={cn(
-          'relative flex items-center justify-center rounded-[22%] overflow-hidden',
-          s.badge
-        )}
-        style={{ backgroundColor: 'var(--ink)' }}
+        className="welcome__logo-mark"
+        style={{
+          width: s.sizePx,
+          height: s.sizePx,
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '22%',
+          overflow: 'hidden',
+          backgroundColor: 'var(--ink)',
+          boxShadow: '0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent)',
+          flexShrink: 0,
+        }}
       >
         {/* Ambient reflection — subtle inner highlight at badge bottom */}
         <div
-          className="absolute bottom-0 left-[10%] right-[10%] h-[28%] rounded-full pointer-events-none z-[1]"
-          style={{ backgroundColor: 'var(--paper-overlay-08)' }}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '10%',
+            right: '10%',
+            height: '28%',
+            borderRadius: 9999,
+            backgroundColor: 'color-mix(in srgb, var(--paper) 8%, transparent)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
         />
 
         {/* Baseline mark */}
         <div
-          className="absolute z-[2] rounded-full"
           style={{
+            position: 'absolute',
             bottom: '22%',
             left: '18%',
             right: '18%',
             height: '13%',
+            borderRadius: 9999,
             backgroundColor: 'var(--paper)',
+            zIndex: 2,
           }}
         />
       </div>
 
       {showText && (
         <span
-          className={cn('font-serif tracking-[-0.02em]', s.text)}
-          style={{ color: 'var(--ink)', fontSize: s.textSize }}
+          className="u-serif"
+          style={{ color: 'var(--ink)', fontSize: s.textSize, letterSpacing: '-0.02em', fontWeight: 400 }}
         >
           underscore
         </span>

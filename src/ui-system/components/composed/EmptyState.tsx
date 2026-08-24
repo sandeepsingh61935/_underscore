@@ -1,6 +1,5 @@
 import {
   Search,
-  FileText,
   Sparkles,
   Globe,
   FolderOpen,
@@ -106,7 +105,7 @@ const sizeStyles = {
 
 export function EmptyState({
   variant = 'custom',
-  icon: CustomIcon,
+  icon: _CustomIcon,
   title: customTitle,
   description: customDescription,
   action,
@@ -115,7 +114,6 @@ export function EmptyState({
   className,
 }: EmptyStateProps): React.ReactElement {
   const config = variant !== 'custom' ? variantConfigs[variant] : null;
-  const Icon = CustomIcon || config?.icon || FileText;
   const title = customTitle || config?.title || 'No content';
   const description = customDescription || config?.description || '';
 
@@ -123,50 +121,50 @@ export function EmptyState({
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={cn(
         'flex flex-col items-center justify-center text-center',
         className
       )}
-      style={styles.container}
+      style={{ ...styles.container, gap: '8px' }}
     >
-      <div
-        className="rounded-full flex items-center justify-center mb-4"
+      <h3
         style={{
-          ...styles.iconWrapper,
-          backgroundColor: 'var(--paper-2)',
+          color: 'var(--ink)',
+          ...styles.title,
+          fontFamily: 'var(--serif)',
+          fontWeight: 500,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.2,
+          margin: 0,
         }}
       >
-        <Icon
-          className={cn('shrink-0')}
-          style={{ ...styles.icon, color: 'var(--ink-3)' }}
-        />
-      </div>
-
-      <h3 className="mb-1" style={{ color: 'var(--ink)', ...styles.title }}>
         {title}
       </h3>
 
       {description && (
         <p
-          className="max-w-xs"
-          style={{ color: 'var(--ink-3)', ...styles.description }}
+          className="max-w-[32ch]"
+          style={{
+            color: 'var(--ink-3)',
+            ...styles.description,
+            fontFamily: 'var(--sans)',
+            lineHeight: 1.45,
+            margin: 0,
+          }}
         >
           {description}
         </p>
       )}
 
       {(action || secondaryAction) && (
-        <div className="flex items-center gap-3 mt-6">
+        <div className="flex flex-wrap items-center justify-center gap-2" style={{ marginTop: '14px' }}>
           {action && (
             <button
               type="button"
               onClick={action.onClick}
-              className="inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 transition-colors duration-step-0 ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-              style={{
-                backgroundColor: 'var(--accent)',
-                color: 'var(--accent-ink)',
-                fontSize: 'var(--step-0)',
-              }}
+              className="btn primary sm"
             >
               {action.label}
             </button>
@@ -175,12 +173,7 @@ export function EmptyState({
             <button
               type="button"
               onClick={secondaryAction.onClick}
-              className="inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 transition-colors duration-step-0 ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-              style={{
-                backgroundColor: 'var(--paper-2)',
-                color: 'var(--ink)',
-                fontSize: 'var(--step-0)',
-              }}
+              className="btn sm"
             >
               {secondaryAction.label}
             </button>

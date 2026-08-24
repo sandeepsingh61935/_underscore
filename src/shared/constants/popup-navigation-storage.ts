@@ -16,7 +16,6 @@ export const PERSISTED_POPUP_VIEWS = [
   'SUB_DOMAIN',
   'SETTINGS',
   'DASHBOARD',
-  'MODE_SELECTION',
 ] as const;
 
 /** Transient views — never persisted or restored (auth gates, loaders). */

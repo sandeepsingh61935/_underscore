@@ -59,7 +59,7 @@
     // Specify library files to be included in the compilation
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     // Generate .d.ts files from TypeScript and JavaScript files in your project
-    "declaration": true,
+    "declaration": false,
     // Generate .map files
     "sourceMap": true,
     // Specify an output folder for all emitted files

@@ -16,7 +16,6 @@ import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
-import { SettingsStatusGlyph } from '@/features/settings/components/SettingsStatusGlyph';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
 import { freeEntitlement } from '@/shared/billing';
@@ -33,8 +32,6 @@ import {
   useMcpGate,
   useModeFeature,
 } from '@/ui-system/hooks/useModeFeature';
-import { BtnText } from '@/ui-system/components/primitives/BtnText';
-import { Row } from '@/ui-system/components/primitives/Row';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
 
 export interface SettingsPageProps {
@@ -46,9 +43,10 @@ export interface SettingsPageProps {
 }
 
 /**
- * Settings — stacked IA:
- * Account → Appearance → Keyboard (subpage) → Data → Integrations → Session → Legal.
- * No Mode control (sign-in / sign-out only). No Billing UI.
+ * Settings — prototype parity: viewSettings()
+ * Order: Account → Appearance → Help/Keyboard → Data → Integrations → Session → About
+ * No Mode control. No Billing UI. Pixel-parity with
+ * open-design/.od/projects/77039981-726c-431d-8a7a-ae9f169bba0c prototype.
  */
 export function SettingsPage({
   onBack: _onBack,
@@ -167,6 +165,7 @@ export function SettingsPage({
       <div
         style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
         data-testid="settings-keyboard-page"
+        data-od-id="settings-keyboard-page"
       >
         <div
           style={{
@@ -181,6 +180,7 @@ export function SettingsPage({
             type="button"
             className="u-mono"
             data-testid="settings-keyboard-back"
+            data-od-id="settings-keyboard-back"
             onClick={() => setKeyboardOpen(false)}
             style={{
               all: 'unset',
@@ -194,11 +194,9 @@ export function SettingsPage({
             ← Settings
           </button>
         </div>
-        <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
+        <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0 }}>
           <div className="popup-page-title-wrap" style={{ paddingBottom: 4 }}>
-            <h1 className="popup-page-title">
-              Keyboard
-            </h1>
+            <h1 className="popup-page-title">Keyboard</h1>
             <p
               className="u-sans"
               style={{
@@ -232,22 +230,24 @@ export function SettingsPage({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <div className="popup-page-title-wrap">
-        <h1 className="popup-page-title" data-testid="settings-title">
+    <div
+      className="screen-enter"
+      data-od-id="settings-page"
+      data-testid="settings-page"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      <div className="settings-head" data-od-id="settings-head">
+        <h2 className="settings-title" data-od-id="settings-title" data-testid="settings-title">
           Settings
-        </h1>
+        </h2>
       </div>
 
-      <div className="list-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll">
+      <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll" data-od-id="settings-scroll">
         {/* Account */}
-        <div data-testid="settings-section-account-wrap">
+        <div data-od-id="settings-section-account-wrap" data-testid="settings-section-account-wrap">
           {!user ? (
             <div data-testid="settings-guest-card">
-              <SettingsLocalCard
-                onSignIn={onSignIn}
-                onChooseFree={onSignIn}
-              />
+              <SettingsLocalCard onSignIn={onSignIn} onChooseFree={onSignIn} />
             </div>
           ) : null}
 
@@ -256,14 +256,17 @@ export function SettingsPage({
               <div
                 className="u-caps"
                 data-testid="settings-section-account"
+                data-od-id="settings-section-account"
                 style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
               >
                 Account
               </div>
-              <Row
-                title={user.email || 'Signed in'}
-                sub="Synced"
-              />
+              <div className="row" style={{ cursor: 'default' }} data-od-id="settings-account-row">
+                <div>
+                  <div className="title">{user.email || 'Signed in'}</div>
+                  <div className="sub">Synced</div>
+                </div>
+              </div>
             </>
           ) : (
             <div data-testid="settings-section-account" hidden aria-hidden="true" />
@@ -271,58 +274,59 @@ export function SettingsPage({
         </div>
 
         {/* Appearance */}
-        <div>
+        <div data-od-id="settings-section-appearance" data-testid="settings-section-appearance">
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
           >
             Appearance
           </div>
-          <div data-testid="settings-section-typography">
+          <div data-testid="settings-section-typography" data-od-id="settings-section-typography">
             <TypographySettings
               expanded={typographyExpanded}
               onToggle={() => setTypographyExpanded((v) => !v)}
             />
           </div>
-          <SettingsThemeSeg
-            theme={theme}
-            onChange={(t) => setTheme(t)}
-          />
+          <SettingsThemeSeg theme={theme} onChange={(t) => setTheme(t)} />
         </div>
 
-        {/* Keyboard — row opens dedicated page */}
-        <div data-testid="settings-section-keyboard-entry">
+        {/* Help → Keyboard - subpage entry */}
+        <div data-testid="settings-section-keyboard-entry" data-od-id="settings-section-keyboard-entry">
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
           >
             Help
           </div>
-          <Row
-            title="Keyboard"
-            sub="Shortcuts on pages you highlight"
-            right={
-              <BtnText
-                aria-label="Open keyboard shortcuts"
-                data-testid="settings-open-keyboard"
-                onClick={() => setKeyboardOpen(true)}
-              >
-                <SettingsStatusGlyph kind="chevron" label="Open" />
-              </BtnText>
-            }
-          />
+          <button
+            type="button"
+            className="row"
+            data-action="open-keyboard"
+            data-testid="settings-open-keyboard"
+            data-od-id="settings-open-keyboard"
+            onClick={() => setKeyboardOpen(true)}
+          >
+            <div>
+              <div className="title">Keyboard</div>
+              <div className="sub">Shortcuts on pages you highlight</div>
+            </div>
+            <span className="trail" aria-hidden="true">
+              ›
+            </span>
+          </button>
         </div>
 
-        {/* Data */}
-        {isAuthenticated ? (
-          <div data-testid="settings-section-data">
-            <div
-              className="u-caps"
-              data-testid="settings-section-library"
-              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
-            >
-              Data
-            </div>
+        {/* Data — always visible (guest has Download/Delete; signed-in adds stats+sync) */}
+        <div data-testid="settings-section-data" data-od-id="settings-section-data">
+          <div
+            className="u-caps"
+            data-testid="settings-section-library"
+            data-od-id="settings-section-library"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Data
+          </div>
+          {isAuthenticated ? (
             <LibraryPulse
               totalHighlights={dashboardData?.totalHighlights ?? 0}
               thisWeekCount={dashboardData?.thisWeekCount ?? 0}
@@ -334,122 +338,161 @@ export function SettingsPage({
               expanded={libraryStatsOpen}
               onToggle={() => setLibraryStatsOpen((o) => !o)}
             />
-            <Row
-              title="Library sync"
-              sub={syncSubtitle}
-              right={
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  data-testid="settings-sync-btn"
-                  disabled={!syncGate.allowed || !user || isSyncing}
-                  aria-label="Sync library"
-                  aria-busy={isSyncing}
-                  onClick={() => {
-                    void handleSyncLibrary();
+          ) : null}
+          {isAuthenticated ? (
+            <>
+              <div className="row" style={{ cursor: 'default' }} data-od-id="settings-sync">
+                <div>
+                  <div className="title">Library sync</div>
+                  <div className="sub">{syncSubtitle}</div>
+                </div>
+                <span className="row-end">
+                  {isSyncing ? (
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      disabled
+                      data-testid="settings-sync-btn"
+                      data-od-id="settings-sync-btn"
+                      aria-busy="true"
+                    >
+                      <span
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        data-testid="sync-progress"
+                      >
+                        <span className="state-dot-spin" aria-hidden="true" />
+                        <span className="u-mono" style={{ fontSize: 'var(--step--2)' }}>
+                          {progressPercent !== null ? `${progressPercent}%` : '…'}
+                        </span>
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      data-testid="settings-sync-btn"
+                      data-od-id="settings-sync-btn"
+                      disabled={!syncGate.allowed || !user}
+                      aria-label="Sync library"
+                      onClick={() => {
+                        void handleSyncLibrary();
+                      }}
+                    >
+                      Sync
+                    </button>
+                  )}
+                </span>
+              </div>
+              {isSyncing ? (
+                <div
+                  data-testid="sync-progress-bar"
+                  data-od-id="sync-progress-bar"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progressPercent ?? 0}
+                  style={{
+                    margin: '0 16px 8px',
+                    height: 3,
+                    background: 'var(--rule-soft)',
+                    overflow: 'hidden',
                   }}
                 >
-                  {isSyncing ? (
-                    <span
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                      data-testid="sync-progress"
-                    >
-                      <Spinner size="sm" />
-                      <span className="u-mono" style={{ fontSize: 'var(--step--2)' }}>
-                        {progressPercent !== null ? `${progressPercent}%` : '…'}
-                      </span>
-                    </span>
-                  ) : (
-                    'Sync'
-                  )}
-                </button>
-              }
-            />
-            {isSyncing ? (
-              <div
-                data-testid="sync-progress-bar"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progressPercent ?? 0}
-                style={{
-                  margin: '0 16px 8px',
-                  height: 3,
-                  background: 'var(--rule-soft)',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${progressPercent ?? 8}%`,
-                    background: 'var(--accent)',
-                    transition: 'width 120ms linear',
-                  }}
-                />
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${progressPercent ?? 8}%`,
+                      background: 'var(--accent)',
+                      transition: 'width 120ms linear',
+                    }}
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : null}
+          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-export">
+            <div>
+              <div className="title">Download</div>
+              <div className="sub">
+                {exportGate.allowed && user ? 'Markdown or spreadsheet' : featureGateSubtitle(exportGate.reason)}
               </div>
-            ) : null}
-            <Row
-              title="Export"
-              sub={
-                exportGate.allowed && user
-                  ? undefined
-                  : featureGateSubtitle(exportGate.reason)
-              }
-              right={
-                <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
-              }
-            />
-            {settingsGates.canDeleteLibrary ? (
-              <Row
-                title="Delete library"
-                sub={undefined}
-                right={
-                  <button
-                    type="button"
-                    className="btn ghost sm danger"
-                    aria-label="Delete library"
-                    onClick={() => setDeleteLibraryOpen(true)}
-                  >
-                    Delete
-                  </button>
-                }
-              />
-            ) : null}
+            </div>
+            <span className="row-end">
+              <span data-od-id="export-actions">
+                <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed || !user} variant="inline" />
+              </span>
+            </span>
           </div>
-        ) : (
-          <div data-testid="settings-section-data" hidden aria-hidden="true" />
-        )}
+          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-delete-lib">
+            <div>
+              <div className="title">Delete library</div>
+            </div>
+            <span className="row-end">
+              <button
+                type="button"
+                className="btn ghost sm danger"
+                aria-label="Delete library"
+                data-testid="settings-delete-library"
+                data-od-id="settings-delete-lib-btn"
+                onClick={() => setDeleteLibraryOpen(true)}
+              >
+                Delete
+              </button>
+            </span>
+          </div>
+        </div>
 
         {/* Integrations */}
-        <div data-testid="settings-section-integrations">
+        <div data-testid="settings-section-integrations" data-od-id="settings-section-integrations">
           <div
             className="u-caps"
             data-testid="settings-section-ai"
+            data-od-id="settings-section-ai"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
           >
             Integrations
           </div>
-          <Row
-            title="Integrations"
-            sub={
-              settingsGates.canUseIntegrations
-                ? 'Let agents use your library (MCP)'
-                : settingsGates.integrationsLockReason ??
-                  'Sign in to use account features'
-            }
-            right={
-              <BtnText
+          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-connect-ai">
+            <div>
+              <div className="title">Integrations</div>
+              <div className="sub">
+                {settingsGates.canUseIntegrations
+                  ? 'Let agents use your library (MCP)'
+                  : settingsGates.integrationsLockReason ?? 'Sign in to use account features'}
+              </div>
+            </div>
+            <span className="row-end">
+              <button
+                type="button"
+                className="btn-text"
+                data-action="open-connect"
+                data-testid="settings-open-connect"
+                data-od-id="settings-open-connect"
                 aria-label={mcpGate.allowed ? 'Open Integrations' : 'Integrations locked'}
                 onClick={() => setConnectOpen(true)}
               >
-                <SettingsStatusGlyph
-                  kind={mcpGate.allowed ? 'chevron' : 'lock'}
-                  label={mcpGate.allowed ? 'Open' : 'Locked'}
-                />
-              </BtnText>
-            }
-          />
+                {mcpGate.allowed ? (
+                  '›'
+                ) : (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 12 12"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ display: 'block' }}
+                  >
+                    <rect x="2.5" y="5.5" width="7" height="5" rx="1" />
+                    <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" />
+                  </svg>
+                )}
+              </button>
+            </span>
+          </div>
         </div>
 
         {/* Session */}
@@ -458,18 +501,22 @@ export function SettingsPage({
             <div
               className="u-caps"
               data-testid="settings-section-session"
+              data-od-id="settings-section-session"
               style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
             >
               Session
             </div>
-            <Row
-              title="Sign out"
-              sub={undefined}
-              right={
+            <div className="row" style={{ cursor: 'default' }} data-od-id="settings-session">
+              <div>
+                <div className="title">Sign out</div>
+              </div>
+              <span className="row-end">
                 <button
                   type="button"
                   className="btn ghost sm"
                   aria-label="Sign out"
+                  data-testid="settings-sign-out"
+                  data-od-id="settings-sign-out"
                   disabled={isSigningOut}
                   onClick={() => {
                     if (!isSigningOut) setSignOutOpen(true);
@@ -477,13 +524,16 @@ export function SettingsPage({
                 >
                   {isSigningOut ? <Spinner size="sm" /> : 'Sign out'}
                 </button>
-              }
-            />
+              </span>
+            </div>
           </>
         ) : null}
-      </div>
 
-      <SettingsLegalFooter />
+        {/* About — prototype aboutBlock inside scroll, not sticky footer */}
+        <div data-testid="settings-legal-wrapper">
+          <SettingsLegalFooter />
+        </div>
+      </div>
 
       {(() => {
         const copy = deleteLibraryCopy(Boolean(user));

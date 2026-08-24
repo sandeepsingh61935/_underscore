@@ -16,17 +16,51 @@ export function EmptySubDomain({ domain, section, onBack }: EmptySubDomainProps)
   const sectionLabel = formatSectionLabel(section);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 20, textAlign: "center" }}>
-      <div style={{ width: 50, height: 50, border: "1px dashed var(--rule)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-        <span className="u-serif" style={{ fontSize: 28, color: "var(--ink-3)", fontStyle: "italic" }}>"</span>
-      </div>
-      <div className="u-serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>No highlights in {sectionLabel}</div>
-      <div className="u-serif" style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6, fontStyle: "italic", maxWidth: 260 }}>
-        This section of {domain} is empty. Head back to explore others.
-      </div>
-      <button type="button" className="btn ghost sm" style={{ marginTop: 14 }} onClick={onBack}>
-        ← Back to {domain}
-      </button>
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '40px 24px',
+        textAlign: 'center',
+        gap: 8,
+        minHeight: 280,
+      }}
+    >
+      <h3
+        style={{
+          fontFamily: 'var(--serif)',
+          fontSize: 'var(--step-2)',
+          fontWeight: 500,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.2,
+          color: 'var(--ink)',
+          margin: 0,
+        }}
+      >
+        No highlights in {sectionLabel}
+      </h3>
+      <p
+        style={{
+          fontFamily: 'var(--sans)',
+          fontSize: 'var(--step-0)',
+          color: 'var(--ink-3)',
+          lineHeight: 1.45,
+          maxWidth: '32ch',
+          margin: 0,
+        }}
+      >
+        This section of {domain} is empty.
+      </p>
+      {onBack && (
+        <button type="button" className="btn sm" style={{ marginTop: 14 }} onClick={onBack}>
+          Back to {domain}
+        </button>
+      )}
     </div>
   );
 }

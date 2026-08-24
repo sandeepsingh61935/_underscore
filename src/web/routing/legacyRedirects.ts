@@ -10,10 +10,6 @@ export function resolveLegacyRedirect(
     return '/library';
   }
 
-  if (pathname === '/mode') {
-    return '/home';
-  }
-
   // /domain/:domain/section/:section — check longer pattern first
   const domainSectionMatch = pathname.match(/^\/domain\/([^/]+)\/section\/([^/]+)$/);
   if (domainSectionMatch) {

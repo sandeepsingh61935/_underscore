@@ -70,13 +70,13 @@ export function homeFirstRunCopy(input: { guest: boolean }): FirstRunCopy {
   if (input.guest) {
     return {
       title: 'No highlights yet',
-      body: 'Select text on a page to save it on this device.',
+      body: 'Select text on any page and save a highlight. It will show up here.',
       signInLabel: 'Sign in to sync',
     };
   }
   return {
     title: 'No highlights yet',
-    body: 'Select text on a page to save it to your library.',
+    body: 'Select text on any page and save a highlight to fill your library.',
   };
 }
 
@@ -122,8 +122,8 @@ export function webHomeEmptyInstallCopy(input: {
 /** Popup library empty (guest). Web library uses libraryEmptyInstallCopy. */
 export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
   return {
-    title: 'No highlights yet',
-    body: 'Read anything lately? Highlight a phrase to begin — or sign in to load your cloud library.',
+    title: 'No highlights',
+    body: 'Select text on any page — or sign in to load your cloud library.',
     signInLabel: 'Sign in',
     // Real chord is Ctrl/⌘+U (see shared/keyboard/shortcuts-table).
     keyboardHint:

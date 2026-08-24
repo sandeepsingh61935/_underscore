@@ -38,6 +38,7 @@ import {
   deleteDomainCopy,
   deleteSectionCopy,
 } from '@/shared/utils/confirm-dialog-copy';
+import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
@@ -255,9 +256,9 @@ export function DomainDetailsView({
               <EmptyState
                 variant="no-results"
                 size="sm"
-                title="No matches"
-                description="Try a different query"
-                action={{ label: 'Clear', onClick: clearSearchAndFilters }}
+                title={libraryNoMatchesCopy().title}
+                description={libraryNoMatchesCopy().body}
+                action={{ label: libraryNoMatchesCopy().resetLabel, onClick: clearSearchAndFilters }}
               />
             ) : (
               searchSectionGroups.map((section) => (

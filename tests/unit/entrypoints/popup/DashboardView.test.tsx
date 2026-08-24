@@ -141,18 +141,15 @@ describe('DashboardView home product cleanup', () => {
     render(<DashboardView onSignIn={vi.fn()} />);
 
     expect(screen.getByText('No highlights yet')).toBeTruthy();
-    expect(screen.getByText(/Select text on a page to save it/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Sign in to sync/i })).toBeTruthy();
+    expect(screen.getByText(/Select text on any page and save a highlight/i)).toBeTruthy();
     expect(screen.queryByTestId('home-this-page')).toBeNull();
     expect(screen.queryByTestId('home-two-col')).toBeNull();
   });
 
-  it('with highlights shows this-page line, two columns, Library title', () => {
+  it('with highlights shows this-page line, two columns, and stats', () => {
     mockWithHighlights({ recentCount: 2, pageCount: 1 });
     render(<DashboardView onSectionClick={vi.fn()} />);
 
-    expect(screen.getByTestId('home-title').textContent).toBe('Library');
-    expect(screen.getByTestId('home-title').textContent).not.toMatch(/Good /);
     expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
     expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
     expect(screen.getByTestId('home-two-col')).toBeTruthy();
@@ -206,11 +203,10 @@ describe('DashboardView home product cleanup', () => {
     expect(screen.queryByText('css')).toBeNull();
   });
 
-  it('shows Local library title for guest with highlights (no status kicker)', () => {
+  it('shows stats and this-page line for guest with highlights', () => {
     mockWithHighlights({ mode: 'basic', isAuthenticated: false, recentCount: 2 });
     render(<DashboardView />);
 
-    expect(screen.getByTestId('home-title').textContent).toBe('Local library');
     expect(screen.queryByText(/Local only/i)).toBeNull();
     expect(screen.getByTestId('home-stats')).toBeTruthy();
   });

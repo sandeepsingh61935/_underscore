@@ -27,28 +27,32 @@ export interface PopupShellProps {
   dark?: boolean;
 }
 
-/** Brand-only title strip — no place label, no plan pill (tab bar owns location). */
-function PopupTitleStrip({ brand }: { brand: string }): React.ReactElement {
+/** Brand center + place extreme-left (grid 1fr auto 1fr keeps brand optically centered). */
+function PopupTitleStrip({ brand, place }: { brand: string; place?: string }): React.ReactElement {
   return (
     <div
       data-testid="popup-title-strip"
       style={{
         background: 'var(--paper-2)',
         borderLeft: '1px solid var(--rule)',
-        borderRight: '1px solid var(--rule)',
         borderTop: '1px solid var(--rule)',
         padding: '8px 14px',
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: '8px',
         fontFamily: 'var(--mono)',
         fontSize: 'var(--step--2)',
-        letterSpacing: '0.14em',
+        letterSpacing: '0.08em',
         textTransform: 'uppercase',
-        color: 'var(--ink)',
+        color: 'var(--ink-3)',
       }}
     >
-      <span>{brand}</span>
+      <span style={{ justifySelf: 'start', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+        {place ? `· ${place}` : ''}
+      </span>
+      <span style={{ justifySelf: 'center', color: 'var(--ink)' }}>{brand}</span>
+      <span aria-hidden style={{ justifySelf: 'end' }} />
     </div>
   );
 }
@@ -71,7 +75,7 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         flexDirection: 'column',
       }}
     >
-      {chrome.showTitleStrip && <PopupTitleStrip brand={chrome.brand} />}
+      {chrome.showTitleStrip && <PopupTitleStrip brand={chrome.brand} place={chrome.place} />}
       <div
         className="popup"
         style={{

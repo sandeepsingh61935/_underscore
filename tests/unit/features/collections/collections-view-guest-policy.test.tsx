@@ -37,7 +37,7 @@ describe('CollectionsView guest/account policy', () => {
 
     render(<CollectionsView onSignIn={vi.fn()} />);
 
-    expect(screen.getByText('No highlights yet')).toBeTruthy();
+    expect(screen.getByText('No highlights')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
   });
 
