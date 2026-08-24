@@ -100,7 +100,6 @@ export function SettingsPage({
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<'privacy' | 'terms' | 'help' | null>(null);
   const isAuthenticated = Boolean(user);
-  const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
   const mcpGate = useMcpGate(
     isAuthenticated,
@@ -458,17 +457,11 @@ export function SettingsPage({
           <div className="row" style={{ cursor: 'default' }} data-od-id="settings-export">
             <div>
               <div className="title">Download</div>
-              <div className="sub">
-                {productCaps.flags.export && user ? 'Markdown or spreadsheet' : featureGateSubtitle(exportGate.reason)}
-              </div>
+              <div className="sub">Markdown or spreadsheet</div>
             </div>
             <span className="row-end">
               <span data-od-id="export-actions">
-                <ExportActions
-                  scope={{ kind: 'library' }}
-                  disabled={!productCaps.flags.export || !user}
-                  variant="inline"
-                />
+                <ExportActions scope={{ kind: 'library' }} variant="inline" />
               </span>
             </span>
           </div>
@@ -601,9 +594,7 @@ export function SettingsPage({
               void handleDeleteLibrary();
             }}
             isConfirming={isDeletingLibrary}
-            exportFooter={
-              <ExportActions scope={{ kind: 'library' }} disabled={!productCaps.flags.export} />
-            }
+            exportFooter={<ExportActions scope={{ kind: 'library' }} />}
           />
         );
       })()}
