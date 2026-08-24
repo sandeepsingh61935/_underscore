@@ -75,14 +75,12 @@ export function useHighlightsByDomain(
   isAuthenticated = true,
 ): HighlightsResult {
   const context = isExtensionContext() ? 'extension' : 'web';
-  const bootKey =
-    domain && isAuthenticated
-      ? sessionKey(domain, isAuthenticated, context)
-      : null;
+  const bootKey = domain ? sessionKey(domain, isAuthenticated, context) : null;
   const warm = bootKey ? sessionByKey.get(bootKey) : undefined;
 
   const [result, setResult] = useState<HighlightsResult>(() => {
-    if (!domain || !isAuthenticated) return EMPTY_HIGHLIGHTS_RESULT;
+    if (!domain) return EMPTY_HIGHLIGHTS_RESULT;
+    if (context === 'web' && !isAuthenticated) return EMPTY_HIGHLIGHTS_RESULT;
     if (warm) {
       return { highlights: warm, isLoading: false, error: null };
     }
@@ -126,7 +124,7 @@ export function useHighlightsByDomain(
         return;
       }
 
-      if (!auth) {
+      if (!auth && context === 'web') {
         setResult(EMPTY_HIGHLIGHTS_RESULT);
         return;
       }
@@ -259,7 +257,11 @@ export function useHighlightsByDomain(
     let cancelled = false;
 
     const load = async () => {
-      if (!isAuthenticated || !domain) {
+      if (!domain) {
+        setResult(EMPTY_HIGHLIGHTS_RESULT);
+        return;
+      }
+      if (context === 'web' && !isAuthenticated) {
         setResult(EMPTY_HIGHLIGHTS_RESULT);
         return;
       }
@@ -287,13 +289,15 @@ export function useHighlightsByDomain(
       for (const k of [...sessionByKey.keys()]) {
         if (k.endsWith(':auth')) sessionByKey.delete(k);
       }
-      setResult(EMPTY_HIGHLIGHTS_RESULT);
+      if (context === 'web') {
+        setResult(EMPTY_HIGHLIGHTS_RESULT);
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, context]);
 
   useLibraryDataChanged(() => {
     void (async () => {
-      if (!authRef.current) {
+      if (!authRef.current && context === 'web') {
         setResult(EMPTY_HIGHLIGHTS_RESULT);
         return;
       }

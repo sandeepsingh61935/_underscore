@@ -59,7 +59,7 @@ describe('scoped-highlight-query', () => {
     let facadeUsed = false;
 
     const repositoryFacade = {
-      asCacheReadable: () => {
+      getReadable: () => {
         facadeUsed = true;
         return facadeReadable;
       },
