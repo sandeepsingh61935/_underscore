@@ -25,12 +25,17 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
   constructor(private readonly messageBus: IMessageBus) {}
 
   async add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void> {
+    // [DEBUG-diagnose] content cache write
+    console.log('[DEBUG-diagnose] LocalCacheIpcRepository.add cache', { id: highlight.id, url: highlight.url, skipSync: options?.skipSync });
     await this.cache.add(highlight);
     // Remote ingest / echo paths must not re-enter background DualWrite (cloud loop).
     if (options?.skipSync) {
+      console.log('[DEBUG-diagnose] skipSync true - no IPC');
       return;
     }
+    console.log('[DEBUG-diagnose] sending IPC_HIGHLIGHT_ADD', { id: highlight.id });
     await this.sendIpc('IPC_HIGHLIGHT_ADD', highlight);
+    console.log('[DEBUG-diagnose] IPC_HIGHLIGHT_ADD done', { id: highlight.id });
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {
@@ -95,12 +100,14 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
    * Local cache already succeeded; IPC failure after retries is logged only.
    */
   private async sendIpc(type: string, payload: unknown): Promise<void> {
+    console.log('[DEBUG-diagnose] sendIpc start', { type });
     await sendBackgroundIpcWithRetry(
       this.messageBus,
       { type, payload, timestamp: Date.now() },
       {
         onExhausted: 'log',
         onLogExhausted: (error, attempts) => {
+          console.log('[DEBUG-diagnose] IPC exhausted', { type, attempts, error: String(error) });
           this.logger.warn(`IPC ${type} failed after retries (cache write already succeeded)`, {
             error: error instanceof Error ? error.message : String(error),
             attempts,
@@ -108,5 +115,6 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
         },
       }
     );
+    console.log('[DEBUG-diagnose] sendIpc end', { type });
   }
 }

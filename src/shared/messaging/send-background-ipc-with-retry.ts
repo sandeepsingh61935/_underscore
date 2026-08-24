@@ -6,9 +6,9 @@
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { Message } from '@/shared/schemas/message-schemas';
 
-export const BACKGROUND_IPC_MAX_ATTEMPTS = 3;
-/** Delay before attempt index 1 and 2 (ms). Attempt 0 is immediate. */
-export const BACKGROUND_IPC_RETRY_DELAYS_MS = [0, 50, 150] as const;
+export const BACKGROUND_IPC_MAX_ATTEMPTS = 6;
+/** Delay before attempts (ms). Attempt 0 is immediate. Extended for MV3 SW cold wake (~500-800ms). */
+export const BACKGROUND_IPC_RETRY_DELAYS_MS = [0, 100, 300, 600, 1000, 1500] as const;
 
 export type BackgroundIpcExhaustedPolicy = 'log' | 'throw';
 

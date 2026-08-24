@@ -72,16 +72,20 @@ export class BackgroundHighlightOrchestrator {
     highlight: HighlightDataV2,
     sender?: chrome.runtime.MessageSender,
   ) {
+    console.log('[DEBUG-diagnose] BG onAdd received', { id: highlight.id, url: highlight.url, senderUrl: sender?.tab?.url });
     const stamped = this.withTabPageUrl(highlight, sender);
+    console.log('[DEBUG-diagnose] BG stamped url', { id: stamped.id, stampedUrl: stamped.url, activeScope: (this.facade.getReadable() as any)?.getActiveScope?.() });
     this.logger.info('[bridge] add', { id: stamped.id, url: stamped.url });
     try {
       // Await IndexedDB (active auth scope) so SW death after response does not drop the row.
       await this.facade.addPersisted(stamped);
+      console.log('[DEBUG-diagnose] BG addPersisted success', { id: stamped.id, cacheCount: this.facade.count() });
       notifyLibraryDataChanged({ source: 'highlight-bridge-add' });
       this.logger.debug('[bridge] response', { id: stamped.id, ok: true });
       return { success: true, data: undefined as void };
     } catch (e) {
       const err = e as Error;
+      console.log('[DEBUG-diagnose] BG add failed', { id: stamped.id, error: err.message });
       this.logger.error('[bridge] add failed', err, { id: stamped.id });
       return { success: false, error: err.message };
     }
