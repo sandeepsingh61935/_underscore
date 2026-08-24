@@ -32,9 +32,12 @@ body {
     box-sizing: border-box;
 }
 
+/* Popup is fixed 400×600 — no responsive shrink inside extension.
+   Keep 400 even on narrow viewports to avoid gap after scrollbar. */
 @media (max-width: 480px) {
     .popup-wrap,
     .popup {
-        width: min(400px, calc(100vw - 24px));
+        width: 400px;
+        max-width: 400px;
     }
 }

@@ -567,7 +567,7 @@
 
 /* Screen scroll — prototype .screen-scroll / .list-scroll: Settings list container */
 .screen-scroll {
-  overflow-y: auto;
+  overflow-y: overlay;
   overflow-x: hidden;
   flex: 1 1 0;
   min-height: 0;
@@ -856,7 +856,7 @@ button.hl-icon.is-danger:active {
 
 /* Nice scroll for lists when we do show them */
 .list-scroll {
-  overflow-y: auto;
+  overflow-y: overlay;
   overflow-x: hidden;
   width: 100%;
   max-width: 100%;
