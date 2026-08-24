@@ -3,7 +3,7 @@
  * @description Background service worker entry point
  */
 
-// Polyfill environment removed
+import '@/background/polyfill';
 import { browser } from 'wxt/browser';
 
 import type { IAuthManager, OAuthProviderType, AuthState } from '@/background/auth/interfaces/i-auth-manager';

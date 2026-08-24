@@ -17,7 +17,6 @@ export interface ScopedHighlightQueryDeps {
 /** Build a query service that reads the correct storage partition for the auth state. */
 export function createScopedHighlightQueryService(deps: ScopedHighlightQueryDeps): HighlightQueryService {
   const scope = resolveQueryStorageScope(deps.isAuthenticated);
-  console.log('[DEBUG-diagnose] createScopedHighlightQueryService', { isAuthenticated: deps.isAuthenticated, scope, activeScope: deps.scopedHighlightRepository.getActiveScope() });
   // Pro: durable DualWrite/local pro IDB (survives SW restart; matches restore path).
   // Cache-only reads missed rows when facade was still hydrated from basic scope.
   // Basic (guest): dedicated basic partition.

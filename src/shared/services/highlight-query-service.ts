@@ -96,7 +96,6 @@ export class HighlightQueryService {
 
   async getCollections(mode?: string): Promise<CollectionSummary[]> {
     const highlights = await this.readable.findAll();
-    console.log('[DEBUG-diagnose] getCollections raw', { count: highlights.length, sample: highlights.slice(0,2).map(h=>({id:h.id,url:(h as any).url})) });
     const domainMap = new Map<string, { count: number; lastActive: number }>();
 
     for (const hl of highlights) {

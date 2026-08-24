@@ -98,10 +98,13 @@ function hrefFromLocation(loc: Location): string {
  * Injectable for tests.
  */
 export function collectSameOriginFrameHrefs(
-  start: Window = window,
+  start?: Window,
 ): string[] {
+  const fallbackWindow = typeof window !== 'undefined' ? window : undefined;
+  const initial = start ?? fallbackWindow;
+  if (!initial) return [];
   const hrefs: string[] = [];
-  let current: Window = start;
+  let current: Window = initial;
   try {
     hrefs.push(hrefFromLocation(current.location));
     while (current.parent && current.parent !== current) {
@@ -129,7 +132,10 @@ export function getCapturePageUrl(
   const outermost = hrefs.length > 0 ? hrefs[hrefs.length - 1]! : '';
   if (!outermost) {
     try {
-      return normalizePageUrl(window.location.href);
+      if (typeof window !== 'undefined' && window.location?.href) {
+        return normalizePageUrl(window.location.href);
+      }
+      return '';
     } catch {
       return '';
     }
