@@ -14,6 +14,9 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
+import { PrivacyPage } from '@/pages/PrivacyPage';
+import { TermsPage } from '@/pages/TermsPage';
+import { HelpPage } from '@/pages/HelpPage';
 import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
@@ -95,6 +98,7 @@ export function SettingsPage({
   const [isDeletingLibrary, setIsDeletingLibrary] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<'privacy' | 'terms' | 'help' | null>(null);
   const isAuthenticated = Boolean(user);
   const exportGate = useModeFeature('export', isAuthenticated);
   const syncGate = useModeFeature('sync', isAuthenticated);
@@ -225,6 +229,47 @@ export function SettingsPage({
           onSignIn={onSignIn}
           onExit={() => setConnectOpen(false)}
         />
+      </div>
+    );
+  }
+
+  if (legalDoc) {
+    return (
+      <div
+        style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+        data-testid="settings-legal-page"
+        data-od-id="legal-page"
+      >
+        <div
+          style={{
+            padding: '10px 16px',
+            borderBottom: '1px solid var(--rule-soft)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <button
+            type="button"
+            className="u-mono"
+            data-testid="settings-legal-back"
+            data-od-id="legal-back"
+            onClick={() => setLegalDoc(null)}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              fontSize: 'var(--step--2)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-3)',
+            }}
+          >
+            ← Settings
+          </button>
+        </div>
+        <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0, padding: '0' }}>
+          {legalDoc === 'privacy' ? <PrivacyPage /> : legalDoc === 'terms' ? <TermsPage /> : <HelpPage />}
+        </div>
       </div>
     );
   }
@@ -414,12 +459,16 @@ export function SettingsPage({
             <div>
               <div className="title">Download</div>
               <div className="sub">
-                {exportGate.allowed && user ? 'Markdown or spreadsheet' : featureGateSubtitle(exportGate.reason)}
+                {productCaps.flags.export && user ? 'Markdown or spreadsheet' : featureGateSubtitle(exportGate.reason)}
               </div>
             </div>
             <span className="row-end">
               <span data-od-id="export-actions">
-                <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed || !user} variant="inline" />
+                <ExportActions
+                  scope={{ kind: 'library' }}
+                  disabled={!productCaps.flags.export || !user}
+                  variant="inline"
+                />
               </span>
             </span>
           </div>
@@ -529,9 +578,9 @@ export function SettingsPage({
           </>
         ) : null}
 
-        {/* About — prototype aboutBlock inside scroll, not sticky footer */}
+        {/* About — prototype aboutBlock inside scroll; in extension internal viewLegal, in web window.open */}
         <div data-testid="settings-legal-wrapper">
-          <SettingsLegalFooter />
+          <SettingsLegalFooter onOpenLegal={(doc) => setLegalDoc(doc)} />
         </div>
       </div>
 
@@ -553,7 +602,7 @@ export function SettingsPage({
             }}
             isConfirming={isDeletingLibrary}
             exportFooter={
-              <ExportActions scope={{ kind: 'library' }} disabled={!exportGate.allowed} />
+              <ExportActions scope={{ kind: 'library' }} disabled={!productCaps.flags.export} />
             }
           />
         );

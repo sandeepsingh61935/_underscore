@@ -218,7 +218,8 @@
 
 /* Popup chrome — no outer right rule (user-reported vertical bar top→bottom) */
 .popup {
-  width: var(--pop-w);
+  width: 100%;
+  max-width: var(--pop-w);
   height: var(--pop-h);
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -229,6 +230,7 @@
   flex-direction: column;
   font-family: var(--sans);
   color: var(--ink);
+  box-sizing: border-box;
 }
 
 /* Type helpers */
@@ -561,7 +563,11 @@
   overflow-x: hidden;
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
 }
@@ -843,7 +849,12 @@ button.hl-icon.is-danger:active {
 /* Nice scroll for lists when we do show them */
 .list-scroll {
   overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
 }
 .list-scroll::-webkit-scrollbar { width: 6px; }
 .list-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }

@@ -83,7 +83,11 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
+          width: '100%',
+          maxWidth: 'var(--pop-w)',
+          boxSizing: 'border-box',
           borderTop: chrome.showTitleStrip ? 'none' : '1px solid var(--rule)',
+          overflow: 'hidden',
         }}
       >
         {chrome.showModeHeader && (
@@ -95,7 +99,7 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         )}
         <div
           className="body-slot"
-          style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden' }}
+          style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div

@@ -1,12 +1,42 @@
 /**
  * About / legal rows — prototype viewSettings() aboutBlock
  * Three rows: Privacy Policy / Terms of Service / Help — 44px min-height, trail ›
+ * In EXTENSION popup, onOpenLegal triggers internal viewLegal() (same content as web PrivacyPage/TermsPage/HelpPage)
+ * In WEB, falls back to window.open(resolveLegalDocUrl()) at web origin.
  */
 import React from 'react';
 
 import { openLegalDoc } from '@/shared/auth/web-legal-urls';
 
-export function SettingsLegalFooter(): React.ReactElement {
+export type LegalDocId = 'privacy' | 'terms' | 'help';
+
+export interface SettingsLegalFooterProps {
+  onOpenLegal?: (doc: LegalDocId) => void;
+}
+
+export function SettingsLegalFooter({ onOpenLegal }: SettingsLegalFooterProps = {}): React.ReactElement {
+  const handleOpen = (doc: LegalDocId): void => {
+    if (onOpenLegal) {
+      onOpenLegal(doc);
+      return;
+    }
+    // Web fallback — open at web origin
+    if (doc === 'help') {
+      const origin = (() => {
+        try {
+          const env = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_WEB_APP_URL'];
+          if (env) return new URL(env.includes('://') ? env : `https://${env}`).origin;
+        } catch {}
+        return null;
+      })();
+      const url = origin ? `${origin}/help` : '/help';
+      if (typeof chrome !== 'undefined' && chrome.tabs?.create) void chrome.tabs.create({ url });
+      else if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    openLegalDoc(doc === 'privacy' ? '/privacy' : '/terms');
+  };
+
   return (
     <div data-od-id="settings-section-about" data-testid="settings-legal-footer">
       <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
@@ -19,7 +49,7 @@ export function SettingsLegalFooter(): React.ReactElement {
         data-doc="privacy"
         data-testid="settings-legal-privacy"
         data-od-id="settings-legal-privacy"
-        onClick={() => openLegalDoc('/privacy')}
+        onClick={() => handleOpen('privacy')}
       >
         <div>
           <div className="title">Privacy Policy</div>
@@ -36,7 +66,7 @@ export function SettingsLegalFooter(): React.ReactElement {
         data-doc="terms"
         data-testid="settings-legal-terms"
         data-od-id="settings-legal-terms"
-        onClick={() => openLegalDoc('/terms')}
+        onClick={() => handleOpen('terms')}
       >
         <div>
           <div className="title">Terms of Service</div>
@@ -53,19 +83,7 @@ export function SettingsLegalFooter(): React.ReactElement {
         data-doc="help"
         data-testid="settings-legal-help"
         data-od-id="settings-legal-help"
-        onClick={() => {
-          // Help is not a LegalDocPath — open via web origin directly
-          const origin = (() => {
-            try {
-              const env = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_WEB_APP_URL'];
-              if (env) return new URL(env.includes('://') ? env : `https://${env}`).origin;
-            } catch {}
-            return null;
-          })();
-          const url = origin ? `${origin}/help` : '/help';
-          if (typeof chrome !== 'undefined' && chrome.tabs?.create) void chrome.tabs.create({ url });
-          else if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer');
-        }}
+        onClick={() => handleOpen('help')}
       >
         <div>
           <div className="title">Help</div>
