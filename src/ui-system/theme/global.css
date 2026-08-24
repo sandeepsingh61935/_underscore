@@ -214,11 +214,17 @@
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.005em;
+  width: 400px;
+  max-width: 400px;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Popup chrome — no outer right rule (user-reported vertical bar top→bottom) */
 .popup {
-  width: 100%;
+  width: var(--pop-w);
   max-width: var(--pop-w);
   height: var(--pop-h);
   background: var(--paper);
@@ -231,6 +237,8 @@
   font-family: var(--sans);
   color: var(--ink);
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Type helpers */
@@ -567,7 +575,7 @@
   max-width: 100%;
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
 }
@@ -854,7 +862,7 @@ button.hl-icon.is-danger:active {
   max-width: 100%;
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 .list-scroll::-webkit-scrollbar { width: 6px; }
 .list-scroll::-webkit-scrollbar-thumb { background: var(--rule-soft); border-radius: 3px; }

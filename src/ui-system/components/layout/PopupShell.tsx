@@ -83,9 +83,11 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
-          width: '100%',
+          width: 'var(--pop-w)',
           maxWidth: 'var(--pop-w)',
           boxSizing: 'border-box',
+          margin: 0,
+          padding: 0,
           borderTop: chrome.showTitleStrip ? 'none' : '1px solid var(--rule)',
           overflow: 'hidden',
         }}
