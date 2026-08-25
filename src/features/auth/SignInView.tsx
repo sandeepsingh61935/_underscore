@@ -1,25 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-import { AuthLandingChrome } from '@/features/auth/components/AuthLandingChrome';
 import { useApp } from '@/core/context/AppProvider';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { syncSessionToExtension } from '@/shared/auth/session-bridge';
 import { stashIntendedMode } from '@/shared/auth/pending-intent';
 import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { mapAuthError, isExistingAccountSignup } from '@/shared/auth/auth-error-messages';
-import { navigateAuthLandingBack } from '@/shared/auth/navigate-auth-landing-back';
 import { resolveAuthRedirectTarget, stashPendingAuthorizationId } from '@/shared/oauth/oauth-consent-path';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 
-/**
- * SignInView — registration-first auth landing (web SPA).
- *
- * Spec: docs/superpowers/specs/2026-07-14-auth-landing-redesign.md
- * After mock: chrome brand only · no rail/kicker · soft fields ·
- * history-aware Back · text secondary links · centered title.
- */
 function stashPendingAuthorizationIdFromReturnTo(returnTo: string): void {
     const parsed = new URL(returnTo, 'https://placeholder.local');
     const authorizationId = parsed.searchParams.get('authorization_id');
@@ -44,13 +35,6 @@ const textLinkStyle: React.CSSProperties = {
     textUnderlineOffset: 2,
 };
 
-const quietLinkStyle: React.CSSProperties = {
-    ...textLinkStyle,
-    color: 'var(--ink-3)',
-    fontWeight: 400,
-    fontSize: 'var(--step--1)',
-};
-
 export function SignInView(): React.ReactElement {
     const navigate = useNavigate();
     const { login, setIsLoading, isLoading } = useApp();
@@ -60,22 +44,6 @@ export function SignInView(): React.ReactElement {
     const [password, setPassword] = useState('');
     const [isSignIn, setIsSignIn] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
-
-    const handleBack = (): void => {
-        const params = new URLSearchParams(window.location.search);
-        const returnTo = params.get('returnTo');
-        navigateAuthLandingBack({
-            returnTo,
-            resolveReturnTo: (value) => resolveAuthRedirectTarget(value),
-            navigate: (path) => {
-                // Only persist OAuth pending id when returnTo was accepted (not open-redirect fallback).
-                if (returnTo && path !== '/home') {
-                    stashPendingAuthorizationIdFromReturnTo(returnTo);
-                }
-                navigate(path);
-            },
-        });
-    };
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
@@ -188,286 +156,165 @@ export function SignInView(): React.ReactElement {
         }
     };
 
-    const showPasswordHelper = !isSignIn && password.length < 8;
-    const modeStatus = isSignIn ? 'Welcome back' : 'Create account';
+    const handleGuest = (): void => {
+        const params = new URLSearchParams(window.location.search);
+        const returnTo = params.get('returnTo');
+        const intendedMode = params.get('intendedMode');
+        if (returnTo) {
+            stashPendingAuthorizationIdFromReturnTo(returnTo);
+            navigate(resolveAuthRedirectTarget(returnTo));
+            return;
+        }
+        if (intendedMode) {
+            stashIntendedMode(intendedMode);
+        }
+        navigate('/home');
+    };
 
     return (
-        <div
-            className="public-legal"
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'var(--paper)',
-                color: 'var(--ink)',
-            }}
-        >
-            <AuthLandingChrome modeStatus={modeStatus} />
+        <div className="auth-signin" data-testid="auth-signin-page">
+            <div className="auth-signin__card" data-od-id="signin-card">
+                <div className="auth-signin__brand" aria-hidden>
+                    <div className="auth-signin__mark">—</div>
+                </div>
+                <h1 className="u-serif auth-signin__title">
+                    {emailUi ? (isSignIn ? 'Welcome back' : 'Create your account') : 'Sign in to underscore'}
+                </h1>
+                <p className="u-sans auth-signin__subtitle">
+                    {emailUi ? (
+                        isSignIn ? (
+                            'Open your synced collections.'
+                        ) : (
+                            'Save highlights to your library.'
+                        )
+                    ) : (
+                        <>
+                            Sync highlights across devices. Guest
+                            <br />
+                            keeps everything local.
+                        </>
+                    )}
+                </p>
 
-            <div
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                }}
-            >
-                <div
-                    style={{
-                        width: '100%',
-                        maxWidth: 'min(100%, 28rem)',
-                        padding: 'clamp(1.5rem, 3vw, 2.25rem) clamp(1.25rem, 3vw, 2rem)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 16,
-                        boxSizing: 'border-box',
-                    }}
-                >
-                    <button
-                        type="button"
-                        onClick={handleBack}
-                        className="u-sans"
-                        aria-label="Back to settings"
-                        style={{
-                            ...quietLinkStyle,
-                            alignSelf: 'flex-start',
-                            minHeight: 44,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            fontSize: 'var(--step-1)',
-                            textDecoration: 'none',
-                        }}
-                    >
-                        ←
-                    </button>
-
-                    <div style={{ textAlign: 'center', width: '100%' }}>
-                        <h1
-                            className="u-serif"
-                            style={{
-                                fontSize: 'var(--step-3)',
-                                fontWeight: 500,
-                                margin: '0 0 8px',
-                                textAlign: 'center',
-                                letterSpacing: '-0.025em',
-                                lineHeight: 1.2,
-                            }}
-                        >
-                            {emailUi
-                                ? isSignIn
-                                    ? 'Welcome back'
-                                    : 'Create your account'
-                                : 'Sign in'}
-                        </h1>
-                        <p
-                            className="u-sans"
-                            style={{
-                                fontSize: 'var(--step-0)',
-                                color: 'var(--ink-3)',
-                                margin: 0,
-                                textAlign: 'center',
-                                lineHeight: 1.45,
-                            }}
-                        >
-                            {emailUi
-                                ? isSignIn
-                                    ? 'Open your synced collections.'
-                                    : 'Save highlights to your library.'
-                                : 'Save highlights to your library.'}
-                        </p>
+                {authError ? (
+                    <div className="u-sans auth-signin__error" role="alert">
+                        {authError}
                     </div>
+                ) : null}
 
-                    <div
-                        aria-hidden
-                        style={{ height: 1, background: 'var(--rule-soft)', width: '100%' }}
-                    />
+                <button
+                    type="button"
+                    className="auth-signin__google"
+                    onClick={() => void handleSocialAuth()}
+                    disabled={isLoading}
+                    data-testid="auth-continue-google"
+                >
+                    <span className="auth-signin__google-icon" aria-hidden>
+                        <svg width="18" height="18" viewBox="0 0 48 48" role="img">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                            <path fill="none" d="M0 0h48v48H0z" />
+                        </svg>
+                    </span>
+                    Continue with Google
+                </button>
 
-                    {authError ? (
+                <div className="auth-signin__divider" aria-hidden>
+                    <span className="auth-signin__line" />
+                    <span className="u-mono auth-signin__or">{emailUi ? 'or email' : 'OR'}</span>
+                    <span className="auth-signin__line" />
+                </div>
+
+                {emailUi ? (
+                    <>
+                        <form
+                            onSubmit={(e) => void handleSubmit(e)}
+                            className="auth-signin__form"
+                            data-testid="auth-email-form"
+                            style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                                    Email
+                                </label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    placeholder="you@example.com"
+                                    autoComplete="email"
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                    <label htmlFor="password" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
+                                        Password
+                                    </label>
+                                </div>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    placeholder="••••••••"
+                                    autoComplete={isSignIn ? 'current-password' : 'new-password'}
+                                />
+                            </div>
+
+                            <Button type="submit" variant="primary" isLoading={isLoading} style={{ width: '100%' }}>
+                                {isSignIn ? 'Sign in' : 'Create account'}
+                            </Button>
+                        </form>
+
                         <div
                             className="u-sans"
-                            role="alert"
                             style={{
-                                padding: '12px 14px',
-                                borderRadius: 'var(--radius)',
-                                border: '1px solid var(--rule)',
-                                background: 'var(--accent-tint-08)',
-                                color: 'var(--ink)',
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                textAlign: 'center',
                                 fontSize: 'var(--step--1)',
+                                color: 'var(--ink-3)',
+                                marginBottom: 16,
                             }}
                         >
-                            {authError}
-                        </div>
-                    ) : null}
-
-                    <Button
-                        type="button"
-                        variant="accent"
-                        onClick={() => void handleSocialAuth()}
-                        disabled={isLoading}
-                        style={{ width: '100%' }}
-                        data-testid="auth-continue-google"
-                    >
-                        Continue with Google
-                    </Button>
-
-                    {emailUi ? (
-                        <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                                <span
-                                    className="u-mono"
-                                    style={{
-                                        color: 'var(--ink-3)',
-                                        fontSize: 'var(--step--2)',
-                                        letterSpacing: '0.12em',
-                                        textTransform: 'uppercase',
-                                    }}
-                                >
-                                    or email
-                                </span>
-                                <div style={{ flex: 1, height: 1, background: 'var(--rule-soft)' }} />
-                            </div>
-
-                            <form
-                                onSubmit={(e) => void handleSubmit(e)}
-                                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                                data-testid="auth-email-form"
-                            >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    <label htmlFor="email" className="u-kicker" style={{ color: 'var(--ink-3)' }}>
-                                        Email
-                                    </label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                        placeholder="you@example.com"
-                                        autoComplete="email"
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'baseline',
-                                        }}
-                                    >
-                                        <label
-                                            htmlFor="password"
-                                            className="u-kicker"
-                                            style={{ color: 'var(--ink-3)' }}
-                                        >
-                                            Password
-                                        </label>
-                                        {isSignIn ? (
-                                            <Link
-                                                to="/forgot-password"
-                                                className="u-sans"
-                                                style={{
-                                                    fontSize: 'var(--step--2)',
-                                                    color: 'var(--ink-3)',
-                                                    textDecoration: 'underline',
-                                                    textUnderlineOffset: 2,
-                                                }}
-                                            >
-                                                Forgot password?
-                                            </Link>
-                                        ) : null}
-                                    </div>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        placeholder="••••••••"
-                                        autoComplete={isSignIn ? 'current-password' : 'new-password'}
-                                    />
-                                    {showPasswordHelper ? (
-                                        <p
-                                            className="u-sans"
-                                            style={{
-                                                margin: 0,
-                                                fontSize: 'var(--step--2)',
-                                                color: 'var(--ink-3)',
-                                            }}
-                                        >
-                                            At least 8 characters
-                                        </p>
-                                    ) : null}
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    isLoading={isLoading}
-                                    style={{ width: '100%' }}
-                                >
-                                    {isSignIn ? 'Sign in' : 'Create account'}
-                                </Button>
-                            </form>
-
-                            <div
-                                className="u-sans"
-                                style={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                    textAlign: 'center',
-                                    fontSize: 'var(--step--1)',
-                                    color: 'var(--ink-3)',
+                            <span>{isSignIn ? "Don't have an account?" : 'Already have an account?'}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsSignIn(!isSignIn);
+                                    setAuthError(null);
                                 }}
+                                style={textLinkStyle}
                             >
-                                <span>
-                                    {isSignIn ? "Don't have an account?" : 'Already have an account?'}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsSignIn(!isSignIn);
-                                        setAuthError(null);
-                                    }}
-                                    style={textLinkStyle}
-                                >
-                                    {isSignIn ? 'Create one' : 'Sign in'}
-                                </button>
-                            </div>
-                        </>
-                    ) : null}
+                                {isSignIn ? 'Create one' : 'Sign in'}
+                            </button>
+                        </div>
+                    </>
+                ) : null}
 
-                    <p
-                        className="u-sans"
-                        style={{
-                            textAlign: 'center',
-                            fontSize: 'var(--step--2)',
-                            margin: 0,
-                            lineHeight: 1.5,
-                            color: 'var(--ink-3)',
-                        }}
-                    >
-                        By continuing, you agree to our{' '}
-                        <Link
-                            to="/terms"
-                            style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}
-                        >
-                            Terms of Service
-                        </Link>{' '}
-                        and{' '}
-                        <Link
-                            to="/privacy"
-                            style={{ color: 'var(--ink-3)', textDecoration: 'underline' }}
-                        >
-                            Privacy Policy
-                        </Link>
-                    </p>
-                </div>
+                <button
+                    type="button"
+                    className="auth-signin__guest"
+                    onClick={handleGuest}
+                    disabled={isLoading}
+                    data-testid="auth-continue-guest"
+                    data-od-id="signin-continue-guest"
+                >
+                    Continue as guest
+                </button>
+
+                <p className="u-sans auth-signin__legal">
+                    By continuing you agree to <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy</Link>.
+                </p>
             </div>
         </div>
     );

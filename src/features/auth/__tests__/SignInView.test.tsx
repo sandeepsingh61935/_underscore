@@ -88,25 +88,27 @@ describe('SignInView', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByTestId('auth-landing-chrome')).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Sign in to underscore' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Continue as guest' })).toBeInTheDocument();
+        expect(screen.getByText('OR')).toBeInTheDocument();
         expect(screen.queryByTestId('auth-email-form')).toBeNull();
         expect(screen.queryByLabelText('Email')).toBeNull();
         expect(screen.queryByText('or email')).toBeNull();
-        expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
-        expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms');
+        expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
+        expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
+        expect(screen.queryByTestId('auth-landing-chrome')).toBeNull();
     });
 
-    it('navigates to /settings on Back when there is no same-origin history', () => {
+    it('Continue as guest navigates to /home', () => {
         render(
             <MemoryRouter>
                 <SignInView />
             </MemoryRouter>
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Back to settings' }));
-        expect(mockNavigate).toHaveBeenCalledWith('/settings');
+        fireEvent.click(screen.getByRole('button', { name: 'Continue as guest' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/home');
     });
 
     it('does not call login before OAuth redirect completes', async () => {
