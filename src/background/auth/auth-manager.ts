@@ -185,7 +185,10 @@ export class AuthManager implements IAuthManager {
 
         try {
             if (!(await ensureSupabaseOrigin())) {
-                throw new Error('Permission to access the account service was denied');
+                const permErr = new Error('Permission to access the account service was denied');
+                // Attach code so mapAuthError can surface a clear permission message
+                (permErr as unknown as { code: string }).code = 'permission_denied';
+                throw permErr;
             }
 
             redirectUrl = chrome.identity.getRedirectURL();
@@ -234,10 +237,11 @@ export class AuthManager implements IAuthManager {
             if (error instanceof RateLimitError) throw error;
 
             const innerMsg = error instanceof Error ? error.message : String(error);
+            const innerCode = (error as unknown as { code?: string })?.code;
 
             // User-facing message is mapped (never leaks the redirect URL /
             // provider debug info); full detail stays in the logger call above.
-            throw new AuthenticationError(mapAuthError('oauth', { message: innerMsg }), {
+            throw new AuthenticationError(mapAuthError('oauth', { message: innerMsg, code: innerCode }), {
                 provider,
                 error: innerMsg,
                 redirectUrl: redirectUrl || 'Not generated',

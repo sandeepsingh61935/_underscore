@@ -145,7 +145,14 @@ export function mapAuthError(
         case 'signup_disabled':
         case 'email_provider_disabled':
             return 'Sign up is temporarily unavailable. Please try again later.';
+        case 'permission_denied':
+        case 'permissions_denied':
+            return 'Permission to access the account service was denied. Please grant access and try again.';
         default:
+            // Fallback: permission keyword in message (ensureSupabaseOrigin throw)
+            if (/permission/i.test(normalized.message ?? '')) {
+                return 'Permission to access the account service was denied. Please grant access and try again.';
+            }
             return DEFAULT_MESSAGES[context];
     }
 }
