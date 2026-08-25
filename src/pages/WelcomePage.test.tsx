@@ -170,13 +170,9 @@ describe('WelcomePage', () => {
     });
   });
 
-  it('Back button closes gate', async () => {
+  it('has no Back button (removed per design)', async () => {
     wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
-    const back = document.querySelector('[data-action="welcome-close-gate"]') as HTMLElement;
-    expect(back).toBeTruthy();
-    fireEvent.click(back);
-    await waitFor(() => {
-      expect(document.querySelector('[data-gate="open"]')).toBeNull();
-    });
+    expect(document.querySelector('[data-action="welcome-close-gate"]')).toBeNull();
+    expect(document.querySelector('.welcome__gate-back')).toBeNull();
   });
 });

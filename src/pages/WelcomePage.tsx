@@ -118,12 +118,6 @@ export function WelcomePage({
     setCheckError(null);
   }, []);
 
-  const closeGate = useCallback(() => {
-    setWelcomeGateOpen(false);
-    setCheckError(null);
-    requestAnimationFrame(() => getStartedRef.current?.focus());
-  }, []);
-
   const handleCheck = useCallback(async () => {
     setChecking(true);
     setCheckError(null);
@@ -323,15 +317,6 @@ export function WelcomePage({
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            className="u-mono welcome__gate-back"
-            data-action="welcome-close-gate"
-            onClick={closeGate}
-            style={{ marginTop: 16 }}
-          >
-            ← Back
-          </button>
         </div>
 
         {/* Right gate card */}
