@@ -7,6 +7,7 @@ import {
   isInAppLlmProvider,
   parseInAppLlmProvider,
 } from '@/shared/llm/in-app-providers';
+import { ensureLlmOrigin, ensureOllamaOrigins } from '@/shared/permissions/ensure-origins';
 import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 
 
@@ -31,9 +32,6 @@ export async function buildProvider(
     throw new Error(NO_PROVIDER_MESSAGE);
   }
 
-  const { ensureLlmOrigin, ensureOllamaOrigins } = await import(
-    '@/shared/permissions/ensure-origins'
-  );
   const originOk =
     provider === 'ollama' ? await ensureOllamaOrigins() : await ensureLlmOrigin(provider);
   if (!originOk) {

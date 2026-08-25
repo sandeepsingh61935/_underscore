@@ -54,19 +54,22 @@ describe('scoped-highlight-query', () => {
     expect(scopedHighlightRepository.queryScope).toBeDefined();
   });
 
-  it('createScopedHighlightQueryService uses facade cache for signed-in users', () => {
-    const facadeReadable = makeReadable();
-    let facadeUsed = false;
+  it('createScopedHighlightQueryService uses scoped repository for signed-in users', () => {
+    const proReadable = makeReadable();
+    let proUsed = false;
 
-    const repositoryFacade = {
-      getReadable: () => {
-        facadeUsed = true;
-        return facadeReadable;
+    const scopedHighlightRepository = {
+      queryScope: (scope: 'basic' | 'pro') => {
+        if (scope === 'pro') {
+          proUsed = true;
+          return proReadable;
+        }
+        return makeReadable();
       },
     };
 
-    const scopedHighlightRepository = {
-      queryScope: () => makeReadable(),
+    const repositoryFacade = {
+      getReadable: () => makeReadable(),
     };
 
     createScopedHighlightQueryService({
@@ -75,6 +78,6 @@ describe('scoped-highlight-query', () => {
       scopedHighlightRepository: scopedHighlightRepository as never,
     });
 
-    expect(facadeUsed).toBe(true);
+    expect(proUsed).toBe(true);
   });
 });

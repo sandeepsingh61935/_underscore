@@ -18,6 +18,7 @@ import {
     RateLimitError,
     InvalidProviderError,
 } from './auth-errors';
+import { ORIGIN_SUPABASE, ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
 
 /**
  * Authentication manager implementation using Supabase Auth
@@ -87,7 +88,6 @@ export class AuthManager implements IAuthManager {
 
             // Supabase host is optional — only hydrate session if already granted
             // (request happens on explicit sign-in; no permission prompt at SW start).
-            const { ORIGIN_SUPABASE } = await import('@/shared/permissions/ensure-origins');
             let canReachAccount = false;
             try {
                 canReachAccount = Boolean(
@@ -179,7 +179,6 @@ export class AuthManager implements IAuthManager {
         let redirectUrl: string | undefined;
 
         try {
-            const { ensureSupabaseOrigin } = await import('@/shared/permissions/ensure-origins');
             if (!(await ensureSupabaseOrigin())) {
                 throw new Error('Permission to access the account service was denied');
             }

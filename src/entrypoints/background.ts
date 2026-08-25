@@ -45,6 +45,7 @@ import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { validateHighlightText } from '@/shared/utils/highlight-text';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+import { notifyLibrarySyncProgress } from '@/background/services/library-sync-progress';
 import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
 import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
@@ -465,9 +466,6 @@ export default defineBackground({
           if (!authManager.isAuthenticated) {
             return { success: false, error: 'Sign in to sync library with cloud' };
           }
-          const { notifyLibrarySyncProgress } = await import(
-            '@/background/services/library-sync-progress'
-          );
           const result = await cloudHydrationService.hydrate((percent, phase) => {
             notifyLibrarySyncProgress(percent, phase);
           });

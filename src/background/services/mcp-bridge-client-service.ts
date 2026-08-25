@@ -18,6 +18,7 @@ import type {
 import { BRIDGE_PROTOCOL_VERSION } from '@/shared/mcp/bridge-protocol';
 import type { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import type { ILogger } from '@/shared/utils/logger';
+import { ensureMcpBridgeOrigins } from '@/shared/permissions/ensure-origins';
 import { browser } from 'wxt/browser';
 
 const RECONNECT_BASE_MS = 5_000;
@@ -130,7 +131,6 @@ export class McpBridgeClientService {
       return;
     }
 
-    const { ensureMcpBridgeOrigins } = await import('@/shared/permissions/ensure-origins');
     if (!(await ensureMcpBridgeOrigins())) {
       this.logger.warn('[McpBridge] localhost bridge permission denied — not connecting');
       this.activeToken = '';
