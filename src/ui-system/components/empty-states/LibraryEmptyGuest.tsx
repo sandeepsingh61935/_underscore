@@ -52,7 +52,7 @@ export function LibraryEmptyGuest({ onSignIn }: LibraryEmptyGuestProps): React.R
       {onSignIn && (
         <button
           type="button"
-          className="btn primary sm"
+          className="btn accent sm"
           style={{ marginTop: 14 }}
           onClick={onSignIn}
         >

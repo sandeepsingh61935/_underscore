@@ -21,7 +21,7 @@ export function GuestBanner({
       <div style={{ flex: 1, minWidth: 0 }} data-od-id="guest-passive">
         {copy.body}
       </div>
-      <Link to={signInTo} className="btn sm">
+      <Link to={signInTo} className="btn accent sm">
         {copy.signInLabel ?? 'Sign in'}
       </Link>
     </div>

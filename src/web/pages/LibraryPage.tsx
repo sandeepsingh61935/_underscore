@@ -181,7 +181,7 @@ function LibraryEmptyInstall({ isGuest }: { isGuest: boolean }): React.ReactElem
             </Link>
           ) : null}
           {copy.signInLabel ? (
-            <Link to="/sign-in" className="btn sm" data-od-id="library-guest-signin">
+            <Link to="/sign-in" className="btn accent sm" data-od-id="library-guest-signin">
               {copy.signInLabel}
             </Link>
           ) : null}

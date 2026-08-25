@@ -28,7 +28,7 @@ export function SettingsLocalCard({
       <div className="ls-actions">
         <button
           type="button"
-          className="btn primary sm"
+          className="btn accent sm"
           data-testid="settings-local-signin"
           data-od-id="settings-local-signin"
           aria-label="Sign in"

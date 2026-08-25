@@ -156,7 +156,7 @@ export function AccountPanel({
               Sign out
             </button>
           ) : (
-            <Link to="/sign-in" className="btn primary sm" data-od-id="settings-signin">
+            <Link to="/sign-in" className="btn accent sm" data-od-id="settings-signin">
               Sign in
             </Link>
           )}
