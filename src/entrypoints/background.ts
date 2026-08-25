@@ -208,13 +208,18 @@ export default defineBackground({
           }
           return { success: true, data: authStateResponseData(authManager.getAuthState()) };
         } catch (error) {
-          logger.error('Login handler caught error', error as Error);
+          const msg = error instanceof Error ? error.message : String(error);
+          if (msg.includes('Permission to access the account service was denied')) {
+            logger.warn('Login blocked: permission denied');
+          } else {
+            logger.error('Login handler caught error', error as Error);
+          }
           // OAuth flow (unlike the direct AuthResult paths) still throws on
           // failure; the message is already user-facing (mapAuthError in
           // AuthManager), so surface it as-is rather than a raw Error.
           return {
             success: false,
-            error: error instanceof Error ? error.message : 'Login failed. Please try again.',
+            error: msg || 'Login failed. Please try again.',
           };
         }
       });

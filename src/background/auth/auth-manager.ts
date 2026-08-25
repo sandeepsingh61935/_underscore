@@ -18,7 +18,7 @@ import {
     RateLimitError,
     InvalidProviderError,
 } from './auth-errors';
-import { ORIGIN_SUPABASE, ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
+import { ORIGIN_SUPABASE, hasSupabaseOrigin } from '@/shared/permissions/ensure-origins';
 
 /**
  * Authentication manager implementation using Supabase Auth
@@ -184,7 +184,9 @@ export class AuthManager implements IAuthManager {
         let redirectUrl: string | undefined;
 
         try {
-            if (!(await ensureSupabaseOrigin())) {
+            // In background, do not request permission (requires user gesture); just check.
+            // Popup should request before calling login (see AuthView).
+            if (!(await hasSupabaseOrigin())) {
                 const permErr = new Error('Permission to access the account service was denied');
                 // Attach code so mapAuthError can surface a clear permission message
                 (permErr as unknown as { code: string }).code = 'permission_denied';
@@ -232,7 +234,12 @@ export class AuthManager implements IAuthManager {
 
         } catch (error) {
             await this.logAuthFailure(provider);
-            this.logger.error('Sign in failed', error as Error, { provider });
+            const errCode = (error as unknown as { code?: string })?.code;
+            if (errCode === 'permission_denied') {
+                this.logger.warn('Sign in blocked: permission denied', { provider });
+            } else {
+                this.logger.error('Sign in failed', error as Error, { provider });
+            }
 
             if (error instanceof RateLimitError) throw error;
 

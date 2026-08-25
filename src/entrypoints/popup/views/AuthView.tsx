@@ -10,6 +10,7 @@ import { VerificationView } from './VerificationView';
 
 import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { EXISTING_ACCOUNT_CODE, mapAuthError } from '@/shared/auth/auth-error-messages';
+import { ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 
@@ -72,6 +73,19 @@ export function AuthView({
 
     const handleProviderClick = async (provider: OAuthProviderType): Promise<void> => {
         setLoginError(null);
+        // Request host permission with user gesture before background OAuth flow
+        // (chrome.permissions.request requires a user gesture; background cannot prompt).
+        if (provider === 'google') {
+            try {
+                const granted = await ensureSupabaseOrigin();
+                if (!granted) {
+                    setLoginError('Permission to access the account service was denied. Please grant access and try again.');
+                    return;
+                }
+            } catch {
+                // ignore, proceed to login and let background surface permission message
+            }
+        }
         setActiveProvider(provider);
         const result = await login(provider);
         setActiveProvider(null);

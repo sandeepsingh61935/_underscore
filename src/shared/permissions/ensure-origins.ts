@@ -58,6 +58,16 @@ export async function ensureSupabaseOrigin(): Promise<boolean> {
   return ensureOrigins([ORIGIN_SUPABASE]);
 }
 
+export async function hasSupabaseOrigin(): Promise<boolean> {
+  try {
+    const perms = browser.permissions;
+    if (!perms?.contains) return true;
+    return await perms.contains({ origins: [ORIGIN_SUPABASE] });
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureLlmOrigin(provider: string): Promise<boolean> {
   const origin = ORIGIN_LLM[provider];
   if (!origin) return true;
