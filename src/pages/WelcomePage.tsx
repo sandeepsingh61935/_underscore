@@ -1,83 +1,230 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
+import { pingExtensionPresence } from '@/shared/extension/extension-presence';
+import { detectInstallBrowser } from '@/web/install/install-distribution';
 
 export interface WelcomePageProps {
   onStartClick?: () => void;
+  /** For /install alias: start with gate open. */
+  initialGateOpen?: boolean;
+  /** Legacy selector alias: render data-od-id="install" data-alias="welcome-gate" */
+  aliasMode?: boolean;
+  /** Test seam: override detected browser. */
+  detectedBrowser?: 'chrome' | 'firefox' | 'unknown';
 }
 
-/**
- * Welcome Page — landing experience.
- * Web SPA: fluid viewport canvas (`welcome--web`).
- * Extension popup: compact layout (`welcome--popup`) when `onStartClick` is set.
- */
-export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.ReactElement {
+const FALLBACK_CHROME_URL = 'https://chrome.google.com/webstore';
+const FALLBACK_FIREFOX_URL = 'https://addons.mozilla.org/firefox/';
+const GATE_TIMEOUT_MS = 2200;
+
+export function WelcomePage({
+  onStartClick,
+  initialGateOpen = false,
+  aliasMode = false,
+  detectedBrowser,
+}: WelcomePageProps = {}): React.ReactElement {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useApp();
   const isWeb = !onStartClick;
 
-  React.useEffect(() => {
-    if (isAuthenticated && !onStartClick) {
+  const locationGateOpen = (location.state as { gateOpen?: boolean } | null)?.gateOpen ?? false;
+  const [welcomeGateOpen, setWelcomeGateOpen] = useState(initialGateOpen || locationGateOpen);
+  const [welcomeGateHowOpen, setWelcomeGateHowOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [checkSuccess, setCheckSuccess] = useState(false);
+
+  // Sync when guard redirects to "/" with gateOpen state
+  useEffect(() => {
+    if (locationGateOpen && !welcomeGateOpen) {
+      setWelcomeGateOpen(true);
+    }
+  }, [locationGateOpen, welcomeGateOpen]);
+
+  const firstCtaRef = useRef<HTMLAnchorElement>(null);
+  const openLibraryRef = useRef<HTMLAnchorElement>(null);
+  const getStartedRef = useRef<HTMLButtonElement>(null);
+
+  const detected = detectedBrowser ?? detectInstallBrowser();
+  const browserLabel =
+    detected === 'chrome' ? 'Chrome' : detected === 'firefox' ? 'Firefox' : null;
+
+  const storeUrls = React.useMemo(() => {
+    const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
+    const chrome = (env['VITE_CHROME_STORE_URL'] as string | undefined)?.trim() || FALLBACK_CHROME_URL;
+    const firefox = (env['VITE_FIREFOX_STORE_URL'] as string | undefined)?.trim() || FALLBACK_FIREFOX_URL;
+    return { chrome, firefox };
+  }, []);
+
+  // Popup still honors auth redirect; web gate does not auto-redirect (guard handles it)
+  useEffect(() => {
+    if (isAuthenticated && !onStartClick && !welcomeGateOpen) {
       navigate('/home');
     }
-  }, [isAuthenticated, navigate, onStartClick]);
+  }, [isAuthenticated, navigate, onStartClick, welcomeGateOpen]);
 
-  return (
-    <div
-      className={`welcome ${isWeb ? 'welcome--web' : 'welcome--popup'}`}
-      data-od-id="welcome"
-      data-platform={isWeb ? 'web' : 'popup'}
-    >
-      <div className="welcome__main">
-        <div className="welcome__logo">
-          <Logo size="lg" showText={false} />
+  // Esc reverses gate
+  useEffect(() => {
+    if (!welcomeGateOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setWelcomeGateOpen(false);
+        setCheckError(null);
+        // return focus to Get started
+        requestAnimationFrame(() => getStartedRef.current?.focus());
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [welcomeGateOpen]);
+
+  // Focus first store CTA on gate open
+  useEffect(() => {
+    if (welcomeGateOpen) {
+      requestAnimationFrame(() => firstCtaRef.current?.focus());
+    }
+  }, [welcomeGateOpen]);
+
+  // Focus Open library on success
+  useEffect(() => {
+    if (checkSuccess) {
+      requestAnimationFrame(() => openLibraryRef.current?.focus());
+    }
+  }, [checkSuccess]);
+
+  const openGate = useCallback(() => {
+    setWelcomeGateOpen(true);
+    setCheckError(null);
+  }, []);
+
+  const closeGate = useCallback(() => {
+    setWelcomeGateOpen(false);
+    setCheckError(null);
+    requestAnimationFrame(() => getStartedRef.current?.focus());
+  }, []);
+
+  const handleCheck = useCallback(async () => {
+    setChecking(true);
+    setCheckError(null);
+    setCheckSuccess(false);
+    try {
+      const result = await pingExtensionPresence({ timeoutMs: GATE_TIMEOUT_MS });
+      if (result.presence === 'installed') {
+        setCheckSuccess(true);
+        try {
+          window.localStorage.setItem('_underscore_extension_gate_passed', '1');
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      setCheckError('We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.');
+    } catch {
+      setCheckError('We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.');
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
+  const handleAlreadySetup = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      try {
+        const result = await pingExtensionPresence({ timeoutMs: GATE_TIMEOUT_MS });
+        if (result.presence === 'installed') {
+          navigate('/home');
+          return;
+        }
+      } catch {
+        // fall through to gate
+      }
+      openGate();
+    },
+    [navigate, openGate],
+  );
+
+  // Popup mode: keep legacy compact layout, no gate
+  if (!isWeb) {
+    return (
+      <div className="welcome welcome--popup" data-od-id="welcome" data-platform="popup">
+        <div className="welcome__main">
+          <div className="welcome__logo">
+            <Logo size="lg" showText={false} />
+          </div>
+          <h1 className="u-serif welcome__title">underscore</h1>
+          <p className="u-sans welcome__lede">
+            Highlight what matters.
+            <br />
+            Everything else fades away.
+          </p>
+          <Button
+            variant="primary"
+            className="welcome__cta"
+            data-od-id="welcome-get-started"
+            onClick={() => {
+              if (onStartClick) onStartClick();
+            }}
+          >
+            Get started →
+          </Button>
         </div>
-
-        <h1 className="u-serif welcome__title">underscore</h1>
-
-        <p className="u-sans welcome__lede">
-          Highlight what matters.
-          <br />
-          Everything else fades away.
-        </p>
-
-        <Button
-          variant="primary"
-          className="welcome__cta"
-          data-od-id="welcome-get-started"
-          onClick={() => {
-            if (onStartClick) onStartClick();
-            else navigate('/install');
-          }}
-        >
-          Get started →
-        </Button>
-
-        {isWeb ? (
-          <>
-            <Link
-              to="/home"
-              className="u-mono welcome__already"
-              data-od-id="welcome-already-setup"
-            >
-              Already set up? Open library
-            </Link>
-
-            <div className="u-mono welcome__trust">
-              <span>Free forever</span>
-              <span className="welcome__trust-dot" aria-hidden />
-              <span>No ads</span>
-              <span className="welcome__trust-dot" aria-hidden />
-              <span>Private by default</span>
-            </div>
-          </>
-        ) : null}
       </div>
+    );
+  }
 
-      {isWeb ? (
+  const dataOdId = aliasMode ? 'install' : 'welcome';
+  const gateDataProps = aliasMode ? { 'data-alias': 'welcome-gate' } : {};
+
+  // Idle hero (centered)
+  if (!welcomeGateOpen) {
+    return (
+      <div
+        className="welcome welcome--web"
+        data-od-id={dataOdId}
+        data-platform="web"
+        {...(gateDataProps as Record<string, string>)}
+      >
+        <div className="welcome__main">
+          <div className="welcome__logo">
+            <Logo size="lg" showText={false} />
+          </div>
+          <h1 className="u-serif welcome__title">underscore</h1>
+          <p className="u-sans welcome__lede">
+            Highlight what matters.
+            <br />
+            Everything else fades away.
+          </p>
+          <Button
+            ref={getStartedRef as unknown as React.Ref<HTMLButtonElement>}
+            variant="primary"
+            className="welcome__cta"
+            data-od-id="welcome-get-started"
+            data-action="welcome-open-gate"
+            onClick={openGate}
+          >
+            Get started →
+          </Button>
+          <a
+            href="/home"
+            className="u-mono welcome__already"
+            data-od-id="welcome-already-setup"
+            onClick={handleAlreadySetup}
+          >
+            Already set up? Open library
+          </a>
+          <div className="u-mono welcome__trust">
+            <span>Free forever</span>
+            <span className="welcome__trust-dot" aria-hidden />
+            <span>No ads</span>
+            <span className="welcome__trust-dot" aria-hidden />
+            <span>Private by default</span>
+          </div>
+        </div>
         <div className="welcome__footer">
           <Link to="/privacy" className="u-mono welcome__footer-link">
             Privacy
@@ -89,7 +236,267 @@ export function WelcomePage({ onStartClick }: WelcomePageProps = {}): React.Reac
             Help
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  // Gate open: stage with left why-rail + right gate card
+  const gateToast = (location.state as { toast?: string } | null)?.toast ?? null;
+  return (
+    <div
+      className="welcome welcome--web welcome--gate"
+      data-od-id={dataOdId}
+      data-platform="web"
+      data-gate="open"
+      {...(gateDataProps as Record<string, string>)}
+    >
+      {gateToast ? (
+        <div role="status" aria-live="polite" data-od-id="welcome-gate-toast" style={{ textAlign: 'center', padding: '10px 16px', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--ink-2)', borderBottom: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
+          {gateToast}
+        </div>
       ) : null}
+      <div className="welcome__stage">
+        {/* Left rail */}
+        <div className="welcome__hero welcome__hero--collapsed">
+          <div className="welcome__logo" style={{ marginBottom: 14 }}>
+            <Logo size="lg" showText={false} />
+          </div>
+          <h1 className="u-serif welcome__title" style={{ marginBottom: 8 }}>
+            underscore
+          </h1>
+          <p className="u-sans welcome__lede" style={{ textAlign: 'left', maxWidth: '28ch', marginBottom: 14 }}>
+            Highlight what matters.
+          </p>
+          <div className="welcome__gate-why">
+            <h2 className="u-serif welcome__gate-why-title">Why an extension?</h2>
+            <div className="welcome__gate-why-cards">
+              <div className="welcome__gate-why-card">
+                <span className="welcome__gate-why-tick" aria-hidden>
+                  ✓
+                </span>
+                <span className="u-sans welcome__gate-why-text">Capture on any page</span>
+              </div>
+              <div className="welcome__gate-why-card">
+                <span className="welcome__gate-why-tick" aria-hidden>
+                  ✓
+                </span>
+                <span className="u-sans welcome__gate-why-text">Private by default</span>
+              </div>
+              <div className="welcome__gate-why-card">
+                <span className="welcome__gate-why-tick" aria-hidden>
+                  ✓
+                </span>
+                <span className="u-sans welcome__gate-why-text">Organised automatically</span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="u-mono welcome__gate-back"
+            data-action="welcome-close-gate"
+            onClick={closeGate}
+            style={{ marginTop: 16 }}
+          >
+            ← Back
+          </button>
+        </div>
+
+        {/* Right gate card */}
+        <div
+          className="welcome__gate"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Install extension"
+          data-od-id="welcome-gate-panel"
+        >
+          <div className="welcome__gate-head">
+            <p className="welcome__gate-kicker">Get started</p>
+            <h2 className="welcome__gate-title">
+              {browserLabel ? `Install for ${browserLabel}` : 'Install the extension'}
+            </h2>
+            <p className="welcome__gate-sub">
+              Add the extension to capture highlights on the page. This site is your library.
+            </p>
+          </div>
+          <div className="welcome__gate-body">
+            <div className="welcome__gate-browsers" data-od-id="welcome-gate-browsers">
+              {detected === 'chrome' ? (
+                <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-chrome">
+                  <div className="welcome__gate-browser-copy">
+                    <p className="welcome__gate-browser-name">Chrome</p>
+                    <p className="welcome__gate-browser-meta">Chrome Web Store</p>
+                  </div>
+                  <div className="welcome__gate-browser-actions">
+                    <a
+                      ref={firstCtaRef}
+                      href={storeUrls.chrome}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn primary"
+                      data-od-id="welcome-gate-store-chrome"
+                      data-action="gate-choice__download"
+                    >
+                      Add to Chrome
+                    </a>
+                  </div>
+                </div>
+              ) : detected === 'firefox' ? (
+                <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-firefox">
+                  <div className="welcome__gate-browser-copy">
+                    <p className="welcome__gate-browser-name">Firefox</p>
+                    <p className="welcome__gate-browser-meta">Firefox Add-ons</p>
+                  </div>
+                  <div className="welcome__gate-browser-actions">
+                    <a
+                      ref={firstCtaRef}
+                      href={storeUrls.firefox}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn primary"
+                      data-od-id="welcome-gate-store-firefox"
+                      data-action="gate-choice__download"
+                    >
+                      Add to Firefox
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-chrome">
+                    <div className="welcome__gate-browser-copy">
+                      <p className="welcome__gate-browser-name">Chrome</p>
+                      <p className="welcome__gate-browser-meta">Chrome Web Store</p>
+                    </div>
+                    <div className="welcome__gate-browser-actions">
+                      <a
+                        ref={firstCtaRef}
+                        href={storeUrls.chrome}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn primary"
+                        data-od-id="welcome-gate-store-chrome"
+                      >
+                        Add to Chrome
+                      </a>
+                    </div>
+                  </div>
+                  <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-firefox">
+                    <div className="welcome__gate-browser-copy">
+                      <p className="welcome__gate-browser-name">Firefox</p>
+                      <p className="welcome__gate-browser-meta">Firefox Add-ons</p>
+                    </div>
+                    <div className="welcome__gate-browser-actions">
+                      <a
+                        href={storeUrls.firefox}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn primary"
+                        data-od-id="welcome-gate-store-firefox"
+                      >
+                        Add to Firefox
+                      </a>
+                    </div>
+                  </div>
+                  <div className="welcome__gate-callout" data-od-id="welcome-gate-callout">
+                    Desktop Chrome or Firefox required
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="welcome__gate-verify" data-od-id="welcome-gate-verify">
+              <p className="welcome__gate-verify-hint">After you add it, pin it and then check below.</p>
+              {!checkSuccess ? (
+                <>
+                  <div className="welcome__gate-verify-actions">
+                    <button
+                      type="button"
+                      className={`btn primary${checking ? ' is-loading' : ''}`}
+                      data-od-id="welcome-gate-check"
+                      data-action="install-check"
+                      disabled={checking}
+                      aria-busy={checking}
+                      onClick={() => void handleCheck()}
+                      style={{ minHeight: 44 }}
+                    >
+                      {checking ? 'Checking…' : 'I’ve installed it — check'}
+                    </button>
+                  </div>
+                  {checkError ? (
+                    <p className="welcome__gate-error" data-od-id="welcome-gate-check-error" role="alert">
+                      {checkError}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <div className="welcome__gate-success" data-od-id="welcome-gate-success">
+                  <span className="welcome__gate-success-ico" aria-hidden>
+                    ✓
+                  </span>
+                  <span className="welcome__gate-success-text">
+                    Extension detected — ready
+                    <small>Pin it, then open your library</small>
+                  </span>
+                </div>
+              )}
+              {checkSuccess ? (
+                <a
+                  ref={openLibraryRef}
+                  href="/home"
+                  className="btn primary"
+                  data-od-id="welcome-gate-open-library"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/home');
+                  }}
+                  style={{ minHeight: 44, marginTop: 4 }}
+                >
+                  Open library →
+                </a>
+              ) : null}
+            </div>
+
+            <div className="welcome__gate-how" data-od-id="welcome-gate-how">
+              <button
+                type="button"
+                className="welcome__gate-how-toggle"
+                aria-expanded={welcomeGateHowOpen}
+                data-od-id="welcome-gate-how-toggle"
+                onClick={() => setWelcomeGateHowOpen((v) => !v)}
+              >
+                <span>How to set it up</span>
+                <span aria-hidden>{welcomeGateHowOpen ? '−' : '+'}</span>
+              </button>
+              {welcomeGateHowOpen ? (
+                <div className="welcome__gate-how-body" data-od-id="welcome-gate-how-body">
+                  <ol>
+                    <li>
+                      Add → confirm <span className="u-mono">Add to Chrome / Add to Firefox</span>
+                    </li>
+                    <li>
+                      Pin via puzzle icon → Pin <span className="u-mono">underscore</span>
+                    </li>
+                    <li>
+                      Select text → highlight → <span className="u-mono">Check</span> to unlock
+                    </li>
+                  </ol>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="welcome__footer">
+        <Link to="/privacy" className="u-mono welcome__footer-link">
+          Privacy
+        </Link>
+        <Link to="/terms" className="u-mono welcome__footer-link">
+          Terms
+        </Link>
+        <Link to="/help" className="u-mono welcome__footer-link">
+          Help
+        </Link>
+      </div>
     </div>
   );
 }

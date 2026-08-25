@@ -22,17 +22,18 @@ function renderGate(
   return render(
     <MemoryRouter initialEntries={[opts.initial ?? '/home']}>
       <Routes>
-        <Route
-          element={
-            <GuestExtensionGate presenceOverride={opts.presenceOverride} />
-          }
-        >
+        <Route element={<GuestExtensionGate presenceOverride={opts.presenceOverride} />}>
           <Route path="/home" element={<div data-od-id="home-ok">Home</div>} />
           <Route path="/library" element={<div data-od-id="lib-ok">Lib</div>} />
           <Route path="/settings" element={<div data-od-id="set-ok">Set</div>} />
+          <Route path="/ask" element={<div data-od-id="ask-ok">Ask</div>} />
+          <Route path="/insights" element={<div data-od-id="insights-ok">Insights</div>} />
         </Route>
-        <Route path="/install" element={<div data-od-id="install-ok">Install</div>} />
+        <Route path="/" element={<div data-od-id="welcome-ok">Welcome</div>} />
         <Route path="/privacy" element={<div data-od-id="privacy-ok">Privacy</div>} />
+        <Route path="/terms" element={<div data-od-id="terms-ok">Terms</div>} />
+        <Route path="/help" element={<div data-od-id="help-ok">Help</div>} />
+        <Route path="/install" element={<div data-od-id="install-ok">Install</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -43,12 +44,29 @@ describe('GuestExtensionGate', () => {
     vi.clearAllMocks();
   });
 
-  it('guest + missing → redirect /install', async () => {
+  it('guest + missing → redirect to welcome gate ("/" with gate open, not /install)', async () => {
     renderGate({ auth: false, presenceOverride: 'missing', initial: '/home' });
     await waitFor(() => {
-      expect(document.querySelector('[data-od-id="install-ok"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="welcome-ok"]')).toBeTruthy();
     });
     expect(document.querySelector('[data-od-id="home-ok"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="install-ok"]')).toBeNull();
+  });
+
+  it('guest + missing on /ask → redirect to welcome gate', async () => {
+    renderGate({ auth: false, presenceOverride: 'missing', initial: '/ask' });
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="welcome-ok"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="ask-ok"]')).toBeNull();
+  });
+
+  it('guest + missing on /insights → redirect to welcome gate', async () => {
+    renderGate({ auth: false, presenceOverride: 'missing', initial: '/insights' });
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="welcome-ok"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="insights-ok"]')).toBeNull();
   });
 
   it('guest + installed → product renders', async () => {
@@ -65,11 +83,25 @@ describe('GuestExtensionGate', () => {
     });
   });
 
-  it('signed-in + missing → product still renders', async () => {
+  it('signed-in + missing → product still renders, no redirect to welcome', async () => {
     renderGate({ auth: true, presenceOverride: 'missing', initial: '/home' });
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="home-ok"]')).toBeTruthy();
     });
-    expect(document.querySelector('[data-od-id="install-ok"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="welcome-ok"]')).toBeNull();
+  });
+
+  it('public routes remain reachable without gate (privacy)', async () => {
+    // privacy is outside gate — render directly proves not blocked
+    useAppMock.mockReturnValue({ isAuthenticated: false });
+    render(
+      <MemoryRouter initialEntries={['/privacy']}>
+        <Routes>
+          <Route path="/privacy" element={<div data-od-id="privacy-ok">Privacy</div>} />
+          <Route path="/" element={<div data-od-id="welcome-ok">Welcome</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(document.querySelector('[data-od-id="privacy-ok"]')).toBeTruthy();
   });
 });

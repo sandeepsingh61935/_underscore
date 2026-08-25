@@ -81,6 +81,19 @@ export function resolveBrowserAvailability(
 export function detectInstallBrowser(
   userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
 ): InstallBrowserDetect {
+  // Prefer UAData brands when available (prototype source-of-truth)
+  try {
+    const nav = typeof navigator !== 'undefined' ? (navigator as unknown as Record<string, unknown>) : null;
+    const uaData = nav?.['userAgentData'] as { brands?: Array<{ brand: string }> } | undefined;
+    const brands = uaData?.brands;
+    if (Array.isArray(brands) && brands.length > 0) {
+      const brandStr = brands.map((b) => b.brand).join(' ');
+      if (/Firefox/i.test(brandStr)) return 'firefox';
+      if (/Chrome|Chromium|Edge|Edg/i.test(brandStr)) return 'chrome';
+    }
+  } catch {
+    // ignore and fall back to UA string
+  }
   const ua = userAgent || '';
   // Firefox first (UA also contains "Chrome" in some builds is rare; Gecko check is safer)
   if (/Firefox\//i.test(ua) && !/Seamonkey/i.test(ua)) {

@@ -38,7 +38,7 @@ export type ExtensionPingDeps = {
   skipDomPoll?: boolean;
 };
 
-const DEFAULT_TIMEOUT_MS = 2000;
+const DEFAULT_TIMEOUT_MS = 2200;
 const DOM_POLL_MS = 800;
 const DOM_POLL_STEP_MS = 50;
 const MSG_SOURCE = 'underscore-extension';

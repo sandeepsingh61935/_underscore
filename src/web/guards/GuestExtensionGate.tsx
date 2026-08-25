@@ -72,9 +72,9 @@ export function GuestExtensionGate({
   if (shouldBlockGuestProductAccess({ isAuthenticated, presence })) {
     return (
       <Navigate
-        to="/install"
+        to="/"
         replace
-        state={{ from: location.pathname }}
+        state={{ from: location.pathname, gateOpen: true, toast: 'Install the extension to use the app' }}
       />
     );
   }

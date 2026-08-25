@@ -1,100 +1,61 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import React from 'react';
 
-import { getInstallDistributionConfig } from '@/web/install/install-distribution';
+vi.mock('@/core/context/AppProvider', () => ({
+  useApp: () => ({ isAuthenticated: false }),
+}));
+
+vi.mock('@/shared/extension/extension-presence', async () => {
+  const actual = (await vi.importActual('@/shared/extension/extension-presence')) as Record<string, unknown>;
+  return {
+    ...actual,
+    pingExtensionPresence: vi.fn(async () => ({ presence: 'missing' as const })),
+  };
+});
 
 import { InstallPage } from './InstallPage';
 
-function renderInstall(ui: React.ReactElement = <InstallPage detectedBrowser="chrome" />) {
+function renderInstall(initial = '/install') {
   return render(
-    <MemoryRouter initialEntries={['/install']}>
+    <MemoryRouter initialEntries={[initial]}>
       <Routes>
-        <Route path="/install" element={ui} />
+        <Route path="/install" element={<InstallPage />} />
+        <Route path="/" element={<div data-od-id="welcome-stub">Welcome</div>} />
         <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
-        <Route path="/help" element={<div data-od-id="help-stub">Help</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
-describe('InstallPage', () => {
+describe('InstallPage alias', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('chrome UA: only Chrome download; no Continue', () => {
-    renderInstall(<InstallPage detectedBrowser="chrome" />);
-    expect(screen.getByRole('heading', { name: /Install the extension/i })).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-lede"]')?.textContent).toMatch(
-      /must download and load the extension/i,
-    );
-    expect(screen.getByText(/This site is your library/i)).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-status"]')).toBeNull();
-    expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeNull();
-    expect(document.querySelector('[data-od-id="install-browser-firefox"]')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Continue without installing/i })).toBeNull();
-    expect(document.querySelector('[data-od-id="install-wrong-browser"]')).toBeTruthy();
-  });
-
-  it('firefox UA: only Firefox download', () => {
-    renderInstall(<InstallPage detectedBrowser="firefox" />);
-    expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeNull();
-  });
-
-  it('unknown UA: both downloads, no wrong-browser toggle', () => {
-    renderInstall(<InstallPage detectedBrowser="unknown" />);
-    expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-wrong-browser"]')).toBeNull();
-  });
-
-  it('Wrong browser? reveals the other package', () => {
-    renderInstall(<InstallPage detectedBrowser="chrome" />);
-    fireEvent.click(screen.getByRole('button', { name: /Need Firefox/i }));
-    expect(document.querySelector('[data-od-id="install-download-firefox"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="install-download-chrome"]')).toBeTruthy();
-  });
-
-  it('help link targets /help#install', () => {
+  it('renders welcome-gate alias (data-od-id=install data-alias=welcome-gate, gate open)', () => {
     renderInstall();
-    const help = document.querySelector('[data-od-id="install-help"]') as HTMLAnchorElement;
-    expect(help?.getAttribute('href')).toBe('/help#install');
+    const root = document.querySelector('[data-od-id="install"]');
+    expect(root).toBeTruthy();
+    expect(root?.getAttribute('data-alias')).toBe('welcome-gate');
+    expect(root?.getAttribute('data-gate')).toBe('open');
+    expect(document.querySelector('[data-od-id="welcome-gate-panel"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="welcome-gate-browsers"]')).toBeTruthy();
   });
 
-  it('manual mode has no store CTAs', () => {
-    const cfg = getInstallDistributionConfig({} as ImportMetaEnv);
-    renderInstall(<InstallPage config={cfg} detectedBrowser="chrome" />);
-    expect(document.querySelector('[data-od-id="install-store-chrome"]')).toBeNull();
+  it('alias shows browser cards (at least one store CTA) and verify block', () => {
+    renderInstall();
+    const chrome = document.querySelector('[data-od-id="welcome-gate-browser-chrome"]');
+    const firefox = document.querySelector('[data-od-id="welcome-gate-browser-firefox"]');
+    expect(chrome || firefox).toBeTruthy();
+    expect(document.querySelector('[data-od-id="welcome-gate-check"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="welcome-gate-how"]')).toBeTruthy();
   });
 
-  it('auto-navigates home when extension already installed', async () => {
-    const ping = vi.fn(async () => ({ presence: 'installed' as const, version: '0.1.1' }));
-    renderInstall(<InstallPage detectedBrowser="chrome" ping={ping} />);
-    await vi.waitFor(() => {
-      expect(ping).toHaveBeenCalled();
-      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
-    });
-  });
-
-  it('check button shows error when extension missing', async () => {
-    const ping = vi.fn(async () => ({ presence: 'missing' as const }));
-    renderInstall(<InstallPage detectedBrowser="chrome" ping={ping} />);
-    fireEvent.click(screen.getByRole('button', { name: /I've installed it/i }));
-    await vi.waitFor(() => {
-      expect(document.querySelector('[data-od-id="install-check-error"]')?.textContent).toMatch(
-        /bridge|answer|unpacked|Load/i,
-      );
-    });
-    expect(document.querySelector('[data-od-id="home-stub"]')).toBeNull();
-  });
-
-  it('download click updates verify hint', () => {
-    renderInstall(<InstallPage detectedBrowser="chrome" />);
-    fireEvent.click(document.querySelector('[data-od-id="install-download-chrome"]')!);
-    expect(screen.getByText(/Load the extension in your browser/i)).toBeTruthy();
+  it('alias has no separate install layout', () => {
+    renderInstall();
+    expect(document.querySelector('[data-od-id="install-lede"]')).toBeNull();
+    expect(document.querySelector('.install__panel')).toBeNull();
   });
 });

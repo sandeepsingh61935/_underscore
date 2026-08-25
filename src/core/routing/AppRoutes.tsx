@@ -92,14 +92,19 @@ export function AppRoutes() {
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/library" element={<LibraryPage />} />
                   <Route path="/settings" element={<WebSettingsPage />} />
+                  <Route path="/ask" element={<Navigate to="/home" replace />} />
+                  <Route path="/ask/*" element={<Navigate to="/home" replace />} />
+                  <Route path="/insights" element={<Navigate to="/home" replace />} />
+                  <Route path="/insights/*" element={<Navigate to="/home" replace />} />
                 </Route>
               </Route>
 
-              {/* Legacy redirects */}
-              <Route path="/ask" element={<Navigate to="/home" replace />} />
-              <Route path="/ask/*" element={<Navigate to="/home" replace />} />
+              {/* Legacy redirects (public) */}
               <Route path="/collections" element={<Navigate to="/library" replace />} />
-              <Route path="/domain/:domain" element={<LegacyDomainRedirect />} />
+              <Route
+                path="/domain/:domain"
+                element={<LegacyDomainRedirect />}
+              />
               <Route
                 path="/domain/:domain/section/:section"
                 element={<LegacyDomainRedirect />}
