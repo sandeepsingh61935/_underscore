@@ -347,7 +347,7 @@ export function WelcomePage({
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={chromeArtifact?.downloadHref ?? '/downloads/underscore-highlighter-chrome.zip'}
+                      href={chromeArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`}
                       download
                       className="btn accent"
                       data-od-id="welcome-gate-store-chrome"
@@ -366,7 +366,7 @@ export function WelcomePage({
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={firefoxArtifact?.downloadHref ?? '/downloads/underscore-highlighter-firefox.zip'}
+                      href={firefoxArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`}
                       download
                       className="btn accent"
                       data-od-id="welcome-gate-store-firefox"
@@ -386,7 +386,7 @@ export function WelcomePage({
                     <div className="welcome__gate-browser-actions">
                       <a
                         ref={firstCtaRef}
-                        href={chromeArtifact?.downloadHref ?? '/downloads/underscore-highlighter-chrome.zip'}
+                        href={chromeArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`}
                         download
                         className="btn accent"
                         data-od-id="welcome-gate-store-chrome"
@@ -402,7 +402,7 @@ export function WelcomePage({
                     </div>
                     <div className="welcome__gate-browser-actions">
                       <a
-                        href={firefoxArtifact?.downloadHref ?? '/downloads/underscore-highlighter-firefox.zip'}
+                        href={firefoxArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`}
                         download
                         className="btn accent"
                         data-od-id="welcome-gate-store-firefox"
