@@ -49,7 +49,7 @@ export function productSurfaceCopyHasRetiredChat(text: string): boolean {
 /** Web GuestBanner + popup guest strip. */
 export function guestBannerCopy(): SurfaceCtaCopy {
   return {
-    body: 'Local only — sync, export, and Integrations after sign-in.',
+    body: 'Highlights are stored locally. Sign in to sync, export, and connect Integrations.',
     signInLabel: 'Sign in',
   };
 }
@@ -60,7 +60,7 @@ export function guestBannerCopy(): SurfaceCtaCopy {
  */
 export function guestLibraryLocalBannerCopy(): SurfaceCtaCopy {
   return {
-    body: 'Local only. Sign in to sync across devices and unlock export.',
+    body: 'Your highlights are saved on this device. Sign in to sync across devices and enable export.',
     signInLabel: 'Sign in',
   };
 }

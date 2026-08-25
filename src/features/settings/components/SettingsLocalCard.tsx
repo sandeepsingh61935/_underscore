@@ -20,11 +20,10 @@ export function SettingsLocalCard({
       className="local-status-card"
       data-testid="settings-local-card"
       role="region"
-      aria-label="Local only status"
+      aria-label="Sync status"
     >
-      <div className="ls-kicker">Local only</div>
-      <div className="ls-title">Highlights stay on this device</div>
-      <div className="ls-body">Sign in for free sync &amp; export.</div>
+      <div className="ls-title">Back up your highlights</div>
+      <div className="ls-body">Sign in to sync across devices and enable export.</div>
       <div className="ls-actions">
         <button
           type="button"

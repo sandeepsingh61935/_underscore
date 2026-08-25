@@ -14,15 +14,14 @@ import {
 describe('product-surface-copy', () => {
   it('guest banner never mentions Chat or Ask', () => {
     const c = guestBannerCopy();
-    expect(c.body).toMatch(/Local only/i);
     expect(c.body).toMatch(/sync/i);
+    expect(c.body).toMatch(/export/i);
     expect(c.signInLabel).toBe('Sign in');
     expect(productSurfaceCopyHasRetiredChat(c.body)).toBe(false);
   });
 
   it('guest library local banner matches web tone without AI/Chat', () => {
     const c = guestLibraryLocalBannerCopy();
-    expect(c.body).toMatch(/Local only/i);
     expect(c.body).toMatch(/sync/i);
     expect(c.body).toMatch(/export/i);
     expect(productSurfaceCopyHasRetiredChat(c.body)).toBe(false);
