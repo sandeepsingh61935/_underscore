@@ -167,8 +167,48 @@ export function WebAppShell(): React.ReactElement {
         >
           <div className="sb-top">
             <div className="logo" data-od-id="brand">
-              <div className="logo-mark" aria-hidden="true">
-                _
+              <div
+                className="welcome__logo-mark"
+                aria-hidden="true"
+                style={{
+                  width: 32,
+                  height: 32,
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '22%',
+                  overflow: 'hidden',
+                  backgroundColor: 'var(--ink)',
+                  boxShadow: '0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent)',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: '10%',
+                    right: '10%',
+                    height: '28%',
+                    borderRadius: 9999,
+                    backgroundColor: 'color-mix(in srgb, var(--paper) 8%, transparent)',
+                    pointerEvents: 'none',
+                    zIndex: 1,
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '22%',
+                    left: '18%',
+                    right: '18%',
+                    height: '13%',
+                    borderRadius: 9999,
+                    backgroundColor: 'var(--paper)',
+                    zIndex: 2,
+                  }}
+                />
               </div>
               <div>
                 <div className="logo-text">underscore</div>

@@ -175,7 +175,48 @@ export function SignInView(): React.ReactElement {
         <div className="auth-signin" data-testid="auth-signin-page">
             <div className="auth-signin__card" data-od-id="signin-card">
                 <div className="auth-signin__brand" aria-hidden>
-                    <div className="auth-signin__mark">—</div>
+                    <div
+                        className="welcome__logo-mark"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '22%',
+                            overflow: 'hidden',
+                            backgroundColor: 'var(--ink)',
+                            boxShadow: '0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent)',
+                            flexShrink: 0,
+                        }}
+                    >
+                        <div
+                            style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: '10%',
+                                right: '10%',
+                                height: '28%',
+                                borderRadius: 9999,
+                                backgroundColor: 'color-mix(in srgb, var(--paper) 8%, transparent)',
+                                pointerEvents: 'none',
+                                zIndex: 1,
+                            }}
+                        />
+                        <div
+                            style={{
+                                position: 'absolute',
+                                bottom: '22%',
+                                left: '18%',
+                                right: '18%',
+                                height: '13%',
+                                borderRadius: 9999,
+                                backgroundColor: 'var(--paper)',
+                                zIndex: 2,
+                            }}
+                        />
+                    </div>
                 </div>
                 <h1 className="u-serif auth-signin__title">
                     {emailUi ? (isSignIn ? 'Welcome back' : 'Create your account') : 'Sign in to underscore'}
