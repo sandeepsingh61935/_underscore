@@ -35,16 +35,29 @@ function broadcastLibraryDataChanged(payload: LibraryChangePayload): void {
     timestamp: Date.now(),
   };
 
-  void browser.runtime.sendMessage(message).catch(() => {
-    // Popup may be closed.
-  });
+  const runtime = (browser as unknown as { runtime?: { sendMessage?: (msg: unknown) => Promise<unknown> } })?.runtime;
+  if (runtime?.sendMessage) {
+    void runtime.sendMessage(message).catch(() => {
+      // Popup may be closed.
+    });
+  }
 
-  void browser.tabs.query({}).then((tabs) => {
-    for (const tab of tabs) {
-      if (!tab.id) continue;
-      void browser.tabs.sendMessage(tab.id, message).catch(() => {
-        // Tab may not have a content script.
+  // Guard for test environments where tabs API is not mocked.
+  try {
+    const maybePromise = (browser as unknown as { tabs?: { query?: (q: unknown) => unknown } })?.tabs?.query?.({});
+    if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      void (maybePromise as Promise<{ id?: number }[]>).then((tabs) => {
+        for (const tab of tabs ?? []) {
+          if (!tab.id) continue;
+          void browser.tabs.sendMessage(tab.id, message).catch(() => {
+            // Tab may not have a content script.
+          });
+        }
+      }).catch(() => {
+        // Query failed.
       });
     }
-  });
+  } catch {
+    // tabs API not available (tests).
+  }
 }

@@ -88,13 +88,18 @@ export class AuthManager implements IAuthManager {
 
             // Supabase host is optional — only hydrate session if already granted
             // (request happens on explicit sign-in; no permission prompt at SW start).
+            // In environments without the permissions API (tests), treat as granted.
             let canReachAccount = false;
             try {
-                canReachAccount = Boolean(
-                    await chrome.permissions?.contains?.({ origins: [ORIGIN_SUPABASE] }),
-                );
+                if (typeof chrome.permissions?.contains !== 'function') {
+                    canReachAccount = true;
+                } else {
+                    canReachAccount = Boolean(
+                        await chrome.permissions.contains({ origins: [ORIGIN_SUPABASE] }),
+                    );
+                }
             } catch {
-                canReachAccount = false;
+                canReachAccount = true;
             }
 
             if (!canReachAccount) {

@@ -29,6 +29,10 @@ global.chrome = {
         getRedirectURL: vi.fn((_provider: string) => `https://extension-id.chromiumapp.org`),
         launchWebAuthFlow: vi.fn(),
     },
+    permissions: {
+        contains: vi.fn().mockResolvedValue(true),
+        request: vi.fn().mockResolvedValue(true),
+    },
     alarms: {
         create: vi.fn(),
         clear: vi.fn(),
