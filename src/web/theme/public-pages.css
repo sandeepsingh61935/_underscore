@@ -663,35 +663,63 @@ body {
   gap: 12px;
 }
 
+.welcome__gate-why-kicker {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
 .welcome__gate-why-title {
   margin: 0;
   font-family: var(--serif);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.025em;
   line-height: 1.2;
   color: var(--ink);
-  text-align: center;
+  text-align: left;
 }
 
-.welcome__hero--collapsed .welcome__gate-why-title {
-  text-align: left;
+.welcome__gate-why-lede {
+  margin: 8px 0 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-3);
+  letter-spacing: -0.005em;
+  max-width: 34ch;
+}
+
+.welcome__gate-why-lede em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-2);
 }
 
 .welcome__gate-why-cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+  margin-top: 14px;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper);
 }
 
 .welcome__gate-why-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--rule-soft);
-  border-radius: var(--radius);
+  padding: 12px 12px 13px;
   background: var(--paper);
+}
+
+.welcome__gate-why-card + .welcome__gate-why-card {
+  border-top: 1px solid var(--rule-soft);
 }
 
 .welcome__gate-why-tick {
@@ -702,15 +730,44 @@ body {
   color: var(--paper);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.welcome__gate-why-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.welcome__gate-why-card-title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.welcome__gate-why-card-desc {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
 }
 
 .welcome__gate-why-text {
   font-size: 13px;
   line-height: 1.4;
   color: var(--ink-2);
+}
+
+.welcome__hero--why {
+  padding-top: 8px;
 }
 
 .welcome__gate {

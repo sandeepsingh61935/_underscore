@@ -5,7 +5,10 @@ import { useApp } from '@/core/context/AppProvider';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
 import { pingExtensionPresence } from '@/shared/extension/extension-presence';
-import { detectInstallBrowser } from '@/web/install/install-distribution';
+import {
+  detectInstallBrowser,
+  getInstallDistributionConfig,
+} from '@/web/install/install-distribution';
 
 export interface WelcomePageProps {
   onStartClick?: () => void;
@@ -17,9 +20,19 @@ export interface WelcomePageProps {
   detectedBrowser?: 'chrome' | 'firefox' | 'unknown';
 }
 
-const FALLBACK_CHROME_URL = 'https://chrome.google.com/webstore';
-const FALLBACK_FIREFOX_URL = 'https://addons.mozilla.org/firefox/';
 const GATE_TIMEOUT_MS = 2200;
+
+const CHROME_CONCISE_STEPS = [
+  'Click Add to Chrome to download the ZIP and unzip it',
+  'Open chrome://extensions → enable Developer mode → Load unpacked → choose the folder',
+  'Pin via puzzle icon → Pin underscore, then select text on any page to highlight',
+] as const;
+
+const FIREFOX_CONCISE_STEPS = [
+  'Click Add to Firefox to download the build',
+  'Open about:debugging#/runtime/this-firefox → Load Temporary Add-on → choose the file',
+  'Keep this browser open (temporary add-ons reset when Firefox quits)',
+] as const;
 
 export function WelcomePage({
   onStartClick,
@@ -54,12 +67,15 @@ export function WelcomePage({
   const browserLabel =
     detected === 'chrome' ? 'Chrome' : detected === 'firefox' ? 'Firefox' : null;
 
-  const storeUrls = React.useMemo(() => {
-    const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
-    const chrome = (env['VITE_CHROME_STORE_URL'] as string | undefined)?.trim() || FALLBACK_CHROME_URL;
-    const firefox = (env['VITE_FIREFOX_STORE_URL'] as string | undefined)?.trim() || FALLBACK_FIREFOX_URL;
-    return { chrome, firefox };
-  }, []);
+  const distConfig = React.useMemo(() => getInstallDistributionConfig(), []);
+  const chromeArtifact = React.useMemo(
+    () => distConfig.browsers.find((b) => b.id === 'chrome'),
+    [distConfig],
+  );
+  const firefoxArtifact = React.useMemo(
+    () => distConfig.browsers.find((b) => b.id === 'firefox'),
+    [distConfig],
+  );
 
   // Popup still honors auth redirect; web gate does not auto-redirect (guard handles it)
   useEffect(() => {
@@ -256,37 +272,54 @@ export function WelcomePage({
         </div>
       ) : null}
       <div className="welcome__stage">
-        {/* Left rail */}
-        <div className="welcome__hero welcome__hero--collapsed">
-          <div className="welcome__logo" style={{ marginBottom: 14 }}>
-            <Logo size="lg" showText={false} />
-          </div>
-          <h1 className="u-serif welcome__title" style={{ marginBottom: 8 }}>
-            underscore
-          </h1>
-          <p className="u-sans welcome__lede" style={{ textAlign: 'left', maxWidth: '28ch', marginBottom: 14 }}>
-            Highlight what matters.
-          </p>
+        {/* Left rail — replicate [Image 1] */}
+        <div className="welcome__hero welcome__hero--collapsed welcome__hero--why">
           <div className="welcome__gate-why">
-            <h2 className="u-serif welcome__gate-why-title">Why an extension?</h2>
+            <p className="u-mono welcome__gate-why-kicker">Why an extension?</p>
+            <h2 className="u-serif welcome__gate-why-title">
+              The web app can&rsquo;t read the page by itself.
+            </h2>
+            <p className="u-sans welcome__gate-why-lede">
+              Browsers isolate every tab for security. The extension runs{' '}
+              <em>on the page</em> to capture what you select — this site is just the library
+              where it lands.
+            </p>
             <div className="welcome__gate-why-cards">
               <div className="welcome__gate-why-card">
                 <span className="welcome__gate-why-tick" aria-hidden>
                   ✓
                 </span>
-                <span className="u-sans welcome__gate-why-text">Capture on any page</span>
+                <div className="welcome__gate-why-copy">
+                  <p className="u-sans welcome__gate-why-card-title">Capture on any page</p>
+                  <p className="u-sans welcome__gate-why-card-desc">
+                    Articles, docs and PDFs — select text and highlight. Source URL is saved with
+                    it.
+                  </p>
+                </div>
               </div>
               <div className="welcome__gate-why-card">
                 <span className="welcome__gate-why-tick" aria-hidden>
                   ✓
                 </span>
-                <span className="u-sans welcome__gate-why-text">Private by default</span>
+                <div className="welcome__gate-why-copy">
+                  <p className="u-sans welcome__gate-why-card-title">Private by default</p>
+                  <p className="u-sans welcome__gate-why-card-desc">
+                    Guest highlights stay on device. Sign in only if you want sync — no data
+                    selling, no history scraping.
+                  </p>
+                </div>
               </div>
               <div className="welcome__gate-why-card">
                 <span className="welcome__gate-why-tick" aria-hidden>
                   ✓
                 </span>
-                <span className="u-sans welcome__gate-why-text">Organised automatically</span>
+                <div className="welcome__gate-why-copy">
+                  <p className="u-sans welcome__gate-why-card-title">Organised automatically</p>
+                  <p className="u-sans welcome__gate-why-card-desc">
+                    Grouped by site and page, searchable and taggable — the collection lives here,
+                    not in the browser.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -324,15 +357,14 @@ export function WelcomePage({
                 <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-chrome">
                   <div className="welcome__gate-browser-copy">
                     <p className="welcome__gate-browser-name">Chrome</p>
-                    <p className="welcome__gate-browser-meta">Chrome Web Store</p>
+                    <p className="welcome__gate-browser-meta">Chrome Web Store · Manifest v3</p>
                   </div>
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={storeUrls.chrome}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn primary"
+                      href={chromeArtifact?.downloadHref ?? '/downloads/underscore-highlighter-chrome.zip'}
+                      download
+                      className="btn accent"
                       data-od-id="welcome-gate-store-chrome"
                       data-action="gate-choice__download"
                     >
@@ -344,15 +376,14 @@ export function WelcomePage({
                 <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-firefox">
                   <div className="welcome__gate-browser-copy">
                     <p className="welcome__gate-browser-name">Firefox</p>
-                    <p className="welcome__gate-browser-meta">Firefox Add-ons</p>
+                    <p className="welcome__gate-browser-meta">Firefox Add-ons · Manifest v2</p>
                   </div>
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={storeUrls.firefox}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn primary"
+                      href={firefoxArtifact?.downloadHref ?? '/downloads/underscore-highlighter-firefox.zip'}
+                      download
+                      className="btn accent"
                       data-od-id="welcome-gate-store-firefox"
                       data-action="gate-choice__download"
                     >
@@ -365,15 +396,14 @@ export function WelcomePage({
                   <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-chrome">
                     <div className="welcome__gate-browser-copy">
                       <p className="welcome__gate-browser-name">Chrome</p>
-                      <p className="welcome__gate-browser-meta">Chrome Web Store</p>
+                      <p className="welcome__gate-browser-meta">Chrome Web Store · Manifest v3</p>
                     </div>
                     <div className="welcome__gate-browser-actions">
                       <a
                         ref={firstCtaRef}
-                        href={storeUrls.chrome}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn primary"
+                        href={chromeArtifact?.downloadHref ?? '/downloads/underscore-highlighter-chrome.zip'}
+                        download
+                        className="btn accent"
                         data-od-id="welcome-gate-store-chrome"
                       >
                         Add to Chrome
@@ -383,14 +413,13 @@ export function WelcomePage({
                   <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-firefox">
                     <div className="welcome__gate-browser-copy">
                       <p className="welcome__gate-browser-name">Firefox</p>
-                      <p className="welcome__gate-browser-meta">Firefox Add-ons</p>
+                      <p className="welcome__gate-browser-meta">Firefox Add-ons · Manifest v2</p>
                     </div>
                     <div className="welcome__gate-browser-actions">
                       <a
-                        href={storeUrls.firefox}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn primary"
+                        href={firefoxArtifact?.downloadHref ?? '/downloads/underscore-highlighter-firefox.zip'}
+                        download
+                        className="btn accent"
                         data-od-id="welcome-gate-store-firefox"
                       >
                         Add to Firefox
@@ -405,13 +434,13 @@ export function WelcomePage({
             </div>
 
             <div className="welcome__gate-verify" data-od-id="welcome-gate-verify">
-              <p className="welcome__gate-verify-hint">After you add it, pin it and then check below.</p>
+              <p className="welcome__gate-verify-hint">After you add it, check below to open the app.</p>
               {!checkSuccess ? (
                 <>
                   <div className="welcome__gate-verify-actions">
                     <button
                       type="button"
-                      className={`btn primary${checking ? ' is-loading' : ''}`}
+                      className={`btn accent${checking ? ' is-loading' : ''}`}
                       data-od-id="welcome-gate-check"
                       data-action="install-check"
                       disabled={checking}
@@ -443,7 +472,7 @@ export function WelcomePage({
                 <a
                   ref={openLibraryRef}
                   href="/home"
-                  className="btn primary"
+                  className="btn accent"
                   data-od-id="welcome-gate-open-library"
                   onClick={(e) => {
                     e.preventDefault();
@@ -469,17 +498,38 @@ export function WelcomePage({
               </button>
               {welcomeGateHowOpen ? (
                 <div className="welcome__gate-how-body" data-od-id="welcome-gate-how-body">
-                  <ol>
-                    <li>
-                      Add → confirm <span className="u-mono">Add to Chrome / Add to Firefox</span>
-                    </li>
-                    <li>
-                      Pin via puzzle icon → Pin <span className="u-mono">underscore</span>
-                    </li>
-                    <li>
-                      Select text → highlight → <span className="u-mono">Check</span> to unlock
-                    </li>
-                  </ol>
+                  {detected === 'firefox' ? (
+                    <ol>
+                      {FIREFOX_CONCISE_STEPS.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ol>
+                  ) : detected === 'chrome' ? (
+                    <ol>
+                      {CHROME_CONCISE_STEPS.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <>
+                      <p className="u-mono" style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 8px' }}>
+                        Chrome
+                      </p>
+                      <ol style={{ marginBottom: 12 }}>
+                        {CHROME_CONCISE_STEPS.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
+                      </ol>
+                      <p className="u-mono" style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 8px' }}>
+                        Firefox
+                      </p>
+                      <ol>
+                        {FIREFOX_CONCISE_STEPS.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
+                      </ol>
+                    </>
+                  )}
                 </div>
               ) : null}
             </div>
