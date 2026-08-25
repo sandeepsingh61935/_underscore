@@ -14,9 +14,16 @@ export function getWebSupabaseClient(): SupabaseClient {
     return webClient;
   }
 
-  const { url, anonKey } = getSupabaseEnv();
+  let { url, anonKey } = getSupabaseEnv();
   if (!url || !anonKey) {
-    throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for web auth');
+    // Do not crash the entire SPA in dev when env is missing; surface a
+    // clear warning and create a placeholder client so the app can still
+    // render (auth calls will fail with a network error until env is set).
+    console.warn(
+      '[supabase-web] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing — web auth will fail. Copy .env.production to .env.development or set env vars (see .env.production.example).',
+    );
+    url = url || 'https://placeholder.supabase.co';
+    anonKey = anonKey || 'placeholder-anon-key';
   }
 
   webClient = createClient(url, anonKey, {

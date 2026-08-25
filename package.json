@@ -14,9 +14,9 @@
   "scripts": {
     "dev": "wxt",
     "dev:web": "vite --config vite.config.web.ts --mode development",
-    "web:dev": "node scripts/sync-extension-downloads.mjs && node --env-file=.env.development ./node_modules/vite/bin/vite.js --config vite.config.web.ts --mode development",
+    "web:dev": "node scripts/sync-extension-downloads.mjs && ./node_modules/.bin/vite --config vite.config.web.ts --mode development",
     "build:web": "node scripts/sync-extension-downloads.mjs && vite build --config vite.config.web.ts",
-    "web:build": "node scripts/sync-extension-downloads.mjs && node --env-file=.env.development ./node_modules/vite/bin/vite.js build --config vite.config.web.ts",
+    "web:build": "node scripts/sync-extension-downloads.mjs && ./node_modules/.bin/vite build --config vite.config.web.ts",
     "web:pages-dev": "npm run web:build && npx wrangler pages dev dist-web --project-name=underscore-web --compatibility-date=2024-12-01",
     "web:deploy": "node scripts/sync-extension-downloads.mjs && node --env-file=.env.production ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production && npx wrangler pages deploy dist-web --project-name=underscore-web --branch=main --commit-dirty=true",
     "supabase:link": "npx supabase link --project-ref cuzwaukxagefyvtxbqmi",
