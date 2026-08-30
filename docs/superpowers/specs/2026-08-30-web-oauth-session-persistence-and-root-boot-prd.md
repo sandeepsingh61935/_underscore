@@ -182,7 +182,7 @@ From the user’s perspective:
 ### Source of truth
 
 * This file: `docs/superpowers/specs/2026-08-30-web-oauth-session-persistence-and-root-boot-prd.md`
-* Tracker issue: publish with label `ready-for-agent`
+* Tracker: https://github.com/sandeepsingh61935/_underscore/issues/48 (`ready-for-agent`)
 
 ---
 
