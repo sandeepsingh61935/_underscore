@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { ModeType as Mode } from '../../shared/schemas/mode-state-schemas';
-import { ThemeType as Theme } from '../../shared/types/theme';
+import { isValidTheme, type ThemeType as Theme } from '../../shared/types/theme';
 import type { User } from '../../background/auth/interfaces/i-auth-manager';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { TypePresetBootstrap } from '@/ui-system/hooks/useTypePreset';
@@ -41,6 +41,35 @@ export interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
+/** Shared key with PopupAppProvider — web uses localStorage; extension may also mirror chrome.storage. */
+export const THEME_STORAGE_KEY = 'underscore-theme';
+
+/** Read persisted appearance preference (web-safe). Defaults to system. */
+export function readStoredTheme(): Theme {
+    if (typeof window === 'undefined') return 'system';
+    try {
+        const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+        if (isValidTheme(saved)) return saved;
+    } catch {
+        // private mode / blocked storage
+    }
+    return 'system';
+}
+
+/** Persist appearance preference for reload. Always localStorage; chrome.storage when present. */
+export function writeStoredTheme(theme: Theme): void {
+    if (typeof window !== 'undefined') {
+        try {
+            window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+        } catch {
+            // ignore quota / private mode
+        }
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage?.local?.set) {
+        void chrome.storage.local.set({ [THEME_STORAGE_KEY]: theme });
+    }
+}
+
 function AppProviderInner({
     children,
     dataProvider,
@@ -52,7 +81,8 @@ function AppProviderInner({
     const { currentMode, persistMode } = usePersistedMode(isAuthenticated);
     const onEffectiveMode = useModeSyncCallback(persistMode);
     const [isLoading, setIsLoading] = useState(false);
-    const [theme, setThemeState] = useState<Theme>('system');
+    // Hydrate synchronously so refresh keeps Light/Dark (chrome.storage is extension-only).
+    const [theme, setThemeState] = useState<Theme>(() => readStoredTheme());
 
     const supabase = useMemo(() => {
         try {
@@ -68,16 +98,6 @@ function AppProviderInner({
         return data.session?.access_token ?? null;
     }, [supabase]);
 
-    useEffect(() => {
-        if (window.chrome && chrome.storage) {
-            chrome.storage.local.get(['underscore-theme']).then(data => {
-                if (data['underscore-theme']) {
-                    setThemeState(data['underscore-theme'] as Theme);
-                }
-            });
-        }
-    }, []);
-
     // Entitled paid users may switch Free ↔ Paid; free users only Free.
     const availableModes: Mode[] = isAuthenticated
         ? getEntitlementPaidActive()
@@ -87,19 +107,28 @@ function AppProviderInner({
 
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove('light', 'dark');
+        const applyResolved = (resolved: 'light' | 'dark'): void => {
+            root.classList.remove('light', 'dark');
+            root.classList.add(resolved);
+        };
+
         if (theme === 'dark') {
-            root.classList.add('dark');
+            applyResolved('dark');
         } else if (theme === 'light') {
-            root.classList.add('light');
-        } else if (theme === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            root.classList.add(prefersDark ? 'dark' : 'light');
+            applyResolved('light');
+        } else {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            applyResolved(mq.matches ? 'dark' : 'light');
+            const onChange = (e: MediaQueryListEvent): void => {
+                applyResolved(e.matches ? 'dark' : 'light');
+            };
+            mq.addEventListener('change', onChange);
+            writeStoredTheme(theme);
+            return () => mq.removeEventListener('change', onChange);
         }
 
-        if (window.chrome && chrome.storage) {
-            chrome.storage.local.set({ 'underscore-theme': theme });
-        }
+        writeStoredTheme(theme);
+        return undefined;
     }, [theme]);
 
     const setMode = useCallback((mode: Mode) => {
