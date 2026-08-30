@@ -34,7 +34,7 @@ export interface InstallDistributionConfig {
   statusLine: string;
 }
 
-const DEFAULT_VERSION = '0.1.1';
+const DEFAULT_VERSION = '0.1.3';
 
 function readMode(env: ImportMetaEnv | undefined): InstallDistributionMode {
   const raw = env?.['VITE_INSTALL_DISTRIBUTION_MODE']?.trim().toLowerCase();
