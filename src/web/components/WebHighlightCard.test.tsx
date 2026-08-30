@@ -175,4 +175,46 @@ describe('WebHighlightCard', () => {
     );
     expect(document.querySelector('[data-od-id="hl-delete-h1"]')).toBeNull();
   });
+
+  it('rail density shows domain only (no path) and existing tags/note inline', () => {
+    render(
+      <WebHighlightCard
+        highlight={{
+          ...base,
+          path: '/docs/deep/path',
+          note: 'Saved note',
+          tags: ['craft', 'css'],
+        }}
+        density="rail"
+        showDomain
+        readOnly
+      />,
+    );
+
+    const main = document.querySelector('[data-od-id="hl-main-h1"]');
+    expect(main?.textContent).toContain('example.com');
+    expect(main?.textContent).not.toContain('/docs/deep/path');
+    expect(document.querySelector('.hl-path')).toBeNull();
+    expect(document.querySelector('[data-od-id="hl-extras-toggle-h1"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="hl-tag-h1-craft"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
+      /Saved note/,
+    );
+  });
+
+  it('rail density omits tags/note chrome when neither exists', () => {
+    render(
+      <WebHighlightCard
+        highlight={{ ...base, note: '', tags: [] }}
+        density="rail"
+        showDomain
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={vi.fn().mockResolvedValue(true)}
+      />,
+    );
+
+    expect(document.querySelector('[data-od-id="hl-tags-h1"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="hl-note-h1"]')).toBeNull();
+    expect(document.querySelector('.hl-foot')).toBeNull();
+  });
 });

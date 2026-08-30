@@ -190,14 +190,17 @@ export function WebHighlightCard({
   const saveNote = useCallback(async () => {
     if (!onNoteSave) return;
     const next = noteDraft.trim();
-    setSavingNote(true);
-    try {
-      const ok = await onNoteSave(h.id, next);
-      if (ok) setNoteEditing(false);
-    } finally {
-      setSavingNote(false);
+    const previousNote = h.note;
+    // Close editor immediately — parent patches library optimistically.
+    setNoteEditing(false);
+    setSavingNote(false);
+    const ok = await onNoteSave(h.id, next);
+    if (!ok) {
+      // Network failed: restore draft and reopen so the user can retry.
+      setNoteDraft(next || previousNote);
+      setNoteEditing(true);
     }
-  }, [h.id, noteDraft, onNoteSave]);
+  }, [h.id, h.note, noteDraft, onNoteSave]);
 
   const cancelNote = useCallback(() => {
     setNoteDraft(h.note);
@@ -207,10 +210,12 @@ export function WebHighlightCard({
   const persistTags = useCallback(
     async (next: string[], previous: string[]): Promise<boolean> => {
       if (!onTagsChange) return false;
+      if (tagsBusyRef.current) return false;
       tagsBusyRef.current = true;
-      setSavingTags(true);
       setTagError(null);
+      // Optimistic chip update — do not block the row on network RTT.
       setLocalTags(next);
+      setSavingTags(false);
       try {
         const ok = await onTagsChange(h.id, next);
         if (!ok) {
@@ -225,14 +230,13 @@ export function WebHighlightCard({
         return false;
       } finally {
         tagsBusyRef.current = false;
-        setSavingTags(false);
       }
     },
     [h.id, onTagsChange],
   );
 
   const addTag = useCallback(async () => {
-    if (!onTagsChange || savingTags) return;
+    if (!onTagsChange || tagsBusyRef.current) return;
     const clean = normalizeTagInput(tagInput);
     if (!clean) {
       setTagError('Type a tag name first.');
@@ -250,25 +254,28 @@ export function WebHighlightCard({
       setTagError('Tag limit reached (10).');
       return;
     }
+    // Clear input immediately so the next tag can be typed while save runs.
+    setTagInput('');
+    setTagError(null);
     const ok = await persistTags(next, previous);
     if (ok) {
-      setTagInput('');
-      setTagError(null);
-      // Keep editor open for another tag; focus input again.
       window.setTimeout(() => tagInputRef.current?.focus(), 0);
+    } else {
+      // Restore typed value on failure so the user can retry without retyping.
+      setTagInput(clean);
     }
-  }, [localTags, onTagsChange, persistTags, savingTags, tagInput]);
+  }, [localTags, onTagsChange, persistTags, tagInput]);
 
   const removeTag = useCallback(
     async (tag: string) => {
-      if (!onTagsChange || savingTags) return;
+      if (!onTagsChange || tagsBusyRef.current) return;
       const previous = localTags;
       const next = normalizeHighlightTags(
         localTags.filter((t) => tagKey(t) !== tagKey(tag)),
       );
       await persistTags(next, previous);
     },
-    [localTags, onTagsChange, persistTags, savingTags],
+    [localTags, onTagsChange, persistTags],
   );
 
   const startTagEdit = useCallback(
@@ -300,6 +307,7 @@ export function WebHighlightCard({
   }, [h.id, onDelete]);
 
   const isRail = density === 'rail';
+  // Rail: show existing tags/note only — no empty add chrome, no expand/collapse.
   const showTagAdd = Boolean(canEdit && onTagsChange && !isRail);
   const showEmptyNote = Boolean(canEdit && onNoteSave && !isRail);
   const showNoteBlock = Boolean(
@@ -328,7 +336,10 @@ export function WebHighlightCard({
           {showMeta ? (
             <div className="hl-meta">
               {showDomain ? <span className="src">{h.domain}</span> : null}
-              <span className="hl-path">{h.path}</span>
+              {/* Rail shows domain only — path wastes a line and is in Library. */}
+              {!isRail && h.path ? (
+                <span className="hl-path">{h.path}</span>
+              ) : null}
               <span>{relativeTime(h.savedAt)}</span>
             </div>
           ) : null}

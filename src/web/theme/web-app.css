@@ -1080,6 +1080,8 @@ button.nav-item,
 }
 
 .hl--rail .hl-quote {
+  font-size: var(--step-0);
+  line-height: 1.4;
   -webkit-line-clamp: 2;
 }
 
@@ -1103,8 +1105,21 @@ button.nav-item,
   white-space: nowrap;
 }
 
+/* Home Recent — dense rail: quote + domain + time; extras on demand */
 .hl--rail {
-  padding: 12px 12px;
+  padding: 10px 12px;
+}
+
+.hl--rail .hl-meta {
+  margin-top: 4px;
+  gap: 6px 10px;
+  flex-wrap: nowrap;
+}
+
+.hl--rail .hl-foot {
+  margin-top: 6px;
+  padding-top: 6px;
+  gap: 6px;
 }
 
 .hl--rail .hl-foot:empty {

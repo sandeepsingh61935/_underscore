@@ -69,8 +69,8 @@ describe('aggregateLibrary', () => {
     expect(second!.sections).toEqual([{ path: '/', count: 1 }]);
   });
 
-  it('caps recent at 6 by default (newest first)', () => {
-    const rows = Array.from({ length: 8 }, (_, i) =>
+  it('caps recent at 12 by default (newest first)', () => {
+    const rows = Array.from({ length: 15 }, (_, i) =>
       hl({
         id: String(i),
         domain: 'x.com',
@@ -81,8 +81,10 @@ describe('aggregateLibrary', () => {
 
     const result = aggregateLibrary(rows, { now: NOW });
 
-    expect(result.recent).toHaveLength(6);
-    expect(result.recent.map((r) => r.id)).toEqual(['0', '1', '2', '3', '4', '5']);
+    expect(result.recent).toHaveLength(12);
+    expect(result.recent.map((r) => r.id)).toEqual(
+      Array.from({ length: 12 }, (_, i) => String(i)),
+    );
   });
 
   it('respects custom recentCap', () => {

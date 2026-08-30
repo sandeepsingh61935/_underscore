@@ -52,6 +52,7 @@ import {
   exportWebHighlights,
 } from '@/web/lib/webHighlightExport';
 import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
+import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
   buildLibrarySearch,
   parseLibrarySelection,
@@ -478,22 +479,17 @@ export function LibraryPage(): React.ReactElement {
     setSelection(selection.domain, selection.section, null);
   }, [selection.domain, selection.section, setSelection]);
 
-  const handleNoteSave = useCallback(
-    async (id: string, note: string): Promise<boolean> => {
-      const ok = await updateMetadata(id, { notes: note }, { silent: true });
-      if (ok) patchHighlight(id, { note });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
-  );
+  const highlightsRef = useRef(lib.highlights);
+  highlightsRef.current = lib.highlights;
 
-  const handleTagsChange = useCallback(
-    async (id: string, tags: string[]): Promise<boolean> => {
-      const ok = await updateMetadata(id, { tags }, { silent: true });
-      if (ok) patchHighlight(id, { tags });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
+  const { handleNoteSave, handleTagsChange } = useMemo(
+    () =>
+      createOptimisticMetadataHandlers({
+        getHighlight: (id) => highlightsRef.current.find((h) => h.id === id),
+        patchHighlight,
+        updateMetadata,
+      }),
+    [patchHighlight, updateMetadata],
   );
 
   const handleHighlightDelete = useCallback(

@@ -48,7 +48,7 @@ export type WebLibraryAggregate = {
   highlightCount: number;
 };
 
-const DEFAULT_RECENT_CAP = 6;
+const DEFAULT_RECENT_CAP = 12;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 function pageKey(domain: string, path: string): string {

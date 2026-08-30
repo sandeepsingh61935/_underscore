@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
@@ -15,9 +15,11 @@ import {
   type WebCurrentPage,
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
+import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import { buildLibrarySearch } from '@/web/routing/librarySelection';
 
-const RECENT_CAP = 6;
+/** Denser rail cards fit more rows; keep in sync with aggregateLibrary default. */
+const RECENT_CAP = 12;
 const ACTIVE_PAGES_CAP = 8;
 
 type ActivePage = {
@@ -159,23 +161,17 @@ export function HomePage(): React.ReactElement {
   const showIntegrationsCta = caps.flags.mcp;
 
   const patchHighlight = lib.patchHighlight;
+  const highlightsRef = useRef(lib.highlights);
+  highlightsRef.current = lib.highlights;
 
-  const handleNoteSave = useCallback(
-    async (id: string, note: string): Promise<boolean> => {
-      const ok = await updateMetadata(id, { notes: note }, { silent: true });
-      if (ok) patchHighlight(id, { note });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
-  );
-
-  const handleTagsChange = useCallback(
-    async (id: string, tags: string[]): Promise<boolean> => {
-      const ok = await updateMetadata(id, { tags }, { silent: true });
-      if (ok) patchHighlight(id, { tags });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
+  const { handleNoteSave, handleTagsChange } = useMemo(
+    () =>
+      createOptimisticMetadataHandlers({
+        getHighlight: (id) => highlightsRef.current.find((h) => h.id === id),
+        patchHighlight,
+        updateMetadata,
+      }),
+    [patchHighlight, updateMetadata],
   );
 
   const handleToggleTagFilter = useCallback(
@@ -434,6 +430,7 @@ export function HomePage(): React.ReactElement {
       <WebHighlightCard
         key={h.id}
         highlight={h}
+        density="rail"
         showDomain
         readOnly={guest}
         onOpenPage={openLibraryPage}

@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 
 import { isExtensionContext } from '@/features/collections/hooks/useHighlightExport';
+import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { UPDATE_HIGHLIGHT_METADATA } from '@/shared/schemas/message-schemas';
 import {
@@ -49,9 +50,11 @@ export async function updateHighlightMetadataWeb(
   id: string,
   input: HighlightMetadataInput,
 ): Promise<{ success: boolean; error?: string }> {
-  const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
+  // Static client import — avoid per-save dynamic import latency.
   const supabase = getWebSupabaseClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.user) {
     return { success: false, error: 'Not authenticated' };
   }
@@ -98,19 +101,17 @@ export async function updateHighlightMetadataWeb(
     }
 
     if (input.tags !== undefined) {
-      try {
-        await setHighlightLabelsWeb(supabase, session.user.id, id, input.tags);
-      } catch (junctionError) {
-        // Metadata.tags is already persisted above and is a supported read fallback
-        // (resolveCloudHighlightTags). Do not fail the whole save if the optional
-        // junction dual-write is missing/misconfigured (common when tags migration
-        // is not applied). Log the real PostgREST message for debugging.
-        const detail = toTagError(junctionError).message;
-        console.warn(
-          '[web] highlight_tags dual-write failed; metadata.tags saved:',
-          detail,
-        );
-      }
+      // Junction dual-write is best-effort and must not block UI success.
+      // metadata.tags is already the supported read fallback.
+      void setHighlightLabelsWeb(supabase, session.user.id, id, input.tags).catch(
+        (junctionError: unknown) => {
+          const detail = toTagError(junctionError).message;
+          console.warn(
+            '[web] highlight_tags dual-write failed; metadata.tags saved:',
+            detail,
+          );
+        },
+      );
     }
 
     return { success: true };
