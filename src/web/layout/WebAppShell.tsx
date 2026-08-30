@@ -22,7 +22,7 @@ const ROUTE_META: Record<
 > = {
   home: {
     label: 'Home',
-    hint: 'Current page · Active pages · Recent',
+    hint: '',
     path: '/home',
   },
   library: {
@@ -210,10 +210,7 @@ export function WebAppShell(): React.ReactElement {
                   }}
                 />
               </div>
-              <div>
-                <div className="logo-text">underscore</div>
-                <div className="logo-sub">Read · save · ask</div>
-              </div>
+              <div className="logo-text">underscore</div>
             </div>
             <button
               type="button"
@@ -307,7 +304,7 @@ export function WebAppShell(): React.ReactElement {
             </button>
             <div className="topbar-context" data-od-id="topbar-context">
               <span className="topbar-route">{meta.label}</span>
-              <span className="topbar-hint">{meta.hint}</span>
+              {meta.hint ? <span className="topbar-hint">{meta.hint}</span> : null}
             </div>
             <div className="top-actions">
               <PlanPill label={caps.planLabel} />

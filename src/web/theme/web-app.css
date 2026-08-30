@@ -130,16 +130,6 @@
   white-space: nowrap;
 }
 
-.logo-sub {
-  font-family: var(--mono);
-  font-size: var(--type-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-top: 6px;
-  line-height: 1.5;
-}
-
 .sb-collapse {
   width: 32px;
   height: 32px;
@@ -262,7 +252,6 @@ button.nav-item,
 }
 
 .sidebar-collapsed .logo-text,
-.sidebar-collapsed .logo-sub,
 .sidebar-collapsed .nav-label,
 .sidebar-collapsed .nav-item span.label,
 .sidebar-collapsed .nav-count,
