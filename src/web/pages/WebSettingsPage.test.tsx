@@ -235,6 +235,30 @@ describe('WebSettingsPage', () => {
     expect(document.body.textContent).not.toMatch(/\bCapabilities\b/);
   });
 
+  it('account tab ends with Legal links to privacy, terms, and help', () => {
+    renderSettings('/settings?tab=account', true);
+    const about = document.querySelector('[data-od-id="settings-section-about"]');
+    expect(about).toBeTruthy();
+    expect(about?.textContent).toMatch(/Legal/i);
+
+    const privacy = document.querySelector(
+      '[data-od-id="settings-legal-privacy"]',
+    ) as HTMLAnchorElement | null;
+    const terms = document.querySelector(
+      '[data-od-id="settings-legal-terms"]',
+    ) as HTMLAnchorElement | null;
+    const help = document.querySelector(
+      '[data-od-id="settings-legal-help"]',
+    ) as HTMLAnchorElement | null;
+
+    expect(privacy?.getAttribute('href')).toBe('/privacy');
+    expect(terms?.getAttribute('href')).toBe('/terms');
+    expect(help?.getAttribute('href')).toBe('/help');
+    expect(privacy?.textContent).toMatch(/Privacy Policy/);
+    expect(terms?.textContent).toMatch(/Terms of Service/);
+    expect(help?.textContent).toMatch(/Help/);
+  });
+
   it('data tab: guest delete stays disabled with sign-in copy', async () => {
     renderSettings('/settings?tab=data', false);
     await waitFor(() => {

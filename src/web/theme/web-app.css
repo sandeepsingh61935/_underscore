@@ -2385,6 +2385,49 @@ html[data-density='roomy'] {
   min-width: 0;
 }
 
+/* Account → Legal rows (Privacy / Terms / Help) */
+.setting-row-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 140ms var(--ease);
+  margin: 0 -10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 10px;
+  border-bottom-color: transparent;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.setting-row-link:last-child {
+  box-shadow: none;
+}
+
+.setting-row-link:hover {
+  background: var(--card-hover);
+}
+
+.setting-row-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.setting-row .row-trail {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: var(--type-meta);
+  color: var(--ink-4);
+}
+
+.setting-row-link:hover .row-trail {
+  color: var(--accent);
+}
+
+.legal-list {
+  display: flex;
+  flex-direction: column;
+}
+
 .setting-row.plan-current {
   border: 1px solid var(--border);
   border-radius: 12px;

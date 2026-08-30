@@ -166,6 +166,54 @@ export function AccountPanel({
         <p className="block-label">Billing</p>
         <BillingUpcomingBlock />
       </div>
+      {/* Standard placement: Legal at end of Account (matches extension About footer). */}
+      <div className="block" data-od-id="settings-section-about">
+        <p className="block-label">Legal</p>
+        <div className="legal-list" data-testid="settings-legal-footer">
+          <Link
+            to="/privacy"
+            className="setting-row setting-row-link"
+            data-od-id="settings-legal-privacy"
+            data-testid="settings-legal-privacy"
+          >
+            <div className="grow">
+              <div className="title">Privacy Policy</div>
+              <div className="sub">How we handle your data</div>
+            </div>
+            <span className="row-trail" aria-hidden="true">
+              →
+            </span>
+          </Link>
+          <Link
+            to="/terms"
+            className="setting-row setting-row-link"
+            data-od-id="settings-legal-terms"
+            data-testid="settings-legal-terms"
+          >
+            <div className="grow">
+              <div className="title">Terms of Service</div>
+              <div className="sub">Rules of use</div>
+            </div>
+            <span className="row-trail" aria-hidden="true">
+              →
+            </span>
+          </Link>
+          <Link
+            to="/help"
+            className="setting-row setting-row-link"
+            data-od-id="settings-legal-help"
+            data-testid="settings-legal-help"
+          >
+            <div className="grow">
+              <div className="title">Help</div>
+              <div className="sub">FAQ and install guide</div>
+            </div>
+            <span className="row-trail" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
