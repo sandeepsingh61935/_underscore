@@ -9,7 +9,6 @@ import React, {
 import type { Session } from '@supabase/supabase-js';
 
 import type { User } from '@/background/auth/interfaces/i-auth-manager';
-import { AUTH_SESSION_CLEARED } from '@/shared/auth/constants';
 import { clearExtensionSession, syncSessionToExtension } from '@/shared/auth/session-bridge';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 
@@ -71,9 +70,27 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
   useEffect(() => {
     const supabase = getWebSupabaseClient();
 
-    void supabase.auth.getSession().then(({ data }) => {
-      refreshFromSession(data.session);
-    });
+    // First definitive restore: getSession (storage) + INITIAL_SESSION from subscription.
+    // Logout coupling (PRD 2026-08-30): web is source of truth for browser login.
+    // Extension AUTH_SESSION_CLEARED must NOT force web signOut (accidental wipe).
+    // Web logout still clears extension via clearExtensionSession / logout().
+    void supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[web-auth] getSession failed', {
+            message: error.message,
+            name: error.name,
+          });
+          refreshFromSession(null);
+          return;
+        }
+        refreshFromSession(data.session);
+      })
+      .catch((err: unknown) => {
+        console.warn('[web-auth] getSession threw', err);
+        refreshFromSession(null);
+      });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
       refreshFromSession(session);
@@ -87,21 +104,8 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
       }
     });
 
-    const handleExtensionMessage = (message: { type?: string }): void => {
-      if (message?.type === AUTH_SESSION_CLEARED) {
-        void supabase.auth.signOut();
-      }
-    };
-
-    if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
-      chrome.runtime.onMessage.addListener(handleExtensionMessage);
-    }
-
     return () => {
       subscription.subscription.unsubscribe();
-      if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
-        chrome.runtime.onMessage.removeListener(handleExtensionMessage);
-      }
     };
   }, [refreshFromSession]);
 

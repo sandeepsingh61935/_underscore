@@ -10,9 +10,10 @@ import {
 import { AppProvider, useApp } from '@/core/context/AppProvider';
 import { WebAuthProvider } from '@/features/auth/providers/WebAuthProvider';
 import { WebDataProviderAdapter } from '@/core/data/WebDataProviderAdapter';
-import { WelcomePage } from '@/pages/WelcomePage';
 import { SignInView } from '@/features/auth/SignInView';
 import { VerifyEmailView } from '@/features/auth/VerifyEmailView';
+import { RootEntry } from '@/web/routing/RootEntry';
+import { AuthPageEntry } from '@/web/routing/AuthPageEntry';
 import { ForgotPasswordView } from '@/features/auth/ForgotPasswordView';
 import { ResetPasswordView } from '@/features/auth/ResetPasswordView';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -74,9 +75,16 @@ export function AppRoutes() {
         <BrowserRouter>
           <IntentCatcher>
             <Routes>
-              {/* Public / marketing */}
-              <Route path="/" element={<WelcomePage />} />
-              <Route path="/sign-in" element={<SignInView />} />
+              {/* Public / marketing — root waits on auth boot (no Welcome flash) */}
+              <Route path="/" element={<RootEntry />} />
+              <Route
+                path="/sign-in"
+                element={
+                  <AuthPageEntry>
+                    <SignInView />
+                  </AuthPageEntry>
+                }
+              />
               <Route path="/verify-email" element={<VerifyEmailView />} />
               <Route path="/forgot-password" element={<ForgotPasswordView />} />
               <Route path="/reset-password" element={<ResetPasswordView />} />

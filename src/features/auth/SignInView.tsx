@@ -134,7 +134,8 @@ export function SignInView(): React.ReactElement {
                 redirectUrl.pathname = parsed.pathname;
                 redirectUrl.search = parsed.search;
             } else {
-                redirectUrl.pathname = '/';
+                // Land on product shell so OAuth return never paints Welcome.
+                redirectUrl.pathname = '/home';
                 if (intendedMode) {
                     redirectUrl.searchParams.set('intendedMode', intendedMode);
                 }

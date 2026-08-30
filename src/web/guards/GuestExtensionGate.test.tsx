@@ -6,19 +6,33 @@ import React from 'react';
 import { GuestExtensionGate } from './GuestExtensionGate';
 
 const useAppMock = vi.fn();
+const useWebAuthMock = vi.fn();
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: () => useAppMock(),
 }));
 
+vi.mock('@/features/auth/providers/WebAuthProvider', () => ({
+  useWebAuth: () => useWebAuthMock(),
+}));
+
 function renderGate(
   opts: {
     auth?: boolean;
+    authStatus?: 'loading' | 'authenticated' | 'unauthenticated';
     presenceOverride?: 'installed' | 'missing' | 'unknown';
     initial?: string;
   } = {},
 ) {
-  useAppMock.mockReturnValue({ isAuthenticated: opts.auth ?? false });
+  const auth = opts.auth ?? false;
+  useAppMock.mockReturnValue({
+    isAuthenticated: auth,
+  });
+  useWebAuthMock.mockReturnValue({
+    status:
+      opts.authStatus ??
+      (auth ? 'authenticated' : 'unauthenticated'),
+  });
   return render(
     <MemoryRouter initialEntries={[opts.initial ?? '/home']}>
       <Routes>
@@ -74,6 +88,18 @@ describe('GuestExtensionGate', () => {
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="lib-ok"]')).toBeTruthy();
     });
+  });
+
+  it('auth loading: neutral boot, no welcome redirect', async () => {
+    renderGate({
+      auth: false,
+      authStatus: 'loading',
+      presenceOverride: 'missing',
+      initial: '/home',
+    });
+    expect(document.querySelector('[data-od-id="auth-boot"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="welcome-ok"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="home-ok"]')).toBeNull();
   });
 
   it('signed-in + missing presence still allows product', async () => {

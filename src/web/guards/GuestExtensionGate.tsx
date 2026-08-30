@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
+import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
 import {
   pingExtensionPresence,
   shouldBlockGuestProductAccess,
@@ -26,6 +27,7 @@ export function GuestExtensionGate({
   ping = pingExtensionPresence,
 }: GuestExtensionGateProps = {}): React.ReactElement {
   const { isAuthenticated } = useApp();
+  const { status: authStatus } = useWebAuth();
   const location = useLocation();
   const [presence, setPresence] = useState<ExtensionPresence | null>(
     presenceOverride ?? null,
@@ -49,7 +51,20 @@ export function GuestExtensionGate({
     };
   }, [isAuthenticated, presenceOverride, ping]);
 
-  // Fail closed for guests while resolving
+  // Auth still restoring: never treat as guest (avoids install-wall flash on /home refresh).
+  if (authStatus === 'loading') {
+    return (
+      <div
+        className="auth-boot"
+        data-od-id="auth-boot"
+        style={{ minHeight: '100%', background: 'var(--paper)' }}
+        aria-busy="true"
+        aria-label="Loading"
+      />
+    );
+  }
+
+  // Fail closed for guests while resolving extension presence
   if (presence === null) {
     if (isAuthenticated) {
       // Allow shell; empty states treat null as unknown (no install CTA spam until known)

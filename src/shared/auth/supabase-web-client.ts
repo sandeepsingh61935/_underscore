@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+import { buildWebSupabaseAuthOptions } from './web-supabase-auth-options';
+
 let webClient: SupabaseClient | null = null;
 
 function getSupabaseEnv(): { url: string; anonKey: string } {
@@ -27,11 +29,7 @@ export function getWebSupabaseClient(): SupabaseClient {
   }
 
   webClient = createClient(url, anonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
+    auth: buildWebSupabaseAuthOptions(url),
   });
 
   return webClient;
