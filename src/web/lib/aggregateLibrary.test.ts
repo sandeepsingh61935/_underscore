@@ -29,6 +29,8 @@ describe('aggregateLibrary', () => {
       highlightCount: 0,
       pageCount: 0,
       thisWeekCount: 0,
+      notesCount: 0,
+      tagCount: 0,
       planLabel: '',
     });
   });
@@ -140,5 +142,39 @@ describe('aggregateLibrary', () => {
     ];
 
     expect(aggregateLibrary(rows, { now: NOW }).stats.pageCount).toBe(3);
+  });
+
+  it('counts notes and unique tags (case-insensitive, trimmed)', () => {
+    const rows = [
+      hl({
+        id: '1',
+        domain: 'a.com',
+        path: '/',
+        savedAt: NOW,
+        note: '  keep  ',
+        tags: ['React', 'css'],
+      }),
+      hl({
+        id: '2',
+        domain: 'a.com',
+        path: '/',
+        savedAt: NOW,
+        note: '',
+        tags: ['react', ' Hooks ', ''],
+      }),
+      hl({
+        id: '3',
+        domain: 'b.com',
+        path: '/',
+        savedAt: NOW,
+        note: '   ',
+        tags: ['CSS'],
+      }),
+    ];
+
+    const stats = aggregateLibrary(rows, { now: NOW }).stats;
+    expect(stats.notesCount).toBe(1);
+    // react, css, hooks — unique case-insensitive
+    expect(stats.tagCount).toBe(3);
   });
 });

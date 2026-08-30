@@ -137,6 +137,33 @@ describe('DeleteConfirmDialog', () => {
     expect(screen.getByTestId('confirm-dialog-message').textContent).not.toMatch(/guest/i);
   });
 
+  it('confirmText challenge disables confirm until exact match', () => {
+    const onConfirm = vi.fn();
+    render(
+      <DeleteConfirmDialog
+        open
+        title="Delete entire library?"
+        message="All highlights go."
+        confirmText="DELETE"
+        onClose={() => {}}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const confirm = screen.getByTestId('confirm-dialog-confirm');
+    const challenge = screen.getByTestId('confirm-dialog-challenge');
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(challenge, { target: { value: 'delete' } });
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(challenge, { target: { value: 'DELETE' } });
+    expect(confirm).not.toBeDisabled();
+
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
   it('export first strip is optional', () => {
     const { rerender } = render(
       <DeleteConfirmDialog

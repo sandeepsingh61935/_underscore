@@ -15,7 +15,8 @@ import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 export type WebDeleteRequest =
   | { scope: 'highlight'; id: string }
   | { scope: 'section'; domain: string; sectionKey: string }
-  | { scope: 'domain'; domain: string };
+  | { scope: 'domain'; domain: string }
+  | { scope: 'library' };
 
 function idsForRequest(
   highlights: readonly WebHighlight[],
@@ -30,6 +31,8 @@ function idsForRequest(
         .map((h) => h.id);
     case 'domain':
       return highlights.filter((h) => h.domain === request.domain).map((h) => h.id);
+    case 'library':
+      return highlights.map((h) => h.id);
     default: {
       const _x: never = request;
       return _x;
@@ -74,6 +77,12 @@ export function useWebHighlightDelete(opts: UseWebHighlightDeleteOpts) {
 
       if (request.scope === 'highlight') {
         toast.success('Highlight deleted');
+      } else if (request.scope === 'library') {
+        toast.success(
+          result.deletedCount === 1
+            ? 'Library deleted (1 highlight)'
+            : `Library deleted (${result.deletedCount} highlights)`,
+        );
       } else {
         toast.success(
           `Deleted ${result.deletedCount} highlight${result.deletedCount === 1 ? '' : 's'}`,

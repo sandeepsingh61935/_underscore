@@ -166,14 +166,6 @@ export function AccountPanel({
         <p className="block-label">Billing</p>
         <BillingUpcomingBlock />
       </div>
-      <div className="block">
-        <p className="block-label">Capabilities</p>
-        <div className="cap-list" data-od-id="mode-caps">
-          <span className={`cap ${caps.flags.sync ? 'on' : 'off'}`}>Sync</span>
-          <span className={`cap ${caps.flags.export ? 'on' : 'off'}`}>Export</span>
-          <span className={`cap ${caps.flags.mcp ? 'on' : 'off'}`}>Integrations</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -350,6 +342,9 @@ export function DataPanel({
   onSync,
   syncing,
   lastSyncedLabel,
+  highlightCount = 0,
+  onDeleteLibrary,
+  deleteLibraryBusy = false,
 }: {
   caps: WebCaps;
   isAuthenticated: boolean;
@@ -357,9 +352,24 @@ export function DataPanel({
   onSync: () => void;
   syncing?: boolean;
   lastSyncedLabel?: string;
+  /** Cloud library size — gates empty delete. */
+  highlightCount?: number;
+  /** Opens confirm + performs wipe. Parent owns dialog. */
+  onDeleteLibrary?: () => void;
+  deleteLibraryBusy?: boolean;
 }): React.ReactElement {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = React.useRef<HTMLDivElement>(null);
+
+  const canDeleteLibrary =
+    isAuthenticated && highlightCount > 0 && typeof onDeleteLibrary === 'function';
+  const deleteDisabledReason = !isAuthenticated
+    ? 'Sign in required'
+    : highlightCount === 0
+      ? 'Nothing to delete'
+      : deleteLibraryBusy
+        ? 'Deleting…'
+        : undefined;
 
   useEffect(() => {
     if (!exportOpen) return;
@@ -491,18 +501,25 @@ export function DataPanel({
               <div className="title">Delete library</div>
               <div className="sub">
                 {isAuthenticated
-                  ? 'Bulk delete is available in the extension for now. Web delete is not enabled yet.'
-                  : 'Sign in and use the extension to delete a cloud library.'}
+                  ? highlightCount === 0
+                    ? 'Nothing to delete. Your cloud library is empty.'
+                    : 'Remove all highlights from your account. Export first if you need a copy.'
+                  : 'Sign in to manage or delete your cloud library.'}
               </div>
             </div>
             <button
               type="button"
               className="btn sm danger"
               data-od-id="settings-delete"
-              disabled
-              title="Not available on web yet"
+              disabled={!canDeleteLibrary || deleteLibraryBusy}
+              title={deleteDisabledReason}
+              aria-disabled={!canDeleteLibrary || deleteLibraryBusy}
+              onClick={() => {
+                if (!canDeleteLibrary || deleteLibraryBusy) return;
+                onDeleteLibrary?.();
+              }}
             >
-              Delete
+              {deleteLibraryBusy ? '…' : 'Delete'}
             </button>
           </div>
         </div>

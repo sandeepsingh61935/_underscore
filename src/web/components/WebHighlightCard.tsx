@@ -18,6 +18,11 @@ export type WebHighlightCardProps = {
   showDomain?: boolean;
   /** When false, omit path/time meta (OD library page list). */
   showMeta?: boolean;
+  /**
+   * `rail` = Home Recent: denser clamp, no empty add chrome (parent usually readOnly).
+   * `default` = full Library card.
+   */
+  density?: 'default' | 'rail';
   matchBadge?: string | null;
   /** Guests / locked: display only, no edit affordances. */
   readOnly?: boolean;
@@ -87,6 +92,7 @@ export function WebHighlightCard({
   highlight: h,
   showDomain = true,
   showMeta = true,
+  density = 'default',
   matchBadge,
   readOnly = false,
   activeTagFilters = [],
@@ -293,8 +299,24 @@ export function WebHighlightCard({
     }
   }, [h.id, onDelete]);
 
+  const isRail = density === 'rail';
+  const showTagAdd = Boolean(canEdit && onTagsChange && !isRail);
+  const showEmptyNote = Boolean(canEdit && onNoteSave && !isRail);
+  const showNoteBlock = Boolean(
+    (noteEditing && canEdit && onNoteSave) ||
+      showEmptyNote ||
+      (canEdit && onNoteSave && note) ||
+      note,
+  );
+  const showTagsBlock = tags.length > 0 || showTagAdd || tagEditing;
+  const showFoot = showTagsBlock || Boolean(tagError) || showNoteBlock;
+
   return (
-    <div className="hl" data-od-id={`hl-${h.id}`}>
+    <div
+      className={`hl${isRail ? ' hl--rail' : ''}`}
+      data-od-id={`hl-${h.id}`}
+      data-density={density}
+    >
       <div className="hl-top">
         <button
           type="button"
@@ -306,7 +328,7 @@ export function WebHighlightCard({
           {showMeta ? (
             <div className="hl-meta">
               {showDomain ? <span className="src">{h.domain}</span> : null}
-              <span>{h.path}</span>
+              <span className="hl-path">{h.path}</span>
               <span>{relativeTime(h.savedAt)}</span>
             </div>
           ) : null}
@@ -330,7 +352,9 @@ export function WebHighlightCard({
         ) : null}
       </div>
 
+      {showFoot ? (
       <div className="hl-foot">
+        {showTagsBlock ? (
         <div
           className="hl-tags"
           data-od-id={`hl-tags-${h.id}`}
@@ -430,7 +454,7 @@ export function WebHighlightCard({
                 {savingTags ? 'Saving…' : 'Add'}
               </button>
             </span>
-          ) : canEdit && onTagsChange ? (
+          ) : showTagAdd ? (
             <button
               type="button"
               className="hl-tag-add"
@@ -446,6 +470,7 @@ export function WebHighlightCard({
             </button>
           ) : null}
         </div>
+        ) : null}
         {tagError ? (
           <p className="hl-tag-error" data-od-id={`hl-tag-error-${h.id}`} role="alert">
             {tagError}
@@ -489,7 +514,7 @@ export function WebHighlightCard({
               </button>
             </div>
           </div>
-        ) : canEdit && onNoteSave ? (
+        ) : showEmptyNote || (canEdit && onNoteSave && note) ? (
           <button
             type="button"
             className={`hl-note-btn ${note ? 'has-note' : 'is-empty'}`}
@@ -510,6 +535,7 @@ export function WebHighlightCard({
           </div>
         ) : null}
       </div>
+      ) : null}
 
       {canDelete ? (
         <DeleteConfirmDialog

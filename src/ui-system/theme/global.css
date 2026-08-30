@@ -161,15 +161,17 @@
    Accent lifts slightly for contrast on near-black paper. */
 .dark {
   color-scheme: dark;
-  --paper:     #111110;
-  --paper-2:   #1a1918;
+  /* Warm editorial charcoal — raised separation for WCAG-friendlier text/chrome. */
+  --paper:     #141312;
+  --paper-2:   #1e1c1a;
   /* Borders stay muted charcoal — never near-white (cards/buttons use --rule). */
-  --rule:      #3a3732;
-  --rule-soft: #2a2826;
-  --ink:       #f2eee6;
-  --ink-2:     #cfc9bd;
-  --ink-3:     #8a857c;
-  --ink-4:     #5a564f;
+  --rule:      #4f4a43;
+  --rule-soft: #35322e;
+  --ink:       #f5f1e8;
+  --ink-2:     #d8d2c6;
+  /* Muted labels aim ~AA on paper (was too muddy at #5a/#8a). */
+  --ink-3:     #b0a99c;
+  --ink-4:     #8f877c;
 
   /* Mode labels track ink (glyph + label, not color). */
   --mode-basic:   var(--ink);
@@ -186,7 +188,7 @@
   --accent-ink: #f2eee6;
 
   /* Elevated surface (chips, primary-adjacent fills). */
-  --utility-surface-elevated: #242220;
+  --utility-surface-elevated: #2a2724;
 
   /* Hover/press washes — light ink on dark paper (black rgba would vanish). */
   --utility-overlay-05: rgba(255, 255, 255, 0.05);

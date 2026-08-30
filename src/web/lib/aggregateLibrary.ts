@@ -26,6 +26,10 @@ export type WebLibraryStats = {
   highlightCount: number;
   pageCount: number;
   thisWeekCount: number;
+  /** Highlights with a non-empty trimmed note. */
+  notesCount: number;
+  /** Unique tags after trim + case-insensitive dedupe. */
+  tagCount: number;
   planLabel: string;
 };
 
@@ -72,6 +76,8 @@ export function aggregateLibrary(
         highlightCount: 0,
         pageCount: 0,
         thisWeekCount: 0,
+        notesCount: 0,
+        tagCount: 0,
         planLabel: '',
       },
       recent: [],
@@ -86,12 +92,23 @@ export function aggregateLibrary(
     { count: number; lastActive: number; sections: Map<string, number> }
   >();
   const pageCounts = new Map<string, number>();
+  const uniqueTags = new Set<string>();
   let thisWeekCount = 0;
+  let notesCount = 0;
   let latest: WebHighlight | null = null;
 
   for (const row of rows) {
     if (row.savedAt >= weekStart) {
       thisWeekCount += 1;
+    }
+
+    if (row.note.trim()) {
+      notesCount += 1;
+    }
+
+    for (const raw of row.tags) {
+      const key = raw.trim().toLowerCase();
+      if (key) uniqueTags.add(key);
     }
 
     if (!latest || row.savedAt > latest.savedAt) {
@@ -143,6 +160,8 @@ export function aggregateLibrary(
       highlightCount,
       pageCount: pageCounts.size,
       thisWeekCount,
+      notesCount,
+      tagCount: uniqueTags.size,
       planLabel: '',
     },
     recent,

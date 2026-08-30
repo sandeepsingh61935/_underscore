@@ -53,6 +53,8 @@ describe('useWebLibrary', () => {
       highlightCount: 0,
       pageCount: 0,
       thisWeekCount: 0,
+      notesCount: 0,
+      tagCount: 0,
       planLabel: 'Guest',
     });
   });

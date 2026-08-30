@@ -9,9 +9,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { freeEntitlement } from '@/shared/billing';
 import type { ExportFormat } from '@/shared/highlight-export';
 import type { ThemeType } from '@/shared/types/theme';
+import { deleteLibraryCopy } from '@/shared/utils/confirm-dialog-copy';
 import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
@@ -25,6 +27,7 @@ import {
   PlanPanel,
   type SharedBillingProps,
 } from '@/web/components/settings/settingsPanels';
+import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary } from '@/web/hooks/useWebLibrary';
 import { exportWebHighlights } from '@/web/lib/webHighlightExport';
 import {
@@ -68,8 +71,14 @@ export function WebSettingsPage(): React.ReactElement {
     isAuthenticated,
     planLabel: caps.planLabel,
   });
+  const { deleteScope } = useWebHighlightDelete({
+    highlights: lib.highlights,
+    removeHighlights: lib.removeHighlights,
+  });
 
   const [billingActionError, setBillingActionError] = useState<string | null>(null);
+  const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
+  const [deleteLibraryBusy, setDeleteLibraryBusy] = useState(false);
   const [handoff, setHandoff] = useState<'checkout' | 'portal' | null>(null);
   const [returnKind, setReturnKind] = useState<BillingReturnKind>(null);
   const [returnDismissed, setReturnDismissed] = useState(false);
@@ -152,6 +161,17 @@ export function WebSettingsPage(): React.ReactElement {
     void lib.refresh();
   }, [lib]);
 
+  const handleConfirmDeleteLibrary = useCallback(async () => {
+    if (!isAuthenticated || deleteLibraryBusy || lib.highlights.length === 0) return;
+    setDeleteLibraryBusy(true);
+    try {
+      const result = await deleteScope({ scope: 'library' });
+      if (result.success) setDeleteLibraryOpen(false);
+    } finally {
+      setDeleteLibraryBusy(false);
+    }
+  }, [deleteLibraryBusy, deleteScope, isAuthenticated, lib.highlights.length]);
+
   const sharedBilling: SharedBillingProps = {
     isAuthenticated,
     caps,
@@ -216,6 +236,13 @@ export function WebSettingsPage(): React.ReactElement {
               ? `${lib.highlights.length} highlights loaded`
               : undefined
           }
+          highlightCount={isAuthenticated ? lib.highlights.length : 0}
+          onDeleteLibrary={
+            isAuthenticated
+              ? () => setDeleteLibraryOpen(true)
+              : undefined
+          }
+          deleteLibraryBusy={deleteLibraryBusy}
         />
       );
       break;
@@ -232,6 +259,8 @@ export function WebSettingsPage(): React.ReactElement {
         />
       );
   }
+
+  const libraryDeleteCopy = deleteLibraryCopy(true);
 
   return (
     <div data-od-id="settings">
@@ -259,6 +288,48 @@ export function WebSettingsPage(): React.ReactElement {
         </nav>
         {panel}
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteLibraryOpen}
+        onClose={() => {
+          if (!deleteLibraryBusy) setDeleteLibraryOpen(false);
+        }}
+        severity={libraryDeleteCopy.severity}
+        title={libraryDeleteCopy.title}
+        message="This permanently removes every highlight in your cloud library."
+        note={libraryDeleteCopy.note}
+        confirmLabel={libraryDeleteCopy.confirmLabel}
+        cancelLabel={libraryDeleteCopy.cancelLabel}
+        confirmText="DELETE"
+        isConfirming={deleteLibraryBusy}
+        onConfirm={() => {
+          void handleConfirmDeleteLibrary();
+        }}
+        exportFooter={
+          caps.flags.export ? (
+            <>
+              <button
+                type="button"
+                className="btn sm"
+                data-od-id="settings-delete-export-md"
+                disabled={deleteLibraryBusy}
+                onClick={() => handleExport('md')}
+              >
+                Markdown
+              </button>
+              <button
+                type="button"
+                className="btn sm"
+                data-od-id="settings-delete-export-xlsx"
+                disabled={deleteLibraryBusy}
+                onClick={() => handleExport('xlsx')}
+              >
+                Spreadsheet
+              </button>
+            </>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

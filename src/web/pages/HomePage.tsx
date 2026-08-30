@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
-import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
@@ -152,31 +151,10 @@ export function HomePage(): React.ReactElement {
     isAuthenticated,
     planLabel: caps.planLabel,
   });
-  const { updateMetadata } = useUpdateHighlightMetadata();
 
   const empty = lib.highlights.length === 0;
   const guest = caps.isGuest;
   const showIntegrationsCta = caps.flags.mcp;
-
-  const patchHighlight = lib.patchHighlight;
-
-  const handleNoteSave = useCallback(
-    async (id: string, note: string): Promise<boolean> => {
-      const ok = await updateMetadata(id, { notes: note }, { silent: true });
-      if (ok) patchHighlight(id, { note });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
-  );
-
-  const handleTagsChange = useCallback(
-    async (id: string, tags: string[]): Promise<boolean> => {
-      const ok = await updateMetadata(id, { tags }, { silent: true });
-      if (ok) patchHighlight(id, { tags });
-      return ok;
-    },
-    [updateMetadata, patchHighlight],
-  );
 
   const handleToggleTagFilter = useCallback(
     (tag: string) => {
@@ -435,11 +413,10 @@ export function HomePage(): React.ReactElement {
         key={h.id}
         highlight={h}
         showDomain
-        readOnly={guest}
+        density="rail"
+        readOnly
         onOpenPage={openLibraryPage}
         onToggleTagFilter={guest ? undefined : handleToggleTagFilter}
-        onNoteSave={guest ? undefined : handleNoteSave}
-        onTagsChange={guest ? undefined : handleTagsChange}
       />
     ))
   );
@@ -478,6 +455,17 @@ export function HomePage(): React.ReactElement {
             <div className="g-stat" data-od-id="stat-sources">
               <span className="g-stat-label">Sources</span>
               <span className="g-stat-val">{fmt(lib.domains.length)}</span>
+            </div>
+          </section>
+          <section className="stats-group" data-od-id="stats-library">
+            <h3 className="stats-group-title">Library</h3>
+            <div className="g-stat" data-od-id="stat-notes">
+              <span className="g-stat-label">Notes</span>
+              <span className="g-stat-val">{fmt(lib.stats.notesCount)}</span>
+            </div>
+            <div className="g-stat" data-od-id="stat-tags">
+              <span className="g-stat-label">Tags</span>
+              <span className="g-stat-val">{fmt(lib.stats.tagCount)}</span>
             </div>
           </section>
         </div>

@@ -57,6 +57,7 @@ vi.mock('@/web/hooks/useWebLibrary', async () => {
 
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { clearWebLibrarySessionMemory } from '@/web/hooks/useWebLibrary';
 
 function renderSettings(initialPath: string, authenticated = false) {
   (useApp as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -79,6 +80,7 @@ function renderSettings(initialPath: string, authenticated = false) {
 describe('WebSettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWebLibrarySessionMemory();
     mockFetch.mockResolvedValue([]);
     (useBillingContextOptional as ReturnType<typeof vi.fn>).mockReturnValue(null);
   });
@@ -225,5 +227,62 @@ describe('WebSettingsPage', () => {
     );
     expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
+  });
+
+  it('account tab no longer shows Capabilities chips', () => {
+    renderSettings('/settings?tab=account', true);
+    expect(document.querySelector('[data-od-id="mode-caps"]')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/\bCapabilities\b/);
+  });
+
+  it('data tab: guest delete stays disabled with sign-in copy', async () => {
+    renderSettings('/settings?tab=data', false);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="settings-data"]')).toBeTruthy();
+    });
+    const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+    expect(btn.disabled).toBe(true);
+    expect(document.body.textContent).toMatch(/Sign in to manage or delete your cloud library/i);
+  });
+
+  it('data tab: signed-in empty library disables delete', async () => {
+    mockFetch.mockResolvedValue([]);
+    renderSettings('/settings?tab=data', true);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="settings-data"]')).toBeTruthy();
+    });
+    const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.title).toMatch(/Nothing to delete/i);
+  });
+
+  it('data tab: signed-in with highlights opens type-to-confirm delete dialog', async () => {
+    mockFetch.mockResolvedValue([
+      {
+        id: 'h1',
+        domain: 'example.com',
+        path: '/',
+        quote: 'q',
+        note: '',
+        tags: [],
+        savedAt: Date.now(),
+      },
+    ]);
+    mockBilling({ isPaidActive: true, status: 'active' });
+    renderSettings('/settings?tab=data', true);
+
+    await waitFor(() => {
+      const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+      expect(btn?.disabled).toBe(false);
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="settings-delete"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="confirm-dialog-challenge"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-testid="confirm-dialog-confirm"]')).toBeDisabled();
+    expect(document.body.textContent).toMatch(/Type DELETE to confirm/i);
   });
 });

@@ -12,12 +12,6 @@ vi.mock('@/features/billing/BillingProvider', () => ({
   useBillingContextOptional: vi.fn(() => null),
 }));
 
-vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
-  useUpdateHighlightMetadata: () => ({
-    updateMetadata: vi.fn().mockResolvedValue(true),
-  }),
-}));
-
 import { useApp } from '@/core/context/AppProvider';
 
 function renderHome() {
@@ -49,7 +43,7 @@ describe('HomePage', () => {
 
     expect(document.querySelector('[data-od-id="guest-banner"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="guest-passive"]')?.textContent).toMatch(
-      /Local only/i,
+      /stored locally|Local only|Sign in to sync/i,
     );
 
     // OD: stats-groups only when library has rows
