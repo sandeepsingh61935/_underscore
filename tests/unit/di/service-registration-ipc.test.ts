@@ -124,9 +124,9 @@ describe('DI Container - IPC Layer Registration', () => {
       expect(container.resolve('logger')).toBeDefined();
       expect(container.resolve('eventBus')).toBeDefined();
       expect(container.resolve('storage')).toBeDefined();
+      expect(container.resolve('basicStorage')).toBeDefined();
       expect(container.resolve('repository')).toBeDefined();
-      expect(container.resolve('messaging')).toBeDefined();
-      expect(container.resolve('tabQuery')).toBeDefined();
+      expect(container.resolve('messageBus')).toBeDefined();
       expect(container.resolve('modeManager')).toBeDefined();
     });
   });

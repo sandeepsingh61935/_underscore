@@ -40,7 +40,7 @@ const AlertDialogContent = React.forwardRef<
       style={{
         backgroundColor: 'var(--paper)',
         color: 'var(--ink)',
-        border: '1px solid var( --rule )',
+        border: '1px solid var(--rule)',
         ...style,
       }}
       {...props}
@@ -109,12 +109,12 @@ const AlertDialogAction = React.forwardRef<
     className={cn(
       'inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 border-0 cursor-pointer',
       'transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
       className
     )}
     style={{
-      backgroundColor: 'var( --accent )',
+      backgroundColor: 'var(--accent)',
       color: 'var(--paper)',
       fontSize: 'var(--step-0)',
       ...style,
@@ -133,7 +133,7 @@ const AlertDialogCancel = React.forwardRef<
     className={cn(
       'mt-2 inline-flex min-h-[44px] items-center justify-center rounded px-4 py-2 sm:mt-0',
       'transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
       className
     )}

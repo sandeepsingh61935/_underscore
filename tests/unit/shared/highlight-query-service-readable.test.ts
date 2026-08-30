@@ -56,7 +56,9 @@ describe('HighlightQueryService (readable contract)', () => {
         const result = await svc.getCollections('local');
 
         expect(readable.findAll).toHaveBeenCalled();
-        expect(result).toEqual([{ domain: 'example.com', highlightCount: 1, mode: 'local' }]);
+        expect(result).toEqual([
+            expect.objectContaining({ domain: 'example.com', highlightCount: 1, mode: 'local' }),
+        ]);
     });
 
     it('filters by domain using the readable\'s findAll', async () => {

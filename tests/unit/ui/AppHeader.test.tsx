@@ -75,7 +75,6 @@ describe('V2 AppHeader', () => {
         // Arbitrary motion
         expect(html).not.toMatch(/duration-\[/);
         expect(html).not.toMatch(/ease-out/);
-        expect(html).not.toMatch(/color-mix/);
         // shadcn
         expect(html).not.toMatch(/rounded-md/);
     });

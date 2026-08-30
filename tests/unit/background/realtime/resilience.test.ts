@@ -152,9 +152,9 @@ describe('Realtime Resilience & Security', () => {
             );
         });
 
-        it('should handle completely malformed non-object payloads gracefully', async () => {
-            // Payload is null?
-            await expect(changeHandler(null)).rejects.toThrow();
+        it('should handle completely malformed non-object payloads gracefully', () => {
+            // Payload is null - should not crash
+            expect(() => changeHandler(null)).not.toThrow();
         });
     });
 

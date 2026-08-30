@@ -40,6 +40,9 @@ export const DEFAULT_AUTH_REDIRECT_PATH = '/home' as const;
 
 /** Map retired web paths still present in bookmarks / old returnTo values. */
 function rewriteLegacyAuthPath(path: string): string {
+  if (path === '/mode' || path.startsWith('/mode?')) {
+    return `/home${path.slice('/mode'.length)}`;
+  }
   if (path === '/collections' || path.startsWith('/collections?')) {
     return `/library${path.slice('/collections'.length)}`;
   }

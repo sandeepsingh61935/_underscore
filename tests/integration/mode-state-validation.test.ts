@@ -16,29 +16,33 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import type { ModeManager } from '@/content/modes/mode-manager';
 import { ModeStateManager } from '@/content/modes/mode-state-manager';
 import { StateValidationError } from '@/shared/errors/state-errors';
+import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type { ILogger } from '@/shared/utils/logger';
 
 // Realistic chrome.storage mock that behaves like the real one
 const storageData: Record<string, any> = {};
 
+const storageHandler = {
+  get: vi.fn().mockImplementation((keys) => {
+    if (typeof keys === 'string') {
+      return Promise.resolve({ [keys]: storageData[keys] });
+    }
+    if (Array.isArray(keys)) {
+      return Promise.resolve(
+        keys.reduce((acc, key) => ({ ...acc, [key]: storageData[key] }), {})
+      );
+    }
+    return Promise.resolve(storageData); // Get all
+  }),
+  set: vi.fn().mockImplementation((items) => {
+    Object.assign(storageData, items);
+    return Promise.resolve();
+  }),
+};
+
 const mockChromeStorage = {
-  sync: {
-    get: vi.fn().mockImplementation((keys) => {
-      if (typeof keys === 'string') {
-        return Promise.resolve({ [keys]: storageData[keys] });
-      }
-      if (Array.isArray(keys)) {
-        return Promise.resolve(
-          keys.reduce((acc, key) => ({ ...acc, [key]: storageData[key] }), {})
-        );
-      }
-      return Promise.resolve(storageData); // Get all
-    }),
-    set: vi.fn().mockImplementation((items) => {
-      Object.assign(storageData, items);
-      return Promise.resolve();
-    }),
-  },
+  local: storageHandler,
+  sync: storageHandler,
 };
 
 global.chrome = {
@@ -100,7 +104,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
   it('should recover from manually corrupted storage', async () => {
     // 1. Manually corrupt storage (simulate user editing sync data or bug)
-    storageData['defaultMode'] = 'invalid-mode-hacker';
+    storageData[MODE_STORAGE_KEY] = 'invalid-mode-hacker';
     storageData['metadata'] = { version: 'bad' }; // Invalid metadata
 
     // 2. Initialize manager
@@ -144,6 +148,6 @@ describe('ModeStateManager - Validation Integration', () => {
     expect(stateManager.getMode()).toBe('pro');
 
     // 4. Verify storage remains 'pro'
-    expect(storageData['defaultMode']).toBe('pro');
+    expect(storageData[MODE_STORAGE_KEY]).toBe('pro');
   });
 });

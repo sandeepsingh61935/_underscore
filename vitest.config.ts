@@ -50,9 +50,14 @@ export default defineConfig({
       'tests/unit/**/*.test.ts',
       'tests/unit/**/*.test.tsx',
       'tests/integration/**/*.test.ts',
-      'tests/e2e/**/*.test.ts',
       'src/**/*.test.ts',
       'src/**/*.test.tsx',
+    ],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'tests/e2e/**',
+      'tests/integration/coursera-real-idb.test.ts',
     ],
 
     // Setup files

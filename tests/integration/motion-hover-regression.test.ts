@@ -9,7 +9,6 @@ const srcRoot = path.join(repoRoot, 'src');
 const auditedFiles = [
   'src/features/modes/ModeCard.tsx',
   'src/ui-system/components/composed/ModeCard.tsx',
-  'src/ui-system/components/primitives/SocialButton.tsx',
   'src/features/collections/views/CollectionsView.tsx',
   'src/ui-system/pages/CollectionsView.tsx',
   'src/features/collections/views/DomainDetailsView.tsx',

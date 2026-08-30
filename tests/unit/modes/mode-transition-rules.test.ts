@@ -62,7 +62,7 @@ describe('Mode Transition Rules', () => {
 
       expect(rule.allowed).toBe(true);
       expect(rule.requiresConfirmation).toBe(false);
-      expect(rule.reason).toContain('AI');
+      expect(rule.reason).toMatch(/Integrations|Paid/);
     });
 
     it('should allow pro_xai → basic with data preservation warning', () => {

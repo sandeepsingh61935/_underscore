@@ -16,7 +16,9 @@ export function getWebAppOrigin(options?: {
   useWindowOrigin?: boolean;
   windowOrigin?: string;
 }): string | null {
-  const fromEnv = (options?.envOrigin ?? readEnvWebAppUrl())?.trim();
+  const rawEnv =
+    options?.envOrigin !== undefined ? options.envOrigin : readEnvWebAppUrl();
+  const fromEnv = rawEnv?.trim();
   if (fromEnv) {
     try {
       const url = new URL(fromEnv.includes('://') ? fromEnv : `https://${fromEnv}`);

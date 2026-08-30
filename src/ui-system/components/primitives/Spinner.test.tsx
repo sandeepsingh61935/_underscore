@@ -18,11 +18,11 @@ describe('Spinner (V2 wireframe contract)', () => {
     expect(screen.getByRole('status', { name: /loading/i })).toBeTruthy();
   });
 
-  it('routes border-top-color to var( --accent )', () => {
+  it('routes border-top-color to var(--accent)', () => {
     const { container } = render(<Spinner />);
     const el = container.firstElementChild as HTMLElement;
     const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('border-top-color: var( --accent )');
+    expect(style).toContain('border-top-color: var(--accent)');
   });
 
   it('routes default border (right/bottom/left) to var(--rule-soft)', () => {

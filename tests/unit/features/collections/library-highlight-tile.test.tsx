@@ -59,7 +59,7 @@ describe('LibraryHighlightTile', () => {
     );
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('n1');
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('t1');
-    expect(screen.getByTestId('highlight-action-row').textContent).toMatch(/Edit/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeInTheDocument();
   });
 
   it('passes match badge through to the card', () => {
@@ -185,6 +185,6 @@ describe('LibraryHighlightTile', () => {
       />,
     );
     expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
-    expect(screen.getByTestId('highlight-action-row').textContent).toMatch(/Edit/i);
+    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeInTheDocument();
   });
 });

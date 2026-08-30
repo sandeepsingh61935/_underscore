@@ -166,7 +166,6 @@ export function HighlightCard({
 }: HighlightCardProps): React.ReactElement {
   const padTop = density === 'compact' ? 10 : 12;
   const padBottom = 8;
-  const [metaHover, setMetaHover] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(quote);
   const [saving, setSaving] = useState(false);
@@ -575,15 +574,12 @@ export function HighlightCard({
                 <button
                   type="button"
                   onClick={onSectionClick}
-                  onMouseEnter={() => setMetaHover(true)}
-                  onMouseLeave={() => setMetaHover(false)}
                   style={{
                     all: 'unset',
                     cursor: 'pointer',
-                    textDecoration: metaHover ? 'underline' : 'none',
                     ...metaStyle,
                   }}
-                  className="u-mono"
+                  className="u-mono hover:underline focus-visible:underline"
                 >
                   {metaText}
                 </button>

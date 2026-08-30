@@ -211,6 +211,6 @@ describe('BaseHighlightMode.renderAndRegister', () => {
     const stored = mode.getHighlight('hl-hex');
     expect(stored?.colorRole).toBe('yellow');
     const rect = document.querySelector('.underscore-paint-rect');
-    expect(rect?.getAttribute('data-color')).toBe('yellow');
+    expect(rect?.getAttribute('data-highlight-id')).toBe('hl-hex');
   });
 });

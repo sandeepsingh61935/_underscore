@@ -7,19 +7,25 @@
  */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Row } from './Row';
 
 describe('Row (V2 wireframe contract)', () => {
-  it('renders as a <button> with the title', () => {
-    render(<Row title="Apple" />);
+  it('renders as a <button> when onClick is provided', () => {
+    render(<Row title="Apple" onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     expect(btn.tagName).toBe('BUTTON');
   });
 
+  it('renders as a <div> when onClick is omitted', () => {
+    const { container } = render(<Row title="Apple" />);
+    const div = container.firstElementChild as HTMLElement;
+    expect(div.tagName).toBe('DIV');
+  });
+
   it('uses display:grid in inline style', () => {
-    render(<Row title="Apple" />);
+    render(<Row title="Apple" onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     const style = btn.getAttribute('style') ?? '';
     expect(style).toContain('display: grid');
@@ -30,6 +36,7 @@ describe('Row (V2 wireframe contract)', () => {
       <Row
         title="Apple"
         left={<span data-testid="left-icon">A</span>}
+        onClick={vi.fn()}
       />
     );
     const btn = screen.getByRole('button', { name: /Apple/ });
@@ -38,28 +45,28 @@ describe('Row (V2 wireframe contract)', () => {
   });
 
   it('uses grid-template-columns 1fr auto when left is absent', () => {
-    render(<Row title="Apple" />);
+    render(<Row title="Apple" onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     const style = btn.getAttribute('style') ?? '';
     expect(style).toContain('1fr auto');
   });
 
   it('enforces min-height: 44px', () => {
-    render(<Row title="Apple" />);
+    render(<Row title="Apple" onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     const style = btn.getAttribute('style') ?? '';
     expect(style).toContain('min-height: 44px');
   });
 
   it('uses compact padding 10px 16px when compact is true', () => {
-    render(<Row title="Apple" compact />);
+    render(<Row title="Apple" compact onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     const style = btn.getAttribute('style') ?? '';
     expect(style).toContain('10px 16px');
   });
 
   it('uses default padding 14px 16px when compact is false', () => {
-    render(<Row title="Apple" />);
+    render(<Row title="Apple" onClick={vi.fn()} />);
     const btn = screen.getByRole('button', { name: /Apple/ });
     const style = btn.getAttribute('style') ?? '';
     expect(style).toContain('14px 16px');

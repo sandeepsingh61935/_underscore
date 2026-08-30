@@ -47,12 +47,18 @@ describe('ProMode.restore IPC hydrate + paint', () => {
 
   beforeEach(async () => {
     RangeOverlayPainter.resetForTests();
-    document.body.innerHTML = '<p>restored phrase</p>';
+    const loc = new URL('https://example.com/article#section');
     Object.defineProperty(window, 'location', {
-      value: { href: 'https://example.com/article#section' },
+      value: {
+        href: loc.href,
+        origin: loc.origin,
+        pathname: loc.pathname,
+        search: loc.search,
+      },
       writable: true,
       configurable: true,
     });
+    document.body.innerHTML = '<p>restored phrase</p>';
 
     // jsdom ranges need getClientRects for overlay paint
     const originalCreateRange = document.createRange.bind(document);

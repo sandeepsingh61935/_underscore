@@ -47,15 +47,23 @@ describe('useModeFeature', () => {
     expect(result.current.allowed).toBe(true);
   });
 
-  it('allows AI when signed in and paid', () => {
+  it('denies retired AI even when signed in', () => {
     mockMode('pro_xai');
     const { result } = renderHook(() => useModeFeature('ai', true, true));
-    expect(result.current.allowed).toBe(true);
+    expect(result.current.allowed).toBe(false);
+    expect(result.current.reason).toBe('PAID_REQUIRED');
   });
 
-  it('allows provider setup when paid', () => {
+  it('denies retired provider setup even when paid', () => {
     mockMode('pro_xai');
     const { result } = renderHook(() => useConfigureAiProvidersGate(true, true));
+    expect(result.current.allowed).toBe(false);
+    expect(result.current.reason).toBe('PAID_REQUIRED');
+  });
+
+  it('allows MCP when signed in', () => {
+    mockMode('pro_xai');
+    const { result } = renderHook(() => useModeFeature('mcp', true, true));
     expect(result.current.allowed).toBe(true);
   });
 });

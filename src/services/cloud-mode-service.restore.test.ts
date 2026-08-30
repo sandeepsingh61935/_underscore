@@ -25,9 +25,16 @@ describe('CloudModeService.restoreHighlightsForUrl', () => {
     service = new CloudModeService(facade, new MultiSelectorEngine(), logger);
 
     // jsdom location for normalizePageUrl filter
+    const loc = new URL('https://example.com/page');
     Object.defineProperty(window, 'location', {
-      value: { href: 'https://example.com/page' },
+      value: {
+        href: loc.href,
+        origin: loc.origin,
+        pathname: loc.pathname,
+        search: loc.search,
+      },
       writable: true,
+      configurable: true,
     });
   });
 

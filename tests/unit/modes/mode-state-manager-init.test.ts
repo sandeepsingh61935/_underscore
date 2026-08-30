@@ -96,7 +96,7 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
     await manager.setMode('pro', { isAuthenticated: true });
 
     // Second call should still hit storage (no circuit-breaker short-circuit)
-    await manager.setMode('pro_xai', { isAuthenticated: true });
+    await manager.setMode('pro_xai', { isAuthenticated: true, isPaidActive: true });
 
     expect(mockStorage.set).toHaveBeenCalledTimes(2);
   });

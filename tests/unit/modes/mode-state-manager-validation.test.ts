@@ -70,8 +70,9 @@ describe('ModeStateManager - Validation Integration', () => {
       const validModes = ['basic', 'pro', 'pro_xai'] as const;
 
       // Act & Assert
+      const auth = { isAuthenticated: true, isPaidActive: true };
       for (const mode of validModes) {
-        await expect(stateManager.setMode(mode)).resolves.not.toThrow();
+        await expect(stateManager.setMode(mode, auth)).resolves.not.toThrow();
       }
     });
 
@@ -225,7 +226,7 @@ describe('ModeStateManager - Validation Integration', () => {
 
   describe('Edge cases and boundary conditions', () => {
     it('should handle rapid mode switches', async () => {
-      const auth = { isAuthenticated: true };
+      const auth = { isAuthenticated: true, isPaidActive: true };
       const guest = { isAuthenticated: false };
 
       await stateManager.setMode('pro', auth);
@@ -238,11 +239,11 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
-      await stateManager.setMode('pro_xai', { isAuthenticated: true });
+      await stateManager.setMode('pro_xai', { isAuthenticated: true, isPaidActive: true });
       mockEventBus.emit.mockClear();
 
       // Act
-      await stateManager.setMode('pro_xai', { isAuthenticated: true });
+      await stateManager.setMode('pro_xai', { isAuthenticated: true, isPaidActive: true });
 
       // Assert - No intent should be sent
       expect(mockEventBus.emit).not.toHaveBeenCalled();

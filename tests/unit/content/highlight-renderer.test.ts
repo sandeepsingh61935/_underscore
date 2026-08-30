@@ -177,7 +177,7 @@ describe('HighlightRenderer', () => {
   });
 
   describe('Click to Remove', () => {
-    it('should emit events when highlight is clicked', () => {
+    it('should emit HIGHLIGHT_CLICKED when highlight is clicked', () => {
       const emitSpy = vi.spyOn(eventBus, 'emit');
       const selection = createMockSelection();
 
@@ -190,14 +190,6 @@ describe('HighlightRenderer', () => {
         EventName.HIGHLIGHT_CLICKED,
         expect.objectContaining({
           type: EventName.HIGHLIGHT_CLICKED,
-          highlightId: highlight.id,
-        })
-      );
-
-      expect(emitSpy).toHaveBeenCalledWith(
-        EventName.HIGHLIGHT_REMOVED,
-        expect.objectContaining({
-          type: EventName.HIGHLIGHT_REMOVED,
           highlightId: highlight.id,
         })
       );

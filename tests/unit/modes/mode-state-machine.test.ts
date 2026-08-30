@@ -75,7 +75,7 @@ describe('ModeStateMachine', () => {
   });
 
   describe('executeGuards', () => {
-    const signedIn = { isAuthenticated: true };
+    const signedIn = { isAuthenticated: true, isPaidActive: true };
 
     it('should return true for transitions without guards', async () => {
       const result = await stateMachine.executeGuards('pro', 'pro_xai', signedIn);
@@ -111,7 +111,7 @@ describe('ModeStateMachine', () => {
     it('should return descriptive reason for pro → pro_xai', () => {
       const reason = stateMachine.getTransitionReason('pro', 'pro_xai');
 
-      expect(reason).toContain('AI');
+      expect(reason).toMatch(/Integrations|Paid/);
     });
 
     it('should return warning reason for pro_xai → basic', () => {
@@ -156,7 +156,7 @@ describe('ModeStateMachine', () => {
     });
 
     it('should handle full circular transition path', async () => {
-      const signedIn = { isAuthenticated: true };
+      const signedIn = { isAuthenticated: true, isPaidActive: true };
       const signedOut = { isAuthenticated: false };
       // basic → pro → pro_xai → basic (full circle when signed out at end)
       expect(await stateMachine.executeGuards('basic', 'pro', signedIn)).toBe(true);

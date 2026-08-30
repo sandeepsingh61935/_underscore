@@ -32,7 +32,7 @@ export type Message = z.infer<typeof MessageSchema>;
 export const MessageResponseSchema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
-    data: z.unknown(),
+    data: z.unknown().optional(),
   }),
   z.object({
     success: z.literal(false),

@@ -125,7 +125,7 @@ describe('Mock Infrastructure (10 tests)', () => {
     expect(context.container.has('logger')).toBe(true);
     expect(context.container.has('repository')).toBe(true);
     expect(context.container.has('storage')).toBe(true);
-    expect(context.container.has('messaging')).toBe(true);
+    expect(context.container.has('messageBus')).toBe(true);
     expect(context.container.has('modeManager')).toBe(true);
     expect(context.container.has('eventBus')).toBe(true); // Real one
   });

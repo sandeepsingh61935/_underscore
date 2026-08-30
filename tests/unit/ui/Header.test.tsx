@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppProvider } from '../../../src/core/context/AppProvider';
+import { WebAuthProvider } from '../../../src/features/auth/providers/WebAuthProvider';
 import { Header } from '../../../src/ui-system/components/layout/Header';
 import type { IDataProvider } from '../../../src/shared/interfaces/i-data-provider';
 
@@ -37,7 +38,9 @@ const user = {
 function Wrap({ children }: { children: React.ReactNode }) {
     return (
         <MemoryRouter>
-            <AppProvider dataProvider={mockDataProvider}>{children}</AppProvider>
+            <WebAuthProvider>
+                <AppProvider dataProvider={mockDataProvider}>{children}</AppProvider>
+            </WebAuthProvider>
         </MemoryRouter>
     );
 }

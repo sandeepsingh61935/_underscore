@@ -13,7 +13,7 @@ import { ModeStateManager } from '@/content/modes/mode-state-manager';
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type { ILogger } from '@/shared/utils/logger';
 
-const AUTH = { isAuthenticated: true } as const;
+const AUTH = { isAuthenticated: true, isPaidActive: true } as const;
 const GUEST = { isAuthenticated: false } as const;
 
 // Mock chrome.storage

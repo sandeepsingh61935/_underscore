@@ -30,10 +30,10 @@ describe('V2 Logo', () => {
         expect(html).toContain('var(--paper)');
     });
 
-    it('uses --paper-overlay-08 for the ambient reflection', () => {
+    it('uses color-mix reflection with var(--paper) for ambient reflection', () => {
         const { container } = render(<Logo />);
         const html = container.innerHTML;
-        expect(html).toContain('var(--paper-overlay-08)');
+        expect(html).toContain('color-mix(in srgb, var(--paper) 8%, transparent)');
     });
 
     it('does not use deprecated --logo-* tokens', () => {

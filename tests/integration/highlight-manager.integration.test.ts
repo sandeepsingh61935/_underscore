@@ -21,9 +21,11 @@ describe('HighlightManager Integration Tests', () => {
       global.CSS.highlights = new Map();
     }
 
-    // Mock Highlight constructor
-    (global as any).Highlight = class {
-      constructor(public range: Range) {}
+    // Mock Highlight constructor (Set of Ranges per CSS Custom Highlight API)
+    (global as any).Highlight = class extends Set<Range> {
+      constructor(...ranges: Range[]) {
+        super(ranges);
+      }
     };
 
     eventBus = new EventBus();
@@ -68,13 +70,13 @@ describe('HighlightManager Integration Tests', () => {
       toString: () => 'Test',
     } as any;
 
-    const result = manager.createHighlight(selection, '#00ff00');
+    manager.createHighlight(selection, '#00ff00');
 
     // Check CSS.highlights was called
     expect(global.CSS.highlights.size).toBeGreaterThan(0);
 
     // Verify highlight name format
-    const expectedName = `underscore-${result?.id}`;
+    const expectedName = `underscore-#00ff00`;
     expect(global.CSS.highlights.has(expectedName)).toBe(true);
   });
 
@@ -95,7 +97,7 @@ describe('HighlightManager Integration Tests', () => {
     expect(result).not.toBeNull();
 
     const highlightId = result!.id;
-    const highlightName = `underscore-${highlightId}`;
+    const highlightName = `underscore-#0000ff`;
 
     // Verify it exists
     expect(global.CSS.highlights.has(highlightName)).toBe(true);
@@ -103,7 +105,8 @@ describe('HighlightManager Integration Tests', () => {
     // Remove it
     manager.removeHighlight(highlightId);
 
-    // Verify it's gone
-    expect(global.CSS.highlights.has(highlightName)).toBe(false);
+    // Verify range was deleted from semantic highlight
+    const semanticHighlight = global.CSS.highlights.get(highlightName);
+    expect(semanticHighlight?.has(range)).toBe(false);
   });
 });

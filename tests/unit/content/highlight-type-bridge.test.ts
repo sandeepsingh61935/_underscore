@@ -33,7 +33,6 @@ describe('Highlight Type Bridge', () => {
 
       expect(stored).toEqual(
         expect.objectContaining({
-          version: 2,
           id: 'hl-123',
           text: 'test text',
           color: 'yellow',

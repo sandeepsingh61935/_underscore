@@ -142,7 +142,7 @@ describe('check-legacy-ds.sh — flags', () => {
     });
     // --soft + scratch as the path arg: violations present but exit 0
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toMatch(/--soft: exiting 0/);
+    expect(result.stdout).toMatch(/--soft mode/);
   });
 
   it('--help prints usage and exits 0', async () => {

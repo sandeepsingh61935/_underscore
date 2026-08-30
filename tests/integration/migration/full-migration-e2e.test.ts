@@ -13,6 +13,11 @@ import { createTestHighlight } from '../../helpers/test-fixtures';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
 
+import { LocalToCloudMigrator } from '@/background/migration/local-to-cloud-migrator';
+import type { IEventBus } from '@/shared/interfaces/i-event-bus';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IPersistentStorage } from '@/shared/interfaces/i-storage';
+
 describe('Migration E2E Flow (DI Container)', () => {
     let container: Container;
 
@@ -38,6 +43,30 @@ describe('Migration E2E Flow (DI Container)', () => {
         // We re-register it to overwrite the real one
         container.registerSingleton<IAPIClient>('apiClient', () => {
             return new MockAPIClient();
+        });
+
+        const dataStore = new Map<string, unknown>();
+        const memStorage: IPersistentStorage = {
+            async save<T>(key: string, value: T): Promise<void> {
+                dataStore.set(key, value);
+            },
+            async load<T>(key: string): Promise<T | null> {
+                return (dataStore.get(key) as T) ?? null;
+            },
+            async delete(key: string): Promise<void> {
+                dataStore.delete(key);
+            },
+        };
+
+        // Register migrator
+        container.registerSingleton<IMigrator>('migrator', () => {
+            return new LocalToCloudMigrator(
+                container.resolve<IHighlightRepository>('repository'),
+                container.resolve<IAPIClient>('apiClient'),
+                container.resolve<IEventBus>('eventBus'),
+                container.resolve<ILogger>('logger'),
+                memStorage
+            );
         });
     });
 

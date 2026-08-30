@@ -127,6 +127,10 @@ export class WebSocketClient implements IWebSocketClient {
      * Handle incoming change events from Supabase
      */
     private handleChange(payload: RealtimePostgresChangesPayload<SupabaseHighlightRow>): void {
+        if (!payload || typeof payload !== 'object') {
+            this.logger.warn('[WebSocketClient] Ignoring malformed realtime payload', { payload });
+            return;
+        }
         const eventType = payload.eventType;
         this.logger.info('[WebSocketClient] [MSG] Received realtime event', {
             event: eventType,
