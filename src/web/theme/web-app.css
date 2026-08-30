@@ -1727,9 +1727,22 @@ div.hl-note-btn:hover {
 
 .lib-search-wrap {
   flex-shrink: 0;
-  padding: 12px 22px 0;
+  /* Match .lib-main-head horizontal rhythm; keep equal top/bottom so the
+     search-input-row border is inset from the section rule (not flush). */
+  padding: 12px 22px;
+  box-sizing: border-box;
   background: var(--paper);
   border-bottom: 1px solid var(--border);
+}
+
+.lib-search-wrap .search-bar {
+  width: 100%;
+  min-width: 0;
+}
+
+.lib-search-wrap .search-input-row {
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .lib-main-body {
@@ -2014,17 +2027,21 @@ div.hl-note-btn:hover {
 
 .pager {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 10px 12px;
   padding: 18px 0 4px;
 }
 
-.pager-btn {
+.pager-btn,
+.pager-page {
   all: unset;
+  box-sizing: border-box;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -2032,17 +2049,101 @@ div.hl-note-btn:hover {
   border: 1px solid var(--border);
   background: var(--paper);
   color: var(--ink-2);
-  font-size: 14px;
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
 }
 
-.pager-btn:hover:not(:disabled) {
+.pager-btn:hover:not(:disabled),
+.pager-page:hover {
   background: var(--paper-2);
   color: var(--ink);
+}
+
+.pager-btn:focus-visible,
+.pager-page:focus-visible,
+.pager-goto-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .pager-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.pager-pages {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pager-page.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  cursor: default;
+}
+
+.pager-page.is-active:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.pager-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  color: var(--ink-3);
+  user-select: none;
+}
+
+.pager-goto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  color: var(--ink-3);
+}
+
+.pager-goto-label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pager-goto-input {
+  box-sizing: border-box;
+  width: 4.5rem;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Hide number input spinners — keyboard/type is the intent */
+.pager-goto-input::-webkit-outer-spin-button,
+.pager-goto-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pager-goto-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .pager-label {

@@ -324,4 +324,56 @@ describe('LibraryPage', () => {
     expect(document.querySelector('[data-od-id="related-hl-r2"]')).toBeTruthy();
     expect(document.querySelector('.related-reason-pill')).toBeTruthy();
   });
+
+  it('lets the user jump to any page via number buttons and go-to input', async () => {
+    const many: WebHighlight[] = Array.from({ length: 30 }, (_, i) => ({
+      id: `p${i + 1}`,
+      domain: 'pager.test',
+      path: `/${i + 1}`,
+      quote: `Quote number ${i + 1}`,
+      note: '',
+      tags: [],
+      savedAt: Date.now() - i * 1000,
+    }));
+    mockFetch.mockResolvedValue(many);
+    renderLibrary('/library', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="library-pager"]')).toBeTruthy();
+    });
+
+    // PAGE_SIZE=12 → 3 pages; page 1 shows quotes 1-12 (newest first).
+    // Prefer stable card ids over quote text (curly-quote wrapping).
+    expect(document.querySelector('[data-od-id="hl-p1"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="hl-p13"]')).toBeNull();
+
+    fireEvent.click(document.querySelector('[data-od-id="library-pager-page-2"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-p13"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="hl-p1"]')).toBeNull();
+      expect(
+        document
+          .querySelector('[data-od-id="library-pager-page-2"]')
+          ?.getAttribute('aria-current'),
+      ).toBe('page');
+    });
+
+    const goto = document.querySelector(
+      '[data-od-id="library-pager-goto"]',
+    ) as HTMLInputElement;
+    expect(goto).toBeTruthy();
+    fireEvent.change(goto, { target: { value: '3' } });
+    fireEvent.keyDown(goto, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-p25"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="hl-p13"]')).toBeNull();
+      expect(
+        document
+          .querySelector('[data-od-id="library-pager-page-3"]')
+          ?.getAttribute('aria-current'),
+      ).toBe('page');
+    });
+  });
 });
