@@ -504,11 +504,6 @@ export function HomePage(): React.ReactElement {
             <div className="section-copy">
               <h2 id="home-pages-title">Pages</h2>
             </div>
-            {!empty ? (
-              <span className="meta" data-od-id="home-pages-count">
-                {pageCountAll}
-              </span>
-            ) : null}
           </div>
           <div className="home-col-scroll" data-od-id="home-pages-scroll">
             {pagesBody}
