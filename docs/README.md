@@ -10,7 +10,7 @@ history only (`git log --all -- docs/`).
 | You want... | Location |
 |---|---|
 | Project policies (commits, emoji ban) | `00-policies/` |
-| Development setup & workflows (auth, git, billing, AMO) | `01-development/` |
+| Development setup & workflows (auth, git, billing, AMO, web CI/CD) | `01-development/` (web deploy: `web-ci-cd-deploy.md`) |
 | Architectural decisions (ADRs) | `04-adrs/` |
 | Coding/testing/design standards | `05-quality-framework/` |
 | Security (threat model, RLS, schema) | `06-security/` |
