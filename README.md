@@ -1,328 +1,195 @@
-# Underscore Web Highlighter
+# Underscore Highlighter
 
-**Status**: 🚧 Sprint 0 - Infrastructure Setup  
-**Version**: 0.1.0  
-**License**: ISC
+**Highlight the web. Save passages to a library you can search, export, and sync.**
 
----
+Browser extension (Chrome + Firefox, Manifest V3) and companion web app.
 
-## Overview
-
-A browser extension for intelligent web highlighting with three modes:
-
-- **🚶 Walk Mode**: Ephemeral highlighting (memory only, no persistence)
-- **🏃 Sprint Mode**: 4-hour TTL with encrypted storage ✅ **AVAILABLE NOW**
-- **🔐 Vault Mode** (Future): Permanent storage with cross-device sync
-- **🧠 Gen Mode** (Future): AI-powered insights and knowledge synthesis
+| | |
+|---|---|
+| **Version** | 0.1.3 |
+| **License** | [GPL-3.0-only](./LICENSE) |
+| **Privacy** | [PRIVACY.md](./PRIVACY.md) |
+| **Docs index** | [docs/README.md](./docs/README.md) |
 
 ---
 
-## Sprint Mode
+## What it does
 
-**Philosophy:** "Use and forget" - Zero commitment, minimal trace
+Underscore lets you highlight text on any page and keep those passages in a
+searchable library — on-device as a guest, or synced when you sign in.
 
-### Features
+| Mode | Who | Persistence |
+|------|-----|-------------|
+| **Guest** | No account | Permanent on this device |
+| **Account (Free)** | Signed in | Synced across devices |
+| **Account (Paid)** | Signed in + plan | Sync, Integrations (MCP), in-app chat (BYOK) |
 
-- ✅ **4-hour TTL** - Highlights auto-delete after 4 hours
-- ✅ **Encrypted Storage** - AES-256-GCM encryption with domain-scoped keys
-- ✅ **Cross-Session Persistence** - Survives page reload and browser restart
-- ✅ **Cross-Domain Isolation** - Highlights on `example.com` ≠ `example.org`
-- ✅ **Undo/Redo Support** - Full undo/redo capability
-- ✅ **No Account Required** - Works entirely offline
-- ✅ **Privacy-First** - No cloud sync, no tracking, auto-deletion
-
-### Usage
-
-1. Click the extension icon
-2. Select "Sprint Mode"
-3. Highlight text on any webpage
-4. Highlights automatically delete after 4 hours
-
-### Technical Details
-
-**Storage:**
-
-- Location: `chrome.storage.local`
-- Encryption: AES-256-GCM
-- Key Derivation: PBKDF2 (100,000 iterations)
-- Domain Scoping: Separate encryption keys per domain
-- Capacity: ~5MB per domain (browser quota)
-
-**Persistence:**
-
-- Event sourcing for state restoration
-- Automatic cleanup of expired highlights
-- Cross-session support (survives browser restart)
-
-**Security:**
-
-- Domain-based encryption keys
-- Random IV per encryption (forward secrecy)
-- Tampering detection via authentication tags
-- No data leaves your device
-
-### Troubleshooting
-
-**Highlights not restoring after page reload?**
-
-- Check browser storage quota (Settings → Privacy → Site Data)
-- Verify highlights haven't exceeded 4-hour TTL
-
-**Highlights disappeared?**
-
-- Expected behavior: Highlights auto-delete after 4 hours
-- Check creation time in extension popup
-
-**Can't see highlights from another domain?**
-
-- By design: Encryption isolates domains for privacy
-- Highlights on `wikipedia.org` won't appear on `example.com`
-
-**Performance issues with many highlights?**
-
-- Sprint Mode handles 100+ highlights efficiently
-- Consider using Walk Mode for quick reading sessions
+AI features use your own keys or agents — Underscore does not bill model tokens.
 
 ---
 
-## Project Structure
+## Try it
+
+### From a release zip
+
+1. Download a build from the web app install page, or use artifacts under
+   `public-web/downloads/` after `npm run zip:chrome` / `npm run zip:firefox`.
+2. **Chrome**: `chrome://extensions` → Developer mode → Load unpacked → select
+   the unzipped extension directory (or packed `.zip` where supported).
+3. **Firefox**: temporary add-on via `about:debugging`, or follow
+   [Firefox / AMO notes](./docs/01-development/firefox-amo-publish.md).
+
+### From source (extension)
+
+```bash
+git clone git@github.com:sandeepsingh61935/_underscore.git
+cd _underscore
+npm install
+npm run dev
+```
+
+WXT prints the extension output path (typically under `.output/`). Load that
+directory as an unpacked extension in Chrome or Firefox.
+
+### From source (web app)
+
+```bash
+npm run dev:web
+```
+
+Requires env vars (see [Configuration](#configuration)). Deploy path:
+[Web CI/CD](./docs/01-development/web-ci-cd-deploy.md).
+
+---
+
+## Repository layout
 
 ```
 _underscore/
 ├── src/
-│   ├── content/           # Content scripts
-│   ├── background/        # Background service worker
-│   ├── popup/             # Popup UI
-│   ├── shared/            # Shared code
-│   │   ├── interfaces/    # TypeScript interfaces
-│   │   ├── entities/      # Domain entities
-│   │   ├── utils/         # Utilities (logger, errors)
-│   │   └── constants/     # Constants
-│   ├── components/        # UI components
-│   └── types/             # TypeScript type definitions
-├── tests/
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   ├── e2e/               # End-to-end tests (Playwright)
-│   ├── fixtures/          # Test fixtures
-│   └── helpers/           # Test helpers
-├── docs/
-│   ├── 05-quality-framework/  # Quality standards
-│   ├── 02-architecture/       # Architecture docs
-│   └── 03-implementation/     # Implementation plans
-└── public/                # Static assets
+│   ├── entrypoints/       # WXT entrypoints (background, content, popup)
+│   ├── content/           # Content-script highlight runtime
+│   ├── background/        # Service worker services
+│   ├── features/          # Feature modules (modes, vault, settings, oauth, …)
+│   ├── ui-system/         # Design system, primitives, theme
+│   ├── shared/            # Types, schemas, DI, platform-agnostic services
+│   ├── pages/             # Extension page-level views
+│   └── web/               # Web app (pages, API workers, app shell)
+├── packages/              # Workspace packages (e.g. MCP server)
+├── tests/                 # Unit / integration / e2e helpers
+├── docs/                  # Policies, ADRs, security, specs, plans
+├── store/                 # Store listing copy and screenshots
+├── ui_kits/               # Wireframe / design references (V2 Editorial)
+├── supabase/              # Schema and migrations
+├── public/                # Extension static assets
+└── public-web/            # Web static assets and download zips
 ```
+
+Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/) →
+[`docs/superpowers/specs/`](./docs/superpowers/specs/). Start at
+[`docs/README.md`](./docs/README.md).
 
 ---
 
-## Development Setup
+## Stack
+
+- **Extension**: WXT, React 19, TypeScript (strict), Chrome/Firefox MV3
+- **Web**: Vite SPA, Cloudflare Pages + Workers
+- **Backend**: Supabase (auth, data), event-sourced sync
+- **UI**: CSS custom properties (V2 Editorial) — no Tailwind
+- **Quality**: ESLint, Prettier, Vitest, Playwright
+
+---
+
+## Development
 
 ### Prerequisites
 
-- Node.js ≥ 20.0.0
-- npm ≥ 10.0.0
+- Node.js >= 20
+- npm >= 10
 
-### Installation
+### Common scripts
 
-```bash
-# Clone repository
-git clone <repository-url>
-cd _underscore
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Extension dev (WXT) |
+| `npm run dev:web` | Web app dev server |
+| `npm run build` | Production extension zips (all targets) |
+| `npm run zip:chrome` / `zip:firefox` | Browser-specific packages |
+| `npm run type-check` | TypeScript |
+| `npm run lint` / `lint:fix` | ESLint |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` | Unit tests (Vitest) |
+| `npm run test:coverage` | Coverage report |
+| `npm run test:e2e` | Playwright e2e |
+| `npm run quality` | type-check + lint + format + unit tests + legacy-DS check |
 
-# Install dependencies
-npm install
-```
+### Configuration
 
-### Available Scripts
+Copy and fill environment files for local web/extension builds that talk to
+backend services (never commit secrets):
 
-```bash
-# Development
-npm run dev               # Start development server
+- `.env.development` — local dev
+- `.env.production` / `.env.production.example` — production web / CI
 
-# Build
-npm run build            # Build for production
-npm run clean            # Clean build artifacts
+Typical variables include `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+`VITE_WEB_APP_URL`, `VITE_MCP_CLOUD_URL`, and OAuth client IDs. See
+[authentication architecture](./docs/01-development/authentication-architecture.md)
+and [web deploy](./docs/01-development/web-ci-cd-deploy.md).
 
-# Quality Checks
-npm run type-check       # TypeScript type checking
-npm run lint             # Run ESLint
-npm run lint:fix         # Fix ESLint errors
-npm run format           # Format code with Prettier
-npm run format:check     # Check formatting
-npm run quality          # Run all quality checks
+### Tests and quality bar
 
-# Testing
-npm test                 # Run unit tests
-npm run test:watch       # Run tests in watch mode
-npm run test:coverage    # Run tests with coverage
-npm run test:ui          # Open Vitest UI
-npm run test:e2e         # Run E2E tests (Playwright)
-npm run test:e2e:ui      # Open Playwright UI
-```
+- Unit/integration: Vitest — target >= 80% overall coverage on services and
+  repositories
+- E2E: Playwright for critical flows
+- Before merge: `npm run quality`
 
----
-
-## Quality Framework
-
-This project follows a comprehensive quality framework:
-
-- **Design Patterns**: Plugin architecture, Dependency Injection, Event Bus
-- **Type Safety**: TypeScript strict mode, 100% type coverage
-- **Error Handling**: Custom error hierarchy with operational/programmer
-  distinction
-- **Logging**: Structured logging with multiple levels
-- **Testing**: 80% coverage requirement (unit, integration, E2E)
-- **Code Quality**: ESLint + Prettier, complexity limits
-
-📚 **Documentation**: See
-[`docs/05-quality-framework/`](./docs/05-quality-framework/README.md)
+Details: [Quality framework](./docs/05-quality-framework/README.md).
 
 ---
 
-## Current Progress
+## Documentation map
 
-### Sprint 0: Infrastructure & Foundation ✅
+| Need | Location |
+|------|----------|
+| Doc routing / SSOT | [docs/README.md](./docs/README.md) |
+| ADRs | [docs/04-adrs/](./docs/04-adrs/) |
+| Feature specs | [docs/superpowers/specs/](./docs/superpowers/specs/) |
+| Implementation plans | [docs/superpowers/plans/](./docs/superpowers/plans/) |
+| Coding / testing standards | [docs/05-quality-framework/](./docs/05-quality-framework/) |
+| Security / threat model | [docs/06-security/](./docs/06-security/) |
+| Policies (commits, etc.) | [docs/00-policies/](./docs/00-policies/) |
+| Dev runbooks | [docs/01-development/](./docs/01-development/) |
+| Privacy policy | [PRIVACY.md](./PRIVACY.md) |
+| Changelog | [CHANGELOG.md](./CHANGELOG.md) |
+| Contributing | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 
-- [x] Project initialization
-- [x] TypeScript strict configuration
-- [x] ESLint & Prettier setup
-- [x] Vitest configuration
-- [x] Playwright configuration
-- [x] Project structure
-- [x] Logger implementation
-- [x] Error handling framework
-- [x] Initial unit tests
-- [ ] Build tool setup (WXT or Vite)
-- [ ] Manifest.json (v3)
-
----
-
-## Technology Stack
-
-### Core
-
-- **TypeScript 5.9+** (strict mode)
-- **Manifest V3** (Chrome Extension API)
-
-### Development Tools
-
-- **Vite/WXT** - Build tool
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
-- **Vitest** - Unit testing
-- **Playwright** - E2E testing
-
-### Quality Standards
-
-- ✅ 80%+ test coverage
-- ✅ 0 TypeScript errors
-- ✅ 0 ESLint errors
-- ✅ Strict type checking
-- ✅ Complexity limits enforced
-
----
-
-## Coding Standards
-
-### Naming Conventions
-
-- **Files**: `kebab-case` (`highlight-service.ts`)
-- **Classes**: `PascalCase` (`HighlightService`)
-- **Interfaces**: `IPascalCase` (`ILogger`)
-- **Variables**: `camelCase` (`highlightCount`)
-- **Constants**: `UPPER_SNAKE_CASE` (`MAX_HIGHLIGHTS`)
-
-### Import Organization
-
-```typescript
-// 1. External imports
-import { v4 as uuidv4 } from 'uuid';
-
-// 2. Internal types
-import type { ILogger } from '@/shared/interfaces';
-
-// 3. Internal implementations
-import { ConsoleLogger } from '@/shared/utils/logger';
-
-// 4. Constants
-import { DEFAULT_COLOR } from '@/shared/constants';
-```
-
----
-
-## Testing
-
-### Unit Tests
-
-```bash
-npm test                    # Run all tests
-npm run test:watch          # Watch mode
-npm run test:coverage       # With coverage
-```
-
-### E2E Tests
-
-```bash
-npm run test:e2e           # Run E2E tests
-npm run test:e2e:ui        # Interactive mode
-```
-
-### Coverage Requirements
-
-- Overall: ≥80%
-- Branches: ≥75%
-- Critical paths: 100%
+Agent/editor project rules live in [`CLAUDE.md`](./CLAUDE.md) (file map, UI
+contracts, backend rules). They are not a substitute for `docs/`.
 
 ---
 
 ## Contributing
 
-1. Read [Quality Framework](./docs/05-quality-framework/README.md)
-2. Follow [Coding Standards](./docs/05-quality-framework/02-coding-standards.md)
-3. Write tests for new code
-4. Run quality checks: `npm run quality`
-5. Ensure all checks pass
+1. Read [CONTRIBUTING.md](./CONTRIBUTING.md) and the
+   [quality framework](./docs/05-quality-framework/README.md).
+2. Use conventional commits (`feat|fix|docs|…`) — see
+   [git commit strategy](./docs/01-development/git-commit-strategy.md).
+3. One logical change per commit; no emoji in commits or source.
+4. Add tests for behavior changes; run `npm run quality` before opening a PR.
 
----
-
-## Architecture Principles
-
-### SOLID
-
-- ✅ Single Responsibility
-- ✅ Open/Closed
-- ✅ Liskov Substitution
-- ✅ Interface Segregation
-- ✅ Dependency Inversion
-
-### Core Principles
-
-- ✅ KISS (Keep It Simple)
-- ✅ YAGNI (You Aren't Gonna Need It)
-- ✅ DRY (Don't Repeat Yourself)
-
-See
-[Architecture Principles](./docs/05-quality-framework/03-architecture-principles.md)
+Security-sensitive findings: prefer a private report to the maintainer rather
+than a public issue when exploit detail is involved. Threat model and controls:
+[docs/06-security/](./docs/06-security/).
 
 ---
 
 ## License
 
-ISC
+[GNU General Public License v3.0 only](./LICENSE) (`GPL-3.0-only`).
 
 ---
 
 ## Author
 
-Sandeep Singh
-
----
-
-## Status
-
-**Current**: Sprint 0 - Infrastructure Setup  
-**Next**: Sprint 1 - Core Highlighting Implementation
-
-See
-[Sprint Mode Implementation Plan](./docs/03-implementation/sprint_mode_implementation_plan.md)
-for details.
+Sandeep Singh — [github.com/sandeepsingh61935](https://github.com/sandeepsingh61935)
