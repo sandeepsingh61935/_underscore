@@ -41,11 +41,7 @@ const STAT_CELLS: Array<{ key: keyof PopupHomeStats; label: string }> = [
   { key: 'todayCount', label: 'Today' },
 ];
 
-function HomeHeader({
-  stats,
-}: {
-  stats: PopupHomeStats;
-}): React.ReactElement {
+function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
   return (
     <div data-testid="home-status" style={{ padding: '12px 16px 10px' }}>
       <div
@@ -261,14 +257,16 @@ export function DashboardView({
   const { data: dashboardData } = useDashboardData(mode, isAuthenticated);
   const { highlights: currentDomainHighlights } = useHighlightsByDomain(
     tabContext.domain || undefined,
-    isAuthenticated,
+    isAuthenticated
   );
   const [recentExpanded, setRecentExpanded] = useState(false);
 
   const currentSectionKey = useMemo(() => {
     if (!tabContext.url && !tabContext.path) return '/';
     return getSectionKey({
-      url: tabContext.url ?? `https://${tabContext.domain ?? 'local'}${tabContext.path ?? '/'}`,
+      url:
+        tabContext.url ??
+        `https://${tabContext.domain ?? 'local'}${tabContext.path ?? '/'}`,
       path: tabContext.path ?? '/',
     });
   }, [tabContext.url, tabContext.path, tabContext.domain]);
@@ -289,9 +287,7 @@ export function DashboardView({
   const isGuest = !isAuthenticated || mode === 'basic';
 
   const displayName =
-    user?.displayName?.trim()?.split(/\s+/)[0] ||
-    user?.email?.split('@')[0] ||
-    null;
+    user?.displayName?.trim()?.split(/\s+/)[0] || user?.email?.split('@')[0] || null;
 
   const homeModel = buildPopupHomeModel({
     isAuthenticated: Boolean(isAuthenticated) && mode !== 'basic',
@@ -335,7 +331,14 @@ export function DashboardView({
 
   if (homeModel.emptyKind === 'first_run') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+        }}
+      >
         <FirstRunEmpty
           guest={isGuest || libraryAccess.showSignInPrompt}
           onSignIn={onSignIn}
@@ -393,7 +396,10 @@ export function DashboardView({
           }}
         >
           <ColumnHeader label="Active" />
-          <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div
+            className="list-scroll"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             {activePages.length === 0 ? (
               <div
                 style={{
@@ -463,7 +469,10 @@ export function DashboardView({
           }}
         >
           <ColumnHeader label="Recent" />
-          <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div
+            className="list-scroll"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             {visibleRecent.map((hl) => {
               const sectionKey = getSectionKey({ url: hl.url, path: hl.path || '/' });
               const pathLabel = !hl.path || hl.path === '/' ? '' : hl.path;

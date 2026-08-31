@@ -18,11 +18,16 @@ export function CollectionsDrawer({
 }: CollectionsDrawerProps): React.JSX.Element {
   return (
     <Drawer.Root shouldScaleBackground>
-      <Drawer.Trigger asChild>
-        {trigger}
-      </Drawer.Trigger>
+      <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
       <Drawer.Portal>
-        <Drawer.Overlay style={{ position: 'fixed', inset: 0, background: 'var(--utility-overlay-40)', zIndex: 40 }} />
+        <Drawer.Overlay
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'var(--utility-overlay-40)',
+            zIndex: 40,
+          }}
+        />
         <Drawer.Content
           style={{
             position: 'fixed',
@@ -40,14 +45,16 @@ export function CollectionsDrawer({
           }}
         >
           {/* Drag handle */}
-          <div style={{
-            margin: '12px auto 4px',
-            height: 4,
-            width: 40,
-            borderRadius: 9999,
-            background: 'var(--rule)',
-            flexShrink: 0,
-          }} />
+          <div
+            style={{
+              margin: '12px auto 4px',
+              height: 4,
+              width: 40,
+              borderRadius: 9999,
+              background: 'var(--rule)',
+              flexShrink: 0,
+            }}
+          />
 
           {/* Drawer title */}
           <Drawer.Title

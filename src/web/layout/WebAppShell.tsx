@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
@@ -41,19 +42,43 @@ function initialsFromEmail(email: string | undefined | null): string {
 }
 
 const IconHome = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    aria-hidden="true"
+  >
     <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" />
   </svg>
 );
 
 const IconLibrary = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    aria-hidden="true"
+  >
     <path d="M4 5h7v14H4zM13 5h7v14h-7z" />
   </svg>
 );
 
 const IconSettings = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    aria-hidden="true"
+  >
     <circle cx="12" cy="12" r="3" />
     <path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
   </svg>
@@ -95,7 +120,7 @@ export function WebAppShell(): React.ReactElement {
         isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status]
   );
 
   const activeRoute = routeFromPathname(location.pathname);
@@ -106,14 +131,9 @@ export function WebAppShell(): React.ReactElement {
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'
     : 'Guest';
-  const avatarText = isAuthenticated
-    ? initialsFromEmail(user?.email)
-    : 'G';
+  const avatarText = isAuthenticated ? initialsFromEmail(user?.email) : 'G';
 
-  const shellClass = [
-    'app',
-    sidebarCollapsed ? 'sidebar-collapsed' : '',
-  ]
+  const shellClass = ['app', sidebarCollapsed ? 'sidebar-collapsed' : '']
     .filter(Boolean)
     .join(' ');
 
@@ -185,7 +205,13 @@ export function WebAppShell(): React.ReactElement {
               title={sidebarCollapsed ? 'Expand' : 'Collapse'}
               onClick={() => setSidebarCollapsed((c) => !c)}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
                 <path
                   d="M10 3L5 8l5 5"
                   stroke="currentColor"

@@ -19,7 +19,10 @@ import type { HighlightDataV2, SerializedRange } from '../schemas/highlight-sche
 import { LoggerFactory } from '../utils/logger';
 import type { ILogger } from '../utils/logger';
 
-import type { IHighlightRepository, IReadableHighlightRepository } from './i-highlight-repository';
+import type {
+  IHighlightRepository,
+  IReadableHighlightRepository,
+} from './i-highlight-repository';
 
 /**
  * Synchronous Repository Facade

@@ -48,7 +48,10 @@ describe('ModeStateManager - Storage persistence (no circuit breaker)', () => {
       set: vi.fn().mockResolvedValue(undefined),
     };
     global.chrome = {
-      storage: { local: mockStorage, onChanged: { addListener: vi.fn(), removeListener: vi.fn() } },
+      storage: {
+        local: mockStorage,
+        onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+      },
       runtime: { id: 'test-id', sendMessage: vi.fn().mockResolvedValue(undefined) },
     } as any;
   });

@@ -45,7 +45,8 @@ describe('Highlight bridge: content -> IPC -> SW -> IDB roundtrip', () => {
         onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
         sendMessage: vi.fn((msg: unknown, callback: (response: unknown) => void) => {
           const validated = MessageSchema.parse(msg);
-          const handlers: Set<(payload: unknown, sender: unknown) => unknown> | undefined = (
+          const handlers:
+            Set<(payload: unknown, sender: unknown) => unknown> | undefined = (
             swBus as any
           ).handlers?.get(validated.type);
           const handler = handlers ? Array.from(handlers)[0] : undefined;

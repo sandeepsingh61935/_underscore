@@ -14,7 +14,9 @@ export interface SettingsLegalFooterProps {
   onOpenLegal?: (doc: LegalDocId) => void;
 }
 
-export function SettingsLegalFooter({ onOpenLegal }: SettingsLegalFooterProps = {}): React.ReactElement {
+export function SettingsLegalFooter({
+  onOpenLegal,
+}: SettingsLegalFooterProps = {}): React.ReactElement {
   const handleOpen = (doc: LegalDocId): void => {
     if (onOpenLegal) {
       onOpenLegal(doc);
@@ -24,14 +26,18 @@ export function SettingsLegalFooter({ onOpenLegal }: SettingsLegalFooterProps = 
     if (doc === 'help') {
       const origin = (() => {
         try {
-          const env = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_WEB_APP_URL'];
+          const env = (import.meta as unknown as { env?: Record<string, string> }).env?.[
+            'VITE_WEB_APP_URL'
+          ];
           if (env) return new URL(env.includes('://') ? env : `https://${env}`).origin;
         } catch {}
         return null;
       })();
       const url = origin ? `${origin}/help` : '/help';
-      if (typeof chrome !== 'undefined' && chrome.tabs?.create) void chrome.tabs.create({ url });
-      else if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer');
+      if (typeof chrome !== 'undefined' && chrome.tabs?.create)
+        void chrome.tabs.create({ url });
+      else if (typeof window !== 'undefined')
+        window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
     openLegalDoc(doc === 'privacy' ? '/privacy' : '/terms');

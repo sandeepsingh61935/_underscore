@@ -7,14 +7,19 @@ import {
   isInAppLlmProvider,
   parseInAppLlmProvider,
 } from '@/shared/llm/in-app-providers';
-import { ensureLlmOrigin, ensureOllamaOrigins } from '@/shared/permissions/ensure-origins';
 import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
-
+import {
+  ensureLlmOrigin,
+  ensureOllamaOrigins,
+} from '@/shared/permissions/ensure-origins';
 
 const NO_PROVIDER_MESSAGE =
   'No model configured. Open Settings → Models & providers and add OpenAI, Anthropic, Gemini, xAI (Grok), OpenRouter, or Ollama.';
 
-export function tryGetRegistered(registry: LLMRegistry, name: ProviderName): ILLMService | null {
+export function tryGetRegistered(
+  registry: LLMRegistry,
+  name: ProviderName
+): ILLMService | null {
   try {
     return registry.get(name);
   } catch {
@@ -26,7 +31,7 @@ export async function buildProvider(
   provider: ProviderName,
   keyStore: LLMKeyStore,
   apiBase?: string,
-  modelOverride?: string,
+  modelOverride?: string
 ): Promise<ILLMService> {
   if (!isInAppLlmProvider(provider)) {
     throw new Error(NO_PROVIDER_MESSAGE);
@@ -38,9 +43,11 @@ export async function buildProvider(
     throw new Error('Permission to reach this AI provider was denied');
   }
 
-  const model = modelOverride ?? await keyStore.getModel(provider);
-  const resolvedApiBase = apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
-  const apiKey = provider === 'ollama' ? undefined : (await keyStore.get(provider)) ?? undefined;
+  const model = modelOverride ?? (await keyStore.getModel(provider));
+  const resolvedApiBase =
+    apiBase ?? (provider === 'ollama' ? await keyStore.getApiBase('ollama') : undefined);
+  const apiKey =
+    provider === 'ollama' ? undefined : ((await keyStore.get(provider)) ?? undefined);
 
   return buildProviderFromConfig({
     provider,
@@ -59,7 +66,7 @@ export async function buildProvider(
 export async function resolveConfiguredProvider(
   registry: LLMRegistry,
   keyStore: LLMKeyStore,
-  preferred?: ProviderName,
+  preferred?: ProviderName
 ): Promise<ILLMService> {
   const preferredValid = parseInAppLlmProvider(preferred);
   if (preferred && !preferredValid) {
@@ -95,7 +102,7 @@ export async function resolveConfiguredProvider(
 async function tryBuildConfigured(
   name: ProviderName,
   keyStore: LLMKeyStore,
-  registry: LLMRegistry,
+  registry: LLMRegistry
 ): Promise<ILLMService> {
   if (name === 'ollama') {
     // Only auto-select after the user completed Connect in setup (not bare localhost).

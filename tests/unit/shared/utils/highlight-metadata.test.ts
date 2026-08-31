@@ -45,7 +45,7 @@ describe('highlight-metadata', () => {
         buildHighlightMetadataUpdate({
           notes: '  Key definition  ',
           tags: [' Comedy ', 'comedy'],
-        }),
+        })
       ).toEqual({
         source: 'user',
         notes: 'Key definition',
@@ -58,7 +58,7 @@ describe('highlight-metadata', () => {
         buildHighlightMetadataUpdate({
           notes: '   ',
           tags: [],
-        }),
+        })
       ).toBeUndefined();
     });
   });
@@ -68,8 +68,8 @@ describe('highlight-metadata', () => {
       expect(
         mergeHighlightMetadataPatch(
           { source: 'user', notes: 'Keep me', tags: ['old'] },
-          { tags: ['bfs', 'cpp'] },
-        ),
+          { tags: ['bfs', 'cpp'] }
+        )
       ).toEqual({
         source: 'user',
         notes: 'Keep me',
@@ -81,8 +81,8 @@ describe('highlight-metadata', () => {
       expect(
         mergeHighlightMetadataPatch(
           { source: 'user', notes: 'Old', tags: ['bfs'] },
-          { notes: '  New note  ' },
-        ),
+          { notes: '  New note  ' }
+        )
       ).toEqual({
         source: 'user',
         notes: 'New note',
@@ -94,8 +94,8 @@ describe('highlight-metadata', () => {
       expect(
         mergeHighlightMetadataPatch(
           { source: 'user', notes: 'Keep', tags: ['bfs'] },
-          { tags: [] },
-        ),
+          { tags: [] }
+        )
       ).toEqual({
         source: 'user',
         notes: 'Keep',
@@ -112,8 +112,8 @@ describe('highlight-metadata', () => {
             sourceKind: 'code',
             language: 'cpp',
           },
-          { presentation: { format: 'bullets' } },
-        ),
+          { presentation: { format: 'bullets' } }
+        )
       ).toEqual({
         source: 'user',
         notes: 'Keep',
@@ -132,8 +132,8 @@ describe('highlight-metadata', () => {
             notes: 'Keep',
             presentation: { format: 'code', language: 'js' },
           },
-          { presentation: null },
-        ),
+          { presentation: null }
+        )
       ).toEqual({
         source: 'user',
         notes: 'Keep',

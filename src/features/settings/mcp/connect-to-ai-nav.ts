@@ -7,9 +7,7 @@ import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { getMcpAiApp } from '@/features/settings/mcp/mcp-ai-apps';
 
 export type ConnectToAiScreen =
-  | { kind: 'hub' }
-  | { kind: 'picker' }
-  | { kind: 'setup'; appId: McpAiAppId };
+  { kind: 'hub' } | { kind: 'picker' } | { kind: 'setup'; appId: McpAiAppId };
 
 export function connectToAiPageTitle(screen: ConnectToAiScreen): string {
   switch (screen.kind) {
@@ -22,9 +20,7 @@ export function connectToAiPageTitle(screen: ConnectToAiScreen): string {
   }
 }
 
-export function connectToAiBackLabel(
-  stack: readonly ConnectToAiScreen[],
-): string {
+export function connectToAiBackLabel(stack: readonly ConnectToAiScreen[]): string {
   if (stack.length <= 1) {
     return '← Settings';
   }
@@ -44,17 +40,21 @@ export function connectToAiBackLabel(
 
 export function pushConnectScreen(
   stack: readonly ConnectToAiScreen[],
-  next: ConnectToAiScreen,
+  next: ConnectToAiScreen
 ): ConnectToAiScreen[] {
   const top = stack[stack.length - 1];
-  if (top && top.kind === next.kind && (next.kind !== 'setup' || (top.kind === 'setup' && top.appId === next.appId))) {
+  if (
+    top &&
+    top.kind === next.kind &&
+    (next.kind !== 'setup' || (top.kind === 'setup' && top.appId === next.appId))
+  ) {
     return [...stack];
   }
   return [...stack, next];
 }
 
 export function popConnectScreen(
-  stack: readonly ConnectToAiScreen[],
+  stack: readonly ConnectToAiScreen[]
 ): ConnectToAiScreen[] {
   if (stack.length <= 1) {
     return [{ kind: 'hub' }];

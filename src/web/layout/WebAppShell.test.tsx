@@ -25,7 +25,7 @@ function renderShell(initialPath = '/home') {
           <Route path="/sign-in" element={<h1>Sign in page</h1>} />
         </Route>
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -69,13 +69,13 @@ describe('WebAppShell', () => {
   it('sets workspace is-flush on /library, not on /home', () => {
     const lib = renderShell('/library');
     expect(
-      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush'),
+      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush')
     ).toBe(true);
     lib.unmount();
 
     renderShell('/home');
     expect(
-      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush'),
+      document.querySelector('[data-od-id="workspace"]')?.classList.contains('is-flush')
     ).toBe(false);
   });
 });

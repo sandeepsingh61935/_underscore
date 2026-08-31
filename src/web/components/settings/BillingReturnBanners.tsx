@@ -4,11 +4,7 @@
 
 import React from 'react';
 
-export type BillingReturnKind =
-  | 'success_pending'
-  | 'success_active'
-  | 'cancel'
-  | null;
+export type BillingReturnKind = 'success_pending' | 'success_active' | 'cancel' | null;
 
 export interface BillingReturnBannersProps {
   returnKind: BillingReturnKind;
@@ -43,8 +39,8 @@ export function BillingReturnBanners({
       <div className="billing-banner" data-od-id="billing-return-pending" role="status">
         <p className="bb-title">Payment successful</p>
         <p className="bb-body">
-          Activating Account (Paid)… stay on this page. Reopen the extension with the same login
-          when Active.
+          Activating Account (Paid)… stay on this page. Reopen the extension with the same
+          login when Active.
         </p>
         <div className="bb-actions">
           <span className="plan-pill spin">Confirming subscription…</span>
@@ -74,8 +70,8 @@ export function BillingReturnBanners({
       <div className="billing-banner" data-od-id="billing-return-active" role="status">
         <p className="bb-title">Payment successful</p>
         <p className="bb-body">
-          AI unlocked · reopen the Chrome extension with the same login to use Summarize and MCP
-          there.
+          AI unlocked · reopen the Chrome extension with the same login to use Summarize
+          and MCP there.
         </p>
         <div className="bb-actions">
           <span className="plan-pill paid">Account (Paid)</span>
@@ -110,8 +106,8 @@ export function BillingReturnBanners({
       <div className="billing-banner" data-od-id="billing-cancel-scheduled" role="status">
         <p className="bb-title">Cancel scheduled</p>
         <p className="bb-body">
-          You&apos;ll keep Paid features until {formatPeriodEnd(currentPeriodEnd)}. After that,
-          account returns to Free. Library stays.
+          You&apos;ll keep Paid features until {formatPeriodEnd(currentPeriodEnd)}. After
+          that, account returns to Free. Library stays.
         </p>
       </div>
     );

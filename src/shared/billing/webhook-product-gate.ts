@@ -5,9 +5,7 @@
 
 import { mapPolarSubscriptionStatus } from './polar-map';
 
-export type WebhookWriteDecision =
-  | { write: true }
-  | { write: false; reason: string };
+export type WebhookWriteDecision = { write: true } | { write: false; reason: string };
 
 /**
  * Whether to upsert billing_entitlements from this webhook event.
@@ -24,8 +22,7 @@ export function decideWebhookEntitlementWrite(input: {
   eventProductId: string | null | undefined;
 }): WebhookWriteDecision {
   const status = mapPolarSubscriptionStatus(input.polarStatus);
-  const isGrant =
-    status === 'active' || status === 'trialing' || status === 'past_due';
+  const isGrant = status === 'active' || status === 'trialing' || status === 'past_due';
 
   const allowed =
     typeof input.allowedProductId === 'string' && input.allowedProductId.trim()

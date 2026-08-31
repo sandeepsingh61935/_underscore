@@ -1,4 +1,10 @@
-export type { ExportScope, ExportableHighlight, ExportResult, ExportStats, ExportFormat } from './types';
+export type {
+  ExportScope,
+  ExportableHighlight,
+  ExportResult,
+  ExportStats,
+  ExportFormat,
+} from './types';
 export {
   toExportableHighlight,
   filterRawHighlightsByScope,

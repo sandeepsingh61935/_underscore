@@ -25,7 +25,11 @@ describe('Chip (V2 wireframe contract)', () => {
 
   it('uses --rule-soft border when not selected, --accent when selected', () => {
     const { container: a } = render(<Chip variant="filter">A</Chip>);
-    const { container: b } = render(<Chip variant="filter" selected>A</Chip>);
+    const { container: b } = render(
+      <Chip variant="filter" selected>
+        A
+      </Chip>
+    );
     const idle = a.querySelector('button') as HTMLButtonElement;
     const sel = b.querySelector('button') as HTMLButtonElement;
     expect(idle.className).toMatch(/border-\[var\(--rule-soft\)\]/);
@@ -34,7 +38,9 @@ describe('Chip (V2 wireframe contract)', () => {
 
   it('input variant uses pill (rounded-full) with --rule-soft border and --paper-2 surface', () => {
     const { container } = render(
-      <Chip variant="input" onRemove={() => {}}>Apple</Chip>
+      <Chip variant="input" onRemove={() => {}}>
+        Apple
+      </Chip>
     );
     // input variant wraps in a div span (not button)
     const wrapper = container.firstElementChild as HTMLElement;
@@ -43,7 +49,11 @@ describe('Chip (V2 wireframe contract)', () => {
   });
 
   it('input variant renders a Remove button (aria-label="Remove") when onRemove is set', () => {
-    render(<Chip variant="input" onRemove={() => {}}>Apple</Chip>);
+    render(
+      <Chip variant="input" onRemove={() => {}}>
+        Apple
+      </Chip>
+    );
     expect(screen.getByRole('button', { name: /remove/i })).toBeTruthy();
   });
 
@@ -57,7 +67,9 @@ describe('Chip (V2 wireframe contract)', () => {
     const parent = vi.fn();
     render(
       <div onClick={parent}>
-        <Chip variant="input" onRemove={onRemove}>Apple</Chip>
+        <Chip variant="input" onRemove={onRemove}>
+          Apple
+        </Chip>
       </div>
     );
     screen.getByRole('button', { name: /remove/i }).click();

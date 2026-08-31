@@ -19,11 +19,7 @@ export type FeatureKey = {
 }[keyof ModeCapabilities];
 
 export type FeatureDenyReason =
-  | 'AUTH_REQUIRED'
-  | 'CAPABILITY_DENIED'
-  | 'WRONG_MODE'
-  | 'WRONG_SCOPE'
-  | 'PAID_REQUIRED';
+  'AUTH_REQUIRED' | 'CAPABILITY_DENIED' | 'WRONG_MODE' | 'WRONG_SCOPE' | 'PAID_REQUIRED';
 
 export interface FeatureGateContext {
   mode: ModeType;
@@ -95,7 +91,7 @@ export interface LibraryAccessState {
 /** Resolve library UI access from auth state and local highlight count. */
 export function resolveLibraryAccess(
   isAuthenticated: boolean,
-  highlightCount: number,
+  highlightCount: number
 ): LibraryAccessState {
   const storageScope = isAuthenticated ? 'pro' : 'basic';
   const hasLocalHighlights = highlightCount > 0;
@@ -117,7 +113,7 @@ export function canAccessLibrary(isAuthenticated: boolean): boolean {
 
 export function canUseFeature(
   feature: FeatureKey,
-  ctx: FeatureGateContext,
+  ctx: FeatureGateContext
 ): FeatureGateResult {
   // In-app Ask/Models retired — never unlock via mode feature.
   if (feature === 'ai') {
@@ -160,7 +156,9 @@ export function canUseFeature(
  */
 /** Features that require pro storage scope (signed-in cloud sync). */
 function proOnlyFeature(feature: FeatureKey): boolean {
-  return feature === 'sync' || feature === 'export' || feature === 'ai' || feature === 'mcp';
+  return (
+    feature === 'sync' || feature === 'export' || feature === 'ai' || feature === 'mcp'
+  );
 }
 
 export interface McpCapabilityFlags {

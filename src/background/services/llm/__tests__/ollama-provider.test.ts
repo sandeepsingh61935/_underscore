@@ -17,7 +17,7 @@ function makeNdjsonResponse(body: string): Response {
         controller.close();
       },
     }),
-    { headers: { 'content-type': 'application/x-ndjson' } },
+    { headers: { 'content-type': 'application/x-ndjson' } }
   );
 }
 
@@ -36,8 +36,8 @@ describe('OllamaProvider', () => {
     const chunks: string[] = [];
     const result = await provider.streamChat(
       { systemPrompt: 's', messages: [{ role: 'user', content: 'hi' }], maxTokens: 100 },
-      chunk => chunks.push(chunk.delta),
-      new AbortController().signal,
+      (chunk) => chunks.push(chunk.delta),
+      new AbortController().signal
     );
 
     expect(chunks.join('')).toBe('Hello world');
@@ -48,11 +48,18 @@ describe('OllamaProvider', () => {
   it('sends correct request shape to /api/chat', async () => {
     fetchMock.mockResolvedValueOnce(makeNdjsonResponse(OLLAMA_NDJSON));
 
-    const provider = new OllamaProvider({ apiBase: 'http://localhost:11434', model: 'mistral' });
+    const provider = new OllamaProvider({
+      apiBase: 'http://localhost:11434',
+      model: 'mistral',
+    });
     await provider.streamChat(
-      { systemPrompt: 'sys', messages: [{ role: 'user', content: 'msg' }], maxTokens: 256 },
+      {
+        systemPrompt: 'sys',
+        messages: [{ role: 'user', content: 'msg' }],
+        maxTokens: 256,
+      },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];

@@ -28,7 +28,7 @@ export interface ContentLibrarySyncDeps {
 
 export async function handleLibraryDataChanged(
   payload: LibraryChangePayload,
-  deps: ContentLibrarySyncDeps,
+  deps: ContentLibrarySyncDeps
 ): Promise<void> {
   if (payload.removedIds?.length) {
     for (const id of payload.removedIds) {
@@ -47,17 +47,20 @@ export async function handleLibraryDataChanged(
 
 async function restoreHighlightOnPage(
   id: string,
-  deps: ContentLibrarySyncDeps,
+  deps: ContentLibrarySyncDeps
 ): Promise<void> {
   if (deps.modeManager.getHighlight(id)) {
     return;
   }
 
-  const response = await deps.messageBus.send<MessageResponse<HighlightDataV2>>('background', {
-    type: IPC_HIGHLIGHT_GET,
-    payload: { id },
-    timestamp: Date.now(),
-  });
+  const response = await deps.messageBus.send<MessageResponse<HighlightDataV2>>(
+    'background',
+    {
+      type: IPC_HIGHLIGHT_GET,
+      payload: { id },
+      timestamp: Date.now(),
+    }
+  );
 
   if (!response?.success || !response.data) {
     deps.logger.warn('[LibrarySync] Could not fetch restored highlight', { id });
@@ -68,7 +71,7 @@ async function restoreHighlightOnPage(
 
   const highlightUrl = highlight.url ? normalizePageUrl(highlight.url) : '';
   const onCurrentPage = Boolean(
-    highlightUrl && highlightUrl === normalizePageUrl(deps.currentUrl),
+    highlightUrl && highlightUrl === normalizePageUrl(deps.currentUrl)
   );
 
   if (!onCurrentPage) {

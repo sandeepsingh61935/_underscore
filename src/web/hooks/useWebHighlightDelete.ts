@@ -20,7 +20,7 @@ export type WebDeleteRequest =
 
 function idsForRequest(
   highlights: readonly WebHighlight[],
-  request: WebDeleteRequest,
+  request: WebDeleteRequest
 ): string[] {
   switch (request.scope) {
     case 'highlight':
@@ -59,9 +59,7 @@ export function useWebHighlightDelete(opts: UseWebHighlightDeleteOpts) {
         const empty: WebDeleteResult = {
           success: false,
           error:
-            request.scope === 'highlight'
-              ? 'Highlight not found'
-              : 'Nothing to delete',
+            request.scope === 'highlight' ? 'Highlight not found' : 'Nothing to delete',
         };
         toast.error(empty.error);
         return empty;
@@ -81,16 +79,16 @@ export function useWebHighlightDelete(opts: UseWebHighlightDeleteOpts) {
         toast.success(
           result.deletedCount === 1
             ? 'Library deleted (1 highlight)'
-            : `Library deleted (${result.deletedCount} highlights)`,
+            : `Library deleted (${result.deletedCount} highlights)`
         );
       } else {
         toast.success(
-          `Deleted ${result.deletedCount} highlight${result.deletedCount === 1 ? '' : 's'}`,
+          `Deleted ${result.deletedCount} highlight${result.deletedCount === 1 ? '' : 's'}`
         );
       }
       return result;
     },
-    [highlights, removeHighlights],
+    [highlights, removeHighlights]
   );
 
   return { deleteScope };

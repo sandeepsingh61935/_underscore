@@ -12,14 +12,20 @@ export interface LLMHealthCheckOptions {
 export function useLLMHealthCheck(): {
   run: (
     provider: ProviderName,
-    options?: LLMHealthCheckOptions,
-  ) => Promise<{ success: true; data: HealthCheckResult } | { success: false; error: string }>;
+    options?: LLMHealthCheckOptions
+  ) => Promise<
+    { success: true; data: HealthCheckResult } | { success: false; error: string }
+  >;
 } {
-  const check = useIpcAction<{ provider: ProviderName; apiBase?: string; model?: string }, HealthCheckResult>(
-    IPC_AI_HEALTH_CHECK,
+  const check = useIpcAction<
+    { provider: ProviderName; apiBase?: string; model?: string },
+    HealthCheckResult
+  >(IPC_AI_HEALTH_CHECK);
+  const run = useCallback(
+    async (provider: ProviderName, options: LLMHealthCheckOptions = {}) => {
+      return check({ provider, apiBase: options.apiBase, model: options.model });
+    },
+    [check]
   );
-  const run = useCallback(async (provider: ProviderName, options: LLMHealthCheckOptions = {}) => {
-    return check({ provider, apiBase: options.apiBase, model: options.model });
-  }, [check]);
   return { run };
 }

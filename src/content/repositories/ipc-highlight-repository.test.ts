@@ -19,7 +19,10 @@ function makeHighlight(): HighlightDataV2 {
 
 describe('IpcHighlightRepository IPC payload contract', () => {
   let captured: unknown[];
-  let sentMessages: Array<{ target: 'background' | 'content' | 'popup'; message: unknown }>;
+  let sentMessages: Array<{
+    target: 'background' | 'content' | 'popup';
+    message: unknown;
+  }>;
   let repo: IpcHighlightRepository;
 
   beforeEach(() => {
@@ -27,11 +30,16 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     sentMessages = [];
 
     const mockBus = {
-      send: vi.fn(async (target: 'background' | 'content' | 'popup', message: unknown): Promise<unknown> => {
-        sentMessages.push({ target, message });
-        captured.push(message);
-        return { success: true };
-      }),
+      send: vi.fn(
+        async (
+          target: 'background' | 'content' | 'popup',
+          message: unknown
+        ): Promise<unknown> => {
+          sentMessages.push({ target, message });
+          captured.push(message);
+          return { success: true };
+        }
+      ),
       subscribe: vi.fn(() => () => {}),
       publish: vi.fn(async () => {}),
     } as unknown as IMessageBus;
@@ -75,7 +83,9 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     const parsed = MessageSchema.parse(captured[0]);
     expect(parsed.type).toBe('IPC_HIGHLIGHT_ADD_MANY');
     expect(parsed.timestamp).toBeGreaterThan(0);
-    expect((parsed.payload as { highlights: HighlightDataV2[] }).highlights).toEqual(highlights);
+    expect((parsed.payload as { highlights: HighlightDataV2[] }).highlights).toEqual(
+      highlights
+    );
     expect(sentMessages[0]!.target).toBe('background');
   });
 
@@ -83,7 +93,12 @@ describe('IpcHighlightRepository IPC payload contract', () => {
     // Compile-time check: IpcHighlightRepository only has write methods.
     // This test guards against accidental re-introduction of read methods
     // that throw at runtime.
-    const repoAsWriteOnly: { add: unknown; update: unknown; remove: unknown; addMany: unknown } = repo;
+    const repoAsWriteOnly: {
+      add: unknown;
+      update: unknown;
+      remove: unknown;
+      addMany: unknown;
+    } = repo;
     expect(typeof repoAsWriteOnly.add).toBe('function');
     expect(typeof repoAsWriteOnly.update).toBe('function');
     expect(typeof repoAsWriteOnly.remove).toBe('function');

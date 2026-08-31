@@ -44,17 +44,23 @@ export class OllamaProvider implements ILLMService {
   async streamChat(
     request: LLMRequest,
     onChunk: (chunk: LLMChunk) => void,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<LLMResult> {
     const start = Date.now();
     const messages: Array<{ role: string; content: string }> = [];
-    if (request.systemPrompt) messages.push({ role: 'system', content: request.systemPrompt });
-    messages.push(...request.messages.map(m => ({ role: m.role, content: m.content })));
+    if (request.systemPrompt)
+      messages.push({ role: 'system', content: request.systemPrompt });
+    messages.push(...request.messages.map((m) => ({ role: m.role, content: m.content })));
 
     const response = await fetch(`${this.apiBase}/api/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: this.model, messages, stream: true, options: { num_predict: request.maxTokens } }),
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+        stream: true,
+        options: { num_predict: request.maxTokens },
+      }),
       signal,
     });
 
@@ -81,7 +87,11 @@ export class OllamaProvider implements ILLMService {
       for (const line of lines) {
         if (!line.trim()) continue;
         let chunk: OllamaChatChunk;
-        try { chunk = JSON.parse(line); } catch { continue; }
+        try {
+          chunk = JSON.parse(line);
+        } catch {
+          continue;
+        }
         if (chunk.message?.content) {
           accumulated += chunk.message.content;
           onChunk({ delta: chunk.message.content });
@@ -93,7 +103,12 @@ export class OllamaProvider implements ILLMService {
       }
     }
 
-    return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
+    return {
+      text: accumulated,
+      inputTokens,
+      outputTokens,
+      durationMs: Date.now() - start,
+    };
   }
 
   async chat(request: LLMRequest): Promise<LLMResult> {
@@ -101,8 +116,10 @@ export class OllamaProvider implements ILLMService {
     let accumulated = '';
     const result = await this.streamChat(
       request,
-      chunk => { accumulated += chunk.delta; },
-      controller.signal,
+      (chunk) => {
+        accumulated += chunk.delta;
+      },
+      controller.signal
     );
     return { ...result, text: accumulated };
   }
@@ -113,8 +130,8 @@ export class OllamaProvider implements ILLMService {
       if (!response.ok) {
         return { ok: false, model: this.model, error: `HTTP ${response.status}` };
       }
-      const json = await response.json() as { models?: Array<{ name: string }> };
-      const names = (json.models ?? []).map(m => m.name);
+      const json = (await response.json()) as { models?: Array<{ name: string }> };
+      const names = (json.models ?? []).map((m) => m.name);
       if (names.length === 0) {
         return {
           ok: false,

@@ -7,13 +7,15 @@ import {
   formatScopeQueryUserContent,
 } from '../scope-query-request';
 
-const excerpts: HighlightExcerpt[] = [{
-  id: 'h1',
-  url: 'https://example.com',
-  highlightText: 'key idea',
-  pageTitle: 'Example',
-  excerpt: 'Body with <mark>key idea</mark>.',
-}];
+const excerpts: HighlightExcerpt[] = [
+  {
+    id: 'h1',
+    url: 'https://example.com',
+    highlightText: 'key idea',
+    pageTitle: 'Example',
+    excerpt: 'Body with <mark>key idea</mark>.',
+  },
+];
 
 describe('scope query', () => {
   it('askScope restricts answers to highlight excerpts', () => {
@@ -29,7 +31,9 @@ describe('scope query', () => {
 
   it('formats question after excerpts', () => {
     const user = formatScopeQueryUserContent(excerpts, 'What is the main theme?');
-    expect(user.indexOf('key idea')).toBeLessThan(user.indexOf('What is the main theme?'));
+    expect(user.indexOf('key idea')).toBeLessThan(
+      user.indexOf('What is the main theme?')
+    );
     expect(user).toContain('## Question');
   });
 

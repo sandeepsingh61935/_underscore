@@ -14,9 +14,7 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
  * Event types for event sourcing
  */
 export type HighlightEventType =
-  | 'highlight.created'
-  | 'highlight.removed'
-  | 'highlights.cleared';
+  'highlight.created' | 'highlight.removed' | 'highlights.cleared';
 
 /**
  * Base event interface
@@ -55,9 +53,7 @@ export interface HighlightsClearedEvent extends HighlightEvent {
  * Union type for all highlight events
  */
 export type AnyHighlightEvent =
-  | HighlightCreatedEvent
-  | HighlightRemovedEvent
-  | HighlightsClearedEvent;
+  HighlightCreatedEvent | HighlightRemovedEvent | HighlightsClearedEvent;
 
 /**
  * Domain storage schema

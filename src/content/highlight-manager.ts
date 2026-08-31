@@ -11,8 +11,8 @@
 
 import { getHighlightName } from './styles/highlight-styles';
 
-import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
 import { EventName, createEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
@@ -52,10 +52,7 @@ export class HighlightManager {
     return 'highlights' in CSS;
   }
 
-  createHighlight(
-    selection: Selection,
-    color: string
-  ): HighlightData | null {
+  createHighlight(selection: Selection, color: string): HighlightData | null {
     if (selection.rangeCount === 0) {
       this.logger.warn('No range in selection');
       return null;
@@ -115,7 +112,11 @@ export class HighlightManager {
       })
     );
 
-    this.logger.info('Highlight created', { id, type: 'underscore', textLength: text.length });
+    this.logger.info('Highlight created', {
+      id,
+      type: 'underscore',
+      textLength: text.length,
+    });
     return highlightData;
   }
 

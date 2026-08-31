@@ -31,7 +31,7 @@ export function resolveLlmProxyAllowedOrigins(env: {
 /** Exact origin match against allowlist. */
 export function isAllowedLlmProxyOrigin(
   origin: string | null,
-  allowed: readonly string[],
+  allowed: readonly string[]
 ): boolean {
   if (!origin || origin === 'null') return false;
   return allowed.includes(origin);
@@ -43,12 +43,11 @@ export function isAllowedLlmProxyOrigin(
  */
 export function llmProxyCorsHeaders(
   req: Request,
-  allowed: readonly string[],
+  allowed: readonly string[]
 ): Record<string, string> {
   const origin = req.headers.get('Origin');
   const headers: Record<string, string> = {
-    'access-control-allow-headers':
-      'authorization, content-type, x-llm-api-key',
+    'access-control-allow-headers': 'authorization, content-type, x-llm-api-key',
     'access-control-allow-methods': 'POST, OPTIONS',
     vary: 'Origin',
   };

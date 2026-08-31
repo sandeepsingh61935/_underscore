@@ -88,7 +88,9 @@ describe('RealtimeHighlightIngestService', () => {
     const id = '22222222-2222-4222-8222-222222222222';
     await handlers.get(EventName.REMOTE_HIGHLIGHT_CREATED)!(makeRow(id));
 
-    expect(repo.add).toHaveBeenCalledWith(expect.objectContaining({ id }), { skipSync: true });
+    expect(repo.add).toHaveBeenCalledWith(expect.objectContaining({ id }), {
+      skipSync: true,
+    });
     expect(facade.reload).toHaveBeenCalled();
   });
 
@@ -98,7 +100,10 @@ describe('RealtimeHighlightIngestService', () => {
     tracker.record(id, 'add');
 
     const echoService = new RealtimeHighlightIngestService(
-      { on: (event: string, handler: (payload: unknown) => void) => handlers.set(event, handler) } as never,
+      {
+        on: (event: string, handler: (payload: unknown) => void) =>
+          handlers.set(event, handler),
+      } as never,
       repo as never,
       facade as never,
       tracker,

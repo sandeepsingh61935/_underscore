@@ -21,7 +21,9 @@ export function createIpcOAuthGrantsPort(bus: IMessageBus): OAuthGrantsPort {
         timestamp: Date.now(),
       });
       if (!res || !res.success) {
-        throw new Error(res && !res.success ? res.error : 'Failed to load connected apps');
+        throw new Error(
+          res && !res.success ? res.error : 'Failed to load connected apps'
+        );
       }
       return res.data ?? [];
     },
@@ -59,7 +61,9 @@ export function createWebOAuthGrantsPort(): OAuthGrantsPort {
 }
 
 function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+  return (
+    typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function'
+  );
 }
 
 export function resolveOAuthGrantsPort(bus: IMessageBus | null): OAuthGrantsPort {

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { getModeBranding } from '@/shared/constants/mode-branding';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { Row } from '@/ui-system/components/primitives/Row';
 
 export interface McpTierCalloutProps {
@@ -25,7 +25,10 @@ export function McpTierCallout({
         title="Account sync and Integrations"
         sub="Sign in to sync your library; Integrations need Account (Paid)"
         right={
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
+          <span
+            className="u-mono"
+            style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+          >
             Sign in
           </span>
         }

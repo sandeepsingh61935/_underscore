@@ -18,7 +18,7 @@ function makeSseResponse(body: string): Response {
         controller.close();
       },
     }),
-    { headers: { 'content-type': 'text/event-stream' } },
+    { headers: { 'content-type': 'text/event-stream' } }
   );
 }
 
@@ -37,8 +37,8 @@ describe('OpenAIProvider', () => {
     const chunks: string[] = [];
     const result = await provider.streamChat(
       { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 100 },
-      chunk => chunks.push(chunk.delta),
-      new AbortController().signal,
+      (chunk) => chunks.push(chunk.delta),
+      new AbortController().signal
     );
 
     expect(chunks.join('')).toBe('Hi there');
@@ -51,9 +51,13 @@ describe('OpenAIProvider', () => {
 
     const provider = new OpenAIProvider({ apiKey: 'sk-x' });
     await provider.streamChat(
-      { systemPrompt: 'sys', messages: [{ role: 'user', content: 'msg' }], maxTokens: 64 },
+      {
+        systemPrompt: 'sys',
+        messages: [{ role: 'user', content: 'msg' }],
+        maxTokens: 64,
+      },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -77,10 +81,12 @@ describe('OpenAIProvider', () => {
     await provider.streamChat(
       { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 64 },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((init.headers as Record<string, string>)['HTTP-Referer']).toBe('https://example.com');
+    expect((init.headers as Record<string, string>)['HTTP-Referer']).toBe(
+      'https://example.com'
+    );
   });
 
   it('lets extraHeaders override Authorization when needed', async () => {
@@ -95,7 +101,7 @@ describe('OpenAIProvider', () => {
     await provider.streamChat(
       { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 64 },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://example.com/v1/chat/completions');
@@ -109,8 +115,8 @@ describe('OpenAIProvider', () => {
       provider.streamChat(
         { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 8 },
         () => {},
-        new AbortController().signal,
-      ),
+        new AbortController().signal
+      )
     ).rejects.toThrow(/LLM request failed \(401\) at api\.openai\.com model=gpt-4o-mini/);
   });
 });

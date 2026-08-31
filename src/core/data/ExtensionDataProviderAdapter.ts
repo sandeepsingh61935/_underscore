@@ -6,21 +6,23 @@ import type { DomainCollection } from '@/shared/types/domain-collection';
 import type { EventBus } from '@/shared/utils/event-bus';
 
 export class ExtensionDataProviderAdapter implements IDataProvider {
-  constructor(_eventBus: EventBus, private readonly messageBus?: IMessageBus) {}
+  constructor(
+    _eventBus: EventBus,
+    private readonly messageBus?: IMessageBus
+  ) {}
 
   async getCollections(mode: string): Promise<DomainCollection[]> {
     if (!this.messageBus) {
       return [];
     }
     try {
-      const response = await this.messageBus.send<MessageResponse<{ collections: CollectionSummary[] }>>(
-        'background',
-        {
-          type: 'GET_COLLECTIONS',
-          payload: { mode },
-          timestamp: Date.now(),
-        }
-      );
+      const response = await this.messageBus.send<
+        MessageResponse<{ collections: CollectionSummary[] }>
+      >('background', {
+        type: 'GET_COLLECTIONS',
+        payload: { mode },
+        timestamp: Date.now(),
+      });
       if (!response?.success || !response.data) {
         return [];
       }

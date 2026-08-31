@@ -7,7 +7,11 @@ export interface SetupSectionProps {
 }
 
 /** Numbered section header ("1 · CONNECT") that encodes the real setup sequence. */
-export function SetupSection({ index, label, children }: SetupSectionProps): React.ReactElement {
+export function SetupSection({
+  index,
+  label,
+  children,
+}: SetupSectionProps): React.ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="u-kicker" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

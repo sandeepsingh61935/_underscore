@@ -30,9 +30,9 @@ describe('highlight-filter model', () => {
     });
 
     it('counts restricted fields as one unit', () => {
-      expect(
-        countActiveFilters({ fields: ['text'], refine: [], tagFilters: [] }),
-      ).toBe(1);
+      expect(countActiveFilters({ fields: ['text'], refine: [], tagFilters: [] })).toBe(
+        1
+      );
       expect(fieldsAreRestricted(['text', 'notes', 'tags', 'domain'])).toBe(false);
       expect(fieldsAreRestricted(['text', 'notes', 'tags'])).toBe(true);
       expect(fieldsAreRestricted(['text', 'notes'])).toBe(true);
@@ -44,7 +44,7 @@ describe('highlight-filter model', () => {
           fields: ['text'],
           refine: ['has_notes', 'has_tags'],
           tagFilters: ['css', 'rag'],
-        }),
+        })
       ).toBe(1 + 2 + 2);
     });
 
@@ -70,8 +70,12 @@ describe('highlight-filter model', () => {
     });
 
     it('ANDs multiple refine ids', () => {
-      expect(matchesRefine(item({ notes: 'n', tags: [] }), ['has_notes', 'untagged'])).toBe(true);
-      expect(matchesRefine(item({ notes: 'n', tags: ['a'] }), ['has_notes', 'untagged'])).toBe(false);
+      expect(
+        matchesRefine(item({ notes: 'n', tags: [] }), ['has_notes', 'untagged'])
+      ).toBe(true);
+      expect(
+        matchesRefine(item({ notes: 'n', tags: ['a'] }), ['has_notes', 'untagged'])
+      ).toBe(false);
     });
 
     it('conflicting pair matches nothing', () => {
@@ -82,7 +86,9 @@ describe('highlight-filter model', () => {
   describe('matchesTagFilters', () => {
     it('requires every selected tag (AND, case-insensitive)', () => {
       expect(matchesTagFilters(item({ tags: ['css', 'cascade'] }), ['css'])).toBe(true);
-      expect(matchesTagFilters(item({ tags: ['css', 'cascade'] }), ['CSS', 'Cascade'])).toBe(true);
+      expect(
+        matchesTagFilters(item({ tags: ['css', 'cascade'] }), ['CSS', 'Cascade'])
+      ).toBe(true);
       expect(matchesTagFilters(item({ tags: ['css'] }), ['css', 'rag'])).toBe(false);
     });
 

@@ -22,10 +22,7 @@ export {
   snapshotFromEntitlement,
 } from './entitlement';
 
-export {
-  getEntitlementPaidActive,
-  setEntitlementPaidActive,
-} from './entitlement-gate';
+export { getEntitlementPaidActive, setEntitlementPaidActive } from './entitlement-gate';
 
 export {
   entitlementUpsertFromPolarSubscription,
@@ -54,10 +51,7 @@ export {
   resolveBillingReturnUrl,
 } from './allowed-origins';
 
-export {
-  assertPolarCheckoutUrl,
-  isPolarCheckoutHost,
-} from './polar-checkout-url';
+export { assertPolarCheckoutUrl, isPolarCheckoutHost } from './polar-checkout-url';
 
 export {
   createEmptyRateBucket,

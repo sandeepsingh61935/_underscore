@@ -12,7 +12,10 @@ import {
 
 const HIGHLIGHT_ID = '11111111-1111-4111-8111-111111111111';
 
-function makeHighlight(id: string, url = 'https://example.com/docs/page'): HighlightDataV2 {
+function makeHighlight(
+  id: string,
+  url = 'https://example.com/docs/page'
+): HighlightDataV2 {
   return {
     id,
     text: `text-${id}`,
@@ -53,7 +56,7 @@ function proContext(): HighlightDeleteContext {
 
 async function makeService(
   highlights: HighlightDataV2[] = [],
-  initialScope: 'basic' | 'pro' = 'basic',
+  initialScope: 'basic' | 'pro' = 'basic'
 ) {
   const basic = new InMemoryHighlightRepository();
   const pro = new InMemoryHighlightRepository();
@@ -75,23 +78,34 @@ describe('HighlightDeleteService.executeDelete', () => {
 
     const result = await service.executeDelete(
       { scope: 'highlight', id: HIGHLIGHT_ID },
-      guestContext(),
+      guestContext()
     );
 
-    expect(result).toEqual({ success: true, deletedCount: 1, removedIds: [HIGHLIGHT_ID] });
+    expect(result).toEqual({
+      success: true,
+      deletedCount: 1,
+      removedIds: [HIGHLIGHT_ID],
+    });
     expect(await basic.count()).toBe(0);
     expect(cloud.deleteHighlight).not.toHaveBeenCalled();
   });
 
   it('soft-deletes in cloud when a signed-in user deletes a highlight', async () => {
-    const { service, pro, cloud } = await makeService([makeHighlight(HIGHLIGHT_ID)], 'pro');
+    const { service, pro, cloud } = await makeService(
+      [makeHighlight(HIGHLIGHT_ID)],
+      'pro'
+    );
 
     const result = await service.executeDelete(
       { scope: 'highlight', id: HIGHLIGHT_ID },
-      proContext(),
+      proContext()
     );
 
-    expect(result).toEqual({ success: true, deletedCount: 1, removedIds: [HIGHLIGHT_ID] });
+    expect(result).toEqual({
+      success: true,
+      deletedCount: 1,
+      removedIds: [HIGHLIGHT_ID],
+    });
     expect(await pro.count()).toBe(0);
     expect(cloud.deleteHighlight).toHaveBeenCalledWith(HIGHLIGHT_ID);
   });
@@ -99,7 +113,10 @@ describe('HighlightDeleteService.executeDelete', () => {
 
 describe('HighlightDeleteService.undoPendingHighlight', () => {
   it('restores the last deleted highlight within the undo window', async () => {
-    const { service, pro, cloud } = await makeService([makeHighlight(HIGHLIGHT_ID)], 'pro');
+    const { service, pro, cloud } = await makeService(
+      [makeHighlight(HIGHLIGHT_ID)],
+      'pro'
+    );
 
     await service.executeDelete({ scope: 'highlight', id: HIGHLIGHT_ID }, proContext());
     const undo = await service.undoPendingHighlight(proContext());
@@ -134,7 +151,7 @@ describe('HighlightDeleteService bulk delete', () => {
 
     const result = await service.executeDelete(
       { scope: 'domain', domain: 'example.com' },
-      guestContext(),
+      guestContext()
     );
 
     expect(result).toEqual({
@@ -150,15 +167,24 @@ describe('HighlightDeleteService bulk delete', () => {
 
   it('deletes only highlights in the requested section', async () => {
     const highlights = [
-      makeHighlight('11111111-1111-4111-8111-111111111111', 'https://example.com/docs/page1'),
-      makeHighlight('22222222-2222-4222-8222-222222222222', 'https://example.com/docs/page1'),
-      makeHighlight('33333333-3333-4333-8333-333333333333', 'https://example.com/blog/post'),
+      makeHighlight(
+        '11111111-1111-4111-8111-111111111111',
+        'https://example.com/docs/page1'
+      ),
+      makeHighlight(
+        '22222222-2222-4222-8222-222222222222',
+        'https://example.com/docs/page1'
+      ),
+      makeHighlight(
+        '33333333-3333-4333-8333-333333333333',
+        'https://example.com/blog/post'
+      ),
     ];
     const { service, basic } = await makeService(highlights);
 
     const result = await service.executeDelete(
       { scope: 'section', domain: 'example.com', sectionKey: '/docs/page1' },
-      guestContext(),
+      guestContext()
     );
 
     expect(result).toEqual({
@@ -194,10 +220,13 @@ describe('HighlightDeleteService bulk delete', () => {
   });
 
   it('soft-deletes all cloud highlights when a signed-in user wipes the library', async () => {
-    const { service, pro, cloud } = await makeService([
-      makeHighlight('11111111-1111-4111-8111-111111111111'),
-      makeHighlight('22222222-2222-4222-8222-222222222222'),
-    ], 'pro');
+    const { service, pro, cloud } = await makeService(
+      [
+        makeHighlight('11111111-1111-4111-8111-111111111111'),
+        makeHighlight('22222222-2222-4222-8222-222222222222'),
+      ],
+      'pro'
+    );
 
     const result = await service.executeDelete({ scope: 'library' }, proContext());
 

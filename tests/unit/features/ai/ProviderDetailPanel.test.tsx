@@ -44,7 +44,9 @@ function makeBus(handlers: Record<string, (payload: unknown) => unknown>): IMess
   };
 }
 
-function wrap(bus: IMessageBus): ({ children }: { children: ReactNode }) => React.ReactElement {
+function wrap(
+  bus: IMessageBus
+): ({ children }: { children: ReactNode }) => React.ReactElement {
   return ({ children }: { children: ReactNode }) =>
     React.createElement(MessageBusProvider, { messageBus: bus, children });
 }
@@ -54,20 +56,31 @@ describe('ProviderDetailPanel', () => {
     vi.clearAllMocks();
     vi.stubGlobal('chrome', {
       runtime: { id: 'test-extension', sendMessage: vi.fn() },
-      storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) } },
+      storage: {
+        local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
+      },
     });
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      json: async () => OPENROUTER_CATALOG_RESPONSE,
-    })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => OPENROUTER_CATALOG_RESPONSE,
+      }))
+    );
   });
 
   it('blocks selecting any OpenRouter model until the API key is verified (free included)', async () => {
     const bus = makeBus({
-      [IPC_AI_GET_API_KEY_STATUS]: () => ({ success: true, data: { configured: false, model: 'free-a' } }),
+      [IPC_AI_GET_API_KEY_STATUS]: () => ({
+        success: true,
+        data: { configured: false, model: 'free-a' },
+      }),
     });
 
-    render(<ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />, { wrapper: wrap(bus) });
+    render(
+      <ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />,
+      { wrapper: wrap(bus) }
+    );
 
     await screen.findByText('Free A');
     // Free rows are listed for browsing but locked until a key is verified.
@@ -81,7 +94,10 @@ describe('ProviderDetailPanel', () => {
   });
 
   it('unlocks model selection and save once Ollama connects', async () => {
-    vi.mocked(checkProviderHealthInBrowser).mockResolvedValue({ ok: true, model: 'llama3.2' });
+    vi.mocked(checkProviderHealthInBrowser).mockResolvedValue({
+      ok: true,
+      model: 'llama3.2',
+    });
 
     const bus = makeBus({
       [IPC_AI_GET_API_KEY_STATUS]: () => ({
@@ -94,7 +110,9 @@ describe('ProviderDetailPanel', () => {
       }),
     });
 
-    render(<ProviderDetailPanel provider="ollama" onBack={vi.fn()} onSaved={vi.fn()} />, { wrapper: wrap(bus) });
+    render(<ProviderDetailPanel provider="ollama" onBack={vi.fn()} onSaved={vi.fn()} />, {
+      wrapper: wrap(bus),
+    });
 
     await screen.findByRole('button', { name: /llama3\.2/ });
     expect(screen.getByRole('button', { name: 'Use this model' })).toBeDisabled();
@@ -110,10 +128,16 @@ describe('ProviderDetailPanel', () => {
 
   it('keeps a newly selected free model instead of snapping back to the saved status model', async () => {
     const bus = makeBus({
-      [IPC_AI_GET_API_KEY_STATUS]: () => ({ success: true, data: { configured: true, model: 'free-a' } }),
+      [IPC_AI_GET_API_KEY_STATUS]: () => ({
+        success: true,
+        data: { configured: true, model: 'free-a' },
+      }),
     });
 
-    render(<ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />, { wrapper: wrap(bus) });
+    render(
+      <ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />,
+      { wrapper: wrap(bus) }
+    );
 
     await screen.findByText(/Connected/);
     await screen.findByText('Free A');
@@ -129,10 +153,16 @@ describe('ProviderDetailPanel', () => {
 
   it('reconciles the OpenRouter selection when the filter no longer includes it', async () => {
     const bus = makeBus({
-      [IPC_AI_GET_API_KEY_STATUS]: () => ({ success: true, data: { configured: true, model: 'free-a' } }),
+      [IPC_AI_GET_API_KEY_STATUS]: () => ({
+        success: true,
+        data: { configured: true, model: 'free-a' },
+      }),
     });
 
-    render(<ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />, { wrapper: wrap(bus) });
+    render(
+      <ProviderDetailPanel provider="openrouter" onBack={vi.fn()} onSaved={vi.fn()} />,
+      { wrapper: wrap(bus) }
+    );
 
     // Wait for the already-configured status to settle before interacting —
     // otherwise the mount-reset effect can stomp a filter click made too early.
@@ -154,7 +184,10 @@ describe('ProviderDetailPanel', () => {
   });
 
   it('shows a brief confirmation before returning to the hub on save', async () => {
-    vi.mocked(checkProviderHealthInBrowser).mockResolvedValue({ ok: true, model: 'llama3.2' });
+    vi.mocked(checkProviderHealthInBrowser).mockResolvedValue({
+      ok: true,
+      model: 'llama3.2',
+    });
     const onSaved = vi.fn();
 
     const bus = makeBus({
@@ -167,10 +200,15 @@ describe('ProviderDetailPanel', () => {
         data: { models: [{ id: 'llama3.2', label: 'llama3.2' }] },
       }),
       [IPC_AI_SET_API_KEY]: () => ({ success: true, data: { ok: true } }),
-      [IPC_AI_HEALTH_CHECK]: () => ({ success: true, data: { ok: true, model: 'llama3.2' } }),
+      [IPC_AI_HEALTH_CHECK]: () => ({
+        success: true,
+        data: { ok: true, model: 'llama3.2' },
+      }),
     });
 
-    render(<ProviderDetailPanel provider="ollama" onBack={vi.fn()} onSaved={onSaved} />, { wrapper: wrap(bus) });
+    render(<ProviderDetailPanel provider="ollama" onBack={vi.fn()} onSaved={onSaved} />, {
+      wrapper: wrap(bus),
+    });
 
     await screen.findByRole('button', { name: /llama3\.2/ });
     fireEvent.click(await screen.findByRole('button', { name: 'Use this model' }));

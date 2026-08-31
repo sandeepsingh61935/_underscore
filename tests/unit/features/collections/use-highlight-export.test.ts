@@ -45,12 +45,14 @@ describe('executeHighlightExport', () => {
   });
 
   it('downloads markdown when highlights are available', async () => {
-    const fetchHighlights: FetchExportableHighlights = vi.fn(async () => [sampleHighlight]);
+    const fetchHighlights: FetchExportableHighlights = vi.fn(async () => [
+      sampleHighlight,
+    ]);
 
     const ok = await executeHighlightExport(
       { kind: 'section', domain: 'example.com', sectionKey: '/docs' },
       fetchHighlights,
-      'md',
+      'md'
     );
 
     expect(ok).toBe(true);
@@ -60,13 +62,11 @@ describe('executeHighlightExport', () => {
   });
 
   it('downloads xlsx when spreadsheet format is requested', async () => {
-    const fetchHighlights: FetchExportableHighlights = vi.fn(async () => [sampleHighlight]);
+    const fetchHighlights: FetchExportableHighlights = vi.fn(async () => [
+      sampleHighlight,
+    ]);
 
-    const ok = await executeHighlightExport(
-      { kind: 'library' },
-      fetchHighlights,
-      'xlsx',
-    );
+    const ok = await executeHighlightExport({ kind: 'library' }, fetchHighlights, 'xlsx');
 
     expect(ok).toBe(true);
     expect(downloadBinaryFile).toHaveBeenCalled();
@@ -78,10 +78,15 @@ describe('executeHighlightExport', () => {
       { ...sampleHighlight, text: '' },
     ]);
 
-    const ok = await executeHighlightExport({ kind: 'domain', domain: 'example.com' }, fetchHighlights);
+    const ok = await executeHighlightExport(
+      { kind: 'domain', domain: 'example.com' },
+      fetchHighlights
+    );
 
     expect(ok).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith('No highlights available to export in this scope');
+    expect(toast.error).toHaveBeenCalledWith(
+      'No highlights available to export in this scope'
+    );
     expect(downloadTextFile).not.toHaveBeenCalled();
   });
 });

@@ -16,24 +16,28 @@ import {
 
 function makeBus(): IMessageBus {
   return {
-    send: vi.fn(async (_target, message: { type: string; payload: { provider?: string } }) => {
-      if (message.type === IPC_AI_GET_ACTIVE_PROVIDER) {
-        return { success: true, data: { provider: null } };
+    send: vi.fn(
+      async (_target, message: { type: string; payload: { provider?: string } }) => {
+        if (message.type === IPC_AI_GET_ACTIVE_PROVIDER) {
+          return { success: true, data: { provider: null } };
+        }
+        if (message.type === IPC_AI_GET_API_KEY_STATUS) {
+          return {
+            success: true,
+            data: { configured: false, model: 'claude-sonnet-4-6' },
+          };
+        }
+        return { success: false, error: `no handler for ${message.type}` };
       }
-      if (message.type === IPC_AI_GET_API_KEY_STATUS) {
-        return {
-          success: true,
-          data: { configured: false, model: 'claude-sonnet-4-6' },
-        };
-      }
-      return { success: false, error: `no handler for ${message.type}` };
-    }) as IMessageBus['send'],
+    ) as IMessageBus['send'],
     subscribe: vi.fn(() => () => undefined),
     publish: vi.fn(async () => undefined),
   };
 }
 
-function wrap(bus: IMessageBus): ({ children }: { children: ReactNode }) => React.ReactElement {
+function wrap(
+  bus: IMessageBus
+): ({ children }: { children: ReactNode }) => React.ReactElement {
   return ({ children }: { children: ReactNode }) =>
     React.createElement(MessageBusProvider, { messageBus: bus, children });
 }
@@ -42,7 +46,9 @@ describe('APIKeySetupView', () => {
   beforeEach(() => {
     vi.stubGlobal('chrome', {
       runtime: { id: 'test-extension', sendMessage: vi.fn() },
-      storage: { local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) } },
+      storage: {
+        local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
+      },
     });
   });
 

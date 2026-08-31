@@ -36,7 +36,8 @@ export function useOAuthGrants(enabled: boolean): UseOAuthGrantsResult {
       const port = resolveOAuthGrantsPort(messageBus);
       setGrants(await port.list());
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load connected apps';
+      const message =
+        err instanceof Error ? err.message : 'Failed to load connected apps';
       setError(message);
       setGrants([]);
     } finally {
@@ -48,20 +49,23 @@ export function useOAuthGrants(enabled: boolean): UseOAuthGrantsResult {
     void reload();
   }, [reload]);
 
-  const revoke = useCallback(async (clientId: string) => {
-    setIsRevoking(true);
-    setError(null);
-    try {
-      const port = resolveOAuthGrantsPort(messageBus);
-      await port.revoke(clientId);
-      await reload();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to revoke access';
-      setError(message);
-    } finally {
-      setIsRevoking(false);
-    }
-  }, [messageBus, reload]);
+  const revoke = useCallback(
+    async (clientId: string) => {
+      setIsRevoking(true);
+      setError(null);
+      try {
+        const port = resolveOAuthGrantsPort(messageBus);
+        await port.revoke(clientId);
+        await reload();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to revoke access';
+        setError(message);
+      } finally {
+        setIsRevoking(false);
+      }
+    },
+    [messageBus, reload]
+  );
 
   return { grants, isLoading, error, reload, revoke, isRevoking };
 }

@@ -19,11 +19,7 @@ export type RelatednessHighlightInput = {
 function resolveUrl(h: RelatednessHighlightInput): string {
   if (h.url) return h.url;
   const domain = h.domain ?? 'local';
-  const path = h.path?.startsWith('/')
-    ? h.path
-    : h.path
-      ? `/${h.path}`
-      : '/';
+  const path = h.path?.startsWith('/') ? h.path : h.path ? `/${h.path}` : '/';
   return `https://${domain}${path}`;
 }
 
@@ -40,7 +36,7 @@ export function toRelatednessDoc(h: RelatednessHighlightInput): RelatednessDoc {
 }
 
 export function toRelatednessDocs(
-  rows: readonly RelatednessHighlightInput[],
+  rows: readonly RelatednessHighlightInput[]
 ): RelatednessDoc[] {
   return rows.map(toRelatednessDoc);
 }

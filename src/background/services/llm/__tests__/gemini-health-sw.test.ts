@@ -64,7 +64,11 @@ describe('Gemini health check (no window)', () => {
       bus: bus as never,
       registry: makeRegistry() as never,
       keyStore,
-      pageContentCache: { getByUrl: () => null, set: vi.fn(), deleteTab: vi.fn() } as never,
+      pageContentCache: {
+        getByUrl: () => null,
+        set: vi.fn(),
+        deleteTab: vi.fn(),
+      } as never,
     });
 
     const setResult = await bus.handlers.get('IPC_AI_SET_API_KEY')!({
@@ -110,7 +114,7 @@ describe('Gemini health check (no window)', () => {
         text: async () => '',
         json: async () => ({}),
         body: null,
-      })),
+      }))
     );
 
     const bus = makeMessageBus();
@@ -119,7 +123,11 @@ describe('Gemini health check (no window)', () => {
       bus: bus as never,
       registry: makeRegistry() as never,
       keyStore,
-      pageContentCache: { getByUrl: () => null, set: vi.fn(), deleteTab: vi.fn() } as never,
+      pageContentCache: {
+        getByUrl: () => null,
+        set: vi.fn(),
+        deleteTab: vi.fn(),
+      } as never,
     });
 
     const setResult = await bus.handlers.get('IPC_AI_SET_API_KEY')!({
@@ -167,7 +175,7 @@ describe('Gemini health check (no window)', () => {
         text: async () => '',
         json: async () => ({}),
         body: null,
-      })),
+      }))
     );
 
     const bus = makeMessageBus();
@@ -176,7 +184,11 @@ describe('Gemini health check (no window)', () => {
       bus: bus as never,
       registry: makeRegistry() as never,
       keyStore,
-      pageContentCache: { getByUrl: () => null, set: vi.fn(), deleteTab: vi.fn() } as never,
+      pageContentCache: {
+        getByUrl: () => null,
+        set: vi.fn(),
+        deleteTab: vi.fn(),
+      } as never,
     });
 
     const setResult = await bus.handlers.get('IPC_AI_SET_API_KEY')!({

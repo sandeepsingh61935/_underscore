@@ -6,12 +6,7 @@
 export type BillingPlan = 'free' | 'paid';
 
 export type BillingStatus =
-  | 'none'
-  | 'trialing'
-  | 'active'
-  | 'past_due'
-  | 'canceled'
-  | 'unpaid';
+  'none' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid';
 
 export type BillingProvider = 'polar' | 'apple_iap' | 'google_play';
 

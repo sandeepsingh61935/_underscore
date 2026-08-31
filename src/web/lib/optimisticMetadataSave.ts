@@ -15,7 +15,7 @@ export type WebHighlightPatch = {
 export type UpdateHighlightMetadataFn = (
   id: string,
   input: HighlightMetadataInput,
-  options?: { silent?: boolean },
+  options?: { silent?: boolean }
 ) => Promise<boolean>;
 
 export type OptimisticMetadataDeps = {

@@ -11,19 +11,18 @@
  */
 
 export const tonalPillShellClass =
-    'inline-flex w-fit flex-wrap gap-1 rounded-full border border-[var(--rule-soft)] bg-[var(--paper-2)] p-1';
+  'inline-flex w-fit flex-wrap gap-1 rounded-full border border-[var(--rule-soft)] bg-[var(--paper-2)] p-1';
 
 export const tonalPillBaseClass =
-    'inline-flex min-h-[44px] items-center justify-center appearance-none rounded-full border border-transparent bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2';
+  'inline-flex min-h-[44px] items-center justify-center appearance-none rounded-full border border-transparent bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2';
 
-export const tonalPillStandaloneClass =
-    'border-[var(--rule-soft)] bg-[var(--paper-2)]';
+export const tonalPillStandaloneClass = 'border-[var(--rule-soft)] bg-[var(--paper-2)]';
 
 export const tonalPillActiveClass =
-    'border-[var(--accent)] bg-[var(--paper-2)] text-[var(--accent)]';
+  'border-[var(--accent)] bg-[var(--paper-2)] text-[var(--accent)]';
 
 export const tonalPillInactiveClass =
-    'text-[var(--ink-2)] hover:bg-[color-mix(in_oklch,var(--ink)_6%,var(--paper-2))] hover:text-[var(--ink)]';
+  'text-[var(--ink-2)] hover:bg-[color-mix(in_oklch,var(--ink)_6%,var(--paper-2))] hover:text-[var(--ink)]';
 
 export const tonalPillDisabledClass =
-    'pointer-events-none cursor-not-allowed border-[color-mix(in_oklch,var(--rule-soft)_60%,transparent)] bg-[color-mix(in_oklch,var(--paper-2)_60%,transparent)] text-[var(--ink-3)] opacity-50';
+  'pointer-events-none cursor-not-allowed border-[color-mix(in_oklch,var(--rule-soft)_60%,transparent)] bg-[color-mix(in_oklch,var(--paper-2)_60%,transparent)] text-[var(--ink-3)] opacity-50';

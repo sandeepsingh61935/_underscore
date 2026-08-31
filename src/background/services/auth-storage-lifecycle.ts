@@ -1,14 +1,11 @@
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
-import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import {
-  DEFAULT_MODE,
-  MODE_STORAGE_KEY,
-} from '@/shared/constants/mode-storage';
+import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import { DEFAULT_MODE, MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import type { ScopedTagRepository } from '@/shared/repositories/scoped-tag-repository';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { LoggerFactory } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('AuthStorageLifecycle');
@@ -29,8 +26,7 @@ async function defaultPersistGuestMode(): Promise<void> {
 }
 
 export type AuthStorageEvent =
-  | { type: 'SIGNED_IN'; userId: string }
-  | { type: 'SIGNED_OUT' };
+  { type: 'SIGNED_IN'; userId: string } | { type: 'SIGNED_OUT' };
 
 export interface AuthStorageLifecycleDeps {
   scopedRepository: ScopedHighlightRepository;
@@ -50,7 +46,7 @@ export interface AuthStorageLifecycleDeps {
  */
 export async function handleAuthStorageEvent(
   event: AuthStorageEvent,
-  deps: AuthStorageLifecycleDeps,
+  deps: AuthStorageLifecycleDeps
 ): Promise<void> {
   const {
     scopedRepository,
@@ -103,7 +99,7 @@ export async function handleAuthStorageEvent(
   } catch (err) {
     logger.error(
       'Failed to persist basic mode on sign-out',
-      err instanceof Error ? err : new Error(String(err)),
+      err instanceof Error ? err : new Error(String(err))
     );
   }
   await repositoryFacade.reload();

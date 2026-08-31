@@ -46,9 +46,7 @@ export function detectCodeSelectionMetadata(range: Range): CodeSelectionMeta | u
   try {
     const node = range.commonAncestorContainer;
     const el =
-      node.nodeType === Node.ELEMENT_NODE
-        ? (node as Element)
-        : node.parentElement;
+      node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
     if (!el) return undefined;
 
     const codeHost = el.closest('pre, code');
@@ -58,9 +56,7 @@ export function detectCodeSelectionMetadata(range: Range): CodeSelectionMeta | u
     if (!range.toString().trim()) return undefined;
 
     const language = extractCodeLanguage(codeHost);
-    return language
-      ? { sourceKind: 'code', language }
-      : { sourceKind: 'code' };
+    return language ? { sourceKind: 'code', language } : { sourceKind: 'code' };
   } catch {
     return undefined;
   }

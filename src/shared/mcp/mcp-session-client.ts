@@ -1,6 +1,9 @@
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { IPC_MCP_LAST_SESSION, type MessageResponse } from '@/shared/schemas/message-schemas';
+import {
+  IPC_MCP_LAST_SESSION,
+  type MessageResponse,
+} from '@/shared/schemas/message-schemas';
 
 export function parseMcpLastSuccessAt(iso: string | null | undefined): number | null {
   if (!iso) return null;
@@ -9,7 +12,7 @@ export function parseMcpLastSuccessAt(iso: string | null | undefined): number | 
 }
 
 export async function fetchLastMcpSuccessAtMsFromClient(
-  select: () => Promise<{ last_success_at?: string | null } | null>,
+  select: () => Promise<{ last_success_at?: string | null } | null>
 ): Promise<number | null> {
   try {
     const row = await select();
@@ -20,18 +23,23 @@ export async function fetchLastMcpSuccessAtMsFromClient(
 }
 
 function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+  return (
+    typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function'
+  );
 }
 
 export async function fetchLastMcpSuccessAtMs(
-  bus: IMessageBus | null,
+  bus: IMessageBus | null
 ): Promise<number | null> {
   if (hasChromeRuntime() && bus) {
-    const res = await bus.send<MessageResponse<{ lastSuccessAtMs: number | null }>>('background', {
-      type: IPC_MCP_LAST_SESSION,
-      payload: {},
-      timestamp: Date.now(),
-    });
+    const res = await bus.send<MessageResponse<{ lastSuccessAtMs: number | null }>>(
+      'background',
+      {
+        type: IPC_MCP_LAST_SESSION,
+        payload: {},
+        timestamp: Date.now(),
+      }
+    );
     if (!res || !res.success) return null;
     return res.data?.lastSuccessAtMs ?? null;
   }

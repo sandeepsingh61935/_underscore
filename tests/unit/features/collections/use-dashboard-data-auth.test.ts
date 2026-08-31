@@ -33,7 +33,7 @@ describe('useDashboardData auth clearing', () => {
   it('clears stale data synchronously when auth becomes false', async () => {
     const { result, rerender } = renderHook(
       ({ isAuthenticated }) => useDashboardData('pro', isAuthenticated),
-      { initialProps: { isAuthenticated: true } },
+      { initialProps: { isAuthenticated: true } }
     );
 
     await waitFor(() => {

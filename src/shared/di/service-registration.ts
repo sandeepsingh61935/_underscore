@@ -2,16 +2,17 @@
  * @file service-registration.ts
  * @description Central service registration for dependency injection
  * @deprecated Use background-service-registration.ts or content-service-registration.ts instead.
- * 
+ *
  * Kept for test compatibility only. Do not use in production code.
  */
 
 import type { Container } from './container';
 
+import { AuthManager } from '@/background/auth/auth-manager';
 import { CommandFactory } from '@/content/commands/command-factory';
+import { BasicMode } from '@/content/modes/basic-mode';
 import type { IHighlightMode } from '@/content/modes/highlight-mode.interface';
 import { ModeManager } from '@/content/modes/mode-manager';
-import { BasicMode } from '@/content/modes/basic-mode';
 import { ProMode } from '@/content/modes/pro-mode';
 import { ProXaiMode } from '@/content/modes/pro-xai-mode';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
@@ -28,7 +29,6 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { AuthManager } from '@/background/auth/auth-manager';
 
 /**
  * Register all application services
@@ -191,7 +191,7 @@ export function registerServices(container: Container): void {
   /**
    * Mode registrations are conditional because modes use DOM APIs (CSS.highlights, document)
    * which don't exist in Service Worker context (background script).
-   * 
+   *
    * Detection: Check for 'document' global (exists in browser, not in Service Worker)
    */
   if (typeof document !== 'undefined') {

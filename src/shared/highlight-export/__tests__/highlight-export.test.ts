@@ -52,7 +52,10 @@ describe('highlight-export', () => {
     ];
 
     it('filters by domain', () => {
-      const filtered = filterRawHighlightsByScope(items, { kind: 'domain', domain: 'wikipedia.org' });
+      const filtered = filterRawHighlightsByScope(items, {
+        kind: 'domain',
+        domain: 'wikipedia.org',
+      });
       expect(filtered).toHaveLength(2);
     });
 
@@ -90,13 +93,16 @@ describe('highlight-export', () => {
       const result = toExportableHighlight(
         hl({
           url: 'https://youtubetotranscript.com/transcript?v=AAA&utm_source=x',
-        }),
+        })
       );
       expect(result?.sectionKey).toBe('/transcript?v=AAA');
     });
 
     it('filters by highlight id', () => {
-      const filtered = filterRawHighlightsByScope(items, { kind: 'highlight', highlightId: 'h-2' });
+      const filtered = filterRawHighlightsByScope(items, {
+        kind: 'highlight',
+        highlightId: 'h-2',
+      });
       expect(filtered).toHaveLength(1);
       expect(filtered[0]?.id).toBe('h-2');
     });
@@ -114,7 +120,8 @@ describe('highlight-export', () => {
 
   describe('formatSourceAnnotation', () => {
     it('emits a plain URL without a redundant markdown link label', () => {
-      const url = 'https://chatgpt.com/g/g-p-6a342068ca7881919bda708085339c09-bergson-s-essay-on-comedy/c/6a454c65-bc68-83e9-973a-97011773f328';
+      const url =
+        'https://chatgpt.com/g/g-p-6a342068ca7881919bda708085339c09-bergson-s-essay-on-comedy/c/6a454c65-bc68-83e9-973a-97011773f328';
       expect(formatSourceAnnotation(url)).toBe(`[source] ${url}`);
     });
   });
@@ -125,9 +132,7 @@ describe('highlight-export', () => {
       expect(markdown).toContain('**1.**');
       expect(markdown).toContain('Sample highlight text.');
       expect(markdown).toContain('[date] 2026-06-13');
-      expect(markdown).toContain(
-        '[source] https://wikipedia.org/wiki/Antigravity',
-      );
+      expect(markdown).toContain('[source] https://wikipedia.org/wiki/Antigravity');
       expect(markdown).not.toContain('](https://');
       expect(markdown).not.toContain('[color]');
       expect(markdown).toContain('[tags] physics');
@@ -139,8 +144,8 @@ describe('highlight-export', () => {
         toExportableHighlight(
           hl({
             text: 'Intro\n\n```\nint a = 0;\n```\n\n- one\n- two',
-          }),
-        )!,
+          })
+        )!
       );
       expect(markdown).toContain('> ```');
       expect(markdown).toContain('> int a = 0;');
@@ -158,7 +163,7 @@ describe('highlight-export', () => {
             id: 'h-2',
             url: 'https://github.com/obra/superpowers',
             text: 'Skills extend AI capabilities.',
-          }),
+          })
         )!,
       ];
 
@@ -186,7 +191,13 @@ describe('highlight-export', () => {
 
     it('includes note and tags when highlight metadata is set', () => {
       const exportable = toExportableHighlight(
-        hl({ metadata: { source: 'user' as const, notes: 'Key definition', tags: ['comedy'] } }),
+        hl({
+          metadata: {
+            source: 'user' as const,
+            notes: 'Key definition',
+            tags: ['comedy'],
+          },
+        })
       )!;
       const result = buildExport([exportable], {
         kind: 'section',
@@ -206,23 +217,33 @@ describe('highlight-export', () => {
           sectionSummary: {
             id: 'sum-1',
             kind: 'section_summary',
-            scope: { kind: 'section', domain: 'wikipedia.org', sectionKey: '/wiki/Antigravity' },
+            scope: {
+              kind: 'section',
+              domain: 'wikipedia.org',
+              sectionKey: '/wiki/Antigravity',
+            },
             content: 'Section overview from LLM.',
             highlightCountAtGeneration: 1,
             createdAt: '2026-06-13T00:00:00.000Z',
             updatedAt: '2026-06-13T00:00:00.000Z',
           },
-          scopeQueries: [{
-            id: 'q-1',
-            kind: 'scope_query',
-            scope: { kind: 'section', domain: 'wikipedia.org', sectionKey: '/wiki/Antigravity' },
-            question: 'What is antigravity?',
-            content: 'The highlights discuss fictional antigravity.',
-            highlightCountAtGeneration: 1,
-            createdAt: '2026-06-13T00:00:00.000Z',
-            updatedAt: '2026-06-13T00:00:00.000Z',
-          }],
-        },
+          scopeQueries: [
+            {
+              id: 'q-1',
+              kind: 'scope_query',
+              scope: {
+                kind: 'section',
+                domain: 'wikipedia.org',
+                sectionKey: '/wiki/Antigravity',
+              },
+              question: 'What is antigravity?',
+              content: 'The highlights discuss fictional antigravity.',
+              highlightCountAtGeneration: 1,
+              createdAt: '2026-06-13T00:00:00.000Z',
+              updatedAt: '2026-06-13T00:00:00.000Z',
+            },
+          ],
+        }
       );
       expect(result.markdown).toContain('## Summary');
       expect(result.markdown).toContain('Section overview from LLM.');
@@ -239,13 +260,13 @@ describe('highlight-export', () => {
           kind: 'section',
           domain: 'example.com',
           sectionKey: '/wiki/Antigravity',
-        }),
+        })
       ).toBe('wiki-Antigravity.md');
     });
 
     it('uses xlsx extension when requested', () => {
       expect(buildFilename({ kind: 'library' }, 'xlsx')).toMatch(
-        /underscore-highlights-\d{4}-\d{2}-\d{2}\.xlsx$/,
+        /underscore-highlights-\d{4}-\d{2}-\d{2}\.xlsx$/
       );
     });
   });

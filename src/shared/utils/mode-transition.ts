@@ -12,12 +12,7 @@
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export type ModeTransitionKind =
-  | 'noop'
-  | 'persist'
-  | 'sign_in'
-  | 'upgrade'
-  | 'sign_out'
-  | 'blocked';
+  'noop' | 'persist' | 'sign_in' | 'upgrade' | 'sign_out' | 'blocked';
 
 export interface ModeTransitionInput {
   from: ModeType;
@@ -101,8 +96,7 @@ export function resolveModeTransition(input: ModeTransitionInput): ModeTransitio
  * Does not perform sign-in / upgrade / sign-out side effects.
  */
 export function canPersistMode(input: ModeTransitionInput): boolean {
-  return resolveModeTransition(input).kind === 'persist'
-    || (input.from === input.to);
+  return resolveModeTransition(input).kind === 'persist' || input.from === input.to;
 }
 
 /**
@@ -112,7 +106,7 @@ export function canPersistMode(input: ModeTransitionInput): boolean {
 export function clampModeToEntitlement(
   isAuthenticated: boolean,
   isPaidActive: boolean,
-  currentMode: ModeType,
+  currentMode: ModeType
 ): ModeType {
   if (!isAuthenticated) return 'basic';
   if (!isPaidActive) {
@@ -146,10 +140,10 @@ export function resolveBillingModeWrite(input: {
 
   // First time we learn user is paid while sitting on Free → default to Paid mode
   if (
-    isAuthenticated
-    && isPaidActive
-    && previousIsPaidActive === false
-    && currentMode === 'pro'
+    isAuthenticated &&
+    isPaidActive &&
+    previousIsPaidActive === false &&
+    currentMode === 'pro'
   ) {
     return { write: true, mode: 'pro_xai' };
   }

@@ -44,5 +44,7 @@ export function migrateV2ToV3(rawMode: unknown): V2ToV3Result {
 
 export function needsV2ToV3Migration(rawMode: unknown): boolean {
   if (typeof rawMode !== 'string') return false;
-  return !ModeTypeSchema.safeParse(rawMode).success && rawMode.toLowerCase() in LEGACY_TO_V3;
+  return (
+    !ModeTypeSchema.safeParse(rawMode).success && rawMode.toLowerCase() in LEGACY_TO_V3
+  );
 }

@@ -78,9 +78,11 @@ describe('ProMode remote highlight handlers (no cloud re-entry)', () => {
     });
     rehydrateSpy.mockClear();
 
-    await (mode as unknown as {
-      handleRemoteHighlightUpdated: (data: unknown) => Promise<void>;
-    }).handleRemoteHighlightUpdated(row);
+    await (
+      mode as unknown as {
+        handleRemoteHighlightUpdated: (data: unknown) => Promise<void>;
+      }
+    ).handleRemoteHighlightUpdated(row);
 
     expect(updateSpy).not.toHaveBeenCalled();
     expect(addSpy).not.toHaveBeenCalled();
@@ -95,12 +97,16 @@ describe('ProMode remote highlight handlers (no cloud re-entry)', () => {
     const row = makeSupabaseRow({ id: 'new-remote-id' });
 
     // Avoid restore path network/DOM — stub restoreHighlight
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mode as any).cloudService.restoreHighlight = vi.fn().mockResolvedValue({ range: null });
 
-    await (mode as unknown as {
-      handleRemoteHighlightCreated: (data: unknown) => Promise<void>;
-    }).handleRemoteHighlightCreated(row);
+    (mode as any).cloudService.restoreHighlight = vi
+      .fn()
+      .mockResolvedValue({ range: null });
+
+    await (
+      mode as unknown as {
+        handleRemoteHighlightCreated: (data: unknown) => Promise<void>;
+      }
+    ).handleRemoteHighlightCreated(row);
 
     expect(addSpy).not.toHaveBeenCalled();
     expect(updateSpy).not.toHaveBeenCalled();
@@ -109,9 +115,11 @@ describe('ProMode remote highlight handlers (no cloud re-entry)', () => {
   });
 
   it('ignores invalid remote payloads without writing', async () => {
-    await (mode as unknown as {
-      handleRemoteHighlightUpdated: (data: unknown) => Promise<void>;
-    }).handleRemoteHighlightUpdated({ notAnId: true });
+    await (
+      mode as unknown as {
+        handleRemoteHighlightUpdated: (data: unknown) => Promise<void>;
+      }
+    ).handleRemoteHighlightUpdated({ notAnId: true });
 
     expect(updateSpy).not.toHaveBeenCalled();
     expect(rehydrateSpy).not.toHaveBeenCalled();

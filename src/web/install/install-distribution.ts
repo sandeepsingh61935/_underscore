@@ -51,7 +51,7 @@ function readVersion(env: ImportMetaEnv | undefined): string {
 
 function readStoreUrl(
   env: ImportMetaEnv | undefined,
-  key: 'VITE_CHROME_STORE_URL' | 'VITE_FIREFOX_STORE_URL',
+  key: 'VITE_CHROME_STORE_URL' | 'VITE_FIREFOX_STORE_URL'
 ): string | undefined {
   const v = env?.[key]?.trim();
   return v || undefined;
@@ -63,7 +63,7 @@ function readStoreUrl(
  */
 export function resolveBrowserAvailability(
   mode: InstallDistributionMode,
-  hasStoreUrl: boolean,
+  hasStoreUrl: boolean
 ): InstallBrowserAvailability {
   if (mode === 'manual') {
     return 'manual';
@@ -79,12 +79,16 @@ export function resolveBrowserAvailability(
 }
 
 export function detectInstallBrowser(
-  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : ''
 ): InstallBrowserDetect {
   // Prefer UAData brands when available (prototype source-of-truth)
   try {
-    const nav = typeof navigator !== 'undefined' ? (navigator as unknown as Record<string, unknown>) : null;
-    const uaData = nav?.['userAgentData'] as { brands?: Array<{ brand: string }> } | undefined;
+    const nav =
+      typeof navigator !== 'undefined'
+        ? (navigator as unknown as Record<string, unknown>)
+        : null;
+    const uaData = nav?.['userAgentData'] as
+      { brands?: Array<{ brand: string }> } | undefined;
     const brands = uaData?.brands;
     if (Array.isArray(brands) && brands.length > 0) {
       const brandStr = brands.map((b) => b.brand).join(' ');
@@ -109,7 +113,7 @@ export function detectInstallBrowser(
 /** Order browsers with detected browser first; unknown keeps chrome then firefox. */
 export function orderInstallBrowsers<T extends { id: InstallBrowserId }>(
   browsers: readonly T[],
-  detected: InstallBrowserDetect,
+  detected: InstallBrowserDetect
 ): T[] {
   if (detected === 'unknown') {
     return [...browsers].sort((a, b) => {
@@ -155,7 +159,7 @@ const FIREFOX_STEPS = [
  * @param env - defaults to import.meta.env
  */
 export function getInstallDistributionConfig(
-  env: ImportMetaEnv = import.meta.env,
+  env: ImportMetaEnv = import.meta.env
 ): InstallDistributionConfig {
   const mode = readMode(env);
   const version = readVersion(env);

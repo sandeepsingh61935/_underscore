@@ -12,13 +12,7 @@ describe('settingsTopicsForSurface', () => {
     expect(popup).toContain('mode');
     expect(web).not.toContain('mode');
     expect(popup).toEqual(
-      expect.arrayContaining([
-        'account',
-        'plan',
-        'appearance',
-        'integrations',
-        'data',
-      ]),
+      expect.arrayContaining(['account', 'plan', 'appearance', 'integrations', 'data'])
     );
   });
 });

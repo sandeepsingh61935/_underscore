@@ -5,7 +5,12 @@
 
 import { openDB, type IDBPDatabase } from 'idb';
 
-import type { FontRole, ImportedFontFace, ImportedFontRefs, TypePresetSelection } from '@/shared/constants/type-presets';
+import type {
+  FontRole,
+  ImportedFontFace,
+  ImportedFontRefs,
+  TypePresetSelection,
+} from '@/shared/constants/type-presets';
 import { validateGoogleFontName } from '@/shared/constants/type-presets';
 
 const DB_NAME = 'underscore-font-imports';
@@ -63,10 +68,15 @@ function detectFormat(bytes: ArrayBuffer, fileName: string): FontFileFormat | nu
 
   const view = new DataView(bytes);
   if (bytes.byteLength >= 4) {
-    const tag =
-      String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+    const tag = String.fromCharCode(
+      view.getUint8(0),
+      view.getUint8(1),
+      view.getUint8(2),
+      view.getUint8(3)
+    );
     if (tag === 'wOF2') return 'woff2';
-    if (view.getUint32(0) === 0x00010000 || view.getUint32(0) === 0x74727565) return 'truetype';
+    if (view.getUint32(0) === 0x00010000 || view.getUint32(0) === 0x74727565)
+      return 'truetype';
   }
   return null;
 }
@@ -165,7 +175,6 @@ export async function loadImportedFontFaces(
 
   return faces;
 }
-
 
 export async function applyTypePresetWithImports(
   selection: TypePresetSelection,

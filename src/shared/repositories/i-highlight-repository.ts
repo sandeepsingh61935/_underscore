@@ -52,7 +52,11 @@ export interface IReadableHighlightRepository {
  */
 export interface IWritableHighlightRepository {
   add(highlight: HighlightDataV2, options?: RepositoryOptions): Promise<void>;
-  update(id: string, updates: Partial<HighlightDataV2>, options?: RepositoryOptions): Promise<void>;
+  update(
+    id: string,
+    updates: Partial<HighlightDataV2>,
+    options?: RepositoryOptions
+  ): Promise<void>;
   remove(id: string, options?: RepositoryOptions): Promise<void>;
   clear(): Promise<void>;
   addMany(highlights: HighlightDataV2[]): Promise<void>;

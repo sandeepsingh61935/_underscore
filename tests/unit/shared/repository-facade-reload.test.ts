@@ -20,7 +20,14 @@ const makeHighlight = (id: string, text: string): HighlightDataV2 => ({
   colorRole: 'yellow',
   type: 'underscore',
   ranges: [
-    { xpath: '/p', startOffset: 0, endOffset: text.length, text, textBefore: '', textAfter: '' },
+    {
+      xpath: '/p',
+      startOffset: 0,
+      endOffset: text.length,
+      text,
+      textBefore: '',
+      textAfter: '',
+    },
   ],
   createdAt: new Date(),
 });

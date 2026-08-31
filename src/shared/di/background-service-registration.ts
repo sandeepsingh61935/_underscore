@@ -6,25 +6,25 @@
  * Kept for test compatibility.
  */
 
-import type { Container } from './container';
 import { registerBaseServices } from './base-service-registration';
-import type { EventBus } from '@/shared/utils/event-bus';
-import type { ILogger } from '@/shared/utils/logger';
+import type { Container } from './container';
 
 import { AuthManager } from '@/background/auth/auth-manager';
 import type { IAuditLogger } from '@/background/auth/interfaces/i-audit-logger';
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
 
 export function registerBackgroundServices(container: Container): void {
-    registerBaseServices(container);
+  registerBaseServices(container);
 
-    container.registerSingleton('authManager', () => {
-        const supabase = container.resolve<any>('_supabaseSDK');
-        const eventBus = container.resolve<EventBus>('eventBus');
-        const logger = container.resolve<ILogger>('logger');
-        const auditLogger = container.has('auditLogger')
-            ? container.resolve<IAuditLogger>('auditLogger')
-            : undefined;
+  container.registerSingleton('authManager', () => {
+    const supabase = container.resolve<any>('_supabaseSDK');
+    const eventBus = container.resolve<EventBus>('eventBus');
+    const logger = container.resolve<ILogger>('logger');
+    const auditLogger = container.has('auditLogger')
+      ? container.resolve<IAuditLogger>('auditLogger')
+      : undefined;
 
-        return new AuthManager(supabase, eventBus, logger, auditLogger);
-    });
+    return new AuthManager(supabase, eventBus, logger, auditLogger);
+  });
 }

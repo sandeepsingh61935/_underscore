@@ -7,27 +7,28 @@ import {
   useParams,
   useNavigate,
 } from 'react-router-dom';
+
 import { AppProvider, useApp } from '@/core/context/AppProvider';
-import { WebAuthProvider } from '@/features/auth/providers/WebAuthProvider';
 import { WebDataProviderAdapter } from '@/core/data/WebDataProviderAdapter';
+import { ForgotPasswordView } from '@/features/auth/ForgotPasswordView';
+import { WebAuthProvider } from '@/features/auth/providers/WebAuthProvider';
+import { ResetPasswordView } from '@/features/auth/ResetPasswordView';
 import { SignInView } from '@/features/auth/SignInView';
 import { VerifyEmailView } from '@/features/auth/VerifyEmailView';
-import { RootEntry } from '@/web/routing/RootEntry';
-import { AuthPageEntry } from '@/web/routing/AuthPageEntry';
-import { ForgotPasswordView } from '@/features/auth/ForgotPasswordView';
-import { ResetPasswordView } from '@/features/auth/ResetPasswordView';
+import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
+import { HelpPage } from '@/pages/HelpPage';
+import { InstallPage } from '@/pages/InstallPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
-import { HelpPage } from '@/pages/HelpPage';
-import { InstallPage } from '@/pages/InstallPage';
-import { OAuthConsentPage } from '@/features/oauth/views/OAuthConsentPage';
 import { GuestExtensionGate } from '@/web/guards/GuestExtensionGate';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
 import { WebSettingsPage } from '@/web/pages/WebSettingsPage';
+import { AuthPageEntry } from '@/web/routing/AuthPageEntry';
 import { resolveLegacyRedirect } from '@/web/routing/legacyRedirects';
+import { RootEntry } from '@/web/routing/RootEntry';
 
 /** Routes mid-auth-flow — must never be interrupted by IntentCatcher's redirect. */
 const AUTH_PENDING_PATHS = ['/verify-email', '/forgot-password', '/reset-password'];
@@ -109,10 +110,7 @@ export function AppRoutes() {
 
               {/* Legacy redirects (public) */}
               <Route path="/collections" element={<Navigate to="/library" replace />} />
-              <Route
-                path="/domain/:domain"
-                element={<LegacyDomainRedirect />}
-              />
+              <Route path="/domain/:domain" element={<LegacyDomainRedirect />} />
               <Route
                 path="/domain/:domain/section/:section"
                 element={<LegacyDomainRedirect />}

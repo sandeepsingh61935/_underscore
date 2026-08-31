@@ -141,7 +141,9 @@ describe('DashboardView home product cleanup', () => {
     render(<DashboardView onSignIn={vi.fn()} />);
 
     expect(screen.getByText('No highlights yet')).toBeTruthy();
-    expect(screen.getByText(/Select text on any page and save a highlight/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Select text on any page and save a highlight/i)
+    ).toBeTruthy();
     expect(screen.queryByTestId('home-this-page')).toBeNull();
     expect(screen.queryByTestId('home-two-col')).toBeNull();
   });
@@ -151,7 +153,9 @@ describe('DashboardView home product cleanup', () => {
     render(<DashboardView onSectionClick={vi.fn()} />);
 
     expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
-    expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(
+      /en\.wikipedia\.org/i
+    );
     expect(screen.getByTestId('home-two-col')).toBeTruthy();
     expect(screen.getByTestId('home-active-pages')).toBeTruthy();
     expect(screen.getByTestId('home-recent')).toBeTruthy();
@@ -226,10 +230,17 @@ describe('DashboardView guest sign-out UX', () => {
   });
 
   it('shows this-page line when guest has local highlights on the active tab', () => {
-    mockWithHighlights({ mode: 'basic', isAuthenticated: false, recentCount: 2, pageCount: 1 });
+    mockWithHighlights({
+      mode: 'basic',
+      isAuthenticated: false,
+      recentCount: 2,
+      pageCount: 1,
+    });
     render(<DashboardView />);
 
     expect(screen.getByTestId('home-this-page').textContent).toMatch(/This page/i);
-    expect(screen.getByTestId('home-this-page').textContent).toMatch(/en\.wikipedia\.org/i);
+    expect(screen.getByTestId('home-this-page').textContent).toMatch(
+      /en\.wikipedia\.org/i
+    );
   });
 });

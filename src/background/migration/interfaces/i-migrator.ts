@@ -4,15 +4,15 @@
  */
 
 export interface MigrationResult {
-    migrated: number;
-    failed: number;
-    skipped: number;
+  migrated: number;
+  failed: number;
+  skipped: number;
 }
 
 export interface IMigrator {
-    /**
-     * Migrate data from local storage to cloud storage
-     * @returns Promise resolving to migration result statistics
-     */
-    migrate(): Promise<MigrationResult>;
+  /**
+   * Migrate data from local storage to cloud storage
+   * @returns Promise resolving to migration result statistics
+   */
+  migrate(): Promise<MigrationResult>;
 }

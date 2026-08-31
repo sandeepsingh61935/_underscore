@@ -1,5 +1,5 @@
-import type { ModeManager } from '@/content/modes/mode-manager';
 import { MODE_NAMES } from '@/content/modes/mode-constants';
+import type { ModeManager } from '@/content/modes/mode-manager';
 import type { ModeStateManager } from '@/content/modes/mode-state-manager';
 import type { ProMode } from '@/content/modes/pro-mode';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -24,9 +24,10 @@ export interface ContentAuthSyncDeps {
  */
 export async function handleContentAuthStateChanged(
   isAuthenticated: boolean,
-  deps: ContentAuthSyncDeps,
+  deps: ContentAuthSyncDeps
 ): Promise<void> {
-  const { modeStateManager, modeManager, repositoryFacade, logger, broadcastCount } = deps;
+  const { modeStateManager, modeManager, repositoryFacade, logger, broadcastCount } =
+    deps;
 
   logger.info('[AUTH] Auth state changed', { isAuthenticated });
 

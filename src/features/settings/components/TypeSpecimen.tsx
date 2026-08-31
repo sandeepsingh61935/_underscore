@@ -1,6 +1,9 @@
 import React from 'react';
 
-import { resolveTypography, type TypographyTokens } from '@/shared/constants/type-presets';
+import {
+  resolveTypography,
+  type TypographyTokens,
+} from '@/shared/constants/type-presets';
 
 const PREVIEW_QUOTE = 'Cascading resolves conflicts when multiple CSS rules apply.';
 

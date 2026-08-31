@@ -21,7 +21,7 @@ function makeSseResponse(body: string): Response {
         controller.close();
       },
     }),
-    { headers: { 'content-type': 'text/event-stream' } },
+    { headers: { 'content-type': 'text/event-stream' } }
   );
 }
 
@@ -44,8 +44,8 @@ describe('AnthropicProvider', () => {
         messages: [{ role: 'user', content: 'Hi' }],
         maxTokens: 1024,
       },
-      chunk => chunks.push(chunk.delta),
-      new AbortController().signal,
+      (chunk) => chunks.push(chunk.delta),
+      new AbortController().signal
     );
 
     expect(chunks.join('')).toBe('Hello world');
@@ -64,7 +64,7 @@ describe('AnthropicProvider', () => {
         maxTokens: 256,
       },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -76,7 +76,9 @@ describe('AnthropicProvider', () => {
     expect(body.messages).toEqual([{ role: 'user', content: 'msg' }]);
     expect(body.stream).toBe(true);
     expect((init.headers as Record<string, string>)['x-api-key']).toBe('sk-test');
-    expect((init.headers as Record<string, string>)['anthropic-version']).toBe('2023-06-01');
+    expect((init.headers as Record<string, string>)['anthropic-version']).toBe(
+      '2023-06-01'
+    );
   });
 
   it('reports 200K context window for default model', () => {
@@ -88,7 +90,9 @@ describe('AnthropicProvider', () => {
     const controller = new AbortController();
     fetchMock.mockImplementationOnce((_url: string, init: RequestInit) => {
       return new Promise<Response>((_resolve, reject) => {
-        init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        init.signal?.addEventListener('abort', () =>
+          reject(new DOMException('aborted', 'AbortError'))
+        );
       });
     });
 
@@ -96,7 +100,7 @@ describe('AnthropicProvider', () => {
     const promise = provider.streamChat(
       { systemPrompt: 's', messages: [{ role: 'user', content: 'm' }], maxTokens: 100 },
       () => {},
-      controller.signal,
+      controller.signal
     );
 
     controller.abort();

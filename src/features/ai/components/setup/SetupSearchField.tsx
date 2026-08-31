@@ -20,7 +20,7 @@ export function SetupSearchField({
     <input
       type="search"
       value={value}
-      onChange={e => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       aria-label={ariaLabel}
       disabled={disabled}

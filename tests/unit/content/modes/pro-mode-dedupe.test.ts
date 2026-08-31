@@ -38,7 +38,6 @@ describe('ProMode.createHighlight contentHash dedupe', () => {
   let mode: ProMode;
 
   beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).Highlight = class {
       private ranges = new Set<Range>();
       add(range: Range): void {
@@ -51,7 +50,7 @@ describe('ProMode.createHighlight contentHash dedupe', () => {
         return this.ranges.delete(range);
       }
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (CSS as any).highlights = new Map();
 
     const repo = new InMemoryHighlightRepository();

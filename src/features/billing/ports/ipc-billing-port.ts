@@ -2,13 +2,13 @@
  * Extension billing port — talks to background over the MessageBus.
  */
 
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type {
   BillingEntitlement,
   BillingUrlResult,
   CheckoutOptions,
   IBillingPort,
 } from '@/shared/billing';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { MessageResponse } from '@/shared/schemas/message-schemas';
 import {
   IPC_BILLING_GET_ENTITLEMENT,
@@ -79,9 +79,7 @@ export class IpcBillingPort implements IBillingPort {
       timestamp: Date.now(),
     });
     if (!res || !res.success) {
-      throw new Error(
-        res && !res.success ? res.error : 'Billing sync failed'
-      );
+      throw new Error(res && !res.success ? res.error : 'Billing sync failed');
     }
     return res.data;
   }

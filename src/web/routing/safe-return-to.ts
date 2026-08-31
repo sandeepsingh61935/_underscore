@@ -4,7 +4,7 @@
  */
 export function resolveSafeReturnTo(
   candidate: string | null | undefined,
-  fallback = '/home',
+  fallback = '/home'
 ): string {
   if (!candidate || typeof candidate !== 'string') return fallback;
   const trimmed = candidate.trim();

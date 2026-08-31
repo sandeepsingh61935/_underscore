@@ -57,8 +57,8 @@ export function buildProviderFromConfig(input: ProviderConfigInput): ILLMService
       if (!key) throw new Error('API key not configured');
       if (/^key_/i.test(key)) {
         throw new Error(
-          'Stored key looks like a Cursor agent key, not an OpenAI API key. '
-          + 'Clear it and paste a key from platform.openai.com, or use OpenRouter / Anthropic / Gemini / Ollama.',
+          'Stored key looks like a Cursor agent key, not an OpenAI API key. ' +
+            'Clear it and paste a key from platform.openai.com, or use OpenRouter / Anthropic / Gemini / Ollama.'
         );
       }
       return new OpenAIProvider({ apiKey: key, model });
@@ -72,8 +72,8 @@ export function buildProviderFromConfig(input: ProviderConfigInput): ILLMService
       const key = input.apiKey?.trim();
       if (!key) {
         throw new Error(
-          'OpenRouter API key required (free at openrouter.ai/keys). '
-          + 'Free models do not charge credits but still need a key.',
+          'OpenRouter API key required (free at openrouter.ai/keys). ' +
+            'Free models do not charge credits but still need a key.'
         );
       }
       return new OpenRouterProvider({ apiKey: key, model });

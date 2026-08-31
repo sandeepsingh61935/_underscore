@@ -27,25 +27,23 @@ interface CompletedAuthorizationDetails {
   redirect_url: string;
 }
 
-function isPendingAuthorization(
-  value: unknown,
-): value is PendingAuthorizationDetails {
+function isPendingAuthorization(value: unknown): value is PendingAuthorizationDetails {
   return Boolean(
-    value
-    && typeof value === 'object'
-    && 'authorization_id' in value
-    && typeof (value as PendingAuthorizationDetails).authorization_id === 'string',
+    value &&
+    typeof value === 'object' &&
+    'authorization_id' in value &&
+    typeof (value as PendingAuthorizationDetails).authorization_id === 'string'
   );
 }
 
 function isCompletedAuthorization(
-  value: unknown,
+  value: unknown
 ): value is CompletedAuthorizationDetails {
   return Boolean(
-    value
-    && typeof value === 'object'
-    && 'redirect_url' in value
-    && typeof (value as CompletedAuthorizationDetails).redirect_url === 'string',
+    value &&
+    typeof value === 'object' &&
+    'redirect_url' in value &&
+    typeof (value as CompletedAuthorizationDetails).redirect_url === 'string'
   );
 }
 
@@ -95,7 +93,12 @@ function PartyRow({
         </div>
         <div
           className="u-sans"
-          style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)', lineHeight: 1.3 }}
+          style={{
+            fontSize: 'var(--step-0)',
+            fontWeight: 500,
+            color: 'var(--ink)',
+            lineHeight: 1.3,
+          }}
         >
           {title}
         </div>
@@ -158,7 +161,7 @@ export function OAuthConsentPage(): React.ReactElement {
   useEffect(() => {
     if (!authorizationId) {
       setLoadError(
-        'Missing authorization request. Start from your agent (add Cloud MCP, then approve when the browser opens). Do not open this page directly.',
+        'Missing authorization request. Start from your agent (add Cloud MCP, then approve when the browser opens). Do not open this page directly.'
       );
       setIsLoadingDetails(false);
       return;
@@ -169,7 +172,10 @@ export function OAuthConsentPage(): React.ReactElement {
     }
 
     if (!isAuthenticated) {
-      window.location.href = buildSignInReturnUrl(authorizationId, window.location.origin);
+      window.location.href = buildSignInReturnUrl(
+        authorizationId,
+        window.location.origin
+      );
       return;
     }
 
@@ -208,7 +214,8 @@ export function OAuthConsentPage(): React.ReactElement {
 
         setDetails(data);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load authorization request';
+        const message =
+          err instanceof Error ? err.message : 'Failed to load authorization request';
         setLoadError(message);
       } finally {
         if (!cancelled) {
@@ -224,42 +231,48 @@ export function OAuthConsentPage(): React.ReactElement {
     };
   }, [authorizationId, authLoading, isAuthenticated]);
 
-  const handleDecision = useCallback(async (decision: 'approve' | 'deny') => {
-    if (!authorizationId) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setActionError(null);
-
-    try {
-      const supabase = getWebSupabaseClient();
-      const result = decision === 'approve'
-        ? await supabase.auth.oauth.approveAuthorization(authorizationId)
-        : await supabase.auth.oauth.denyAuthorization(authorizationId);
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      if (result.data?.redirect_url) {
-        clearPendingAuthorizationId();
-        window.location.href = result.data.redirect_url;
+  const handleDecision = useCallback(
+    async (decision: 'approve' | 'deny') => {
+      if (!authorizationId) {
         return;
       }
 
-      throw new Error('No redirect URL returned after authorization decision.');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Authorization failed';
-      setActionError(message);
-      setIsSubmitting(false);
-    }
-  }, [authorizationId]);
+      setIsSubmitting(true);
+      setActionError(null);
 
-  const clientName = details?.client?.name ?? details?.client?.client_name ?? 'Unknown application';
+      try {
+        const supabase = getWebSupabaseClient();
+        const result =
+          decision === 'approve'
+            ? await supabase.auth.oauth.approveAuthorization(authorizationId)
+            : await supabase.auth.oauth.denyAuthorization(authorizationId);
+
+        if (result.error) {
+          throw result.error;
+        }
+
+        if (result.data?.redirect_url) {
+          clearPendingAuthorizationId();
+          window.location.href = result.data.redirect_url;
+          return;
+        }
+
+        throw new Error('No redirect URL returned after authorization decision.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Authorization failed';
+        setActionError(message);
+        setIsSubmitting(false);
+      }
+    },
+    [authorizationId]
+  );
+
+  const clientName =
+    details?.client?.name ?? details?.client?.client_name ?? 'Unknown application';
   const scopeRows = labelOAuthScopes(details?.scope);
   const redirectDisplay = formatOAuthRedirectDisplay(details?.redirect_uri);
-  const accountLabel = user?.displayName?.trim() || user?.email?.split('@')[0] || 'Signed-in account';
+  const accountLabel =
+    user?.displayName?.trim() || user?.email?.split('@')[0] || 'Signed-in account';
   const accountSub = user?.email?.trim() || undefined;
   const accountInitial = (accountLabel.charAt(0) || 'U').toUpperCase();
   const clientInitial = (clientName.charAt(0) || 'A').toUpperCase();
@@ -287,10 +300,19 @@ export function OAuthConsentPage(): React.ReactElement {
 
         {showSpinner ? (
           <div
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '40px 0' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              padding: '40px 0',
+            }}
             role="status"
           >
-            <p className="u-sans" style={{ color: 'var(--ink-3)', fontSize: 'var(--step--1)' }}>
+            <p
+              className="u-sans"
+              style={{ color: 'var(--ink-3)', fontSize: 'var(--step--1)' }}
+            >
               Loading authorization request…
             </p>
           </div>
@@ -303,13 +325,23 @@ export function OAuthConsentPage(): React.ReactElement {
             </p>
             <h1
               className="u-serif"
-              style={{ fontSize: 'var(--step-3)', fontWeight: 500, marginBottom: 12, lineHeight: 1.2 }}
+              style={{
+                fontSize: 'var(--step-3)',
+                fontWeight: 500,
+                marginBottom: 12,
+                lineHeight: 1.2,
+              }}
             >
               Request unavailable
             </h1>
             <p
               className="u-sans"
-              style={{ color: 'var(--ink-2)', marginBottom: 24, lineHeight: 1.5, fontSize: 'var(--step-0)' }}
+              style={{
+                color: 'var(--ink-2)',
+                marginBottom: 24,
+                lineHeight: 1.5,
+                fontSize: 'var(--step-0)',
+              }}
             >
               {loadError}
             </p>
@@ -350,8 +382,8 @@ export function OAuthConsentPage(): React.ReactElement {
                 fontSize: 'var(--step-0)',
               }}
             >
-              {clientName} wants to read your synced Pro highlights through Cloud MCP. Local Basic
-              highlights are never shared.
+              {clientName} wants to read your synced Pro highlights through Cloud MCP.
+              Local Basic highlights are never shared.
             </p>
 
             {/* Signature: account ↔ agent pairing (Figma / GitHub-style trust block) */}
@@ -380,7 +412,11 @@ export function OAuthConsentPage(): React.ReactElement {
                   ) : (
                     <span
                       className="u-sans"
-                      style={{ fontSize: 'var(--step-1)', fontWeight: 500, color: 'var(--ink)' }}
+                      style={{
+                        fontSize: 'var(--step-1)',
+                        fontWeight: 500,
+                        color: 'var(--ink)',
+                      }}
                     >
                       {accountInitial}
                     </span>
@@ -407,7 +443,11 @@ export function OAuthConsentPage(): React.ReactElement {
                 mark={
                   <span
                     className="u-sans"
-                    style={{ fontSize: 'var(--step-1)', fontWeight: 500, color: 'var(--ink)' }}
+                    style={{
+                      fontSize: 'var(--step-1)',
+                      fontWeight: 500,
+                      color: 'var(--ink)',
+                    }}
                   >
                     {clientInitial}
                   </span>
@@ -417,7 +457,10 @@ export function OAuthConsentPage(): React.ReactElement {
 
             {scopeRows.length > 0 ? (
               <div style={{ marginBottom: 18 }} data-testid="oauth-consent-permissions">
-                <p className="u-kicker" style={{ color: 'var(--ink-3)', marginBottom: 10 }}>
+                <p
+                  className="u-kicker"
+                  style={{ color: 'var(--ink-3)', marginBottom: 10 }}
+                >
                   This will allow {clientName} to
                 </p>
                 <ul
@@ -446,7 +489,11 @@ export function OAuthConsentPage(): React.ReactElement {
                       <span
                         aria-hidden
                         className="u-mono"
-                        style={{ color: 'var(--accent)', fontSize: 'var(--step--1)', lineHeight: 1.4 }}
+                        style={{
+                          color: 'var(--accent)',
+                          fontSize: 'var(--step--1)',
+                          lineHeight: 1.4,
+                        }}
                       >
                         ·
                       </span>
@@ -466,7 +513,8 @@ export function OAuthConsentPage(): React.ReactElement {
                 marginBottom: 20,
               }}
             >
-              Not shared: Guest and Basic-only local highlights, mode keys, or payment details.
+              Not shared: Guest and Basic-only local highlights, mode keys, or payment
+              details.
             </p>
 
             {actionError ? (
@@ -527,7 +575,10 @@ export function OAuthConsentPage(): React.ReactElement {
               }}
             >
               You can revoke this connection later in{' '}
-              <Link to="/settings" style={{ color: 'var(--ink-2)', textDecoration: 'underline' }}>
+              <Link
+                to="/settings"
+                style={{ color: 'var(--ink-2)', textDecoration: 'underline' }}
+              >
                 Integrations
               </Link>
               .

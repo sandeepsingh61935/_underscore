@@ -36,7 +36,10 @@ export function HelpPage(): React.ReactElement {
             }}
           >
             Download a build from the{' '}
-            <Link to="/install" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            <Link
+              to="/install"
+              style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+            >
               install page
             </Link>
             , then load it in your browser. Desktop Chrome or Firefox only.
@@ -75,57 +78,61 @@ export function HelpPage(): React.ReactElement {
 
         <FaqSection title="Getting started">
           <FaqItem q="How do I save a highlight?">
-            With the extension installed, select text on a page and use the highlight control
-            or shortcut. Items show in your library (local as Guest, cloud when signed in).
+            With the extension installed, select text on a page and use the highlight
+            control or shortcut. Items show in your library (local as Guest, cloud when
+            signed in).
           </FaqItem>
           <FaqItem q="Where is the web app?">
-            Sign in at this site to open Home, Library, and Settings. The extension popup is
-            for quick capture and account actions on the page you are reading.
+            Sign in at this site to open Home, Library, and Settings. The extension popup
+            is for quick capture and account actions on the page you are reading.
           </FaqItem>
         </FaqSection>
 
         <FaqSection title="Modes and your data">
           <FaqItem q="What is Guest mode?">
-            Guest keeps highlights on your device in browser storage. It is private by default
-            and does not require an account. Clearing site data or uninstalling can remove
-            local highlights.
+            Guest keeps highlights on your device in browser storage. It is private by
+            default and does not require an account. Clearing site data or uninstalling
+            can remove local highlights.
           </FaqItem>
           <FaqItem q="What changes when I create an account?">
-            An account unlocks cloud sync and the full web library so highlights can follow
-            you across devices. See the{' '}
-            <Link to="/privacy" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            An account unlocks cloud sync and the full web library so highlights can
+            follow you across devices. See the{' '}
+            <Link
+              to="/privacy"
+              style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+            >
               Privacy Policy
             </Link>{' '}
             for what we store.
           </FaqItem>
           <FaqItem q="Can I export or delete my data?">
-            Yes. Use Settings → Data for export where available, delete individual highlights
-            in the library, or contact support for account deletion help.
+            Yes. Use Settings → Data for export where available, delete individual
+            highlights in the library, or contact support for account deletion help.
           </FaqItem>
         </FaqSection>
 
         <FaqSection title="Billing">
           <FaqItem q="How do plans work?">
-            Free use covers core highlighting. Paid plans (when offered) unlock higher limits
-            or premium features and are managed from web Settings via our billing provider.
-            You can open the customer portal from Settings when signed in.
+            Free use covers core highlighting. Paid plans (when offered) unlock higher
+            limits or premium features and are managed from web Settings via our billing
+            provider. You can open the customer portal from Settings when signed in.
           </FaqItem>
         </FaqSection>
 
         <FaqSection title="Troubleshooting">
           <FaqItem q="I cannot sign in">
-            Confirm you are using the same email and that any verification link was opened in
-            the same browser profile. Try a password reset from the sign-in screen. Disable
-            strict blockers temporarily if auth redirects fail.
+            Confirm you are using the same email and that any verification link was opened
+            in the same browser profile. Try a password reset from the sign-in screen.
+            Disable strict blockers temporarily if auth redirects fail.
           </FaqItem>
           <FaqItem q="Highlights are missing">
             Check whether you saved them as Guest on another browser/profile or under a
-            different account. Guest data does not automatically merge into cloud until you
-            use an explicit migration path (if offered) or re-save while signed in.
+            different account. Guest data does not automatically merge into cloud until
+            you use an explicit migration path (if offered) or re-save while signed in.
           </FaqItem>
           <FaqItem q="Extension and web feel out of sync">
-            Refresh the tab, confirm you are signed into the same account in both surfaces,
-            and retry after a moment so sync can settle.
+            Refresh the tab, confirm you are signed into the same account in both
+            surfaces, and retry after a moment so sync can settle.
           </FaqItem>
         </FaqSection>
 
@@ -152,11 +159,17 @@ export function HelpPage(): React.ReactElement {
               {SUPPORT_EMAIL}
             </a>
             . For legal pages see{' '}
-            <Link to="/privacy" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            <Link
+              to="/privacy"
+              style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+            >
               Privacy
             </Link>{' '}
             and{' '}
-            <Link to="/terms" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            <Link
+              to="/terms"
+              style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+            >
               Terms
             </Link>
             .

@@ -61,7 +61,7 @@ function pageKey(domain: string, path: string): string {
  */
 export function aggregateLibrary(
   rows: WebHighlight[],
-  opts?: { now?: number; recentCap?: number },
+  opts?: { now?: number; recentCap?: number }
 ): WebLibraryAggregate {
   const now = opts?.now ?? Date.now();
   const recentCap = opts?.recentCap ?? DEFAULT_RECENT_CAP;

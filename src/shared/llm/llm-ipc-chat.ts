@@ -1,4 +1,8 @@
-import type { LLMRequest, LLMResult, ProviderName } from '@/shared/interfaces/i-llm-service';
+import type {
+  LLMRequest,
+  LLMResult,
+  ProviderName,
+} from '@/shared/interfaces/i-llm-service';
 import type { MessageResponse } from '@/shared/schemas/message-schemas';
 import { IPC_AI_CHAT } from '@/shared/schemas/message-schemas';
 
@@ -6,14 +10,20 @@ import { IPC_AI_CHAT } from '@/shared/schemas/message-schemas';
 export const LLM_CHAT_TIMEOUT_MS = 120_000;
 
 function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+  return (
+    typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function'
+  );
 }
 
-export async function sendLlmChat(
-  payload: { provider?: ProviderName; request: LLMRequest },
-): Promise<{ success: true; data: LLMResult } | { success: false; error: string }> {
+export async function sendLlmChat(payload: {
+  provider?: ProviderName;
+  request: LLMRequest;
+}): Promise<{ success: true; data: LLMResult } | { success: false; error: string }> {
   if (!hasChromeRuntime()) {
-    return { success: false, error: 'Chrome extension runtime is unavailable in this context.' };
+    return {
+      success: false,
+      error: 'Chrome extension runtime is unavailable in this context.',
+    };
   }
 
   return new Promise((resolve) => {
@@ -29,7 +39,10 @@ export async function sendLlmChat(
       (response: MessageResponse<LLMResult> | undefined) => {
         clearTimeout(timer);
         if (chrome.runtime.lastError) {
-          resolve({ success: false, error: chrome.runtime.lastError.message ?? 'Chrome runtime error' });
+          resolve({
+            success: false,
+            error: chrome.runtime.lastError.message ?? 'Chrome runtime error',
+          });
           return;
         }
         if (response?.success) {
@@ -37,7 +50,7 @@ export async function sendLlmChat(
           return;
         }
         resolve({ success: false, error: response?.error ?? 'Unknown IPC error' });
-      },
+      }
     );
   });
 }

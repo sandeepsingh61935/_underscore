@@ -43,7 +43,14 @@ describe('CollectionsView guest/account policy', () => {
 
   it('shows local library list for unsigned users with basic data', () => {
     vi.mocked(useCollections).mockReturnValue({
-      collections: [{ id: '1', domain: 'example.com', highlightCount: 2, lastActive: new Date('2026-01-01') }],
+      collections: [
+        {
+          id: '1',
+          domain: 'example.com',
+          highlightCount: 2,
+          lastActive: new Date('2026-01-01'),
+        },
+      ],
       isLoading: false,
       error: null,
     });

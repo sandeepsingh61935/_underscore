@@ -2,14 +2,15 @@
  * Canonical ILLMService → LlmStreamEvent bridge (ADR-027 review cleanup).
  */
 
-import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
 import type { LlmStreamEvent } from './stream-protocol';
+
+import type { ILLMService, LLMRequest } from '@/shared/interfaces/i-llm-service';
 
 export async function runProviderStream(
   provider: ILLMService,
   request: LLMRequest,
   onEvent: (event: LlmStreamEvent) => void,
-  signal: AbortSignal,
+  signal: AbortSignal
 ): Promise<void> {
   try {
     const result = await provider.streamChat(
@@ -17,7 +18,7 @@ export async function runProviderStream(
       (chunk) => {
         if (chunk.delta) onEvent({ type: 'CHUNK', payload: { delta: chunk.delta } });
       },
-      signal,
+      signal
     );
     if (!signal.aborted) {
       onEvent({ type: 'DONE', payload: result });

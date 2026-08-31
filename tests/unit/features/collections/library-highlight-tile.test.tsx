@@ -29,7 +29,7 @@ describe('LibraryHighlightTile', () => {
           domain: 'example.com',
           path: '/docs',
         }}
-      />,
+      />
     );
 
     expect(screen.queryByRole('button', { name: /As captured/i })).toBeNull();
@@ -55,11 +55,13 @@ describe('LibraryHighlightTile', () => {
         allowMarginalia
         isExpanded={false}
         onToggleExpand={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('n1');
     expect(screen.getByTestId('highlight-action-row').textContent).toContain('t1');
-    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Edit highlight text/i })
+    ).toBeInTheDocument();
   });
 
   it('passes match badge through to the card', () => {
@@ -71,7 +73,7 @@ describe('LibraryHighlightTile', () => {
           domain: 'example.com',
         }}
         matchBadge="Notes · Tags"
-      />,
+      />
     );
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes · Tags');
   });
@@ -86,7 +88,7 @@ describe('LibraryHighlightTile', () => {
           domain: 'example.com',
         }}
         onDelete={onDelete}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
@@ -111,7 +113,7 @@ describe('LibraryHighlightTile', () => {
       () =>
         new Promise<void>((resolve) => {
           resolveDelete = resolve;
-        }),
+        })
     );
 
     render(
@@ -122,7 +124,7 @@ describe('LibraryHighlightTile', () => {
           domain: 'example.com',
         }}
         onDelete={onDelete}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
@@ -156,7 +158,7 @@ describe('LibraryHighlightTile', () => {
           domain: 'example.com',
         }}
         onDelete={onDelete}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
@@ -182,9 +184,11 @@ describe('LibraryHighlightTile', () => {
         allowMarginalia
         isExpanded={false}
         onToggleExpand={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Edit highlight text/i })
+    ).toBeInTheDocument();
   });
 });

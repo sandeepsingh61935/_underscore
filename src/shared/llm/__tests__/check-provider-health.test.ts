@@ -24,7 +24,7 @@ describe('checkProviderHealthInBrowser', () => {
         ok: true,
         status: 200,
         text: async () => '',
-      })),
+      }))
     );
 
     const result = await checkProviderHealthInBrowser('gemini', {

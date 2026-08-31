@@ -17,7 +17,10 @@ export interface CodeSnippetBlockProps {
   code: string;
 }
 
-export function CodeSnippetBlock({ label, code }: CodeSnippetBlockProps): React.ReactElement {
+export function CodeSnippetBlock({
+  label,
+  code,
+}: CodeSnippetBlockProps): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const copyId = useId();
 

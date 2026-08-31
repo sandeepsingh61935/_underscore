@@ -35,7 +35,7 @@ describe('HighlightWithMarginalia', () => {
         onToggleExpand={vi.fn()}
         onCopy={vi.fn()}
         onDelete={vi.fn()}
-      />,
+      />
     );
 
     const row = screen.getByTestId('highlight-action-row');
@@ -57,7 +57,7 @@ describe('HighlightWithMarginalia', () => {
         labels={['bfs']}
         isExpanded={false}
         onToggleExpand={vi.fn()}
-      />,
+      />
     );
 
     const row = screen.getByTestId('highlight-action-row');
@@ -74,7 +74,7 @@ describe('HighlightWithMarginalia', () => {
         domain="example.com"
         isExpanded
         onToggleExpand={vi.fn()}
-      />,
+      />
     );
 
     expect(screen.getByTestId('marginalia-tray')).toBeTruthy();

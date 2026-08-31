@@ -58,17 +58,20 @@ describe('BackgroundHighlightOrchestrator', () => {
       subscribe: vi.fn(
         (
           channel: string,
-          handler: (payload: unknown, sender?: chrome.runtime.MessageSender) => Promise<unknown>,
+          handler: (
+            payload: unknown,
+            sender?: chrome.runtime.MessageSender
+          ) => Promise<unknown>
         ) => {
           subscriptions.set(channel, handler);
-        },
+        }
       ),
     };
 
     orchestrator = new BackgroundHighlightOrchestrator(
       facade,
       messageBus as never,
-      { info: vi.fn(), debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as never,
+      { info: vi.fn(), debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as never
     );
     orchestrator.initialize();
   });
@@ -99,7 +102,7 @@ describe('BackgroundHighlightOrchestrator', () => {
       expect.objectContaining({
         id: 'h-tab',
         url: 'https://youtubetotranscript.com/transcript?v=0F8REGux8qs',
-      }),
+      })
     );
   });
 

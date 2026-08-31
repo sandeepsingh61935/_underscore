@@ -48,7 +48,8 @@ Underscore is for readers, researchers, and anyone who highlights faster than th
 
 ## Permissions (plain language — paste into description or reviewer notes)
 
-Firefox shows technical host names; we cannot rename them. Use this copy so humans understand:
+Firefox shows technical host names; we cannot rename them. Use this copy so
+humans understand:
 
 ```
 PERMISSIONS (WHAT AND WHY)
@@ -78,18 +79,18 @@ Secondary: **Bookmarks** (if available)
 
 ## Support
 
-- Homepage: https://underscore-web-3i0.pages.dev  
-- Support / privacy email: privacy@underscore.dev  
-- Privacy policy: https://underscore-web-3i0.pages.dev/privacy  
-- License: GNU GPL v3.0  
+- Homepage: https://underscore-web-3i0.pages.dev
+- Support / privacy email: privacy@underscore.dev
+- Privacy policy: https://underscore-web-3i0.pages.dev/privacy
+- License: GNU GPL v3.0
 
 ## Screenshots (upload order)
 
-1. `store/amo/screenshots/out/01-hero.png` — Highlight the web  
-2. `store/amo/screenshots/out/02-library.png` — Library by site  
-3. `store/amo/screenshots/out/03-local.png` — No account required  
-4. `store/amo/screenshots/out/04-find.png` — Find & export  
-5. `store/amo/screenshots/out/05-sync.png` — Sync when ready  
+1. `store/amo/screenshots/out/01-hero.png` — Highlight the web
+2. `store/amo/screenshots/out/02-library.png` — Library by site
+3. `store/amo/screenshots/out/03-local.png` — No account required
+4. `store/amo/screenshots/out/04-find.png` — Find & export
+5. `store/amo/screenshots/out/05-sync.png` — Sync when ready
 
 Also upload `amo-1280/` variants if you prefer exact 1280×800.
 

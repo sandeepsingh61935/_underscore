@@ -12,10 +12,12 @@ describe('resolveHighlightPresentation', () => {
   });
 
   it('uses sourceKind code when no user presentation', () => {
-    expect(resolveHighlightPresentation({ sourceKind: 'code', language: 'cpp' })).toEqual({
-      format: 'code',
-      language: 'cpp',
-    });
+    expect(resolveHighlightPresentation({ sourceKind: 'code', language: 'cpp' })).toEqual(
+      {
+        format: 'code',
+        language: 'cpp',
+      }
+    );
   });
 
   it('user presentation wins over sourceKind', () => {
@@ -24,28 +26,34 @@ describe('resolveHighlightPresentation', () => {
         sourceKind: 'code',
         language: 'cpp',
         presentation: { format: 'bullets' },
-      }),
+      })
     ).toEqual({ format: 'bullets', language: 'cpp' });
   });
 });
 
 describe('applyPresentationToDisplaySource', () => {
   it('wraps code for display', () => {
-    expect(applyPresentationToDisplaySource('int x;', { format: 'code', language: 'cpp' })).toBe(
-      '```cpp\nint x;\n```',
-    );
+    expect(
+      applyPresentationToDisplaySource('int x;', { format: 'code', language: 'cpp' })
+    ).toBe('```cpp\nint x;\n```');
   });
 
   it('formats bullets per line', () => {
-    expect(applyPresentationToDisplaySource('a\nb', { format: 'bullets' })).toBe('- a\n- b');
+    expect(applyPresentationToDisplaySource('a\nb', { format: 'bullets' })).toBe(
+      '- a\n- b'
+    );
   });
 
   it('formats numbered list', () => {
-    expect(applyPresentationToDisplaySource('a\nb', { format: 'numbered' })).toBe('1. a\n2. b');
+    expect(applyPresentationToDisplaySource('a\nb', { format: 'numbered' })).toBe(
+      '1. a\n2. b'
+    );
   });
 
   it('leaves as_captured unchanged', () => {
-    expect(applyPresentationToDisplaySource('hello', { format: 'as_captured' })).toBe('hello');
+    expect(applyPresentationToDisplaySource('hello', { format: 'as_captured' })).toBe(
+      'hello'
+    );
   });
 });
 

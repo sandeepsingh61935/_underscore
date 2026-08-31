@@ -53,12 +53,18 @@ describe('AuthView existing-account signup', () => {
     render(<AuthView onLoginSuccess={onLoginSuccess} />);
 
     // Landing defaults to create-account (matches web SignInView).
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'existing@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'existing@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => {
-      expect(screen.getByText('An account with this email already exists. Sign in instead.')).toBeInTheDocument();
+      expect(
+        screen.getByText('An account with this email already exists. Sign in instead.')
+      ).toBeInTheDocument();
     });
 
     // Flipped back to the sign-in form (button label reverts to "Sign in").
@@ -72,12 +78,16 @@ describe('AuthView existing-account signup', () => {
 
     render(<AuthView onLoginSuccess={onLoginSuccess} />);
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'new@example.com' },
+    });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'short1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Password must be at least 8 characters.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Password must be at least 8 characters.')
+      ).toBeInTheDocument();
     });
     expect(registerWithEmail).not.toHaveBeenCalled();
   });

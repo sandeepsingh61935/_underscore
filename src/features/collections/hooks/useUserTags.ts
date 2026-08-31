@@ -11,7 +11,11 @@ import { fetchUserTagsWeb } from '@/shared/services/tag-query-web';
 import type { TagEntity } from '@/shared/types/tag-entity';
 
 function isExtensionContext(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined' && chrome.runtime.id !== undefined;
+  return (
+    typeof chrome !== 'undefined' &&
+    typeof chrome.runtime !== 'undefined' &&
+    chrome.runtime.id !== undefined
+  );
 }
 
 export function useUserTags(isAuthenticated = true): {
@@ -47,15 +51,20 @@ export function useUserTags(isAuthenticated = true): {
         if (!result.success) {
           throw new Error(result.error || 'Failed to fetch user labels');
         }
-        setTags((result.data.tags ?? []).map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          createdAt: new Date(tag.createdAt),
-        })));
+        setTags(
+          (result.data.tags ?? []).map((tag) => ({
+            id: tag.id,
+            name: tag.name,
+            createdAt: new Date(tag.createdAt),
+          }))
+        );
       } else {
-        const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
+        const { getWebSupabaseClient } =
+          await import('@/shared/auth/supabase-web-client');
         const supabase = getWebSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (!session?.user) {
           setTags([]);
           return;

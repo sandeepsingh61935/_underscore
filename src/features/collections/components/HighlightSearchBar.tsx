@@ -11,8 +11,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
-import type { SearchField } from '@/shared/utils/highlight-search';
-import { USER_SEARCH_FIELDS } from '@/shared/utils/highlight-search';
 import {
   countActiveFilters,
   DEFAULT_SEARCH_FIELDS,
@@ -22,6 +20,8 @@ import {
   toggleTagFilter,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
+import type { SearchField } from '@/shared/utils/highlight-search';
+import { USER_SEARCH_FIELDS } from '@/shared/utils/highlight-search';
 
 export interface AvailableTag {
   label: string;
@@ -111,7 +111,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
 
   const activeN = countActiveFilters({ fields, refine, tagFilters });
   const hasFilters = activeN > 0;
-  const showTagPicker = Boolean(availableTags && availableTags.length > 0 && onTagFiltersChange);
+  const showTagPicker = Boolean(
+    availableTags && availableTags.length > 0 && onTagFiltersChange
+  );
   const showRefine = Boolean(onRefineChange);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -174,10 +176,13 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     if (tagSort === 'az') {
       return [...list].sort((a, b) => a.label.localeCompare(b.label));
     }
-    return [...list].sort((a, b) => (b.n ?? 0) - (a.n ?? 0) || a.label.localeCompare(b.label));
+    return [...list].sort(
+      (a, b) => (b.n ?? 0) - (a.n ?? 0) || a.label.localeCompare(b.label)
+    );
   }, [availableTags, tagFind, tagSort]);
 
-  const fieldActiveSet = fields.length === 0 ? new Set(USER_SEARCH_FIELDS) : new Set(fields);
+  const fieldActiveSet =
+    fields.length === 0 ? new Set(USER_SEARCH_FIELDS) : new Set(fields);
 
   return (
     <div className="search-bar" style={{ opacity: disabled ? 0.5 : 1 }}>
@@ -411,7 +416,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                     ) : (
                       browseTags.map((t) => {
                         const on = tagFilters.some(
-                          (x) => x.toLowerCase() === t.label.toLowerCase(),
+                          (x) => x.toLowerCase() === t.label.toLowerCase()
                         );
                         return (
                           <button
@@ -449,7 +454,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                     <div className="tag-popular-row">
                       {popularTags.map((t) => {
                         const on = tagFilters.some(
-                          (x) => x.toLowerCase() === t.label.toLowerCase(),
+                          (x) => x.toLowerCase() === t.label.toLowerCase()
                         );
                         return (
                           <button

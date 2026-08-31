@@ -11,7 +11,10 @@ import {
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
 const highlights = JSON.parse(
-  readFileSync(join(fixtureDir, '../../../fixtures/coursera-scale-highlights.json'), 'utf8'),
+  readFileSync(
+    join(fixtureDir, '../../../fixtures/coursera-scale-highlights.json'),
+    'utf8'
+  )
 ) as AuditHighlight[];
 
 describe('summarization audit (coursera-scale fixture)', () => {
@@ -46,7 +49,7 @@ describe('summarization audit (coursera-scale fixture)', () => {
     expect(domain.highlightCount).toBe(50);
     expect(domain.maxOutputTokens).toBeGreaterThan(1024);
     expect(domain.pageBodyChars).toBe(0);
-    expect(domain.issues.some(i => i.includes('section'))).toBe(true);
+    expect(domain.issues.some((i) => i.includes('section'))).toBe(true);
   });
 
   it('logs audit snapshot for manual review', () => {

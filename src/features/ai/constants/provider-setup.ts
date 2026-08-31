@@ -57,7 +57,7 @@ export const CUSTOM_MODEL_ID = '__custom__';
 
 export function providerStatusLabel(
   provider: ProviderName,
-  configured: boolean | null,
+  configured: boolean | null
 ): string {
   if (configured === null) return '…';
   if (provider === 'ollama') return configured ? 'On' : 'Off';
@@ -71,5 +71,5 @@ export function formatModelDisplayName(modelId: string): string {
     .replace(/^gpt-/i, 'GPT-')
     .replace(/^grok-/i, 'Grok ')
     .replace(/-/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

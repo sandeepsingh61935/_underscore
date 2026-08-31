@@ -23,7 +23,13 @@ export interface HighlightSearchMatch<T> {
   matchedFields: SearchField[];
 }
 
-export const ALL_SEARCH_FIELDS: SearchField[] = ['text', 'notes', 'tags', 'url', 'domain'];
+export const ALL_SEARCH_FIELDS: SearchField[] = [
+  'text',
+  'notes',
+  'tags',
+  'url',
+  'domain',
+];
 
 /**
  * User-facing field chips (Text / Notes / Tags / Domain).
@@ -47,9 +53,9 @@ const MATCH_BADGE_FIELD_ORDER: ReadonlyArray<{ field: SearchField; label: string
 export function formatMatchBadge(matchedFields: readonly SearchField[]): string | null {
   if (matchedFields.length === 0) return null;
 
-  const labels = MATCH_BADGE_FIELD_ORDER
-    .filter(({ field }) => matchedFields.includes(field))
-    .map(({ label }) => label);
+  const labels = MATCH_BADGE_FIELD_ORDER.filter(({ field }) =>
+    matchedFields.includes(field)
+  ).map(({ label }) => label);
 
   if (labels.length === 0) return null;
   // Quote already shows why a pure-text hit matched.
@@ -76,7 +82,7 @@ export function formatMatchBadge(matchedFields: readonly SearchField[]): string 
 export function searchHighlights<T extends SearchableHighlight>(
   items: T[],
   query: string,
-  fields: SearchField[] = ALL_SEARCH_FIELDS,
+  fields: SearchField[] = ALL_SEARCH_FIELDS
 ): HighlightSearchMatch<T>[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) {
@@ -96,7 +102,10 @@ export function searchHighlights<T extends SearchableHighlight>(
     if (fieldSet.has('notes') && (item.notes ?? '').toLowerCase().includes(trimmed)) {
       matchedFields.push('notes');
     }
-    if (fieldSet.has('tags') && (item.tags ?? []).some((tag) => tag.toLowerCase().includes(trimmed))) {
+    if (
+      fieldSet.has('tags') &&
+      (item.tags ?? []).some((tag) => tag.toLowerCase().includes(trimmed))
+    ) {
       matchedFields.push('tags');
     }
     if (fieldSet.has('url') && item.url.toLowerCase().includes(trimmed)) {

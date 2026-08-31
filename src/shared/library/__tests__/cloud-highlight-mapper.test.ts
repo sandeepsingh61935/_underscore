@@ -4,10 +4,9 @@ import { mapCloudBodyText, resolveCloudHighlightTags } from '../cloud-highlight-
 
 describe('resolveCloudHighlightTags', () => {
   it('prefers junction labels and ignores metadata when junction is present', () => {
-    expect(resolveCloudHighlightTags(['Alpha', 'alpha', 'Beta'], ['legacy', 'other'])).toEqual([
-      'alpha',
-      'beta',
-    ]);
+    expect(
+      resolveCloudHighlightTags(['Alpha', 'alpha', 'Beta'], ['legacy', 'other'])
+    ).toEqual(['alpha', 'beta']);
   });
 
   it('falls back to metadata.tags when junction is empty', () => {

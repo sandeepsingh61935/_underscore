@@ -8,9 +8,9 @@ describe('buildPagerItems', () => {
   });
 
   it('lists every page when total fits the window', () => {
-    expect(buildPagerItems(2, 5).map((i) => (i.type === 'page' ? i.page : i.key))).toEqual([
-      1, 2, 3, 4, 5,
-    ]);
+    expect(
+      buildPagerItems(2, 5).map((i) => (i.type === 'page' ? i.page : i.key))
+    ).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('keeps boundaries and a window around current with ellipses', () => {
@@ -31,7 +31,9 @@ describe('buildPagerItems', () => {
     const items = buildPagerItems(3, 6);
     // total 6 with defaults fits full list (sibling*2+boundary*2+3 = 7 >= 6)
     expect(items.every((i) => i.type === 'page')).toBe(true);
-    expect(items.map((i) => (i.type === 'page' ? i.page : null))).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(items.map((i) => (i.type === 'page' ? i.page : null))).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
   });
 
   it('clamps current into range', () => {

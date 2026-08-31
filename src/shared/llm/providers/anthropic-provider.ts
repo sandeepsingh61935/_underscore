@@ -59,7 +59,7 @@ export class AnthropicProvider implements ILLMService {
   async streamChat(
     request: LLMRequest,
     onChunk: (chunk: LLMChunk) => void,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<LLMResult> {
     const start = Date.now();
     const response = await fetch(`${this.apiBase}/messages`, {
@@ -105,12 +105,16 @@ export class AnthropicProvider implements ILLMService {
 
       for (const raw of events) {
         const lines = raw.split('\n');
-        const dataLine = lines.find(l => l.startsWith('data:'));
+        const dataLine = lines.find((l) => l.startsWith('data:'));
         if (!dataLine) continue;
         const json = dataLine.slice(5).trim();
         if (!json) continue;
         let event: AnthropicEvent;
-        try { event = JSON.parse(json); } catch { continue; }
+        try {
+          event = JSON.parse(json);
+        } catch {
+          continue;
+        }
         if (event.type === 'message_start') {
           const e = event as AnthropicMessageStart;
           inputTokens = e.message.usage.input_tokens;
@@ -125,7 +129,12 @@ export class AnthropicProvider implements ILLMService {
       }
     }
 
-    return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
+    return {
+      text: accumulated,
+      inputTokens,
+      outputTokens,
+      durationMs: Date.now() - start,
+    };
   }
 
   async chat(request: LLMRequest): Promise<LLMResult> {
@@ -133,8 +142,10 @@ export class AnthropicProvider implements ILLMService {
     let accumulated = '';
     const result = await this.streamChat(
       request,
-      chunk => { accumulated += chunk.delta; },
-      controller.signal,
+      (chunk) => {
+        accumulated += chunk.delta;
+      },
+      controller.signal
     );
     return { ...result, text: accumulated };
   }

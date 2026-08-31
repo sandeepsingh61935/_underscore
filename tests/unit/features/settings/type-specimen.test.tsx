@@ -13,10 +13,16 @@ describe('TypeSpecimen', () => {
     expect(screen.getByTestId('type-specimen-display').textContent).toBe('Library');
     expect(screen.getByTestId('type-specimen-domain').textContent).toBe('anthropic.com');
     expect(screen.getByTestId('type-specimen-section').textContent).toBe('Academy');
-    expect(screen.getByTestId('type-specimen-body').textContent).toMatch(/Cascading resolves/);
-    expect(screen.getByTestId('type-specimen-meta').textContent).toMatch(/Source Serif 4/);
+    expect(screen.getByTestId('type-specimen-body').textContent).toMatch(
+      /Cascading resolves/
+    );
+    expect(screen.getByTestId('type-specimen-meta').textContent).toMatch(
+      /Source Serif 4/
+    );
     expect(screen.getByTestId('type-specimen-meta').textContent).toMatch(/Inter/);
-    expect(screen.getByTestId('type-specimen-meta').textContent).toMatch(/JetBrains Mono/);
+    expect(screen.getByTestId('type-specimen-meta').textContent).toMatch(
+      /JetBrains Mono/
+    );
   });
 
   it('reflects custom scale and font names in specimen', () => {

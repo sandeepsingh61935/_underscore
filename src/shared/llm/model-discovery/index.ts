@@ -1,12 +1,12 @@
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
-import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
-
 import { fetchAnthropicModels } from './anthropic-models';
 import { fetchGeminiModels } from './gemini-models';
 import { fetchOllamaModels } from './ollama-models';
 import { fetchOpenAIModels } from './openai-models';
-import { fetchXaiModels } from './xai-models';
 import type { ModelDiscoveryInput, ModelDiscoveryResult } from './types';
+import { fetchXaiModels } from './xai-models';
+
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
+import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
 
 export type { ModelDiscoveryInput, ModelDiscoveryResult };
 
@@ -22,7 +22,7 @@ export const DYNAMIC_MODEL_PROVIDERS: ReadonlyArray<ProviderName> = [
 
 export async function fetchProviderModels(
   provider: ProviderName,
-  input: ModelDiscoveryInput = {},
+  input: ModelDiscoveryInput = {}
 ): Promise<ModelDiscoveryResult> {
   if (!isInAppLlmProvider(provider)) {
     return { models: [], error: 'Unknown provider' };

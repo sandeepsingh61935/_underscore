@@ -28,7 +28,13 @@ export interface PopupShellProps {
 }
 
 /** Brand center + place extreme-left (grid 1fr auto 1fr keeps brand optically centered). */
-function PopupTitleStrip({ brand, place }: { brand: string; place?: string }): React.ReactElement {
+function PopupTitleStrip({
+  brand,
+  place,
+}: {
+  brand: string;
+  place?: string;
+}): React.ReactElement {
   return (
     <div
       data-testid="popup-title-strip"
@@ -48,7 +54,16 @@ function PopupTitleStrip({ brand, place }: { brand: string; place?: string }): R
         color: 'var(--ink-3)',
       }}
     >
-      <span style={{ justifySelf: 'start', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+      <span
+        style={{
+          justifySelf: 'start',
+          textAlign: 'left',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          minWidth: 0,
+        }}
+      >
         {place ? `· ${place}` : ''}
       </span>
       <span style={{ justifySelf: 'center', color: 'var(--ink)' }}>{brand}</span>
@@ -57,7 +72,12 @@ function PopupTitleStrip({ brand, place }: { brand: string; place?: string }): R
   );
 }
 
-export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShellProps): React.ReactElement {
+export function PopupShell({
+  chrome,
+  viewKey,
+  children,
+  dark = false,
+}: PopupShellProps): React.ReactElement {
   const reduceMotion = useReducedMotion();
   const variants = reduceMotion ? reducedScreenVariants : screenVariants;
   const transition = reduceMotion
@@ -75,7 +95,9 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         flexDirection: 'column',
       }}
     >
-      {chrome.showTitleStrip && <PopupTitleStrip brand={chrome.brand} place={chrome.place} />}
+      {chrome.showTitleStrip && (
+        <PopupTitleStrip brand={chrome.brand} place={chrome.place} />
+      )}
       <div
         className="popup"
         style={{
@@ -101,7 +123,14 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
         )}
         <div
           className="body-slot"
-          style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}
+          style={{
+            flex: 1,
+            position: 'relative',
+            minHeight: 0,
+            overflow: 'hidden',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -111,7 +140,13 @@ export function PopupShell({ chrome, viewKey, children, dark = false }: PopupShe
               animate="animate"
               exit="exit"
               transition={transition}
-              style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'auto' }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                pointerEvents: 'auto',
+              }}
             >
               {children}
             </motion.div>

@@ -44,7 +44,7 @@ describe('buildMarkedPageContext', () => {
         title: 'Example',
         text: 'This is an important bit of text.',
         truncated: false,
-      }),
+      })
     );
 
     expect(result.pageContextWithMarks).toContain('<mark>important bit</mark>');
@@ -55,7 +55,7 @@ describe('buildMarkedPageContext', () => {
   it('falls back to highlight quotes when page content is missing', () => {
     const result = buildMarkedPageContext(
       [{ url: 'https://example.com/a', text: 'quote only' }],
-      () => null,
+      () => null
     );
 
     expect(result.pageContextWithMarks).toContain('[page content not cached');
@@ -70,17 +70,21 @@ describe('summary-request', () => {
     pageUrl: 'https://example.com',
     pageContextWithMarks: 'Body with <mark>key idea</mark>.',
     pageContext: 'Body with key idea.',
-    highlights: [{ id: '1', text: 'key idea', url: 'https://example.com', title: 'Test' }],
+    highlights: [
+      { id: '1', text: 'key idea', url: 'https://example.com', title: 'Test' },
+    ],
     length: 'medium',
   };
 
-  const excerpts: HighlightExcerpt[] = [{
-    id: '1',
-    url: 'https://example.com',
-    highlightText: 'key idea',
-    pageTitle: 'Test',
-    excerpt: 'Body with <mark>key idea</mark>.',
-  }];
+  const excerpts: HighlightExcerpt[] = [
+    {
+      id: '1',
+      url: 'https://example.com',
+      highlightText: 'key idea',
+      pageTitle: 'Test',
+      excerpt: 'Body with <mark>key idea</mark>.',
+    },
+  ];
 
   it('formats excerpt windows for the user message', () => {
     const user = formatExcerptUserContent(excerpts);

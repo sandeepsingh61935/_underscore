@@ -80,7 +80,6 @@ export const IPC_HIGHLIGHT_DELETE_SCOPE = 'IPC_HIGHLIGHT_DELETE_SCOPE' as const;
 /** Undo the most recent single-highlight delete (5s window). */
 export const IPC_HIGHLIGHT_UNDO_DELETE = 'IPC_HIGHLIGHT_UNDO_DELETE' as const;
 
-
 /** Broadcast when cloud hydration backfills local highlight storage. */
 export const LIBRARY_DATA_CHANGED = 'LIBRARY_DATA_CHANGED' as const;
 

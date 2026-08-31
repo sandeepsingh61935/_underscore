@@ -42,13 +42,19 @@ describe('AuthView register-without-onLoginSuccess', () => {
   }
 
   it('does not call onLoginSuccess when registration requires email confirmation', async () => {
-    const registerWithEmail = vi.fn().mockResolvedValue({ success: true, verificationStatus: 'awaiting' });
+    const registerWithEmail = vi
+      .fn()
+      .mockResolvedValue({ success: true, verificationStatus: 'awaiting' });
     mockCurrentUser(registerWithEmail);
 
     render(<AuthView onLoginSuccess={onLoginSuccess} />);
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => {
@@ -59,13 +65,19 @@ describe('AuthView register-without-onLoginSuccess', () => {
   });
 
   it('calls onLoginSuccess when registration completes with an active session', async () => {
-    const registerWithEmail = vi.fn().mockResolvedValue({ success: true, verificationStatus: 'idle' });
+    const registerWithEmail = vi
+      .fn()
+      .mockResolvedValue({ success: true, verificationStatus: 'idle' });
     mockCurrentUser(registerWithEmail);
 
     render(<AuthView onLoginSuccess={onLoginSuccess} />);
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => {

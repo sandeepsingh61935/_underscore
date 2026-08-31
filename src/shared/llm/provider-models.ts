@@ -97,7 +97,10 @@ export function getProviderModels(provider: ProviderName): ProviderModelOption[]
   return PROVIDER_MODEL_CATALOG[provider].models;
 }
 
-export function resolveProviderModel(provider: ProviderName, stored: string | null | undefined): string {
+export function resolveProviderModel(
+  provider: ProviderName,
+  stored: string | null | undefined
+): string {
   const trimmed = stored?.trim();
   if (trimmed) return trimmed;
   return getDefaultModelId(provider);
@@ -105,7 +108,7 @@ export function resolveProviderModel(provider: ProviderName, stored: string | nu
 
 export function findCatalogModel(
   provider: ProviderName,
-  modelId: string,
+  modelId: string
 ): ProviderModelOption | undefined {
-  return PROVIDER_MODEL_CATALOG[provider].models.find(m => m.id === modelId);
+  return PROVIDER_MODEL_CATALOG[provider].models.find((m) => m.id === modelId);
 }

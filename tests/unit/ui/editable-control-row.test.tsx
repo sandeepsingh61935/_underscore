@@ -8,7 +8,12 @@ describe('EditableControlRow', () => {
   it('renders a compact wheel picker when valueKind is set', () => {
     const onChange = vi.fn();
     const { container, getByRole } = render(
-      <EditableControlRow label="Display" value="22px" valueKind="px-scale" onChange={onChange} />
+      <EditableControlRow
+        label="Display"
+        value="22px"
+        valueKind="px-scale"
+        onChange={onChange}
+      />
     );
 
     expect(container.querySelector('input')).toBeNull();
@@ -22,7 +27,12 @@ describe('EditableControlRow', () => {
   it('steps value via wheel picker arrow keys', () => {
     const onChange = vi.fn();
     const { getByRole } = render(
-      <EditableControlRow label="Display" value="22px" valueKind="px-scale" onChange={onChange} />
+      <EditableControlRow
+        label="Display"
+        value="22px"
+        valueKind="px-scale"
+        onChange={onChange}
+      />
     );
 
     const wheel = getByRole('generic', {

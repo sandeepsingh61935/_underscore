@@ -17,13 +17,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import {
+  fetchHighlightLabelsWeb,
+  mergeLabelsForHighlight,
+} from '@/shared/services/tag-query-web';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
-import { getSectionPath } from '@/shared/utils/normalize-page-url';
-import { getSectionKey } from '@/shared/utils/section-key';
+import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import type { SearchField, SearchableHighlight } from '@/shared/utils/highlight-search';
 import { searchHighlights } from '@/shared/utils/highlight-search';
-import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
-import { fetchHighlightLabelsWeb, mergeLabelsForHighlight } from '@/shared/services/tag-query-web';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
+import { getSectionKey } from '@/shared/utils/section-key';
 
 export type SearchScope =
   | { kind: 'library' }
@@ -65,7 +68,11 @@ const EMPTY_STATE: HighlightSearchState = {
 
 /** Check if running in Chrome extension context (mirrors useHighlightsByDomainFactory.ts). */
 function isExtensionContext(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined' && chrome.runtime.id !== undefined;
+  return (
+    typeof chrome !== 'undefined' &&
+    typeof chrome.runtime !== 'undefined' &&
+    chrome.runtime.id !== undefined
+  );
 }
 
 /** Translate a `SearchScope` into the domain/section filter the IPC/query-service pair understands. */
@@ -153,26 +160,31 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
           throw new Error(ipcResult.error || 'Failed to search highlights');
         }
 
-        const results: HighlightSearchResult[] = (ipcResult.data.highlights || []).map((hl) => ({
-          id: hl.id,
-          text: hl.text,
-          url: hl.url,
-          path: hl.path,
-          domain: hl.domain,
-          createdAt: new Date(hl.createdAt),
-          notes: hl.notes,
-          tags: hl.tags,
-          sourceKind: hl.sourceKind,
-          language: hl.language,
-          presentation: hl.presentation,
-          matchedFields: hl.matchedFields,
-        }));
+        const results: HighlightSearchResult[] = (ipcResult.data.highlights || []).map(
+          (hl) => ({
+            id: hl.id,
+            text: hl.text,
+            url: hl.url,
+            path: hl.path,
+            domain: hl.domain,
+            createdAt: new Date(hl.createdAt),
+            notes: hl.notes,
+            tags: hl.tags,
+            sourceKind: hl.sourceKind,
+            language: hl.language,
+            presentation: hl.presentation,
+            matchedFields: hl.matchedFields,
+          })
+        );
 
         setState({ results, isLoading: false, error: null });
       } else {
-        const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
+        const { getWebSupabaseClient } =
+          await import('@/shared/auth/supabase-web-client');
         const supabase = getWebSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!session?.user) {
           setState(EMPTY_STATE);
@@ -188,7 +200,11 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
         if (queryError) throw queryError;
 
         const highlightIds = (data || []).map((hl) => hl.id);
-        const labelMap = await fetchHighlightLabelsWeb(supabase, session.user.id, highlightIds);
+        const labelMap = await fetchHighlightLabelsWeb(
+          supabase,
+          session.user.id,
+          highlightIds
+        );
 
         const rows: WebSearchableHighlight[] = [];
         for (const hl of data || []) {
@@ -202,7 +218,10 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
           if (scope.kind === 'domain' || scope.kind === 'section') {
             if (!urlMatchesDomain(hl.url, scope.domain)) continue;
           }
-          if (scope.kind === 'section' && getSectionKey({ url: hl.url, path }) !== scope.section) {
+          if (
+            scope.kind === 'section' &&
+            getSectionKey({ url: hl.url, path }) !== scope.section
+          ) {
             continue;
           }
 

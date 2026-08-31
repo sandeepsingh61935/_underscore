@@ -18,20 +18,19 @@ export function useGenerateSummary(): Omit<StreamAPI, 'start'> & {
   const { provider } = useActiveLLMProvider();
   const [phase, setPhase] = useState<SummarizePhase>('idle');
 
-  const start = useCallback((ctx: PromptContext, excerpts: HighlightExcerpt[]) => {
-    setPhase('streaming');
-    stream.start({
-      request: buildExcerptSummaryRequest(ctx, excerpts),
-      provider: provider ?? undefined,
-    });
+  const start = useCallback(
+    (ctx: PromptContext, excerpts: HighlightExcerpt[]) => {
+      setPhase('streaming');
+      stream.start({
+        request: buildExcerptSummaryRequest(ctx, excerpts),
+        provider: provider ?? undefined,
+      });
+    },
+    [stream, provider]
+  );
 
-  }, [stream, provider]);
-
-  const derivedPhase: SummarizePhase = stream.status === 'done'
-    ? 'done'
-    : stream.status === 'error'
-      ? 'error'
-      : phase;
+  const derivedPhase: SummarizePhase =
+    stream.status === 'done' ? 'done' : stream.status === 'error' ? 'error' : phase;
 
   return {
     ...stream,

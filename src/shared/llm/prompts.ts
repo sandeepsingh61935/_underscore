@@ -38,7 +38,10 @@ const SUMMARY_LENGTH_GUIDE: Record<NonNullable<PromptContext['length']>, string>
   long: 'Write 2-4 paragraphs (roughly 250-400 words) with enough detail to capture nuance in the highlights.',
 };
 
-function excerptLengthGuide(count: number, length: NonNullable<PromptContext['length']>): string {
+function excerptLengthGuide(
+  count: number,
+  length: NonNullable<PromptContext['length']>
+): string {
   if (length === 'short') {
     return 'Keep it brief — only as long as needed to cover each excerpt.';
   }
@@ -57,7 +60,8 @@ function excerptLengthGuide(count: number, length: NonNullable<PromptContext['le
 export const PROMPT_TEMPLATES = {
   explain: (ctx: PromptContext): string => {
     const first = ctx.highlights[0];
-    if (!first) throw new Error('PROMPT_TEMPLATES.explain requires at least one highlight');
+    if (!first)
+      throw new Error('PROMPT_TEMPLATES.explain requires at least one highlight');
     return `
 You are helping a reader understand a specific passage they marked.
 Page: ${ctx.pageTitle} (${ctx.pageUrl})
@@ -122,7 +126,12 @@ Rules:
 `.trim();
   },
 
-  reduceDomainSynthesis: (domain: string, totalHighlights: number, sectionCount: number): string => `
+  reduceDomainSynthesis: (
+    domain: string,
+    totalHighlights: number,
+    sectionCount: number
+  ): string =>
+    `
 You synthesize a reader's highlights across ${sectionCount} section${sectionCount === 1 ? '' : 's'} on ${domain} (${totalHighlights} total highlights).
 
 You receive section-level summaries, not raw pages.
@@ -136,10 +145,11 @@ Rules:
 6. Stay faithful to the provided section summaries.
 `.trim(),
 
-  synthesizeDomain: (ctx: PromptContext): string => `
+  synthesizeDomain: (ctx: PromptContext): string =>
+    `
 You are synthesizing a reader's understanding across multiple pages on ${ctx.domain ?? 'this domain'}.
 The reader highlighted ${ctx.highlights.length} spans across ${ctx.uniqueUrls ?? ctx.highlights.length} pages:
-${ctx.highlights.map(h => `[${h.url}] ${h.text}`).join('\n')}
+${ctx.highlights.map((h) => `[${h.url}] ${h.text}`).join('\n')}
 Identify the recurring themes, the connections between pages, and any contradictions.
 Write clear prose with short headings. No JSON.
 `.trim(),

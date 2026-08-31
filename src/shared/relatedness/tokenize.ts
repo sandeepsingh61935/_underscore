@@ -5,8 +5,8 @@
 
 const STOP = new Set(
   'a an the is are was were be been being to of in on for and or as at by with from that this it its into our your their we you they not no'.split(
-    ' ',
-  ),
+    ' '
+  )
 );
 
 /** Lowercase alphanumeric tokens; drops stopwords and length ≤ 2. */

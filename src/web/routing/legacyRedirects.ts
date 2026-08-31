@@ -4,7 +4,7 @@
  */
 export function resolveLegacyRedirect(
   pathname: string,
-  params?: { domain?: string; section?: string },
+  params?: { domain?: string; section?: string }
 ): string | null {
   if (pathname === '/collections') {
     return '/library';

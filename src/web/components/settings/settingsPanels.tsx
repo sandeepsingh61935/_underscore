@@ -8,13 +8,13 @@ import { Link } from 'react-router-dom';
 
 import { type BillingReturnKind } from './BillingReturnBanners';
 
+import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import {
   BUILTIN_TYPE_PRESET_LIST,
   BUILTIN_TYPE_PRESETS,
   type BuiltinTypePresetId,
 } from '@/shared/constants/type-presets';
 import type { ThemeType } from '@/shared/types/theme';
-import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { useTypePreset } from '@/ui-system/hooks/useTypePreset';
 import type { WebCaps, WebPlanLabel } from '@/web/caps/resolveWebCaps';
@@ -24,7 +24,6 @@ import {
   writeWebPrefs,
   type WebDensity,
 } from '@/web/lib/webPrefs';
-
 
 function formatPeriodEnd(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -130,7 +129,9 @@ export function AccountPanel({
             </div>
           ) : null}
           <div className="grow">
-            <div className="title">{isAuthenticated && email ? email : 'Not signed in'}</div>
+            <div className="title">
+              {isAuthenticated && email ? email : 'Not signed in'}
+            </div>
             <div className="sub">
               {isAuthenticated
                 ? planTitle({
@@ -228,11 +229,10 @@ export function PlanPanel({
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-plan">
       <h2>Plan</h2>
-      <p className="lead">Guest vs Account. Paid billing is upcoming — not offered here yet.</p>
-      <div
-        className="setting-row plan-current"
-        data-od-id="plan-current"
-      >
+      <p className="lead">
+        Guest vs Account. Paid billing is upcoming — not offered here yet.
+      </p>
+      <div className="setting-row plan-current" data-od-id="plan-current">
         <div className="grow">
           <div className="title">
             {planTitle({
@@ -255,7 +255,11 @@ export function PlanPanel({
           <span className={planPillClass(caps.planLabel)}>{caps.planLabel}</span>
         ) : null}
       </div>
-      <div className="block" data-od-id="settings-billing-block" style={{ marginTop: 16 }}>
+      <div
+        className="block"
+        data-od-id="settings-billing-block"
+        style={{ marginTop: 16 }}
+      >
         <p className="block-label">Billing</p>
         <BillingUpcomingBlock />
       </div>
@@ -293,9 +297,9 @@ export function AppearancePanel({
   theme: ThemeType | string;
   onThemeChange: (t: ThemeType) => void;
 }): React.ReactElement {
-  const themeValue = (THEME_OPTS.includes(theme as ThemeType)
-    ? theme
-    : 'system') as ThemeType;
+  const themeValue = (
+    THEME_OPTS.includes(theme as ThemeType) ? theme : 'system'
+  ) as ThemeType;
   const { selection, displayName, setSelection } = useTypePreset();
   const [density, setDensity] = useState<WebDensity>(() => readWebPrefs().density);
 
@@ -312,11 +316,10 @@ export function AppearancePanel({
     (id: BuiltinTypePresetId) => {
       void setSelection({ kind: 'builtin', id });
     },
-    [setSelection],
+    [setSelection]
   );
 
-  const activePresetId =
-    selection.kind === 'builtin' ? selection.id : null;
+  const activePresetId = selection.kind === 'builtin' ? selection.id : null;
 
   return (
     <div className="settings-panel is-tab-enter" data-od-id="settings-appearance">
@@ -362,7 +365,12 @@ export function AppearancePanel({
       </div>
       <div className="block">
         <p className="block-label">Density</p>
-        <div className="seg" role="radiogroup" aria-label="Density" data-od-id="density-seg">
+        <div
+          className="seg"
+          role="radiogroup"
+          aria-label="Density"
+          data-od-id="density-seg"
+        >
           {DENSITY_OPTS.map((d) => (
             <button
               key={d}

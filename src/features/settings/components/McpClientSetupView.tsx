@@ -13,8 +13,14 @@ export function McpClientSetupView({
   remoteUrl,
 }: McpClientSetupViewProps): React.ReactElement {
   return (
-    <div data-testid="mcp-client-setup" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="list-scroll" style={{ flex: 1, overflow: 'auto', padding: '12px 16px 16px' }}>
+    <div
+      data-testid="mcp-client-setup"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      <div
+        className="list-scroll"
+        style={{ flex: 1, overflow: 'auto', padding: '12px 16px 16px' }}
+      >
         <HostTipBody app={app} remoteUrl={remoteUrl} />
       </div>
     </div>

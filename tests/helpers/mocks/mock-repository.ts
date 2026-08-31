@@ -57,7 +57,11 @@ export class MockRepository implements IHighlightRepository {
     return this.items.has(id);
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>, _options?: unknown): Promise<void> {
+  async update(
+    id: string,
+    updates: Partial<HighlightDataV2>,
+    _options?: unknown
+  ): Promise<void> {
     this.updateSpy(id, updates);
     const existing = this.items.get(id);
     if (!existing) {
@@ -84,7 +88,9 @@ export class MockRepository implements IHighlightRepository {
 
   async findByUrl(url: string): Promise<HighlightDataV2[]> {
     // Simple mock: filter items by checking against id prefix or content hash.
-    return Array.from(this.items.values()).filter((item) => item.contentHash.includes(url));
+    return Array.from(this.items.values()).filter((item) =>
+      item.contentHash.includes(url)
+    );
   }
 
   async addMany(highlights: HighlightDataV2[]): Promise<void> {

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildActivePages,
-  buildPopupHomeModel,
-  homeGreeting,
-} from './home-model';
+import { buildActivePages, buildPopupHomeModel, homeGreeting } from './home-model';
 
 describe('homeGreeting', () => {
   it('morning with name (legacy helper)', () => {
@@ -29,7 +25,7 @@ describe('buildActivePages', () => {
     const pages = buildActivePages(
       rows,
       { domain: 'a.com', path: '/x' },
-      { excludeCurrent: true },
+      { excludeCurrent: true }
     );
     expect(pages).toHaveLength(1);
     expect(pages[0]?.domain).toBe('b.com');

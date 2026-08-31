@@ -8,10 +8,10 @@ import { toast } from 'sonner';
 
 import { isExtensionContext } from '@/features/collections/hooks/useHighlightExport';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { UPDATE_HIGHLIGHT_TEXT } from '@/shared/schemas/message-schemas';
 import { validateHighlightText } from '@/shared/utils/highlight-text';
 import { serializeHighlightTextForCloud } from '@/shared/utils/supabase-highlight-row';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 export type SendHighlightTextUpdate = (payload: {
   id: string;
@@ -21,7 +21,7 @@ export type SendHighlightTextUpdate = (payload: {
 export async function executeUpdateHighlightText(
   id: string,
   text: string,
-  sendUpdate: SendHighlightTextUpdate,
+  sendUpdate: SendHighlightTextUpdate
 ): Promise<boolean> {
   const validated = validateHighlightText(text);
   if (!validated.ok) {
@@ -40,7 +40,7 @@ export async function executeUpdateHighlightText(
 
 export async function updateHighlightTextWeb(
   id: string,
-  text: string,
+  text: string
 ): Promise<{ success: boolean; error?: string }> {
   const validated = validateHighlightText(text);
   if (!validated.ok) {
@@ -96,13 +96,15 @@ export async function updateHighlightTextWeb(
 export function useUpdateHighlightText(): {
   updateText: (id: string, text: string) => Promise<boolean>;
 } {
-  const sendAction = useIpcAction<{ id: string; text: string }, void>(UPDATE_HIGHLIGHT_TEXT);
+  const sendAction = useIpcAction<{ id: string; text: string }, void>(
+    UPDATE_HIGHLIGHT_TEXT
+  );
 
   const updateText = useCallback(
     async (id: string, text: string): Promise<boolean> => {
       if (!isExtensionContext()) {
         return executeUpdateHighlightText(id, text, (payload) =>
-          updateHighlightTextWeb(payload.id, payload.text),
+          updateHighlightTextWeb(payload.id, payload.text)
         );
       }
       return executeUpdateHighlightText(id, text, async (payload) => {
@@ -112,7 +114,7 @@ export function useUpdateHighlightText(): {
           : { success: false, error: result.error };
       });
     },
-    [sendAction],
+    [sendAction]
   );
 
   return { updateText };

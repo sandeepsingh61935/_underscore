@@ -10,7 +10,7 @@ import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 
 export function resolveCloudHighlightTags(
   junctionLabels?: readonly string[] | null,
-  metadataTags?: readonly string[] | null,
+  metadataTags?: readonly string[] | null
 ): string[] {
   const junction = normalizeHighlightTags([...(junctionLabels ?? [])]);
   if (junction.length > 0) return junction;
@@ -23,10 +23,10 @@ export function isEncryptedHighlightText(text: string): boolean {
   return t.startsWith('[ADR013:') || t.startsWith('[ADR013');
 }
 
-export function mapCloudBodyText(row: {
-  text?: unknown;
-  text_encrypted?: unknown;
-}): { text: string; encrypted: boolean } {
+export function mapCloudBodyText(row: { text?: unknown; text_encrypted?: unknown }): {
+  text: string;
+  encrypted: boolean;
+} {
   if (typeof row.text === 'string' && row.text.length > 0) {
     if (isEncryptedHighlightText(row.text)) {
       // Never surface ciphertext as English for BM25 / UI quote paths.

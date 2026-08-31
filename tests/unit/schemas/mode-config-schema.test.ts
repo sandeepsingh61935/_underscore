@@ -19,11 +19,20 @@ describe('ModeConfigSchema — V3 mode agreement', () => {
   });
 
   it('rejects legacy V1/V2 mode names (walk/sprint/vault/neural/ephemeral/local/cloud/ai)', () => {
-    for (const legacyName of ['walk', 'sprint', 'vault', 'neural', 'ephemeral', 'local', 'cloud', 'ai']) {
+    for (const legacyName of [
+      'walk',
+      'sprint',
+      'vault',
+      'neural',
+      'ephemeral',
+      'local',
+      'cloud',
+      'ai',
+    ]) {
       const result = ModeConfigSchema.shape.modeName.safeParse(legacyName);
       expect(
         result.success,
-        `ModeConfigSchema must reject legacy name "${legacyName}"`,
+        `ModeConfigSchema must reject legacy name "${legacyName}"`
       ).toBe(false);
     }
   });

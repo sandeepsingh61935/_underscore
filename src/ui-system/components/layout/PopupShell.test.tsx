@@ -46,7 +46,9 @@ describe('PopupShell', () => {
     const strip = screen.getByTestId('popup-title-strip');
     expect(strip.textContent).toContain('_underscore');
     expect(strip.textContent).toContain('· Home');
-    expect(screen.queryByRole('button', { name: /guest|free|paid/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /guest|free|paid/i })
+    ).not.toBeInTheDocument();
   });
 
   it('renders the title strip with the chrome brand when showTitleStrip is true', () => {
@@ -74,7 +76,7 @@ describe('PopupShell', () => {
       render(
         <PopupShell chrome={baseChrome} viewKey="DASHBOARD">
           <div>calm-body</div>
-        </PopupShell>,
+        </PopupShell>
       );
       expect(screen.getByText('calm-body')).toBeInTheDocument();
     } finally {
@@ -84,7 +86,10 @@ describe('PopupShell', () => {
 
   it('omits the title strip when showTitleStrip is false', () => {
     render(
-      <PopupShell chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }} viewKey="WELCOME">
+      <PopupShell
+        chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }}
+        viewKey="WELCOME"
+      >
         <div>body</div>
       </PopupShell>
     );

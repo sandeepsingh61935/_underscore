@@ -10,9 +10,7 @@ import { HighlightMarkdownBody } from '@/ui-system/components/primitives/Highlig
 
 describe('HighlightMarkdownBody', () => {
   it('renders plain paragraphs from blank-line breaks', () => {
-    render(
-      <HighlightMarkdownBody source={'First paragraph.\n\nSecond paragraph.'} />
-    );
+    render(<HighlightMarkdownBody source={'First paragraph.\n\nSecond paragraph.'} />);
     expect(screen.getByText('First paragraph.')).toBeTruthy();
     expect(screen.getByText('Second paragraph.')).toBeTruthy();
   });
@@ -56,9 +54,7 @@ describe('HighlightMarkdownBody', () => {
   });
 
   it('renders unordered lists', () => {
-    const { container } = render(
-      <HighlightMarkdownBody source={'- one\n- two'} />
-    );
+    const { container } = render(<HighlightMarkdownBody source={'- one\n- two'} />);
     const items = container.querySelectorAll('li');
     expect(items.length).toBe(2);
     expect(items[0]?.textContent).toContain('one');
@@ -78,17 +74,16 @@ describe('HighlightMarkdownBody', () => {
   });
 
   it('does not render headings as heading elements', () => {
-    const { container } = render(
-      <HighlightMarkdownBody source={'# Not a heading'} />
-    );
+    const { container } = render(<HighlightMarkdownBody source={'# Not a heading'} />);
     expect(container.querySelector('h1')).toBeNull();
     expect(container.textContent).toContain('Not a heading');
   });
 
   it('shows Show more when clamp overflows long content', () => {
-    const long = Array.from({ length: 20 }, (_, i) => `Line ${i + 1} of a long quote.`).join(
-      '\n\n',
-    );
+    const long = Array.from(
+      { length: 20 },
+      (_, i) => `Line ${i + 1} of a long quote.`
+    ).join('\n\n');
     render(<HighlightMarkdownBody source={long} clamp />);
     const toggle = screen.getByRole('button', { name: /Show more/i });
     fireEvent.click(toggle);

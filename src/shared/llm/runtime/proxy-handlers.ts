@@ -5,16 +5,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-import { rowToEntitlement } from '@/shared/billing/entitlement';
-import type { BillingEntitlementRow } from '@/shared/billing/types';
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
-import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
-import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import { parseLlmRequest } from './parse-llm-request';
-import {
-  llmProxyCorsHeaders,
-  resolveLlmProxyAllowedOrigins,
-} from './proxy-cors';
+import { llmProxyCorsHeaders, resolveLlmProxyAllowedOrigins } from './proxy-cors';
 import {
   LLM_PROXY_MAX_BODY_BYTES,
   LLM_PROXY_MAX_STREAM_MS,
@@ -28,6 +20,12 @@ import {
 } from './proxy-rate-limit';
 import { runProviderStream } from './run-provider-stream';
 import { encodeSseEvent } from './sse';
+
+import { rowToEntitlement } from '@/shared/billing/entitlement';
+import type { BillingEntitlementRow } from '@/shared/billing/types';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
+import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
+import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 
 export interface ProxyEnv {
   SUPABASE_URL?: string;
@@ -70,9 +68,9 @@ function bearerToken(req: Request): string | null {
 
 function apiKeyFromRequest(req: Request): string {
   return (
-    req.headers.get('x-llm-api-key')
-    || req.headers.get('X-Llm-Api-Key')
-    || ''
+    req.headers.get('x-llm-api-key') ||
+    req.headers.get('X-Llm-Api-Key') ||
+    ''
   ).trim();
 }
 
@@ -90,7 +88,7 @@ function withCors(req: Request, env: ProxyEnv, res: Response): Response {
 
 async function requirePaidUser(
   req: Request,
-  env: ProxyEnv,
+  env: ProxyEnv
 ): Promise<{ userId: string } | Response> {
   const creds = getSupabaseEnv(env);
   if (!creds) {
@@ -115,7 +113,7 @@ async function requirePaidUser(
   const { data: row, error: entErr } = await supabase
     .from('billing_entitlements')
     .select(
-      'user_id, plan, status, current_period_end, cancel_at_period_end, provider, provider_customer_id',
+      'user_id, plan, status, current_period_end, cancel_at_period_end, provider, provider_customer_id'
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -138,17 +136,24 @@ function parseProvider(raw: unknown): ProviderName | null {
   return raw;
 }
 
-async function readJsonBody(req: Request): Promise<
-  | { ok: true; body: Record<string, unknown> }
-  | { ok: false; response: Response }
+async function readJsonBody(
+  req: Request
+): Promise<
+  { ok: true; body: Record<string, unknown> } | { ok: false; response: Response }
 > {
   const cl = req.headers.get('content-length');
   if (cl && Number(cl) > LLM_PROXY_MAX_BODY_BYTES) {
-    return { ok: false, response: jsonResponse(413, { error: 'Request body too large' }) };
+    return {
+      ok: false,
+      response: jsonResponse(413, { error: 'Request body too large' }),
+    };
   }
   const text = await req.text();
   if (text.length > LLM_PROXY_MAX_BODY_BYTES) {
-    return { ok: false, response: jsonResponse(413, { error: 'Request body too large' }) };
+    return {
+      ok: false,
+      response: jsonResponse(413, { error: 'Request body too large' }),
+    };
   }
   try {
     const body = JSON.parse(text) as Record<string, unknown>;
@@ -165,7 +170,7 @@ async function readJsonBody(req: Request): Promise<
  */
 export async function handleLlmStreamProxy(
   req: Request,
-  env: ProxyEnv,
+  env: ProxyEnv
 ): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -190,7 +195,9 @@ export async function handleLlmStreamProxy(
     return withCors(
       req,
       env,
-      jsonResponse(400, { error: 'Invalid or non-cloud provider (use Ollama direct on client)' }),
+      jsonResponse(400, {
+        error: 'Invalid or non-cloud provider (use Ollama direct on client)',
+      })
     );
   }
 
@@ -207,7 +214,7 @@ export async function handleLlmStreamProxy(
   const model =
     typeof parsed.body['model'] === 'string' ? parsed.body['model'] : undefined;
 
-  let state = rateByUser.get(auth.userId) ?? emptyRateLimitState();
+  const state = rateByUser.get(auth.userId) ?? emptyRateLimitState();
   const { decision, next } = checkAndRecordStreamStart(state);
   rateByUser.set(auth.userId, next);
   if (!decision.ok) {
@@ -275,7 +282,7 @@ export async function handleLlmStreamProxy(
         'cache-control': 'no-store',
         connection: 'keep-alive',
       },
-    }),
+    })
   );
 }
 
@@ -286,7 +293,7 @@ export async function handleLlmStreamProxy(
  */
 export async function handleLlmHealthProxy(
   req: Request,
-  env: ProxyEnv,
+  env: ProxyEnv
 ): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -331,7 +338,7 @@ export async function handleLlmHealthProxy(
         ok: false,
         model: model ?? 'unknown',
         error: (err as Error).message,
-      }),
+      })
     );
   }
 }

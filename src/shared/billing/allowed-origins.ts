@@ -3,9 +3,7 @@
  * Used by clients for docs alignment; Edge copies same rules in _shared/billing-urls.ts.
  */
 
-export function parseBillingAllowedOrigins(
-  raw: string | undefined | null
-): string[] {
+export function parseBillingAllowedOrigins(raw: string | undefined | null): string[] {
   if (!raw || !raw.trim()) return [];
   return raw
     .split(',')
@@ -70,8 +68,7 @@ export function defaultBillingSuccessUrl(
 }
 
 export type ResolveRedirectResult =
-  | { ok: true; url: string }
-  | { ok: false; error: string };
+  { ok: true; url: string } | { ok: false; error: string };
 
 /**
  * Resolve a client-provided redirect URL or default under the first allowlisted origin.

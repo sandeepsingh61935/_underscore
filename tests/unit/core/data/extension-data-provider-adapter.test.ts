@@ -58,7 +58,9 @@ describe('ExtensionDataProviderAdapter', () => {
   });
 
   it('returns empty array when IPC throws', async () => {
-    const send = vi.fn(async () => { throw new Error('IPC down'); });
+    const send = vi.fn(async () => {
+      throw new Error('IPC down');
+    });
     const messageBus = { send } as unknown as IMessageBus;
     const adapter = new ExtensionDataProviderAdapter(
       new EventBus(new ConsoleLogger('test', LogLevel.NONE)),

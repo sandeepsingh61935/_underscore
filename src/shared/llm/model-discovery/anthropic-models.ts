@@ -1,11 +1,13 @@
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
-
 import type { ModelDiscoveryResult } from './types';
+
+import type { ProviderModelOption } from '@/shared/llm/provider-models';
 
 const MODELS_URL = 'https://api.anthropic.com/v1/models';
 
 /** Fetch available models via Anthropic REST API (same catalog as @anthropic-ai/sdk). */
-export async function fetchAnthropicModels(apiKey: string): Promise<ModelDiscoveryResult> {
+export async function fetchAnthropicModels(
+  apiKey: string
+): Promise<ModelDiscoveryResult> {
   const trimmed = apiKey.trim();
   if (!trimmed) return { models: [], error: 'API key required to load models' };
 
@@ -19,9 +21,11 @@ export async function fetchAnthropicModels(apiKey: string): Promise<ModelDiscove
     if (!response.ok) {
       return { models: [], error: `Anthropic models HTTP ${response.status}` };
     }
-    const json = await response.json() as { data?: Array<{ id: string; display_name?: string }> };
+    const json = (await response.json()) as {
+      data?: Array<{ id: string; display_name?: string }>;
+    };
     const models: ProviderModelOption[] = (json.data ?? [])
-      .map(m => ({
+      .map((m) => ({
         id: m.id,
         label: m.display_name ?? m.id,
       }))

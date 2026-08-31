@@ -3,9 +3,10 @@
  * @description Central event bus for event-driven architecture
  */
 
+import type { IEventBus, EventHandler } from '../interfaces/i-event-bus';
+
 import { LoggerFactory } from './logger';
 import type { ILogger } from './logger';
-import type { IEventBus, EventHandler } from '../interfaces/i-event-bus';
 
 /**
  * EventBus - Central event coordination using Observer pattern
@@ -44,7 +45,7 @@ export class EventBus implements IEventBus {
 
     this.handlers.get(event)!.add(handler as EventHandler);
     this.logger.debug(`Listener added for "${event}"`);
-    
+
     // Return unsubscribe function
     return () => {
       this.off(event, handler);

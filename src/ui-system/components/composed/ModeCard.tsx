@@ -28,8 +28,8 @@ export function ModeCard({
   const containerStyle: React.CSSProperties = isActive
     ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' }
     : isLocked
-    ? { backgroundColor: 'var(--paper)', borderColor: 'var(--rule-soft)' }
-    : { backgroundColor: 'var(--paper)', borderColor: 'var(--rule-soft)' };
+      ? { backgroundColor: 'var(--paper)', borderColor: 'var(--rule-soft)' }
+      : { backgroundColor: 'var(--paper)', borderColor: 'var(--rule-soft)' };
 
   const iconWrapStyle: React.CSSProperties = isActive
     ? { backgroundColor: 'var(--accent-ink)', color: 'var(--paper)' }
@@ -62,10 +62,7 @@ export function ModeCard({
       <div className="flex items-start justify-between w-full mb-2">
         <div className="flex items-center gap-3">
           {icon && (
-            <div
-              className="p-2 rounded"
-              style={iconWrapStyle}
-            >
+            <div className="p-2 rounded" style={iconWrapStyle}>
               {icon}
             </div>
           )}
@@ -82,7 +79,11 @@ export function ModeCard({
               className="w-5 h-5 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'var(--accent-ink)' }}
             >
-              <Check className="w-3 h-3" style={{ color: 'var(--accent)' }} strokeWidth={3} />
+              <Check
+                className="w-3 h-3"
+                style={{ color: 'var(--accent)' }}
+                strokeWidth={3}
+              />
             </div>
           ) : (
             <div

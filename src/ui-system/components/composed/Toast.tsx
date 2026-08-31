@@ -174,10 +174,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
       }}
       role="alert"
     >
-      <Icon
-        className="w-5 h-5 shrink-0 mt-0.5"
-        style={{ color: 'var(--accent)' }}
-      />
+      <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
 
       <div className="flex-1 min-w-0">
         <p

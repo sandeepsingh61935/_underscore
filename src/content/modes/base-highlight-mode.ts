@@ -13,8 +13,8 @@ import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import type { EventBus } from '@/shared/utils/event-bus';
-import type { ILogger } from '@/shared/utils/logger';
 import { generateHighlightId } from '@/shared/utils/generate-highlight-id';
+import type { ILogger } from '@/shared/utils/logger';
 
 export abstract class BaseHighlightMode {
   /** Session highlights with optional liveRanges for paint / undo. */

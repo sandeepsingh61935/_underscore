@@ -7,7 +7,9 @@ import {
   type SearchableHighlight,
 } from '@/shared/utils/highlight-search';
 
-function makeHighlight(overrides: Partial<SearchableHighlight> = {}): SearchableHighlight {
+function makeHighlight(
+  overrides: Partial<SearchableHighlight> = {}
+): SearchableHighlight {
   return {
     id: 'h1',
     text: 'The quick brown fox',
@@ -49,16 +51,33 @@ describe('searchHighlights', () => {
   });
 
   it('treats an empty fields array as user-facing fields (All chip scope)', () => {
-    const items = [makeHighlight({ text: 'the telephone', notes: undefined, tags: undefined })];
+    const items = [
+      makeHighlight({ text: 'the telephone', notes: undefined, tags: undefined }),
+    ];
     const results = searchHighlights(items, 'telephone', []);
     expect(results).toHaveLength(1);
     expect(results[0]?.matchedFields).toEqual(['text']);
   });
 
   it('preserves input order and does not dedupe', () => {
-    const a = makeHighlight({ id: 'a', text: 'fox in a hat', notes: undefined, tags: undefined });
-    const b = makeHighlight({ id: 'b', text: 'another fox', notes: undefined, tags: undefined });
-    const c = makeHighlight({ id: 'c', text: 'no match here', notes: undefined, tags: undefined });
+    const a = makeHighlight({
+      id: 'a',
+      text: 'fox in a hat',
+      notes: undefined,
+      tags: undefined,
+    });
+    const b = makeHighlight({
+      id: 'b',
+      text: 'another fox',
+      notes: undefined,
+      tags: undefined,
+    });
+    const c = makeHighlight({
+      id: 'c',
+      text: 'no match here',
+      notes: undefined,
+      tags: undefined,
+    });
     const results = searchHighlights([a, b, c], 'fox');
     expect(results.map((r) => r.highlight.id)).toEqual(['a', 'b']);
   });
@@ -67,7 +86,11 @@ describe('searchHighlights', () => {
     it('text-only: matches on text, ignores notes/tags/url with same term', () => {
       const items = [
         makeHighlight({ id: 'text-match', text: 'contains keyword here' }),
-        makeHighlight({ id: 'notes-only', text: 'no match', notes: 'contains keyword here' }),
+        makeHighlight({
+          id: 'notes-only',
+          text: 'no match',
+          notes: 'contains keyword here',
+        }),
       ];
       const results = searchHighlights(items, 'keyword', ['text']);
       expect(results.map((r) => r.highlight.id)).toEqual(['text-match']);
@@ -76,8 +99,16 @@ describe('searchHighlights', () => {
 
     it('notes-only: matches on notes, ignores text/tags/url', () => {
       const items = [
-        makeHighlight({ id: 'notes-match', text: 'no match', notes: 'contains keyword here' }),
-        makeHighlight({ id: 'text-only', text: 'contains keyword here', notes: 'no match' }),
+        makeHighlight({
+          id: 'notes-match',
+          text: 'no match',
+          notes: 'contains keyword here',
+        }),
+        makeHighlight({
+          id: 'text-only',
+          text: 'contains keyword here',
+          notes: 'no match',
+        }),
       ];
       const results = searchHighlights(items, 'keyword', ['notes']);
       expect(results.map((r) => r.highlight.id)).toEqual(['notes-match']);
@@ -86,8 +117,16 @@ describe('searchHighlights', () => {
 
     it('tags-only: matches when any tag contains the query', () => {
       const items = [
-        makeHighlight({ id: 'tag-match', text: 'no match', tags: ['keyword-tag', 'other'] }),
-        makeHighlight({ id: 'text-only', text: 'contains keyword here', tags: ['unrelated'] }),
+        makeHighlight({
+          id: 'tag-match',
+          text: 'no match',
+          tags: ['keyword-tag', 'other'],
+        }),
+        makeHighlight({
+          id: 'text-only',
+          text: 'contains keyword here',
+          tags: ['unrelated'],
+        }),
       ];
       const results = searchHighlights(items, 'keyword', ['tags']);
       expect(results.map((r) => r.highlight.id)).toEqual(['tag-match']);
@@ -96,8 +135,16 @@ describe('searchHighlights', () => {
 
     it('url-only: matches on url, ignores other fields', () => {
       const items = [
-        makeHighlight({ id: 'url-match', text: 'no match', url: 'https://keyword.com/page' }),
-        makeHighlight({ id: 'text-only', text: 'contains keyword here', url: 'https://other.com' }),
+        makeHighlight({
+          id: 'url-match',
+          text: 'no match',
+          url: 'https://keyword.com/page',
+        }),
+        makeHighlight({
+          id: 'text-only',
+          text: 'contains keyword here',
+          url: 'https://other.com',
+        }),
       ];
       const results = searchHighlights(items, 'keyword', ['url']);
       expect(results.map((r) => r.highlight.id)).toEqual(['url-match']);
@@ -106,10 +153,34 @@ describe('searchHighlights', () => {
 
     it('all fields: matches across text, notes, tags, url, and domain', () => {
       const items = [
-        makeHighlight({ id: 'by-text', text: 'keyword here', notes: undefined, tags: undefined, url: 'https://a.com' }),
-        makeHighlight({ id: 'by-notes', text: 'no match', notes: 'keyword note', tags: undefined, url: 'https://a.com' }),
-        makeHighlight({ id: 'by-tags', text: 'no match', notes: undefined, tags: ['keyword'], url: 'https://a.com' }),
-        makeHighlight({ id: 'by-url', text: 'no match', notes: undefined, tags: undefined, url: 'https://keyword.com' }),
+        makeHighlight({
+          id: 'by-text',
+          text: 'keyword here',
+          notes: undefined,
+          tags: undefined,
+          url: 'https://a.com',
+        }),
+        makeHighlight({
+          id: 'by-notes',
+          text: 'no match',
+          notes: 'keyword note',
+          tags: undefined,
+          url: 'https://a.com',
+        }),
+        makeHighlight({
+          id: 'by-tags',
+          text: 'no match',
+          notes: undefined,
+          tags: ['keyword'],
+          url: 'https://a.com',
+        }),
+        makeHighlight({
+          id: 'by-url',
+          text: 'no match',
+          notes: undefined,
+          tags: undefined,
+          url: 'https://keyword.com',
+        }),
         makeHighlight({
           id: 'by-domain',
           text: 'no match',
@@ -132,7 +203,14 @@ describe('searchHighlights', () => {
 
   describe('matchedFields reporting', () => {
     it('reports a single matched field', () => {
-      const items = [makeHighlight({ text: 'unique-term-here', notes: 'no match', tags: ['no-match'], url: 'https://a.com' })];
+      const items = [
+        makeHighlight({
+          text: 'unique-term-here',
+          notes: 'no match',
+          tags: ['no-match'],
+          url: 'https://a.com',
+        }),
+      ];
       const results = searchHighlights(items, 'unique-term-here');
       expect(results[0]?.matchedFields).toEqual(['text']);
     });
@@ -147,12 +225,23 @@ describe('searchHighlights', () => {
         }),
       ];
       const results = searchHighlights(items, 'keyword');
-      expect(results[0]?.matchedFields).toEqual(['text', 'notes', 'tags', 'url', 'domain']);
+      expect(results[0]?.matchedFields).toEqual([
+        'text',
+        'notes',
+        'tags',
+        'url',
+        'domain',
+      ]);
     });
 
     it('counts multiple matching tags as a single tags match', () => {
       const items = [
-        makeHighlight({ text: 'no match', notes: undefined, tags: ['keyword-one', 'keyword-two'], url: 'https://a.com' }),
+        makeHighlight({
+          text: 'no match',
+          notes: undefined,
+          tags: ['keyword-one', 'keyword-two'],
+          url: 'https://a.com',
+        }),
       ];
       const results = searchHighlights(items, 'keyword');
       expect(results[0]?.matchedFields).toEqual(['tags']);

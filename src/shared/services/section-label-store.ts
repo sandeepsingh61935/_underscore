@@ -15,7 +15,9 @@ export function sectionLabelsStorageKey(scope: HighlightStorageScope): string {
 }
 
 /** Guest/Basic → basic; Pro / Pro-xAI → pro. */
-export function sectionLabelScopeFromMode(mode: ModeType | string | null | undefined): HighlightStorageScope {
+export function sectionLabelScopeFromMode(
+  mode: ModeType | string | null | undefined
+): HighlightStorageScope {
   if (mode === 'pro' || mode === 'pro_xai') return 'pro';
   return 'basic';
 }
@@ -26,7 +28,7 @@ export function defaultSectionTitle(sectionKey: string): string {
 
 export function displaySectionTitle(
   sectionKey: string,
-  labels: Record<string, string> | undefined,
+  labels: Record<string, string> | undefined
 ): string {
   const override = labels?.[sectionKey];
   if (override !== undefined && override.trim() !== '') {
@@ -43,7 +45,7 @@ export function applySectionLabel(
   store: SectionLabelsMap,
   domain: string,
   sectionKey: string,
-  label: string,
+  label: string
 ): SectionLabelsMap {
   const trimmed = label.trim();
   const next: SectionLabelsMap = { ...store };
@@ -69,7 +71,7 @@ function hasChromeLocalStorage(): boolean {
 }
 
 export async function loadSectionLabelsStore(
-  scope: HighlightStorageScope,
+  scope: HighlightStorageScope
 ): Promise<SectionLabelsMap> {
   if (!hasChromeLocalStorage()) return {};
   const key = sectionLabelsStorageKey(scope);
@@ -81,7 +83,7 @@ export async function loadSectionLabelsStore(
 
 export async function getDomainSectionLabels(
   scope: HighlightStorageScope,
-  domain: string,
+  domain: string
 ): Promise<Record<string, string>> {
   if (!domain) return {};
   const store = await loadSectionLabelsStore(scope);
@@ -92,7 +94,7 @@ export async function setDomainSectionLabel(
   scope: HighlightStorageScope,
   domain: string,
   sectionKey: string,
-  label: string,
+  label: string
 ): Promise<Record<string, string>> {
   if (!domain || !sectionKey) {
     return getDomainSectionLabels(scope, domain);

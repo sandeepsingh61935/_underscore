@@ -97,9 +97,7 @@ function hrefFromLocation(loc: Location): string {
  * Cross-origin parents stop the walk (SecurityError).
  * Injectable for tests.
  */
-export function collectSameOriginFrameHrefs(
-  start?: Window,
-): string[] {
+export function collectSameOriginFrameHrefs(start?: Window): string[] {
   const fallbackWindow = typeof window !== 'undefined' ? window : undefined;
   const initial = start ?? fallbackWindow;
   if (!initial) return [];
@@ -126,7 +124,7 @@ export function collectSameOriginFrameHrefs(
  * @param getFrameHrefs - ordered self→top hrefs; defaults to live window walk
  */
 export function getCapturePageUrl(
-  getFrameHrefs: () => string[] = collectSameOriginFrameHrefs,
+  getFrameHrefs: () => string[] = collectSameOriginFrameHrefs
 ): string {
   const hrefs = getFrameHrefs().filter((h) => typeof h === 'string' && h.length > 0);
   const outermost = hrefs.length > 0 ? hrefs[hrefs.length - 1]! : '';
@@ -162,9 +160,7 @@ export function resolveHighlightPageUrl(options: {
   tabUrl?: string | null;
 }): string {
   const tab =
-    options.tabUrl && options.tabUrl.length > 0
-      ? normalizePageUrl(options.tabUrl)
-      : '';
+    options.tabUrl && options.tabUrl.length > 0 ? normalizePageUrl(options.tabUrl) : '';
   const content =
     options.contentUrl && options.contentUrl.length > 0
       ? normalizePageUrl(options.contentUrl)

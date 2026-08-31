@@ -36,7 +36,11 @@ export function Logo({
   return (
     <div
       className={cn('flex items-center', className)}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: size === 'sm' ? 8 : size === 'md' ? 10 : 12 }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: size === 'sm' ? 8 : size === 'md' ? 10 : 12,
+      }}
     >
       <div
         className="welcome__logo-mark"
@@ -87,7 +91,12 @@ export function Logo({
       {showText && (
         <span
           className="u-serif"
-          style={{ color: 'var(--ink)', fontSize: s.textSize, letterSpacing: '-0.02em', fontWeight: 400 }}
+          style={{
+            color: 'var(--ink)',
+            fontSize: s.textSize,
+            letterSpacing: '-0.02em',
+            fontWeight: 400,
+          }}
         >
           underscore
         </span>

@@ -94,7 +94,9 @@ function CodeBlockChrome({
         </span>
         <button
           type="button"
-          onClick={(e) => { void handleCopy(e); }}
+          onClick={(e) => {
+            void handleCopy(e);
+          }}
           className="u-mono"
           aria-label="Copy code block"
           style={{
@@ -123,7 +125,10 @@ function CodeBlockChrome({
           color: 'var(--ink)',
         }}
       >
-        <code className="u-mono" style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--ink)' }}>
+        <code
+          className="u-mono"
+          style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--ink)' }}
+        >
           {code}
         </code>
       </pre>
@@ -158,7 +163,8 @@ const markdownComponents: Components = {
     <em style={{ fontStyle: 'italic', color: 'var(--ink)' }}>{children}</em>
   ),
   code: ({ className, children }) => {
-    const isBlock = Boolean(className?.includes('language-')) || String(children).includes('\n');
+    const isBlock =
+      Boolean(className?.includes('language-')) || String(children).includes('\n');
     if (isBlock) {
       // Block code is rendered via `pre` → CodeBlockChrome; keep fallback plain.
       return (
@@ -196,7 +202,9 @@ const markdownComponents: Components = {
     let lang = '';
     let code = '';
     React.Children.forEach(children, (child) => {
-      if (React.isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
+      if (
+        React.isValidElement<{ className?: string; children?: React.ReactNode }>(child)
+      ) {
         lang = extractFenceLang(child.props.className);
         const raw = child.props.children;
         code = String(Array.isArray(raw) ? raw.join('') : (raw ?? '')).replace(/\n$/, '');
@@ -309,7 +317,8 @@ export function HighlightMarkdownBody({
     const measured = el.scrollHeight > HIGHLIGHT_QUOTE_CLAMP_PX + 1;
     // jsdom often ignores max-height (scrollHeight === clientHeight); fall back to content size.
     const layoutUnreliable =
-      el.scrollHeight <= el.clientHeight + 1 && estimateHighlightNeedsClamp(displaySource);
+      el.scrollHeight <= el.clientHeight + 1 &&
+      estimateHighlightNeedsClamp(displaySource);
     setOverflows(measured || layoutUnreliable);
   }, [displaySource, clamp, expanded]);
 

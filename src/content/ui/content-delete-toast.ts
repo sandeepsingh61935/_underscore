@@ -8,7 +8,7 @@ const TOAST_ID = 'underscore-delete-toast';
 export function showDeleteUndoToast(
   message: string,
   onUndo: () => void,
-  durationMs = 5000,
+  durationMs = 5000
 ): void {
   dismissDeleteUndoToast();
 

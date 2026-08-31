@@ -138,9 +138,7 @@ export default defineConfig({
      * Must not run for content-script builds (IIFE + inlineDynamicImports).
      */
     'vite:build:extendConfig': (entrypoints, config) => {
-      const isPopup = entrypoints.some(
-        (e) => e.type === 'popup' || e.name === 'popup',
-      );
+      const isPopup = entrypoints.some((e) => e.type === 'popup' || e.name === 'popup');
       if (!isPopup) return;
 
       config.build ??= {};

@@ -68,7 +68,7 @@ export async function saveLlmArtifact(input: SaveLlmArtifactInput): Promise<LlmA
 
 export async function getLlmArtifactsByScope(
   scope: LlmArtifactScope,
-  kind?: LlmArtifactKind,
+  kind?: LlmArtifactKind
 ): Promise<LlmArtifact[]> {
   const all = await readRaw();
   return getArtifactsForScope(all, scope, kind);

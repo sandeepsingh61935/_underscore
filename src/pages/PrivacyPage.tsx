@@ -50,8 +50,8 @@ export function PrivacyPage(): React.ReactElement {
           <p>We collect only what we need to run the product:</p>
           <ul>
             <li>
-              <strong>Account data</strong> — email and profile fields you provide when you
-              register or sign in (handled by our auth provider).
+              <strong>Account data</strong> — email and profile fields you provide when
+              you register or sign in (handled by our auth provider).
             </li>
             <li>
               <strong>Highlight and library data you save</strong> — selected text, notes,
@@ -59,18 +59,18 @@ export function PrivacyPage(): React.ReactElement {
               persistence beyond pure on-device Guest use.
             </li>
             <li>
-              <strong>Billing data</strong> — if you subscribe, payment is processed by our
-              payment provider. We receive subscription status and related account identifiers,
-              not your full card number.
+              <strong>Billing data</strong> — if you subscribe, payment is processed by
+              our payment provider. We receive subscription status and related account
+              identifiers, not your full card number.
             </li>
             <li>
               <strong>Support messages</strong> — if you email us, the content of that
               correspondence.
             </li>
             <li>
-              <strong>Basic operational logs</strong> — technical signals needed to keep the
-              service reliable and secure (for example error and request diagnostics). We do
-              not build advertising profiles from your browsing history.
+              <strong>Basic operational logs</strong> — technical signals needed to keep
+              the service reliable and secure (for example error and request diagnostics).
+              We do not build advertising profiles from your browsing history.
             </li>
           </ul>
         </PolicySection>
@@ -78,19 +78,19 @@ export function PrivacyPage(): React.ReactElement {
         <PolicySection title="Modes and where data lives">
           <ul>
             <li>
-              <strong>Guest</strong> — highlights can live only in local browser storage on
-              your device until you clear them or the storage is removed.
+              <strong>Guest</strong> — highlights can live only in local browser storage
+              on your device until you clear them or the storage is removed.
             </li>
             <li>
               <strong>Account</strong> — when you sign in and use cloud sync or the web
-              library, highlights and related library data are stored in your account so you
-              can access them across sessions and devices.
+              library, highlights and related library data are stored in your account so
+              you can access them across sessions and devices.
             </li>
             <li>
               <strong>Paid features</strong> — optional paid plans may unlock additional
               capabilities (for example higher limits or AI-related features). Using those
-              features may send the inputs you choose (such as selected highlights or prompts)
-              to the providers required to fulfill the request.
+              features may send the inputs you choose (such as selected highlights or
+              prompts) to the providers required to fulfill the request.
             </li>
           </ul>
         </PolicySection>
@@ -113,9 +113,9 @@ export function PrivacyPage(): React.ReactElement {
         <PolicySection title="Service providers">
           <p>
             We use processors to operate Underscore, which may include authentication and
-            database hosting, payment/subscription processing, hosting/CDN, and (when you use
-            AI features) model or API providers. They process data only to provide their
-            services to us, under appropriate agreements.
+            database hosting, payment/subscription processing, hosting/CDN, and (when you
+            use AI features) model or API providers. They process data only to provide
+            their services to us, under appropriate agreements.
           </p>
         </PolicySection>
 
@@ -123,38 +123,42 @@ export function PrivacyPage(): React.ReactElement {
           <p>You can:</p>
           <ul>
             <li>Use Guest mode without creating an account</li>
-            <li>Export your data from product controls where available (Settings → Data)</li>
-            <li>Delete highlights or close/delete your account through product or support paths</li>
+            <li>
+              Export your data from product controls where available (Settings → Data)
+            </li>
+            <li>
+              Delete highlights or close/delete your account through product or support
+              paths
+            </li>
             <li>
               Contact us to ask questions about this policy or your data at{' '}
               <ContactLink />
             </li>
           </ul>
           <p>
-            Depending on where you live, you may have additional rights under local law (access,
-            correction, deletion, objection). Email us to exercise them.
+            Depending on where you live, you may have additional rights under local law
+            (access, correction, deletion, objection). Email us to exercise them.
           </p>
         </PolicySection>
 
         <PolicySection title="Children">
           <p>
-            Underscore is not directed at children under 13 (or the minimum age required in
-            your jurisdiction). Do not create an account if you are under that age.
+            Underscore is not directed at children under 13 (or the minimum age required
+            in your jurisdiction). Do not create an account if you are under that age.
           </p>
         </PolicySection>
 
         <PolicySection title="Changes">
           <p>
-            We may update this policy as the product evolves. We will revise the &ldquo;Last
-            updated&rdquo; date above. Continued use after changes means you accept the updated
-            policy.
+            We may update this policy as the product evolves. We will revise the
+            &ldquo;Last updated&rdquo; date above. Continued use after changes means you
+            accept the updated policy.
           </p>
         </PolicySection>
 
         <PolicySection title="Contact">
           <p>
-            Privacy questions: email{' '}
-            <ContactLink />.
+            Privacy questions: email <ContactLink />.
           </p>
         </PolicySection>
       </article>

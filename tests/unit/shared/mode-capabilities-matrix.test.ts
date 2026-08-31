@@ -62,7 +62,7 @@ function happyContext(mode: ModeType) {
 
 describe('canUseFeature capability matrix', () => {
   const cases = MODES.flatMap((mode) =>
-    BOOLEAN_FEATURES.map((feature) => ({ mode, feature })),
+    BOOLEAN_FEATURES.map((feature) => ({ mode, feature }))
   );
 
   it.each(cases)(
@@ -81,6 +81,6 @@ describe('canUseFeature capability matrix', () => {
             : 'CAPABILITY_DENIED';
         expect(result.reason).toBe(expectedReason);
       }
-    },
+    }
   );
 });

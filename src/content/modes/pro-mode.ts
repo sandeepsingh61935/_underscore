@@ -20,23 +20,22 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IPersistentMode, ModeCapabilities } from './mode-interfaces';
 
-import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
-
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { CloudModeService } from '@/services/cloud-mode-service';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import type { EventBus } from '@/shared/utils/event-bus';
+import type { ILogger } from '@/shared/utils/logger';
 import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 import {
   transformHighlightRow,
   type SupabaseHighlightRow,
 } from '@/shared/utils/supabase-highlight-row';
-import { EventName } from '@/shared/types/events';
-import type { EventBus } from '@/shared/utils/event-bus';
-import type { ILogger } from '@/shared/utils/logger';
 
 export interface ProModeDeps {
   /** IPC read path to hydrate the facade after page reload (empty local cache). */
@@ -84,11 +83,18 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   /**
    * Handle bridged events from background
    */
-  private async handleRuntimeMessage(message: any, _sender: any, _sendResponse: any): Promise<void> {
+  private async handleRuntimeMessage(
+    message: any,
+    _sender: any,
+    _sendResponse: any
+  ): Promise<void> {
     // Only handle internal bridged events
     if (!message || !message.type || !message.type.startsWith('remote:highlight')) return;
 
-    this.logger.info('[PRO] [MSG] Received remote event', { type: message.type, id: message.payload?.id });
+    this.logger.info('[PRO] [MSG] Received remote event', {
+      type: message.type,
+      id: message.payload?.id,
+    });
 
     try {
       switch (message.type) {
@@ -121,7 +127,12 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       return null;
     }
     // EventBridge forwards Supabase rows (snake_case). Transform when needed.
-    if ('user_id' in row || 'color_role' in row || 'content_hash' in row || 'created_at' in row) {
+    if (
+      'user_id' in row ||
+      'color_role' in row ||
+      'content_hash' in row ||
+      'created_at' in row
+    ) {
       return transformHighlightRow(row);
     }
     // Already domain-shaped (tests / alternate bridges).
@@ -147,7 +158,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     // 1. Deduplication Check
     if (this.data.has(highlight.id)) {
-      this.logger.debug('[PRO] Skipping remote highlight (already exists)', { id: highlight.id });
+      this.logger.debug('[PRO] Skipping remote highlight (already exists)', {
+        id: highlight.id,
+      });
       return;
     }
 
@@ -157,7 +170,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       // Cache-only: do not re-enter DualWrite / cloud.
       this.facade.rehydrate(highlight);
 
-      this.logger.info('[PRO] Rehydrated remote highlight into session cache. Attempting instant render...');
+      this.logger.info(
+        '[PRO] Rehydrated remote highlight into session cache. Attempting instant render...'
+      );
 
       // Instant Render: Restore range and inject CSS
       const restoreResult = await this.cloudService.restoreHighlight(highlight as never);
@@ -212,11 +227,14 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     const localHighlight = this.data.get(id);
     if (localHighlight) {
-      this.logger.info('[PRO] [STAT] Update received for existing highlight (potential concurrent edit)', {
-        highlightId: id,
-        hasLocalVersion: true,
-        resolution: 'Last-Write-Wins (accepting remote)',
-      });
+      this.logger.info(
+        '[PRO] [STAT] Update received for existing highlight (potential concurrent edit)',
+        {
+          highlightId: id,
+          hasLocalVersion: true,
+          resolution: 'Last-Write-Wins (accepting remote)',
+        }
+      );
     }
 
     // Session cache only — background already applied via RealtimeIngest.
@@ -264,7 +282,10 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   /**
    * Create highlight from existing data (e.g., Undo/Restore)
    */
-  async createFromData(data: HighlightData, _options?: { skipSync?: boolean }): Promise<void> {
+  async createFromData(
+    data: HighlightData,
+    _options?: { skipSync?: boolean }
+  ): Promise<void> {
     // 1. Ensure live ranges exist
     if (!data.liveRanges || data.liveRanges.length === 0) {
       this.logger.warn('[PRO] createFromData called without live ranges', data.id);
@@ -283,12 +304,14 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     // 4. Update Repository (Idempotent check)
     // Note: repository is RepositoryFacade with sync API (get/has, not findById)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const alreadyExists = this.facade.get?.(data.id) || this.facade.has?.(data.id);
     if (!alreadyExists) {
       // Strip runtime-only fields (liveRanges) before persisting — Bug A.
       const { toStorageFormat } = await import('@/content/highlight-type-bridge');
-      const { liveRanges: _lr, ...persisted } = data as HighlightData & { liveRanges?: Range[] };
+      const { liveRanges: _lr, ...persisted } = data as HighlightData & {
+        liveRanges?: Range[];
+      };
       const storageData = await toStorageFormat({
         ...persisted,
         color: data.colorRole,
@@ -331,7 +354,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     // `updated` carries liveRanges from `existing`; we must remove them so the
     // repository can serialize the object via structuredClone (IDB).
     const { toStorageFormat } = await import('@/content/highlight-type-bridge');
-    const { liveRanges: _lrFromUpdated, ...persisted } = updated as HighlightData & { liveRanges?: Range[] };
+    const { liveRanges: _lrFromUpdated, ...persisted } = updated as HighlightData & {
+      liveRanges?: Range[];
+    };
     const storageData = await toStorageFormat({
       ...persisted,
       color: updated.colorRole,
@@ -346,7 +371,8 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     // Also strip liveRanges from the partial update payload in case the caller
     // included it — Bug A.
-    const { liveRanges: _lrFromUpdates, ...cleanUpdates } = updates as Partial<HighlightData> & { liveRanges?: Range[] };
+    const { liveRanges: _lrFromUpdates, ...cleanUpdates } =
+      updates as Partial<HighlightData> & { liveRanges?: Range[] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.facade.update(id, cleanUpdates as any);
 
@@ -406,9 +432,12 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     const existing = this.facade.findByContentHash(contentHash);
     if (existing?.id) {
-      this.logger.info('Duplicate content detected - returning existing highlight (Pro Mode)', {
-        existingId: existing.id,
-      });
+      this.logger.info(
+        'Duplicate content detected - returning existing highlight (Pro Mode)',
+        {
+          existingId: existing.id,
+        }
+      );
       return existing.id;
     }
 
@@ -455,7 +484,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     this.eventBus.emit(EventName.HIGHLIGHT_CREATED, {
       type: EventName.HIGHLIGHT_CREATED,
       highlight: runtimeHighlight as unknown as HighlightData,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     return id;
@@ -470,7 +499,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     // 3. Remove from Session Repository (for UI consistency / HoverDetector)
     // NOTE: persistence is handled by cloudService above, but we must clear session state
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     if (this.facade.remove) {
       await this.facade.remove(id);
     }
@@ -478,7 +507,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     this.eventBus.emit(EventName.HIGHLIGHT_REMOVED, {
       type: EventName.HIGHLIGHT_REMOVED,
       highlightId: id,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -492,7 +521,10 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
         for (const highlight of stored) {
           this.facade.rehydrate(highlight);
         }
-        this.logger.info('[PRO] Hydrated facade from IPC', { count: stored.length, pageUrl });
+        this.logger.info('[PRO] Hydrated facade from IPC', {
+          count: stored.length,
+          pageUrl,
+        });
       } catch (error) {
         this.logger.warn('[PRO] IPC hydrate failed; continuing with local cache', {
           error: error instanceof Error ? error.message : String(error),
@@ -505,7 +537,9 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     this.logger.info(`[PRO] [OK] Restoring ${restored.length} highlights`);
 
     if (restored.length === 0) {
-      this.logger.warn('[PRO] [WARN] No highlights found to restore. Check if highlights were saved with correct URL.');
+      this.logger.warn(
+        '[PRO] [WARN] No highlights found to restore. Check if highlights were saved with correct URL.'
+      );
       return;
     }
 
@@ -521,9 +555,13 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
         await this.renderAndRegister(fullData);
         this.facade.rehydrate(storedData);
 
-        this.logger.info(`[PRO] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`);
+        this.logger.info(
+          `[PRO] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`
+        );
       } else {
-        this.logger.warn(`[PRO] [FAIL] Failed to restore range for highlight: ${storedData.id}`);
+        this.logger.warn(
+          `[PRO] [FAIL] Failed to restore range for highlight: ${storedData.id}`
+        );
       }
     }
 

@@ -35,16 +35,17 @@ export function LibraryDomainRow({
         </div>
         <span
           className="u-serif"
-          style={{ fontSize: 16, fontStyle: 'italic', color: 'var(--ink-3)', flexShrink: 0 }}
+          style={{
+            fontSize: 16,
+            fontStyle: 'italic',
+            color: 'var(--ink-3)',
+            flexShrink: 0,
+          }}
         >
           {count}
         </span>
       </button>
-      <ScopeRowActions
-        kind="domain"
-        show={showActions}
-        onDelete={onDelete}
-      />
+      <ScopeRowActions kind="domain" show={showActions} onDelete={onDelete} />
     </div>
   );
 }

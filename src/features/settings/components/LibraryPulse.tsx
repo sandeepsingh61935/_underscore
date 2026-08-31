@@ -63,11 +63,7 @@ function PulseCell({
   );
 }
 
-function summaryLine(
-  total: number,
-  domains: number,
-  loading: boolean,
-): string {
+function summaryLine(total: number, domains: number, loading: boolean): string {
   if (loading) return '…';
   return `${total} highlights · ${domains} domains`;
 }

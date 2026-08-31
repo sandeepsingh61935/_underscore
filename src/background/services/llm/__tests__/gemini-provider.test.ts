@@ -16,7 +16,7 @@ function makeSseResponse(body: string): Response {
         controller.close();
       },
     }),
-    { headers: { 'content-type': 'text/event-stream' } },
+    { headers: { 'content-type': 'text/event-stream' } }
   );
 }
 
@@ -34,9 +34,13 @@ describe('GeminiProvider', () => {
     const provider = new GeminiProvider({ apiKey: 'AIza-test' });
     const chunks: string[] = [];
     const result = await provider.streamChat(
-      { systemPrompt: 'sys', messages: [{ role: 'user', content: 'hi' }], maxTokens: 256 },
-      chunk => chunks.push(chunk.delta),
-      new AbortController().signal,
+      {
+        systemPrompt: 'sys',
+        messages: [{ role: 'user', content: 'hi' }],
+        maxTokens: 256,
+      },
+      (chunk) => chunks.push(chunk.delta),
+      new AbortController().signal
     );
 
     expect(chunks.join('')).toBe('Hello world');
@@ -51,7 +55,7 @@ describe('GeminiProvider', () => {
     await provider.streamChat(
       { systemPrompt: 'sys', messages: [{ role: 'user', content: 'm' }], maxTokens: 128 },
       () => {},
-      new AbortController().signal,
+      new AbortController().signal
     );
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];

@@ -6,7 +6,7 @@ import type { RelatednessDoc } from './types';
 
 function doc(
   id: string,
-  partial: Partial<RelatednessDoc> & { tags?: string[] },
+  partial: Partial<RelatednessDoc> & { tags?: string[] }
 ): RelatednessDoc {
   return {
     id,
@@ -78,7 +78,7 @@ describe('relatedHighlights', () => {
           domain: 'long.example.com',
           text: `shared topic vocabulary extra words ${i} six seven eight`,
           tags: ['topic'],
-        }),
+        })
       );
     }
     rows.push(
@@ -99,7 +99,7 @@ describe('relatedHighlights', () => {
         domain: 'c.com',
         text: 'shared topic vocabulary thirteen fourteen',
         tags: ['topic'],
-      }),
+      })
     );
 
     const top = relatedHighlights(indexOf(rows), 'seed', 5);
@@ -206,7 +206,7 @@ describe('relatedHighlights', () => {
           text: `related shared wording ${i} abcdefghijk`,
           url: `https://n${i}.com/`,
           domain: `n${i}.com`,
-        }),
+        })
       );
     }
     // Unrelated noise — should not appear
@@ -216,7 +216,7 @@ describe('relatedHighlights', () => {
         text: 'zzzzzzzz qqqqqqqq',
         url: 'https://noise.com/',
         domain: 'noise.com',
-      }),
+      })
     );
 
     const top = relatedHighlights(buildRelatednessIndex(rows), 'seed', 5);

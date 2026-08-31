@@ -1,17 +1,22 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { registerAiHandlers } from './ipc-handlers';
 import type { LlmKeyStoreHolder } from './llm-key-store-holder';
 import { resolveConfiguredProvider } from './llm-provider-factory';
-import type { BackgroundPageContentCache, PageContent } from './page-content-cache';
 import type { LLMRegistry } from './llm-registry';
+import type { BackgroundPageContentCache, PageContent } from './page-content-cache';
 import { handleStreamChat } from './stream-relay';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ILLMService, LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import type {
+  ILLMService,
+  LLMRequest,
+  ProviderName,
+} from '@/shared/interfaces/i-llm-service';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import { PAGE_CONTENT_CACHED } from '@/shared/schemas/message-schemas';
+import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 import type { ILogger } from '@/shared/utils/logger';
 import { canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
-import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 
 interface StreamChatRequestMessage {
   type: 'STREAM_CHAT_REQUEST';
@@ -43,7 +48,7 @@ export class AiOrchestrator {
     private readonly registry: LLMRegistry,
     private readonly keyStoreHolder: LlmKeyStoreHolder,
     private readonly pageContentCache: BackgroundPageContentCache,
-    private readonly logger: ILogger,
+    private readonly logger: ILogger
   ) {}
 
   configureFeatureGate(resolver: () => Promise<FeatureGateContext>): void {
@@ -97,7 +102,10 @@ export class AiOrchestrator {
     });
   }
 
-  private async handleStreamRequest(port: StreamingPort, msg: StreamChatRequestMessage): Promise<void> {
+  private async handleStreamRequest(
+    port: StreamingPort,
+    msg: StreamChatRequestMessage
+  ): Promise<void> {
     if (msg.type !== 'STREAM_CHAT_REQUEST') return;
 
     try {
@@ -117,7 +125,7 @@ export class AiOrchestrator {
       const providerInstance: ILLMService = await resolveConfiguredProvider(
         this.registry,
         this.keyStoreHolder.get(),
-        provider,
+        provider
       );
       await handleStreamChat(port, providerInstance, request);
     } catch (err) {

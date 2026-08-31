@@ -23,8 +23,13 @@ interface MessageBusProviderProps {
   children: ReactNode;
 }
 
-export function MessageBusProvider({ messageBus, children }: MessageBusProviderProps): React.ReactElement {
-  return <MessageBusContext.Provider value={messageBus}>{children}</MessageBusContext.Provider>;
+export function MessageBusProvider({
+  messageBus,
+  children,
+}: MessageBusProviderProps): React.ReactElement {
+  return (
+    <MessageBusContext.Provider value={messageBus}>{children}</MessageBusContext.Provider>
+  );
 }
 
 /**

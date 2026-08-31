@@ -24,14 +24,14 @@ describe('parseLlmRequest', () => {
         systemPrompt: 's',
         messages: [],
         maxTokens: 1,
-      }),
+      })
     ).toBeNull();
     expect(
       parseLlmRequest({
         systemPrompt: 's',
         messages: [{ role: 'system', content: 'x' }],
         maxTokens: 1,
-      }),
+      })
     ).toBeNull();
   });
 });

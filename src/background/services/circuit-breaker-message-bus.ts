@@ -1,5 +1,9 @@
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { Message, MessageTarget, MessageHandler } from '@/shared/schemas/message-schemas';
+import type {
+  Message,
+  MessageTarget,
+  MessageHandler,
+} from '@/shared/schemas/message-schemas';
 import type { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 
 /**

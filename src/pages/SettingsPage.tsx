@@ -1,41 +1,35 @@
 import React, { useState } from 'react';
 
 import { useApp } from '@/core/context/AppProvider';
-import { ExportActions } from '@/features/collections/components/ExportActions';
+import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
-import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
+import { ExportActions } from '@/features/collections/components/ExportActions';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
 import {
   formatLastSyncedAt,
   formatSyncSubtitle,
   useSyncLibrary,
 } from '@/features/collections/hooks/use-sync-library';
-import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
-import { PrivacyPage } from '@/pages/PrivacyPage';
-import { TermsPage } from '@/pages/TermsPage';
-import { HelpPage } from '@/pages/HelpPage';
 import { SettingsLegalFooter } from '@/features/settings/components/SettingsLegalFooter';
 import { SettingsLocalCard } from '@/features/settings/components/SettingsLocalCard';
 import { SettingsThemeSeg } from '@/features/settings/components/SettingsThemeSeg';
 import { TypographySettings } from '@/features/settings/components/TypographySettings';
+import { HelpPage } from '@/pages/HelpPage';
+import { PrivacyPage } from '@/pages/PrivacyPage';
+import { TermsPage } from '@/pages/TermsPage';
 import { freeEntitlement } from '@/shared/billing';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { resolveProductCaps } from '@/shared/entitlement/resolveProductCaps';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveSettingsActionGates } from '@/shared/settings/settings-topic-ia';
-import {
-  deleteLibraryCopy,
-  signOutCopy,
-} from '@/shared/utils/confirm-dialog-copy';
+import { deleteLibraryCopy, signOutCopy } from '@/shared/utils/confirm-dialog-copy';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
-import {
-  useMcpGate,
-  useModeFeature,
-} from '@/ui-system/hooks/useModeFeature';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
+import { useMcpGate, useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface SettingsPageProps {
   onBack?: () => void;
@@ -68,7 +62,7 @@ export function SettingsPage({
   const modeForDashboard = (currentMode ?? DEFAULT_MODE) as ModeType;
   const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData(
     modeForDashboard,
-    appAuthenticated,
+    appAuthenticated
   );
   const billing = useBillingContextOptional();
   const billingEntitlement = billing?.snapshot.entitlement ?? freeEntitlement();
@@ -104,7 +98,7 @@ export function SettingsPage({
   const mcpGate = useMcpGate(
     isAuthenticated,
     isPaidActive,
-    billing?.snapshot.entitlement.status === 'past_due',
+    billing?.snapshot.entitlement.status === 'past_due'
   );
   const productCaps = resolveProductCaps({
     isAuthenticated,
@@ -166,7 +160,12 @@ export function SettingsPage({
   if (keyboardOpen) {
     return (
       <div
-        style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+        }}
         data-testid="settings-keyboard-page"
         data-od-id="settings-keyboard-page"
       >
@@ -220,7 +219,14 @@ export function SettingsPage({
 
   if (connectOpen) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+        }}
+      >
         <ConnectToAiFlow
           isAuthenticated={isAuthenticated}
           currentMode={currentMode}
@@ -235,7 +241,12 @@ export function SettingsPage({
   if (legalDoc) {
     return (
       <div
-        style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+        }}
         data-testid="settings-legal-page"
         data-od-id="legal-page"
       >
@@ -266,8 +277,17 @@ export function SettingsPage({
             ← Settings
           </button>
         </div>
-        <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0, padding: '0' }}>
-          {legalDoc === 'privacy' ? <PrivacyPage /> : legalDoc === 'terms' ? <TermsPage /> : <HelpPage />}
+        <div
+          className="list-scroll screen-scroll"
+          style={{ flex: 1, minHeight: 0, padding: '0' }}
+        >
+          {legalDoc === 'privacy' ? (
+            <PrivacyPage />
+          ) : legalDoc === 'terms' ? (
+            <TermsPage />
+          ) : (
+            <HelpPage />
+          )}
         </div>
       </div>
     );
@@ -281,14 +301,26 @@ export function SettingsPage({
       style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
     >
       <div className="settings-head" data-od-id="settings-head">
-        <h2 className="settings-title" data-od-id="settings-title" data-testid="settings-title">
+        <h2
+          className="settings-title"
+          data-od-id="settings-title"
+          data-testid="settings-title"
+        >
           Settings
         </h2>
       </div>
 
-      <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0 }} data-testid="settings-scroll" data-od-id="settings-scroll">
+      <div
+        className="list-scroll screen-scroll"
+        style={{ flex: 1, minHeight: 0 }}
+        data-testid="settings-scroll"
+        data-od-id="settings-scroll"
+      >
         {/* Account */}
-        <div data-od-id="settings-section-account-wrap" data-testid="settings-section-account-wrap">
+        <div
+          data-od-id="settings-section-account-wrap"
+          data-testid="settings-section-account-wrap"
+        >
           {!user ? (
             <div data-testid="settings-guest-card">
               <SettingsLocalCard onSignIn={onSignIn} onChooseFree={onSignIn} />
@@ -305,7 +337,11 @@ export function SettingsPage({
               >
                 Account
               </div>
-              <div className="row" style={{ cursor: 'default' }} data-od-id="settings-account-row">
+              <div
+                className="row"
+                style={{ cursor: 'default' }}
+                data-od-id="settings-account-row"
+              >
                 <div>
                   <div className="title">{user.email || 'Signed in'}</div>
                   <div className="sub">Synced</div>
@@ -318,14 +354,20 @@ export function SettingsPage({
         </div>
 
         {/* Appearance */}
-        <div data-od-id="settings-section-appearance" data-testid="settings-section-appearance">
+        <div
+          data-od-id="settings-section-appearance"
+          data-testid="settings-section-appearance"
+        >
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
           >
             Appearance
           </div>
-          <div data-testid="settings-section-typography" data-od-id="settings-section-typography">
+          <div
+            data-testid="settings-section-typography"
+            data-od-id="settings-section-typography"
+          >
             <TypographySettings
               expanded={typographyExpanded}
               onToggle={() => setTypographyExpanded((v) => !v)}
@@ -335,7 +377,10 @@ export function SettingsPage({
         </div>
 
         {/* Help → Keyboard - subpage entry */}
-        <div data-testid="settings-section-keyboard-entry" data-od-id="settings-section-keyboard-entry">
+        <div
+          data-testid="settings-section-keyboard-entry"
+          data-od-id="settings-section-keyboard-entry"
+        >
           <div
             className="u-caps"
             style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
@@ -385,7 +430,11 @@ export function SettingsPage({
           ) : null}
           {isAuthenticated ? (
             <>
-              <div className="row" style={{ cursor: 'default' }} data-od-id="settings-sync">
+              <div
+                className="row"
+                style={{ cursor: 'default' }}
+                data-od-id="settings-sync"
+              >
                 <div>
                   <div className="title">Library sync</div>
                   <div className="sub">{syncSubtitle}</div>
@@ -465,7 +514,11 @@ export function SettingsPage({
               </span>
             </span>
           </div>
-          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-delete-lib">
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-delete-lib"
+          >
             <div>
               <div className="title">Delete library</div>
             </div>
@@ -485,7 +538,10 @@ export function SettingsPage({
         </div>
 
         {/* Integrations */}
-        <div data-testid="settings-section-integrations" data-od-id="settings-section-integrations">
+        <div
+          data-testid="settings-section-integrations"
+          data-od-id="settings-section-integrations"
+        >
           <div
             className="u-caps"
             data-testid="settings-section-ai"
@@ -494,13 +550,18 @@ export function SettingsPage({
           >
             Integrations
           </div>
-          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-connect-ai">
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-connect-ai"
+          >
             <div>
               <div className="title">Integrations</div>
               <div className="sub">
                 {settingsGates.canUseIntegrations
                   ? 'Let agents use your library (MCP)'
-                  : settingsGates.integrationsLockReason ?? 'Sign in to use account features'}
+                  : (settingsGates.integrationsLockReason ??
+                    'Sign in to use account features')}
               </div>
             </div>
             <span className="row-end">
@@ -548,7 +609,11 @@ export function SettingsPage({
             >
               Session
             </div>
-            <div className="row" style={{ cursor: 'default' }} data-od-id="settings-session">
+            <div
+              className="row"
+              style={{ cursor: 'default' }}
+              data-od-id="settings-session"
+            >
               <div>
                 <div className="title">Sign out</div>
               </div>

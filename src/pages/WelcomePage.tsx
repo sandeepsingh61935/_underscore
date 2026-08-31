@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
+import { pingExtensionPresence } from '@/shared/extension/extension-presence';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
-import { pingExtensionPresence } from '@/shared/extension/extension-presence';
 import {
   detectInstallBrowser,
   getInstallDistributionConfig,
@@ -45,8 +45,11 @@ export function WelcomePage({
   const { isAuthenticated } = useApp();
   const isWeb = !onStartClick;
 
-  const locationGateOpen = (location.state as { gateOpen?: boolean } | null)?.gateOpen ?? false;
-  const [welcomeGateOpen, setWelcomeGateOpen] = useState(initialGateOpen || locationGateOpen);
+  const locationGateOpen =
+    (location.state as { gateOpen?: boolean } | null)?.gateOpen ?? false;
+  const [welcomeGateOpen, setWelcomeGateOpen] = useState(
+    initialGateOpen || locationGateOpen
+  );
   const [welcomeGateHowOpen, setWelcomeGateHowOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -70,11 +73,11 @@ export function WelcomePage({
   const distConfig = React.useMemo(() => getInstallDistributionConfig(), []);
   const chromeArtifact = React.useMemo(
     () => distConfig.browsers.find((b) => b.id === 'chrome'),
-    [distConfig],
+    [distConfig]
   );
   const firefoxArtifact = React.useMemo(
     () => distConfig.browsers.find((b) => b.id === 'firefox'),
-    [distConfig],
+    [distConfig]
   );
 
   // Popup still honors auth redirect; web gate does not auto-redirect (guard handles it)
@@ -133,9 +136,13 @@ export function WelcomePage({
         }
         return;
       }
-      setCheckError('We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.');
+      setCheckError(
+        'We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.'
+      );
     } catch {
-      setCheckError('We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.');
+      setCheckError(
+        'We couldn\u2019t find the extension. Refresh the page after you pin it, then check again.'
+      );
     } finally {
       setChecking(false);
     }
@@ -155,7 +162,7 @@ export function WelcomePage({
       }
       openGate();
     },
-    [navigate, openGate],
+    [navigate, openGate]
   );
 
   // Popup mode: keep legacy compact layout, no gate
@@ -261,7 +268,20 @@ export function WelcomePage({
       {...(gateDataProps as Record<string, string>)}
     >
       {gateToast ? (
-        <div role="status" aria-live="polite" data-od-id="welcome-gate-toast" style={{ textAlign: 'center', padding: '10px 16px', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--ink-2)', borderBottom: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
+        <div
+          role="status"
+          aria-live="polite"
+          data-od-id="welcome-gate-toast"
+          style={{
+            textAlign: 'center',
+            padding: '10px 16px',
+            fontFamily: 'var(--sans)',
+            fontSize: '13px',
+            color: 'var(--ink-2)',
+            borderBottom: '1px solid var(--rule-soft)',
+            background: 'var(--paper-2)',
+          }}
+        >
           {gateToast}
         </div>
       ) : null}
@@ -275,8 +295,8 @@ export function WelcomePage({
             </h2>
             <p className="u-sans welcome__gate-why-lede">
               Browsers isolate every tab for security. The extension runs{' '}
-              <em>on the page</em> to capture what you select — this site is just the library
-              where it lands.
+              <em>on the page</em> to capture what you select — this site is just the
+              library where it lands.
             </p>
             <div className="welcome__gate-why-cards">
               <div className="welcome__gate-why-card">
@@ -284,10 +304,12 @@ export function WelcomePage({
                   ✓
                 </span>
                 <div className="welcome__gate-why-copy">
-                  <p className="u-sans welcome__gate-why-card-title">Capture on any page</p>
+                  <p className="u-sans welcome__gate-why-card-title">
+                    Capture on any page
+                  </p>
                   <p className="u-sans welcome__gate-why-card-desc">
-                    Articles, docs and PDFs — select text and highlight. Source URL is saved with
-                    it.
+                    Articles, docs and PDFs — select text and highlight. Source URL is
+                    saved with it.
                   </p>
                 </div>
               </div>
@@ -296,10 +318,12 @@ export function WelcomePage({
                   ✓
                 </span>
                 <div className="welcome__gate-why-copy">
-                  <p className="u-sans welcome__gate-why-card-title">Private by default</p>
+                  <p className="u-sans welcome__gate-why-card-title">
+                    Private by default
+                  </p>
                   <p className="u-sans welcome__gate-why-card-desc">
-                    Guest highlights stay on device. Sign in only if you want sync — no data
-                    selling, no history scraping.
+                    Guest highlights stay on device. Sign in only if you want sync — no
+                    data selling, no history scraping.
                   </p>
                 </div>
               </div>
@@ -308,10 +332,12 @@ export function WelcomePage({
                   ✓
                 </span>
                 <div className="welcome__gate-why-copy">
-                  <p className="u-sans welcome__gate-why-card-title">Organised automatically</p>
+                  <p className="u-sans welcome__gate-why-card-title">
+                    Organised automatically
+                  </p>
                   <p className="u-sans welcome__gate-why-card-desc">
-                    Grouped by site and page, searchable and taggable — the collection lives here,
-                    not in the browser.
+                    Grouped by site and page, searchable and taggable — the collection
+                    lives here, not in the browser.
                   </p>
                 </div>
               </div>
@@ -333,21 +359,30 @@ export function WelcomePage({
               {browserLabel ? `Install for ${browserLabel}` : 'Install the extension'}
             </h2>
             <p className="welcome__gate-sub">
-              Add the extension to capture highlights on the page. This site is your library.
+              Add the extension to capture highlights on the page. This site is your
+              library.
             </p>
           </div>
           <div className="welcome__gate-body">
             <div className="welcome__gate-browsers" data-od-id="welcome-gate-browsers">
               {detected === 'chrome' ? (
-                <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-chrome">
+                <div
+                  className="welcome__gate-browser welcome__gate-browser--primary"
+                  data-od-id="welcome-gate-browser-chrome"
+                >
                   <div className="welcome__gate-browser-copy">
                     <p className="welcome__gate-browser-name">Chrome</p>
-                    <p className="welcome__gate-browser-meta">Chrome Web Store · Manifest v3</p>
+                    <p className="welcome__gate-browser-meta">
+                      Chrome Web Store · Manifest v3
+                    </p>
                   </div>
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={chromeArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`}
+                      href={
+                        chromeArtifact?.downloadHref ??
+                        `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`
+                      }
                       download
                       className="btn accent"
                       data-od-id="welcome-gate-store-chrome"
@@ -358,15 +393,23 @@ export function WelcomePage({
                   </div>
                 </div>
               ) : detected === 'firefox' ? (
-                <div className="welcome__gate-browser welcome__gate-browser--primary" data-od-id="welcome-gate-browser-firefox">
+                <div
+                  className="welcome__gate-browser welcome__gate-browser--primary"
+                  data-od-id="welcome-gate-browser-firefox"
+                >
                   <div className="welcome__gate-browser-copy">
                     <p className="welcome__gate-browser-name">Firefox</p>
-                    <p className="welcome__gate-browser-meta">Firefox Add-ons · Manifest v2</p>
+                    <p className="welcome__gate-browser-meta">
+                      Firefox Add-ons · Manifest v2
+                    </p>
                   </div>
                   <div className="welcome__gate-browser-actions">
                     <a
                       ref={firstCtaRef}
-                      href={firefoxArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`}
+                      href={
+                        firefoxArtifact?.downloadHref ??
+                        `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`
+                      }
                       download
                       className="btn accent"
                       data-od-id="welcome-gate-store-firefox"
@@ -378,15 +421,23 @@ export function WelcomePage({
                 </div>
               ) : (
                 <>
-                  <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-chrome">
+                  <div
+                    className="welcome__gate-browser"
+                    data-od-id="welcome-gate-browser-chrome"
+                  >
                     <div className="welcome__gate-browser-copy">
                       <p className="welcome__gate-browser-name">Chrome</p>
-                      <p className="welcome__gate-browser-meta">Chrome Web Store · Manifest v3</p>
+                      <p className="welcome__gate-browser-meta">
+                        Chrome Web Store · Manifest v3
+                      </p>
                     </div>
                     <div className="welcome__gate-browser-actions">
                       <a
                         ref={firstCtaRef}
-                        href={chromeArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`}
+                        href={
+                          chromeArtifact?.downloadHref ??
+                          `/downloads/underscore-highlighter-${distConfig.version}-chrome.zip`
+                        }
                         download
                         className="btn accent"
                         data-od-id="welcome-gate-store-chrome"
@@ -395,14 +446,22 @@ export function WelcomePage({
                       </a>
                     </div>
                   </div>
-                  <div className="welcome__gate-browser" data-od-id="welcome-gate-browser-firefox">
+                  <div
+                    className="welcome__gate-browser"
+                    data-od-id="welcome-gate-browser-firefox"
+                  >
                     <div className="welcome__gate-browser-copy">
                       <p className="welcome__gate-browser-name">Firefox</p>
-                      <p className="welcome__gate-browser-meta">Firefox Add-ons · Manifest v2</p>
+                      <p className="welcome__gate-browser-meta">
+                        Firefox Add-ons · Manifest v2
+                      </p>
                     </div>
                     <div className="welcome__gate-browser-actions">
                       <a
-                        href={firefoxArtifact?.downloadHref ?? `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`}
+                        href={
+                          firefoxArtifact?.downloadHref ??
+                          `/downloads/underscore-highlighter-${distConfig.version}-firefox.zip`
+                        }
                         download
                         className="btn accent"
                         data-od-id="welcome-gate-store-firefox"
@@ -411,7 +470,10 @@ export function WelcomePage({
                       </a>
                     </div>
                   </div>
-                  <div className="welcome__gate-callout" data-od-id="welcome-gate-callout">
+                  <div
+                    className="welcome__gate-callout"
+                    data-od-id="welcome-gate-callout"
+                  >
                     Desktop Chrome or Firefox required
                   </div>
                 </>
@@ -419,7 +481,9 @@ export function WelcomePage({
             </div>
 
             <div className="welcome__gate-verify" data-od-id="welcome-gate-verify">
-              <p className="welcome__gate-verify-hint">After you add it, check below to open the app.</p>
+              <p className="welcome__gate-verify-hint">
+                After you add it, check below to open the app.
+              </p>
               {!checkSuccess ? (
                 <>
                   <div className="welcome__gate-verify-actions">
@@ -437,7 +501,11 @@ export function WelcomePage({
                     </button>
                   </div>
                   {checkError ? (
-                    <p className="welcome__gate-error" data-od-id="welcome-gate-check-error" role="alert">
+                    <p
+                      className="welcome__gate-error"
+                      data-od-id="welcome-gate-check-error"
+                      role="alert"
+                    >
                       {checkError}
                     </p>
                   ) : null}
@@ -482,7 +550,10 @@ export function WelcomePage({
                 <span aria-hidden>{welcomeGateHowOpen ? '−' : '+'}</span>
               </button>
               {welcomeGateHowOpen ? (
-                <div className="welcome__gate-how-body" data-od-id="welcome-gate-how-body">
+                <div
+                  className="welcome__gate-how-body"
+                  data-od-id="welcome-gate-how-body"
+                >
                   {detected === 'firefox' ? (
                     <ol>
                       {FIREFOX_CONCISE_STEPS.map((s) => (
@@ -497,7 +568,16 @@ export function WelcomePage({
                     </ol>
                   ) : (
                     <>
-                      <p className="u-mono" style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 8px' }}>
+                      <p
+                        className="u-mono"
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          color: 'var(--ink-3)',
+                          margin: '0 0 8px',
+                        }}
+                      >
                         Chrome
                       </p>
                       <ol style={{ marginBottom: 12 }}>
@@ -505,7 +585,16 @@ export function WelcomePage({
                           <li key={s}>{s}</li>
                         ))}
                       </ol>
-                      <p className="u-mono" style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 8px' }}>
+                      <p
+                        className="u-mono"
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          color: 'var(--ink-3)',
+                          margin: '0 0 8px',
+                        }}
+                      >
                         Firefox
                       </p>
                       <ol>

@@ -27,7 +27,8 @@ export function useTypePreset(): {
   setSelection: (selection: TypePresetSelection) => Promise<void>;
   resetToDefault: () => Promise<void>;
 } {
-  const [selection, setSelectionState] = useState<TypePresetSelection>(TYPE_PRESET_DEFAULT);
+  const [selection, setSelectionState] =
+    useState<TypePresetSelection>(TYPE_PRESET_DEFAULT);
   const [ready, setReady] = useState(false);
 
   const tokens = useMemo(() => resolveTypographyTokens(selection), [selection]);
@@ -93,11 +94,14 @@ export function useTypePreset(): {
     };
   }, [applySelection]);
 
-  const setSelection = useCallback(async (next: TypePresetSelection): Promise<void> => {
-    await setTypePresetSelection(next);
-    setSelectionState(next);
-    applySelection(next);
-  }, [applySelection]);
+  const setSelection = useCallback(
+    async (next: TypePresetSelection): Promise<void> => {
+      await setTypePresetSelection(next);
+      setSelectionState(next);
+      applySelection(next);
+    },
+    [applySelection]
+  );
 
   const resetToDefault = useCallback(async (): Promise<void> => {
     await setSelection(TYPE_PRESET_DEFAULT);

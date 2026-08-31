@@ -10,15 +10,13 @@ import {
   IntegrationsWebList,
   IntegrationsWebSetup,
 } from '@/features/settings/integrations/IntegrationsWebPanel';
-import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
+import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import type { WebCaps } from '@/web/caps/resolveWebCaps';
 
-export type AiView =
-  | { panel: 'list' }
-  | { panel: 'app'; id: McpAiAppId };
+export type AiView = { panel: 'list' } | { panel: 'app'; id: McpAiAppId };
 
 const INITIAL_VIEW: AiView = { panel: 'list' };
 
@@ -67,7 +65,9 @@ export function AiPanel({
       {!mcpAllowed ? (
         <div className="banner" data-od-id="ai-lock-banner">
           <div className="grow">
-            <strong>{isAuthenticated ? 'Integrations locked' : 'Sign in required'}</strong>
+            <strong>
+              {isAuthenticated ? 'Integrations locked' : 'Sign in required'}
+            </strong>
             <div className="sub" style={{ marginTop: 4 }}>
               {isAuthenticated
                 ? `${upcoming.title}: ${upcoming.sub}`

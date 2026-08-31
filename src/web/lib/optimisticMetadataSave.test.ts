@@ -19,14 +19,16 @@ describe('createOptimisticMetadataHandlers', () => {
   it('patches note immediately and keeps it when network succeeds', async () => {
     const row = hl({ id: '1', note: 'old' });
     const store = new Map<string, WebHighlight>([['1', row]]);
-    const patchHighlight = vi.fn((id: string, patch: { note?: string; tags?: string[] }) => {
-      const cur = store.get(id)!;
-      store.set(id, {
-        ...cur,
-        note: patch.note !== undefined ? patch.note : cur.note,
-        tags: patch.tags !== undefined ? patch.tags : cur.tags,
-      });
-    });
+    const patchHighlight = vi.fn(
+      (id: string, patch: { note?: string; tags?: string[] }) => {
+        const cur = store.get(id)!;
+        store.set(id, {
+          ...cur,
+          note: patch.note !== undefined ? patch.note : cur.note,
+          tags: patch.tags !== undefined ? patch.tags : cur.tags,
+        });
+      }
+    );
     const updateMetadata = vi.fn().mockResolvedValue(true);
 
     const { handleNoteSave } = createOptimisticMetadataHandlers({
@@ -39,21 +41,27 @@ describe('createOptimisticMetadataHandlers', () => {
     // Optimistic: patched before await settles.
     expect(store.get('1')?.note).toBe('new note');
     expect(await p).toBe(true);
-    expect(updateMetadata).toHaveBeenCalledWith('1', { notes: 'new note' }, { silent: true });
+    expect(updateMetadata).toHaveBeenCalledWith(
+      '1',
+      { notes: 'new note' },
+      { silent: true }
+    );
     expect(store.get('1')?.note).toBe('new note');
   });
 
   it('rolls note back when network fails', async () => {
     const row = hl({ id: '1', note: 'old' });
     const store = new Map<string, WebHighlight>([['1', row]]);
-    const patchHighlight = vi.fn((id: string, patch: { note?: string; tags?: string[] }) => {
-      const cur = store.get(id)!;
-      store.set(id, {
-        ...cur,
-        note: patch.note !== undefined ? patch.note : cur.note,
-        tags: patch.tags !== undefined ? patch.tags : cur.tags,
-      });
-    });
+    const patchHighlight = vi.fn(
+      (id: string, patch: { note?: string; tags?: string[] }) => {
+        const cur = store.get(id)!;
+        store.set(id, {
+          ...cur,
+          note: patch.note !== undefined ? patch.note : cur.note,
+          tags: patch.tags !== undefined ? patch.tags : cur.tags,
+        });
+      }
+    );
     const updateMetadata = vi.fn().mockResolvedValue(false);
 
     const { handleNoteSave } = createOptimisticMetadataHandlers({
@@ -69,14 +77,16 @@ describe('createOptimisticMetadataHandlers', () => {
   it('patches tags immediately and rolls back on failure', async () => {
     const row = hl({ id: '1', tags: ['a'] });
     const store = new Map<string, WebHighlight>([['1', row]]);
-    const patchHighlight = vi.fn((id: string, patch: { note?: string; tags?: string[] }) => {
-      const cur = store.get(id)!;
-      store.set(id, {
-        ...cur,
-        note: patch.note !== undefined ? patch.note : cur.note,
-        tags: patch.tags !== undefined ? patch.tags : cur.tags,
-      });
-    });
+    const patchHighlight = vi.fn(
+      (id: string, patch: { note?: string; tags?: string[] }) => {
+        const cur = store.get(id)!;
+        store.set(id, {
+          ...cur,
+          note: patch.note !== undefined ? patch.note : cur.note,
+          tags: patch.tags !== undefined ? patch.tags : cur.tags,
+        });
+      }
+    );
     const updateMetadata = vi.fn().mockResolvedValue(false);
 
     const { handleTagsChange } = createOptimisticMetadataHandlers({

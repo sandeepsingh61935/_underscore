@@ -5,19 +5,25 @@ import { useAPIKeyStatus } from '../useAPIKeyStatus';
 
 vi.mock('@/shared/hooks/useIpcAction', () => ({
   useIpcAction: <TPayload, TResponse>(type: string) => {
-    return vi.fn(async (payload: TPayload): Promise<{ success: true; data: TResponse } | { success: false; error: string }> => {
-      if (type === 'IPC_AI_GET_API_KEY_STATUS') {
-        const { provider } = payload as { provider: string };
-        return {
-          success: true,
-          data: {
-            configured: provider === 'anthropic',
-            model: provider === 'openrouter' ? 'openrouter/free' : 'claude-sonnet-4-6',
-          } as TResponse,
-        };
+    return vi.fn(
+      async (
+        payload: TPayload
+      ): Promise<
+        { success: true; data: TResponse } | { success: false; error: string }
+      > => {
+        if (type === 'IPC_AI_GET_API_KEY_STATUS') {
+          const { provider } = payload as { provider: string };
+          return {
+            success: true,
+            data: {
+              configured: provider === 'anthropic',
+              model: provider === 'openrouter' ? 'openrouter/free' : 'claude-sonnet-4-6',
+            } as TResponse,
+          };
+        }
+        return { success: false, error: 'unknown' };
       }
-      return { success: false, error: 'unknown' };
-    });
+    );
   },
 }));
 

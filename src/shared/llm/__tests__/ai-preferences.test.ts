@@ -69,20 +69,20 @@ describe('ai-preferences', () => {
     const prefs = emptyAiPreferences();
     expect(isProviderPreferenceEnabled(prefs, 'openai')).toBe(true);
     expect(
-      isProviderPreferenceEnabled(
-        { ...prefs, enabledProviders: ['anthropic'] },
-        'openai',
-      ),
+      isProviderPreferenceEnabled({ ...prefs, enabledProviders: ['anthropic'] }, 'openai')
     ).toBe(false);
   });
 
   it('row round-trip keeps clock', () => {
-    const prefs = touchPrefs({
-      defaultProvider: 'openrouter',
-      models: { openrouter: 'meta-llama/x' },
-      enabledProviders: ['openrouter'],
-      updatedAtMs: 0,
-    }, 1_700_000_000_000);
+    const prefs = touchPrefs(
+      {
+        defaultProvider: 'openrouter',
+        models: { openrouter: 'meta-llama/x' },
+        enabledProviders: ['openrouter'],
+        updatedAtMs: 0,
+      },
+      1_700_000_000_000
+    );
     const row = aiPreferencesToRow('user-1', prefs);
     expect(row.user_id).toBe('user-1');
     expect(row.default_provider).toBe('openrouter');

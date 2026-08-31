@@ -28,9 +28,11 @@
   --r-lg: 16px;
   --r-xl: 20px;
   --shadow-sm: 0 1px 2px color-mix(in srgb, var(--ink) 4%, transparent);
-  --shadow-md: 0 4px 16px color-mix(in srgb, var(--ink) 6%, transparent),
+  --shadow-md:
+    0 4px 16px color-mix(in srgb, var(--ink) 6%, transparent),
     0 1px 3px color-mix(in srgb, var(--ink) 4%, transparent);
-  --shadow-lg: 0 16px 48px color-mix(in srgb, var(--ink) 10%, transparent),
+  --shadow-lg:
+    0 16px 48px color-mix(in srgb, var(--ink) 10%, transparent),
     0 4px 12px color-mix(in srgb, var(--ink) 5%, transparent);
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-instant: 80ms;
@@ -59,13 +61,25 @@
   --btn-default-bg-active: color-mix(in oklch, var(--ink) 7%, var(--paper));
   --btn-default-border: var(--rule-soft);
   --btn-default-border-hover: color-mix(in oklch, var(--ink) 22%, var(--rule-soft));
-  --btn-default-border-focus-edge: color-mix(in oklch, var(--accent) 40%, var(--rule-soft));
+  --btn-default-border-focus-edge: color-mix(
+    in oklch,
+    var(--accent) 40%,
+    var(--rule-soft)
+  );
   --btn-primary-bg: var(--ink);
   --btn-primary-bg-hover: color-mix(in oklch, var(--ink) 88%, var(--paper));
   --btn-primary-bg-active: color-mix(in oklch, var(--ink) 96%, var(--paper));
   --btn-accent-bg: var(--accent);
-  --btn-accent-bg-hover: color-mix(in oklch, var(--accent) 82%, var(--accent-ink, #2a1208));
-  --btn-accent-bg-active: color-mix(in oklch, var(--accent) 70%, var(--accent-ink, #2a1208));
+  --btn-accent-bg-hover: color-mix(
+    in oklch,
+    var(--accent) 82%,
+    var(--accent-ink, #2a1208)
+  );
+  --btn-accent-bg-active: color-mix(
+    in oklch,
+    var(--accent) 70%,
+    var(--accent-ink, #2a1208)
+  );
   --btn-danger-fg: var(--danger);
   --btn-danger-bg: color-mix(in oklch, var(--danger) 8%, var(--paper));
   --btn-danger-bg-hover: color-mix(in oklch, var(--danger) 14%, var(--paper));
@@ -213,7 +227,9 @@ button.nav-item,
   color: var(--ink-2);
   font-weight: 500;
   font-size: var(--type-body);
-  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
   text-align: left;
   width: 100%;
   text-decoration: none;
@@ -761,7 +777,9 @@ button.nav-item,
   width: 100%;
   text-align: left;
   color: var(--ink-2);
-  transition: background 140ms var(--ease), color 140ms var(--ease);
+  transition:
+    background 140ms var(--ease),
+    color 140ms var(--ease);
   flex-shrink: 0;
   background: transparent;
   border: none;
@@ -979,7 +997,9 @@ button.nav-item,
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--paper);
-  transition: border-color 140ms var(--ease), background 140ms var(--ease);
+  transition:
+    border-color 140ms var(--ease),
+    background 140ms var(--ease);
   text-align: left;
   width: 100%;
   display: block;
@@ -1007,7 +1027,10 @@ button.nav-item,
   flex-shrink: 0;
   margin-top: 2px;
   opacity: 0.55;
-  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+  transition:
+    opacity 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
 }
 
 .hl:hover .hl-delete,
@@ -1142,7 +1165,10 @@ button.nav-item,
   font-size: 9px;
   letter-spacing: 0.04em;
   color: var(--ink-3);
-  transition: background 120ms var(--ease), color 120ms var(--ease), border-color 120ms var(--ease);
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease),
+    border-color 120ms var(--ease);
   box-sizing: border-box;
 }
 
@@ -1195,7 +1221,9 @@ button.nav-item,
   line-height: 1;
   font-size: 10px;
   color: var(--ink-4);
-  transition: background 120ms var(--ease), color 120ms var(--ease);
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease);
 }
 
 .hl-tag-rm:hover {
@@ -1216,7 +1244,10 @@ button.nav-item,
   border-radius: 99px;
   border: 1px dashed var(--border-strong, var(--border));
   color: var(--ink-4);
-  transition: color 120ms var(--ease), border-color 120ms var(--ease), background 120ms var(--ease);
+  transition:
+    color 120ms var(--ease),
+    border-color 120ms var(--ease),
+    background 120ms var(--ease);
   box-sizing: border-box;
 }
 
@@ -1790,7 +1821,9 @@ div.hl-note-btn:hover {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  transition: opacity var(--dur-ui) var(--ease), visibility var(--dur-ui) var(--ease);
+  transition:
+    opacity var(--dur-ui) var(--ease),
+    visibility var(--dur-ui) var(--ease);
 }
 
 .overlay-side.open {
@@ -2089,7 +2122,9 @@ div.hl-note-btn:hover {
   font: inherit;
   text-align: left;
   text-decoration: none;
-  transition: border-color 140ms var(--ease), background 140ms var(--ease);
+  transition:
+    border-color 140ms var(--ease),
+    background 140ms var(--ease);
 }
 
 .related-hl-row:hover {
@@ -2366,7 +2401,9 @@ div.hl-note-btn:hover {
   width: 100%;
   text-align: left;
   color: var(--ink-2);
-  transition: background 140ms var(--ease), color 140ms var(--ease);
+  transition:
+    background 140ms var(--ease),
+    color 140ms var(--ease);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -2437,7 +2474,10 @@ div.hl-note-btn:hover {
 .tree-delete {
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+  transition:
+    opacity 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
 }
 
 .tree-row:hover .tree-delete,
@@ -2464,7 +2504,9 @@ div.hl-note-btn:hover {
   border: none;
   background: none;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .tree-toggle:hover {
@@ -2594,7 +2636,9 @@ html[data-density='roomy'] {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
   min-height: var(--control-h);
 }
 

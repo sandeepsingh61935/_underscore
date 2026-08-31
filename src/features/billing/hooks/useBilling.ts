@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+
 import {
   computeIsPaidActive,
   emptyBillingSnapshot,
@@ -131,13 +132,9 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
       try {
         const origin = getBillingAppOrigin();
         const successUrl =
-          opts?.successUrl ??
-          defaultSuccessUrl ??
-          `${origin}/settings?billing=success`;
+          opts?.successUrl ?? defaultSuccessUrl ?? `${origin}/settings?billing=success`;
         const cancelUrl =
-          opts?.cancelUrl ??
-          defaultCancelUrl ??
-          `${origin}/settings?billing=cancel`;
+          opts?.cancelUrl ?? defaultCancelUrl ?? `${origin}/settings?billing=cancel`;
         const { url } = await port.createCheckout({
           successUrl,
           cancelUrl,

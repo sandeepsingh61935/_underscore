@@ -7,7 +7,10 @@
  */
 import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-export interface RowProps extends Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'role' | 'aria-checked' | 'aria-labelledby' | 'aria-label' | 'aria-disabled'> {
+export interface RowProps extends Pick<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'role' | 'aria-checked' | 'aria-labelledby' | 'aria-label' | 'aria-disabled'
+> {
   left?: ReactNode;
   title: string;
   meta?: ReactNode;
@@ -52,7 +55,10 @@ function RowContent({
           {title}
         </div>
         {sub ? (
-          <div className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>
+          <div
+            className="u-mono"
+            style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}
+          >
             {sub}
           </div>
         ) : null}

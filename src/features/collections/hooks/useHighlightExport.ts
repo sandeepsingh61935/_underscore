@@ -17,10 +17,10 @@ import {
   type ExportFormat,
   type ExportScope,
 } from '@/shared/highlight-export';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { bundleArtifactsForExport } from '@/shared/llm/llm-artifact-service';
 import { loadAllLlmArtifacts } from '@/shared/llm/llm-artifact-store';
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { GET_EXPORTABLE_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
 
 /** Scopes where file export is allowed in the UI. */
@@ -77,7 +77,7 @@ interface ExportableHighlightPayload {
 }
 
 export type FetchExportableHighlights = (
-  scope: ExportScope,
+  scope: ExportScope
 ) => Promise<ExportableHighlight[]>;
 
 function mapPayload(items: ExportableHighlightPayload[]): ExportableHighlight[] {
@@ -94,10 +94,14 @@ function mapPayload(items: ExportableHighlightPayload[]): ExportableHighlight[] 
   }));
 }
 
-export async function fetchExportableHighlightsWeb(scope: ExportScope): Promise<ExportableHighlight[]> {
+export async function fetchExportableHighlightsWeb(
+  scope: ExportScope
+): Promise<ExportableHighlight[]> {
   const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
   const supabase = getWebSupabaseClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.user) return [];
 
   let query = supabase
@@ -136,7 +140,7 @@ export async function fetchExportableHighlightsWeb(scope: ExportScope): Promise<
 
   if (scope.kind === 'section') {
     return mapped.filter(
-      (item) => item.domain === scope.domain && item.sectionKey === scope.sectionKey,
+      (item) => item.domain === scope.domain && item.sectionKey === scope.sectionKey
     );
   }
 
@@ -156,7 +160,7 @@ function deliverExport(result: ReturnType<typeof buildScopedExport>): void {
     downloadBinaryFile(
       result.filename,
       result.xlsxBuffer,
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
     return;
   }
@@ -169,7 +173,7 @@ function deliverExport(result: ReturnType<typeof buildScopedExport>): void {
 export async function executeHighlightExport(
   scope: ExportScope,
   fetchHighlights: FetchExportableHighlights,
-  format: ExportFormat = 'md',
+  format: ExportFormat = 'md'
 ): Promise<boolean> {
   const highlights = await fetchHighlights(scope);
   const { included } = partitionExportable(highlights);
@@ -195,7 +199,7 @@ export interface UseHighlightExportResult {
 
 export function useHighlightExport(
   scope: ExportViewScope,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean }
 ): UseHighlightExportResult {
   const enabled = options?.enabled ?? true;
   const [isBusy, setIsBusy] = useState(false);
@@ -219,21 +223,24 @@ export function useHighlightExport(
       }
       return fetchExportableHighlightsWeb(fetchScope);
     },
-    [getExportableAction],
+    [getExportableAction]
   );
 
-  const exportFile = useCallback(async (format: ExportFormat) => {
-    if (!enabled || isBusy) return;
+  const exportFile = useCallback(
+    async (format: ExportFormat) => {
+      if (!enabled || isBusy) return;
 
-    setIsBusy(true);
-    try {
-      await executeHighlightExport(scope, fetchHighlights, format);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Export failed');
-    } finally {
-      setIsBusy(false);
-    }
-  }, [enabled, isBusy, fetchHighlights, scope]);
+      setIsBusy(true);
+      try {
+        await executeHighlightExport(scope, fetchHighlights, format);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Export failed');
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [enabled, isBusy, fetchHighlights, scope]
+  );
 
   return {
     exportFile,

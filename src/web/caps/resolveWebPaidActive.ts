@@ -17,13 +17,11 @@ export type WebPaidActiveSnapshot = {
  * - otherwise → entitlement.isPaidActive || snapshot.isPaidActive (never demote)
  */
 export function resolveWebPaidActive(
-  snapshot: WebPaidActiveSnapshot | null | undefined,
+  snapshot: WebPaidActiveSnapshot | null | undefined
 ): boolean {
   if (!snapshot) return false;
   if (snapshot.loadState === 'ready') {
     return Boolean(snapshot.isPaidActive);
   }
-  return Boolean(
-    snapshot.entitlement?.isPaidActive || snapshot.isPaidActive,
-  );
+  return Boolean(snapshot.entitlement?.isPaidActive || snapshot.isPaidActive);
 }

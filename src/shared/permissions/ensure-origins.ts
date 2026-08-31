@@ -6,10 +6,7 @@ import { browser } from 'wxt/browser';
 
 export const ORIGIN_SUPABASE = 'https://cuzwaukxagefyvtxbqmi.supabase.co/*';
 
-export const ORIGIN_POLAR = [
-  'https://polar.sh/*',
-  'https://buy.polar.sh/*',
-] as const;
+export const ORIGIN_POLAR = ['https://polar.sh/*', 'https://buy.polar.sh/*'] as const;
 
 /** Dev/sandbox Polar only — not shown unless billing hits sandbox. */
 export const ORIGIN_POLAR_SANDBOX = 'https://sandbox.polar.sh/*';

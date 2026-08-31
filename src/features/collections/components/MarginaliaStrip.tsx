@@ -155,7 +155,7 @@ export function MarginaliaStrip({
         setIsSaving(false);
       }
     },
-    [highlightId, updateMetadata],
+    [highlightId, updateMetadata]
   );
 
   const prevHighlightIdRef = useRef(highlightId);
@@ -197,7 +197,7 @@ export function MarginaliaStrip({
         void persist({ notes: value });
       }, NOTE_SAVE_DEBOUNCE_MS);
     },
-    [clearSaveTimer, persist],
+    [clearSaveTimer, persist]
   );
 
   const flushNoteSave = useCallback(async (): Promise<void> => {
@@ -229,7 +229,7 @@ export function MarginaliaStrip({
       setTagInputDraft('');
       void persist({ tags: next });
     },
-    [labelsDraft, persist],
+    [labelsDraft, persist]
   );
 
   const handleRemoveLabel = useCallback(
@@ -239,7 +239,7 @@ export function MarginaliaStrip({
       labelsDraftRef.current = next;
       void persist({ tags: next });
     },
-    [labelsDraft, persist],
+    [labelsDraft, persist]
   );
 
   const hasContent = noteDraft.trim() !== '' || labelsDraft.length > 0;
@@ -265,7 +265,13 @@ export function MarginaliaStrip({
           whiteSpace: 'nowrap',
         }}
       >
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+        <span
+          style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 'var(--step--2)',
+            color: 'var(--ink-3)',
+          }}
+        >
           + Add note or tags
         </span>
       </button>
@@ -399,7 +405,13 @@ export function MarginaliaStrip({
   }
 
   const chrome = isSaving ? (
-    <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+    <span
+      style={{
+        fontFamily: 'var(--mono)',
+        fontSize: 'var(--step--2)',
+        color: 'var(--ink-3)',
+      }}
+    >
       Saving…
     </span>
   ) : (
@@ -477,9 +489,7 @@ export function MarginaliaStrip({
 
   if (embedInCard) {
     return (
-      <div style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-        {editor}
-      </div>
+      <div style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}>{editor}</div>
     );
   }
 

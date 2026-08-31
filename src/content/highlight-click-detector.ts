@@ -7,15 +7,15 @@
  * - Click outside highlight (and not on delete icon / safe pad): dismiss pin
  */
 
-import { EventName } from '@/shared/types/events';
-import type { EventBus } from '@/shared/utils/event-bus';
-import { LoggerFactory } from '@/shared/utils/logger';
-import type { ILogger } from '@/shared/utils/logger';
-import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
 import {
   collectDeleteIconRects,
   isPointNearDeleteIcon,
 } from '@/content/ui/delete-icon-geometry';
+import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
+import { EventName } from '@/shared/types/events';
+import type { EventBus } from '@/shared/utils/event-bus';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /** Event: user toggled delete-icon pin on a highlight. */
 export const HIGHLIGHT_DELETE_ICON_TOGGLE = 'highlight:delete-icon:toggle';
@@ -27,7 +27,7 @@ export class HighlightClickDetector {
 
   constructor(
     private eventBus: EventBus,
-    private hitTester: HighlightDOMHitTester,
+    private hitTester: HighlightDOMHitTester
   ) {
     this.logger = LoggerFactory.getLogger('HighlightClickDetector');
   }

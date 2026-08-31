@@ -8,7 +8,11 @@ import {
   type TypePresetSelection,
   type TypographyTokens,
 } from '@/shared/constants/type-presets';
-import { deleteFontFile, getFontFile, storeFontFile } from '@/shared/services/font-import-store';
+import {
+  deleteFontFile,
+  getFontFile,
+  storeFontFile,
+} from '@/shared/services/font-import-store';
 
 const setSelection = vi.fn(async (_next: TypePresetSelection) => undefined);
 const resetToDefault = vi.fn(async () => undefined);

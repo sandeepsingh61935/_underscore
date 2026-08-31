@@ -6,8 +6,8 @@
 
 import type { HealthCheckResult, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { resolveCloudHealthTransport } from '@/shared/llm/health-transport';
-import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import { resolveProviderModel } from '@/shared/llm/provider-models';
+import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import { LLM_PROXY_HEALTH_PATH } from '@/shared/llm/runtime/proxy-policy';
 
 interface CheckOptions {
@@ -30,7 +30,7 @@ interface CheckOptions {
  */
 export async function checkProviderHealthInBrowser(
   provider: ProviderName,
-  options: CheckOptions = {},
+  options: CheckOptions = {}
 ): Promise<HealthCheckResult> {
   const model = resolveProviderModel(provider, options.model);
   const fetchFn = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
@@ -73,7 +73,7 @@ async function checkCloudViaProxy(
   provider: ProviderName,
   model: string,
   options: CheckOptions,
-  fetchFn: typeof fetch,
+  fetchFn: typeof fetch
 ): Promise<HealthCheckResult> {
   const apiKey = options.apiKey?.trim();
   if (!apiKey) return { ok: false, model, error: 'API key required' };

@@ -89,7 +89,11 @@ describe('State Error Hierarchy', () => {
     });
 
     it('should include from/to modes in transition errors', () => {
-      const error = new StateTransitionError('Transition not allowed', 'ephemeral', 'gen');
+      const error = new StateTransitionError(
+        'Transition not allowed',
+        'ephemeral',
+        'gen'
+      );
 
       expect(error.context).toMatchObject({
         from: 'ephemeral',
@@ -195,7 +199,11 @@ describe('State Error Hierarchy', () => {
     it('should have descriptive, user-friendly messages', () => {
       const errors = [
         new StateValidationError('Mode "invalid" is not recognized'),
-        new StateTransitionError('Cannot transition from walk to gen', 'ephemeral', 'gen'),
+        new StateTransitionError(
+          'Cannot transition from walk to gen',
+          'ephemeral',
+          'gen'
+        ),
         new StatePersistenceError('Failed to save state: quota exceeded'),
         new StateMigrationError('Cannot migrate from v1 to v3: missing v2', 1, 3),
       ];

@@ -9,11 +9,7 @@ export interface WrapResult {
   selEnd: number;
 }
 
-function clampRange(
-  text: string,
-  start: number,
-  end: number,
-): { s: number; e: number } {
+function clampRange(text: string, start: number, end: number): { s: number; e: number } {
   const s = Math.max(0, Math.min(start, end, text.length));
   const e = Math.max(0, Math.min(Math.max(start, end), text.length));
   return { s, e };
@@ -26,7 +22,7 @@ function clampRange(
 export function isWrappedByMarkers(
   selected: string,
   before: string,
-  after: string,
+  after: string
 ): boolean {
   if (selected.length < before.length + after.length) return false;
   if (!selected.startsWith(before) || !selected.endsWith(after)) return false;
@@ -50,7 +46,7 @@ export function hasFlankingMarkers(
   s: number,
   e: number,
   before: string,
-  after: string,
+  after: string
 ): boolean {
   if (s < before.length || e + after.length > text.length) return false;
   if (text.slice(s - before.length, s) !== before) return false;
@@ -74,7 +70,7 @@ export function wrapSelection(
   start: number,
   end: number,
   before: string,
-  after: string,
+  after: string
 ): WrapResult {
   const { s, e } = clampRange(text, start, end);
   if (s === e) {
@@ -106,7 +102,7 @@ export function toggleWrapSelection(
   start: number,
   end: number,
   before: string,
-  after: string,
+  after: string
 ): WrapResult {
   const { s, e } = clampRange(text, start, end);
 
@@ -156,7 +152,11 @@ function emphasisOpenLen(bold: boolean, italic: boolean): number {
 }
 
 /** Render inner text with at most one combined * emphasis form. */
-export function renderStarEmphasis(inner: string, bold: boolean, italic: boolean): string {
+export function renderStarEmphasis(
+  inner: string,
+  bold: boolean,
+  italic: boolean
+): string {
   if (bold && italic) return `***${inner}***`;
   if (bold) return `**${inner}**`;
   if (italic) return `*${inner}*`;
@@ -204,7 +204,7 @@ export function flagsFromStarCount(count: number): { bold: boolean; italic: bool
 export function analyzeStarEmphasis(
   text: string,
   start: number,
-  end: number,
+  end: number
 ): StarEmphasisInfo {
   const { s, e } = clampRange(text, start, end);
 
@@ -268,12 +268,15 @@ export function analyzeStarEmphasis(
  */
 export function expandCaretIntoStarContent(
   text: string,
-  caret: number,
+  caret: number
 ): { s: number; e: number } | null {
   const c = Math.max(0, Math.min(caret, text.length));
 
   // Already between empty markers: **|** or *|*
-  if (hasFlankingMarkers(text, c, c, '**', '**') || hasFlankingMarkers(text, c, c, '*', '*')) {
+  if (
+    hasFlankingMarkers(text, c, c, '**', '**') ||
+    hasFlankingMarkers(text, c, c, '*', '*')
+  ) {
     return { s: c, e: c };
   }
 
@@ -311,7 +314,7 @@ export function toggleStarEmphasis(
   text: string,
   start: number,
   end: number,
-  style: 'bold' | 'italic',
+  style: 'bold' | 'italic'
 ): WrapResult {
   let { s, e } = clampRange(text, start, end);
 
@@ -327,7 +330,13 @@ export function toggleStarEmphasis(
   const info = analyzeStarEmphasis(text, s, e);
 
   // Empty caret, no existing emphasis → insert empty markers (type inside).
-  if (s === e && !info.bold && !info.italic && info.inner.length === 0 && info.wrapStart === s) {
+  if (
+    s === e &&
+    !info.bold &&
+    !info.italic &&
+    info.inner.length === 0 &&
+    info.wrapStart === s
+  ) {
     const before = style === 'bold' ? '**' : '*';
     return wrapSelection(text, s, e, before, before);
   }
@@ -494,11 +503,7 @@ const FENCE_CLOSE_RE = /^\n```/;
  * If selection is a fenced block (or immediately inside one), unwrap to inner code.
  * Returns null when not fenced.
  */
-export function tryUnfence(
-  text: string,
-  start: number,
-  end: number,
-): WrapResult | null {
+export function tryUnfence(text: string, start: number, end: number): WrapResult | null {
   const { s, e } = clampRange(text, start, end);
 
   if (s !== e) {
@@ -537,11 +542,7 @@ export function tryUnfence(
  *
  * Shortcut: Ctrl/Cmd+Shift+K (not Shift+C — Chrome steals that for Inspect).
  */
-export function fenceWrapPretty(
-  text: string,
-  start: number,
-  end: number,
-): WrapResult {
+export function fenceWrapPretty(text: string, start: number, end: number): WrapResult {
   const unfenced = tryUnfence(text, start, end);
   if (unfenced) return unfenced;
 
@@ -568,7 +569,7 @@ export function fenceWrapPretty(
 export function expandToLineBounds(
   text: string,
   start: number,
-  end: number,
+  end: number
 ): { start: number; end: number } {
   const s = Math.max(0, Math.min(start, end, text.length));
   const e = Math.max(0, Math.min(Math.max(start, end), text.length));
@@ -588,16 +589,17 @@ function mapSelectedLines(
   text: string,
   start: number,
   end: number,
-  mapLine: (line: string, index: number) => string,
+  mapLine: (line: string, index: number) => string
 ): WrapResult {
   const bounds = expandToLineBounds(text, start, end);
   const block = text.slice(bounds.start, bounds.end);
   const lines = block.length === 0 ? [''] : block.split('\n');
   // Trailing empty from split when block ends with newline — drop for mapping.
   const hadTrailingNl = block.endsWith('\n');
-  const bodyLines = hadTrailingNl && lines.length > 0 && lines[lines.length - 1] === ''
-    ? lines.slice(0, -1)
-    : lines;
+  const bodyLines =
+    hadTrailingNl && lines.length > 0 && lines[lines.length - 1] === ''
+      ? lines.slice(0, -1)
+      : lines;
   const mapped = bodyLines.map((line, i) => mapLine(line, i));
   const joined = mapped.join('\n') + (hadTrailingNl ? '\n' : '');
   const next = text.slice(0, bounds.start) + joined + text.slice(bounds.end);
@@ -616,8 +618,9 @@ export function applyBulletList(text: string, start: number, end: number): WrapR
   const bounds = expandToLineBounds(text, start, end);
   const block = text.slice(bounds.start, bounds.end);
   const lines = block.replace(/\n$/, '').split('\n');
-  const allBulleted = lines.every((l) => l.trim() === '' || BULLET_RE.test(l) || NUMBERED_RE.test(l))
-    && lines.some((l) => BULLET_RE.test(l) || NUMBERED_RE.test(l));
+  const allBulleted =
+    lines.every((l) => l.trim() === '' || BULLET_RE.test(l) || NUMBERED_RE.test(l)) &&
+    lines.some((l) => BULLET_RE.test(l) || NUMBERED_RE.test(l));
 
   return mapSelectedLines(text, start, end, (line) => {
     if (line.trim() === '') return line;
@@ -641,8 +644,9 @@ export function applyNumberedList(text: string, start: number, end: number): Wra
   const bounds = expandToLineBounds(text, start, end);
   const block = text.slice(bounds.start, bounds.end);
   const lines = block.replace(/\n$/, '').split('\n');
-  const allNumbered = lines.every((l) => l.trim() === '' || NUMBERED_RE.test(l) || BULLET_RE.test(l))
-    && lines.some((l) => NUMBERED_RE.test(l) || BULLET_RE.test(l));
+  const allNumbered =
+    lines.every((l) => l.trim() === '' || NUMBERED_RE.test(l) || BULLET_RE.test(l)) &&
+    lines.some((l) => NUMBERED_RE.test(l) || BULLET_RE.test(l));
 
   let n = 1;
   return mapSelectedLines(text, start, end, (line) => {
@@ -673,19 +677,14 @@ export function applyNumberedList(text: string, start: number, end: number): Wra
 }
 
 export type MarkdownFormatAction =
-  | 'bold'
-  | 'italic'
-  | 'code'
-  | 'bullets'
-  | 'numbered'
-  | 'fence';
+  'bold' | 'italic' | 'code' | 'bullets' | 'numbered' | 'fence';
 
 /** Toolbar + shortcut shared path: apply a named format action to a selection. */
 export function applyMarkdownFormatAction(
   text: string,
   start: number,
   end: number,
-  action: MarkdownFormatAction,
+  action: MarkdownFormatAction
 ): WrapResult {
   const { s, e } = clampRange(text, start, end);
   switch (action) {
@@ -722,14 +721,17 @@ export function applyMarkdownShortcut(
   start: number,
   end: number,
   key: string,
-  mods: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean },
+  mods: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean }
 ): WrapResult | null {
   const mod = mods.metaKey || mods.ctrlKey;
   if (!mod) return null;
   const k = key.toLowerCase();
-  if (k === 'b' && !mods.shiftKey) return applyMarkdownFormatAction(text, start, end, 'bold');
-  if (k === 'i' && !mods.shiftKey) return applyMarkdownFormatAction(text, start, end, 'italic');
-  if (k === 'e' && !mods.shiftKey) return applyMarkdownFormatAction(text, start, end, 'code');
+  if (k === 'b' && !mods.shiftKey)
+    return applyMarkdownFormatAction(text, start, end, 'bold');
+  if (k === 'i' && !mods.shiftKey)
+    return applyMarkdownFormatAction(text, start, end, 'italic');
+  if (k === 'e' && !mods.shiftKey)
+    return applyMarkdownFormatAction(text, start, end, 'code');
   // Prefer K: Chrome extension + DevTools bind Ctrl+Shift+C to Inspect.
   if ((k === 'k' || k === 'c') && mods.shiftKey) {
     return applyMarkdownFormatAction(text, start, end, 'fence');

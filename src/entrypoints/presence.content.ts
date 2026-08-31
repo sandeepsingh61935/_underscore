@@ -26,7 +26,7 @@ function announce(version: string): void {
   try {
     window.postMessage(
       { source: MSG_SOURCE, type: 'EXTENSION_PRESENT', version },
-      window.location.origin,
+      window.location.origin
     );
   } catch {
     /* ignore */

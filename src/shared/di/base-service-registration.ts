@@ -14,6 +14,10 @@
 
 import type { Container } from './container';
 
+import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
+import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
+import { LLMRegistry } from '@/background/services/llm/llm-registry';
+import { BackgroundPageContentCache } from '@/background/services/llm/page-content-cache';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
@@ -27,147 +31,150 @@ import { CircuitBreaker } from '@/shared/utils/circuit-breaker';
 import { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
 import type { ILogger } from '@/shared/utils/logger';
-import { LLMRegistry } from '@/background/services/llm/llm-registry';
-import { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
-import { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
-import { BackgroundPageContentCache } from '@/background/services/llm/page-content-cache';
 
 /**
  * Register base services available in all contexts
  */
 export function registerBaseServices(container: Container): void {
-    // ============================================
-    // INFRASTRUCTURE LAYER (No Dependencies)
-    // ============================================
+  // ============================================
+  // INFRASTRUCTURE LAYER (No Dependencies)
+  // ============================================
 
-    /**
-     * Logger - Singleton
-     * Shared across entire application for consistent logging
-     */
-    container.registerSingleton<ILogger>('logger', () => {
-        return LoggerFactory.getLogger('App');
-    });
+  /**
+   * Logger - Singleton
+   * Shared across entire application for consistent logging
+   */
+  container.registerSingleton<ILogger>('logger', () => {
+    return LoggerFactory.getLogger('App');
+  });
 
-    /**
-     * Event Bus - Singleton
-     * Single event bus for pub/sub across application
-     */
-    container.registerSingleton<EventBus>('eventBus', () => {
-        return new EventBus();
-    });
+  /**
+   * Event Bus - Singleton
+   * Single event bus for pub/sub across application
+   */
+  container.registerSingleton<EventBus>('eventBus', () => {
+    return new EventBus();
+  });
 
-    // ============================================
-    // CORE SERVICES LAYER (Depend on Infrastructure)
-    // ============================================
+  // ============================================
+  // CORE SERVICES LAYER (Depend on Infrastructure)
+  // ============================================
 
-    /**
-     * Pro storage — permanent, synced
-     */
-    container.registerSingleton<IStorage>('storage', () => {
-        return new StorageService({ mode: 'pro' });
-    });
+  /**
+   * Pro storage — permanent, synced
+   */
+  container.registerSingleton<IStorage>('storage', () => {
+    return new StorageService({ mode: 'pro' });
+  });
 
-    /**
-     * Guest (Basic) storage — permanent local persistence.
-     */
-    container.registerSingleton<IStorage>('basicStorage', () => {
-        return new StorageService({ mode: 'basic' });
-    });
+  /**
+   * Guest (Basic) storage — permanent local persistence.
+   */
+  container.registerSingleton<IStorage>('basicStorage', () => {
+    return new StorageService({ mode: 'basic' });
+  });
 
-    /**
-     * Highlight Repository - Singleton
-     * In-memory highlight storage with content hash indexing
-     */
-    container.registerSingleton<IHighlightRepository>('repository', () => {
-        return new InMemoryHighlightRepository();
-    });
+  /**
+   * Highlight Repository - Singleton
+   * In-memory highlight storage with content hash indexing
+   */
+  container.registerSingleton<IHighlightRepository>('repository', () => {
+    return new InMemoryHighlightRepository();
+  });
 
-    /**
-     * Repository Facade - Singleton
-     * Unified interface for highlight storage operations
-     */
-    container.registerSingleton<RepositoryFacade>('repositoryFacade', () => {
-        const repository = container.resolve<IHighlightRepository>('repository');
-        return new RepositoryFacade(repository);
-    });
+  /**
+   * Repository Facade - Singleton
+   * Unified interface for highlight storage operations
+   */
+  container.registerSingleton<RepositoryFacade>('repositoryFacade', () => {
+    const repository = container.resolve<IHighlightRepository>('repository');
+    return new RepositoryFacade(repository);
+  });
 
-    // ============================================
-    // MESSAGING LAYER (Chrome Extension IPC)
-    // ============================================
+  // ============================================
+  // MESSAGING LAYER (Chrome Extension IPC)
+  // ============================================
 
-    /**
-     * Messaging Circuit Breaker - Singleton
-     * Prevents message flood during failures
-     */
-    container.registerSingleton('messagingCircuitBreaker', () => {
-        const logger = container.resolve<ILogger>('logger');
-        return new CircuitBreaker(
-            {
-                failureThreshold: 5,
-                resetTimeout: 30000,
-                successThreshold: 2,
-                name: 'Messaging',
-            },
-            logger
-        );
-    });
+  /**
+   * Messaging Circuit Breaker - Singleton
+   * Prevents message flood during failures
+   */
+  container.registerSingleton('messagingCircuitBreaker', () => {
+    const logger = container.resolve<ILogger>('logger');
+    return new CircuitBreaker(
+      {
+        failureThreshold: 5,
+        resetTimeout: 30000,
+        successThreshold: 2,
+        name: 'Messaging',
+      },
+      logger
+    );
+  });
 
-    /**
-     * Message Bus - Singleton
-     * High-level pub/sub messaging with retry and circuit breaker
-     *
-     * Architecture: CircuitBreaker → Retry → ChromeMessageBus
-     */
-    container.registerSingleton<IMessageBus>('messageBus', () => {
-        const logger = container.resolve<ILogger>('logger');
-        const circuitBreaker = container.resolve<CircuitBreaker>('messagingCircuitBreaker');
+  /**
+   * Message Bus - Singleton
+   * High-level pub/sub messaging with retry and circuit breaker
+   *
+   * Architecture: CircuitBreaker → Retry → ChromeMessageBus
+   */
+  container.registerSingleton<IMessageBus>('messageBus', () => {
+    const logger = container.resolve<ILogger>('logger');
+    const circuitBreaker = container.resolve<CircuitBreaker>('messagingCircuitBreaker');
 
-        // Base message bus
-        const baseMessageBus = new ChromeMessageBus(logger);
+    // Base message bus
+    const baseMessageBus = new ChromeMessageBus(logger);
 
-        // Add retry capability
-        const retryMessageBus = new RetryDecorator(
-            baseMessageBus,
-            logger,
-            DEFAULT_RETRY_POLICY
-        );
+    // Add retry capability
+    const retryMessageBus = new RetryDecorator(
+      baseMessageBus,
+      logger,
+      DEFAULT_RETRY_POLICY
+    );
 
-        // Add circuit breaker protection
-        const resilientMessageBus = new CircuitBreakerMessageBus(
-            retryMessageBus,
-            circuitBreaker
-        );
+    // Add circuit breaker protection
+    const resilientMessageBus = new CircuitBreakerMessageBus(
+      retryMessageBus,
+      circuitBreaker
+    );
 
-        return resilientMessageBus;
-    });
+    return resilientMessageBus;
+  });
 
-    // ============================================
-    // LLM LAYER (ADR-021)
-    // ============================================
+  // ============================================
+  // LLM LAYER (ADR-021)
+  // ============================================
 
-    /**
-     * LLM Registry - Singleton
-     * Holds provider implementations (Anthropic, Ollama).
-     * Providers register themselves at boot.
-     */
-    container.registerSingleton<LLMRegistry>('llmRegistry', () => {
-        return new LLMRegistry();
-    });
+  /**
+   * LLM Registry - Singleton
+   * Holds provider implementations (Anthropic, Ollama).
+   * Providers register themselves at boot.
+   */
+  container.registerSingleton<LLMRegistry>('llmRegistry', () => {
+    return new LLMRegistry();
+  });
 
-    container.registerSingleton<LlmKeyStoreHolder>('llmKeyStoreHolder', () => {
-        return new LlmKeyStoreHolder();
-    });
+  container.registerSingleton<LlmKeyStoreHolder>('llmKeyStoreHolder', () => {
+    return new LlmKeyStoreHolder();
+  });
 
-    container.registerSingleton<BackgroundPageContentCache>('pageContentCache', () => {
-        return new BackgroundPageContentCache({ ttlMs: 30 * 60 * 1000 });
-    });
+  container.registerSingleton<BackgroundPageContentCache>('pageContentCache', () => {
+    return new BackgroundPageContentCache({ ttlMs: 30 * 60 * 1000 });
+  });
 
-    container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
-        const messageBus = container.resolve<IMessageBus>('messageBus');
-        const registry = container.resolve<LLMRegistry>('llmRegistry');
-        const keyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
-        const pageContentCache = container.resolve<BackgroundPageContentCache>('pageContentCache');
-        const logger = container.resolve<ILogger>('logger');
-        return new AiOrchestrator(messageBus, registry, keyStoreHolder, pageContentCache, logger);
-    });
+  container.registerSingleton<AiOrchestrator>('aiOrchestrator', () => {
+    const messageBus = container.resolve<IMessageBus>('messageBus');
+    const registry = container.resolve<LLMRegistry>('llmRegistry');
+    const keyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
+    const pageContentCache =
+      container.resolve<BackgroundPageContentCache>('pageContentCache');
+    const logger = container.resolve<ILogger>('logger');
+    return new AiOrchestrator(
+      messageBus,
+      registry,
+      keyStoreHolder,
+      pageContentCache,
+      logger
+    );
+  });
 }

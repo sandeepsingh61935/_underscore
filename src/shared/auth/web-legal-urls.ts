@@ -57,7 +57,7 @@ export function resolveLegalDocUrl(
     envOrigin?: string | null;
     useWindowOrigin?: boolean;
     windowOrigin?: string;
-  },
+  }
 ): string | null {
   const origin = getWebAppOrigin(options);
   if (!origin) return null;
@@ -73,7 +73,7 @@ export function openLegalDoc(
   options?: {
     envOrigin?: string | null;
     openUrl?: (url: string) => void;
-  },
+  }
 ): boolean {
   const url = resolveLegalDocUrl(path, {
     envOrigin: options?.envOrigin,

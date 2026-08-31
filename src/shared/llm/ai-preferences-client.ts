@@ -28,11 +28,13 @@ export type AiPreferencesSyncResult = {
 
 export async function fetchAiPreferences(
   supabase: SupabaseClient,
-  userId: string,
+  userId: string
 ): Promise<AiPreferences | null> {
   const { data, error } = await supabase
     .from(AI_PREFERENCES_TABLE)
-    .select('user_id, default_provider, models, enabled_providers, updated_at, created_at')
+    .select(
+      'user_id, default_provider, models, enabled_providers, updated_at, created_at'
+    )
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -51,7 +53,7 @@ export async function putAiPreferencesLww(
   supabase: SupabaseClient,
   userId: string,
   prefs: AiPreferences,
-  knownRemote: AiPreferences | null,
+  knownRemote: AiPreferences | null
 ): Promise<AiPreferences> {
   if (prefs.updatedAtMs <= 0) {
     throw new Error('AI preferences require a positive updatedAtMs');
@@ -107,7 +109,7 @@ export async function putAiPreferencesLww(
 export async function syncAiPreferences(
   supabase: SupabaseClient,
   userId: string,
-  local: AiPreferences,
+  local: AiPreferences
 ): Promise<AiPreferencesSyncResult> {
   const remote = await fetchAiPreferences(supabase, userId);
   const resolved = resolveSyncedPrefs(local, remote);

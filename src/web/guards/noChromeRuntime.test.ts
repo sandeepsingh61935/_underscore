@@ -11,16 +11,7 @@ const FORBIDDEN = ['chrome', 'runtime'].join('.');
 
 const WEB_ROOT = join(process.cwd(), 'src', 'web');
 
-const TEXT_EXT = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.css',
-  '.json',
-  '.md',
-  '.html',
-]);
+const TEXT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.md', '.html']);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -59,9 +50,7 @@ describe('platform guard: no extension IPC under src/web', () => {
 
     expect(
       offenders,
-      offenders.length
-        ? `Forbidden ${FORBIDDEN} in:\n${offenders.join('\n')}`
-        : undefined,
+      offenders.length ? `Forbidden ${FORBIDDEN} in:\n${offenders.join('\n')}` : undefined
     ).toEqual([]);
   });
 });

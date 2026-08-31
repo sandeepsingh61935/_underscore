@@ -40,7 +40,8 @@ function makeRegistry(providers: Map<string, ILLMService>) {
       if (!provider) throw new Error('not registered');
       return provider;
     },
-    list: () => Array.from(providers.entries()).map(([name]) => ({ name, configured: true })),
+    list: () =>
+      Array.from(providers.entries()).map(([name]) => ({ name, configured: true })),
     setConfigured: vi.fn(),
   };
 }
@@ -80,7 +81,11 @@ describe('registerAiHandlers AI feature gate (product retired)', () => {
     const handler = bus.handlers.get(IPC_AI_CHAT)!;
     const result = await handler({
       provider: 'anthropic',
-      request: { systemPrompt: 's', messages: [{ role: 'user', content: 'hi' }], maxTokens: 10 },
+      request: {
+        systemPrompt: 's',
+        messages: [{ role: 'user', content: 'hi' }],
+        maxTokens: 10,
+      },
     });
 
     expect(result).toEqual({ success: false, error: 'Available with Account (Paid)' });
@@ -104,7 +109,12 @@ describe('registerAiHandlers AI feature gate (product retired)', () => {
 
   it('denies IPC_AI_CHAT even when paid (Ask product retired)', async () => {
     const bus = makeMessageBus();
-    const chatResult: LLMResult = { text: 'ok', inputTokens: 1, outputTokens: 1, durationMs: 1 };
+    const chatResult: LLMResult = {
+      text: 'ok',
+      inputTokens: 1,
+      outputTokens: 1,
+      durationMs: 1,
+    };
     const anthropic: ILLMService = {
       providerName: 'anthropic',
       capabilities: {
@@ -129,7 +139,11 @@ describe('registerAiHandlers AI feature gate (product retired)', () => {
     const handler = bus.handlers.get(IPC_AI_CHAT)!;
     const result = await handler({
       provider: 'anthropic',
-      request: { systemPrompt: 's', messages: [{ role: 'user', content: 'hi' }], maxTokens: 10 },
+      request: {
+        systemPrompt: 's',
+        messages: [{ role: 'user', content: 'hi' }],
+        maxTokens: 10,
+      },
     });
 
     expect(anthropic.chat).not.toHaveBeenCalled();

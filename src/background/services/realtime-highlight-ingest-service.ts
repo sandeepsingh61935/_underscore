@@ -3,20 +3,19 @@
  * @description Applies Supabase Realtime highlight events to background IndexedDB.
  */
 
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { RealtimeIngestStats } from '@/background/services/interfaces/i-realtime-highlight-ingest-service';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { EventName } from '@/shared/types/events';
 import {
   isRemoteHighlightNewer,
   transformHighlightRow,
   type SupabaseHighlightRow,
 } from '@/shared/utils/supabase-highlight-row';
-
-import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
-import type { RealtimeIngestStats } from '@/background/services/interfaces/i-realtime-highlight-ingest-service';
 
 export class RealtimeHighlightIngestService {
   constructor(
@@ -80,7 +79,9 @@ export class RealtimeHighlightIngestService {
       notifyLibraryDataChanged({ source: 'realtime-delete' });
     } catch (error) {
       stats.failed = 1;
-      this.logger.error('[RealtimeIngest] Failed to apply delete', error as Error, { id });
+      this.logger.error('[RealtimeIngest] Failed to apply delete', error as Error, {
+        id,
+      });
     }
   }
 

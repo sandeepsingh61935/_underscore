@@ -1,6 +1,8 @@
 # Document Critique Template
 
-Use this template when the playground helps review and critique documents: SKILL.md files, READMEs, specs, proposals, or any text that needs structured feedback with approve/reject/comment workflow.
+Use this template when the playground helps review and critique documents:
+SKILL.md files, READMEs, specs, proposals, or any text that needs structured
+feedback with approve/reject/comment workflow.
 
 ## Layout
 
@@ -22,12 +24,15 @@ Use this template when the playground helps review and critique documents: SKILL
 ## Key components
 
 ### Document panel (left)
+
 - Display full document with line numbers
 - Highlight lines with suggestions using a colored left border
-- Color-code by status: pending (amber), approved (green), rejected (red with opacity)
+- Color-code by status: pending (amber), approved (green), rejected (red with
+  opacity)
 - Click a suggestion card to scroll to the relevant line
 
 ### Suggestions panel (right)
+
 - Filter tabs: All / Pending / Approved / Rejected
 - Stats in header showing counts for each status
 - Each suggestion card shows:
@@ -37,6 +42,7 @@ Use this template when the playground helps review and critique documents: SKILL
   - Optional textarea for user comments
 
 ### Prompt output (bottom)
+
 - Generates a prompt only from approved suggestions and user comments
 - Groups by: Approved Improvements, Additional Feedback, Rejected (for context)
 - Copy button with "Copied!" feedback
@@ -69,7 +75,7 @@ let state = {
 Match suggestions to document lines by parsing the lineRef:
 
 ```javascript
-const suggestion = state.suggestions.find(s => {
+const suggestion = state.suggestions.find((s) => {
   const match = s.lineRef.match(/Line[s]?\s*(\d+)/);
   if (match) {
     const targetLine = parseInt(match[1]);
@@ -83,7 +89,7 @@ const suggestion = state.suggestions.find(s => {
 
 Handle markdown-style formatting inline:
 
-```javascript
+````javascript
 // Skip ``` lines, wrap content in code-block-wrapper
 if (line.startsWith('```')) {
   inCodeBlock = !inCodeBlock;
@@ -97,7 +103,7 @@ if (line.startsWith('## ')) renderedLine = `<h2>...</h2>`;
 // Inline formatting (outside code blocks)
 renderedLine = renderedLine.replace(/`([^`]+)`/g, '<code>$1</code>');
 renderedLine = renderedLine.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-```
+````
 
 ## Prompt output generation
 
@@ -105,8 +111,8 @@ Only include actionable items:
 
 ```javascript
 function updatePrompt() {
-  const approved = state.suggestions.filter(s => s.status === 'approved');
-  const withComments = state.suggestions.filter(s => s.userComment?.trim());
+  const approved = state.suggestions.filter((s) => s.status === 'approved');
+  const withComments = state.suggestions.filter((s) => s.userComment?.trim());
 
   if (approved.length === 0 && withComments.length === 0) {
     // Show placeholder
@@ -135,17 +141,17 @@ function updatePrompt() {
 
 ```css
 .doc-line.has-suggestion {
-  border-left: 3px solid #bf8700;  /* amber for pending */
+  border-left: 3px solid #bf8700; /* amber for pending */
   background: rgba(191, 135, 0, 0.08);
 }
 
 .doc-line.approved {
-  border-left-color: #1a7f37;  /* green */
+  border-left-color: #1a7f37; /* green */
   background: rgba(26, 127, 55, 0.08);
 }
 
 .doc-line.rejected {
-  border-left-color: #cf222e;  /* red */
+  border-left-color: #cf222e; /* red */
   background: rgba(207, 34, 46, 0.08);
   opacity: 0.6;
 }
@@ -165,7 +171,8 @@ When building a critique playground for a specific document:
 ## Example use cases
 
 - SKILL.md review (skill definition quality, completeness, clarity)
-- README critique (documentation quality, missing sections, unclear explanations)
+- README critique (documentation quality, missing sections, unclear
+  explanations)
 - Spec review (requirements clarity, missing edge cases, ambiguity)
 - Proposal feedback (structure, argumentation, missing context)
 - Code comment review (docstring quality, inline comment usefulness)

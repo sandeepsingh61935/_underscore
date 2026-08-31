@@ -26,7 +26,7 @@ describe('resolvePopupInitialRoute', () => {
       route({
         isAuthenticated: true,
         nav: { lastView: 'AUTH' },
-      }),
+      })
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
@@ -35,7 +35,7 @@ describe('resolvePopupInitialRoute', () => {
       route({
         isAuthenticated: true,
         nav: { pendingAuthMode: 'pro' },
-      }),
+      })
     ).toEqual({
       view: 'COLLECTIONS',
       applyMode: 'pro',
@@ -48,7 +48,7 @@ describe('resolvePopupInitialRoute', () => {
       route({
         isAuthenticated: true,
         nav: { lastView: 'SETTINGS' },
-      }),
+      })
     ).toEqual({ view: 'SETTINGS' });
   });
 
@@ -61,7 +61,7 @@ describe('resolvePopupInitialRoute', () => {
           lastDomain: 'example.com',
           lastSection: 'docs',
         },
-      }),
+      })
     ).toEqual({
       view: 'SUB_DOMAIN',
       selectedDomain: 'example.com',
@@ -73,7 +73,7 @@ describe('resolvePopupInitialRoute', () => {
     expect(
       route({
         nav: { lastView: 'AUTH' },
-      }),
+      })
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
@@ -81,7 +81,7 @@ describe('resolvePopupInitialRoute', () => {
     expect(
       route({
         nav: { lastView: 'COLLECTIONS' },
-      }),
+      })
     ).toEqual({ view: 'COLLECTIONS' });
   });
 
@@ -92,7 +92,7 @@ describe('resolvePopupInitialRoute', () => {
           lastView: 'DOMAIN_DETAILS',
           lastDomain: 'example.com',
         },
-      }),
+      })
     ).toEqual({
       view: 'DOMAIN_DETAILS',
       selectedDomain: 'example.com',
@@ -108,7 +108,7 @@ describe('resolvePopupInitialRoute', () => {
       route({
         verificationStatus: 'awaiting',
         nav: { lastView: 'COLLECTIONS' },
-      }),
+      })
     ).toEqual({ view: 'AUTH' });
   });
 
@@ -118,7 +118,7 @@ describe('resolvePopupInitialRoute', () => {
         isAuthenticated: true,
         verificationStatus: 'awaiting',
         nav: { lastView: 'SETTINGS' },
-      }),
+      })
     ).toEqual({ view: 'SETTINGS' });
   });
 
@@ -126,7 +126,7 @@ describe('resolvePopupInitialRoute', () => {
     expect(
       route({
         nav: { pendingAuthMode: 'pro' },
-      }),
+      })
     ).toEqual({ view: 'AUTH' });
   });
 });

@@ -9,7 +9,8 @@ import {
 } from './useWebLibrary';
 
 function hl(
-  partial: Partial<WebHighlight> & Pick<WebHighlight, 'id' | 'domain' | 'path' | 'savedAt'>,
+  partial: Partial<WebHighlight> &
+    Pick<WebHighlight, 'id' | 'domain' | 'path' | 'savedAt'>
 ): WebHighlight {
   return {
     quote: partial.quote ?? `quote-${partial.id}`,
@@ -26,16 +27,18 @@ describe('useWebLibrary', () => {
   });
 
   it('guest: ready empty state and never calls fetchHighlights', async () => {
-    const fetchHighlights = vi.fn().mockResolvedValue([
-      hl({ id: 'seed', domain: 'evil.com', path: '/', savedAt: Date.now() }),
-    ]);
+    const fetchHighlights = vi
+      .fn()
+      .mockResolvedValue([
+        hl({ id: 'seed', domain: 'evil.com', path: '/', savedAt: Date.now() }),
+      ]);
 
     const { result } = renderHook(() =>
       useWebLibrary({
         isAuthenticated: false,
         planLabel: 'Guest',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -73,7 +76,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     expect(result.current.status).toBe('loading');
@@ -101,16 +104,18 @@ describe('useWebLibrary', () => {
 
   it('signed-in: patchHighlight updates note and tags in local aggregate', async () => {
     const now = Date.now();
-    const fetchHighlights = vi.fn().mockResolvedValue([
-      hl({ id: '1', domain: 'a.com', path: '/', savedAt: now, note: '', tags: [] }),
-    ]);
+    const fetchHighlights = vi
+      .fn()
+      .mockResolvedValue([
+        hl({ id: '1', domain: 'a.com', path: '/', savedAt: now, note: '', tags: [] }),
+      ]);
 
     const { result } = renderHook(() =>
       useWebLibrary({
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -128,18 +133,20 @@ describe('useWebLibrary', () => {
 
   it('signed-in: removeHighlights drops rows and re-aggregates', async () => {
     const now = Date.now();
-    const fetchHighlights = vi.fn().mockResolvedValue([
-      hl({ id: '1', domain: 'a.com', path: '/docs', savedAt: now }),
-      hl({ id: '2', domain: 'a.com', path: '/docs', savedAt: now - 1 }),
-      hl({ id: '3', domain: 'b.com', path: '/', savedAt: now - 2 }),
-    ]);
+    const fetchHighlights = vi
+      .fn()
+      .mockResolvedValue([
+        hl({ id: '1', domain: 'a.com', path: '/docs', savedAt: now }),
+        hl({ id: '2', domain: 'a.com', path: '/docs', savedAt: now - 1 }),
+        hl({ id: '3', domain: 'b.com', path: '/', savedAt: now - 2 }),
+      ]);
 
     const { result } = renderHook(() =>
       useWebLibrary({
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -160,7 +167,14 @@ describe('useWebLibrary', () => {
   it('mergeLibraryRowsWithLocal keeps fresher local tags over stale server row', () => {
     const server = [hl({ id: '1', domain: 'a.com', path: '/', savedAt: 100, tags: [] })];
     const local = [
-      hl({ id: '1', domain: 'a.com', path: '/', savedAt: 200, tags: ['kept'], note: 'n' }),
+      hl({
+        id: '1',
+        domain: 'a.com',
+        path: '/',
+        savedAt: 200,
+        tags: ['kept'],
+        note: 'n',
+      }),
     ];
     const merged = mergeLibraryRowsWithLocal(server, local);
     expect(merged[0]?.tags).toEqual(['kept']);
@@ -181,7 +195,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     // Warm session first so subsequent force refresh merges.
@@ -219,7 +233,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Paid',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -244,7 +258,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -270,7 +284,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: false,
         planLabel: 'Guest',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -291,13 +305,13 @@ describe('useWebLibrary', () => {
       () =>
         new Promise<WebHighlight[]>((resolve) => {
           resolveFetch = resolve;
-        }),
+        })
     );
 
     const { result, rerender } = renderHook(
       ({ isAuthenticated, planLabel }: { isAuthenticated: boolean; planLabel: string }) =>
         useWebLibrary({ isAuthenticated, planLabel, fetchHighlights }),
-      { initialProps: { isAuthenticated: true, planLabel: 'Free' } },
+      { initialProps: { isAuthenticated: true, planLabel: 'Free' } }
     );
 
     expect(result.current.status).toBe('loading');
@@ -312,7 +326,9 @@ describe('useWebLibrary', () => {
     expect(result.current.highlights).toEqual([]);
 
     await act(async () => {
-      resolveFetch([hl({ id: 'stale', domain: 'leak.com', path: '/', savedAt: Date.now() })]);
+      resolveFetch([
+        hl({ id: 'stale', domain: 'leak.com', path: '/', savedAt: Date.now() }),
+      ]);
       // Allow microtasks from the stale promise to run
       await Promise.resolve();
       await Promise.resolve();
@@ -334,7 +350,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {
@@ -349,7 +365,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights: fetch2,
-      }),
+      })
     );
 
     // Session memory: ready with data on first paint (no loading flash).
@@ -370,7 +386,7 @@ describe('useWebLibrary', () => {
       () =>
         new Promise<WebHighlight[]>((resolve) => {
           resolvers.push(resolve);
-        }),
+        })
     );
 
     const { result } = renderHook(() =>
@@ -378,7 +394,7 @@ describe('useWebLibrary', () => {
         isAuthenticated: true,
         planLabel: 'Free',
         fetchHighlights,
-      }),
+      })
     );
 
     await waitFor(() => {

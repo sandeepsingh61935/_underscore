@@ -3,7 +3,12 @@
  * @description Pure logic for LLM artifact upsert, scope queries, and staleness.
  */
 
-import type { LlmArtifact, LlmArtifactKind, LlmArtifactScope, SaveLlmArtifactInput } from '@/shared/schemas/llm-artifact-schema';
+import type {
+  LlmArtifact,
+  LlmArtifactKind,
+  LlmArtifactScope,
+  SaveLlmArtifactInput,
+} from '@/shared/schemas/llm-artifact-schema';
 
 export const SCOPE_QUERY_CAP = 10;
 
@@ -12,33 +17,36 @@ export function scopeMatches(artifact: LlmArtifact, scope: LlmArtifactScope): bo
     return artifact.scope.kind === 'domain' && artifact.scope.domain === scope.domain;
   }
   return (
-    artifact.scope.kind === 'section'
-    && artifact.scope.domain === scope.domain
-    && artifact.scope.sectionKey === scope.sectionKey
+    artifact.scope.kind === 'section' &&
+    artifact.scope.domain === scope.domain &&
+    artifact.scope.sectionKey === scope.sectionKey
   );
 }
 
-export function isArtifactStale(artifact: LlmArtifact, currentHighlightCount: number): boolean {
+export function isArtifactStale(
+  artifact: LlmArtifact,
+  currentHighlightCount: number
+): boolean {
   return artifact.highlightCountAtGeneration !== currentHighlightCount;
 }
 
 export function upsertArtifact(
   existing: LlmArtifact[],
-  incoming: LlmArtifact,
+  incoming: LlmArtifact
 ): LlmArtifact[] {
   if (incoming.kind === 'scope_query') {
     const sameScope = existing.filter(
-      (a) => a.kind === 'scope_query' && scopeMatches(a, incoming.scope),
+      (a) => a.kind === 'scope_query' && scopeMatches(a, incoming.scope)
     );
     const other = existing.filter(
-      (a) => !(a.kind === 'scope_query' && scopeMatches(a, incoming.scope)),
+      (a) => !(a.kind === 'scope_query' && scopeMatches(a, incoming.scope))
     );
     const next = [...sameScope, incoming].slice(-SCOPE_QUERY_CAP);
     return [...other, ...next];
   }
 
   const filtered = existing.filter(
-    (a) => !(a.kind === incoming.kind && scopeMatches(a, incoming.scope)),
+    (a) => !(a.kind === incoming.kind && scopeMatches(a, incoming.scope))
   );
   return [...filtered, incoming];
 }
@@ -46,7 +54,7 @@ export function upsertArtifact(
 export function getArtifactsForScope(
   artifacts: LlmArtifact[],
   scope: LlmArtifactScope,
-  kind?: LlmArtifactKind,
+  kind?: LlmArtifactKind
 ): LlmArtifact[] {
   return artifacts
     .filter((a) => scopeMatches(a, scope) && (kind === undefined || a.kind === kind))
@@ -55,9 +63,11 @@ export function getArtifactsForScope(
 
 export function buildLlmArtifact(input: SaveLlmArtifactInput, id?: string): LlmArtifact {
   const now = new Date().toISOString();
-  const artifactId = id ?? (typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `artifact-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const artifactId =
+    id ??
+    (typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `artifact-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   return {
     id: artifactId,
     kind: input.kind,
@@ -73,7 +83,7 @@ export function buildLlmArtifact(input: SaveLlmArtifactInput, id?: string): LlmA
 
 export function applySave(
   existing: LlmArtifact[],
-  input: SaveLlmArtifactInput,
+  input: SaveLlmArtifactInput
 ): LlmArtifact[] {
   const artifact = buildLlmArtifact(input);
   return upsertArtifact(existing, artifact);
@@ -87,10 +97,11 @@ export interface ExportArtifactsBundle {
 
 export function bundleArtifactsForExport(
   artifacts: LlmArtifact[],
-  scope: { kind: 'library' }
+  scope:
+    | { kind: 'library' }
     | { kind: 'domain'; domain: string }
     | { kind: 'section'; domain: string; sectionKey: string }
-    | { kind: 'highlight'; highlightId: string },
+    | { kind: 'highlight'; highlightId: string }
 ): ExportArtifactsBundle {
   const scopeQueries = artifacts.filter((a) => a.kind === 'scope_query');
 
@@ -105,7 +116,9 @@ export function bundleArtifactsForExport(
       sectionKey: scope.sectionKey,
     };
     return {
-      sectionSummary: lastOf(getArtifactsForScope(artifacts, sectionScope, 'section_summary')),
+      sectionSummary: lastOf(
+        getArtifactsForScope(artifacts, sectionScope, 'section_summary')
+      ),
       scopeQueries: scopeQueries.filter((a) => scopeMatches(a, sectionScope)),
     };
   }
@@ -113,10 +126,13 @@ export function bundleArtifactsForExport(
   if (scope.kind === 'domain') {
     const domainScope = { kind: 'domain' as const, domain: scope.domain };
     return {
-      domainSynthesis: lastOf(getArtifactsForScope(artifacts, domainScope, 'domain_synthesis')),
+      domainSynthesis: lastOf(
+        getArtifactsForScope(artifacts, domainScope, 'domain_synthesis')
+      ),
       scopeQueries: scopeQueries.filter(
-        (a) => scopeMatches(a, domainScope)
-          || (a.scope.kind === 'section' && a.scope.domain === scope.domain),
+        (a) =>
+          scopeMatches(a, domainScope) ||
+          (a.scope.kind === 'section' && a.scope.domain === scope.domain)
       ),
     };
   }

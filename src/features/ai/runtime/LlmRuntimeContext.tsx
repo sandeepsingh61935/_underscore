@@ -42,6 +42,6 @@ export function useLlmRuntime(): ILlmRuntime {
   if (fallback) return fallback;
 
   throw new Error(
-    'LlmRuntimeProvider is required outside the Chrome extension (web must use WebLlmRuntimeProvider).',
+    'LlmRuntimeProvider is required outside the Chrome extension (web must use WebLlmRuntimeProvider).'
   );
 }

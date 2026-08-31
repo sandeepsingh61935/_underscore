@@ -14,7 +14,7 @@ describe('buildProviderFromConfig', () => {
 
   it('rejects cursor-looking openai keys', () => {
     expect(() =>
-      buildProviderFromConfig({ provider: 'openai', apiKey: 'key_abc' }),
+      buildProviderFromConfig({ provider: 'openai', apiKey: 'key_abc' })
     ).toThrow(/Cursor/i);
   });
 

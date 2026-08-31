@@ -203,7 +203,7 @@ describe('CloudHydrationService.hydrate()', () => {
         type: LIBRARY_DATA_CHANGED,
         payload: expect.objectContaining({ backfilledCount: 3 }),
         timestamp: expect.any(Number),
-      }),
+      })
     );
     expect(syncCursor.set).toHaveBeenCalled();
   });
@@ -242,7 +242,9 @@ describe('CloudHydrationService.hydrate()', () => {
   });
 
   it('removes locally stored highlights deleted in cloud', async () => {
-    localStore.push(makeHighlight('99999999-9999-4999-8999-999999999999', 'https://example.com/gone'));
+    localStore.push(
+      makeHighlight('99999999-9999-4999-8999-999999999999', 'https://example.com/gone')
+    );
     cloudFindChanged.mockResolvedValue([]);
     cloudFindDeleted.mockResolvedValue(['99999999-9999-4999-8999-999999999999']);
 

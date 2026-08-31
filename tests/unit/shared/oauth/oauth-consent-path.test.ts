@@ -8,7 +8,9 @@ import {
 
 describe('oauth-consent-path', () => {
   it('builds consent path with authorization_id', () => {
-    expect(buildOAuthConsentReturnPath('abc-123')).toBe('/oauth/consent?authorization_id=abc-123');
+    expect(buildOAuthConsentReturnPath('abc-123')).toBe(
+      '/oauth/consent?authorization_id=abc-123'
+    );
   });
 
   it('builds sign-in URL preserving consent return', () => {
@@ -19,7 +21,7 @@ describe('oauth-consent-path', () => {
 
   it('resolves safe relative return paths', () => {
     expect(resolveAuthRedirectTarget('/oauth/consent?authorization_id=x')).toBe(
-      '/oauth/consent?authorization_id=x',
+      '/oauth/consent?authorization_id=x'
     );
   });
 
@@ -37,7 +39,7 @@ describe('oauth-consent-path', () => {
     expect(resolveAuthRedirectTarget('/mode?x=1')).toBe('/home?x=1');
     expect(resolveAuthRedirectTarget('/collections')).toBe('/library');
     expect(resolveAuthRedirectTarget('/collections?domain=a.com')).toBe(
-      '/library?domain=a.com',
+      '/library?domain=a.com'
     );
   });
 });

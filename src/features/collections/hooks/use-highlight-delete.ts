@@ -5,15 +5,19 @@ import type {
   DeleteRequest,
   DeleteResult,
 } from '@/background/services/highlight-delete-service';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import {
   IPC_HIGHLIGHT_DELETE_SCOPE,
   IPC_HIGHLIGHT_UNDO_DELETE,
 } from '@/shared/schemas/message-schemas';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
 
 export function useHighlightDelete() {
-  const deleteScopeAction = useIpcAction<DeleteRequest, DeleteResult>(IPC_HIGHLIGHT_DELETE_SCOPE);
-  const undoAction = useIpcAction<Record<string, never>, DeleteResult>(IPC_HIGHLIGHT_UNDO_DELETE);
+  const deleteScopeAction = useIpcAction<DeleteRequest, DeleteResult>(
+    IPC_HIGHLIGHT_DELETE_SCOPE
+  );
+  const undoAction = useIpcAction<Record<string, never>, DeleteResult>(
+    IPC_HIGHLIGHT_UNDO_DELETE
+  );
 
   const undoLastDelete = useCallback(async (): Promise<boolean> => {
     const result = await undoAction({});
@@ -57,12 +61,14 @@ export function useHighlightDelete() {
       } else if (request.scope === 'library') {
         toast.success('Library deleted');
       } else {
-        toast.success(`Deleted ${data.deletedCount} highlight${data.deletedCount === 1 ? '' : 's'}`);
+        toast.success(
+          `Deleted ${data.deletedCount} highlight${data.deletedCount === 1 ? '' : 's'}`
+        );
       }
 
       return data;
     },
-    [deleteScopeAction, undoLastDelete],
+    [deleteScopeAction, undoLastDelete]
   );
 
   return { deleteScope, undoLastDelete };

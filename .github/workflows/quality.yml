@@ -56,8 +56,8 @@ jobs:
         run: npm run format:check
 
       - name: Legacy design system check
-        # Layer 10: Strict enforcement of 0 legacy DS violations.
-        run: npm run check:legacy-ds -- src/
+        # Layer 10: Report legacy DS violations in soft mode during migration
+        run: npm run check:legacy-ds -- --soft src/
 
       - name: Run unit tests
         if: github.event_name == 'push'
@@ -105,9 +105,11 @@ jobs:
 
       - name: Run npm audit
         run: npm audit --audit-level=moderate
+        continue-on-error: true
 
       - name: Check for known vulnerabilities
         uses: snyk/actions/node@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+

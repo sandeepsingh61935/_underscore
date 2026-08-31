@@ -6,7 +6,9 @@ export interface LibraryEmptyGuestProps {
   onSignIn?: () => void;
 }
 
-export function LibraryEmptyGuest({ onSignIn }: LibraryEmptyGuestProps): React.ReactElement {
+export function LibraryEmptyGuest({
+  onSignIn,
+}: LibraryEmptyGuestProps): React.ReactElement {
   const copy = libraryEmptyGuestCopy();
   return (
     <div

@@ -8,16 +8,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
-import { fetchHighlightLabelsWeb } from '@/shared/services/tag-query-web';
-import { getDomainFromUrl } from '@/shared/utils/domain-from-url';
 import {
   mapCloudBodyText,
   resolveCloudHighlightTags,
 } from '@/shared/library/cloud-highlight-mapper';
+import { fetchHighlightLabelsWeb } from '@/shared/services/tag-query-web';
+import { getDomainFromUrl } from '@/shared/utils/domain-from-url';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import { getSectionPath } from '@/shared/utils/normalize-page-url';
 import { highlightTimestampMs } from '@/shared/utils/supabase-highlight-row';
-import { readWebLibraryCache, writeWebLibraryCache } from '@/web/lib/web-library-cache';
 import {
   aggregateLibrary,
   type WebCurrentPage,
@@ -25,6 +24,7 @@ import {
   type WebHighlight,
   type WebLibraryStats,
 } from '@/web/lib/aggregateLibrary';
+import { readWebLibraryCache, writeWebLibraryCache } from '@/web/lib/web-library-cache';
 
 export type {
   WebHighlight,
@@ -182,7 +182,7 @@ async function defaultFetchHighlights(): Promise<WebHighlight[]> {
     const labels = await fetchHighlightLabelsWeb(
       supabase,
       session.user.id,
-      out.map((h) => h.id),
+      out.map((h) => h.id)
     );
     for (const h of out) {
       const junction = labels.get(h.id);
@@ -211,7 +211,7 @@ function readSession(key: string): SessionSnapshot | null {
  */
 export function mergeLibraryRowsWithLocal(
   server: readonly WebHighlight[],
-  local: readonly WebHighlight[],
+  local: readonly WebHighlight[]
 ): WebHighlight[] {
   if (local.length === 0) return [...server];
   const localById = new Map(local.map((h) => [h.id, h]));
@@ -226,7 +226,6 @@ export function mergeLibraryRowsWithLocal(
     };
   });
 }
-
 
 /**
  * Library data for the web product shell.
@@ -252,28 +251,33 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
   const bootAgg = boot ? aggregateLibrary(boot.highlights) : null;
 
   const [status, setStatus] = useState<WebLibraryState['status']>(() =>
-    !isAuthenticated ? 'ready' : boot ? 'ready' : 'loading',
+    !isAuthenticated ? 'ready' : boot ? 'ready' : 'loading'
   );
-  const [highlights, setHighlights] = useState<WebHighlight[]>(() => boot?.highlights ?? []);
+  const [highlights, setHighlights] = useState<WebHighlight[]>(
+    () => boot?.highlights ?? []
+  );
   const [domains, setDomains] = useState<WebDomainNode[]>(() => bootAgg?.domains ?? []);
   const [stats, setStats] = useState<WebLibraryStats>(() =>
-    bootAgg
-      ? { ...bootAgg.stats, planLabel }
-      : emptyStats(planLabel),
+    bootAgg ? { ...bootAgg.stats, planLabel } : emptyStats(planLabel)
   );
   const [recent, setRecent] = useState<WebHighlight[]>(() => bootAgg?.recent ?? []);
-  const [currentPage, setCurrentPage] = useState<WebCurrentPage>(() => bootAgg?.currentPage ?? null);
+  const [currentPage, setCurrentPage] = useState<WebCurrentPage>(
+    () => bootAgg?.currentPage ?? null
+  );
   const [error, setError] = useState<string | null>(null);
 
-  const applyEmpty = useCallback((readyStatus: 'ready' | 'error' = 'ready', err: string | null = null) => {
-    setHighlights([]);
-    setDomains([]);
-    setStats(emptyStats(planLabelRef.current));
-    setRecent([]);
-    setCurrentPage(null);
-    setError(err);
-    setStatus(readyStatus);
-  }, []);
+  const applyEmpty = useCallback(
+    (readyStatus: 'ready' | 'error' = 'ready', err: string | null = null) => {
+      setHighlights([]);
+      setDomains([]);
+      setStats(emptyStats(planLabelRef.current));
+      setRecent([]);
+      setCurrentPage(null);
+      setError(err);
+      setStatus(readyStatus);
+    },
+    []
+  );
 
   const applyRows = useCallback(
     (
@@ -282,7 +286,7 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         mergeLocal?: boolean;
         /** Persist session/IDB after merge (network refresh). */
         cacheKey?: string;
-      },
+      }
     ) => {
       setHighlights((prev) => {
         const next =
@@ -303,7 +307,7 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         return next;
       });
     },
-    [],
+    []
   );
 
   const load = useCallback(
@@ -413,7 +417,7 @@ export function useWebLibrary(opts: UseWebLibraryOpts): WebLibraryState {
         applyEmpty('error', message);
       }
     },
-    [applyEmpty, applyRows],
+    [applyEmpty, applyRows]
   );
 
   useEffect(() => {

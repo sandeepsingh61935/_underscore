@@ -8,12 +8,14 @@ import { browser } from 'wxt/browser';
 import type { CloudHydrationResult } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
 
-export type LibraryChangePayload = CloudHydrationResult | {
-  source: string;
-  deletedCount?: number;
-  removedIds?: string[];
-  restoredIds?: string[];
-};
+export type LibraryChangePayload =
+  | CloudHydrationResult
+  | {
+      source: string;
+      deletedCount?: number;
+      removedIds?: string[];
+      restoredIds?: string[];
+    };
 
 /**
  * Broadcast library changes to popup + content tabs.
@@ -35,7 +37,11 @@ function broadcastLibraryDataChanged(payload: LibraryChangePayload): void {
     timestamp: Date.now(),
   };
 
-  const runtime = (browser as unknown as { runtime?: { sendMessage?: (msg: unknown) => Promise<unknown> } })?.runtime;
+  const runtime = (
+    browser as unknown as {
+      runtime?: { sendMessage?: (msg: unknown) => Promise<unknown> };
+    }
+  )?.runtime;
   if (runtime?.sendMessage) {
     void runtime.sendMessage(message).catch(() => {
       // Popup may be closed.
@@ -44,18 +50,22 @@ function broadcastLibraryDataChanged(payload: LibraryChangePayload): void {
 
   // Guard for test environments where tabs API is not mocked.
   try {
-    const maybePromise = (browser as unknown as { tabs?: { query?: (q: unknown) => unknown } })?.tabs?.query?.({});
+    const maybePromise = (
+      browser as unknown as { tabs?: { query?: (q: unknown) => unknown } }
+    )?.tabs?.query?.({});
     if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
-      void (maybePromise as Promise<{ id?: number }[]>).then((tabs) => {
-        for (const tab of tabs ?? []) {
-          if (!tab.id) continue;
-          void browser.tabs.sendMessage(tab.id, message).catch(() => {
-            // Tab may not have a content script.
-          });
-        }
-      }).catch(() => {
-        // Query failed.
-      });
+      void (maybePromise as Promise<{ id?: number }[]>)
+        .then((tabs) => {
+          for (const tab of tabs ?? []) {
+            if (!tab.id) continue;
+            void browser.tabs.sendMessage(tab.id, message).catch(() => {
+              // Tab may not have a content script.
+            });
+          }
+        })
+        .catch(() => {
+          // Query failed.
+        });
     }
   } catch {
     // tabs API not available (tests).

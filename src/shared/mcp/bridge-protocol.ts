@@ -55,11 +55,14 @@ export type BridgeServerMessage =
 
 /** Messages sent from extension to MCP bridge server. */
 export type BridgeExtensionToServerMessage =
-  | BridgeRequest
-  | BridgeAuthMessage
-  | BridgePongMessage
-  | BridgeResponse;
+  BridgeRequest | BridgeAuthMessage | BridgePongMessage | BridgeResponse;
 
-export function isBridgeRequest(msg: { type?: string; id?: string; method?: string }): msg is BridgeRequest {
-  return msg.type === 'request' && typeof msg.id === 'string' && typeof msg.method === 'string';
+export function isBridgeRequest(msg: {
+  type?: string;
+  id?: string;
+  method?: string;
+}): msg is BridgeRequest {
+  return (
+    msg.type === 'request' && typeof msg.id === 'string' && typeof msg.method === 'string'
+  );
 }

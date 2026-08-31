@@ -29,7 +29,7 @@ export type LibrarySortableHighlight = {
 export function compareLibraryHighlights(
   a: LibrarySortableHighlight,
   b: LibrarySortableHighlight,
-  sort: LibrarySortKey,
+  sort: LibrarySortKey
 ): number {
   switch (sort) {
     case 'oldest':
@@ -54,7 +54,7 @@ export function compareLibraryHighlights(
 
 export function sortLibraryHighlights<T extends LibrarySortableHighlight>(
   rows: readonly T[],
-  sort: LibrarySortKey,
+  sort: LibrarySortKey
 ): T[] {
   return [...rows].sort((a, b) => compareLibraryHighlights(a, b, sort));
 }

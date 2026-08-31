@@ -2,45 +2,42 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
-import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
-import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
-import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
-import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
+import { ExportActions } from '@/features/collections/components/ExportActions';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
-import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
 import {
   formatSearchMatchMeta,
   LibrarySearchGroupHeader,
 } from '@/features/collections/components/LibrarySearchGroupHeader';
 import { LibrarySectionRow } from '@/features/collections/components/LibrarySectionRow';
+import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
 import type { LibrarySortKey } from '@/shared/library/library-sort';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { displaySectionTitle } from '@/shared/services/section-label-store';
-import { getSectionKey } from '@/shared/utils/section-key';
-import { highlightActivityMs } from '@/shared/utils/highlight-activity';
+import { deleteDomainCopy, deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
   countSectionGranularResults,
   groupSearchResultsBySection,
   matchSectionNames,
 } from '@/shared/utils/group-library-search';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { highlightActivityMs } from '@/shared/utils/highlight-activity';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
-import {
-  deleteDomainCopy,
-  deleteSectionCopy,
-} from '@/shared/utils/confirm-dialog-copy';
-import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
-import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface DomainDetailsViewProps {
   domain?: string;
@@ -74,11 +71,16 @@ export function DomainDetailsView({
   const { deleteScope } = useHighlightDelete();
   const [deleteDomainOpen, setDeleteDomainOpen] = useState(false);
   const [isDeletingDomain, setIsDeletingDomain] = useState(false);
-  const [deleteSection, setDeleteSection] = useState<{ path: string; count: number } | null>(null);
+  const [deleteSection, setDeleteSection] = useState<{
+    path: string;
+    count: number;
+  } | null>(null);
   const [isDeletingSection, setIsDeletingSection] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([
+    ...DEFAULT_SEARCH_FIELDS,
+  ]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
@@ -99,12 +101,12 @@ export function DomainDetailsView({
   });
   const filteredResults = useMemo(
     () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
-    [searchResults, refine, tagFilters],
+    [searchResults, refine, tagFilters]
   );
   const isSearching = searchQuery.trim().length > 0;
   const availableTags = useMemo(
     () => userTags.map((t) => ({ label: t.name })),
-    [userTags],
+    [userTags]
   );
 
   const clearSearchAndFilters = (): void => {
@@ -149,14 +151,14 @@ export function DomainDetailsView({
     const nameMatchedSections = matchSectionNames(
       sections.map((s) => s.path),
       searchQuery,
-      (key) => displaySectionTitle(key, labels),
+      (key) => displaySectionTitle(key, labels)
     );
     return groupSearchResultsBySection(filteredResults, { nameMatchedSections });
   }, [isSearching, sections, searchQuery, labels, filteredResults]);
 
   const searchResultCount = useMemo(
     () => countSectionGranularResults(searchSectionGroups),
-    [searchSectionGroups],
+    [searchSectionGroups]
   );
 
   useEffect(() => {
@@ -212,7 +214,15 @@ export function DomainDetailsView({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minHeight: 0,
+      }}
+    >
       <LibraryScopeChrome
         testId="domain-sticky-chrome"
         toolbarTestId="domain-scope-toolbar"
@@ -245,12 +255,16 @@ export function DomainDetailsView({
         <div style={{ marginTop: 4 }}>
           {isLoading ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+                Loading...
+              </span>
             </div>
           ) : isSearching ? (
             isSearchLoading ? (
               <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+                <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+                  Loading...
+                </span>
               </div>
             ) : searchSectionGroups.length === 0 ? (
               <EmptyState
@@ -258,7 +272,10 @@ export function DomainDetailsView({
                 size="sm"
                 title={libraryNoMatchesCopy().title}
                 description={libraryNoMatchesCopy().body}
-                action={{ label: libraryNoMatchesCopy().resetLabel, onClick: clearSearchAndFilters }}
+                action={{
+                  label: libraryNoMatchesCopy().resetLabel,
+                  onClick: clearSearchAndFilters,
+                }}
               />
             ) : (
               searchSectionGroups.map((section) => (
@@ -293,7 +310,10 @@ export function DomainDetailsView({
                       }}
                       suggestions={labelSuggestions}
                       onDelete={async () => {
-                        const result = await deleteScope({ scope: 'highlight', id: r.id });
+                        const result = await deleteScope({
+                          scope: 'highlight',
+                          id: r.id,
+                        });
                         if (!result?.success) {
                           throw new Error(result?.error ?? 'Delete failed');
                         }
@@ -336,7 +356,9 @@ export function DomainDetailsView({
             strongNames={copy.strongNames}
             confirmLabel={copy.confirmLabel}
             cancelLabel={copy.cancelLabel}
-            onConfirm={() => { void handleDeleteDomain(); }}
+            onConfirm={() => {
+              void handleDeleteDomain();
+            }}
             isConfirming={isDeletingDomain}
             exportFooter={
               <ExportActions
@@ -364,7 +386,9 @@ export function DomainDetailsView({
             strongNames={copy?.strongNames}
             confirmLabel={copy?.confirmLabel}
             cancelLabel={copy?.cancelLabel}
-            onConfirm={() => { void handleDeleteSection(); }}
+            onConfirm={() => {
+              void handleDeleteSection();
+            }}
             isConfirming={isDeletingSection}
             exportFooter={
               deleteSection ? (

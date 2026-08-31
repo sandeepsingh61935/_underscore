@@ -96,7 +96,7 @@ describe('ModeStateManager - State Machine Integration', () => {
 
     it('should block transition if guard fails', async () => {
       await expect(stateManager.setMode('pro', GUEST)).rejects.toThrow(
-        /Transition guard failed/,
+        /Transition guard failed/
       );
       expect(stateManager.getMode()).toBe('basic');
     });
@@ -150,8 +150,12 @@ describe('ModeStateManager - State Machine Integration', () => {
       await stateManager.setMode('pro_xai', AUTH);
 
       // Assert - Intent was dispatched via eventBus and saved locally
-      expect(mockEventBus.emit).toHaveBeenCalledWith('INTENT_SET_MODE', { mode: 'pro_xai' });
-      expect(mockChromeStorage.local.set).toHaveBeenCalledWith({ [MODE_STORAGE_KEY]: 'pro_xai' });
+      expect(mockEventBus.emit).toHaveBeenCalledWith('INTENT_SET_MODE', {
+        mode: 'pro_xai',
+      });
+      expect(mockChromeStorage.local.set).toHaveBeenCalledWith({
+        [MODE_STORAGE_KEY]: 'pro_xai',
+      });
     });
   });
 

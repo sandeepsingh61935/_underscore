@@ -77,10 +77,9 @@ describe('useDashboardData session memory', () => {
   });
 
   it('logout clears auth snapshot so remount does not flash prior user totals', async () => {
-    const authed = renderHook(
-      ({ auth }) => useDashboardData('pro', auth),
-      { initialProps: { auth: true } },
-    );
+    const authed = renderHook(({ auth }) => useDashboardData('pro', auth), {
+      initialProps: { auth: true },
+    });
     await waitFor(() => {
       expect(authed.result.current.data?.totalHighlights).toBe(5);
     });

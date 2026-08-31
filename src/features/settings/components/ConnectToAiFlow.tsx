@@ -64,7 +64,7 @@ export function ConnectToAiFlow({
     setLockMessage(
       isAuthenticated
         ? 'Integrations need an Account with access. Paid billing is upcoming — available in a few months.'
-        : 'Sign in with Account to use Integrations when unlocked.',
+        : 'Sign in with Account to use Integrations when unlocked.'
     );
     if (!isAuthenticated) {
       onSignIn?.();
@@ -112,10 +112,7 @@ export function ConnectToAiFlow({
         onLockedInteract={lockedCta}
       />
     ) : (
-      <McpClientSetupView
-        app={getMcpAiApp(screen.appId)}
-        remoteUrl={remoteUrl}
-      />
+      <McpClientSetupView app={getMcpAiApp(screen.appId)} remoteUrl={remoteUrl} />
     );
 
   return (

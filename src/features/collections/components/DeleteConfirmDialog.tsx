@@ -53,7 +53,7 @@ function emphasizeNames(message: string, strongNames: string[]): React.ReactNode
         style={{ fontWeight: 600, color: 'var(--ink)', wordBreak: 'break-word' }}
       >
         {name}
-      </strong>,
+      </strong>
     );
     rest = rest.slice(idx + name.length);
   });
@@ -91,7 +91,7 @@ export function DeleteConfirmDialog({
 
   const warnNode = useMemo(
     () => emphasizeNames(message, strongNames),
-    [message, strongNames],
+    [message, strongNames]
   );
 
   const handleClose = (): void => {
@@ -178,10 +178,7 @@ export function DeleteConfirmDialog({
         {warnNode}
       </p>
       {confirmText ? (
-        <div
-          data-testid="confirm-dialog-challenge-wrap"
-          style={{ marginTop: 14 }}
-        >
+        <div data-testid="confirm-dialog-challenge-wrap" style={{ marginTop: 14 }}>
           <label
             htmlFor={challengeId}
             className="u-mono"
@@ -257,7 +254,10 @@ export function DeleteConfirmDialog({
             flexWrap: 'wrap',
           }}
         >
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+          <span
+            className="u-mono"
+            style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+          >
             Export first
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

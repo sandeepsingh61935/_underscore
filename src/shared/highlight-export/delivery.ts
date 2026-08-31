@@ -25,7 +25,11 @@ export function downloadTextFile(filename: string, content: string): void {
   downloadBlob(filename, blob);
 }
 
-export function downloadBinaryFile(filename: string, buffer: ArrayBuffer, mimeType: string): void {
+export function downloadBinaryFile(
+  filename: string,
+  buffer: ArrayBuffer,
+  mimeType: string
+): void {
   const blob = new Blob([buffer], { type: mimeType });
   downloadBlob(filename, blob);
 }

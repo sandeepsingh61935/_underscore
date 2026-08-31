@@ -42,8 +42,8 @@ describe('oauth-scope-labels', () => {
       primary: 'Local development app',
       secondary: '127.0.0.1:39613',
     });
-    expect(formatOAuthRedirectDisplay('https://chatgpt.com/connector/oauth/callback').primary).toBe(
-      'chatgpt.com',
-    );
+    expect(
+      formatOAuthRedirectDisplay('https://chatgpt.com/connector/oauth/callback').primary
+    ).toBe('chatgpt.com');
   });
 });

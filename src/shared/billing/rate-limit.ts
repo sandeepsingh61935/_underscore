@@ -51,9 +51,7 @@ export function tryConsumeRateLimit(
  * Parse durable RPC JSON from `billing_try_rate_limit`.
  * Malformed / missing → fail open (do not lock users out if DB hiccups).
  */
-export function parseBillingRateLimitRpc(
-  data: unknown
-): RateLimitDecision {
+export function parseBillingRateLimitRpc(data: unknown): RateLimitDecision {
   if (!data || typeof data !== 'object') {
     return { allowed: true, retryAfterMs: 0 };
   }

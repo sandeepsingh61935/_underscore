@@ -9,8 +9,8 @@
  * Key: underscore.web.llm
  */
 
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { PROVIDER_META } from '@/features/ai/constants/provider-setup';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { AiPreferences } from '@/shared/llm/ai-preferences';
 import { normalizeEnabledProviders } from '@/shared/llm/ai-preferences';
 import {
@@ -81,13 +81,14 @@ export function readWebLlmState(): WebLlmState {
         ? parsed.defaultProvider
         : undefined;
     const prefsUpdatedAtMs =
-      typeof parsed.prefsUpdatedAtMs === 'number' && Number.isFinite(parsed.prefsUpdatedAtMs)
+      typeof parsed.prefsUpdatedAtMs === 'number' &&
+      Number.isFinite(parsed.prefsUpdatedAtMs)
         ? parsed.prefsUpdatedAtMs
         : undefined;
     let enabledProviders: ProviderName[] | undefined;
     if (Array.isArray(parsed.enabledProviders)) {
       enabledProviders = normalizeEnabledProviders(
-        parsed.enabledProviders.filter(isInAppLlmProvider),
+        parsed.enabledProviders.filter(isInAppLlmProvider)
       );
     }
     return { providers, defaultProvider, prefsUpdatedAtMs, enabledProviders };
@@ -108,7 +109,7 @@ export function writeWebLlmState(next: WebLlmState): void {
 /** Configured = successful check (checkedAt) and required credentials present. */
 export function isProviderConfigured(
   state: WebLlmState,
-  provider: ProviderName,
+  provider: ProviderName
 ): boolean {
   const cfg = state.providers[provider];
   if (!cfg?.checkedAt) return false;
@@ -116,10 +117,7 @@ export function isProviderConfigured(
   return Boolean(cfg.apiKey?.trim());
 }
 
-export function getProviderModel(
-  state: WebLlmState,
-  provider: ProviderName,
-): string {
+export function getProviderModel(state: WebLlmState, provider: ProviderName): string {
   return state.providers[provider]?.model?.trim() || getDefaultModelId(provider);
 }
 
@@ -144,7 +142,7 @@ export function formatDefaultModelLabel(state: WebLlmState): string {
 export function reduceWebLlmState(
   state: WebLlmState,
   action: WebLlmAction,
-  nowMs: number = Date.now(),
+  nowMs: number = Date.now()
 ): WebLlmState {
   switch (action.type) {
     case 'upsert': {
@@ -155,10 +153,7 @@ export function reduceWebLlmState(
       const providers = { ...state.providers, [action.provider]: merged };
       let defaultProvider = state.defaultProvider;
       const nextProbe = { providers, defaultProvider };
-      if (
-        !defaultProvider &&
-        isProviderConfigured(nextProbe, action.provider)
-      ) {
+      if (!defaultProvider && isProviderConfigured(nextProbe, action.provider)) {
         defaultProvider = action.provider;
       }
       // Enablement is explicit only — empty means all; never invent allow-lists.
@@ -183,7 +178,9 @@ export function reduceWebLlmState(
         }
       }
       // Only drop from allow-list when one was set explicitly.
-      const enabledProviders = state.enabledProviders?.filter((p) => p !== action.provider);
+      const enabledProviders = state.enabledProviders?.filter(
+        (p) => p !== action.provider
+      );
       return {
         providers,
         defaultProvider,
@@ -268,7 +265,7 @@ export function commitWebLlmAction(action: WebLlmAction): WebLlmState {
 /** @deprecated prefer commitWebLlmAction — kept for call-site clarity aliases */
 export function upsertProviderConfig(
   provider: ProviderName,
-  patch: WebProviderConfig,
+  patch: WebProviderConfig
 ): WebLlmState {
   return commitWebLlmAction({ type: 'upsert', provider, patch });
 }

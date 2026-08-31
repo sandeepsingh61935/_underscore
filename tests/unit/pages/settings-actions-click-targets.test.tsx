@@ -117,7 +117,12 @@ describe('SettingsPage action click targets', () => {
       theme: 'system',
       setTheme: vi.fn(),
       currentMode: 'pro_xai',
-      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
+      user: {
+        id: 'u1',
+        email: 'user@example.com',
+        displayName: 'user',
+        provider: 'email',
+      },
       isAuthenticated: true,
       login: vi.fn(),
       logout: vi.fn(),
@@ -165,7 +170,12 @@ describe('SettingsPage action click targets', () => {
       theme: 'system',
       setTheme,
       currentMode: 'pro',
-      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
+      user: {
+        id: 'u1',
+        email: 'user@example.com',
+        displayName: 'user',
+        provider: 'email',
+      },
       isAuthenticated: true,
       login: vi.fn(),
       logout: vi.fn(),
@@ -194,7 +204,9 @@ describe('SettingsPage action click targets', () => {
     });
     render(<SettingsPage />);
     expect(screen.getByTestId('sync-progress')).toHaveTextContent('42%');
-    expect(screen.getByTestId('sync-progress-bar').getAttribute('aria-valuenow')).toBe('42');
+    expect(screen.getByTestId('sync-progress-bar').getAttribute('aria-valuenow')).toBe(
+      '42'
+    );
     expect(screen.getByText(/Syncing · 42%/)).toBeTruthy();
   });
 });

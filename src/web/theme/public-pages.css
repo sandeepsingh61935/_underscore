@@ -900,7 +900,9 @@ body {
 }
 
 .welcome__gate-browser:focus-within {
-  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--accent);
 }
 
 .welcome__gate-browser--primary {

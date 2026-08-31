@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import {
-  buildHighlightExcerpts,
-  extractExcerptWindow,
-} from '../highlight-excerpts';
+import { buildHighlightExcerpts, extractExcerptWindow } from '../highlight-excerpts';
 
 describe('extractExcerptWindow', () => {
   it('wraps highlight in mark tags with surrounding context', () => {
@@ -28,7 +25,7 @@ describe('buildHighlightExcerpts', () => {
         title: 'Example',
         text: 'Say hello world today.',
         truncated: false,
-      }),
+      })
     );
 
     expect(cacheMissUrls).toEqual([]);
@@ -40,7 +37,7 @@ describe('buildHighlightExcerpts', () => {
   it('falls back to highlight-only excerpt on cache miss', () => {
     const { excerpts, cacheMissUrls } = buildHighlightExcerpts(
       [{ url: 'https://example.com', text: 'quote' }],
-      () => null,
+      () => null
     );
 
     expect(cacheMissUrls).toEqual(['https://example.com']);

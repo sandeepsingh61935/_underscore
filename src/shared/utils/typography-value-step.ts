@@ -1,9 +1,5 @@
 export type TypographyValueKind =
-  | 'px-scale'
-  | 'px-row'
-  | 'px-margin'
-  | 'line-height'
-  | 'em-tracking';
+  'px-scale' | 'px-row' | 'px-margin' | 'line-height' | 'em-tracking';
 
 export interface TypographyValueSpec {
   min: number;
@@ -41,7 +37,10 @@ function parseUnitValue(value: string, unit: '' | 'px' | 'em'): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function parseTypographyNumeric(value: string, kind: TypographyValueKind): number | null {
+export function parseTypographyNumeric(
+  value: string,
+  kind: TypographyValueKind
+): number | null {
   return parseUnitValue(value, TYPOGRAPHY_VALUE_SPECS[kind].unit);
 }
 

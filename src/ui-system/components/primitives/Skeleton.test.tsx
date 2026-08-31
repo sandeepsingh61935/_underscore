@@ -10,7 +10,13 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Skeleton, SkeletonText, SkeletonAvatar, SkeletonCollectionCard, SkeletonHighlightCard } from './Skeleton';
+import {
+  Skeleton,
+  SkeletonText,
+  SkeletonAvatar,
+  SkeletonCollectionCard,
+  SkeletonHighlightCard,
+} from './Skeleton';
 
 describe('Skeleton (V2 wireframe contract)', () => {
   it('base Skeleton uses --paper-2 surface', () => {

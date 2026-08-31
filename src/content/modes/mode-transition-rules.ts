@@ -71,7 +71,8 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'pro_xai',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Account (Paid) enables Integrations and in-app chat. Requires sign-in.',
+      reason:
+        'Switching to Account (Paid) enables Integrations and in-app chat. Requires sign-in.',
       guard: async (ctx) => ctx.isAuthenticated,
     },
   },
@@ -108,7 +109,8 @@ export const TRANSITION_MATRIX: Record<ModeType, Record<ModeType, TransitionRule
       to: 'basic',
       allowed: true,
       requiresConfirmation: true,
-      reason: 'Switching to Guest mode will disable sync and AI features. Data will be preserved.',
+      reason:
+        'Switching to Guest mode will disable sync and AI features. Data will be preserved.',
       guard: async (ctx) => !ctx.isAuthenticated,
     },
     pro: {
@@ -170,7 +172,7 @@ export function getAllTransitions(from: ModeType): TransitionRule[] {
 export async function executeTransitionGuard(
   from: ModeType,
   to: ModeType,
-  ctx: TransitionGuardContext,
+  ctx: TransitionGuardContext
 ): Promise<boolean> {
   const rule = getTransitionRule(from, to);
 

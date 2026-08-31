@@ -2,6 +2,7 @@
  * Owns billing snapshot + mode sync. Mode is projected from auth + paid when load is ready.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import React, {
   createContext,
   useCallback,
@@ -10,8 +11,9 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+
+import { useBilling } from '@/features/billing/hooks/useBilling';
+import { IpcBillingPort } from '@/features/billing/ports/ipc-billing-port';
 import {
   shouldRunFocusBillingSync,
   shouldSyncModeFromBilling,
@@ -21,10 +23,9 @@ import {
   type CheckoutOptions,
   type IBillingPort,
 } from '@/shared/billing';
-import { resolveBillingModeWrite } from '@/shared/utils/mode-transition';
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
-import { IpcBillingPort } from '@/features/billing/ports/ipc-billing-port';
-import { useBilling } from '@/features/billing/hooks/useBilling';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { resolveBillingModeWrite } from '@/shared/utils/mode-transition';
 
 export interface BillingContextValue {
   snapshot: BillingSnapshot;
@@ -95,9 +96,7 @@ export function BillingProvider({
 
   // Publish paid gate for setMode (Paid↔Free when entitled).
   useEffect(() => {
-    setEntitlementPaidActive(
-      isAuthenticated && billing.snapshot.isPaidActive
-    );
+    setEntitlementPaidActive(isAuthenticated && billing.snapshot.isPaidActive);
     if (!isAuthenticated) {
       setEntitlementPaidActive(false);
     }
@@ -233,9 +232,7 @@ export function BillingProvider({
     ]
   );
 
-  return (
-    <BillingContext.Provider value={value}>{children}</BillingContext.Provider>
-  );
+  return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }
 
 export function useBillingContext(): BillingContextValue {

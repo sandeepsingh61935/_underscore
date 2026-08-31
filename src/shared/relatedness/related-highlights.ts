@@ -33,7 +33,7 @@ function tagIdf(index: RelatednessIndex): Map<string, number> {
 function weightedJaccard(
   a: RelatednessDoc,
   b: RelatednessDoc,
-  idf: Map<string, number>,
+  idf: Map<string, number>
 ): number {
   const A = new Set(a.tags);
   const B = new Set(b.tags);
@@ -71,7 +71,7 @@ function buildReason(signals: {
 export function relatedHighlights(
   index: RelatednessIndex,
   highlightId: string,
-  limit: number = DEFAULT_LIMIT,
+  limit: number = DEFAULT_LIMIT
 ): RelatedHighlightResult[] {
   const seedIdx = index.idToIndex.get(highlightId);
   if (seedIdx === undefined) return [];
@@ -80,7 +80,8 @@ export function relatedHighlights(
 
   const bm25 = index.bm25;
   const idf = tagIdf(index);
-  const scored: Array<RelatedHighlightResult & { tagScore: number; textScore: number }> = [];
+  const scored: Array<RelatedHighlightResult & { tagScore: number; textScore: number }> =
+    [];
 
   for (let j = 0; j < index.docs.length; j++) {
     if (j === seedIdx) continue;
@@ -89,7 +90,11 @@ export function relatedHighlights(
     const text = bm25.scoreNorm(seedIdx, j);
     const sameUrl = Boolean(seed.url && seed.url === other.url);
     const sameDomain = Boolean(seed.domain && seed.domain === other.domain);
-    const score = W_TAG * tag + W_TEXT * text + W_URL * (sameUrl ? 1 : 0) + W_DOMAIN * (sameDomain ? 1 : 0);
+    const score =
+      W_TAG * tag +
+      W_TEXT * text +
+      W_URL * (sameUrl ? 1 : 0) +
+      W_DOMAIN * (sameDomain ? 1 : 0);
     if (score <= 0) continue;
 
     const sharedTags = tag > 0;
@@ -116,7 +121,7 @@ export function relatedHighlights(
       b.score - a.score ||
       b.tagScore - a.tagScore ||
       b.textScore - a.textScore ||
-      a.id.localeCompare(b.id),
+      a.id.localeCompare(b.id)
   );
 
   const out: RelatedHighlightResult[] = [];

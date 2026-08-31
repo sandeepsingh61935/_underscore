@@ -29,7 +29,7 @@ describe('normalizeCapturedHighlightText', () => {
   
 `;
     expect(normalizeCapturedHighlightText(raw)).toBe(
-      '0:00 In this video we explore how propaganda films 0:05 shaped public opinion during wartime. 0:10 The director used montage to create emotion.',
+      '0:00 In this video we explore how propaganda films 0:05 shaped public opinion during wartime. 0:10 The director used montage to create emotion.'
     );
   });
 
@@ -40,7 +40,7 @@ In a time of total war
 ,  to
 ,  to`;
     expect(normalizeCapturedHighlightText(raw)).toBe(
-      '0:00 In a time of total war, the film, to, to',
+      '0:00 In a time of total war, the film, to, to'
     );
   });
 
@@ -63,7 +63,7 @@ In a time of total war
         lots of indent from HTML source
 `;
     expect(normalizeCapturedHighlightText(raw)).toBe(
-      'Hello world this is a sentence with lots of indent from HTML source',
+      'Hello world this is a sentence with lots of indent from HTML source'
     );
   });
 
@@ -90,19 +90,19 @@ In a time of total war
   it('preserves mid-body fences (trim ends only)', () => {
     const src = '\nSee this:\n\n```\nint x = 1;\n```\n\nDone.\n';
     expect(normalizeCapturedHighlightText(src)).toBe(
-      'See this:\n\n```\nint x = 1;\n```\n\nDone.',
+      'See this:\n\n```\nint x = 1;\n```\n\nDone.'
     );
   });
 
   it('keeps inline backticks in prose', () => {
     expect(normalizeCapturedHighlightText('use the `code` keyword in docs')).toBe(
-      'use the `code` keyword in docs',
+      'use the `code` keyword in docs'
     );
   });
 
   it('collapses NBSP and unicode spaces', () => {
     expect(normalizeCapturedHighlightText('hello\u00A0\u00A0world\n\u00A0next')).toBe(
-      'hello world next',
+      'hello world next'
     );
   });
 
@@ -115,9 +115,10 @@ In a time of total war
   });
 
   it('handles 200 segment lines without newlines', () => {
-    const many = Array.from({ length: 200 }, (_, i) => `    segment ${i} words here`).join(
-      '\n\n',
-    );
+    const many = Array.from(
+      { length: 200 },
+      (_, i) => `    segment ${i} words here`
+    ).join('\n\n');
     const out = normalizeCapturedHighlightText(many);
     expect(out.startsWith('segment 0 words here segment 1')).toBe(true);
     expect(out.includes('\n')).toBe(false);
@@ -125,7 +126,7 @@ In a time of total war
 
   it('flattens list-like capture (known tradeoff for plain capture)', () => {
     expect(normalizeCapturedHighlightText('Features:\n- fast\n- offline')).toBe(
-      'Features: - fast - offline',
+      'Features: - fast - offline'
     );
   });
 
@@ -179,7 +180,7 @@ In a time of total war
     ].join('\n');
 
     expect(normalizeCapturedHighlightText(raw)).toBe(
-      'finitum until he runs out of ink his typical intellectual moves to break things into three parts and i guess you can go back and in a pro-christian way kind of force this into that thesis antithesis mol',
+      'finitum until he runs out of ink his typical intellectual moves to break things into three parts and i guess you can go back and in a pro-christian way kind of force this into that thesis antithesis mol'
     );
   });
 });

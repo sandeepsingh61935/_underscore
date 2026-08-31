@@ -16,7 +16,7 @@ describe('ModelsHubPanel', () => {
         statuses={{}}
         onOpenProvider={vi.fn()}
         onChangeActiveModel={vi.fn()}
-      />,
+      />
     );
 
     const root = screen.getByTestId('models-hub');

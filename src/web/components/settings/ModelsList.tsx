@@ -35,11 +35,15 @@ export function ModelsList({
     >
       <p className="block-label">Models &amp; providers</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        Keys stay on this device (not synced). Used for AI features on this browser;
-        the extension has its own device keys.
+        Keys stay on this device (not synced). Used for AI features on this browser; the
+        extension has its own device keys.
       </p>
       {!isAuthenticated ? (
-        <div className="banner" data-od-id="models-signin-banner" style={{ marginBottom: 12 }}>
+        <div
+          className="banner"
+          data-od-id="models-signin-banner"
+          style={{ marginBottom: 12 }}
+        >
           <div className="grow">
             <strong>Sign in</strong>
             <div className="sub" style={{ marginTop: 4 }}>
@@ -78,7 +82,11 @@ export function ModelsList({
           </div>
         );
       })}
-      <div className="setting-row" style={{ marginTop: 8 }} data-od-id="settings-default-model">
+      <div
+        className="setting-row"
+        style={{ marginTop: 8 }}
+        data-od-id="settings-default-model"
+      >
         <div className="grow">
           <div className="title">Default for Ask</div>
           <div className="sub">{defaultLabel}</div>

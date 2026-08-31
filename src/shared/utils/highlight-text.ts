@@ -6,8 +6,7 @@
 export const HIGHLIGHT_TEXT_MAX_LENGTH = 10000;
 
 export type HighlightTextValidation =
-  | { ok: true; text: string }
-  | { ok: false; error: string };
+  { ok: true; text: string } | { ok: false; error: string };
 
 /**
  * Normalize and validate highlight body text before persist.
@@ -20,7 +19,10 @@ export function validateHighlightText(raw: string): HighlightTextValidation {
     return { ok: false, error: 'Highlight text cannot be empty' };
   }
   if (text.length > HIGHLIGHT_TEXT_MAX_LENGTH) {
-    return { ok: false, error: `Highlight text too long (max ${HIGHLIGHT_TEXT_MAX_LENGTH} characters)` };
+    return {
+      ok: false,
+      error: `Highlight text too long (max ${HIGHLIGHT_TEXT_MAX_LENGTH} characters)`,
+    };
   }
   return { ok: true, text };
 }

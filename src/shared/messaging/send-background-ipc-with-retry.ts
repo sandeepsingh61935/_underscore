@@ -54,9 +54,7 @@ export async function sendBackgroundIpcWithRetry<T = unknown>(
         'success' in response &&
         (response as { success?: boolean }).success === false
       ) {
-        throw new Error(
-          `IPC ${message.type} returned success: false`
-        );
+        throw new Error(`IPC ${message.type} returned success: false`);
       }
 
       return response as T;
@@ -70,7 +68,5 @@ export async function sendBackgroundIpcWithRetry<T = unknown>(
     return undefined;
   }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(String(lastError));
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }

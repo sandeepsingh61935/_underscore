@@ -53,15 +53,17 @@ export function softTrimCapturedText(raw: string): string {
 export function normalizeCapturedHighlightText(raw: string): string {
   if (raw == null || raw === '') return '';
 
-  let s = String(raw).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const s = String(raw).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   if (looksLikeFencedMarkdown(s)) {
     return softTrimCapturedText(s);
   }
 
-  const lines = s.split('\n').map((line) =>
-    line.replace(UNICODE_SPACE_RE, ' ').replace(HORIZONTAL_WS_RE, ' ').trim(),
-  );
+  const lines = s
+    .split('\n')
+    .map((line) =>
+      line.replace(UNICODE_SPACE_RE, ' ').replace(HORIZONTAL_WS_RE, ' ').trim()
+    );
   const nonEmpty = lines.filter((line) => line.length > 0);
 
   let out = '';

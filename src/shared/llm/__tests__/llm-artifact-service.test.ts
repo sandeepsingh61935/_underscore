@@ -34,18 +34,25 @@ describe('llm-artifact-service', () => {
   it('appends scope_query entries and caps at ten per scope', () => {
     let store: LlmArtifact[] = [];
     for (let i = 0; i < SCOPE_QUERY_CAP + 2; i += 1) {
-      store = upsertArtifact(store, artifact({
-        id: `q-${i}`,
-        kind: 'scope_query',
-        question: `Q${i}`,
-        content: `A${i}`,
-      }));
+      store = upsertArtifact(
+        store,
+        artifact({
+          id: `q-${i}`,
+          kind: 'scope_query',
+          question: `Q${i}`,
+          content: `A${i}`,
+        })
+      );
     }
-    const queries = getArtifactsForScope(store, {
-      kind: 'section',
-      domain: 'example.com',
-      sectionKey: '/docs',
-    }, 'scope_query');
+    const queries = getArtifactsForScope(
+      store,
+      {
+        kind: 'section',
+        domain: 'example.com',
+        sectionKey: '/docs',
+      },
+      'scope_query'
+    );
     expect(queries).toHaveLength(SCOPE_QUERY_CAP);
     expect(queries[0]?.question).toBe('Q2');
     expect(queries[queries.length - 1]?.question).toBe(`Q${SCOPE_QUERY_CAP + 1}`);

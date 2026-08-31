@@ -19,17 +19,27 @@ function makeMessageBus() {
 }
 
 function makeKeyStore(overrides: Partial<Record<string, unknown>> = {}) {
-  const state = { ollamaVerified: false, model: 'llama3.2', apiBase: 'http://localhost:11434' };
+  const state = {
+    ollamaVerified: false,
+    model: 'llama3.2',
+    apiBase: 'http://localhost:11434',
+  };
   return {
     get: vi.fn(async () => null),
     set: vi.fn(),
     clear: vi.fn(),
     getModel: vi.fn(async () => state.model),
-    setModel: vi.fn(async (_provider: string, model: string) => { state.model = model; }),
+    setModel: vi.fn(async (_provider: string, model: string) => {
+      state.model = model;
+    }),
     getApiBase: vi.fn(async () => state.apiBase),
-    setApiBase: vi.fn(async (_provider: string, base: string) => { state.apiBase = base; }),
+    setApiBase: vi.fn(async (_provider: string, base: string) => {
+      state.apiBase = base;
+    }),
     getOllamaVerified: vi.fn(async () => state.ollamaVerified),
-    setOllamaVerified: vi.fn(async (v: boolean) => { state.ollamaVerified = v; }),
+    setOllamaVerified: vi.fn(async (v: boolean) => {
+      state.ollamaVerified = v;
+    }),
     getActiveProvider: vi.fn(async () => 'ollama'),
     setActiveProvider: vi.fn(),
     ...overrides,
@@ -38,7 +48,9 @@ function makeKeyStore(overrides: Partial<Record<string, unknown>> = {}) {
 
 function makeRegistry() {
   return {
-    get: () => { throw new Error('not registered'); },
+    get: () => {
+      throw new Error('not registered');
+    },
     list: () => [],
     setConfigured: vi.fn(),
   };
@@ -63,9 +75,14 @@ describe('registerAiHandlers — ollama configured state and model-aware health 
       pageContentCache: makePageContentCache() as never,
     });
 
-    const status = await bus.handlers.get(IPC_AI_GET_API_KEY_STATUS)!({ provider: 'ollama' });
+    const status = await bus.handlers.get(IPC_AI_GET_API_KEY_STATUS)!({
+      provider: 'ollama',
+    });
 
-    expect(status).toEqual({ success: true, data: { configured: false, model: 'llama3.2', apiBase: 'http://localhost:11434' } });
+    expect(status).toEqual({
+      success: true,
+      data: { configured: false, model: 'llama3.2', apiBase: 'http://localhost:11434' },
+    });
   });
 
   it('fails the health check when the selected model is not in the Ollama catalog', async () => {
@@ -88,7 +105,10 @@ describe('registerAiHandlers — ollama configured state and model-aware health 
       model: 'mistral:latest',
     });
 
-    expect(result).toEqual({ success: false, error: 'Model not installed — run ollama pull mistral:latest' });
+    expect(result).toEqual({
+      success: false,
+      error: 'Model not installed — run ollama pull mistral:latest',
+    });
   });
 
   it('marks ollama configured only after set-api-key is called with a verified model', async () => {
@@ -123,7 +143,12 @@ describe('registerAiHandlers — ollama configured state and model-aware health 
     expect(keyStore.setOllamaVerified).toHaveBeenCalledWith(true);
     expect(registry.setConfigured).toHaveBeenCalledWith('ollama', true);
 
-    const status = await bus.handlers.get(IPC_AI_GET_API_KEY_STATUS)!({ provider: 'ollama' });
-    expect(status).toEqual({ success: true, data: { configured: true, model: 'llama3.2', apiBase: 'http://localhost:11434' } });
+    const status = await bus.handlers.get(IPC_AI_GET_API_KEY_STATUS)!({
+      provider: 'ollama',
+    });
+    expect(status).toEqual({
+      success: true,
+      data: { configured: true, model: 'llama3.2', apiBase: 'http://localhost:11434' },
+    });
   });
 });

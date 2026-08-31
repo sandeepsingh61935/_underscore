@@ -10,23 +10,19 @@ import { AppError } from '../../shared/errors/app-error';
  * Base error class for all conflict-related errors
  */
 export abstract class ConflictError extends AppError {
-    public readonly code: string;
+  public readonly code: string;
 
-    constructor(
-        message: string,
-        code: string,
-        context?: Record<string, unknown>
-    ) {
-        super(message, context);
-        this.name = 'ConflictError';
-        this.code = code;
-    }
+  constructor(message: string, code: string, context?: Record<string, unknown>) {
+    super(message, context);
+    this.name = 'ConflictError';
+    this.code = code;
+  }
 }
 
 /**
  * Error thrown when a conflict cannot be automatically resolved
  * Requires manual intervention or different resolution strategy
- * 
+ *
  * @example
  * throw new UnresolvableConflictError(
  *   'Content conflict requires manual resolution',
@@ -34,22 +30,22 @@ export abstract class ConflictError extends AppError {
  * );
  */
 export class UnresolvableConflictError extends ConflictError {
-    constructor(message: string, context?: Record<string, unknown>) {
-        super(message, 'UNRESOLVABLE_CONFLICT', context);
-        this.name = 'UnresolvableConflictError';
-    }
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'UNRESOLVABLE_CONFLICT', context);
+    this.name = 'UnresolvableConflictError';
+  }
 }
 
 /**
  * Error thrown when vector clock is malformed or invalid
- * 
+ *
  * **Validation Failures**:
  * - Negative counter values
  * - Non-integer counter values
  * - NaN or Infinity values
  * - Empty or invalid device IDs
  * - Too many devices (>100)
- * 
+ *
  * @example
  * throw new InvalidVectorClockError(
  *   'Vector clock contains negative counter',
@@ -57,21 +53,21 @@ export class UnresolvableConflictError extends ConflictError {
  * );
  */
 export class InvalidVectorClockError extends ConflictError {
-    constructor(message: string, context?: Record<string, unknown>) {
-        super(message, 'INVALID_VECTOR_CLOCK', context);
-        this.name = 'InvalidVectorClockError';
-    }
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'INVALID_VECTOR_CLOCK', context);
+    this.name = 'InvalidVectorClockError';
+  }
 }
 
 /**
  * Error thrown when conflict detection fails
- * 
+ *
  * **Possible Causes**:
  * - Invalid event data
  * - Missing vector clocks
  * - Corrupted event store
  * - Internal algorithm error
- * 
+ *
  * @example
  * throw new ConflictDetectionError(
  *   'Failed to detect conflicts: missing vector clock',
@@ -79,20 +75,20 @@ export class InvalidVectorClockError extends ConflictError {
  * );
  */
 export class ConflictDetectionError extends ConflictError {
-    constructor(message: string, context?: Record<string, unknown>) {
-        super(message, 'CONFLICT_DETECTION_ERROR', context);
-        this.name = 'ConflictDetectionError';
-    }
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'CONFLICT_DETECTION_ERROR', context);
+    this.name = 'ConflictDetectionError';
+  }
 }
 
 /**
  * Error thrown when resolution strategy is invalid or incompatible
- * 
+ *
  * **Validation Failures**:
  * - Unknown strategy name
  * - Strategy incompatible with conflict type
  * - Strategy requires user input but timeout occurred
- * 
+ *
  * @example
  * throw new ResolutionStrategyError(
  *   'MERGE strategy cannot resolve DELETE_CONFLICT',
@@ -100,8 +96,8 @@ export class ConflictDetectionError extends ConflictError {
  * );
  */
 export class ResolutionStrategyError extends ConflictError {
-    constructor(message: string, context?: Record<string, unknown>) {
-        super(message, 'RESOLUTION_STRATEGY_ERROR', context);
-        this.name = 'ResolutionStrategyError';
-    }
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'RESOLUTION_STRATEGY_ERROR', context);
+    this.name = 'ResolutionStrategyError';
+  }
 }

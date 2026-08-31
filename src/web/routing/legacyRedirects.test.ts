@@ -8,13 +8,13 @@ describe('resolveLegacyRedirect', () => {
 
   it('redirects /domain/:domain to library with domain query', () => {
     expect(resolveLegacyRedirect('/domain/example.com')).toBe(
-      '/library?domain=example.com',
+      '/library?domain=example.com'
     );
   });
 
   it('redirects /domain/:domain/section/:section with both params', () => {
     expect(resolveLegacyRedirect('/domain/a.com/section/%2Fdocs')).toBe(
-      '/library?domain=a.com&section=%2Fdocs',
+      '/library?domain=a.com&section=%2Fdocs'
     );
   });
 
@@ -22,7 +22,7 @@ describe('resolveLegacyRedirect', () => {
     expect(
       resolveLegacyRedirect('/domain/placeholder', {
         domain: 'real.com',
-      }),
+      })
     ).toBe('/library?domain=real.com');
   });
 

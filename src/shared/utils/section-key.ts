@@ -29,14 +29,12 @@ export function getSectionKey(highlight: SectionKeyInput): string {
 
   try {
     // Validate url; getSectionPath also parses but we need catch for fallback.
-    // eslint-disable-next-line no-new
+
     new URL(highlight.url);
     sectionKey = getSectionPath(highlight.url);
   } catch {
     sectionKey =
-      highlight.path !== undefined && highlight.path !== ''
-        ? highlight.path
-        : '/';
+      highlight.path !== undefined && highlight.path !== '' ? highlight.path : '/';
   }
 
   if (!sectionKey) {

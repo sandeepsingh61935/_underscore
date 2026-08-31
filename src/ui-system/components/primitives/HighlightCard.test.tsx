@@ -10,9 +10,7 @@ import { HighlightCard } from './HighlightCard';
 
 describe('HighlightCard (V2 wireframe contract)', () => {
   it('uses --paper background and --rule-soft border-bottom', () => {
-    const { container } = render(
-      <HighlightCard quote="Apple" domain="example.com" />
-    );
+    const { container } = render(<HighlightCard quote="Apple" domain="example.com" />);
     const root = container.firstElementChild as HTMLElement;
     const style = root.getAttribute('style') ?? '';
     expect(style).toContain('var(--rule-soft)');
@@ -47,7 +45,9 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(screen.getByTestId('highlight-format-toolbar')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Bold/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Bullet list/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Code block \+ pretty-print/i })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: /Code block \+ pretty-print/i })
+    ).toBeTruthy();
   });
 
   it('enters edit mode and saves markdown via onSaveQuote', async () => {
@@ -97,10 +97,16 @@ describe('HighlightCard (V2 wireframe contract)', () => {
 
   it('undoes format toolbar action via Undo button', () => {
     render(
-      <HighlightCard quote="Apple pie" domain="example.com" onSaveQuote={async () => true} />
+      <HighlightCard
+        quote="Apple pie"
+        domain="example.com"
+        onSaveQuote={async () => true}
+      />
     );
     fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText(
+      /Edit highlight markdown/
+    ) as HTMLTextAreaElement;
     textarea.focus();
     textarea.setSelectionRange(0, 5);
     fireEvent.select(textarea);
@@ -117,7 +123,9 @@ describe('HighlightCard (V2 wireframe contract)', () => {
       <HighlightCard quote="Hi" domain="example.com" onSaveQuote={async () => true} />
     );
     fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText(
+      /Edit highlight markdown/
+    ) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Hello' } });
     expect(textarea.value).toBe('Hello');
     fireEvent.keyDown(textarea, { key: 'z', ctrlKey: true });
@@ -128,10 +136,16 @@ describe('HighlightCard (V2 wireframe contract)', () => {
 
   it('applies bold from the edit format toolbar', () => {
     render(
-      <HighlightCard quote="Apple pie" domain="example.com" onSaveQuote={async () => true} />
+      <HighlightCard
+        quote="Apple pie"
+        domain="example.com"
+        onSaveQuote={async () => true}
+      />
     );
     fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText(
+      /Edit highlight markdown/
+    ) as HTMLTextAreaElement;
     textarea.focus();
     textarea.setSelectionRange(0, 5);
     fireEvent.select(textarea);
@@ -173,10 +187,16 @@ describe('HighlightCard (V2 wireframe contract)', () => {
 
   it('applies Ctrl+B bold wrap on markdown selection', () => {
     render(
-      <HighlightCard quote="Apple pie" domain="example.com" onSaveQuote={async () => true} />
+      <HighlightCard
+        quote="Apple pie"
+        domain="example.com"
+        onSaveQuote={async () => true}
+      />
     );
     fireEvent.click(screen.getByRole('button', { name: /Edit highlight text/ }));
-    const textarea = screen.getByLabelText(/Edit highlight markdown/) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText(
+      /Edit highlight markdown/
+    ) as HTMLTextAreaElement;
     textarea.focus();
     textarea.setSelectionRange(0, 5);
     fireEvent.select(textarea);
@@ -211,7 +231,12 @@ describe('HighlightCard (V2 wireframe contract)', () => {
   it('calls onSectionClick when meta line is clicked', () => {
     const handler = vi.fn();
     render(
-      <HighlightCard quote="Apple" domain="example.com" section="/docs" onSectionClick={handler} />
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        section="/docs"
+        onSectionClick={handler}
+      />
     );
     const btn = screen.getByRole('button', { name: 'example.com/docs' });
     fireEvent.click(btn);
@@ -234,9 +259,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
 
   it('calls onDelete when delete action is clicked', () => {
     const handler = vi.fn();
-    render(
-      <HighlightCard quote="Apple" domain="example.com" onDelete={handler} />
-    );
+    render(<HighlightCard quote="Apple" domain="example.com" onDelete={handler} />);
     fireEvent.click(screen.getByRole('button', { name: /Delete highlight/ }));
     expect(handler).toHaveBeenCalledOnce();
   });
@@ -249,7 +272,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
         onSaveQuote={async () => true}
         onCopy={vi.fn()}
         onDelete={vi.fn()}
-      />,
+      />
     );
     const row = screen.getByTestId('highlight-action-row');
     expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
@@ -265,7 +288,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
         domain="example.com"
         onCopy={vi.fn()}
         matchBadge="Text · Tags"
-      />,
+      />
     );
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Text · Tags');
   });

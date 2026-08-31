@@ -64,19 +64,20 @@ describe('buildMcpCapabilities', () => {
 describe('canUseMcp', () => {
   it('denies guests always', () => {
     expect(
-      canUseMcp({ isAuthenticated: false, isPaidActive: false }, { freeWindow: true }).allowed,
+      canUseMcp({ isAuthenticated: false, isPaidActive: false }, { freeWindow: true })
+        .allowed
     ).toBe(false);
   });
 
   it('allows signed-in unpaid when free window on', () => {
     expect(
-      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: true }),
+      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: true })
     ).toEqual({ allowed: true });
   });
 
   it('denies signed-in unpaid when free window off', () => {
     expect(
-      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: false }),
+      canUseMcp({ isAuthenticated: true, isPaidActive: false }, { freeWindow: false })
     ).toEqual({
       allowed: false,
       reason: 'PAID_REQUIRED',
@@ -85,7 +86,8 @@ describe('canUseMcp', () => {
 
   it('allows signed-in paid without a mode string', () => {
     expect(
-      canUseMcp({ isAuthenticated: true, isPaidActive: true }, { freeWindow: false }).allowed,
+      canUseMcp({ isAuthenticated: true, isPaidActive: true }, { freeWindow: false })
+        .allowed
     ).toBe(true);
   });
 });

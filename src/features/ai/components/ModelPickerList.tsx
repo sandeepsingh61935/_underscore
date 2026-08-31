@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 
 import { SetupSearchField } from './setup/SetupSearchField';
 
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
 import { CUSTOM_MODEL_ID } from '@/features/ai/constants/provider-setup';
+import type { ProviderModelOption } from '@/shared/llm/provider-models';
 
 export interface ModelPickerListProps {
   models: ProviderModelOption[];
@@ -42,7 +42,7 @@ export function ModelPickerList({
     const q = query.trim().toLowerCase();
     if (!q) return models;
     return models.filter(
-      m => m.label.toLowerCase().includes(q) || m.id.toLowerCase().includes(q),
+      (m) => m.label.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)
     );
   }, [models, query]);
 
@@ -57,15 +57,29 @@ export function ModelPickerList({
 
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {loading ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '12px 0' }}>
+          <p
+            className="u-mono"
+            style={{
+              fontSize: 'var(--step--2)',
+              color: 'var(--ink-3)',
+              margin: '12px 0',
+            }}
+          >
             Loading…
           </p>
         ) : filtered.length === 0 ? (
-          <p className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', margin: '12px 0' }}>
+          <p
+            className="u-mono"
+            style={{
+              fontSize: 'var(--step--2)',
+              color: 'var(--ink-3)',
+              margin: '12px 0',
+            }}
+          >
             {emptyMessage}
           </p>
         ) : (
-          filtered.map(m => {
+          filtered.map((m) => {
             const selected = !usingCustom && m.id === selectedId;
             const disabled = isModelDisabled?.(m) ?? false;
             return (
@@ -73,7 +87,9 @@ export function ModelPickerList({
                 key={m.id}
                 type="button"
                 disabled={disabled}
-                onClick={() => { if (!disabled) onSelect(m.id); }}
+                onClick={() => {
+                  if (!disabled) onSelect(m.id);
+                }}
                 style={{
                   all: 'unset',
                   cursor: disabled ? 'not-allowed' : 'pointer',
@@ -90,19 +106,48 @@ export function ModelPickerList({
                   background: selected ? 'var(--paper-2)' : 'transparent',
                 }}
               >
-                <span className="u-mono" style={{ fontSize: 10, color: selected ? 'var(--accent)' : 'var(--ink-3)', width: 14, textAlign: 'center' }}>
+                <span
+                  className="u-mono"
+                  style={{
+                    fontSize: 10,
+                    color: selected ? 'var(--accent)' : 'var(--ink-3)',
+                    width: 14,
+                    textAlign: 'center',
+                  }}
+                >
                   {selected ? '●' : '○'}
                 </span>
                 <div style={{ minWidth: 0, textAlign: 'left' }}>
-                  <div style={{ fontSize: 'var(--step-0)', color: 'var(--ink)', fontWeight: selected ? 600 : 500 }}>
+                  <div
+                    style={{
+                      fontSize: 'var(--step-0)',
+                      color: 'var(--ink)',
+                      fontWeight: selected ? 600 : 500,
+                    }}
+                  >
                     {m.label}
                   </div>
-                  <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 2 }}>
+                  <div
+                    className="u-mono"
+                    style={{
+                      fontSize: 'var(--step--2)',
+                      color: 'var(--ink-3)',
+                      marginTop: 2,
+                    }}
+                  >
                     {m.id}
                   </div>
                 </div>
                 {m.hint ? (
-                  <span className="u-mono" style={{ fontSize: 9, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <span
+                    className="u-mono"
+                    style={{
+                      fontSize: 9,
+                      color: 'var(--ink-3)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
                     {m.hint}
                   </span>
                 ) : null}
@@ -113,7 +158,7 @@ export function ModelPickerList({
 
         <button
           type="button"
-          onClick={() => setShowCustom(s => !s)}
+          onClick={() => setShowCustom((s) => !s)}
           className="u-mono"
           style={{
             all: 'unset',
@@ -128,18 +173,35 @@ export function ModelPickerList({
             color: 'var(--ink-3)',
           }}
         >
-          <span style={{ display: 'inline-block', transform: showCustom ? 'rotate(90deg)' : 'none', transition: 'transform 120ms ease' }}>▸</span>
+          <span
+            style={{
+              display: 'inline-block',
+              transform: showCustom ? 'rotate(90deg)' : 'none',
+              transition: 'transform 120ms ease',
+            }}
+          >
+            ▸
+          </span>
           Custom ID
         </button>
 
         {showCustom ? (
-          <div style={{ padding: '4px 4px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label className="u-kicker" htmlFor="custom-model-id">Custom model ID</label>
+          <div
+            style={{
+              padding: '4px 4px 0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}
+          >
+            <label className="u-kicker" htmlFor="custom-model-id">
+              Custom model ID
+            </label>
             <input
               id="custom-model-id"
               type="text"
               value={customModelId}
-              onChange={e => {
+              onChange={(e) => {
                 onCustomModelIdChange(e.target.value);
                 if (!customDisabled) onSelect(CUSTOM_MODEL_ID);
               }}

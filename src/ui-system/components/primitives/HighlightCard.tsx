@@ -24,8 +24,8 @@ import {
   type EditHistory,
   type EditSnapshot,
 } from '@/shared/utils/edit-history';
-import { HIGHLIGHT_TEXT_MAX_LENGTH } from '@/shared/utils/highlight-text';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { HIGHLIGHT_TEXT_MAX_LENGTH } from '@/shared/utils/highlight-text';
 import {
   applyMarkdownFormatAction,
   applyMarkdownShortcut,
@@ -98,8 +98,21 @@ function IconEdit(): React.ReactElement {
 function IconCopy(): React.ReactElement {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="5.5" y="5.5" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M3.5 10.5V3.5h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <rect
+        x="5.5"
+        y="5.5"
+        width="7"
+        height="8"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M3.5 10.5V3.5h7"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -131,11 +144,23 @@ const formatBtnStyle: React.CSSProperties = {
   borderRadius: 2,
 };
 
-const FORMAT_TOOLS: ReadonlyArray<{ action: MarkdownFormatAction; label: string; title: string }> = [
+const FORMAT_TOOLS: ReadonlyArray<{
+  action: MarkdownFormatAction;
+  label: string;
+  title: string;
+}> = [
   { action: 'bold', label: 'B', title: 'Bold (Ctrl/Cmd+B)' },
   { action: 'italic', label: 'I', title: 'Italic (Ctrl/Cmd+I)' },
-  { action: 'code', label: '`code`', title: 'Inline code (Ctrl/Cmd+E). Multi-line uses code block.' },
-  { action: 'fence', label: 'Block', title: 'Code block + pretty-print (Ctrl/Cmd+Shift+K)' },
+  {
+    action: 'code',
+    label: '`code`',
+    title: 'Inline code (Ctrl/Cmd+E). Multi-line uses code block.',
+  },
+  {
+    action: 'fence',
+    label: 'Block',
+    title: 'Code block + pretty-print (Ctrl/Cmd+Shift+K)',
+  },
   { action: 'bullets', label: 'List', title: 'Bullet list' },
   { action: 'numbered', label: '1.', title: 'Numbered list' },
 ];
@@ -354,7 +379,7 @@ export function HighlightCard({
         metaKey: e.metaKey,
         ctrlKey: e.ctrlKey,
         shiftKey: e.shiftKey,
-      },
+      }
     );
     if (!result) return;
     e.preventDefault();
@@ -490,7 +515,7 @@ export function HighlightCard({
                       selStart: savedSelectionRef.current.start,
                       selEnd: savedSelectionRef.current.end,
                     },
-                    next,
+                    next
                   );
                   syncHistoryFlags(historyRef.current);
                   setDraft(next);
@@ -527,7 +552,8 @@ export function HighlightCard({
                   letterSpacing: '0.04em',
                 }}
               >
-                Ctrl/Cmd+Z undo · Shift+Z redo · B bold · I italic · E code · Shift+K block
+                Ctrl/Cmd+Z undo · Shift+Z redo · B bold · I italic · E code · Shift+K
+                block
               </p>
               <div
                 style={{

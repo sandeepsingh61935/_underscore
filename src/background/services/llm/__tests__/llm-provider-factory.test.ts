@@ -4,7 +4,9 @@ import { resolveConfiguredProvider } from '../llm-provider-factory';
 
 function makeRegistry() {
   return {
-    get: vi.fn(() => { throw new Error('not registered'); }),
+    get: vi.fn(() => {
+      throw new Error('not registered');
+    }),
     list: () => [],
     setConfigured: vi.fn(),
   };
@@ -13,14 +15,19 @@ function makeRegistry() {
 describe('resolveConfiguredProvider', () => {
   it('prefers the active provider over the default try order', async () => {
     const keyStore = {
-      get: vi.fn(async (name: string) => (name === 'gemini' || name === 'openrouter' ? `key-${name}` : null)),
+      get: vi.fn(async (name: string) =>
+        name === 'gemini' || name === 'openrouter' ? `key-${name}` : null
+      ),
       getModel: vi.fn(async () => 'nvidia/nemotron-nano-9b-v2:free'),
       getActiveProvider: vi.fn(async () => 'openrouter' as const),
       getApiBase: vi.fn(async () => 'http://localhost:11434'),
       getOllamaVerified: vi.fn(async () => false),
     };
 
-    const provider = await resolveConfiguredProvider(makeRegistry() as any, keyStore as any);
+    const provider = await resolveConfiguredProvider(
+      makeRegistry() as any,
+      keyStore as any
+    );
     expect(provider.providerName).toBe('openrouter');
     expect(keyStore.get).toHaveBeenCalledWith('openrouter');
     expect(keyStore.get).not.toHaveBeenCalledWith('gemini');
@@ -36,7 +43,10 @@ describe('resolveConfiguredProvider', () => {
       getOllamaVerified: vi.fn(async () => false),
     };
 
-    const provider = await resolveConfiguredProvider(makeRegistry() as any, keyStore as any);
+    const provider = await resolveConfiguredProvider(
+      makeRegistry() as any,
+      keyStore as any
+    );
     expect(provider.providerName).toBe('openai');
   });
 
@@ -50,7 +60,7 @@ describe('resolveConfiguredProvider', () => {
     };
 
     await expect(
-      resolveConfiguredProvider(makeRegistry() as any, keyStore as any, 'cursor' as any),
+      resolveConfiguredProvider(makeRegistry() as any, keyStore as any, 'cursor' as any)
     ).rejects.toThrow(/No model configured/);
   });
 
@@ -64,7 +74,7 @@ describe('resolveConfiguredProvider', () => {
     };
 
     await expect(
-      resolveConfiguredProvider(makeRegistry() as any, keyStore as any),
+      resolveConfiguredProvider(makeRegistry() as any, keyStore as any)
     ).rejects.toThrow(/Models & providers/);
   });
 
@@ -77,7 +87,10 @@ describe('resolveConfiguredProvider', () => {
       getOllamaVerified: vi.fn(async () => false),
     };
 
-    const provider = await resolveConfiguredProvider(makeRegistry() as any, keyStore as any);
+    const provider = await resolveConfiguredProvider(
+      makeRegistry() as any,
+      keyStore as any
+    );
     expect(provider.providerName).toBe('openrouter');
   });
 });

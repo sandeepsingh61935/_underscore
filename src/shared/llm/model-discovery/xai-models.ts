@@ -1,6 +1,6 @@
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
-
 import type { ModelDiscoveryResult } from './types';
+
+import type { ProviderModelOption } from '@/shared/llm/provider-models';
 
 const MODELS_URL = 'https://api.x.ai/v1/models';
 

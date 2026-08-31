@@ -2,7 +2,10 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-import { McpTierCallout, mcpTierLabel } from '@/features/settings/components/McpTierCallout';
+import {
+  McpTierCallout,
+  mcpTierLabel,
+} from '@/features/settings/components/McpTierCallout';
 
 describe('mcpTierLabel', () => {
   it('shows local only for guests', () => {
@@ -17,9 +20,13 @@ describe('mcpTierLabel', () => {
 
 describe('McpTierCallout', () => {
   it('shows compact sign-in row for guests', () => {
-    render(<McpTierCallout isAuthenticated={false} currentMode="basic" onSignIn={vi.fn()} />);
+    render(
+      <McpTierCallout isAuthenticated={false} currentMode="basic" onSignIn={vi.fn()} />
+    );
     expect(screen.getByText('Account sync and Integrations')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Account sync and Integrations/i })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: /Account sync and Integrations/i })
+    ).toBeTruthy();
   });
 
   it('shows Account (Paid) upsell for Free accounts', () => {

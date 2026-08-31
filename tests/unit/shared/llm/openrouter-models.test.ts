@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 
-import { mapOpenRouterModels, mapOpenRouterFreeModels, openRouterModelRequiresKey } from '@/shared/llm/openrouter-models';
+import {
+  mapOpenRouterModels,
+  mapOpenRouterFreeModels,
+  openRouterModelRequiresKey,
+} from '@/shared/llm/openrouter-models';
 
 describe('openrouter-models', () => {
   const sampleRecords = [
@@ -28,19 +32,19 @@ describe('openrouter-models', () => {
 
   it('lists free and paid text models with hints; all require API auth', () => {
     const models = mapOpenRouterModels(sampleRecords);
-    expect(models.map(m => m.id)).toEqual([
+    expect(models.map((m) => m.id)).toEqual([
       'openrouter/free',
       'meta-llama/llama-3.3-70b-instruct:free',
       'openai/gpt-4o',
     ]);
     expect(models[0]?.hint).toBe('free');
     expect(models[2]?.hint).toBe('paid');
-    expect(models.every(m => m.requiresKey === true)).toBe(true);
+    expect(models.every((m) => m.requiresKey === true)).toBe(true);
   });
 
   it('mapOpenRouterFreeModels keeps only free models', () => {
     const models = mapOpenRouterFreeModels(sampleRecords);
-    expect(models.map(m => m.id)).toEqual([
+    expect(models.map((m) => m.id)).toEqual([
       'openrouter/free',
       'meta-llama/llama-3.3-70b-instruct:free',
     ]);
@@ -48,7 +52,9 @@ describe('openrouter-models', () => {
 
   it('openRouterModelRequiresKey is always true (auth ≠ billing)', () => {
     expect(openRouterModelRequiresKey('openrouter/free')).toBe(true);
-    expect(openRouterModelRequiresKey('meta-llama/llama-3.3-70b-instruct:free')).toBe(true);
+    expect(openRouterModelRequiresKey('meta-llama/llama-3.3-70b-instruct:free')).toBe(
+      true
+    );
     expect(openRouterModelRequiresKey('openai/gpt-4o')).toBe(true);
   });
 });

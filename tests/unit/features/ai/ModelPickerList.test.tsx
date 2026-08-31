@@ -6,7 +6,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 
-import { ModelPickerList, type ModelPickerListProps } from '@/features/ai/components/ModelPickerList';
+import {
+  ModelPickerList,
+  type ModelPickerListProps,
+} from '@/features/ai/components/ModelPickerList';
 import { CUSTOM_MODEL_ID } from '@/features/ai/constants/provider-setup';
 import type { ProviderModelOption } from '@/shared/llm/provider-models';
 
@@ -33,7 +36,9 @@ describe('ModelPickerList', () => {
     expect(screen.getByText('Claude Sonnet 4.6')).toBeInTheDocument();
     expect(screen.getByText('Claude Haiku 4.5')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'haiku' } });
+    fireEvent.change(screen.getByPlaceholderText('Search…'), {
+      target: { value: 'haiku' },
+    });
 
     expect(screen.queryByText('Claude Sonnet 4.6')).not.toBeInTheDocument();
     expect(screen.getByText('Claude Haiku 4.5')).toBeInTheDocument();
@@ -42,7 +47,9 @@ describe('ModelPickerList', () => {
   it('shows an empty-results message when the search matches nothing', () => {
     render(<ModelPickerList {...baseProps()} />);
 
-    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'nonexistent' } });
+    fireEvent.change(screen.getByPlaceholderText('Search…'), {
+      target: { value: 'nonexistent' },
+    });
 
     expect(screen.getByText('No matches')).toBeInTheDocument();
   });
@@ -51,8 +58,8 @@ describe('ModelPickerList', () => {
     const onSelect = vi.fn();
     render(
       <ModelPickerList
-        {...baseProps({ onSelect, isModelDisabled: m => m.id === 'claude-haiku-4-5' })}
-      />,
+        {...baseProps({ onSelect, isModelDisabled: (m) => m.id === 'claude-haiku-4-5' })}
+      />
     );
 
     fireEvent.click(screen.getByText('Claude Haiku 4.5'));
@@ -77,7 +84,9 @@ describe('ModelPickerList', () => {
     render(<ModelPickerList {...baseProps({ onSelect, onCustomModelIdChange })} />);
 
     fireEvent.click(screen.getByText('Custom ID'));
-    fireEvent.change(screen.getByLabelText('Custom model ID'), { target: { value: 'my-model:latest' } });
+    fireEvent.change(screen.getByLabelText('Custom model ID'), {
+      target: { value: 'my-model:latest' },
+    });
 
     expect(onCustomModelIdChange).toHaveBeenCalledWith('my-model:latest');
     expect(onSelect).toHaveBeenCalledWith(CUSTOM_MODEL_ID);
@@ -87,7 +96,7 @@ describe('ModelPickerList', () => {
     render(
       <ModelPickerList
         {...baseProps({ selectedId: CUSTOM_MODEL_ID, customModelId: 'saved-model' })}
-      />,
+      />
     );
 
     expect(screen.getByLabelText('Custom model ID')).toBeInTheDocument();

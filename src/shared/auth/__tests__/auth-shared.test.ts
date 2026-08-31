@@ -30,7 +30,9 @@ describe('external-origin', () => {
     expect(isAllowedExternalAuthOrigin('http://localhost:5173/sign-in')).toBe(true);
     expect(isAllowedExternalAuthOrigin('http://127.0.0.1:3000/install')).toBe(true);
     expect(isAllowedExternalAuthOrigin('https://underscore.pages.dev/')).toBe(true);
-    expect(isAllowedExternalAuthOrigin('https://underscore-web.vercel.app/install')).toBe(true);
+    expect(isAllowedExternalAuthOrigin('https://underscore-web.vercel.app/install')).toBe(
+      true
+    );
     expect(isAllowedExternalAuthOrigin('https://evil.example.com/')).toBe(false);
   });
 });

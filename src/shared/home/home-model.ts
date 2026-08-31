@@ -60,10 +60,7 @@ export type PopupHomeModel = {
 };
 
 /** @deprecated Greeting theater removed from product Home — kept for any residual callers. */
-export function homeGreeting(input: {
-  name: string | null;
-  hour: number;
-}): string {
+export function homeGreeting(input: { name: string | null; hour: number }): string {
   const when =
     input.hour < 12
       ? 'Good morning'
@@ -76,7 +73,7 @@ export function homeGreeting(input: {
 export function buildActivePages(
   highlights: readonly HomeHighlightLike[],
   currentPage: HomeCurrentPageRef,
-  opts?: { excludeCurrent?: boolean; cap?: number },
+  opts?: { excludeCurrent?: boolean; cap?: number }
 ): HomeActivePage[] {
   const excludeCurrent = opts?.excludeCurrent ?? true;
   const cap = opts?.cap ?? 8;
@@ -99,11 +96,11 @@ export function buildActivePages(
   }
 
   let list = [...map.values()].sort(
-    (a, b) => b.lastActive - a.lastActive || a.domain.localeCompare(b.domain),
+    (a, b) => b.lastActive - a.lastActive || a.domain.localeCompare(b.domain)
   );
   if (excludeCurrent && currentPage) {
     list = list.filter(
-      (p) => !(p.domain === currentPage.domain && p.path === currentPage.path),
+      (p) => !(p.domain === currentPage.domain && p.path === currentPage.path)
     );
   }
   return list.slice(0, cap);

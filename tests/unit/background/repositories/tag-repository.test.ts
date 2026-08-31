@@ -12,7 +12,10 @@ describe('IndexedDBTagRepository', () => {
 
   beforeEach(() => {
     dbCounter += 1;
-    repo = new IndexedDBTagRepository(LoggerFactory.getLogger('test'), `${TEST_DB}_${dbCounter}`);
+    repo = new IndexedDBTagRepository(
+      LoggerFactory.getLogger('test'),
+      `${TEST_DB}_${dbCounter}`
+    );
   });
 
   it('replaces highlight labels atomically', async () => {

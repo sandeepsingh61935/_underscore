@@ -6,9 +6,9 @@
  * No JS-injected ::highlight CSS — host-page paint is overlay-only.
  */
 
-import type { AnnotationType } from '@/shared/types/annotation';
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
 import { ColorRoleSchema } from '@/shared/schemas/highlight-schema';
+import type { AnnotationType } from '@/shared/types/annotation';
 
 export type HighlightType = AnnotationType;
 

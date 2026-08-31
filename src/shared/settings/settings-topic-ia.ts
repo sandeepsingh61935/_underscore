@@ -4,12 +4,7 @@
  */
 
 export type SettingsTopicId =
-  | 'account'
-  | 'mode'
-  | 'plan'
-  | 'appearance'
-  | 'integrations'
-  | 'data';
+  'account' | 'mode' | 'plan' | 'appearance' | 'integrations' | 'data';
 
 export type SettingsTopicDef = {
   id: SettingsTopicId;
@@ -27,9 +22,7 @@ export const SETTINGS_TOPICS: SettingsTopicDef[] = [
   { id: 'data', label: 'Data', surfaces: ['popup', 'web'] },
 ];
 
-export function settingsTopicsForSurface(
-  surface: 'popup' | 'web',
-): SettingsTopicDef[] {
+export function settingsTopicsForSurface(surface: 'popup' | 'web'): SettingsTopicDef[] {
   return SETTINGS_TOPICS.filter((t) => t.surfaces.includes(surface));
 }
 
@@ -58,23 +51,17 @@ export function resolveSettingsActionGates(input: {
 }): SettingsActionGates {
   const { caps, surface, isAuthenticated } = input;
   const authLock = !isAuthenticated ? 'Sign in to use account features' : undefined;
-  const pastDueLock = caps.isPastDue
-    ? 'Fix billing to use Integrations'
-    : undefined;
+  const pastDueLock = caps.isPastDue ? 'Fix billing to use Integrations' : undefined;
 
   return {
     canSync: caps.flags.sync,
     canExport: caps.flags.export,
     canUseIntegrations: caps.flags.mcp,
     canDeleteLibrary: surface === 'popup',
-    syncLockReason: caps.flags.sync
-      ? undefined
-      : authLock ?? 'Unavailable',
-    exportLockReason: caps.flags.export
-      ? undefined
-      : authLock ?? 'Unavailable',
+    syncLockReason: caps.flags.sync ? undefined : (authLock ?? 'Unavailable'),
+    exportLockReason: caps.flags.export ? undefined : (authLock ?? 'Unavailable'),
     integrationsLockReason: caps.flags.mcp
       ? undefined
-      : pastDueLock ?? authLock ?? 'Available with Account (Paid)',
+      : (pastDueLock ?? authLock ?? 'Available with Account (Paid)'),
   };
 }

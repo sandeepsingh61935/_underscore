@@ -60,7 +60,7 @@ describe('OAuthConsentPage', () => {
     render(
       <MemoryRouter initialEntries={['/oauth/consent?authorization_id=auth-1']}>
         <OAuthConsentPage />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     await waitFor(() => expect(screen.getByTestId('oauth-consent-ready')).toBeTruthy());

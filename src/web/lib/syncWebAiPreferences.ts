@@ -50,12 +50,12 @@ export function createWebDeviceAiPrefsStore(): DeviceAiPrefsStore {
 
 export async function pullWebAiPreferences(
   supabase: SupabaseClient,
-  userId: string,
+  userId: string
 ): Promise<WebAiPrefsSyncResult> {
   const result = await reconcileAiPreferences(
     supabase,
     userId,
-    createWebDeviceAiPrefsStore(),
+    createWebDeviceAiPrefsStore()
   );
   return {
     state: readWebLlmState(),
@@ -72,7 +72,7 @@ export async function pullWebAiPreferences(
 export async function pushWebAiPreferences(
   supabase: SupabaseClient,
   userId: string,
-  state: WebLlmState = readWebLlmState(),
+  state: WebLlmState = readWebLlmState()
 ): Promise<WebAiPrefsSyncResult> {
   // Ensure disk matches the committed UI state before reconcile meta writes.
   writeWebLlmState(state);
@@ -86,7 +86,7 @@ export async function pushWebAiPreferences(
       local,
       // Only bump if reduce forgot a clock; normal saves already stamped.
       bumpClock: local.updatedAtMs <= 0,
-    },
+    }
   );
 
   return {

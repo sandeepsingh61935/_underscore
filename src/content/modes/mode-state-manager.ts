@@ -8,27 +8,27 @@ import { migrateV1ToV2 } from './migrations/v1-to-v2';
 import { migrateV2ToV3, needsV2ToV3Migration } from './migrations/v2-to-v3';
 import type { ModeManager } from './mode-manager';
 import { ModeStateMachine } from './mode-state-machine';
-import { MigrationEngine } from './state-migration';
 import type { TransitionGuardContext } from './mode-transition-rules';
+import { MigrationEngine } from './state-migration';
 
-import {
-  StatePersistenceError,
-  StateValidationError,
-  StateTransitionError,
-} from '@/shared/errors/state-errors';
 import {
   DEFAULT_MODE,
   LEGACY_MODE_STORAGE_KEY,
   MODE_STORAGE_KEY,
 } from '@/shared/constants/mode-storage';
 import {
+  StatePersistenceError,
+  StateValidationError,
+  StateTransitionError,
+} from '@/shared/errors/state-errors';
+import {
   ModeTypeSchema,
   type ModeType,
   type StateMetadata,
 } from '@/shared/schemas/mode-state-schemas';
-import { normalizeMode } from '@/shared/utils/normalize-mode';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import { normalizeMode } from '@/shared/utils/normalize-mode';
 
 // Re-export ModeType for backward compatibility
 export type { ModeType };
@@ -116,7 +116,10 @@ export class ModeStateManager {
         const newMode = normalizeMode(newValue);
         if (newMode === this.currentMode) return;
         void this.setMode(newMode).catch((err) => {
-          this.logger.warn('[ModeState] Failed to apply storage mode change', err as Error);
+          this.logger.warn(
+            '[ModeState] Failed to apply storage mode change',
+            err as Error
+          );
         });
       });
     }
@@ -136,7 +139,7 @@ export class ModeStateManager {
    */
   async setMode(
     mode: ModeType,
-    guardContext: TransitionGuardContext = { isAuthenticated: false },
+    guardContext: TransitionGuardContext = { isAuthenticated: false }
   ): Promise<void> {
     try {
       // 1. Validate mode with Zod schema
@@ -181,7 +184,7 @@ export class ModeStateManager {
       const guardPassed = await this.stateMachine.executeGuards(
         this.currentMode,
         validatedMode,
-        guardContext,
+        guardContext
       );
 
       if (!guardPassed) {

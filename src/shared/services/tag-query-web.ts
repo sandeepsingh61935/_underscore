@@ -6,9 +6,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { TagEntity } from '@/shared/types/tag-entity';
-import { mergeHighlightLabels, normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
+import {
+  mergeHighlightLabels,
+  normalizeHighlightTags,
+} from '@/shared/utils/highlight-metadata';
 
-export async function fetchUserTagsWeb(supabase: SupabaseClient, userId: string): Promise<TagEntity[]> {
+export async function fetchUserTagsWeb(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<TagEntity[]> {
   const { data, error } = await supabase
     .from('tags')
     .select('id, name, created_at')
@@ -27,7 +33,7 @@ export async function fetchUserTagsWeb(supabase: SupabaseClient, userId: string)
 export async function fetchHighlightLabelsWeb(
   supabase: SupabaseClient,
   userId: string,
-  highlightIds: string[],
+  highlightIds: string[]
 ): Promise<Map<string, string[]>> {
   const result = new Map<string, string[]>();
   if (highlightIds.length === 0) return result;
@@ -61,7 +67,12 @@ export async function fetchHighlightLabelsWeb(
 export function toTagError(err: unknown, fallback = 'Failed to save tags'): Error {
   if (err instanceof Error) return err;
   if (err && typeof err === 'object') {
-    const o = err as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    const o = err as {
+      message?: unknown;
+      code?: unknown;
+      details?: unknown;
+      hint?: unknown;
+    };
     const message = typeof o.message === 'string' ? o.message : null;
     const code = typeof o.code === 'string' ? o.code : null;
     const details = typeof o.details === 'string' ? o.details : null;
@@ -80,7 +91,7 @@ export function toTagError(err: unknown, fallback = 'Failed to save tags'): Erro
 async function ensureTagIdWeb(
   supabase: SupabaseClient,
   userId: string,
-  name: string,
+  name: string
 ): Promise<string> {
   const { data: existing, error: findError } = await supabase
     .from('tags')
@@ -118,7 +129,7 @@ export async function setHighlightLabelsWeb(
   supabase: SupabaseClient,
   userId: string,
   highlightId: string,
-  names: string[],
+  names: string[]
 ): Promise<void> {
   const normalized = normalizeHighlightTags(names);
   const tagIds: string[] = [];
@@ -143,14 +154,14 @@ export async function setHighlightLabelsWeb(
       highlight_id: highlightId,
       tag_id: tagId,
       user_id: userId,
-    })),
+    }))
   );
   if (insertError) throw toTagError(insertError, 'Failed to link highlight tags');
 }
 
 export function mergeLabelsForHighlight(
   junctionLabels: string[] | undefined,
-  metadataTags: string[] | undefined,
+  metadataTags: string[] | undefined
 ): string[] | undefined {
   return mergeHighlightLabels(junctionLabels, metadataTags);
 }

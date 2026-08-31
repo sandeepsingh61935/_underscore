@@ -48,7 +48,9 @@ export function LabelInputRow({
   const trimmedDraft = draft.trim();
   const visibleSuggestions = suggestions
     .filter((name) => !labels.includes(name))
-    .filter((name) => !trimmedDraft || name.toLowerCase().startsWith(trimmedDraft.toLowerCase()));
+    .filter(
+      (name) => !trimmedDraft || name.toLowerCase().startsWith(trimmedDraft.toLowerCase())
+    );
 
   const resolvedPlaceholder = placeholder ?? (labels.length === 0 ? 'Add tag…' : '');
   const embedded = variant === 'embedded';
@@ -79,7 +81,11 @@ export function LabelInputRow({
       }}
     >
       {labels.map((label, index) => (
-        <TagPill key={`${label}-${index}`} label={label} onRemove={() => onRemoveLabel(index)} />
+        <TagPill
+          key={`${label}-${index}`}
+          label={label}
+          onRemove={() => onRemoveLabel(index)}
+        />
       ))}
       <input
         type="text"

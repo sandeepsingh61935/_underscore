@@ -1,3 +1,4 @@
+import type { LLMRequest } from '@/shared/interfaces/i-llm-service';
 import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
 import { formatExcerptsForPrompt } from '@/shared/llm/highlight-excerpts';
 import { PROMPT_TEMPLATES, type PromptContext } from '@/shared/llm/prompts';
@@ -5,8 +6,6 @@ import {
   computeDomainOutputTokens,
   computeSectionOutputTokens,
 } from '@/shared/llm/summarization-tokens';
-
-import type { LLMRequest } from '@/shared/interfaces/i-llm-service';
 
 /** Low temperature keeps summaries faithful to source material. */
 export const SUMMARY_TEMPERATURE = 0.35;
@@ -29,7 +28,7 @@ export function formatExcerptUserContent(excerpts: HighlightExcerpt[]): string {
 
 export function buildExcerptSummaryRequest(
   ctx: PromptContext,
-  excerpts: HighlightExcerpt[],
+  excerpts: HighlightExcerpt[]
 ): LLMRequest {
   const count = excerpts.length;
   const length = ctx.length ?? 'medium';
@@ -44,23 +43,29 @@ export function buildExcerptSummaryRequest(
 export function buildReduceDomainRequest(
   domain: string,
   sectionDigests: SectionDigest[],
-  totalHighlights: number,
+  totalHighlights: number
 ): LLMRequest {
-  const body = sectionDigests.map(d => (
-    `### ${d.sectionKey} (${d.highlightCount} highlights)\n${d.summary}`
-  )).join('\n\n');
+  const body = sectionDigests
+    .map((d) => `### ${d.sectionKey} (${d.highlightCount} highlights)\n${d.summary}`)
+    .join('\n\n');
 
   return {
-    systemPrompt: PROMPT_TEMPLATES.reduceDomainSynthesis(domain, totalHighlights, sectionDigests.length),
-    messages: [{
-      role: 'user',
-      content: [
-        '## Section summaries',
-        body,
-        '',
-        'Synthesize cross-section themes, connections, and any tensions. Use clear prose with short headings if helpful.',
-      ].join('\n'),
-    }],
+    systemPrompt: PROMPT_TEMPLATES.reduceDomainSynthesis(
+      domain,
+      totalHighlights,
+      sectionDigests.length
+    ),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          '## Section summaries',
+          body,
+          '',
+          'Synthesize cross-section themes, connections, and any tensions. Use clear prose with short headings if helpful.',
+        ].join('\n'),
+      },
+    ],
     maxTokens: computeDomainOutputTokens(totalHighlights, sectionDigests.length),
     temperature: SUMMARY_TEMPERATURE,
   };

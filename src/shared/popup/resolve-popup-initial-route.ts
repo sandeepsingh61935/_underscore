@@ -42,7 +42,7 @@ export function postLoginViewForMode(_mode: ModeType): PopupInitialView {
 
 function drillDownContext(
   nav: PopupNavigationSnapshot,
-  view: PersistedPopupView,
+  view: PersistedPopupView
 ): Pick<PopupRouteResult, 'selectedDomain' | 'selectedSection'> {
   const context: Pick<PopupRouteResult, 'selectedDomain' | 'selectedSection'> = {};
 
@@ -56,9 +56,7 @@ function drillDownContext(
   return context;
 }
 
-function restoredPersistedView(
-  nav: PopupNavigationSnapshot,
-): PopupRouteResult | null {
+function restoredPersistedView(nav: PopupNavigationSnapshot): PopupRouteResult | null {
   if (!nav.lastView || !isPersistedPopupView(nav.lastView)) {
     return null;
   }

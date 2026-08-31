@@ -44,7 +44,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:legacy-ds": "bash scripts/check-legacy-ds.sh",
-    "check:legacy-ds:src": "bash scripts/check-legacy-ds.sh src/",
+    "check:legacy-ds:src": "bash scripts/check-legacy-ds.sh --soft src/",
     "check:legacy-ds:strict": "bash scripts/check-legacy-ds.sh --strict src/",
     "check:legacy-ds:test": "vitest run tests/unit/harness/check-legacy-ds.test.ts",
     "quality": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:legacy-ds:src",

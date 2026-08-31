@@ -2,7 +2,16 @@
  * @deprecated Use AppHeader from './AppHeader' instead. This header remains
  * only for legacy web SPA consumers; new code should use AppHeader.
  */
-import { Settings, LogOut, CheckSquare, Moon, Sun, Palette, Check, Lock } from 'lucide-react';
+import {
+  Settings,
+  LogOut,
+  CheckSquare,
+  Moon,
+  Sun,
+  Palette,
+  Check,
+  Lock,
+} from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 

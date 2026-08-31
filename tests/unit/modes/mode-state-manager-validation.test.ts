@@ -169,7 +169,10 @@ describe('ModeStateManager - Validation Integration', () => {
       await stateManager.init();
 
       // Assert
-      expect(mockEventBus.on).toHaveBeenCalledWith('STATE_MODE_CHANGED', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith(
+        'STATE_MODE_CHANGED',
+        expect.any(Function)
+      );
     });
   });
 
@@ -239,11 +242,17 @@ describe('ModeStateManager - Validation Integration', () => {
 
     it('should handle setMode() with same mode (no-op)', async () => {
       // Arrange
-      await stateManager.setMode('pro_xai', { isAuthenticated: true, isPaidActive: true });
+      await stateManager.setMode('pro_xai', {
+        isAuthenticated: true,
+        isPaidActive: true,
+      });
       mockEventBus.emit.mockClear();
 
       // Act
-      await stateManager.setMode('pro_xai', { isAuthenticated: true, isPaidActive: true });
+      await stateManager.setMode('pro_xai', {
+        isAuthenticated: true,
+        isPaidActive: true,
+      });
 
       // Assert - No intent should be sent
       expect(mockEventBus.emit).not.toHaveBeenCalled();

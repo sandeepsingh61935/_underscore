@@ -25,7 +25,7 @@ export class LLMRegistry {
   }
 
   list(): { name: ILLMService['providerName']; configured: boolean }[] {
-    return Array.from(this.providers.keys()).map(name => ({
+    return Array.from(this.providers.keys()).map((name) => ({
       name,
       configured: this.configured.has(name),
     }));

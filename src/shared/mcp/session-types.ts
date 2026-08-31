@@ -1,5 +1,5 @@
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { HighlightStorageScope } from '@/shared/constants/highlight-storage-scope';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export type McpDataCoverage = 'basic_local' | 'pro_local' | 'pro_cloud';
 

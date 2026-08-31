@@ -1,3 +1,4 @@
+import { isAllowedExternalAuthOrigin } from '../auth/external-origin';
 import type { ILogger } from '../interfaces/i-logger';
 import type { IMessageBus } from '../interfaces/i-message-bus';
 import {
@@ -7,7 +8,6 @@ import {
   type MessageTarget,
   type MessageHandler,
 } from '../schemas/message-schemas';
-import { isAllowedExternalAuthOrigin } from '../auth/external-origin';
 
 /**
  * ChromeMessageBus - Cross-context messaging for Chrome extensions
@@ -42,10 +42,10 @@ export class ChromeMessageBus implements IMessageBus {
   private readonly timeoutMs: number;
   private messageListener:
     | ((
-      message: unknown,
-      sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void
-    ) => boolean | void)
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response?: unknown) => void
+      ) => boolean | void)
     | null = null;
 
   constructor(
@@ -67,7 +67,7 @@ export class ChromeMessageBus implements IMessageBus {
    */
   private isTrustedSender(
     sender: chrome.runtime.MessageSender | undefined | null,
-    messageType?: string,
+    messageType?: string
   ): boolean {
     if (!sender) {
       return false;
@@ -155,14 +155,19 @@ export class ChromeMessageBus implements IMessageBus {
             } catch (handlerError) {
               this.logger.error(
                 'Message handler error',
-                handlerError instanceof Error ? handlerError : new Error(String(handlerError)),
+                handlerError instanceof Error
+                  ? handlerError
+                  : new Error(String(handlerError)),
                 { messageType: validatedMessage.type }
               );
 
               if (!responseSent) {
                 safeSendResponse({
                   success: false,
-                  error: handlerError instanceof Error ? handlerError.message : 'Unknown handler error',
+                  error:
+                    handlerError instanceof Error
+                      ? handlerError.message
+                      : 'Unknown handler error',
                 });
               }
             }
@@ -179,7 +184,8 @@ export class ChromeMessageBus implements IMessageBus {
           if (!responseSent) {
             safeSendResponse({
               success: false,
-              error: error instanceof Error ? error.message : 'Critical message bus error',
+              error:
+                error instanceof Error ? error.message : 'Critical message bus error',
             });
           }
         }

@@ -31,26 +31,33 @@ function openDb(): Promise<IDBDatabase> {
 
 export async function writeWebLibraryCache(
   userId: string,
-  highlights: WebHighlight[],
+  highlights: WebHighlight[]
 ): Promise<void> {
   if (typeof indexedDB === 'undefined' || !userId) return;
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put({ userId, highlights, savedAt: Date.now() } satisfies WebLibraryCacheRecord);
+    tx.objectStore(STORE).put({
+      userId,
+      highlights,
+      savedAt: Date.now(),
+    } satisfies WebLibraryCacheRecord);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   db.close();
 }
 
-export async function readWebLibraryCache(userId: string): Promise<WebLibraryCacheRecord | null> {
+export async function readWebLibraryCache(
+  userId: string
+): Promise<WebLibraryCacheRecord | null> {
   if (typeof indexedDB === 'undefined' || !userId) return null;
   const db = await openDb();
   const record = await new Promise<WebLibraryCacheRecord | null>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readonly');
     const req = tx.objectStore(STORE).get(userId);
-    req.onsuccess = () => resolve((req.result as WebLibraryCacheRecord | undefined) ?? null);
+    req.onsuccess = () =>
+      resolve((req.result as WebLibraryCacheRecord | undefined) ?? null);
     req.onerror = () => reject(req.error);
   });
   db.close();

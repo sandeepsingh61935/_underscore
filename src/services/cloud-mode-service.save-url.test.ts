@@ -90,16 +90,20 @@ describe('CloudModeService.saveHighlight', () => {
     const gate = new Promise<void>((r) => {
       resolvePersist = r;
     });
-    (facade.addPersisted as ReturnType<typeof vi.fn>).mockImplementation(async (h: HighlightDataV2) => {
-      await gate;
-      added.push(h);
-    });
+    (facade.addPersisted as ReturnType<typeof vi.fn>).mockImplementation(
+      async (h: HighlightDataV2) => {
+        await gate;
+        added.push(h);
+      }
+    );
 
     const range = document.createRange();
     let finished = false;
-    const pending = service.saveHighlight(makeHighlight({ url: 'https://a.test/x' }), range).then(() => {
-      finished = true;
-    });
+    const pending = service
+      .saveHighlight(makeHighlight({ url: 'https://a.test/x' }), range)
+      .then(() => {
+        finished = true;
+      });
 
     await Promise.resolve();
     expect(finished).toBe(false);

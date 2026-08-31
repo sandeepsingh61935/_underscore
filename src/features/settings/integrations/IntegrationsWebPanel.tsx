@@ -42,7 +42,8 @@ export function IntegrationsWebList({
     >
       <p className="block-label">Integrations</p>
       <p className="type-sub" style={{ marginBottom: 12 }}>
-        Use your highlights in the agent you already use. OAuth happens in your agent — not in this app.
+        Use your highlights in the agent you already use. OAuth happens in your agent —
+        not in this app.
       </p>
 
       <IntegrationsConnectChrome
@@ -53,7 +54,12 @@ export function IntegrationsWebList({
       />
 
       {grantsError && mcpAllowed ? (
-        <p className="type-sub" role="status" style={{ marginTop: 8 }} data-testid="mcp-grants-error">
+        <p
+          className="type-sub"
+          role="status"
+          style={{ marginTop: 8 }}
+          data-testid="mcp-grants-error"
+        >
           {grantsError}
         </p>
       ) : null}
@@ -80,7 +86,8 @@ export function IntegrationsWebList({
         </div>
       ) : mcpAllowed ? (
         <p className="type-sub" style={{ marginTop: 8 }}>
-          Nothing connected yet. Choose an AI app below, then approve when the browser opens.
+          Nothing connected yet. Choose an AI app below, then approve when the browser
+          opens.
         </p>
       ) : null}
 
@@ -133,7 +140,10 @@ export function IntegrationsWebList({
 
       {mcpAllowed ? (
         <details data-testid="mcp-server-details" style={{ marginTop: 16 }}>
-          <summary className="u-mono" style={{ color: 'var(--accent)', cursor: 'pointer' }}>
+          <summary
+            className="u-mono"
+            style={{ color: 'var(--accent)', cursor: 'pointer' }}
+          >
             Server details
           </summary>
           <p className="type-sub" style={{ marginTop: 8 }}>
@@ -198,7 +208,9 @@ export function IntegrationsWebSetup({
       {mcpAllowed ? (
         <HostTipBody app={app} remoteUrl={remoteUrl} />
       ) : (
-        <p className="type-sub">Account access required to connect agents. Billing is upcoming.</p>
+        <p className="type-sub">
+          Account access required to connect agents. Billing is upcoming.
+        </p>
       )}
     </div>
   );

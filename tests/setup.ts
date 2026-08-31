@@ -150,7 +150,7 @@ export const restoreConsole = (): void => {
 // Mock Highlight API (not available in jsdom)
 if (typeof Highlight === 'undefined') {
   (global as any).Highlight = class Highlight {
-    constructor(public range: Range) { }
+    constructor(public range: Range) {}
   };
 }
 

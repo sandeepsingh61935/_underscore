@@ -13,7 +13,7 @@ export class ScopedTagRepository implements ITagRepository {
   constructor(
     private readonly basicRepository: ITagRepository,
     private readonly proRepository: ITagRepository,
-    initialScope: HighlightStorageScope = 'basic',
+    initialScope: HighlightStorageScope = 'basic'
   ) {
     this.activeScope = initialScope;
   }

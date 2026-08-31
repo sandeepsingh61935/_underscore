@@ -47,9 +47,7 @@ export function resolveBillingSyncFromSubscriptions(input: {
 
   const match =
     input.subscriptions.find(
-      (s) =>
-        typeof s.product_id === 'string' &&
-        s.product_id.trim() === allowed
+      (s) => typeof s.product_id === 'string' && s.product_id.trim() === allowed
     ) ?? null;
 
   if (!match) {

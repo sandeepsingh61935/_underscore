@@ -4,12 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
-import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
-import { useExtensionPresence } from '@/web/extension-presence-context';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
+import { useExtensionPresence } from '@/web/extension-presence-context';
 import {
   useWebLibrary,
   type WebCurrentPage,
@@ -56,7 +56,7 @@ function emailLocalPart(email: string | undefined | null): string | null {
 function buildActivePages(
   highlights: WebHighlight[],
   currentPage: WebCurrentPage,
-  opts?: { excludeCurrent?: boolean; cap?: number },
+  opts?: { excludeCurrent?: boolean; cap?: number }
 ): ActivePage[] {
   const excludeCurrent = opts?.excludeCurrent ?? true;
   const cap = opts?.cap ?? ACTIVE_PAGES_CAP;
@@ -79,11 +79,11 @@ function buildActivePages(
   }
 
   let list = [...map.values()].sort(
-    (a, b) => b.lastActive - a.lastActive || a.domain.localeCompare(b.domain),
+    (a, b) => b.lastActive - a.lastActive || a.domain.localeCompare(b.domain)
   );
   if (excludeCurrent && currentPage) {
     list = list.filter(
-      (p) => !(p.domain === currentPage.domain && p.path === currentPage.path),
+      (p) => !(p.domain === currentPage.domain && p.path === currentPage.path)
     );
   }
   return list.slice(0, cap);
@@ -91,7 +91,7 @@ function buildActivePages(
 
 function highlightsOnPage(
   highlights: WebHighlight[],
-  page: WebCurrentPage,
+  page: WebCurrentPage
 ): WebHighlight[] {
   if (!page) return [];
   return highlights
@@ -147,7 +147,7 @@ export function HomePage(): React.ReactElement {
         isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status]
   );
 
   const lib = useWebLibrary({
@@ -171,7 +171,7 @@ export function HomePage(): React.ReactElement {
         patchHighlight,
         updateMetadata,
       }),
-    [patchHighlight, updateMetadata],
+    [patchHighlight, updateMetadata]
   );
 
   const handleToggleTagFilter = useCallback(
@@ -180,7 +180,7 @@ export function HomePage(): React.ReactElement {
       // Tag chips still filter when user is already on Library; from Home, navigate.
       void navigate(`/library?tag=${encodeURIComponent(tag)}`);
     },
-    [navigate],
+    [navigate]
   );
 
   const name = isAuthenticated
@@ -192,7 +192,7 @@ export function HomePage(): React.ReactElement {
 
   const pageHls = useMemo(
     () => (empty ? [] : highlightsOnPage(lib.highlights, lib.currentPage)),
-    [empty, lib.highlights, lib.currentPage],
+    [empty, lib.highlights, lib.currentPage]
   );
 
   const activePages = useMemo(
@@ -203,7 +203,7 @@ export function HomePage(): React.ReactElement {
             excludeCurrent: true,
             cap: ACTIVE_PAGES_CAP,
           }),
-    [empty, lib.highlights, lib.currentPage],
+    [empty, lib.highlights, lib.currentPage]
   );
 
   /** OD: pageCount includes current page (excludeCurrent: false). */
@@ -215,7 +215,7 @@ export function HomePage(): React.ReactElement {
             excludeCurrent: false,
             cap: 99,
           }).length,
-    [empty, lib.highlights, lib.currentPage],
+    [empty, lib.highlights, lib.currentPage]
   );
 
   const recent = lib.recent;
@@ -226,7 +226,7 @@ export function HomePage(): React.ReactElement {
     (domain: string, path?: string | null) => {
       void navigate(libraryHref(domain, path));
     },
-    [navigate],
+    [navigate]
   );
 
   if (lib.status === 'loading') {
@@ -314,10 +314,7 @@ export function HomePage(): React.ReactElement {
         : '';
 
   const pagesBody = empty ? (
-    <EmptyInline
-      title="No page open"
-      body="Captures from the active tab land here."
-    />
+    <EmptyInline title="No page open" body="Captures from the active tab land here." />
   ) : (
     <>
       {cp ? (
@@ -517,11 +514,7 @@ export function HomePage(): React.ReactElement {
               <h2 id="home-recent-title">Recent</h2>
             </div>
             {!empty ? (
-              <Link
-                to="/library"
-                className="btn-text"
-                data-od-id="home-recent-view-all"
-              >
+              <Link to="/library" className="btn-text" data-od-id="home-recent-view-all">
                 {hasMoreRecent ? 'View all →' : 'Library'}
               </Link>
             ) : null}

@@ -1,5 +1,6 @@
 import type { McpAiAppId } from './mcp-ai-apps';
 import { MCP_AI_APPS } from './mcp-ai-apps';
+
 import type { OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
 
 /**
@@ -44,7 +45,7 @@ export function matchGrantNameToAppId(clientName: string): McpAiAppId | null {
 }
 
 export function catalogAppIdsWithGrants(
-  grants: readonly OAuthGrantSummary[],
+  grants: readonly OAuthGrantSummary[]
 ): ReadonlySet<McpAiAppId> {
   const ids = new Set<McpAiAppId>();
   for (const g of grants) {

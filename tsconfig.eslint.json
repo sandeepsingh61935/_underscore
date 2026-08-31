@@ -1,5 +1,13 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/**/*", "types/**/*", "tests/**/*", "*.config.ts", "*.js"],
-  "exclude": ["node_modules", "dist", "build"]
+  "include": [
+    "src/**/*",
+    "types/**/*",
+    "tests/**/*",
+    "*.config.ts",
+    "*.config.*.ts",
+    "*.js",
+    "*.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build", "dist-web", ".worktrees"]
 }

@@ -20,9 +20,7 @@ function queryParam(href: string, key: string): string | null {
 describe('mcp-host-handoff', () => {
   it('builds a Cursor deep link with URL-only base64 config (no token)', () => {
     const href = buildCursorMcpInstallLink('_underscore', MCP_URL);
-    expect(href.startsWith('cursor://anysphere.cursor-deeplink/mcp/install?')).toBe(
-      true,
-    );
+    expect(href.startsWith('cursor://anysphere.cursor-deeplink/mcp/install?')).toBe(true);
     expect(queryParam(href, 'name')).toBe('_underscore');
     const config = decodeJsonBase64<{ url: string }>(queryParam(href, 'config') ?? '');
     expect(config).toEqual({ url: MCP_URL });
@@ -33,8 +31,8 @@ describe('mcp-host-handoff', () => {
     expect(
       fillCommandTemplate(
         'claude mcp add --transport http underscore {{MCP_URL}}',
-        MCP_URL,
-      ),
+        MCP_URL
+      )
     ).toBe(`claude mcp add --transport http underscore ${MCP_URL}`);
   });
 

@@ -52,7 +52,7 @@ function rewriteLegacyAuthPath(path: string): string {
 /** Resolve post-auth redirect target from sign-in query params. */
 export function resolveAuthRedirectTarget(
   returnTo: string | null,
-  fallbackPath: string = DEFAULT_AUTH_REDIRECT_PATH,
+  fallbackPath: string = DEFAULT_AUTH_REDIRECT_PATH
 ): string {
   if (!returnTo?.trim()) {
     return fallbackPath;

@@ -43,7 +43,7 @@ export function useLLMStream(): {
               setError(event.payload.message ?? 'unknown');
             }
           },
-          controller.signal,
+          controller.signal
         )
         .catch((err: Error) => {
           if (controller.signal.aborted) return;
@@ -51,7 +51,7 @@ export function useLLMStream(): {
           setError(err.message ?? 'unknown');
         });
     },
-    [runtime],
+    [runtime]
   );
 
   const abort = useCallback(() => {

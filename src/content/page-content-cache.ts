@@ -34,16 +34,25 @@ export class PageContentCache {
   private pending: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
-    private readonly send: (msg: { type: string; payload: PushPayload; timestamp: number }) => void,
+    private readonly send: (msg: {
+      type: string;
+      payload: PushPayload;
+      timestamp: number;
+    }) => void,
     private readonly opts: PageContentCacheOptions = {},
-    private readonly meta: DocumentMetadata = { title: document.title, url: window.location.href },
+    private readonly meta: DocumentMetadata = {
+      title: document.title,
+      url: window.location.href,
+    }
   ) {}
 
   start(): void {
     this.push();
     this.observer = new MutationObserver(() => this.schedulePush());
     this.observer.observe(document.body, {
-      subtree: true, childList: true, characterData: true,
+      subtree: true,
+      childList: true,
+      characterData: true,
     });
   }
 
@@ -56,7 +65,11 @@ export class PageContentCache {
     const debounce = this.opts.debounceMs ?? 2_000;
     const elapsed = Date.now() - this.lastPushedAt;
     if (elapsed >= debounce) this.push();
-    else if (!this.pending) this.pending = setTimeout(() => { this.pending = null; this.push(); }, debounce - elapsed);
+    else if (!this.pending)
+      this.pending = setTimeout(() => {
+        this.pending = null;
+        this.push();
+      }, debounce - elapsed);
   }
 
   private push(): void {

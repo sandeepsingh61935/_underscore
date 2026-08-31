@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { IPC_AI_GET_API_KEY_STATUS } from '@/shared/schemas/message-schemas';
 
 export interface ProviderStatusSnapshot {
@@ -9,9 +9,7 @@ export interface ProviderStatusSnapshot {
   model: string | null;
 }
 
-export function useAllProviderStatuses(
-  providers: ReadonlyArray<ProviderName>,
-): {
+export function useAllProviderStatuses(providers: ReadonlyArray<ProviderName>): {
   statuses: Partial<Record<ProviderName, ProviderStatusSnapshot>>;
   refresh: () => Promise<void>;
 } {
@@ -20,11 +18,13 @@ export function useAllProviderStatuses(
     { configured: boolean; model: string; apiBase?: string }
   >(IPC_AI_GET_API_KEY_STATUS);
 
-  const [statuses, setStatuses] = useState<Partial<Record<ProviderName, ProviderStatusSnapshot>>>({});
+  const [statuses, setStatuses] = useState<
+    Partial<Record<ProviderName, ProviderStatusSnapshot>>
+  >({});
 
   const refresh = useCallback(async () => {
     const results = await Promise.all(
-      providers.map(async provider => {
+      providers.map(async (provider) => {
         const result = await getStatus({ provider });
         if (result.success) {
           return [
@@ -33,7 +33,7 @@ export function useAllProviderStatuses(
           ] as const;
         }
         return [provider, { configured: false, model: null }] as const;
-      }),
+      })
     );
     setStatuses(Object.fromEntries(results));
   }, [getStatus, providers]);

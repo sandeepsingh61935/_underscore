@@ -3,7 +3,7 @@
  *
  * This module initializes the Vault Mode service and sets up
  * the connection between the UI and the storage layer.
- * 
+ *
  * Now uses DualWriteRepository for automatic Supabase sync when authenticated.
  */
 
@@ -22,9 +22,6 @@ export async function initializeCloudMode(): Promise<void> {
     console.warn('[CLOUD] Initializing Vault Mode with cloud sync...');
 
     const service = createCloudModeServiceWithCloudSync();
-
-
-
 
     // Restore highlights for current page
     const restored = await service.restoreHighlightsForUrl();

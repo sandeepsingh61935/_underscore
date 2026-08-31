@@ -47,7 +47,7 @@ export function wrapAsMarkdownCodeFence(source: string, language?: string): stri
  * User presentation wins; else capture sourceKind=code → code; else as_captured.
  */
 export function resolveHighlightPresentation(
-  input: PresentationResolveInput | null | undefined,
+  input: PresentationResolveInput | null | undefined
 ): ResolvedPresentation {
   const user = input?.presentation;
   if (user?.format && isPresentationFormat(user.format)) {
@@ -67,19 +67,25 @@ export function resolveHighlightPresentation(
  */
 export function applyPresentationToDisplaySource(
   text: string,
-  resolved: ResolvedPresentation,
+  resolved: ResolvedPresentation
 ): string {
   const body = text ?? '';
   switch (resolved.format) {
     case 'code':
       return wrapAsMarkdownCodeFence(body, resolved.language);
     case 'bullets': {
-      const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+      const lines = body
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
       if (lines.length === 0) return body;
       return lines.map((l) => `- ${l}`).join('\n');
     }
     case 'numbered': {
-      const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+      const lines = body
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
       if (lines.length === 0) return body;
       return lines.map((l, i) => `${i + 1}. ${l}`).join('\n');
     }
@@ -105,7 +111,7 @@ function isPresentationFormat(value: string): value is HighlightPresentationForm
  * Legacy `plain` (no-op) maps to as_captured so old rows stay valid.
  */
 export function normalizePresentation(
-  input: HighlightPresentation | { format: string; language?: string } | null | undefined,
+  input: HighlightPresentation | { format: string; language?: string } | null | undefined
 ): HighlightPresentation | undefined {
   if (input == null) return undefined;
   let format = input.format;

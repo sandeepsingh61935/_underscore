@@ -15,19 +15,19 @@
 
 import type { ExportScope } from '@/shared/highlight-export';
 import { filterRawHighlightsByScope } from '@/shared/highlight-export';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
-import { getSectionPath } from '@/shared/utils/normalize-page-url';
-import { getSectionKey } from '@/shared/utils/section-key';
-import type { SearchField } from '@/shared/utils/highlight-search';
-import { searchHighlights } from '@/shared/utils/highlight-search';
 import {
   compareByHighlightActivityDesc,
   highlightActivityMs,
 } from '@/shared/utils/highlight-activity';
-import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import type { SearchField } from '@/shared/utils/highlight-search';
+import { searchHighlights } from '@/shared/utils/highlight-search';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
+import { getSectionKey } from '@/shared/utils/section-key';
 
 export interface CollectionSummary {
   domain: string;
@@ -77,20 +77,25 @@ export interface DashboardData {
 export class HighlightQueryService {
   constructor(
     private readonly readable: IReadableHighlightRepository,
-    private readonly tagResolver?: ITagLabelResolver,
+    private readonly tagResolver?: ITagLabelResolver
   ) {}
 
   private async resolveTags(
-    summaries: DomainHighlightSummary[],
+    summaries: DomainHighlightSummary[]
   ): Promise<DomainHighlightSummary[]> {
     if (!this.tagResolver || summaries.length === 0) {
       return summaries;
     }
 
-    const labelMap = await this.tagResolver.getLabelsForHighlights(summaries.map((s) => s.id));
+    const labelMap = await this.tagResolver.getLabelsForHighlights(
+      summaries.map((s) => s.id)
+    );
     return summaries.map((summary) => ({
       ...summary,
-      tags: this.tagResolver!.mergeWithMetadataFallback(labelMap.get(summary.id), summary.tags),
+      tags: this.tagResolver!.mergeWithMetadataFallback(
+        labelMap.get(summary.id),
+        summary.tags
+      ),
     }));
   }
 

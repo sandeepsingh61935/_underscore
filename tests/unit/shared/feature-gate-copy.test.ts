@@ -4,7 +4,9 @@ import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
 
 describe('featureGateSubtitle', () => {
   it('maps capability denial to Account (Free) upgrade copy', () => {
-    expect(featureGateSubtitle('CAPABILITY_DENIED')).toBe('Available with Account (Free)');
+    expect(featureGateSubtitle('CAPABILITY_DENIED')).toBe(
+      'Available with Account (Free)'
+    );
   });
 
   it('maps auth requirement to sign-in copy', () => {

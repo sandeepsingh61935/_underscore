@@ -21,11 +21,14 @@ export class ContentHighlightDeleteClient {
   }
 
   async undoDelete(): Promise<ContentDeleteOutcome> {
-    const response = await this.messageBus.send<MessageResponse<DeleteResult>>('background', {
-      type: IPC_HIGHLIGHT_UNDO_DELETE,
-      payload: {},
-      timestamp: Date.now(),
-    });
+    const response = await this.messageBus.send<MessageResponse<DeleteResult>>(
+      'background',
+      {
+        type: IPC_HIGHLIGHT_UNDO_DELETE,
+        payload: {},
+        timestamp: Date.now(),
+      }
+    );
 
     if (!response?.success) {
       return { ok: false, error: response?.error ?? 'Undo failed' };
@@ -39,14 +42,18 @@ export class ContentHighlightDeleteClient {
     return { ok: true, data };
   }
 
-  private async sendDelete(
-    payload: { scope: 'highlight'; id: string },
-  ): Promise<ContentDeleteOutcome> {
-    const response = await this.messageBus.send<MessageResponse<DeleteResult>>('background', {
-      type: IPC_HIGHLIGHT_DELETE_SCOPE,
-      payload,
-      timestamp: Date.now(),
-    });
+  private async sendDelete(payload: {
+    scope: 'highlight';
+    id: string;
+  }): Promise<ContentDeleteOutcome> {
+    const response = await this.messageBus.send<MessageResponse<DeleteResult>>(
+      'background',
+      {
+        type: IPC_HIGHLIGHT_DELETE_SCOPE,
+        payload,
+        timestamp: Date.now(),
+      }
+    );
 
     if (!response?.success) {
       return { ok: false, error: response?.error ?? 'Delete failed' };

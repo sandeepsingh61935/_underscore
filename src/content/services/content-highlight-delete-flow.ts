@@ -1,6 +1,6 @@
 import type { HighlightData } from '@/content/modes/highlight-mode.interface';
 import type { ModeManager } from '@/content/modes/mode-manager';
-import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
+import type { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
 import {
   dismissDeleteUndoToast,
   showDeleteErrorToast,
@@ -25,7 +25,7 @@ export function clearPendingContentUndo(): void {
 
 export async function performContentHighlightDelete(
   id: string,
-  deps: ContentHighlightDeleteFlowDeps,
+  deps: ContentHighlightDeleteFlowDeps
 ): Promise<ContentDeleteOutcome> {
   const snapshot = deps.getSnapshot(id);
   if (!snapshot) {
@@ -55,7 +55,7 @@ export async function performContentHighlightDelete(
 
 export async function undoContentHighlightDelete(
   id: string,
-  deps: Pick<ContentHighlightDeleteFlowDeps, 'deleteClient' | 'modeManager'>,
+  deps: Pick<ContentHighlightDeleteFlowDeps, 'deleteClient' | 'modeManager'>
 ): Promise<boolean> {
   const snapshot = pendingUndoSnapshot;
   pendingUndoSnapshot = null;

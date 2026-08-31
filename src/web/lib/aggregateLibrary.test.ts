@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 
-import {
-  aggregateLibrary,
-  type WebHighlight,
-} from './aggregateLibrary';
+import { aggregateLibrary, type WebHighlight } from './aggregateLibrary';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 7, 5, 12, 0, 0); // 2026-08-05T12:00:00Z
 
-function hl(partial: Partial<WebHighlight> & Pick<WebHighlight, 'id' | 'domain' | 'path' | 'savedAt'>): WebHighlight {
+function hl(
+  partial: Partial<WebHighlight> &
+    Pick<WebHighlight, 'id' | 'domain' | 'path' | 'savedAt'>
+): WebHighlight {
   return {
     quote: partial.quote ?? `quote-${partial.id}`,
     note: partial.note ?? '',
@@ -60,7 +60,7 @@ describe('aggregateLibrary', () => {
       expect.arrayContaining([
         { path: '/docs', count: 2 },
         { path: '/blog', count: 1 },
-      ]),
+      ])
     );
 
     expect(second!.domain).toBe('b.com');
@@ -76,14 +76,14 @@ describe('aggregateLibrary', () => {
         domain: 'x.com',
         path: `/${i}`,
         savedAt: NOW - i * 1000,
-      }),
+      })
     );
 
     const result = aggregateLibrary(rows, { now: NOW });
 
     expect(result.recent).toHaveLength(12);
     expect(result.recent.map((r) => r.id)).toEqual(
-      Array.from({ length: 12 }, (_, i) => String(i)),
+      Array.from({ length: 12 }, (_, i) => String(i))
     );
   });
 

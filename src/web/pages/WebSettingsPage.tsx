@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import { freeEntitlement } from '@/shared/billing';
 import type { ExportFormat } from '@/shared/highlight-export';
 import type { ThemeType } from '@/shared/types/theme';
@@ -18,7 +19,6 @@ import { resolveSettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import type { BillingReturnKind } from '@/web/components/settings/BillingReturnBanners';
-import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
 import {
   AccountPanel,
   AiPanel,
@@ -64,7 +64,7 @@ export function WebSettingsPage(): React.ReactElement {
         isPaidActive,
         billingStatus: entitlement.status,
       }),
-    [isAuthenticated, isPaidActive, entitlement.status],
+    [isAuthenticated, isPaidActive, entitlement.status]
   );
 
   const lib = useWebLibrary({
@@ -113,10 +113,10 @@ export function WebSettingsPage(): React.ReactElement {
     (next: SettingsTab) => {
       navigate(
         { pathname: '/settings', search: buildSettingsSearch(next) },
-        { replace: true },
+        { replace: true }
       );
     },
-    [navigate],
+    [navigate]
   );
 
   const clearHandoffSoon = useCallback(() => {
@@ -154,7 +154,7 @@ export function WebSettingsPage(): React.ReactElement {
       if (!caps.flags.export) return;
       exportWebHighlights(lib.highlights, format, { kind: 'library' });
     },
-    [caps.flags.export, lib.highlights],
+    [caps.flags.export, lib.highlights]
   );
 
   const handleDataSync = useCallback(() => {
@@ -197,10 +197,7 @@ export function WebSettingsPage(): React.ReactElement {
       break;
     case 'appearance':
       panel = (
-        <AppearancePanel
-          theme={theme}
-          onThemeChange={(t: ThemeType) => setTheme(t)}
-        />
+        <AppearancePanel theme={theme} onThemeChange={(t: ThemeType) => setTheme(t)} />
       );
       break;
     case 'keyboard':
@@ -237,11 +234,7 @@ export function WebSettingsPage(): React.ReactElement {
               : undefined
           }
           highlightCount={isAuthenticated ? lib.highlights.length : 0}
-          onDeleteLibrary={
-            isAuthenticated
-              ? () => setDeleteLibraryOpen(true)
-              : undefined
-          }
+          onDeleteLibrary={isAuthenticated ? () => setDeleteLibraryOpen(true) : undefined}
           deleteLibraryBusy={deleteLibraryBusy}
         />
       );
@@ -272,7 +265,11 @@ export function WebSettingsPage(): React.ReactElement {
         </div>
       </div>
       <div className="settings-grid">
-        <nav className="settings-nav" data-od-id="settings-nav" aria-label="Settings sections">
+        <nav
+          className="settings-nav"
+          data-od-id="settings-nav"
+          aria-label="Settings sections"
+        >
           {TABS.map((t) => (
             <button
               key={t.id}

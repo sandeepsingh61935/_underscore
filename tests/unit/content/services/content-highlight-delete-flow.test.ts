@@ -39,10 +39,12 @@ function makeSnapshot(): HighlightData {
   };
 }
 
-function makeDeps(overrides: Partial<{
-  deleteResult: Awaited<ReturnType<ContentHighlightDeleteClient['deleteHighlight']>>;
-  undoResult: Awaited<ReturnType<ContentHighlightDeleteClient['undoDelete']>>;
-}> = {}) {
+function makeDeps(
+  overrides: Partial<{
+    deleteResult: Awaited<ReturnType<ContentHighlightDeleteClient['deleteHighlight']>>;
+    undoResult: Awaited<ReturnType<ContentHighlightDeleteClient['undoDelete']>>;
+  }> = {}
+) {
   const modeManager = {
     detachHighlightFromPage: vi.fn().mockResolvedValue(undefined),
     createFromData: vi.fn().mockResolvedValue(undefined),
@@ -50,12 +52,16 @@ function makeDeps(overrides: Partial<{
   } as unknown as ModeManager;
 
   const deleteClient = {
-    deleteHighlight: vi.fn().mockResolvedValue(
-      overrides.deleteResult ?? { ok: true, data: { success: true, deletedCount: 1 } },
-    ),
-    undoDelete: vi.fn().mockResolvedValue(
-      overrides.undoResult ?? { ok: true, data: { success: true, deletedCount: 0 } },
-    ),
+    deleteHighlight: vi
+      .fn()
+      .mockResolvedValue(
+        overrides.deleteResult ?? { ok: true, data: { success: true, deletedCount: 1 } }
+      ),
+    undoDelete: vi
+      .fn()
+      .mockResolvedValue(
+        overrides.undoResult ?? { ok: true, data: { success: true, deletedCount: 0 } }
+      ),
   } as unknown as ContentHighlightDeleteClient;
 
   return {
@@ -85,7 +91,6 @@ describe('performContentHighlightDelete', () => {
     expect(deleteClient.deleteHighlight).toHaveBeenCalledWith(HIGHLIGHT_ID);
     expect(modeManager.detachHighlightFromPage).toHaveBeenCalledWith(HIGHLIGHT_ID);
   });
-
 });
 
 describe('undoContentHighlightDelete', () => {
@@ -101,6 +106,8 @@ describe('undoContentHighlightDelete', () => {
 
     expect(ok).toBe(true);
     expect(deleteClient.undoDelete).toHaveBeenCalled();
-    expect(modeManager.createFromData).toHaveBeenCalledWith(expect.objectContaining({ id: HIGHLIGHT_ID }));
+    expect(modeManager.createFromData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: HIGHLIGHT_ID })
+    );
   });
 });

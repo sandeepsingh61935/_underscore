@@ -13,10 +13,7 @@ export function SettingsKeyboardSection(props?: {
   hideHeading?: boolean;
 }): React.ReactElement {
   const hideHeading = props?.hideHeading ?? false;
-  const rows = useMemo(
-    () => buildShortcutsTable(detectShortcutPlatform()),
-    [],
-  );
+  const rows = useMemo(() => buildShortcutsTable(detectShortcutPlatform()), []);
 
   return (
     <div data-testid="settings-section-keyboard">

@@ -18,7 +18,9 @@ export function upgradeHighlightDatabase(db: IDBPDatabase): void {
     store.createIndex('name', 'name', { unique: true });
   }
   if (!db.objectStoreNames.contains(HIGHLIGHT_TAGS_STORE)) {
-    const store = db.createObjectStore(HIGHLIGHT_TAGS_STORE, { keyPath: ['highlightId', 'tagId'] });
+    const store = db.createObjectStore(HIGHLIGHT_TAGS_STORE, {
+      keyPath: ['highlightId', 'tagId'],
+    });
     store.createIndex('highlightId', 'highlightId');
     store.createIndex('tagId', 'tagId');
   }

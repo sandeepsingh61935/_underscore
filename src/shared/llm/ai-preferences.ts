@@ -50,7 +50,7 @@ export function emptyAiPreferences(nowMs = 0): AiPreferences {
 
 export function isProviderPreferenceEnabled(
   prefs: Pick<AiPreferences, 'enabledProviders'>,
-  provider: ProviderName,
+  provider: ProviderName
 ): boolean {
   if (prefs.enabledProviders.length === 0) return true;
   return prefs.enabledProviders.includes(provider);
@@ -107,7 +107,7 @@ export function parseAiPreferencesRow(row: unknown): AiPreferences | null {
 
 export function aiPreferencesToRow(
   userId: string,
-  prefs: AiPreferences,
+  prefs: AiPreferences
 ): Omit<AiPreferencesRow, 'created_at'> {
   return {
     user_id: userId,
@@ -121,7 +121,7 @@ export function aiPreferencesToRow(
 /** True when local should win over remote (or remote missing). */
 export function isLocalNewer(
   local: AiPreferences,
-  remote: AiPreferences | null,
+  remote: AiPreferences | null
 ): boolean {
   if (!remote) return local.updatedAtMs > 0 || hasPrefsContent(local);
   return local.updatedAtMs > remote.updatedAtMs;
@@ -137,7 +137,7 @@ export function hasPrefsContent(prefs: AiPreferences): boolean {
 export function pickLwwPrefs(
   a: AiPreferences,
   b: AiPreferences,
-  preferred: 'a' | 'b' = 'a',
+  preferred: 'a' | 'b' = 'a'
 ): AiPreferences {
   if (a.updatedAtMs > b.updatedAtMs) return a;
   if (b.updatedAtMs > a.updatedAtMs) return b;
@@ -150,7 +150,7 @@ export function pickLwwPrefs(
  */
 export function resolveSyncedPrefs(
   local: AiPreferences,
-  remote: AiPreferences | null,
+  remote: AiPreferences | null
 ): { prefs: AiPreferences; source: 'local' | 'remote' | 'empty' } {
   if (!remote) {
     if (!hasPrefsContent(local) && local.updatedAtMs === 0) {
@@ -165,9 +165,7 @@ export function resolveSyncedPrefs(
 }
 
 /** Normalize enabled list: only known providers, preserve order of catalog. */
-export function normalizeEnabledProviders(
-  list: readonly ProviderName[],
-): ProviderName[] {
+export function normalizeEnabledProviders(list: readonly ProviderName[]): ProviderName[] {
   const set = new Set(list.filter(isInAppLlmProvider));
   return IN_APP_LLM_PROVIDER_ORDER.filter((p) => set.has(p));
 }
@@ -175,7 +173,7 @@ export function normalizeEnabledProviders(
 /** Bump LWW clock for a local edit. */
 export function touchPrefs(
   prefs: AiPreferences,
-  nowMs: number = Date.now(),
+  nowMs: number = Date.now()
 ): AiPreferences {
   return { ...prefs, updatedAtMs: Math.max(nowMs, prefs.updatedAtMs + 1) };
 }

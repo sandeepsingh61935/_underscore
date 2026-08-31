@@ -16,8 +16,7 @@ export interface RateLimitState {
 }
 
 export type RateLimitDecision =
-  | { ok: true }
-  | { ok: false; reason: 'rate_hour' | 'rate_minute' | 'concurrent' };
+  { ok: true } | { ok: false; reason: 'rate_hour' | 'rate_minute' | 'concurrent' };
 
 export function emptyRateLimitState(): RateLimitState {
   return { starts: [], concurrent: 0 };
@@ -30,7 +29,7 @@ export function checkAndRecordStreamStart(
     perHour?: number;
     perMinute?: number;
     maxConcurrent?: number;
-  },
+  }
 ): { decision: RateLimitDecision; next: RateLimitState } {
   const perHour = opts?.perHour ?? LLM_PROXY_RATE_LIMIT_PER_HOUR;
   const perMinute = opts?.perMinute ?? LLM_PROXY_RATE_LIMIT_PER_MINUTE;

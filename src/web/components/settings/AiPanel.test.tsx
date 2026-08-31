@@ -41,8 +41,12 @@ const GUEST: WebCaps = {
 function renderAi(caps: WebCaps, isAuthenticated: boolean): void {
   render(
     <MemoryRouter>
-      <AiPanel caps={caps} isAuthenticated={isAuthenticated} userId={isAuthenticated ? 'user-1' : null} />
-    </MemoryRouter>,
+      <AiPanel
+        caps={caps}
+        isAuthenticated={isAuthenticated}
+        userId={isAuthenticated ? 'user-1' : null}
+      />
+    </MemoryRouter>
   );
 }
 
@@ -53,7 +57,9 @@ describe('AiPanel Integrations-only', () => {
 
   it('shows Integrations heading and early-access for free-window signed-in', () => {
     renderAi(FREE_WINDOW, true);
-    expect(document.querySelector('[data-od-id="settings-ai"]')?.textContent).toMatch(/Integrations/i);
+    expect(document.querySelector('[data-od-id="settings-ai"]')?.textContent).toMatch(
+      /Integrations/i
+    );
     expect(document.querySelector('[data-od-id="ai-early-access-banner"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ai-seg-models"]')).toBeNull();
     expect(document.querySelector('[data-od-id="provider-openai"]')).toBeNull();
@@ -62,7 +68,9 @@ describe('AiPanel Integrations-only', () => {
   it('guest sees sign-in lock, not Models', () => {
     renderAi(GUEST, false);
     expect(document.querySelector('[data-od-id="ai-lock-banner"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="settings-ai-see-plan"]')?.textContent).toMatch(/Sign in/i);
+    expect(
+      document.querySelector('[data-od-id="settings-ai-see-plan"]')?.textContent
+    ).toMatch(/Sign in/i);
     expect(document.querySelector('[data-od-id="ai-seg-models"]')).toBeNull();
   });
 

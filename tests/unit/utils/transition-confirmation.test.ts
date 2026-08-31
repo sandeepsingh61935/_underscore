@@ -75,11 +75,7 @@ describe('Transition Confirmation', () => {
         throw new Error('Dialog blocked');
       });
 
-      const result = await requestTransitionConfirmation(
-        'basic',
-        'pro',
-        'Test message'
-      );
+      const result = await requestTransitionConfirmation('basic', 'pro', 'Test message');
 
       // Should return false on error (safe default)
       expect(result).toBe(false);

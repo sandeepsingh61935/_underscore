@@ -8,7 +8,9 @@ export interface SessionBridgePayload {
 }
 
 function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+  return (
+    typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function'
+  );
 }
 
 /**
@@ -74,5 +76,7 @@ export async function clearExtensionSession(): Promise<void> {
 }
 
 export function isExtensionInstalled(): boolean {
-  return Boolean(getTargetExtensionId()) || (hasChromeRuntime() && Boolean(chrome.runtime.id));
+  return (
+    Boolean(getTargetExtensionId()) || (hasChromeRuntime() && Boolean(chrome.runtime.id))
+  );
 }

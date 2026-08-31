@@ -29,11 +29,7 @@ export function LibrarySectionRow({
         <span className="sr-path">{title}</span>
         <span className="sr-count">{count}</span>
       </button>
-      <ScopeRowActions
-        kind="section"
-        show={showActions}
-        onDelete={onDelete}
-      />
+      <ScopeRowActions kind="section" show={showActions} onDelete={onDelete} />
     </div>
   );
 }

@@ -54,7 +54,7 @@ type RuntimeLike = {
   sendMessage: (
     extensionIdOrMessage: string | unknown,
     messageOrCb?: unknown,
-    cb?: (response: unknown) => void,
+    cb?: (response: unknown) => void
   ) => void;
 };
 
@@ -124,7 +124,7 @@ function waitForPostMessage(budgetMs: number): Promise<string | null> {
 function runtimeSend(
   runtime: RuntimeLike,
   extensionId: string,
-  message: unknown,
+  message: unknown
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     try {
@@ -174,9 +174,7 @@ function parsePingResponse(response: unknown): {
   return { ok: false, error: 'unrecognized_response' };
 }
 
-async function defaultSendPing(opts: {
-  skipDomPoll?: boolean;
-}): Promise<{
+async function defaultSendPing(opts: { skipDomPoll?: boolean }): Promise<{
   ok: boolean;
   version?: string;
   via?: ExtensionPingResult['via'];
@@ -253,18 +251,17 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
       (e) => {
         clearTimeout(t);
         reject(e);
-      },
+      }
     );
   });
 }
 
 export async function pingExtensionPresence(
-  deps: ExtensionPingDeps = {},
+  deps: ExtensionPingDeps = {}
 ): Promise<ExtensionPingResult> {
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const send =
-    deps.sendPing ??
-    (() => defaultSendPing({ skipDomPoll: deps.skipDomPoll }));
+    deps.sendPing ?? (() => defaultSendPing({ skipDomPoll: deps.skipDomPoll }));
   try {
     const result = await withTimeout(send(), timeoutMs);
     if (result.ok) {

@@ -8,7 +8,7 @@ import {
 describe('resolveWebAuthStorageKey', () => {
   it('derives sb-<project-ref>-auth-token from Supabase URL host', () => {
     expect(resolveWebAuthStorageKey('https://cuzwaukxagefyvtxbqmi.supabase.co')).toBe(
-      'sb-cuzwaukxagefyvtxbqmi-auth-token',
+      'sb-cuzwaukxagefyvtxbqmi-auth-token'
     );
   });
 

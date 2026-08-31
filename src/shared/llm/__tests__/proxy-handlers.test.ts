@@ -25,10 +25,7 @@ vi.mock('@/shared/llm/providers/build-provider-from-config', () => ({
       supportsStreaming: true,
       supportsToolUse: false,
     },
-    streamChat: async (
-      _req: unknown,
-      onChunk: (c: { delta: string }) => void,
-    ) => {
+    streamChat: async (_req: unknown, onChunk: (c: { delta: string }) => void) => {
       onChunk({ delta: 'hi' });
       return { text: 'hi', inputTokens: 1, outputTokens: 1, durationMs: 1 };
     },
@@ -101,7 +98,7 @@ describe('handleLlmStreamProxy / health', () => {
         headers: { 'content-type': 'application/json' },
         body: '{}',
       }),
-      env,
+      env
     );
     expect(res.status).toBe(401);
   });
@@ -125,7 +122,7 @@ describe('handleLlmStreamProxy / health', () => {
           },
         }),
       }),
-      env,
+      env
     );
     expect(res.status).toBe(403);
   });
@@ -145,7 +142,7 @@ describe('handleLlmStreamProxy / health', () => {
           request: { systemPrompt: 's', messages: [], maxTokens: 1 },
         }),
       }),
-      env,
+      env
     );
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
@@ -173,13 +170,11 @@ describe('handleLlmStreamProxy / health', () => {
           },
         }),
       }),
-      env,
+      env
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
-    expect(res.headers.get('access-control-allow-origin')).toBe(
-      'http://127.0.0.1:3000',
-    );
+    expect(res.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:3000');
     const text = await res.text();
     expect(text).toContain('event: chunk');
     expect(text).toContain('"delta":"hi"');
@@ -198,7 +193,7 @@ describe('handleLlmStreamProxy / health', () => {
         },
         body: JSON.stringify({ provider: 'openai', model: 'gpt-4o-mini' }),
       }),
-      env,
+      env
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; model: string };

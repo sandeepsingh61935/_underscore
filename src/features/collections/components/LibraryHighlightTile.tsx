@@ -65,7 +65,7 @@ export function LibraryHighlightTile({
 
   const onSaveQuote = useCallback(
     async (text: string): Promise<boolean> => updateText(highlight.id, text),
-    [highlight.id, updateText],
+    [highlight.id, updateText]
   );
 
   const quote = highlight.text || '[Unavailable]';

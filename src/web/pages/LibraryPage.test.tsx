@@ -1,10 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import {
-  createMemoryRouter,
-  RouterProvider,
-} from 'react-router-dom';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { LibraryPage } from './LibraryPage';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
@@ -26,7 +23,7 @@ const mockFetch = vi.fn<() => Promise<WebHighlight[]>>();
 
 vi.mock('@/web/hooks/useWebLibrary', async () => {
   const actual = await vi.importActual<typeof import('@/web/hooks/useWebLibrary')>(
-    '@/web/hooks/useWebLibrary',
+    '@/web/hooks/useWebLibrary'
   );
   return {
     ...actual,
@@ -139,10 +136,9 @@ function renderLibrary(initialPath: string, authenticated = true) {
     user: authenticated ? { email: 'u@test.com' } : null,
   });
 
-  const router = createMemoryRouter(
-    [{ path: '/library', element: <LibraryPage /> }],
-    { initialEntries: [initialPath] },
-  );
+  const router = createMemoryRouter([{ path: '/library', element: <LibraryPage /> }], {
+    initialEntries: [initialPath],
+  });
 
   const result = render(<RouterProvider router={router} />);
   return { router, ...result };
@@ -156,9 +152,7 @@ describe('LibraryPage', () => {
   });
 
   it('selecting All clears domain/section query params', async () => {
-    const { router } = renderLibrary(
-      '/library?domain=example.com&section=%2Fdocs',
-    );
+    const { router } = renderLibrary('/library?domain=example.com&section=%2Fdocs');
 
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="lib-all"]')).toBeTruthy();
@@ -167,7 +161,7 @@ describe('LibraryPage', () => {
     // Scope title should reflect section
     await waitFor(() => {
       expect(
-        document.querySelector('[data-od-id="library-scope-title"]')?.textContent,
+        document.querySelector('[data-od-id="library-scope-title"]')?.textContent
       ).toBe('docs');
     });
 
@@ -179,7 +173,7 @@ describe('LibraryPage', () => {
     });
 
     expect(
-      document.querySelector('[data-od-id="lib-all"]')?.classList.contains('active'),
+      document.querySelector('[data-od-id="lib-all"]')?.classList.contains('active')
     ).toBe(true);
   });
 
@@ -210,7 +204,7 @@ describe('LibraryPage', () => {
     expect(document.querySelectorAll('.hl-quote').length).toBe(0);
     expect(screen.getByText('No highlights')).toBeTruthy();
     const install = document.querySelector(
-      '[data-od-id="library-empty-install"]',
+      '[data-od-id="library-empty-install"]'
     ) as HTMLAnchorElement | null;
     expect(install).toBeTruthy();
     expect(install?.getAttribute('href')).toBe('/install');
@@ -228,7 +222,7 @@ describe('LibraryPage', () => {
     });
 
     expect(
-      document.querySelector('[data-od-id="library-export-btn"]')?.textContent,
+      document.querySelector('[data-od-id="library-export-btn"]')?.textContent
     ).toMatch(/Download/i);
 
     await waitFor(() => {
@@ -246,10 +240,10 @@ describe('LibraryPage', () => {
     expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="hl-tag-add-h1"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
-      /Add note/,
+      /Add note/
     );
     expect(document.querySelector('[data-od-id="hl-note-h2"]')?.textContent).toMatch(
-      /note here/,
+      /note here/
     );
   });
 
@@ -316,7 +310,9 @@ describe('LibraryPage', () => {
 
     await waitFor(() => {
       expect(router.state.location.search).toContain('highlight=r1');
-      expect(document.querySelector('[data-od-id="library-highlight-detail"]')).toBeTruthy();
+      expect(
+        document.querySelector('[data-od-id="library-highlight-detail"]')
+      ).toBeTruthy();
       expect(document.querySelector('[data-od-id="related-highlights"]')).toBeTruthy();
     });
 
@@ -355,12 +351,12 @@ describe('LibraryPage', () => {
       expect(
         document
           .querySelector('[data-od-id="library-pager-page-2"]')
-          ?.getAttribute('aria-current'),
+          ?.getAttribute('aria-current')
       ).toBe('page');
     });
 
     const goto = document.querySelector(
-      '[data-od-id="library-pager-goto"]',
+      '[data-od-id="library-pager-goto"]'
     ) as HTMLInputElement;
     expect(goto).toBeTruthy();
     fireEvent.change(goto, { target: { value: '3' } });
@@ -372,7 +368,7 @@ describe('LibraryPage', () => {
       expect(
         document
           .querySelector('[data-od-id="library-pager-page-3"]')
-          ?.getAttribute('aria-current'),
+          ?.getAttribute('aria-current')
       ).toBe('page');
     });
   });

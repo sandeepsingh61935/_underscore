@@ -32,7 +32,7 @@ function toErrorMessage(err: unknown, fallback: string): string {
  * Sets `deleted_at`; does not hard-delete.
  */
 export async function softDeleteHighlightsWeb(
-  ids: readonly string[],
+  ids: readonly string[]
 ): Promise<WebDeleteResult> {
   const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
   if (unique.length === 0) {

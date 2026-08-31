@@ -6,13 +6,13 @@
  */
 
 import type { HighlightData as ModeHighlightData } from '@/content/modes/highlight-mode.interface';
-import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { deserializeRange, serializeRange } from '@/content/utils/range-converter';
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import type { IModeManager } from '@/shared/interfaces/i-mode-manager';
 import type { Command } from '@/shared/patterns/command';
 import type { SerializedRange } from '@/shared/schemas/highlight-schema';
-import type { ILogger } from '@/shared/utils/logger';
 import { generateContentHash } from '@/shared/utils/content-hash';
+import type { ILogger } from '@/shared/utils/logger';
 import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
 /**
@@ -111,14 +111,12 @@ export class CreateHighlightCommand implements Command {
         }
 
         // Prefer snapshotted body; fall back to same capture policy as create.
-        const text =
-          this.bodyText ?? resolveCaptureBodyText(range).text;
+        const text = this.bodyText ?? resolveCaptureBodyText(range).text;
         if (!text) {
           this.logger.warn('Cannot redo: Empty capture body text');
           return;
         }
-        const contentHash =
-          this.contentHash ?? (await generateContentHash(text));
+        const contentHash = this.contentHash ?? (await generateContentHash(text));
 
         // Recreate via mode's createFromData - this handles ALL persistence
         const mode = this.modeManager.getCurrentMode();
@@ -201,7 +199,7 @@ export class RemoveHighlightCommand implements Command {
     private readonly highlightId: string,
     private readonly modeManager: IModeManager,
     private readonly logger: ILogger
-  ) { }
+  ) {}
 
   /**
    * Execute: Remove highlight via mode manager

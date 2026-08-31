@@ -3,8 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import { mapOAuthGrantList, type OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
 import { parseMcpLastSuccessAt } from '@/shared/mcp/mcp-session-client';
+import { mapOAuthGrantList, type OAuthGrantSummary } from '@/shared/oauth/oauth-grants';
 import {
   IPC_MCP_LAST_SESSION,
   IPC_OAUTH_LIST_GRANTS,
@@ -46,7 +46,11 @@ export function registerOAuthGrantHandlers(deps: OAuthGrantHandlerDeps): void {
     try {
       const clientId = payload?.clientId?.trim();
       if (!clientId) {
-        return { success: false, error: 'clientId is required', code: 'INVALID_ARGUMENT' };
+        return {
+          success: false,
+          error: 'clientId is required',
+          code: 'INVALID_ARGUMENT',
+        };
       }
       if (!authManager.isAuthenticated) {
         return { success: false, error: 'Sign in required', code: 'AUTH_REQUIRED' };

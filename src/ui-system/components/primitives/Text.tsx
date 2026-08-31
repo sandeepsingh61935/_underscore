@@ -14,28 +14,28 @@ import React, { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 
 export type TextVariant =
-  | 'displayLarge'   // --step-6 (48px)
-  | 'displaySmall'   // --step-5 (36px)
-  | 'headlineLarge'  // --step-5 (36px)
+  | 'displayLarge' // --step-6 (48px)
+  | 'displaySmall' // --step-5 (36px)
+  | 'headlineLarge' // --step-5 (36px)
   | 'headlineMedium' // --step-4 (28px)
-  | 'headlineSmall'  // --step-3 (22px)
-  | 'titleLarge'     // --step-3 (22px)
-  | 'titleMedium'    // --step-2 (18px)
-  | 'titleSmall'     // --step-1 (15px)
-  | 'bodyLarge'      // --step-1 (15px)
-  | 'bodyMedium'     // --step-0 (13px)
-  | 'bodySmall'      // --step--1 (11px)
-  | 'labelLarge'     // --step-0 (13px)
-  | 'labelMedium'    // --step--1 (11px)
-  | 'labelSmall'     // --step--2 (10px)
-  | 'h1'             // --step-5
-  | 'h2'             // --step-4
-  | 'h3'             // --step-3
-  | 'body'           // --step-0
-  | 'small'          // --step--1
-  | 'tiny'           // --step--1
-  | 'label'          // --step--1
-  | 'link';          // --step--1 + ink color
+  | 'headlineSmall' // --step-3 (22px)
+  | 'titleLarge' // --step-3 (22px)
+  | 'titleMedium' // --step-2 (18px)
+  | 'titleSmall' // --step-1 (15px)
+  | 'bodyLarge' // --step-1 (15px)
+  | 'bodyMedium' // --step-0 (13px)
+  | 'bodySmall' // --step--1 (11px)
+  | 'labelLarge' // --step-0 (13px)
+  | 'labelMedium' // --step--1 (11px)
+  | 'labelSmall' // --step--2 (10px)
+  | 'h1' // --step-5
+  | 'h2' // --step-4
+  | 'h3' // --step-3
+  | 'body' // --step-0
+  | 'small' // --step--1
+  | 'tiny' // --step--1
+  | 'label' // --step--1
+  | 'link'; // --step--1 + ink color
 
 interface TextProps extends HTMLAttributes<HTMLElement> {
   variant?: TextVariant;
@@ -49,28 +49,28 @@ interface TextProps extends HTMLAttributes<HTMLElement> {
  * smaller than MD3's 13-variant scale — V2 favors fewer, larger jumps.
  */
 const variantStepMap: Record<TextVariant, string> = {
-  displayLarge:  'var(--step-6)',
-  displaySmall:  'var(--step-5)',
+  displayLarge: 'var(--step-6)',
+  displaySmall: 'var(--step-5)',
   headlineLarge: 'var(--step-5)',
   headlineMedium: 'var(--step-4)',
   headlineSmall: 'var(--step-3)',
-  titleLarge:    'var(--step-3)',
-  titleMedium:   'var(--step-2)',
-  titleSmall:    'var(--step-1)',
-  bodyLarge:     'var(--step-1)',
-  bodyMedium:    'var(--step-0)',
-  bodySmall:     'var(--step--1)',
-  labelLarge:    'var(--step-0)',
-  labelMedium:   'var(--step--1)',
-  labelSmall:    'var(--step--2)',
-  h1:            'var(--step-5)',
-  h2:            'var(--step-4)',
-  h3:            'var(--step-3)',
-  body:          'var(--step-0)',
-  small:         'var(--step--1)',
-  tiny:          'var(--step--1)',
-  label:         'var(--step--1)',
-  link:          'var(--step--1)',
+  titleLarge: 'var(--step-3)',
+  titleMedium: 'var(--step-2)',
+  titleSmall: 'var(--step-1)',
+  bodyLarge: 'var(--step-1)',
+  bodyMedium: 'var(--step-0)',
+  bodySmall: 'var(--step--1)',
+  labelLarge: 'var(--step-0)',
+  labelMedium: 'var(--step--1)',
+  labelSmall: 'var(--step--2)',
+  h1: 'var(--step-5)',
+  h2: 'var(--step-4)',
+  h3: 'var(--step-3)',
+  body: 'var(--step-0)',
+  small: 'var(--step--1)',
+  tiny: 'var(--step--1)',
+  label: 'var(--step--1)',
+  link: 'var(--step--1)',
 };
 
 const semanticTagMap: Partial<Record<TextVariant, ElementType>> = {
@@ -106,7 +106,7 @@ const Text = forwardRef<HTMLElement, TextProps>(
         className={cn(
           'font-serif',
           isLink && 'cursor-pointer hover:underline',
-          className,
+          className
         )}
         style={computedStyle}
         {...props}

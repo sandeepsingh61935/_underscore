@@ -7,7 +7,7 @@ import type { RelatednessDoc } from './types';
 function doc(
   id: string,
   tags: string[],
-  extras?: Partial<RelatednessDoc>,
+  extras?: Partial<RelatednessDoc>
 ): RelatednessDoc {
   return {
     id,

@@ -5,8 +5,8 @@
 **Last updated:** 21 August 2026
 
 This policy describes how Underscore Highlighter (“Underscore”, “we”, “the
-product”) handles information when you use the browser extension and the
-related web app.
+product”) handles information when you use the browser extension and the related
+web app.
 
 For store listings, the canonical public URL should point at the hosted copy of
 this policy (web app `/privacy` once deployed), not only this repository file.
@@ -48,8 +48,8 @@ When you create a highlight, the product may store:
 - Presentation preferences (for example type presets)
 
 **Guest / device-local use:** this data is stored in extension or browser
-storage on your device (for example `storage.local` / IndexedDB). It is not
-sent to Underscore servers for sync while you remain signed out.
+storage on your device (for example `storage.local` / IndexedDB). It is not sent
+to Underscore servers for sync while you remain signed out.
 
 **Signed-in sync:** when your account and mode support cloud sync, library data
 is transmitted to and stored on our backend (Supabase) so it can appear across
@@ -63,8 +63,8 @@ If you create or use an account, we process:
 
 - Email address
 - Authentication identifiers and session tokens
-- Optional profile fields provided by the identity provider (for example
-  display name or avatar URL from Google sign-in)
+- Optional profile fields provided by the identity provider (for example display
+  name or avatar URL from Google sign-in)
 - Security-related signals needed to prevent abuse (for example rate limits on
   auth attempts)
 
@@ -86,11 +86,11 @@ AI is optional and user-configured:
 
 - **Bring-your-own-key (BYOK)** providers (for example OpenAI, Anthropic,
   Google, xAI, OpenRouter): API keys you enter are stored in extension storage
-  on your device. Requests go to those providers (or via our web app proxy
-  where documented) with content needed for the feature you invoked.
-- **Local Ollama:** if you enable it, the extension may contact
-  `localhost` / `127.0.0.1` on the Ollama port you use. Data stays on your
-  machine except as your local stack is configured.
+  on your device. Requests go to those providers (or via our web app proxy where
+  documented) with content needed for the feature you invoked.
+- **Local Ollama:** if you enable it, the extension may contact `localhost` /
+  `127.0.0.1` on the Ollama port you use. Data stays on your machine except as
+  your local stack is configured.
 - **MCP bridge:** if you enable a local agent bridge, the extension may open a
   connection to a local bridge port on your machine.
 
@@ -100,8 +100,8 @@ We do not require AI for core highlighting or the local library.
 
 The web app may emit **in-process** product events (feature names and
 non-content properties) on an internal event bus for future sinks. **As of this
-policy date, we do not send those events to a third-party analytics vendor.**
-We do not put highlight text into analytics events.
+policy date, we do not send those events to a third-party analytics vendor.** We
+do not put highlight text into analytics events.
 
 ### 6. What we do not do
 
@@ -116,16 +116,16 @@ We do not put highlight text into analytics events.
 
 ## Permissions (extension)
 
-| Permission / access | Purpose |
-|---------------------|---------|
-| `activeTab` | Work with the page you are using when you highlight or open the popup |
-| `storage` | Save library data, preferences, sessions, and optional API keys on device |
-| `alarms` | Maintenance tasks (for example session / verification timing) |
-| `identity` | Complete browser OAuth (Google) securely |
-| Host access to our Supabase project | Auth, sync, and account APIs |
-| Host access to Polar | Paid checkout |
-| Host access to optional LLM APIs | Only for providers you configure |
-| `localhost` / `127.0.0.1` (Ollama, MCP bridge) | Optional local AI / agent features you enable |
+| Permission / access                            | Purpose                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------- |
+| `activeTab`                                    | Work with the page you are using when you highlight or open the popup     |
+| `storage`                                      | Save library data, preferences, sessions, and optional API keys on device |
+| `alarms`                                       | Maintenance tasks (for example session / verification timing)             |
+| `identity`                                     | Complete browser OAuth (Google) securely                                  |
+| Host access to our Supabase project            | Auth, sync, and account APIs                                              |
+| Host access to Polar                           | Paid checkout                                                             |
+| Host access to optional LLM APIs               | Only for providers you configure                                          |
+| `localhost` / `127.0.0.1` (Ollama, MCP bridge) | Optional local AI / agent features you enable                             |
 
 Firefox listings also declare built-in **data collection permissions** for
 website content, website activity (URLs tied to highlights), personally
@@ -136,14 +136,14 @@ match this policy.
 
 ## Third parties
 
-| Party | Role |
-|-------|------|
-| **Supabase** | Auth, database, and related backend APIs for signed-in features |
-| **Cloudflare** | Hosting the web app and edge functions |
-| **Polar** | Payments and subscriptions |
-| **Google** | Optional OAuth sign-in |
-| **LLM providers you choose** | Optional AI requests under their policies and your keys |
-| **Browser vendors** | Extension distribution and browser identity APIs |
+| Party                        | Role                                                            |
+| ---------------------------- | --------------------------------------------------------------- |
+| **Supabase**                 | Auth, database, and related backend APIs for signed-in features |
+| **Cloudflare**               | Hosting the web app and edge functions                          |
+| **Polar**                    | Payments and subscriptions                                      |
+| **Google**                   | Optional OAuth sign-in                                          |
+| **LLM providers you choose** | Optional AI requests under their policies and your keys         |
+| **Browser vendors**          | Extension distribution and browser identity APIs                |
 
 Each provider has its own privacy policy. Optional providers are only used when
 you enable the related feature.
@@ -175,15 +175,15 @@ In product:
 - Disconnect optional AI providers and remove stored API keys
 - Disable optional local bridges
 
-To request account deletion or privacy help, contact us (below). We will
-respond within a reasonable period and as required by law.
+To request account deletion or privacy help, contact us (below). We will respond
+within a reasonable period and as required by law.
 
 ---
 
 ## Children
 
-The product is not directed at children under 13 (or the minimum age required
-in your jurisdiction). Do not use the product if you are under that age.
+The product is not directed at children under 13 (or the minimum age required in
+your jurisdiction). Do not use the product if you are under that age.
 
 ---
 

@@ -58,7 +58,11 @@ const cloudPort: HighlightCloudDeletePort = {
 describe('Basic mode library delete + query consistency', () => {
   it('asCacheReadable sees cache evictions before storage remove finishes', async () => {
     const basic = new DelayedRemoveRepository();
-    const scoped = new ScopedHighlightRepository(basic, new InMemoryHighlightRepository(), 'basic');
+    const scoped = new ScopedHighlightRepository(
+      basic,
+      new InMemoryHighlightRepository(),
+      'basic'
+    );
     const facade = new RepositoryFacade(scoped);
     await facade.initialize();
 
@@ -82,7 +86,11 @@ describe('Basic mode library delete + query consistency', () => {
 
   it('delete service persists Local files domain wipe for basic guests', async () => {
     const basic = new DelayedRemoveRepository();
-    const scoped = new ScopedHighlightRepository(basic, new InMemoryHighlightRepository(), 'basic');
+    const scoped = new ScopedHighlightRepository(
+      basic,
+      new InMemoryHighlightRepository(),
+      'basic'
+    );
     const facade = new RepositoryFacade(scoped);
     await facade.initialize();
 
@@ -95,7 +103,7 @@ describe('Basic mode library delete + query consistency', () => {
 
     const deleteResult = await deleteService.executeDelete(
       { scope: 'domain', domain: LOCAL_FILES_DOMAIN },
-      guestContext,
+      guestContext
     );
 
     expect(deleteResult).toEqual({

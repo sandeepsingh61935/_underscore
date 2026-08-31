@@ -6,13 +6,13 @@
  * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
-import type { FirstLineEdges, HighlightPainter } from './highlight-painter';
-import { resolveUnderscoreStroke } from './highlight-contrast';
 import { getFirstLineEdgeRects } from './first-line-geometry';
+import { resolveUnderscoreStroke } from './highlight-contrast';
+import type { FirstLineEdges, HighlightPainter } from './highlight-painter';
 import { sampleBackgroundNearRange } from './sample-page-background';
 
-import type { ColorRole } from '@/shared/schemas/highlight-schema';
 import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
+import type { ColorRole } from '@/shared/schemas/highlight-schema';
 
 const ROOT_ID = 'underscore-paint-root';
 const STROKE_THICKNESS_PX = 2.5;

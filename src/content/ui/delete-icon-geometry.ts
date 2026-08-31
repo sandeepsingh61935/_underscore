@@ -25,7 +25,7 @@ export function isPointNearDeleteIcon(
   x: number,
   y: number,
   iconRects: readonly RectLike[],
-  padPx: number = DELETE_ICON_SAFE_PAD_PX,
+  padPx: number = DELETE_ICON_SAFE_PAD_PX
 ): boolean {
   for (const r of iconRects) {
     if (
@@ -44,7 +44,9 @@ export function isPointNearDeleteIcon(
  * Collect viewport bounding rects for live delete-icon elements.
  */
 export function collectDeleteIconRects(
-  root: ParentNode = typeof document !== 'undefined' ? document : (null as unknown as ParentNode),
+  root: ParentNode = typeof document !== 'undefined'
+    ? document
+    : (null as unknown as ParentNode)
 ): DOMRect[] {
   if (!root || typeof (root as Document).querySelectorAll !== 'function') {
     return [];

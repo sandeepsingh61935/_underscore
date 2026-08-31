@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeHighlightLabels, normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
+import {
+  mergeHighlightLabels,
+  normalizeHighlightTags,
+} from '@/shared/utils/highlight-metadata';
 
 describe('tag normalization', () => {
   it('normalizes labels to lowercase trimmed unique values', () => {

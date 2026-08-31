@@ -5,12 +5,12 @@
  * Geometry comes from HighlightPainter (first-line edges for exterior icon).
  */
 
+import type { HighlightPainter } from '@/content/paint/highlight-painter';
+import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
+import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
 import type { RepositoryFacade } from '@/shared/repositories';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
-import type { HighlightDOMHitTester } from '@/content/ui/highlight-dom-hit-tester';
-import type { HighlightPainter } from '@/content/paint/highlight-painter';
-import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
 
 export class HighlightHoverDetector {
   private currentHoveredId: string | null = null;

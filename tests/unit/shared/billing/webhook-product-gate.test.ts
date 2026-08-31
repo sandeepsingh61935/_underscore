@@ -95,15 +95,11 @@ describe('decideWebhookEntitlementWrite (S-2 fail-closed product)', () => {
 
 describe('extractPolarProductId', () => {
   it('reads product_id', () => {
-    expect(
-      extractPolarProductId({ data: { product_id: 'p1' } })
-    ).toBe('p1');
+    expect(extractPolarProductId({ data: { product_id: 'p1' } })).toBe('p1');
   });
 
   it('reads product.id', () => {
-    expect(
-      extractPolarProductId({ data: { product: { id: 'p2' } } })
-    ).toBe('p2');
+    expect(extractPolarProductId({ data: { product: { id: 'p2' } } })).toBe('p2');
   });
 
   it('reads nested items product id', () => {

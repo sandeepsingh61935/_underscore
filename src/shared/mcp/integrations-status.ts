@@ -5,7 +5,7 @@ export const RECENT_MCP_SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function hasRecentMcpSession(
   lastSuccessAtMs: number | null | undefined,
-  nowMs: number = Date.now(),
+  nowMs: number = Date.now()
 ): boolean {
   if (lastSuccessAtMs == null || !Number.isFinite(lastSuccessAtMs)) return false;
   const age = nowMs - lastSuccessAtMs;
@@ -37,8 +37,7 @@ export function integrationsStatusLabel(status: IntegrationsStatus): string {
   }
 }
 
-const READY_DETAIL =
-  'Add an AI app, then approve when the browser opens.';
+const READY_DETAIL = 'Add an AI app, then approve when the browser opens.';
 
 const SESSION_CONNECTED_DETAIL = 'Your agent reached Cloud MCP.';
 
@@ -60,4 +59,3 @@ export function integrationsStatusDetail(input: {
   }
   return SESSION_CONNECTED_DETAIL;
 }
-

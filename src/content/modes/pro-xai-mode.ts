@@ -13,8 +13,8 @@
  * highlight mode" gap; pro_xai closes it by extending ProMode directly.
  */
 
-import { ProMode } from './pro-mode';
 import type { ModeCapabilities } from './mode-interfaces';
+import { ProMode } from './pro-mode';
 
 export class ProXaiMode extends ProMode {
   override get name(): 'pro_xai' {

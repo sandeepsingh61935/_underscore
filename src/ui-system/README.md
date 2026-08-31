@@ -1,6 +1,7 @@
 # UI System Component Index
 
-This document provides a comprehensive index of all UI components in the `_underscore` extension.
+This document provides a comprehensive index of all UI components in the
+`_underscore` extension.
 
 ## Directory Structure
 
@@ -41,42 +42,44 @@ src/ui-system/
 
 ### Composed Components
 
-| Component | Description | Props |
-|-----------|-------------|-------|
-| `CollectionCard` | Displays a domain collection with favicon, count | `domain`, `category?`, `favicon?`, `count`, `onClick?` |
-| `EmptyState` | Configurable empty state with variants | `variant?`, `icon?`, `title?`, `description?`, `action?` |
-| `HighlightCard` | Displays a highlight with actions | `highlight`, `onCopy?`, `onDelete?`, `onNavigate?` |
-| `ModeCard` | Mode selection card with states | `id`, `label`, `description?`, `icon?`, `isActive?`, `isLocked?` |
-| `ModeSelector` | Composed mode selection list | `currentModeId`, `onSelect`, `isAuthenticated?` |
-| `ProviderButton` | OAuth provider button | `provider`, `onClick`, `isLoading?`, `disabled?` |
-| `Toast` | Notification toast with variants | Use via `ToastProvider` + `useToast()` |
-| `UserMenu` | User dropdown menu with settings | `user`, `onLogout`, `onThemeChange?` |
+| Component        | Description                                      | Props                                                            |
+| ---------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| `CollectionCard` | Displays a domain collection with favicon, count | `domain`, `category?`, `favicon?`, `count`, `onClick?`           |
+| `EmptyState`     | Configurable empty state with variants           | `variant?`, `icon?`, `title?`, `description?`, `action?`         |
+| `HighlightCard`  | Displays a highlight with actions                | `highlight`, `onCopy?`, `onDelete?`, `onNavigate?`               |
+| `ModeCard`       | Mode selection card with states                  | `id`, `label`, `description?`, `icon?`, `isActive?`, `isLocked?` |
+| `ModeSelector`   | Composed mode selection list                     | `currentModeId`, `onSelect`, `isAuthenticated?`                  |
+| `ProviderButton` | OAuth provider button                            | `provider`, `onClick`, `isLoading?`, `disabled?`                 |
+| `Toast`          | Notification toast with variants                 | Use via `ToastProvider` + `useToast()`                           |
+| `UserMenu`       | User dropdown menu with settings                 | `user`, `onLogout`, `onThemeChange?`                             |
 
 ### Page Components
 
-| Component | Description | Usage |
-|-----------|-------------|-------|
-| `AppShell` | Main layout wrapper (400x600px) | Wrap all popup content |
-| `CollectionsView` | Collections list with search/sort | Main collections page |
-| `DomainDetailsView` | Domain highlights list | Detail page |
-| `ModeSelectionView` | Mode selection screen | Onboarding/settings |
-| `SignInView` | Authentication screen | Sign in flow |
+| Component           | Description                       | Usage                  |
+| ------------------- | --------------------------------- | ---------------------- |
+| `AppShell`          | Main layout wrapper (400x600px)   | Wrap all popup content |
+| `CollectionsView`   | Collections list with search/sort | Main collections page  |
+| `DomainDetailsView` | Domain highlights list            | Detail page            |
+| `ModeSelectionView` | Mode selection screen             | Onboarding/settings    |
+| `SignInView`        | Authentication screen             | Sign in flow           |
 
 ### Primitives
 
-| Component | Description |
-|-----------|-------------|
-| `Skeleton` | Base skeleton loader |
-| `SkeletonText` | Multi-line text skeleton |
-| `SkeletonAvatar` | Circular avatar skeleton |
+| Component                | Description                   |
+| ------------------------ | ----------------------------- |
+| `Skeleton`               | Base skeleton loader          |
+| `SkeletonText`           | Multi-line text skeleton      |
+| `SkeletonAvatar`         | Circular avatar skeleton      |
 | `SkeletonCollectionCard` | Collection card loading state |
-| `SkeletonHighlightCard` | Highlight card loading state |
+| `SkeletonHighlightCard`  | Highlight card loading state  |
 
 ## Design Tokens
 
-Design tokens are defined in `src/ui-system/theme/global.css` and `ui_kits/extension/v2/tokens.css`.
+Design tokens are defined in `src/ui-system/theme/global.css` and
+`ui_kits/extension/v2/tokens.css`.
 
-See `.agent/workflows/v2-tokens-reference.md` for the complete V2 token lookup table.
+See `.agent/workflows/v2-tokens-reference.md` for the complete V2 token lookup
+table.
 
 ### V2 Color System
 
@@ -134,7 +137,8 @@ npm run type-check
 bash scripts/check-legacy-ds.sh
 ```
 
-> Storybook has been removed from this project (Layer 8). No `.stories.tsx` files required.
+> Storybook has been removed from this project (Layer 8). No `.stories.tsx`
+> files required.
 
 ## Accessibility
 
@@ -155,7 +159,7 @@ import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 
 function MyPage() {
     const collections = [...];
-    
+
     return (
         <AppShell>
             {collections.length > 0 ? (

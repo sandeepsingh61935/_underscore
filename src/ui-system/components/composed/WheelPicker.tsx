@@ -50,7 +50,10 @@ function buildLoopedRows(items: WheelPickerItem[]): LoopedWheelRow[] {
 
 function isCircularWrap(prevIndex: number, nextIndex: number, len: number): boolean {
   if (len <= 1) return false;
-  return (prevIndex === 0 && nextIndex === len - 1) || (prevIndex === len - 1 && nextIndex === 0);
+  return (
+    (prevIndex === 0 && nextIndex === len - 1) ||
+    (prevIndex === len - 1 && nextIndex === 0)
+  );
 }
 
 export function WheelPicker({
@@ -112,9 +115,12 @@ export function WheelPicker({
       const delta = event.deltaY > 0 ? 1 : -1;
       const next = (selectedIndexRef.current + delta + len) % len;
       onSelectIndexRef.current(next);
-      window.setTimeout(() => {
-        wheelLock.current = false;
-      }, reduceMotionRef.current ? 0 : 180);
+      window.setTimeout(
+        () => {
+          wheelLock.current = false;
+        },
+        reduceMotionRef.current ? 0 : 180
+      );
     };
 
     el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
@@ -123,7 +129,10 @@ export function WheelPicker({
 
   const loopedRows = useMemo(() => buildLoopedRows(items), [items]);
   const listIndex = len <= 1 ? selectedIndex : selectedIndex + 1;
-  const translateY = useMemo(() => rowHeight - listIndex * rowHeight, [listIndex, rowHeight]);
+  const translateY = useMemo(
+    () => rowHeight - listIndex * rowHeight,
+    [listIndex, rowHeight]
+  );
   const skipTransition =
     reduceMotion || isCircularWrap(prevSelectedIndexRef.current, selectedIndex, len);
   prevSelectedIndexRef.current = selectedIndex;
@@ -223,7 +232,9 @@ export function WheelPicker({
       <div
         style={{
           transform: reduceMotion ? undefined : `translateY(${translateY}px)`,
-          transition: skipTransition ? undefined : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+          transition: skipTransition
+            ? undefined
+            : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: reduceMotion ? undefined : 'transform',
         }}
       >

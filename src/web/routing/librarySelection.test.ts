@@ -47,13 +47,13 @@ describe('buildLibrarySearch', () => {
 
   it('builds domain and section search', () => {
     expect(buildLibrarySearch({ domain: 'a.com', section: '/docs' })).toBe(
-      'domain=a.com&section=%2Fdocs',
+      'domain=a.com&section=%2Fdocs'
     );
   });
 
   it('includes highlight when set', () => {
     expect(
-      buildLibrarySearch({ domain: 'a.com', section: '/docs', highlight: 'h9' }),
+      buildLibrarySearch({ domain: 'a.com', section: '/docs', highlight: 'h9' })
     ).toBe('domain=a.com&section=%2Fdocs&highlight=h9');
   });
 

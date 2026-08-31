@@ -1,9 +1,14 @@
-import type { ScopedHighlightRepository, HighlightStorageScope } from '@/shared/repositories/scoped-highlight-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type {
+  ScopedHighlightRepository,
+  HighlightStorageScope,
+} from '@/shared/repositories/scoped-highlight-repository';
 import { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
 
-export function resolveQueryStorageScope(isAuthenticated: boolean): HighlightStorageScope {
+export function resolveQueryStorageScope(
+  isAuthenticated: boolean
+): HighlightStorageScope {
   return isAuthenticated ? 'pro' : 'basic';
 }
 
@@ -15,7 +20,9 @@ export interface ScopedHighlightQueryDeps {
 }
 
 /** Build a query service that reads the correct storage partition for the auth state. */
-export function createScopedHighlightQueryService(deps: ScopedHighlightQueryDeps): HighlightQueryService {
+export function createScopedHighlightQueryService(
+  deps: ScopedHighlightQueryDeps
+): HighlightQueryService {
   const scope = resolveQueryStorageScope(deps.isAuthenticated);
   // Both scopes now read from the scoped repository partition to ensure
   // consistent read/write paths. The facade cache may have stale data from

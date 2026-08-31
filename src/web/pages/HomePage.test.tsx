@@ -18,7 +18,7 @@ function renderHome() {
   return render(
     <MemoryRouter>
       <HomePage />
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -43,7 +43,7 @@ describe('HomePage', () => {
 
     expect(document.querySelector('[data-od-id="guest-banner"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="guest-passive"]')?.textContent).toMatch(
-      /stored locally|Local only|Sign in to sync/i,
+      /stored locally|Local only|Sign in to sync/i
     );
 
     // OD: stats-groups only when library has rows
@@ -66,8 +66,7 @@ describe('HomePage', () => {
     expect(libraryHref('example.com', '/')).toBe('/library?domain=example.com');
     expect(libraryHref('example.com', null)).toBe('/library?domain=example.com');
     expect(libraryHref('example.com', '/docs/guide')).toBe(
-      '/library?domain=example.com&section=%2Fdocs%2Fguide',
+      '/library?domain=example.com&section=%2Fdocs%2Fguide'
     );
   });
-
 });

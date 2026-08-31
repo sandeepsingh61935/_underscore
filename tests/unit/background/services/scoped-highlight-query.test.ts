@@ -33,8 +33,22 @@ describe('scoped-highlight-query', () => {
     const proReadable = makeReadable();
     const facadeReadable = makeReadable();
 
-    const basicRepo = { ...basicReadable, add: async () => {}, update: async () => {}, remove: async () => {}, clear: async () => {}, addMany: async () => {} };
-    const proRepo = { ...proReadable, add: async () => {}, update: async () => {}, remove: async () => {}, clear: async () => {}, addMany: async () => {} };
+    const basicRepo = {
+      ...basicReadable,
+      add: async () => {},
+      update: async () => {},
+      remove: async () => {},
+      clear: async () => {},
+      addMany: async () => {},
+    };
+    const proRepo = {
+      ...proReadable,
+      add: async () => {},
+      update: async () => {},
+      remove: async () => {},
+      clear: async () => {},
+      addMany: async () => {},
+    };
 
     const scopedHighlightRepository = {
       queryScope: (scope: 'basic' | 'pro') => (scope === 'basic' ? basicRepo : proRepo),

@@ -1,4 +1,7 @@
-import { compressPageText, findSpanMatchesInPageText } from '@/shared/llm/build-page-context';
+import {
+  compressPageText,
+  findSpanMatchesInPageText,
+} from '@/shared/llm/build-page-context';
 import type { PageContentEntry } from '@/shared/llm/build-page-context';
 import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
 
@@ -23,7 +26,7 @@ export const EXCERPT_RADIUS_CHARS = 400;
 export function extractExcerptWindow(
   pageText: string,
   highlight: string,
-  radius = EXCERPT_RADIUS_CHARS,
+  radius = EXCERPT_RADIUS_CHARS
 ): string {
   const trimmed = highlight.trim();
   if (!trimmed) return '';
@@ -44,7 +47,7 @@ export function extractExcerptWindow(
 
 export function buildHighlightExcerpts(
   highlights: HighlightExcerptInput[],
-  getContent: (normalizedUrl: string) => PageContentEntry | null,
+  getContent: (normalizedUrl: string) => PageContentEntry | null
 ): { excerpts: HighlightExcerpt[]; cacheMissUrls: string[] } {
   const cacheMissUrls: string[] = [];
   const excerpts: HighlightExcerpt[] = [];
@@ -81,8 +84,10 @@ export function buildHighlightExcerpts(
 }
 
 export function formatExcerptsForPrompt(excerpts: HighlightExcerpt[]): string {
-  return excerpts.map((ex, i) => {
-    const header = `[${i + 1}] ${ex.pageTitle} (${ex.url})`;
-    return `${header}\nHighlight: "${ex.highlightText.replace(/"/g, '\\"')}"\nContext: ${ex.excerpt}`;
-  }).join('\n\n');
+  return excerpts
+    .map((ex, i) => {
+      const header = `[${i + 1}] ${ex.pageTitle} (${ex.url})`;
+      return `${header}\nHighlight: "${ex.highlightText.replace(/"/g, '\\"')}"\nContext: ${ex.excerpt}`;
+    })
+    .join('\n\n');
 }

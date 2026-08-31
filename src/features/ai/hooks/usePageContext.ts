@@ -11,7 +11,9 @@ interface PageContextHighlight {
 }
 
 export function usePageContext(): {
-  fetch: (highlights: PageContextHighlight[]) => Promise<
+  fetch: (
+    highlights: PageContextHighlight[]
+  ) => Promise<
     { success: true; data: BuiltPageContext } | { success: false; error: string }
   >;
 } {
@@ -20,9 +22,12 @@ export function usePageContext(): {
     BuiltPageContext
   >(IPC_AI_GET_PAGE_CONTEXT);
 
-  const fetch = useCallback(async (highlights: PageContextHighlight[]) => {
-    return getPageContext({ highlights });
-  }, [getPageContext]);
+  const fetch = useCallback(
+    async (highlights: PageContextHighlight[]) => {
+      return getPageContext({ highlights });
+    },
+    [getPageContext]
+  );
 
   return { fetch };
 }

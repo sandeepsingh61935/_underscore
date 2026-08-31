@@ -7,8 +7,18 @@ import type { ILLMService, ProviderName } from '@/shared/interfaces/i-llm-servic
 function makeMockProvider(name: ProviderName): ILLMService {
   return {
     providerName: name,
-    capabilities: { contextWindow: 8192, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
-    streamChat: async () => ({ text: '', inputTokens: 0, outputTokens: 0, durationMs: 0 }),
+    capabilities: {
+      contextWindow: 8192,
+      supportsSystemPrompt: true,
+      supportsStreaming: true,
+      supportsToolUse: false,
+    },
+    streamChat: async () => ({
+      text: '',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: 0,
+    }),
     chat: async () => ({ text: '', inputTokens: 0, outputTokens: 0, durationMs: 0 }),
     healthCheck: async () => ({ ok: true, model: 'mock' }),
   };
@@ -34,9 +44,7 @@ describe('LLMRegistry', () => {
   it('lists registered providers with configured status', () => {
     registry.register(makeMockProvider('anthropic'));
     const list = registry.list();
-    expect(list).toEqual([
-      { name: 'anthropic', configured: false },
-    ]);
+    expect(list).toEqual([{ name: 'anthropic', configured: false }]);
   });
 
   it('marks a provider as configured after setConfigured', () => {

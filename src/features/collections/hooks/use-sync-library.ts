@@ -8,10 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { CloudHydrationResult } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
-import {
-  LIBRARY_SYNC_PROGRESS,
-  SYNC_LIBRARY,
-} from '@/shared/schemas/message-schemas';
+import { LIBRARY_SYNC_PROGRESS, SYNC_LIBRARY } from '@/shared/schemas/message-schemas';
 
 export type SyncLibraryStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -107,7 +104,9 @@ async function writeLastSyncedAt(iso: string): Promise<void> {
 }
 
 export function useSyncLibrary(): UseSyncLibraryResult {
-  const syncAction = useIpcAction<Record<string, never>, CloudHydrationResult>(SYNC_LIBRARY);
+  const syncAction = useIpcAction<Record<string, never>, CloudHydrationResult>(
+    SYNC_LIBRARY
+  );
   const [status, setStatus] = useState<SyncLibraryStatus>('idle');
   const [lastResult, setLastResult] = useState<CloudHydrationResult | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -7,10 +7,10 @@
  */
 
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { sendBackgroundIpcWithRetry } from '@/shared/messaging/send-background-ipc-with-retry';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { sendBackgroundIpcWithRetry } from '@/shared/messaging/send-background-ipc-with-retry';
 import { LoggerFactory } from '@/shared/utils/logger';
 
 export class IpcReadableHighlightRepository implements IReadableHighlightRepository {
@@ -65,10 +65,14 @@ export class IpcReadableHighlightRepository implements IReadableHighlightReposit
     throw new Error('exists not supported via read IPC adapter; use RepositoryFacade');
   }
   async findByContentHash(_hash: string): Promise<HighlightDataV2 | null> {
-    throw new Error('findByContentHash not supported via read IPC adapter; use RepositoryFacade');
+    throw new Error(
+      'findByContentHash not supported via read IPC adapter; use RepositoryFacade'
+    );
   }
   async findOverlapping(_range: SerializedRange): Promise<HighlightDataV2[]> {
-    throw new Error('findOverlapping not supported via read IPC adapter; use RepositoryFacade');
+    throw new Error(
+      'findOverlapping not supported via read IPC adapter; use RepositoryFacade'
+    );
   }
   async clear(): Promise<void> {
     throw new Error('clear not supported via read IPC adapter; use RepositoryFacade');

@@ -3,14 +3,14 @@
  * User should export library before invoking (see docs/implementation-plans/crypto-removal/migration.md).
  */
 
-import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import {
   BASIC_HIGHLIGHT_DB_NAME,
   LEGACY_HIGHLIGHT_DB_NAME,
   PRO_HIGHLIGHT_DB_NAME,
 } from '@/shared/constants/highlight-storage-scope';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 
 const LEGACY_CRYPTO_PREFIXES = ['key_manager_', 'llm.', 'llm.installKey'];
 
@@ -22,7 +22,7 @@ export interface ClearHighlightDataResult {
 export async function clearHighlightData(
   repositoryFacade: RepositoryFacade,
   scopedRepository: ScopedHighlightRepository,
-  logger: ILogger,
+  logger: ILogger
 ): Promise<ClearHighlightDataResult> {
   await repositoryFacade.clearPersisted();
   await scopedRepository.activateScope('basic');
@@ -33,7 +33,7 @@ export async function clearHighlightData(
 
   const all = await chrome.storage.local.get(null);
   const keysToRemove = Object.keys(all).filter((key) =>
-    LEGACY_CRYPTO_PREFIXES.some((prefix) => key.startsWith(prefix)),
+    LEGACY_CRYPTO_PREFIXES.some((prefix) => key.startsWith(prefix))
   );
   if (keysToRemove.length > 0) {
     await chrome.storage.local.remove(keysToRemove);

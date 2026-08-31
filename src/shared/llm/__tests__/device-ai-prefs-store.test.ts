@@ -15,7 +15,9 @@ function prefs(partial: Partial<AiPreferences> & { updatedAtMs: number }): AiPre
   };
 }
 
-function mockDevice(initial: AiPreferences): DeviceAiPrefsStore & { snap: AiPreferences } {
+function mockDevice(
+  initial: AiPreferences
+): DeviceAiPrefsStore & { snap: AiPreferences } {
   const d = {
     snap: { ...initial, models: { ...initial.models } },
     read: vi.fn(async () => ({ ...d.snap, models: { ...d.snap.models } })),
@@ -72,12 +74,12 @@ describe('reconcileAiPreferences', () => {
       updatedAtMs: 5000,
     });
     const device = mockDevice(
-      prefs({ defaultProvider: 'openai', models: { openai: 'gpt' }, updatedAtMs: 100 }),
+      prefs({ defaultProvider: 'openai', models: { openai: 'gpt' }, updatedAtMs: 100 })
     );
     const result = await reconcileAiPreferences(
       mockSupabase(remote) as never,
       'u1',
-      device,
+      device
     );
     expect(result.source).toBe('remote');
     expect(device.apply).toHaveBeenCalledTimes(1);
@@ -91,12 +93,12 @@ describe('reconcileAiPreferences', () => {
         defaultProvider: 'openai',
         models: { openai: 'gpt-4o-mini' },
         updatedAtMs: 9000,
-      }),
+      })
     );
     const result = await reconcileAiPreferences(
       mockSupabase(null) as never,
       'u1',
-      device,
+      device
     );
     expect(result.source).toBe('local');
     expect(result.wroteRemote).toBe(true);
@@ -110,13 +112,14 @@ describe('reconcileAiPreferences', () => {
         defaultProvider: 'openai',
         models: { openai: 'gpt' },
         updatedAtMs: 10,
-      }),
+      })
     );
     await reconcileAiPreferences(mockSupabase(null) as never, 'u1', device, {
       bumpClock: true,
     });
     expect(device.writeMeta).toHaveBeenCalled();
-    const firstMeta = (device.writeMeta as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as AiPreferences;
+    const firstMeta = (device.writeMeta as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as AiPreferences;
     expect(firstMeta.updatedAtMs).toBeGreaterThan(10);
   });
 });

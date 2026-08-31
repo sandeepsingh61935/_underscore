@@ -1,7 +1,7 @@
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import { getSectionKey } from '@/shared/utils/section-key';
 import { urlMatchesDomain } from '@/shared/utils/domain-from-url';
+import { getSectionKey } from '@/shared/utils/section-key';
 
 export type DeleteScope = 'highlight' | 'section' | 'domain' | 'library';
 
@@ -45,7 +45,7 @@ const UNDO_WINDOW_MS = 5000;
 function matchesSection(
   highlight: HighlightDataV2,
   domain: string,
-  sectionKey: string,
+  sectionKey: string
 ): boolean {
   if (!highlight.url || !urlMatchesDomain(highlight.url, domain)) {
     return false;
@@ -66,12 +66,12 @@ export class HighlightDeleteService {
 
   constructor(
     private readonly facade: RepositoryFacade,
-    private readonly cloud: HighlightCloudDeletePort,
+    private readonly cloud: HighlightCloudDeletePort
   ) {}
 
   async executeDelete(
     request: DeleteRequest,
-    context: HighlightDeleteContext,
+    context: HighlightDeleteContext
   ): Promise<DeleteResult> {
     switch (request.scope) {
       case 'highlight':
@@ -79,7 +79,7 @@ export class HighlightDeleteService {
       case 'section':
         return this.deleteMany(
           (h) => matchesSection(h, request.domain, request.sectionKey),
-          context,
+          context
         );
       case 'domain':
         return this.deleteMany((h) => matchesDomain(h, request.domain), context);
@@ -111,7 +111,7 @@ export class HighlightDeleteService {
 
   private async deleteHighlight(
     id: string,
-    context: HighlightDeleteContext,
+    context: HighlightDeleteContext
   ): Promise<DeleteResult> {
     const snapshot = this.facade.get(id);
     if (!snapshot) {
@@ -135,7 +135,7 @@ export class HighlightDeleteService {
 
   private async deleteMany(
     predicate: (highlight: HighlightDataV2) => boolean,
-    context: HighlightDeleteContext,
+    context: HighlightDeleteContext
   ): Promise<DeleteResult> {
     this.clearPendingUndo();
 

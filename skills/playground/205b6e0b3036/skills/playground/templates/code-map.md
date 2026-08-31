@@ -1,6 +1,8 @@
 # Code Map Template
 
-Use this template when the playground is about visualizing codebase architecture: component relationships, data flow, layer diagrams, system architecture with interactive commenting for feedback.
+Use this template when the playground is about visualizing codebase
+architecture: component relationships, data flow, layer diagrams, system
+architecture with interactive commenting for feedback.
 
 ## Layout
 
@@ -20,17 +22,19 @@ Use this template when the playground is about visualizing codebase architecture
 +-------------------+----------------------------------+
 ```
 
-Code map playgrounds use an SVG canvas for the architecture diagram. Users click components to add comments, which become part of the generated prompt. Layer and connection filters let users focus on specific parts of the system.
+Code map playgrounds use an SVG canvas for the architecture diagram. Users click
+components to add comments, which become part of the generated prompt. Layer and
+connection filters let users focus on specific parts of the system.
 
 ## Control types for code maps
 
-| Decision | Control | Example |
-|---|---|---|
-| System view | Preset buttons | Full System, Chat Flow, Data Flow, Agent System |
-| Visible layers | Checkboxes | Client, Server, SDK, Data, External |
-| Connection types | Checkboxes with color indicators | Data Flow (blue), Tool Calls (green), Events (red) |
-| Component feedback | Click-to-comment modal | Opens modal with textarea for feedback |
-| Zoom level | +/−/reset buttons | Scale SVG for detail |
+| Decision           | Control                          | Example                                            |
+| ------------------ | -------------------------------- | -------------------------------------------------- |
+| System view        | Preset buttons                   | Full System, Chat Flow, Data Flow, Agent System    |
+| Visible layers     | Checkboxes                       | Client, Server, SDK, Data, External                |
+| Connection types   | Checkboxes with color indicators | Data Flow (blue), Tool Calls (green), Events (red) |
+| Component feedback | Click-to-comment modal           | Opens modal with textarea for feedback             |
+| Zoom level         | +/−/reset buttons                | Scale SVG for detail                               |
 
 ## Canvas rendering
 
@@ -38,14 +42,25 @@ Use an `<svg>` element with dynamically generated nodes and paths. Key patterns:
 
 - **Nodes:** Rounded rectangles with title and subtitle (file path)
 - **Connections:** Curved paths (bezier) with arrow markers, styled by type
-- **Layer organization:** Group nodes by Y-position bands (e.g., y: 30-80 = Client, y: 130-180 = Server)
-- **Click-to-comment:** Click node → open modal → save comment → node gets visual indicator
+- **Layer organization:** Group nodes by Y-position bands (e.g., y: 30-80 =
+  Client, y: 130-180 = Server)
+- **Click-to-comment:** Click node → open modal → save comment → node gets
+  visual indicator
 - **Filtering:** Toggle visibility of nodes by layer, connections by type
 
 ```javascript
 const nodes = [
-  { id: 'api-client', label: 'API Client', subtitle: 'src/api/client.ts',
-    x: 100, y: 50, w: 140, h: 45, layer: 'client', color: '#dbeafe' },
+  {
+    id: 'api-client',
+    label: 'API Client',
+    subtitle: 'src/api/client.ts',
+    x: 100,
+    y: 50,
+    w: 140,
+    h: 45,
+    layer: 'client',
+    color: '#dbeafe',
+  },
   // ...
 ];
 
@@ -56,10 +71,10 @@ const connections = [
 ];
 
 function renderDiagram() {
-  const visibleNodes = nodes.filter(n => state.layers[n.layer]);
+  const visibleNodes = nodes.filter((n) => state.layers[n.layer]);
   // Draw connections first (under nodes), then nodes
-  connections.forEach(c => drawConnection(c));
-  visibleNodes.forEach(n => drawNode(n));
+  connections.forEach((c) => drawConnection(c));
+  visibleNodes.forEach((n) => drawNode(n));
 }
 ```
 
@@ -67,19 +82,26 @@ function renderDiagram() {
 
 Define 3-5 connection types with distinct visual styles:
 
-| Type | Color | Style | Use for |
-|---|---|---|---|
-| `data-flow` | Blue (#3b82f6) | Solid line | Request/response, data passing |
-| `tool-call` | Green (#10b981) | Dashed (6,3) | Function calls, API invocations |
-| `event` | Red (#ef4444) | Short dash (4,4) | Async events, pub/sub |
-| `skill-invoke` | Orange (#f97316) | Long dash (8,4) | Plugin/skill activation |
-| `dependency` | Gray (#6b7280) | Dotted | Import/require relationships |
+| Type           | Color            | Style            | Use for                         |
+| -------------- | ---------------- | ---------------- | ------------------------------- |
+| `data-flow`    | Blue (#3b82f6)   | Solid line       | Request/response, data passing  |
+| `tool-call`    | Green (#10b981)  | Dashed (6,3)     | Function calls, API invocations |
+| `event`        | Red (#ef4444)    | Short dash (4,4) | Async events, pub/sub           |
+| `skill-invoke` | Orange (#f97316) | Long dash (8,4)  | Plugin/skill activation         |
+| `dependency`   | Gray (#6b7280)   | Dotted           | Import/require relationships    |
 
 Use SVG markers for arrowheads:
 
 ```html
-<marker id="arrowhead-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-  <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+<marker
+  id="arrowhead-blue"
+  markerWidth="8"
+  markerHeight="6"
+  refX="7"
+  refY="3"
+  orient="auto"
+>
+  <polygon points="0 0, 8 3, 0 6" fill="#3b82f6" />
 </marker>
 ```
 
@@ -88,8 +110,10 @@ Use SVG markers for arrowheads:
 The key differentiator for code maps is click-to-comment functionality:
 
 1. **Click node** → Open modal with component name, file path, textarea
-2. **Save comment** → Add to comments list, mark node with visual indicator (colored border)
-3. **View comments** → Sidebar list with component name, comment preview, delete button
+2. **Save comment** → Add to comments list, mark node with visual indicator
+   (colored border)
+3. **View comments** → Sidebar list with component name, comment preview, delete
+   button
 4. **Delete comment** → Remove from list, update node visual, regenerate prompt
 
 Comments should include the component context:
@@ -100,7 +124,7 @@ state.comments.push({
   target: node.id,
   targetLabel: node.label,
   targetFile: node.subtitle,
-  text: userInput
+  text: userInput,
 });
 ```
 
@@ -123,7 +147,8 @@ Can we add connection pooling? Current implementation creates new connections pe
 This should validate JWT tokens and extract user context.
 ```
 
-Only include comments the user added. Mention which layers are visible if not showing the full system.
+Only include comments the user added. Mention which layers are visible if not
+showing the full system.
 
 ## Pre-populating with real data
 
@@ -138,14 +163,14 @@ Organize nodes in horizontal bands by layer, with consistent spacing.
 
 ## Layer color palette (light theme)
 
-| Layer | Node fill | Description |
-|---|---|---|
-| Client/UI | #dbeafe (blue-100) | React components, hooks, pages |
-| Server/API | #fef3c7 (amber-100) | Express routes, middleware, handlers |
-| SDK/Core | #f3e8ff (purple-100) | Core libraries, SDK wrappers |
-| Agent/Logic | #dcfce7 (green-100) | Business logic, agents, processors |
-| Data | #fce7f3 (pink-100) | Database, cache, storage |
-| External | #fbcfe8 (pink-200) | Third-party services, APIs |
+| Layer       | Node fill            | Description                          |
+| ----------- | -------------------- | ------------------------------------ |
+| Client/UI   | #dbeafe (blue-100)   | React components, hooks, pages       |
+| Server/API  | #fef3c7 (amber-100)  | Express routes, middleware, handlers |
+| SDK/Core    | #f3e8ff (purple-100) | Core libraries, SDK wrappers         |
+| Agent/Logic | #dcfce7 (green-100)  | Business logic, agents, processors   |
+| Data        | #fce7f3 (pink-100)   | Database, cache, storage             |
+| External    | #fbcfe8 (pink-200)   | Third-party services, APIs           |
 
 ## Example topics
 

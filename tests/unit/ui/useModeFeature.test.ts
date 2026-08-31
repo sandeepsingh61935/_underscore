@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-import { useModeFeature, useConfigureAiProvidersGate } from '@/ui-system/hooks/useModeFeature';
+import {
+  useModeFeature,
+  useConfigureAiProvidersGate,
+} from '@/ui-system/hooks/useModeFeature';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 
 vi.mock('@/ui-system/hooks/usePersistedMode', () => ({

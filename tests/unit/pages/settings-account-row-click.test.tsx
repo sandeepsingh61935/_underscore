@@ -89,7 +89,12 @@ describe('SettingsPage account row click targets', () => {
       theme: 'system',
       setTheme: vi.fn(),
       currentMode: 'pro',
-      user: { id: 'u1', email: 'user@example.com', displayName: 'user', provider: 'email' },
+      user: {
+        id: 'u1',
+        email: 'user@example.com',
+        displayName: 'user',
+        provider: 'email',
+      },
       isAuthenticated: true,
       login: vi.fn(),
       logout,

@@ -47,7 +47,8 @@ export async function loadPopupNavigationSnapshot(): Promise<PopupNavigationSnap
     lastView: data[POPUP_NAV_STORAGE_KEYS.lastView] as string | undefined,
     lastDomain: data[POPUP_NAV_STORAGE_KEYS.lastDomain] as string | undefined,
     lastSection: data[POPUP_NAV_STORAGE_KEYS.lastSection] as string | undefined,
-    lastLlmSetupProvider: data[POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider] as ProviderName | undefined,
+    lastLlmSetupProvider: data[POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider] as
+      ProviderName | undefined,
     pendingAuthMode: data[POPUP_NAV_STORAGE_KEYS.pendingAuthMode] as string | undefined,
   };
 }
@@ -73,7 +74,9 @@ export async function clearPopupDomainSection(): Promise<void> {
 }
 
 export async function persistLlmSetupProvider(provider: ProviderName): Promise<void> {
-  await browser.storage.local.set({ [POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider]: provider });
+  await browser.storage.local.set({
+    [POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider]: provider,
+  });
 }
 
 export async function persistPendingAuthMode(mode: string): Promise<void> {

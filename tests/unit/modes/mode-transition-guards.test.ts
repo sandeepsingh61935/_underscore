@@ -23,13 +23,19 @@ describe('transition guards (pro boundaries)', () => {
 
   it('blocks pro to pro_xai when signed in but not paid', async () => {
     await expect(
-      executeTransitionGuard('pro', 'pro_xai', { isAuthenticated: true, isPaidActive: false }),
+      executeTransitionGuard('pro', 'pro_xai', {
+        isAuthenticated: true,
+        isPaidActive: false,
+      })
     ).resolves.toBe(false);
   });
 
   it('allows pro to pro_xai when entitled paid', async () => {
     await expect(
-      executeTransitionGuard('pro', 'pro_xai', { isAuthenticated: true, isPaidActive: true }),
+      executeTransitionGuard('pro', 'pro_xai', {
+        isAuthenticated: true,
+        isPaidActive: true,
+      })
     ).resolves.toBe(true);
   });
 });

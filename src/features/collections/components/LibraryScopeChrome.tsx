@@ -4,7 +4,10 @@
  */
 import React, { type ReactNode } from 'react';
 
-import { ExportActions, type ExportViewScope } from '@/features/collections/components/ExportActions';
+import {
+  ExportActions,
+  type ExportViewScope,
+} from '@/features/collections/components/ExportActions';
 import { LibrarySortControl } from '@/features/collections/components/LibrarySortControl';
 import type { LibrarySortKey } from '@/shared/library/library-sort';
 

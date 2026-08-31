@@ -16,21 +16,39 @@ export class MockMessageBus implements IMessageBus {
   publishSpy = vi.fn();
   subscribeSpy = vi.fn();
 
-  private subscribers = new Map<string, Set<(payload: unknown, sender: unknown) => unknown | Promise<unknown>>>();
+  private subscribers = new Map<
+    string,
+    Set<(payload: unknown, sender: unknown) => unknown | Promise<unknown>>
+  >();
 
-  async send<T = unknown>(_target: 'background' | 'content' | 'popup', message: { type: string; payload?: unknown }): Promise<T> {
+  async send<T = unknown>(
+    _target: 'background' | 'content' | 'popup',
+    message: { type: string; payload?: unknown }
+  ): Promise<T> {
     this.sendSpy(message);
     return Promise.resolve({ success: true, mocked: true } as unknown as T);
   }
 
-  subscribe<T = unknown>(messageType: string, handler: (payload: T, sender: chrome.runtime.MessageSender) => unknown | Promise<unknown>): () => void {
+  subscribe<T = unknown>(
+    messageType: string,
+    handler: (
+      payload: T,
+      sender: chrome.runtime.MessageSender
+    ) => unknown | Promise<unknown>
+  ): () => void {
     this.subscribeSpy(messageType, handler);
     if (!this.subscribers.has(messageType)) {
       this.subscribers.set(messageType, new Set());
     }
-    this.subscribers.get(messageType)!.add(handler as (payload: unknown, sender: unknown) => unknown | Promise<unknown>);
+    this.subscribers
+      .get(messageType)!
+      .add(handler as (payload: unknown, sender: unknown) => unknown | Promise<unknown>);
     return () => {
-      this.subscribers.get(messageType)?.delete(handler as (payload: unknown, sender: unknown) => unknown | Promise<unknown>);
+      this.subscribers
+        .get(messageType)
+        ?.delete(
+          handler as (payload: unknown, sender: unknown) => unknown | Promise<unknown>
+        );
     };
   }
 

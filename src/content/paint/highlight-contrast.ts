@@ -95,7 +95,9 @@ export function isLightBackground(rgb: Rgb, threshold = 0.55): boolean {
  * 1) Per-channel invert of bg
  * 2) If contrast vs bg is too low (mid-gray case), snap to near-black or near-white
  */
-export function resolveUnderscoreStroke(backgroundCss: string | null | undefined): string {
+export function resolveUnderscoreStroke(
+  backgroundCss: string | null | undefined
+): string {
   const bg = (backgroundCss ? parseCssColor(backgroundCss) : null) ?? DEFAULT_BG;
   const inverted = invertRgb(bg);
 

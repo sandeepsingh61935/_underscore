@@ -62,7 +62,7 @@ describe('ConnectToAiFlow', () => {
         isPaidActive
         onStackDepthChange={onDepth}
         onExit={onExit}
-      />,
+      />
     );
 
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
@@ -79,7 +79,9 @@ describe('ConnectToAiFlow', () => {
     await waitFor(() => expect(screen.getByTestId('mcp-client-setup')).toBeTruthy());
     expect(screen.getByText('← Add an AI app')).toBeTruthy();
     expect(screen.getByText('Connect Cursor')).toBeTruthy();
-    expect(screen.getByTestId('mcp-handoff-primary').textContent).toMatch(/open in cursor/i);
+    expect(screen.getByTestId('mcp-handoff-primary').textContent).toMatch(
+      /open in cursor/i
+    );
 
     screen.getByText('← Add an AI app').click();
     await waitFor(() => expect(screen.getByTestId('mcp-app-picker')).toBeTruthy());
@@ -98,9 +100,7 @@ describe('ConnectToAiFlow', () => {
       [MCP_BRIDGE_STORAGE_KEYS.activeApps]: ['claude-code'],
     });
 
-    render(
-      <ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />,
-    );
+    render(<ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />);
 
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
     expect(screen.getByTestId('mcp-integrations-status').textContent).toBe('Ready');
@@ -113,9 +113,7 @@ describe('ConnectToAiFlow', () => {
   });
 
   it('reloads grants when the window is focused', async () => {
-    render(
-      <ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />,
-    );
+    render(<ConnectToAiFlow isAuthenticated currentMode="pro_xai" isPaidActive />);
     await waitFor(() => expect(screen.getByTestId('mcp-connections-hub')).toBeTruthy());
     reloadGrants.mockClear();
     window.dispatchEvent(new Event('focus'));

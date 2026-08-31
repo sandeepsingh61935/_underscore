@@ -7,12 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RangeOverlayPainter } from '@/content/paint/range-overlay-painter';
 
-function stubRect(
-  left: number,
-  top: number,
-  width: number,
-  height: number
-): DOMRect {
+function stubRect(left: number, top: number, width: number, height: number): DOMRect {
   return {
     left,
     top,

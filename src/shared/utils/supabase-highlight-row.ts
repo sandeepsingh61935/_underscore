@@ -34,12 +34,14 @@ export interface SupabaseHighlightRow {
 }
 
 export function serializeHighlightMetadataForCloud(
-  metadata: SupabaseHighlightMetadata | undefined,
+  metadata: SupabaseHighlightMetadata | undefined
 ): SupabaseHighlightMetadata | null {
   if (!metadata) return null;
 
-  const notes = metadata.notes !== undefined ? sanitizeHighlightNote(metadata.notes) : undefined;
-  const tags = metadata.tags !== undefined ? normalizeHighlightTags(metadata.tags) : undefined;
+  const notes =
+    metadata.notes !== undefined ? sanitizeHighlightNote(metadata.notes) : undefined;
+  const tags =
+    metadata.tags !== undefined ? normalizeHighlightTags(metadata.tags) : undefined;
   const sourceKind = metadata.sourceKind === 'code' ? 'code' : undefined;
   const language =
     typeof metadata.language === 'string' && metadata.language.trim()
@@ -65,7 +67,9 @@ export function serializeHighlightTextForCloud(data: HighlightDataV2): string {
 }
 
 /** IndexedDB and IPC may leave timestamps as ISO strings instead of Date. */
-export function serializeTimestampForCloud(value: Date | string | number | undefined): string {
+export function serializeTimestampForCloud(
+  value: Date | string | number | undefined
+): string {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -86,7 +90,8 @@ export function parseHighlightTextFromCloud(rawText: string | undefined | null):
 
 export function transformHighlightRow(row: SupabaseHighlightRow): HighlightDataV2 {
   const { text } = parseHighlightTextFromCloud(row.text);
-  const selector = row.selectors as HighlightDataV2['ranges'][number]['selector'] | null | undefined;
+  const selector = row.selectors as
+    HighlightDataV2['ranges'][number]['selector'] | null | undefined;
   const cloudMetadata = serializeHighlightMetadataForCloud(row.metadata ?? undefined);
 
   return {
@@ -117,9 +122,7 @@ export function transformHighlightRow(row: SupabaseHighlightRow): HighlightDataV
           ...(cloudMetadata.tags && cloudMetadata.tags.length > 0
             ? { tags: cloudMetadata.tags }
             : {}),
-          ...(cloudMetadata.sourceKind === 'code'
-            ? { sourceKind: 'code' as const }
-            : {}),
+          ...(cloudMetadata.sourceKind === 'code' ? { sourceKind: 'code' as const } : {}),
           ...(cloudMetadata.language ? { language: cloudMetadata.language } : {}),
           ...(cloudMetadata.presentation
             ? { presentation: cloudMetadata.presentation }

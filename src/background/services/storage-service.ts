@@ -6,9 +6,6 @@
 import { browser } from 'wxt/browser';
 
 import { ValidationError } from '@/background/errors/app-error';
-import { hashDomain } from '@/shared/utils/crypto-utils';
-import { LoggerFactory } from '@/shared/utils/logger';
-import type { ILogger } from '@/shared/utils/logger';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import {
   DEFAULT_STORAGE_CONFIG,
@@ -23,6 +20,9 @@ import type {
   EventLog,
   StorageConfig,
 } from '@/shared/types/storage';
+import { hashDomain } from '@/shared/utils/crypto-utils';
+import { LoggerFactory } from '@/shared/utils/logger';
+import type { ILogger } from '@/shared/utils/logger';
 
 /**
  * Storage service for domain-scoped highlight persistence.
@@ -123,11 +123,12 @@ export class StorageService implements IStorage {
 
   private async backfillIndexIfMissing(
     hashedDomain: string,
-    events: AnyHighlightEvent[],
+    events: AnyHighlightEvent[]
   ): Promise<void> {
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
-      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+      const index: CollectionsIndex =
+        (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
 
       if (hashedDomain in index) return;
 
@@ -135,7 +136,7 @@ export class StorageService implements IStorage {
       if (count === 0) return;
 
       const lastActive =
-        events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : Date.now();
+        events.length > 0 ? Math.max(...events.map((e) => e.timestamp)) : Date.now();
 
       index[hashedDomain] = {
         domain: this.currentDomain,
@@ -146,7 +147,9 @@ export class StorageService implements IStorage {
 
       await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
     } catch (err) {
-      this.logger.warn('Failed to backfill collections index', { error: (err as Error).message });
+      this.logger.warn('Failed to backfill collections index', {
+        error: (err as Error).message,
+      });
     }
   }
 
@@ -180,14 +183,16 @@ export class StorageService implements IStorage {
   private async updateCollectionsIndex(
     hashedDomain: string,
     events: AnyHighlightEvent[],
-    now: number,
+    now: number
   ): Promise<void> {
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
-      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+      const index: CollectionsIndex =
+        (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
 
       const count = computeHighlightCount(events);
-      const lastActive = events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : now;
+      const lastActive =
+        events.length > 0 ? Math.max(...events.map((e) => e.timestamp)) : now;
 
       index[hashedDomain] = {
         domain: this.currentDomain,
@@ -198,7 +203,9 @@ export class StorageService implements IStorage {
 
       await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
     } catch (err) {
-      this.logger.warn('Failed to update collections index', { error: (err as Error).message });
+      this.logger.warn('Failed to update collections index', {
+        error: (err as Error).message,
+      });
     }
   }
 
@@ -208,13 +215,16 @@ export class StorageService implements IStorage {
 
     try {
       const result = await browser.storage.local.get(COLLECTIONS_INDEX_KEY);
-      const index: CollectionsIndex = (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
+      const index: CollectionsIndex =
+        (result[COLLECTIONS_INDEX_KEY] as CollectionsIndex) ?? {};
       if (hashedDomain in index) {
         delete index[hashedDomain];
         await browser.storage.local.set({ [COLLECTIONS_INDEX_KEY]: index });
       }
     } catch (err) {
-      this.logger.warn('Failed to remove from collections index', { error: (err as Error).message });
+      this.logger.warn('Failed to remove from collections index', {
+        error: (err as Error).message,
+      });
     }
     this.logger.info('Storage cleared', { domain: this.currentDomain });
   }

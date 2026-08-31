@@ -14,8 +14,8 @@ import {
   TAGS_STORE,
 } from '@/shared/constants/highlight-db-version';
 import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
-import type { TagEntity } from '@/shared/types/tag-entity';
 import { upgradeHighlightDatabase } from '@/shared/storage/highlight-db-upgrade';
+import type { TagEntity } from '@/shared/types/tag-entity';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import type { ILogger } from '@/shared/utils/logger';
 
@@ -113,7 +113,9 @@ export class IndexedDBTagRepository implements ITagRepository {
     }
 
     const highlightIndex = linksStore.index('highlightId');
-    const existingLinks = (await highlightIndex.getAll(highlightId)) as StoredHighlightTag[];
+    const existingLinks = (await highlightIndex.getAll(
+      highlightId
+    )) as StoredHighlightTag[];
     for (const link of existingLinks) {
       await linksStore.delete([link.highlightId, link.tagId]);
     }
@@ -123,6 +125,9 @@ export class IndexedDBTagRepository implements ITagRepository {
     }
 
     await tx.done;
-    this.logger.debug('[IndexedDBTagRepo] setHighlightLabels', { highlightId, count: normalized.length });
+    this.logger.debug('[IndexedDBTagRepo] setHighlightLabels', {
+      highlightId,
+      count: normalized.length,
+    });
   }
 }

@@ -6,12 +6,14 @@
 import type { ExportFormat, ExportScope } from './types';
 
 function sanitizeFilenamePart(value: string): string {
-  return value
-    .replace(/^\/+/, '')
-    .replace(/[<>:"/\\|?*\s]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 80) || 'section';
+  return (
+    value
+      .replace(/^\/+/, '')
+      .replace(/[<>:"/\\|?*\s]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 80) || 'section'
+  );
 }
 
 export function buildFilename(scope: ExportScope, format: ExportFormat = 'md'): string {

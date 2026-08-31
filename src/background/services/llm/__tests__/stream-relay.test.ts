@@ -2,18 +2,31 @@ import { describe, it, expect, vi } from 'vitest';
 
 import { handleStreamChat } from '../stream-relay';
 
-import type { ILLMService, LLMRequest, LLMResult } from '@/shared/interfaces/i-llm-service';
+import type {
+  ILLMService,
+  LLMRequest,
+  LLMResult,
+} from '@/shared/interfaces/i-llm-service';
 
 function makePort(): {
-  port: { postMessage: ReturnType<typeof vi.fn>; onDisconnect: { addListener: ReturnType<typeof vi.fn> } };
+  port: {
+    postMessage: ReturnType<typeof vi.fn>;
+    onDisconnect: { addListener: ReturnType<typeof vi.fn> };
+  };
   posts: Array<{ type: string; payload?: unknown }>;
   triggerDisconnect: () => void;
 } {
   const posts: Array<{ type: string; payload?: unknown }> = [];
   let disconnectHandler: () => void = () => {};
   const port = {
-    postMessage: vi.fn((msg: { type: string; payload?: unknown }) => { posts.push(msg); }),
-    onDisconnect: { addListener: vi.fn((cb: () => void) => { disconnectHandler = cb; }) },
+    postMessage: vi.fn((msg: { type: string; payload?: unknown }) => {
+      posts.push(msg);
+    }),
+    onDisconnect: {
+      addListener: vi.fn((cb: () => void) => {
+        disconnectHandler = cb;
+      }),
+    },
   };
   return { port: port as any, posts, triggerDisconnect: () => disconnectHandler() };
 }
@@ -23,7 +36,12 @@ describe('handleStreamChat', () => {
     const { port, posts } = makePort();
     const provider: ILLMService = {
       providerName: 'anthropic',
-      capabilities: { contextWindow: 1, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
+      capabilities: {
+        contextWindow: 1,
+        supportsSystemPrompt: true,
+        supportsStreaming: true,
+        supportsToolUse: false,
+      },
       streamChat: async (_req, onChunk, _signal) => {
         onChunk({ delta: 'A' });
         onChunk({ delta: 'B' });
@@ -33,10 +51,14 @@ describe('handleStreamChat', () => {
       healthCheck: async () => ({ ok: true, model: 'x' }),
     };
 
-    const req: LLMRequest = { systemPrompt: 's', messages: [{ role: 'user', content: 'm' }], maxTokens: 10 };
+    const req: LLMRequest = {
+      systemPrompt: 's',
+      messages: [{ role: 'user', content: 'm' }],
+      maxTokens: 10,
+    };
     await handleStreamChat(port as any, provider, req);
 
-    expect(posts.map(p => p.type)).toEqual(['CHUNK', 'CHUNK', 'DONE']);
+    expect(posts.map((p) => p.type)).toEqual(['CHUNK', 'CHUNK', 'DONE']);
     const donePost = posts[2];
     expect(donePost).toBeDefined();
     const done = donePost!.payload as LLMResult;
@@ -48,17 +70,29 @@ describe('handleStreamChat', () => {
     let aborted = false;
     const provider: ILLMService = {
       providerName: 'ollama',
-      capabilities: { contextWindow: 1, supportsSystemPrompt: true, supportsStreaming: true, supportsToolUse: false },
+      capabilities: {
+        contextWindow: 1,
+        supportsSystemPrompt: true,
+        supportsStreaming: true,
+        supportsToolUse: false,
+      },
       streamChat: async (_req, _onChunk, signal) => {
         return new Promise<LLMResult>((_resolve, reject) => {
-          signal.addEventListener('abort', () => { aborted = true; reject(new DOMException('aborted', 'AbortError')); });
+          signal.addEventListener('abort', () => {
+            aborted = true;
+            reject(new DOMException('aborted', 'AbortError'));
+          });
         });
       },
       chat: async () => ({ text: '', inputTokens: 0, outputTokens: 0, durationMs: 0 }),
       healthCheck: async () => ({ ok: true, model: 'x' }),
     };
 
-    const req: LLMRequest = { systemPrompt: 's', messages: [{ role: 'user', content: 'm' }], maxTokens: 10 };
+    const req: LLMRequest = {
+      systemPrompt: 's',
+      messages: [{ role: 'user', content: 'm' }],
+      maxTokens: 10,
+    };
     const promise = handleStreamChat(port as any, provider, req);
     triggerDisconnect();
     await promise;

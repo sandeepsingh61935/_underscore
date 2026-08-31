@@ -86,7 +86,10 @@ export type TypePresetSelection =
   | { kind: 'builtin'; id: BuiltinTypePresetId }
   | { kind: 'custom'; preset: TypographyTokens; importedFonts?: ImportedFontRefs };
 
-export const TYPE_PRESET_DEFAULT: TypePresetSelection = { kind: 'builtin', id: 'editorial' };
+export const TYPE_PRESET_DEFAULT: TypePresetSelection = {
+  kind: 'builtin',
+  id: 'editorial',
+};
 
 export const DEFAULT_SCALE: Record<ScaleStepId, string> = {
   'step-3': '22px',
@@ -186,8 +189,18 @@ const MONO_FALLBACK = 'ui-monospace, monospace';
 const GOOGLE_FONT_NAME_RE = /^[\w\s.'-]+$/;
 
 const SCALE_STEPS: ScaleStepId[] = ['step-3', 'step-2', 'step-0', 'step-1', 'step--2'];
-const SPACING_KEYS: SpacingKey[] = ['displayLh', 'bodyLh', 'sectionTrack', 'displayTrack'];
-const MARGIN_KEYS: MarginKey[] = ['rowHeight', 'sectionGap', 'insetPadding', 'specimenPadding'];
+const SPACING_KEYS: SpacingKey[] = [
+  'displayLh',
+  'bodyLh',
+  'sectionTrack',
+  'displayTrack',
+];
+const MARGIN_KEYS: MarginKey[] = [
+  'rowHeight',
+  'sectionGap',
+  'insetPadding',
+  'specimenPadding',
+];
 
 function googleWeightBundle(...names: string[]): string {
   return names
@@ -219,7 +232,9 @@ function makeTokens(
   };
 }
 
-function resolveFontStacks(fonts: TypographyFonts): Pick<ResolvedTypeFonts, 'serif' | 'sans' | 'mono'> {
+function resolveFontStacks(
+  fonts: TypographyFonts
+): Pick<ResolvedTypeFonts, 'serif' | 'sans' | 'mono'> {
   return {
     serif: toFontFamilyCss(fonts.serif, SERIF_FALLBACK),
     sans: toFontFamilyCss(fonts.sans, SANS_FALLBACK),
@@ -408,7 +423,12 @@ export function isTypePresetSelection(value: unknown): value is TypePresetSelect
 
 function migrateLegacyCustomPreset(raw: unknown): TypographyTokens | null {
   if (!raw || typeof raw !== 'object') return null;
-  const v = raw as { serif?: string; sans?: string; mono?: string; fonts?: TypographyFonts };
+  const v = raw as {
+    serif?: string;
+    sans?: string;
+    mono?: string;
+    fonts?: TypographyFonts;
+  };
   if (v.fonts && isTypographyFonts(v.fonts)) {
     return {
       fonts: v.fonts,
@@ -417,7 +437,11 @@ function migrateLegacyCustomPreset(raw: unknown): TypographyTokens | null {
       margins: { ...DEFAULT_MARGINS },
     };
   }
-  if (typeof v.serif === 'string' && typeof v.sans === 'string' && typeof v.mono === 'string') {
+  if (
+    typeof v.serif === 'string' &&
+    typeof v.sans === 'string' &&
+    typeof v.mono === 'string'
+  ) {
     return makeTokens(v.serif, v.sans, v.mono);
   }
   return null;
@@ -425,7 +449,12 @@ function migrateLegacyCustomPreset(raw: unknown): TypographyTokens | null {
 
 function parseLegacySelection(raw: unknown): TypePresetSelection | null {
   if (!raw || typeof raw !== 'object') return null;
-  const v = raw as { id?: unknown; kind?: unknown; preset?: unknown; importedFonts?: ImportedFontRefs };
+  const v = raw as {
+    id?: unknown;
+    kind?: unknown;
+    preset?: unknown;
+    importedFonts?: ImportedFontRefs;
+  };
   if (v.kind === undefined && isBuiltinTypePresetId(v.id)) {
     return { kind: 'builtin', id: v.id };
   }
@@ -467,7 +496,9 @@ export function resolveBuiltinTokens(id: BuiltinTypePresetId): TypographyTokens 
   };
 }
 
-export function resolveTypographyTokens(selection: TypePresetSelection): TypographyTokens {
+export function resolveTypographyTokens(
+  selection: TypePresetSelection
+): TypographyTokens {
   if (selection.kind === 'builtin') {
     return resolveBuiltinTokens(selection.id);
   }
@@ -479,7 +510,9 @@ export function resolveTypographyTokens(selection: TypePresetSelection): Typogra
   };
 }
 
-export function validateGoogleFontName(name: string): { valid: true } | { valid: false; error: string } {
+export function validateGoogleFontName(
+  name: string
+): { valid: true } | { valid: false; error: string } {
   const trimmed = name.trim();
   if (!trimmed) return { valid: false, error: 'Required' };
   if (trimmed.length > 60) return { valid: false, error: 'Too long' };

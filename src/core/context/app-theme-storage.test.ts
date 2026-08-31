@@ -3,11 +3,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  THEME_STORAGE_KEY,
-  readStoredTheme,
-  writeStoredTheme,
-} from './AppProvider';
+import { THEME_STORAGE_KEY, readStoredTheme, writeStoredTheme } from './AppProvider';
 
 describe('web theme persistence', () => {
   beforeEach(() => {

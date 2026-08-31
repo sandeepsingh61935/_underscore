@@ -37,10 +37,7 @@ export function decodeJsonBase64<T = unknown>(encoded: string): T {
  * Cursor install deep link: name + base64 config with remote URL only (no token).
  * @see https://cursor.com/docs/mcp/install-links
  */
-export function buildCursorMcpInstallLink(
-  name: string,
-  remoteUrl: string,
-): string {
+export function buildCursorMcpInstallLink(name: string, remoteUrl: string): string {
   const config = encodeJsonBase64({ url: remoteUrl.trim() });
   const params = new URLSearchParams({
     name: name.trim() || '_underscore',
@@ -55,7 +52,7 @@ export function fillCommandTemplate(template: string, url: string): string {
 
 export function resolvePrimaryAction(
   app: McpAiAppDef,
-  remoteUrl: string,
+  remoteUrl: string
 ): PrimaryHandoffAction {
   const url = remoteUrl.trim();
   switch (app.handoff) {

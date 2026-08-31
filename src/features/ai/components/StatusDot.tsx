@@ -5,7 +5,10 @@ export interface StatusDotProps {
   pending?: boolean;
 }
 
-export function StatusDot({ connected, pending = false }: StatusDotProps): React.ReactElement {
+export function StatusDot({
+  connected,
+  pending = false,
+}: StatusDotProps): React.ReactElement {
   const color = pending ? 'var(--ink-3)' : connected ? 'var(--accent)' : 'var(--ink-4)';
   return (
     <span

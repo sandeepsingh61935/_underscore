@@ -9,16 +9,16 @@ import { BaseHighlightMode } from './base-highlight-mode';
 import type { HighlightData, DeletionConfig } from './highlight-mode.interface';
 import type { IBasicMode, ModeCapabilities } from './mode-interfaces';
 
-import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import { serializeRange } from '@/content/utils/range-converter';
+import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
-import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
 export class BasicMode extends BaseHighlightMode implements IBasicMode {
   get name(): 'basic' {
@@ -69,9 +69,12 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     const existing = this.facade.findByContentHash(contentHash);
 
     if (existing && existing.id) {
-      this.logger.info('Duplicate content detected - returning existing highlight (Basic Mode)', {
-        existingId: existing.id,
-      });
+      this.logger.info(
+        'Duplicate content detected - returning existing highlight (Basic Mode)',
+        {
+          existingId: existing.id,
+        }
+      );
       return existing.id;
     }
 
@@ -211,7 +214,9 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
       });
     }
 
-    this.logger.info('All highlights cleared (Basic Mode, with storage event)', { count });
+    this.logger.info('All highlights cleared (Basic Mode, with storage event)', {
+      count,
+    });
   }
 
   override async onHighlightCreated(event: HighlightCreatedEvent): Promise<void> {

@@ -47,7 +47,7 @@ export function commercialGate(auth: CommercialAuth): CommercialGateResult {
  */
 export function canUseMcp(
   auth: CommercialAuth,
-  opts?: CommercialGateOptions,
+  opts?: CommercialGateOptions
 ): CommercialGateResult {
   if (!auth.isAuthenticated) {
     return { allowed: false, reason: 'AUTH_REQUIRED' };

@@ -11,17 +11,17 @@ import { isExtensionContext } from '@/features/collections/hooks/useHighlightExp
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { UPDATE_HIGHLIGHT_METADATA } from '@/shared/schemas/message-schemas';
+import { setHighlightLabelsWeb, toTagError } from '@/shared/services/tag-query-web';
 import {
   mergeHighlightMetadataPatch,
   type HighlightMetadataInput,
 } from '@/shared/utils/highlight-metadata';
 import { serializeHighlightMetadataForCloud } from '@/shared/utils/supabase-highlight-row';
-import { setHighlightLabelsWeb, toTagError } from '@/shared/services/tag-query-web';
 
 export type { HighlightMetadataInput };
 
 export type SendHighlightMetadataUpdate = (
-  payload: { id: string } & HighlightMetadataInput,
+  payload: { id: string } & HighlightMetadataInput
 ) => Promise<{ success: boolean; error?: string }>;
 
 export interface UpdateHighlightMetadataOptions {
@@ -33,7 +33,7 @@ export async function executeUpdateHighlightMetadata(
   id: string,
   input: HighlightMetadataInput,
   sendUpdate: SendHighlightMetadataUpdate,
-  options?: UpdateHighlightMetadataOptions,
+  options?: UpdateHighlightMetadataOptions
 ): Promise<boolean> {
   const result = await sendUpdate({ id, ...input });
   if (!result.success) {
@@ -48,7 +48,7 @@ export async function executeUpdateHighlightMetadata(
 
 export async function updateHighlightMetadataWeb(
   id: string,
-  input: HighlightMetadataInput,
+  input: HighlightMetadataInput
 ): Promise<{ success: boolean; error?: string }> {
   // Static client import — avoid per-save dynamic import latency.
   const supabase = getWebSupabaseClient();
@@ -84,7 +84,7 @@ export async function updateHighlightMetadataWeb(
 
     const metadata = mergeHighlightMetadataPatch(
       existing.metadata as Parameters<typeof mergeHighlightMetadataPatch>[0],
-      input,
+      input
     );
 
     const { error } = await supabase
@@ -108,9 +108,9 @@ export async function updateHighlightMetadataWeb(
           const detail = toTagError(junctionError).message;
           console.warn(
             '[web] highlight_tags dual-write failed; metadata.tags saved:',
-            detail,
+            detail
           );
-        },
+        }
       );
     }
 
@@ -127,7 +127,7 @@ export function useUpdateHighlightMetadata(): {
   updateMetadata: (
     id: string,
     input: HighlightMetadataInput,
-    options?: UpdateHighlightMetadataOptions,
+    options?: UpdateHighlightMetadataOptions
   ) => Promise<boolean>;
 } {
   const sendAction = useIpcAction<
@@ -144,14 +144,14 @@ export function useUpdateHighlightMetadata(): {
     async (
       id: string,
       input: HighlightMetadataInput,
-      options?: UpdateHighlightMetadataOptions,
+      options?: UpdateHighlightMetadataOptions
     ): Promise<boolean> => {
       if (!isExtensionContext()) {
         return executeUpdateHighlightMetadata(
           id,
           input,
           (payload) => updateHighlightMetadataWeb(payload.id, payload),
-          options,
+          options
         );
       }
       return executeUpdateHighlightMetadata(
@@ -163,10 +163,10 @@ export function useUpdateHighlightMetadata(): {
             ? { success: true }
             : { success: false, error: result.error };
         },
-        options,
+        options
       );
     },
-    [sendAction],
+    [sendAction]
   );
 
   return { updateMetadata };

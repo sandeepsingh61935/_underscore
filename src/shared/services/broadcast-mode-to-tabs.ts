@@ -6,7 +6,7 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
  */
 export async function broadcastModeToTabs(
   mode: ModeType,
-  isAuthenticated = false,
+  isAuthenticated = false
 ): Promise<void> {
   if (typeof chrome === 'undefined' || !chrome.tabs?.query || !chrome.tabs?.sendMessage) {
     return;

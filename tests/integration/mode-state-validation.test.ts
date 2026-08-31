@@ -92,7 +92,11 @@ describe('ModeStateManager - Validation Integration', () => {
     expect(stateManager.getMode()).toBe('pro');
 
     // 2. Simulate app restart (new instance)
-    const newStateManager = new ModeStateManager(mockEventBus, mockModeManager, mockLogger);
+    const newStateManager = new ModeStateManager(
+      mockEventBus,
+      mockModeManager,
+      mockLogger
+    );
 
     // 3. Initialize new instance (loads from storage)
     await newStateManager.init();

@@ -78,10 +78,7 @@ async function toFetchRequest(req: IncomingMessage): Promise<Request> {
   });
 }
 
-async function writeFetchResponse(
-  webRes: Response,
-  res: ServerResponse,
-): Promise<void> {
+async function writeFetchResponse(webRes: Response, res: ServerResponse): Promise<void> {
   res.statusCode = webRes.status;
   webRes.headers.forEach((value, key) => {
     if (key.toLowerCase() === 'transfer-encoding') return;
@@ -94,7 +91,7 @@ async function writeFetchResponse(
   }
 
   const nodeStream = Readable.fromWeb(
-    webRes.body as import('node:stream/web').ReadableStream,
+    webRes.body as import('node:stream/web').ReadableStream
   );
   await new Promise<void>((resolve, reject) => {
     nodeStream.on('error', reject);
@@ -111,7 +108,7 @@ function isLlmProxyPath(pathname: string): boolean {
 
 async function loadHandlers(server: ViteDevServer): Promise<ProxyHandlers> {
   const mod = (await server.ssrLoadModule(
-    '/src/shared/llm/runtime/proxy-handlers.ts',
+    '/src/shared/llm/runtime/proxy-handlers.ts'
   )) as ProxyHandlers;
   return mod;
 }
@@ -142,7 +139,7 @@ export function viteWebLlmProxyPlugin(): Plugin {
                 JSON.stringify({
                   error:
                     'LLM proxy: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (e.g. .env.development)',
-                }),
+                })
               );
               return;
             }
@@ -169,7 +166,7 @@ export function viteWebLlmProxyPlugin(): Plugin {
       server.config.logger.info(
         hasSb
           ? `[llm-proxy] ${LLM_PROXY_STREAM_PATH} + ${LLM_PROXY_HEALTH_PATH} (dev, same handlers as Pages Functions)`
-          : `[llm-proxy] mounted but Supabase env missing — set VITE_SUPABASE_* in .env.development`,
+          : `[llm-proxy] mounted but Supabase env missing — set VITE_SUPABASE_* in .env.development`
       );
     },
   };

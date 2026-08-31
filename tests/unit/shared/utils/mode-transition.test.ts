@@ -15,7 +15,7 @@ describe('resolveModeTransition', () => {
         to: 'pro',
         isAuthenticated: false,
         isPaidActive: false,
-      }).kind,
+      }).kind
     ).toBe('sign_in');
     expect(
       resolveModeTransition({
@@ -23,7 +23,7 @@ describe('resolveModeTransition', () => {
         to: 'pro_xai',
         isAuthenticated: false,
         isPaidActive: false,
-      }).kind,
+      }).kind
     ).toBe('sign_in');
   });
 
@@ -35,12 +35,14 @@ describe('resolveModeTransition', () => {
       isPaidActive: false,
     });
     expect(r.kind).toBe('upgrade');
-    expect(canPersistMode({
-      from: 'pro',
-      to: 'pro_xai',
-      isAuthenticated: true,
-      isPaidActive: false,
-    })).toBe(false);
+    expect(
+      canPersistMode({
+        from: 'pro',
+        to: 'pro_xai',
+        isAuthenticated: true,
+        isPaidActive: false,
+      })
+    ).toBe(false);
   });
 
   it('paid user: Free→Paid and Paid→Free are persist', () => {
@@ -50,7 +52,7 @@ describe('resolveModeTransition', () => {
         to: 'pro_xai',
         isAuthenticated: true,
         isPaidActive: true,
-      }),
+      })
     ).toMatchObject({ kind: 'persist', mode: 'pro_xai' });
 
     expect(
@@ -59,7 +61,7 @@ describe('resolveModeTransition', () => {
         to: 'pro',
         isAuthenticated: true,
         isPaidActive: true,
-      }),
+      })
     ).toMatchObject({ kind: 'persist', mode: 'pro' });
   });
 
@@ -70,7 +72,7 @@ describe('resolveModeTransition', () => {
         to: 'basic',
         isAuthenticated: true,
         isPaidActive: true,
-      }).kind,
+      }).kind
     ).toBe('sign_out');
   });
 });

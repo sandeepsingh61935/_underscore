@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { hasChromeRuntime, useIpcAction } from '@/shared/hooks/useIpcAction';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { loadInAppCatalog } from '@/shared/llm/catalog-load';
 import { fetchProviderModels } from '@/shared/llm/model-discovery';
 import type { ProviderModelOption } from '@/shared/llm/provider-models';
-import { hasChromeRuntime, useIpcAction } from '@/shared/hooks/useIpcAction';
 import { IPC_AI_LIST_PROVIDER_MODELS } from '@/shared/schemas/message-schemas';
 
 export interface UseProviderModelsInput {
@@ -16,7 +16,7 @@ export interface UseProviderModelsInput {
 
 export function useProviderModels(
   provider: ProviderName | null,
-  input: UseProviderModelsInput = {},
+  input: UseProviderModelsInput = {}
 ): {
   models: ProviderModelOption[];
   loading: boolean;
@@ -32,47 +32,51 @@ export function useProviderModels(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (refresh = false) => {
-    if (!provider) {
-      setModels([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+  const load = useCallback(
+    async (refresh = false) => {
+      if (!provider) {
+        setModels([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const presented = await loadInAppCatalog(
-        {
-          provider,
-          apiKey: input.apiKey,
-          apiBase: input.apiBase,
-          useStoredCredentials: input.useStoredCredentials,
-          refresh,
-        },
-        {
-          fetchLive: async (id, opts) => {
-            if (id === 'openrouter') {
-              const { getOpenRouterModels } = await import('@/shared/llm/openrouter-models');
-              return { models: await getOpenRouterModels({ refresh: opts.refresh }) };
-            }
-            return fetchProviderModels(id, opts);
+      setLoading(true);
+      try {
+        const presented = await loadInAppCatalog(
+          {
+            provider,
+            apiKey: input.apiKey,
+            apiBase: input.apiBase,
+            useStoredCredentials: input.useStoredCredentials,
+            refresh,
           },
-          listViaIpc: hasChromeRuntime()
-            ? async (payload) => {
-                const result = await listViaIpc(payload);
-                if (result.success) return { ok: true, models: result.data.models };
-                return { ok: false, reason: 'error', message: result.error };
+          {
+            fetchLive: async (id, opts) => {
+              if (id === 'openrouter') {
+                const { getOpenRouterModels } =
+                  await import('@/shared/llm/openrouter-models');
+                return { models: await getOpenRouterModels({ refresh: opts.refresh }) };
               }
-            : undefined,
-        },
-      );
-      setModels(presented.models);
-      setError(presented.error);
-    } finally {
-      setLoading(false);
-    }
-  }, [provider, input.apiKey, input.apiBase, input.useStoredCredentials, listViaIpc]);
+              return fetchProviderModels(id, opts);
+            },
+            listViaIpc: hasChromeRuntime()
+              ? async (payload) => {
+                  const result = await listViaIpc(payload);
+                  if (result.success) return { ok: true, models: result.data.models };
+                  return { ok: false, reason: 'error', message: result.error };
+                }
+              : undefined,
+          }
+        );
+        setModels(presented.models);
+        setError(presented.error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [provider, input.apiKey, input.apiBase, input.useStoredCredentials, listViaIpc]
+  );
 
   useEffect(() => {
     void load();

@@ -21,7 +21,8 @@ vi.mock('@/core/context/AppProvider', () => ({
 }));
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -122,18 +123,22 @@ describe('DomainDetailsView search wiring', () => {
       isAuthenticated: true,
       currentMode: 'pro',
     } as ReturnType<typeof useApp>);
-    vi.mocked(useHighlightSearch).mockReturnValue({ results: [], isLoading: false, error: null });
+    vi.mocked(useHighlightSearch).mockReturnValue({
+      results: [],
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('searches within the current domain only, with no scope pill', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(vi.mocked(useHighlightSearch)).toHaveBeenCalledWith(
-      expect.objectContaining({ scope: { kind: 'domain', domain: 'example.com' } }),
+      expect.objectContaining({ scope: { kind: 'domain', domain: 'example.com' } })
     );
     expect(screen.queryByText(/^in: /)).toBeNull();
     expect(screen.queryByRole('listbox')).toBeNull();
@@ -148,7 +153,7 @@ describe('DomainDetailsView search wiring', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -158,7 +163,10 @@ describe('DomainDetailsView search wiring', () => {
 
     await waitFor(() => {
       expect(vi.mocked(useHighlightSearch)).toHaveBeenLastCalledWith(
-        expect.objectContaining({ query: 'hit', scope: { kind: 'domain', domain: 'example.com' } }),
+        expect.objectContaining({
+          query: 'hit',
+          scope: { kind: 'domain', domain: 'example.com' },
+        })
       );
     });
   });
@@ -192,7 +200,7 @@ describe('DomainDetailsView search wiring', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -226,7 +234,7 @@ describe('DomainDetailsView search wiring', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" onSectionClick={onSectionClick} />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -259,7 +267,7 @@ describe('DomainDetailsView search wiring', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');

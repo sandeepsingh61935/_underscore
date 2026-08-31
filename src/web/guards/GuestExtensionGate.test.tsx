@@ -22,16 +22,14 @@ function renderGate(
     authStatus?: 'loading' | 'authenticated' | 'unauthenticated';
     presenceOverride?: 'installed' | 'missing' | 'unknown';
     initial?: string;
-  } = {},
+  } = {}
 ) {
   const auth = opts.auth ?? false;
   useAppMock.mockReturnValue({
     isAuthenticated: auth,
   });
   useWebAuthMock.mockReturnValue({
-    status:
-      opts.authStatus ??
-      (auth ? 'authenticated' : 'unauthenticated'),
+    status: opts.authStatus ?? (auth ? 'authenticated' : 'unauthenticated'),
   });
   return render(
     <MemoryRouter initialEntries={[opts.initial ?? '/home']}>
@@ -41,7 +39,10 @@ function renderGate(
           <Route path="/library" element={<div data-od-id="lib-ok">Lib</div>} />
           <Route path="/settings" element={<div data-od-id="set-ok">Set</div>} />
           <Route path="/ask" element={<div data-od-id="ask-ok">Ask</div>} />
-          <Route path="/insights" element={<div data-od-id="insights-ok">Insights</div>} />
+          <Route
+            path="/insights"
+            element={<div data-od-id="insights-ok">Insights</div>}
+          />
         </Route>
         <Route path="/" element={<div data-od-id="welcome-ok">Welcome</div>} />
         <Route path="/privacy" element={<div data-od-id="privacy-ok">Privacy</div>} />
@@ -49,7 +50,7 @@ function renderGate(
         <Route path="/help" element={<div data-od-id="help-ok">Help</div>} />
         <Route path="/install" element={<div data-od-id="install-ok">Install</div>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -126,7 +127,7 @@ describe('GuestExtensionGate', () => {
           <Route path="/privacy" element={<div data-od-id="privacy-ok">Privacy</div>} />
           <Route path="/" element={<div data-od-id="welcome-ok">Welcome</div>} />
         </Routes>
-      </MemoryRouter>,
+      </MemoryRouter>
     );
     expect(document.querySelector('[data-od-id="privacy-ok"]')).toBeTruthy();
   });

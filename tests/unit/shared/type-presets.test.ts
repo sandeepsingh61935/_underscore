@@ -116,18 +116,29 @@ describe('type-presets', () => {
       margins: DEFAULT_MARGINS,
     };
     expect(
-      selectionsEqual({ kind: 'builtin', id: 'modern' }, { kind: 'builtin', id: 'modern' })
+      selectionsEqual(
+        { kind: 'builtin', id: 'modern' },
+        { kind: 'builtin', id: 'modern' }
+      )
     ).toBe(true);
     expect(
-      selectionsEqual({ kind: 'custom', preset: tokens }, { kind: 'custom', preset: tokens })
+      selectionsEqual(
+        { kind: 'custom', preset: tokens },
+        { kind: 'custom', preset: tokens }
+      )
     ).toBe(true);
     expect(
-      selectionsEqual({ kind: 'builtin', id: 'modern' }, { kind: 'builtin', id: 'classic' })
+      selectionsEqual(
+        { kind: 'builtin', id: 'modern' },
+        { kind: 'builtin', id: 'classic' }
+      )
     ).toBe(false);
   });
 
   it('maps css family from google name', () => {
-    expect(toFontFamilyCss('Playfair Display', 'serif')).toBe('"Playfair Display", serif');
+    expect(toFontFamilyCss('Playfair Display', 'serif')).toBe(
+      '"Playfair Display", serif'
+    );
     expect(toFontFamilyCss('  ', 'serif')).toBe('serif');
   });
 

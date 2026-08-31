@@ -48,7 +48,12 @@ describe('edit-history', () => {
   it('caps undo depth', () => {
     let h = createEditHistory();
     for (let i = 0; i < 5; i++) {
-      h = pushEditHistory(h, { text: String(i), selStart: 0, selEnd: 0 }, String(i + 1), 3);
+      h = pushEditHistory(
+        h,
+        { text: String(i), selStart: 0, selEnd: 0 },
+        String(i + 1),
+        3
+      );
     }
     expect(h.undo.length).toBe(3);
     expect(h.undo[0]?.text).toBe('2');

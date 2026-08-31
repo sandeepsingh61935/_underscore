@@ -1,4 +1,7 @@
-import { getProviderModels, type ProviderModelOption } from '@/shared/llm/provider-models';
+import {
+  getProviderModels,
+  type ProviderModelOption,
+} from '@/shared/llm/provider-models';
 
 const CACHE_KEY = 'llm.openrouter.modelsCache';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -39,10 +42,12 @@ function isTextModel(model: OpenRouterModelRecord): boolean {
 }
 
 /** Map OpenRouter API records to setup UI options (all text models, tagged free/paid). */
-export function mapOpenRouterModels(records: OpenRouterModelRecord[]): ProviderModelOption[] {
+export function mapOpenRouterModels(
+  records: OpenRouterModelRecord[]
+): ProviderModelOption[] {
   return records
-    .filter(m => isTextModel(m))
-    .map(m => {
+    .filter((m) => isTextModel(m))
+    .map((m) => {
       const free = isFreeModel(m);
       return {
         id: m.id,
@@ -61,8 +66,10 @@ export function mapOpenRouterModels(records: OpenRouterModelRecord[]): ProviderM
 }
 
 /** @deprecated Use mapOpenRouterModels — kept for existing tests. */
-export function mapOpenRouterFreeModels(records: OpenRouterModelRecord[]): ProviderModelOption[] {
-  return mapOpenRouterModels(records).filter(m => m.hint === 'free');
+export function mapOpenRouterFreeModels(
+  records: OpenRouterModelRecord[]
+): ProviderModelOption[] {
+  return mapOpenRouterModels(records).filter((m) => m.hint === 'free');
 }
 
 async function readCache(): Promise<ModelsCacheEntry | null> {
@@ -84,14 +91,16 @@ async function writeCache(models: ProviderModelOption[]): Promise<void> {
 export async function fetchOpenRouterModels(): Promise<ProviderModelOption[]> {
   const response = await fetch(MODELS_URL);
   if (!response.ok) throw new Error(`OpenRouter models HTTP ${response.status}`);
-  const json = await response.json() as { data?: OpenRouterModelRecord[] };
+  const json = (await response.json()) as { data?: OpenRouterModelRecord[] };
   const models = mapOpenRouterModels(json.data ?? []);
   if (models.length === 0) throw new Error('OpenRouter returned no text models');
   return models;
 }
 
 /** OpenRouter models for the setup UI. Cached in chrome.storage.local for 1 hour. */
-export async function getOpenRouterModels(options: { refresh?: boolean } = {}): Promise<ProviderModelOption[]> {
+export async function getOpenRouterModels(
+  options: { refresh?: boolean } = {}
+): Promise<ProviderModelOption[]> {
   if (!options.refresh) {
     const cached = await readCache();
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
@@ -118,10 +127,11 @@ export async function getOpenRouterModels(options: { refresh?: boolean } = {}): 
  */
 export function openRouterModelRequiresKey(
   _modelId: string,
-  _catalog?: ProviderModelOption[],
+  _catalog?: ProviderModelOption[]
 ): boolean {
   return true;
 }
 
 /** Short helper — auth required even when inference is free. */
-export const OPENROUTER_KEY_HELP = 'Key from openrouter.ai/keys · free models use $0 credits';
+export const OPENROUTER_KEY_HELP =
+  'Key from openrouter.ai/keys · free models use $0 credits';

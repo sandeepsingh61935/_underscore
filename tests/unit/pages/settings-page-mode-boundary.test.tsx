@@ -52,7 +52,13 @@ vi.mock('@/features/settings/components/ConnectToAiFlow', () => ({
 }));
 
 vi.mock('@/features/settings/components/TypographySettings', () => ({
-  TypographySettings: ({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) => (
+  TypographySettings: ({
+    expanded,
+    onToggle,
+  }: {
+    expanded: boolean;
+    onToggle: () => void;
+  }) => (
     <button type="button" onClick={onToggle} aria-expanded={expanded}>
       Typography
     </button>

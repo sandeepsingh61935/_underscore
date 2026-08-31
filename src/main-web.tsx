@@ -1,6 +1,7 @@
+import { Analytics } from '@vercel/analytics/react';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Analytics } from '@vercel/analytics/react';
+
 import { AppRoutes } from './core/routing/AppRoutes';
 import './ui-system/theme/global.css';
 import './web/theme/web-app.css';
@@ -38,8 +39,8 @@ class RootErrorBoundary extends Component<
         >
           <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
           <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
-            The app hit an unexpected error. Try reloading. If it keeps happening,
-            open the browser console and share the error message.
+            The app hit an unexpected error. Try reloading. If it keeps happening, open
+            the browser console and share the error message.
           </p>
           <pre
             style={{
@@ -66,15 +67,13 @@ class RootErrorBoundary extends Component<
 }
 
 // Web app entry point
-const root = ReactDOM.createRoot(
-    document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
-    <React.StrictMode>
-        <RootErrorBoundary>
-          <AppRoutes />
-          <Analytics />
-        </RootErrorBoundary>
-    </React.StrictMode>
+  <React.StrictMode>
+    <RootErrorBoundary>
+      <AppRoutes />
+      <Analytics />
+    </RootErrorBoundary>
+  </React.StrictMode>
 );

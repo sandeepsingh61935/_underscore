@@ -3,9 +3,10 @@
  * Empty enabledProviders = all enabled (never invent from configured).
  */
 
-import type { LLMKeyStore } from '@/background/services/llm/llm-key-store';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import {
   emptyAiPreferences,
   LLM_ENABLED_PROVIDERS_KEY,
@@ -21,7 +22,6 @@ import {
   IN_APP_LLM_PROVIDER_ORDER,
   isInAppLlmProvider,
 } from '@/shared/llm/in-app-providers';
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 
 async function readPrefsClock(): Promise<number> {
   const r = await chrome.storage.local.get(LLM_PREFS_UPDATED_AT_KEY);
@@ -54,7 +54,9 @@ function modelStorageKey(provider: ProviderName): string {
   return `llm.${provider}.model`;
 }
 
-export async function buildLocalAiPreferences(store: LLMKeyStore): Promise<AiPreferences> {
+export async function buildLocalAiPreferences(
+  store: LLMKeyStore
+): Promise<AiPreferences> {
   const models: AiPreferences['models'] = {};
 
   for (const id of IN_APP_LLM_PROVIDER_ORDER) {
@@ -80,7 +82,7 @@ export async function buildLocalAiPreferences(store: LLMKeyStore): Promise<AiPre
 
 export async function applyAiPreferencesToKeyStore(
   store: LLMKeyStore,
-  prefs: AiPreferences,
+  prefs: AiPreferences
 ): Promise<void> {
   for (const id of IN_APP_LLM_PROVIDER_ORDER) {
     const model = prefs.models[id];
@@ -105,7 +107,9 @@ export async function applyAiPreferencesToKeyStore(
   await writePrefsClock(prefs.updatedAtMs);
 }
 
-export function createExtensionDeviceAiPrefsStore(store: LLMKeyStore): DeviceAiPrefsStore {
+export function createExtensionDeviceAiPrefsStore(
+  store: LLMKeyStore
+): DeviceAiPrefsStore {
   return {
     read: () => buildLocalAiPreferences(store),
     apply: (prefs) => applyAiPreferencesToKeyStore(store, prefs),
@@ -120,12 +124,16 @@ export function createExtensionDeviceAiPrefsStore(store: LLMKeyStore): DeviceAiP
 export async function syncExtensionAiPreferences(
   supabase: SupabaseClient,
   userId: string,
-  store: LLMKeyStore,
-): Promise<{ prefs: AiPreferences; source: 'local' | 'remote' | 'empty'; wroteRemote: boolean }> {
+  store: LLMKeyStore
+): Promise<{
+  prefs: AiPreferences;
+  source: 'local' | 'remote' | 'empty';
+  wroteRemote: boolean;
+}> {
   return reconcileAiPreferences(
     supabase,
     userId,
-    createExtensionDeviceAiPrefsStore(store),
+    createExtensionDeviceAiPrefsStore(store)
   );
 }
 
@@ -133,12 +141,12 @@ export async function syncExtensionAiPreferences(
 export async function pushExtensionAiPreferences(
   supabase: SupabaseClient,
   userId: string,
-  store: LLMKeyStore,
+  store: LLMKeyStore
 ): Promise<void> {
   await reconcileAiPreferences(
     supabase,
     userId,
     createExtensionDeviceAiPrefsStore(store),
-    { bumpClock: true },
+    { bumpClock: true }
   );
 }

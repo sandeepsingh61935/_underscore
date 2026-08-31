@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 
 export interface DashboardData {
@@ -64,7 +64,9 @@ export function useDashboardData(mode: ModeType, isAuthenticated: boolean) {
   const [isLoading, setIsLoading] = useState(warm === null);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchAction = useIpcAction<{ mode: ModeType }, DashboardData>('GET_DASHBOARD_DATA');
+  const fetchAction = useIpcAction<{ mode: ModeType }, DashboardData>(
+    'GET_DASHBOARD_DATA'
+  );
   const fetchActionRef = useRef(fetchAction);
   fetchActionRef.current = fetchAction;
   const genRef = useRef(0);

@@ -127,7 +127,8 @@ export function libraryEmptyGuestCopy(): LibraryEmptyGuestCopy {
     signInLabel: 'Sign in',
     // Real chord is Ctrl/⌘+U (see shared/keyboard/shortcuts-table).
     keyboardHint:
-      typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      typeof navigator !== 'undefined' &&
+      /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
         ? 'Select text · press ⌘+U'
         : 'Select text · press Ctrl+U',
   };

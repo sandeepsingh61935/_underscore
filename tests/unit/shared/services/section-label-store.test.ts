@@ -46,7 +46,7 @@ describe('section-label-store pure helpers', () => {
       { 'github.com': { '/docs': 'Guides', '/blog': 'Blog' } },
       'github.com',
       '/docs',
-      '',
+      ''
     );
     expect(store).toEqual({ 'github.com': { '/blog': 'Blog' } });
   });

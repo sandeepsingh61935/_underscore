@@ -85,7 +85,10 @@ describe('HighlightQueryService.search', () => {
     ]);
     const svc = new HighlightQueryService(readable);
 
-    const results = await svc.search('matching', { domain: 'example.com', section: '/docs/a' });
+    const results = await svc.search('matching', {
+      domain: 'example.com',
+      section: '/docs/a',
+    });
 
     expect(results).toHaveLength(1);
     expect(results[0]?.id).toBe('h-1');
@@ -130,7 +133,9 @@ describe('HighlightQueryService.search', () => {
   });
 
   it('returns no results when the query does not match any field', async () => {
-    const readable = makeReadable([hl({ id: 'h-1', text: 'alpha', url: 'https://example.com/a' })]);
+    const readable = makeReadable([
+      hl({ id: 'h-1', text: 'alpha', url: 'https://example.com/a' }),
+    ]);
     const svc = new HighlightQueryService(readable);
 
     const results = await svc.search('zzz-no-match');

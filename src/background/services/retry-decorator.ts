@@ -1,7 +1,10 @@
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { Message, MessageTarget, MessageHandler } from '@/shared/schemas/message-schemas';
-
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type {
+  Message,
+  MessageTarget,
+  MessageHandler,
+} from '@/shared/schemas/message-schemas';
 
 /**
  * Retry policy configuration for exponential backoff

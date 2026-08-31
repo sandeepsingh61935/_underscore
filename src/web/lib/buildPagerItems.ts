@@ -5,8 +5,7 @@
  */
 
 export type PagerItem =
-  | { type: 'page'; page: number }
-  | { type: 'ellipsis'; key: string };
+  { type: 'page'; page: number } | { type: 'ellipsis'; key: string };
 
 export type BuildPagerItemsOptions = {
   /** Pages shown on each side of the current page. Default 1. */
@@ -24,7 +23,7 @@ export type BuildPagerItemsOptions = {
 export function buildPagerItems(
   current: number,
   total: number,
-  opts: BuildPagerItemsOptions = {},
+  opts: BuildPagerItemsOptions = {}
 ): PagerItem[] {
   const siblingCount = Math.max(0, opts.siblingCount ?? 1);
   const boundaryCount = Math.max(0, opts.boundaryCount ?? 1);

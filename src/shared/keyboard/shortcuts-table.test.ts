@@ -8,9 +8,7 @@ import {
 
 describe('detectShortcutPlatform', () => {
   it('detects mac', () => {
-    expect(detectShortcutPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X)')).toBe(
-      'mac',
-    );
+    expect(detectShortcutPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X)')).toBe('mac');
   });
 
   it('detects other', () => {

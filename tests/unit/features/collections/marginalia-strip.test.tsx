@@ -23,11 +23,7 @@ describe('MarginaliaStrip', () => {
 
   it('invite: shows + Add note or tags when collapsed and empty', () => {
     render(
-      <MarginaliaStrip
-        highlightId="hl-1"
-        isExpanded={false}
-        onToggleExpand={vi.fn()}
-      />,
+      <MarginaliaStrip highlightId="hl-1" isExpanded={false} onToggleExpand={vi.fn()} />
     );
 
     expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
@@ -41,7 +37,7 @@ describe('MarginaliaStrip', () => {
         highlightId="hl-1"
         isExpanded={false}
         onToggleExpand={onToggleExpand}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: '+ Add note or tags' }));
@@ -49,9 +45,7 @@ describe('MarginaliaStrip', () => {
   });
 
   it('expanded: omits NOTE header and shows Done inside the shared notes|tags tray', () => {
-    render(
-      <MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />,
-    );
+    render(<MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />);
 
     expect(screen.queryByText(/^Note$/i)).toBeNull();
     expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
@@ -67,9 +61,7 @@ describe('MarginaliaStrip', () => {
 
   it('persists tags-only when a tag is added (does not send notes field)', async () => {
     updateMetadata.mockResolvedValue(true);
-    render(
-      <MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />,
-    );
+    render(<MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />);
 
     const input = screen.getByLabelText('Add tag');
     fireEvent.change(input, { target: { value: 'bfs' } });
@@ -82,7 +74,7 @@ describe('MarginaliaStrip', () => {
     expect(updateMetadata).toHaveBeenCalledWith(
       'hl-1',
       { tags: ['bfs'] },
-      { silent: true },
+      { silent: true }
     );
   });
 
@@ -94,7 +86,7 @@ describe('MarginaliaStrip', () => {
         isExpanded
         onToggleExpand={vi.fn()}
         labels={[]}
-      />,
+      />
     );
 
     const input = screen.getByLabelText('Add tag');
@@ -112,7 +104,7 @@ describe('MarginaliaStrip', () => {
         isExpanded
         onToggleExpand={vi.fn()}
         labels={[]}
-      />,
+      />
     );
 
     expect(screen.getByText('cpp')).toBeTruthy();
@@ -126,7 +118,7 @@ describe('MarginaliaStrip', () => {
         labels={['research', 'comedy']}
         isExpanded={false}
         onToggleExpand={vi.fn()}
-      />,
+      />
     );
 
     const note = screen.getByTestId('marginalia-note-snip');
@@ -147,7 +139,7 @@ describe('MarginaliaStrip', () => {
         isExpanded={false}
         onToggleExpand={vi.fn()}
         embedInCard
-      />,
+      />
     );
 
     expect(screen.getByText('css')).toBeTruthy();
@@ -165,7 +157,7 @@ describe('MarginaliaStrip', () => {
         isExpanded={false}
         onToggleExpand={vi.fn()}
         embedInCard
-      />,
+      />
     );
 
     expect(screen.getByTestId('marginalia-note-snip').textContent).toBe('Cascade order');
@@ -175,13 +167,7 @@ describe('MarginaliaStrip', () => {
   });
 
   it('does not disable the note field while saving', async () => {
-    render(
-      <MarginaliaStrip
-        highlightId="hl-1"
-        isExpanded
-        onToggleExpand={vi.fn()}
-      />,
-    );
+    render(<MarginaliaStrip highlightId="hl-1" isExpanded onToggleExpand={vi.fn()} />);
 
     const notes = screen.getByPlaceholderText('What stood out?');
     fireEvent.change(notes, { target: { value: 'Typing works' } });

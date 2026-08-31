@@ -23,31 +23,26 @@ export function normalizeOAuthGrantPayload(data: unknown): unknown[] {
 export function mapOAuthGrant(raw: Record<string, unknown>): OAuthGrantSummary | null {
   const client = raw['client'] as Record<string, unknown> | undefined;
   const clientId = String(
-    client?.['client_id']
-      ?? client?.['id']
-      ?? raw['client_id']
-      ?? '',
+    client?.['client_id'] ?? client?.['id'] ?? raw['client_id'] ?? ''
   ).trim();
   if (!clientId) {
     return null;
   }
 
   const scopeRaw = raw['scope'] ?? raw['scopes'];
-  const scopes = typeof scopeRaw === 'string'
-    ? scopeRaw.split(/\s+/).filter(Boolean)
-    : Array.isArray(scopeRaw)
-      ? scopeRaw.map(String)
-      : [];
+  const scopes =
+    typeof scopeRaw === 'string'
+      ? scopeRaw.split(/\s+/).filter(Boolean)
+      : Array.isArray(scopeRaw)
+        ? scopeRaw.map(String)
+        : [];
 
   const createdRaw = raw['created_at'] ?? raw['granted_at'];
 
   return {
     clientId,
     clientName: String(
-      client?.['name']
-        ?? client?.['client_name']
-        ?? raw['client_name']
-        ?? clientId,
+      client?.['name'] ?? client?.['client_name'] ?? raw['client_name'] ?? clientId
     ),
     scopes,
     createdAt: typeof createdRaw === 'string' ? createdRaw : undefined,

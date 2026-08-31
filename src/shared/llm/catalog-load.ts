@@ -4,7 +4,10 @@
  */
 
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
-import { getProviderModels, type ProviderModelOption } from '@/shared/llm/provider-models';
+import {
+  getProviderModels,
+  type ProviderModelOption,
+} from '@/shared/llm/provider-models';
 
 export type CatalogDiscovery =
   | { status: 'unknown' }
@@ -20,7 +23,7 @@ export type PresentedCatalog = {
 
 export function presentCatalog(
   provider: ProviderName,
-  discovery: CatalogDiscovery,
+  discovery: CatalogDiscovery
 ): PresentedCatalog {
   if (discovery.status === 'live' && discovery.models.length > 0) {
     return { models: [...discovery.models], error: null, source: 'live' };
@@ -28,7 +31,11 @@ export function presentCatalog(
 
   if (discovery.status === 'empty') {
     if (provider === 'openrouter') {
-      return { models: [...getProviderModels(provider)], error: null, source: 'snapshot' };
+      return {
+        models: [...getProviderModels(provider)],
+        error: null,
+        source: 'snapshot',
+      };
     }
     return { models: [], error: discovery.error ?? null, source: 'empty' };
   }
@@ -63,7 +70,7 @@ export type LoadCatalogInput = {
 export type LoadCatalogDeps = {
   fetchLive: (
     provider: ProviderName,
-    input: { apiKey?: string; apiBase?: string; refresh?: boolean },
+    input: { apiKey?: string; apiBase?: string; refresh?: boolean }
   ) => Promise<{ models: ProviderModelOption[]; error?: string }>;
   listViaIpc?: (input: {
     provider: ProviderName;
@@ -73,7 +80,7 @@ export type LoadCatalogDeps = {
 
 export async function loadInAppCatalog(
   input: LoadCatalogInput,
-  deps: LoadCatalogDeps,
+  deps: LoadCatalogDeps
 ): Promise<PresentedCatalog> {
   const { provider } = input;
   const key = input.apiKey?.trim();

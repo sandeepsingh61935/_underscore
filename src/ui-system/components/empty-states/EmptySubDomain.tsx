@@ -12,7 +12,11 @@ function formatSectionLabel(section: string | undefined): string {
   return trimmed || 'this section';
 }
 
-export function EmptySubDomain({ domain, section, onBack }: EmptySubDomainProps): React.ReactElement {
+export function EmptySubDomain({
+  domain,
+  section,
+  onBack,
+}: EmptySubDomainProps): React.ReactElement {
   const sectionLabel = formatSectionLabel(section);
 
   return (
@@ -57,7 +61,12 @@ export function EmptySubDomain({ domain, section, onBack }: EmptySubDomainProps)
         This section of {domain} is empty.
       </p>
       {onBack && (
-        <button type="button" className="btn sm" style={{ marginTop: 14 }} onClick={onBack}>
+        <button
+          type="button"
+          className="btn sm"
+          style={{ marginTop: 14 }}
+          onClick={onBack}
+        >
           Back to {domain}
         </button>
       )}

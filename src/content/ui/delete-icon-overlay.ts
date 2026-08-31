@@ -8,10 +8,10 @@
 
 import type { DeletionConfig } from '@/content/modes/highlight-mode.interface';
 import type { ModeManager } from '@/content/modes/mode-manager';
-import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
-import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
 import { positionExteriorIcon } from '@/content/paint/first-line-geometry';
 import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
+import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
+import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
 import {
   resolveDeleteIconChrome,
   samplePageBackgroundAt,
@@ -204,7 +204,7 @@ export class DeleteIconOverlay {
     id: string,
     highlight: HighlightDataV2,
     config: DeletionConfig,
-    samplePoint?: { x: number; y: number },
+    samplePoint?: { x: number; y: number }
   ): HTMLElement {
     const button = document.createElement('button');
     button.type = 'button';
@@ -314,9 +314,12 @@ export class DeleteIconOverlay {
       }
 
       if (config.requireConfirmation) {
-        this.logger.info('Deletion requires confirmation but window.confirm is disabled', {
-          id,
-        });
+        this.logger.info(
+          'Deletion requires confirmation but window.confirm is disabled',
+          {
+            id,
+          }
+        );
         return;
       }
 
@@ -344,7 +347,7 @@ export class DeleteIconOverlay {
   private applyExteriorPosition(
     icon: HTMLElement,
     firstLineStart: DOMRect,
-    firstLineEnd: DOMRect,
+    firstLineEnd: DOMRect
   ): void {
     const pos = positionExteriorIcon(firstLineStart, firstLineEnd, {
       iconSize: DELETE_ICON_HIT_PX,

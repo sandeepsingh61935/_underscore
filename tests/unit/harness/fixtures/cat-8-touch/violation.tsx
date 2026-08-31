@@ -2,6 +2,4 @@
 // Expected violation: <button className="h-10">Click</button>
 import React from 'react';
 
-export const Button = () => (
-  <button className="h-10 w-10 bg-blue-500">Click</button>
-);
+export const Button = () => <button className="h-10 w-10 bg-blue-500">Click</button>;

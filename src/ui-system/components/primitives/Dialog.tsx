@@ -79,7 +79,7 @@ export function Dialog({
   useEffect(() => {
     if (!open || !dialogRef.current) return;
     const focusable = dialogRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
     const first = focusable[0] as HTMLElement | undefined;
     const last = focusable[focusable.length - 1] as HTMLElement | undefined;
@@ -102,11 +102,7 @@ export function Dialog({
 
   return createPortal(
     <>
-      <div
-        style={overlayStyle}
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div style={overlayStyle} onClick={onClose} aria-hidden="true" />
       <div style={centerStyle}>
         <div
           ref={dialogRef}
@@ -198,7 +194,7 @@ export function Dialog({
         </div>
       </div>
     </>,
-    document.body,
+    document.body
   );
 }
 

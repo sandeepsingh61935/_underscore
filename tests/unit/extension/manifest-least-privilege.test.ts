@@ -7,10 +7,7 @@ import { resolve } from 'node:path';
  * Reads wxt.config.ts as text so we catch broad wildcards without building.
  */
 describe('extension manifest least privilege (WP-3)', () => {
-  const src = readFileSync(
-    resolve(process.cwd(), 'wxt.config.ts'),
-    'utf8'
-  );
+  const src = readFileSync(resolve(process.cwd(), 'wxt.config.ts'), 'utf8');
 
   it('does not use wildcard supabase host permission string', () => {
     expect(src).not.toMatch(/['"]https:\/\/\*\.supabase\.co\//);

@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
 
 import { CodeSnippetBlock } from '@/features/settings/components/CodeSnippetBlock';
+import { INTEGRATIONS_ADVANCED_COPY } from '@/features/settings/integrations/IntegrationsConnectChrome';
 import {
   fillMcpConfigTemplate,
   type McpAiAppDef,
 } from '@/features/settings/mcp/mcp-ai-apps';
 import { resolvePrimaryAction } from '@/features/settings/mcp/mcp-host-handoff';
-import { INTEGRATIONS_ADVANCED_COPY } from '@/features/settings/integrations/IntegrationsConnectChrome';
 
 const primaryBtnStyle: React.CSSProperties = {
   width: '100%',
@@ -58,7 +58,7 @@ export function HostTipBody({
         window.location.assign(action.href);
       } catch {
         setDeepLinkError(
-          'Could not open Cursor. Copy the install link or use Manual below.',
+          'Could not open Cursor. Copy the install link or use Manual below.'
         );
       }
       return;
@@ -109,17 +109,32 @@ export function HostTipBody({
       {action.kind === 'deep_link' ? (
         <p
           className="u-sans type-sub"
-          style={{ fontSize: 'var(--step--2)', color: 'var(--ink)', lineHeight: 1.45, margin: '8px 0 0' }}
+          style={{
+            fontSize: 'var(--step--2)',
+            color: 'var(--ink)',
+            lineHeight: 1.45,
+            margin: '8px 0 0',
+          }}
         >
-          Opens Cursor with the Cloud MCP URL pre-filled. OAuth happens in Cursor, not in this app.
+          Opens Cursor with the Cloud MCP URL pre-filled. OAuth happens in Cursor, not in
+          this app.
         </p>
       ) : null}
 
       {deepLinkError ? (
-        <div role="status" data-testid="mcp-handoff-deep-link-error" style={{ marginTop: 10 }}>
+        <div
+          role="status"
+          data-testid="mcp-handoff-deep-link-error"
+          style={{ marginTop: 10 }}
+        >
           <p
             className="u-sans"
-            style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '0 0 8px' }}
+            style={{
+              fontSize: 'var(--step--1)',
+              color: 'var(--ink)',
+              lineHeight: 1.45,
+              margin: '0 0 8px',
+            }}
           >
             {deepLinkError}
           </p>
@@ -127,7 +142,9 @@ export function HostTipBody({
             type="button"
             className="u-caps"
             data-testid="mcp-handoff-copy-deep-link"
-            onClick={() => copyText(action.kind === 'deep_link' ? action.href : remoteUrl)}
+            onClick={() =>
+              copyText(action.kind === 'deep_link' ? action.href : remoteUrl)
+            }
             style={secondaryBtnStyle}
           >
             {copied ? 'Copied' : 'Copy install link'}
@@ -137,9 +154,15 @@ export function HostTipBody({
 
       <p
         className="u-sans type-sub"
-        style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '14px 0 0' }}
+        style={{
+          fontSize: 'var(--step--1)',
+          color: 'var(--ink)',
+          lineHeight: 1.45,
+          margin: '14px 0 0',
+        }}
       >
-        After you approve, come back here (or reopen Integrations). Status updates when the agent finishes — this app does not mark Connected on copy or open.
+        After you approve, come back here (or reopen Integrations). Status updates when
+        the agent finishes — this app does not mark Connected on copy or open.
       </p>
 
       <details data-testid="mcp-setup-manual" style={{ marginTop: 16 }}>
@@ -158,13 +181,23 @@ export function HostTipBody({
         </summary>
         <p
           className="u-sans type-sub"
-          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '0 0 8px' }}
+          style={{
+            fontSize: 'var(--step--1)',
+            color: 'var(--ink)',
+            lineHeight: 1.45,
+            margin: '0 0 8px',
+          }}
         >
           {app.hint}
         </p>
         <p
           className="u-sans type-sub"
-          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '0 0 8px' }}
+          style={{
+            fontSize: 'var(--step--1)',
+            color: 'var(--ink)',
+            lineHeight: 1.45,
+            margin: '0 0 8px',
+          }}
         >
           {app.configLabel}. Then {app.restartLabel.toLowerCase()}.
         </p>
@@ -182,7 +215,12 @@ export function HostTipBody({
         ) : null}
         <p
           className="u-sans type-sub"
-          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '12px 0 0' }}
+          style={{
+            fontSize: 'var(--step--1)',
+            color: 'var(--ink)',
+            lineHeight: 1.45,
+            margin: '12px 0 0',
+          }}
         >
           {INTEGRATIONS_ADVANCED_COPY}
         </p>

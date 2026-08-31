@@ -18,9 +18,7 @@ const base = {
 
 describe('LibraryPulse', () => {
   it('collapsed: shows disclose row with summary, hides grid', () => {
-    render(
-      <LibraryPulse {...base} expanded={false} onToggle={vi.fn()} />,
-    );
+    render(<LibraryPulse {...base} expanded={false} onToggle={vi.fn()} />);
 
     expect(screen.getByTestId('library-stats-toggle')).toBeTruthy();
     expect(screen.getByText('Library stats')).toBeTruthy();
@@ -28,7 +26,7 @@ describe('LibraryPulse', () => {
     expect(screen.queryByTestId('library-stats-panel')).toBeNull();
     expect(screen.getByTestId('library-stats-toggle')).toHaveAttribute(
       'aria-expanded',
-      'false',
+      'false'
     );
   });
 
@@ -44,7 +42,7 @@ describe('LibraryPulse', () => {
     expect(screen.getByTestId('library-pulse-tags').textContent).toMatch(/20/);
     expect(screen.getByTestId('library-stats-toggle')).toHaveAttribute(
       'aria-expanded',
-      'true',
+      'true'
     );
   });
 
@@ -64,7 +62,7 @@ describe('LibraryPulse', () => {
         loading
         expanded
         onToggle={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText('…')).toBeTruthy();
     expect(screen.getByTestId('library-pulse-total').textContent).toMatch(/—/);

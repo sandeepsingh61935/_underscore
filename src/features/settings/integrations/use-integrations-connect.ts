@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useOAuthGrants } from '@/features/oauth/hooks/useOAuthGrants';
+import { catalogAppIdsWithGrants } from '@/features/settings/mcp/match-grant-to-catalog';
 import type { McpAiAppId } from '@/features/settings/mcp/mcp-ai-apps';
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import { canUseMcp } from '@/shared/entitlement/commercial';
-import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import { resolveIntegrationsStatus } from '@/shared/mcp/integrations-status';
+import { getMcpCloudUrl } from '@/shared/mcp/mcp-cloud-url';
 import { fetchLastMcpSuccessAtMs } from '@/shared/mcp/mcp-session-client';
-import { catalogAppIdsWithGrants } from '@/features/settings/mcp/match-grant-to-catalog';
 
 export function useIntegrationsConnect(opts: {
   isAuthenticated: boolean;
@@ -56,17 +56,17 @@ export function useIntegrationsConnect(opts: {
         title: grant.clientName,
         sub: grant.scopes.length > 0 ? grant.scopes.join(', ') : 'Approved MCP access',
       })),
-    [grantsState.grants],
+    [grantsState.grants]
   );
 
   const connectedCatalogIds = useMemo(
     () => catalogAppIdsWithGrants(grantsState.grants),
-    [grantsState.grants],
+    [grantsState.grants]
   );
 
   const isCatalogAppConnected = useCallback(
     (appId: McpAiAppId): boolean => connectedCatalogIds.has(appId),
-    [connectedCatalogIds],
+    [connectedCatalogIds]
   );
 
   const copyUrl = useCallback((): void => {

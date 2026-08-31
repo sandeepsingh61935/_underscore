@@ -5,13 +5,27 @@
 
 import * as XLSX from 'xlsx';
 
-import type { ExportArtifactsBundle } from '@/shared/llm/llm-artifact-service';
-
 import { buildFilename } from './filename';
 import { partitionExportable } from './normalize';
-import type { ExportableHighlight, ExportResult, ExportScope, ExportStats } from './types';
+import type {
+  ExportableHighlight,
+  ExportResult,
+  ExportScope,
+  ExportStats,
+} from './types';
 
-const HIGHLIGHT_HEADERS = ['#', 'Quote', 'Date', 'Source', 'Domain', 'Section', 'Tags', 'Note'];
+import type { ExportArtifactsBundle } from '@/shared/llm/llm-artifact-service';
+
+const HIGHLIGHT_HEADERS = [
+  '#',
+  'Quote',
+  'Date',
+  'Source',
+  'Domain',
+  'Section',
+  'Tags',
+  'Note',
+];
 const ARTIFACT_HEADERS = ['Kind', 'Generated', 'Question', 'Content'];
 
 function formatDate(date: Date): string {
@@ -63,17 +77,18 @@ function buildArtifactRows(artifacts?: ExportArtifactsBundle): string[][] {
 
 function sortedHighlights(highlights: ExportableHighlight[]): ExportableHighlight[] {
   return [...highlights].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 }
 
 export function buildXlsxExport(
   highlights: ExportableHighlight[],
   scope: ExportScope,
-  artifacts?: ExportArtifactsBundle,
+  artifacts?: ExportArtifactsBundle
 ): ExportResult {
   const { included, omitted } = partitionExportable(highlights);
-  const exportable = included.length > 0 ? included : highlights.filter((h) => h.text.trim());
+  const exportable =
+    included.length > 0 ? included : highlights.filter((h) => h.text.trim());
   const sorted = sortedHighlights(exportable);
 
   const highlightRows = sorted.map((h, index) => [
@@ -91,7 +106,7 @@ export function buildXlsxExport(
   XLSX.utils.book_append_sheet(
     workbook,
     XLSX.utils.aoa_to_sheet([HIGHLIGHT_HEADERS, ...highlightRows]),
-    'Highlights',
+    'Highlights'
   );
 
   const artifactRows = buildArtifactRows(artifacts);
@@ -99,11 +114,14 @@ export function buildXlsxExport(
     XLSX.utils.book_append_sheet(
       workbook,
       XLSX.utils.aoa_to_sheet([ARTIFACT_HEADERS, ...artifactRows]),
-      'LLM',
+      'LLM'
     );
   }
 
-  const xlsxBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  const xlsxBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array',
+  }) as ArrayBuffer;
 
   return {
     format: 'xlsx',

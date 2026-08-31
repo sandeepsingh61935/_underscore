@@ -8,10 +8,7 @@ import { LlmRuntimeProvider } from '@/features/ai/runtime/LlmRuntimeContext';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { createBrowserLlmRuntime } from '@/shared/llm/runtime';
-import {
-  readWebLlmState,
-  resolveActiveProvider,
-} from '@/web/lib/webLlmKeys';
+import { readWebLlmState, resolveActiveProvider } from '@/web/lib/webLlmKeys';
 
 export function WebLlmRuntimeProvider({
   children,
@@ -41,7 +38,7 @@ export function WebLlmRuntimeProvider({
           }
         },
       }),
-    [],
+    []
   );
 
   return <LlmRuntimeProvider runtime={runtime}>{children}</LlmRuntimeProvider>;

@@ -31,9 +31,7 @@ describe('resolveBillingSyncFromSubscriptions', () => {
   it('does not fall back to another product active subscription', () => {
     const r = resolveBillingSyncFromSubscriptions({
       allowedProductId: product,
-      subscriptions: [
-        { id: 'other', status: 'active', product_id: 'other-product' },
-      ],
+      subscriptions: [{ id: 'other', status: 'active', product_id: 'other-product' }],
       customerExists: true,
     });
     expect(r).toEqual({
@@ -60,10 +58,7 @@ describe('resolveBillingSyncFromSubscriptions', () => {
     };
     const r = resolveBillingSyncFromSubscriptions({
       allowedProductId: product,
-      subscriptions: [
-        { id: 'other', status: 'active', product_id: 'other' },
-        sub,
-      ],
+      subscriptions: [{ id: 'other', status: 'active', product_id: 'other' }, sub],
       customerExists: true,
     });
     expect(r).toEqual({
@@ -88,8 +83,8 @@ describe('shouldRunFocusBillingSync', () => {
 
   it('allows after min interval', () => {
     const t0 = 1_000_000;
-    expect(
-      shouldRunFocusBillingSync(t0, t0 + BILLING_FOCUS_SYNC_MIN_INTERVAL_MS)
-    ).toBe(true);
+    expect(shouldRunFocusBillingSync(t0, t0 + BILLING_FOCUS_SYNC_MIN_INTERVAL_MS)).toBe(
+      true
+    );
   });
 });

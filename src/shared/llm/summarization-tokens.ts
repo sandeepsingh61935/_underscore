@@ -16,14 +16,17 @@ const LENGTH_FACTOR: Record<'short' | 'medium' | 'long', number> = {
  */
 export function computeSectionOutputTokens(
   highlightCount: number,
-  length: 'short' | 'medium' | 'long' = 'medium',
+  length: 'short' | 'medium' | 'long' = 'medium'
 ): number {
   const factor = LENGTH_FACTOR[length];
   const scaled = Math.round((200 + highlightCount * 120) * factor);
   return Math.min(MAX_OUTPUT_TOKENS, Math.max(MIN_SECTION_OUTPUT, scaled));
 }
 
-export function computeDomainOutputTokens(highlightCount: number, sectionCount: number): number {
+export function computeDomainOutputTokens(
+  highlightCount: number,
+  sectionCount: number
+): number {
   const scaled = 400 + highlightCount * 70 + sectionCount * 150;
   return Math.min(MAX_OUTPUT_TOKENS, Math.max(MIN_DOMAIN_OUTPUT, scaled));
 }

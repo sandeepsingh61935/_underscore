@@ -4,13 +4,12 @@
  * Kept for MCP one-shot grounded questions.
  */
 
+import type { LLMRequest } from '@/shared/interfaces/i-llm-service';
 import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
-import { formatExcerptUserContent } from '@/shared/llm/summary-request';
 import { PROMPT_TEMPLATES, type ScopeQueryContext } from '@/shared/llm/prompts';
 import { computeScopeQueryOutputTokens } from '@/shared/llm/summarization-tokens';
+import { formatExcerptUserContent } from '@/shared/llm/summary-request';
 import { SUMMARY_TEMPERATURE } from '@/shared/llm/summary-request';
-
-import type { LLMRequest } from '@/shared/interfaces/i-llm-service';
 
 export interface BuildScopeQueryInput {
   scope: ScopeQueryContext;
@@ -18,13 +17,13 @@ export interface BuildScopeQueryInput {
   question: string;
 }
 
-export function formatScopeQueryUserContent(excerpts: HighlightExcerpt[], question: string): string {
-  return [
-    formatExcerptUserContent(excerpts),
-    '',
-    '## Question',
-    question.trim(),
-  ].join('\n');
+export function formatScopeQueryUserContent(
+  excerpts: HighlightExcerpt[],
+  question: string
+): string {
+  return [formatExcerptUserContent(excerpts), '', '## Question', question.trim()].join(
+    '\n'
+  );
 }
 
 /**

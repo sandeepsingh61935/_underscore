@@ -40,8 +40,8 @@ export class GeminiProvider implements ILLMService {
     supportsSystemPrompt: true,
     supportsStreaming: true,
     supportsToolUse: true,
-    costPerInputToken: 0.10 / 1_000_000,
-    costPerOutputToken: 0.40 / 1_000_000,
+    costPerInputToken: 0.1 / 1_000_000,
+    costPerOutputToken: 0.4 / 1_000_000,
   };
 
   private readonly apiKey: string;
@@ -57,16 +57,18 @@ export class GeminiProvider implements ILLMService {
   async streamChat(
     request: LLMRequest,
     onChunk: (chunk: LLMChunk) => void,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<LLMResult> {
     const start = Date.now();
-    const contents = request.messages.map(m => ({
+    const contents = request.messages.map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }));
     const body = {
       contents,
-      systemInstruction: request.systemPrompt ? { parts: [{ text: request.systemPrompt }] } : undefined,
+      systemInstruction: request.systemPrompt
+        ? { parts: [{ text: request.systemPrompt }] }
+        : undefined,
       generationConfig: {
         maxOutputTokens: request.maxTokens,
         temperature: request.temperature,
@@ -104,13 +106,19 @@ export class GeminiProvider implements ILLMService {
       buffer = events.pop() ?? '';
 
       for (const raw of events) {
-        const dataLine = raw.split('\n').find(l => l.startsWith('data:'));
+        const dataLine = raw.split('\n').find((l) => l.startsWith('data:'));
         if (!dataLine) continue;
         const json = dataLine.slice(5).trim();
         if (!json) continue;
         let parsed: GeminiResponse;
-        try { parsed = JSON.parse(json); } catch { continue; }
-        const text = parsed.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('');
+        try {
+          parsed = JSON.parse(json);
+        } catch {
+          continue;
+        }
+        const text = parsed.candidates?.[0]?.content?.parts
+          ?.map((p) => p.text ?? '')
+          .join('');
         if (text) {
           accumulated += text;
           onChunk({ delta: text });
@@ -122,7 +130,12 @@ export class GeminiProvider implements ILLMService {
       }
     }
 
-    return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
+    return {
+      text: accumulated,
+      inputTokens,
+      outputTokens,
+      durationMs: Date.now() - start,
+    };
   }
 
   async chat(request: LLMRequest): Promise<LLMResult> {
@@ -130,8 +143,10 @@ export class GeminiProvider implements ILLMService {
     let accumulated = '';
     const result = await this.streamChat(
       request,
-      chunk => { accumulated += chunk.delta; },
-      controller.signal,
+      (chunk) => {
+        accumulated += chunk.delta;
+      },
+      controller.signal
     );
     return { ...result, text: accumulated };
   }
@@ -141,7 +156,11 @@ export class GeminiProvider implements ILLMService {
       const url = `${this.apiBase}/models/${this.model}?key=${encodeURIComponent(this.apiKey)}`;
       const fetchFn = globalThis.fetch;
       if (typeof fetchFn !== 'function') {
-        return { ok: false, model: this.model, error: 'Fetch is unavailable in this context' };
+        return {
+          ok: false,
+          model: this.model,
+          error: 'Fetch is unavailable in this context',
+        };
       }
       const response = await fetchFn(url, { method: 'GET' });
       if (response.ok) {

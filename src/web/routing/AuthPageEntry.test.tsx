@@ -26,7 +26,7 @@ function renderSignIn(path = '/sign-in') {
         <Route path="/home" element={<div data-od-id="home-page">Home</div>} />
         <Route path="/library" element={<div data-od-id="library-page">Library</div>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 

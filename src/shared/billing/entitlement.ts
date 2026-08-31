@@ -2,7 +2,6 @@
  * Pure entitlement helpers — no I/O.
  */
 
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import type {
   BillingEntitlement,
   BillingEntitlementRow,
@@ -12,19 +11,15 @@ import type {
   EntitlementLoadState,
 } from './types';
 
-const PAID_ACTIVE_STATUSES: ReadonlySet<BillingStatus> = new Set([
-  'active',
-  'trialing',
-]);
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+
+const PAID_ACTIVE_STATUSES: ReadonlySet<BillingStatus> = new Set(['active', 'trialing']);
 
 export function isPaidActiveStatus(status: BillingStatus): boolean {
   return PAID_ACTIVE_STATUSES.has(status);
 }
 
-export function computeIsPaidActive(
-  plan: BillingPlan,
-  status: BillingStatus
-): boolean {
+export function computeIsPaidActive(plan: BillingPlan, status: BillingStatus): boolean {
   return plan === 'paid' && isPaidActiveStatus(status);
 }
 
@@ -76,12 +71,15 @@ export function emptyBillingSnapshot(
 
 export function snapshotFromEntitlement(
   entitlement: BillingEntitlement,
-  options?: { loadState?: EntitlementLoadState; error?: string | null; forcePaid?: boolean }
+  options?: {
+    loadState?: EntitlementLoadState;
+    error?: string | null;
+    forcePaid?: boolean;
+  }
 ): BillingSnapshot {
   const loadState = options?.loadState ?? 'ready';
   const isPaidActive =
-    loadState === 'ready' &&
-    (Boolean(options?.forcePaid) || entitlement.isPaidActive);
+    loadState === 'ready' && (Boolean(options?.forcePaid) || entitlement.isPaidActive);
 
   return {
     loadState,
@@ -109,8 +107,6 @@ export function computeEffectiveMode(
  * Whether we may rewrite stored mode from a billing snapshot.
  * Never demote/promote when load failed or still loading.
  */
-export function shouldSyncModeFromBilling(
-  loadState: EntitlementLoadState
-): boolean {
+export function shouldSyncModeFromBilling(loadState: EntitlementLoadState): boolean {
   return loadState === 'ready';
 }

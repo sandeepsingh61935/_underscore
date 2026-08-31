@@ -11,11 +11,7 @@ import { SegmentedControl } from './SegmentedControl';
 describe('SegmentedControl', () => {
   it('renders without crashing', () => {
     const { baseElement } = render(
-      <SegmentedControl
-        options={['A', 'B']}
-        value="A"
-        onChange={vi.fn()}
-      />
+      <SegmentedControl options={['A', 'B']} value="A" onChange={vi.fn()} />
     );
     expect(baseElement).toBeTruthy();
   });

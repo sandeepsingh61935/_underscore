@@ -4,7 +4,11 @@
 
 import { OpenAIProvider } from './openai-provider';
 
-import type { HealthCheckResult, ILLMService, LLMCapabilities } from '@/shared/interfaces/i-llm-service';
+import type {
+  HealthCheckResult,
+  ILLMService,
+  LLMCapabilities,
+} from '@/shared/interfaces/i-llm-service';
 import { getDefaultModelId } from '@/shared/llm/provider-models';
 
 interface XaiProviderConfig {
@@ -42,7 +46,7 @@ export class XaiProvider implements ILLMService {
   streamChat(
     req: Parameters<ILLMService['streamChat']>[0],
     onChunk: Parameters<ILLMService['streamChat']>[1],
-    signal: AbortSignal,
+    signal: AbortSignal
   ) {
     return this.delegate.streamChat(req, onChunk, signal);
   }

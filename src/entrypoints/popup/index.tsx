@@ -6,7 +6,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
-import { AuthProvider, useAuth as useExtensionAuth } from '../../ui-system/providers/AuthProvider';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
 import { SubDomainView } from '../../features/collections/views/SubDomainView';
@@ -20,13 +19,17 @@ import {
   persistPopupSection,
   persistPopupView,
 } from '../../shared/constants/popup-navigation-storage';
-import type { ModeType } from '../../shared/schemas/mode-state-schemas';
 import {
   postLoginViewForMode,
   resolvePopupInitialRoute,
 } from '../../shared/popup/resolve-popup-initial-route';
+import type { ModeType } from '../../shared/schemas/mode-state-schemas';
 import { PopupShell } from '../../ui-system/components/layout/PopupShell';
 import { Spinner } from '../../ui-system/components/primitives/Spinner';
+import {
+  AuthProvider,
+  useAuth as useExtensionAuth,
+} from '../../ui-system/providers/AuthProvider';
 
 import { buildChrome, type ActiveTab, type ChromeHandlers, type ViewKey } from './chrome';
 import { AuthView } from './views/AuthView';
@@ -76,16 +79,33 @@ class ErrorBoundary extends Component<
   override render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div style={{ width: 400, height: 600, padding: 16, backgroundColor: 'var(--paper)', color: 'var(--ink)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <h2 className="u-serif" style={{ fontSize: 22, color: 'var(--accent)', marginBottom: 8 }}>Something went wrong</h2>
-          <p className="u-sans" style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}>
+        <div
+          style={{
+            width: 400,
+            height: 600,
+            padding: 16,
+            backgroundColor: 'var(--paper)',
+            color: 'var(--ink)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          <h2
+            className="u-serif"
+            style={{ fontSize: 22, color: 'var(--accent)', marginBottom: 8 }}
+          >
+            Something went wrong
+          </h2>
+          <p
+            className="u-sans"
+            style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16 }}
+          >
             {this.state.error?.message || 'Unknown error'}
           </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="btn"
-          >
+          <button type="button" onClick={() => window.location.reload()} className="btn">
             Reload Extension
           </button>
         </div>
@@ -308,7 +328,14 @@ function PopupApp(): React.ReactElement {
   if (currentView === View.LOADING || !isStorageReady) {
     return (
       <PopupShell chrome={chrome[View.LOADING]} viewKey={View.LOADING}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Spinner size="lg" />
         </div>
       </PopupShell>
@@ -319,9 +346,7 @@ function PopupApp(): React.ReactElement {
   // (and reduced-motion gating). No per-view motion wrappers.
   return (
     <PopupShell chrome={chrome[currentView as ViewKey]} viewKey={currentView}>
-      {currentView === View.WELCOME && (
-        <WelcomePage onStartClick={handleStartWelcome} />
-      )}
+      {currentView === View.WELCOME && <WelcomePage onStartClick={handleStartWelcome} />}
       {currentView === View.COLLECTIONS && (
         <CollectionsView
           onCollectionClick={handleCollectionClick}
@@ -371,10 +396,16 @@ function PopupApp(): React.ReactElement {
 }
 
 const popupEventBus = new EventBus(new ConsoleLogger('PopupData', LogLevel.WARN));
-const popupMessageBus = new ChromeMessageBus(new ConsoleLogger('PopupMessageBus', LogLevel.WARN), {
-  timeoutMs: 120_000,
-});
-const popupDataProvider = new ExtensionDataProviderAdapter(popupEventBus, popupMessageBus);
+const popupMessageBus = new ChromeMessageBus(
+  new ConsoleLogger('PopupMessageBus', LogLevel.WARN),
+  {
+    timeoutMs: 120_000,
+  }
+);
+const popupDataProvider = new ExtensionDataProviderAdapter(
+  popupEventBus,
+  popupMessageBus
+);
 
 const container = document.getElementById('app');
 if (container) {
@@ -407,7 +438,16 @@ function PopupAppAuthBridge(): React.ReactElement {
 
   if (isLoading) {
     return (
-      <div style={{ width: 400, height: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--paper)' }}>
+      <div
+        style={{
+          width: 400,
+          height: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'var(--paper)',
+        }}
+      >
         <Spinner size="lg" />
       </div>
     );

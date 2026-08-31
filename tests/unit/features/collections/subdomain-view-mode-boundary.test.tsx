@@ -21,7 +21,8 @@ vi.mock('@/core/context/AppProvider', () => ({
 }));
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => vi.fn(),
@@ -80,7 +81,13 @@ vi.mock('@/features/ai/hooks/usePersistLlmArtifactOnDone', () => ({
 }));
 
 vi.mock('@/features/collections/hooks/useUserTags', () => ({
-  useUserTags: vi.fn(() => ({ tagNames: [], tags: [], isLoading: false, error: null, refetch: vi.fn() })),
+  useUserTags: vi.fn(() => ({
+    tagNames: [],
+    tags: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
 }));
 
 vi.mock('@/features/ai/hooks/usePageContext', () => ({
@@ -99,7 +106,7 @@ describe('SubDomainView basic mode boundaries', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.getByTestId('export-menu-trigger')).toBeDisabled();
@@ -109,7 +116,7 @@ describe('SubDomainView basic mode boundaries', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.queryByText('Summarize this section')).toBeNull();
@@ -122,7 +129,7 @@ describe('SubDomainView basic mode boundaries', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();

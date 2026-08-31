@@ -13,7 +13,7 @@ describe('billingUpcomingCopy', () => {
     expect(c.sub).toBe(BILLING_UPCOMING_SUB);
     expect(c.sub.toLowerCase()).toContain('upcoming');
     expect(`${c.title} ${c.sub}`.toLowerCase()).not.toMatch(
-      /polar|upgrade|checkout|manage|portal/,
+      /polar|upgrade|checkout|manage|portal/
     );
   });
 });

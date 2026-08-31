@@ -14,7 +14,4 @@ export type Message =
   | { type: 'HIGHLIGHT_COUNT_UPDATE'; count: number };
 
 export type MessageResponse =
-  | { mode: ModeType }
-  | { count: number }
-  | { success: boolean }
-  | { error: string };
+  { mode: ModeType } | { count: number } | { success: boolean } | { error: string };

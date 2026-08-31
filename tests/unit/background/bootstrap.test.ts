@@ -22,8 +22,15 @@ describe('Background Bootstrap Initialization', () => {
     // chrome APIs so the test environment mirrors the real SW context.
     (globalThis as any).chrome = {
       ...(globalThis as any).chrome,
-      alarms: { create: vi.fn(), clear: vi.fn(), onAlarm: { addListener: vi.fn(), removeListener: vi.fn() } },
-      identity: { getRedirectURL: vi.fn(() => 'https://mock.chromiumapp.org'), launchWebAuthFlow: vi.fn() },
+      alarms: {
+        create: vi.fn(),
+        clear: vi.fn(),
+        onAlarm: { addListener: vi.fn(), removeListener: vi.fn() },
+      },
+      identity: {
+        getRedirectURL: vi.fn(() => 'https://mock.chromiumapp.org'),
+        launchWebAuthFlow: vi.fn(),
+      },
       storage: { local: { get: vi.fn(), set: vi.fn(), remove: vi.fn() } },
       runtime: { lastError: undefined },
     };
@@ -36,7 +43,9 @@ describe('Background Bootstrap Initialization', () => {
 
     // Exercise the two factory paths that previously used require() in the
     // SW-init-scoped registration file.
-    const localRepo = container.resolve<ScopedHighlightRepository>('localRepository' as never);
+    const localRepo = container.resolve<ScopedHighlightRepository>(
+      'localRepository' as never
+    );
     expect(localRepo).toBeInstanceOf(ScopedHighlightRepository);
 
     const highlightRepo = container.resolve<DualWriteRepository>('highlightRepository');

@@ -32,7 +32,9 @@ export function labelOAuthScope(scope: string): string {
   return SCOPE_LABELS[scope] ?? scope.replace(/_/g, ' ');
 }
 
-export function labelOAuthScopes(scope: string | undefined | null): { scope: string; label: string }[] {
+export function labelOAuthScopes(
+  scope: string | undefined | null
+): { scope: string; label: string }[] {
   const parsed = parseOAuthScopeString(scope);
   const rank = (s: string): number => {
     const i = SCOPE_ORDER.indexOf(s);
@@ -47,9 +49,10 @@ export function labelOAuthScopes(scope: string | undefined | null): { scope: str
 }
 
 /** Host line for consent UI — never dump full localhost paths as the main signal. */
-export function formatOAuthRedirectDisplay(
-  redirectUri: string | undefined | null,
-): { primary: string; secondary: string | null } {
+export function formatOAuthRedirectDisplay(redirectUri: string | undefined | null): {
+  primary: string;
+  secondary: string | null;
+} {
   if (!redirectUri?.trim()) {
     return { primary: 'The requesting app', secondary: null };
   }

@@ -2,20 +2,29 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
-import { useCollections } from '@/features/collections/hooks/useCollections';
+import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
+import { ExportActions } from '@/features/collections/components/ExportActions';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
-import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
-import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibraryDomainRow } from '@/features/collections/components/LibraryDomainRow';
+import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
 import {
   formatSearchMatchMeta,
   LibrarySearchGroupHeader,
 } from '@/features/collections/components/LibrarySearchGroupHeader';
-import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
-import { ExportActions } from '@/features/collections/components/ExportActions';
 import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { useCollections } from '@/features/collections/hooks/useCollections';
+import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import {
+  useLibraryRelatednessService,
+  useRelatedTags,
+} from '@/features/collections/hooks/useLibraryRelatedness';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import {
+  guestLibraryLocalBannerCopy,
+  libraryNoMatchesCopy,
+} from '@/shared/copy/product-surface-copy';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { deleteDomainCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
@@ -23,27 +32,18 @@ import {
   groupSearchResultsByDomainAndSection,
   matchDomainNames,
 } from '@/shared/utils/group-library-search';
-import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
-import { getSectionKey } from '@/shared/utils/section-key';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
-import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
-import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
-import {
-  useLibraryRelatednessService,
-  useRelatedTags,
-} from '@/features/collections/hooks/useLibraryRelatedness';
-import {
-  guestLibraryLocalBannerCopy,
-  libraryNoMatchesCopy,
-} from '@/shared/copy/product-surface-copy';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
+import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface CollectionsViewProps {
   onCollectionClick?: (domain: string) => void;
@@ -72,10 +72,15 @@ export function CollectionsView({
   const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([
+    ...DEFAULT_SEARCH_FIELDS,
+  ]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const [deleteDomain, setDeleteDomain] = useState<{ domain: string; count: number } | null>(null);
+  const [deleteDomain, setDeleteDomain] = useState<{
+    domain: string;
+    count: number;
+  } | null>(null);
   const [isDeletingDomain, setIsDeletingDomain] = useState(false);
   const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
 
@@ -87,7 +92,7 @@ export function CollectionsView({
 
   const filteredResults = useMemo(
     () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
-    [searchResults, refine, tagFilters],
+    [searchResults, refine, tagFilters]
   );
 
   const isSearching = searchQuery.trim().length > 0;
@@ -96,12 +101,11 @@ export function CollectionsView({
   const searchGroups = useMemo(() => {
     if (!isSearching) return [];
     // Domain chip (or default All) also matches collection hostnames with zero quote hits.
-    const domainFieldOn =
-      searchFields.length === 0 || searchFields.includes('domain');
+    const domainFieldOn = searchFields.length === 0 || searchFields.includes('domain');
     const nameMatchedDomains = domainFieldOn
       ? matchDomainNames(
           collections.map((c) => c.domain),
-          searchQuery,
+          searchQuery
         )
       : [];
     return groupSearchResultsByDomainAndSection(filteredResults, {
@@ -111,12 +115,12 @@ export function CollectionsView({
 
   const searchResultCount = useMemo(
     () => countGranularSearchResults(searchGroups),
-    [searchGroups],
+    [searchGroups]
   );
 
   const availableTags = useMemo(
     () => userTags.map((t) => ({ label: t.name })),
-    [userTags],
+    [userTags]
   );
 
   const relatednessInputs = useMemo(
@@ -130,7 +134,7 @@ export function CollectionsView({
         path: r.path,
         tags: r.tags,
       })),
-    [filteredResults],
+    [filteredResults]
   );
   const relatedness = useLibraryRelatednessService(relatednessInputs);
   const relatedTagResults = useRelatedTags(relatedness, tagFilters);
@@ -177,7 +181,14 @@ export function CollectionsView({
 
   if (libraryAccess.showSignInPrompt && !isLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+        }}
+      >
         <div className="popup-page-title-wrap">
           <h1 className="popup-page-title" data-testid="library-title">
             Library
@@ -189,7 +200,9 @@ export function CollectionsView({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+    >
       <div className="popup-page-title-wrap">
         <h1 className="popup-page-title" data-testid="library-title">
           Library
@@ -239,19 +252,26 @@ export function CollectionsView({
         />
       </div>
 
-      <div className="list-scroll" style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div
+        className="list-scroll"
+        style={{ marginTop: 10, flex: 1, overflowY: 'auto', minHeight: 0 }}
+      >
         <LibraryRelatedTags
           tags={relatedTagResults}
           onSelectTag={(tag) => setTagFilters([tag])}
         />
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-            <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+            <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+              Loading...
+            </span>
           </div>
         ) : showResultsList ? (
           isSearchLoading ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+                Loading...
+              </span>
             </div>
           ) : searchGroups.length === 0 ? (
             <EmptyState
@@ -271,12 +291,20 @@ export function CollectionsView({
                   onOpen={() => handleCollectionClick(group.domain)}
                 />
                 {group.sections.map((section) => (
-                  <div key={`${group.domain}::${section.sectionKey}`} data-testid="search-section-group">
+                  <div
+                    key={`${group.domain}::${section.sectionKey}`}
+                    data-testid="search-section-group"
+                  >
                     <LibrarySearchGroupHeader
                       level="section"
                       title={section.sectionKey}
-                      meta={formatSearchMatchMeta(section.matchCount, section.nameMatched)}
-                      onOpen={() => handleResultSectionClick(group.domain, section.sectionKey)}
+                      meta={formatSearchMatchMeta(
+                        section.matchCount,
+                        section.nameMatched
+                      )}
+                      onOpen={() =>
+                        handleResultSectionClick(group.domain, section.sectionKey)
+                      }
                     />
                     {section.highlights.map((r) => (
                       <LibraryHighlightTile
@@ -295,7 +323,7 @@ export function CollectionsView({
                         onSectionClick={() =>
                           handleResultSectionClick(
                             r.domain,
-                            getSectionKey({ url: r.url, path: r.path }),
+                            getSectionKey({ url: r.url, path: r.path })
                           )
                         }
                         allowMarginalia={tagsGate.allowed}
@@ -305,7 +333,10 @@ export function CollectionsView({
                         }}
                         suggestions={labelSuggestions}
                         onDelete={async () => {
-                          const result = await deleteScope({ scope: 'highlight', id: r.id });
+                          const result = await deleteScope({
+                            scope: 'highlight',
+                            id: r.id,
+                          });
                           if (!result?.success) {
                             throw new Error(result?.error ?? 'Delete failed');
                           }
@@ -354,7 +385,9 @@ export function CollectionsView({
             strongNames={copy?.strongNames}
             confirmLabel={copy?.confirmLabel}
             cancelLabel={copy?.cancelLabel}
-            onConfirm={() => { void handleDeleteDomain(); }}
+            onConfirm={() => {
+              void handleDeleteDomain();
+            }}
             isConfirming={isDeletingDomain}
             exportFooter={
               deleteDomain ? (

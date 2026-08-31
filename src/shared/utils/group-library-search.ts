@@ -48,7 +48,7 @@ export function matchDomainNames(domains: readonly string[], query: string): str
 export function matchSectionNames(
   sections: readonly string[],
   query: string,
-  titleFor?: (sectionKey: string) => string,
+  titleFor?: (sectionKey: string) => string
 ): string[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -71,7 +71,7 @@ export function groupSearchResultsByDomainAndSection<T extends SearchResultLocat
     /** section keys that matched by name, scoped under a single domain. */
     nameMatchedSections?: readonly string[];
     /** When grouping library-wide name-matched sections (rare); prefer domain-level. */
-  },
+  }
 ): DomainMatchGroup<T>[] {
   const byDomain = new Map<string, T[]>();
 
@@ -91,7 +91,7 @@ export function groupSearchResultsByDomainAndSection<T extends SearchResultLocat
 
   for (const [domain, highlights] of byDomain) {
     const nameMatched = (options?.nameMatchedDomains ?? []).some(
-      (d) => d.toLowerCase() === domain.toLowerCase(),
+      (d) => d.toLowerCase() === domain.toLowerCase()
     );
 
     const bySection = new Map<string, T[]>();
@@ -113,14 +113,16 @@ export function groupSearchResultsByDomainAndSection<T extends SearchResultLocat
 
     const sections: SectionMatchGroup<T>[] = Array.from(bySection.entries()).map(
       ([sectionKey, sectionHighlights]) => {
-        const sectionNameMatched = (options?.nameMatchedSections ?? []).includes(sectionKey);
+        const sectionNameMatched = (options?.nameMatchedSections ?? []).includes(
+          sectionKey
+        );
         return {
           sectionKey,
           highlights: sectionHighlights,
           nameMatched: sectionNameMatched,
           matchCount: sectionHighlights.length,
         };
-      },
+      }
     );
 
     sections.sort((a, b) => {
@@ -153,7 +155,7 @@ export function groupSearchResultsBySection<T extends SearchResultLocation>(
   results: readonly T[],
   options?: {
     nameMatchedSections?: readonly string[];
-  },
+  }
 ): SectionMatchGroup<T>[] {
   const domainGroups = groupSearchResultsByDomainAndSection(results, {
     nameMatchedSections: options?.nameMatchedSections,
@@ -175,7 +177,7 @@ export function groupSearchResultsBySection<T extends SearchResultLocation>(
 
 /** Result count for the search bar: highlight hits + pure name matches with zero hits. */
 export function countGranularSearchResults(
-  domainGroups: readonly DomainMatchGroup<SearchResultLocation>[],
+  domainGroups: readonly DomainMatchGroup<SearchResultLocation>[]
 ): number {
   let n = 0;
   for (const g of domainGroups) {
@@ -189,7 +191,7 @@ export function countGranularSearchResults(
 }
 
 export function countSectionGranularResults(
-  sections: readonly SectionMatchGroup<SearchResultLocation>[],
+  sections: readonly SectionMatchGroup<SearchResultLocation>[]
 ): number {
   let n = 0;
   for (const s of sections) {

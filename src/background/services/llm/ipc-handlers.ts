@@ -1,17 +1,20 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { pushExtensionAiPreferences, syncExtensionAiPreferences } from './ai-prefs-sync';
 import type { LLMKeyStore } from './llm-key-store';
 import type { LlmKeyStoreHolder } from './llm-key-store-holder';
-import { buildProvider, resolveConfiguredProvider, tryGetRegistered } from './llm-provider-factory';
-import type { BackgroundPageContentCache } from './page-content-cache';
-import type { LLMRegistry } from './llm-registry';
 import {
-  pushExtensionAiPreferences,
-  syncExtensionAiPreferences,
-} from './ai-prefs-sync';
+  buildProvider,
+  resolveConfiguredProvider,
+  tryGetRegistered,
+} from './llm-provider-factory';
+import type { LLMRegistry } from './llm-registry';
+import type { BackgroundPageContentCache } from './page-content-cache';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { buildMarkedPageContext } from '@/shared/llm/build-page-context';
 import { buildHighlightExcerpts } from '@/shared/llm/highlight-excerpts';
+import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
 import { fetchProviderModels } from '@/shared/llm/model-discovery';
 import {
   IPC_AI_CHAT,
@@ -27,12 +30,18 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '@/shared/schemas/message-schemas';
-import { isInAppLlmProvider } from '@/shared/llm/in-app-providers';
-import { canConfigureAiProviders, canUseFeature, type FeatureGateContext } from '@/shared/utils/mode-capabilities';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import {
+  canConfigureAiProviders,
+  canUseFeature,
+  type FeatureGateContext,
+} from '@/shared/utils/mode-capabilities';
 
 interface MessageBusLike {
-  subscribe(messageType: string, handler: (payload: unknown) => unknown | Promise<unknown>): () => void;
+  subscribe(
+    messageType: string,
+    handler: (payload: unknown) => unknown | Promise<unknown>
+  ): () => void;
 }
 
 interface RegisterArgs {
@@ -54,7 +63,7 @@ function resolveKeyStore(args: RegisterArgs): LLMKeyStore {
 }
 
 async function denyIfAiSetupGated(
-  args: RegisterArgs,
+  args: RegisterArgs
 ): Promise<ReturnType<typeof createErrorResponse> | null> {
   if (!args.resolveAiGateContext) return null;
   const ctx = await args.resolveAiGateContext();
@@ -69,7 +78,7 @@ async function denyIfAiSetupGated(
 }
 
 async function denyIfAiGated(
-  args: RegisterArgs,
+  args: RegisterArgs
 ): Promise<ReturnType<typeof createErrorResponse> | null> {
   if (!args.resolveAiGateContext) return null;
   const ctx = await args.resolveAiGateContext();
@@ -113,7 +122,10 @@ interface ListModelsPayload {
   apiBase?: string;
 }
 
-async function isProviderConfigured(store: LLMKeyStore, provider: ProviderName): Promise<boolean> {
+async function isProviderConfigured(
+  store: LLMKeyStore,
+  provider: ProviderName
+): Promise<boolean> {
   if (provider === 'ollama') return store.getOllamaVerified();
   // OpenRouter free models still need an API key (auth ≠ billing).
   const key = await store.get(provider);
@@ -133,7 +145,7 @@ export function registerAiHandlers(args: RegisterArgs): void {
       await pushExtensionAiPreferences(supabase, userId, keyStore());
     } catch {
       // Offline / migration pending — local store remains source of truth.
-      // eslint-disable-next-line no-console -- intentional once-per-fail ops signal
+
       console.warn('[ai_prefs_sync_failed] extension push');
     }
   };
@@ -205,7 +217,8 @@ export function registerAiHandlers(args: RegisterArgs): void {
       const store = keyStore();
       const model = await store.getModel(provider);
       const configured = await isProviderConfigured(store, provider);
-      const apiBase = provider === 'ollama' ? await store.getApiBase('ollama') : undefined;
+      const apiBase =
+        provider === 'ollama' ? await store.getApiBase('ollama') : undefined;
       return createSuccessResponse({ configured, model, apiBase });
     } catch (err) {
       return createErrorResponse((err as Error).message);
@@ -263,9 +276,10 @@ export function registerAiHandlers(args: RegisterArgs): void {
     try {
       const { provider, apiBase } = raw as ListModelsPayload;
       const store = keyStore();
-      const resolvedBase = provider === 'ollama'
-        ? (apiBase?.trim() || await store.getApiBase('ollama'))
-        : apiBase;
+      const resolvedBase =
+        provider === 'ollama'
+          ? apiBase?.trim() || (await store.getApiBase('ollama'))
+          : apiBase;
       const storedKey = await store.get(provider);
       const result = await fetchProviderModels(provider, {
         apiKey: storedKey ?? undefined,
@@ -289,9 +303,12 @@ export function registerAiHandlers(args: RegisterArgs): void {
       // A registered instance may hold a stale model/apiBase; when the UI
       // passes a draft value, rebuild against it so verify tests what the
       // user actually selected rather than the last-saved config.
-      const result = registered && apiBase === undefined && model === undefined
-        ? await registered.healthCheck()
-        : await (await buildProvider(provider, keyStore(), apiBase, model)).healthCheck();
+      const result =
+        registered && apiBase === undefined && model === undefined
+          ? await registered.healthCheck()
+          : await (
+              await buildProvider(provider, keyStore(), apiBase, model)
+            ).healthCheck();
       if (!result.ok) {
         return createErrorResponse(result.error ?? 'Health check failed');
       }
@@ -319,32 +336,30 @@ export function registerAiHandlers(args: RegisterArgs): void {
     if (denied) return denied;
     try {
       const { highlights } = raw as PageContextPayload;
-      const built = buildMarkedPageContext(
-        highlights,
-        (url) => {
-          const cached = pageContentCache.getByUrl(url);
-          if (!cached) return null;
-          return {
-            url: cached.url,
-            title: cached.title,
-            text: cached.text,
-            truncated: cached.truncated,
-          };
-        },
-      );
-      const { excerpts: highlightExcerpts, cacheMissUrls: excerptMisses } = buildHighlightExcerpts(
-        highlights.map((h, i) => ({ id: h.id ?? `hl-${i}`, url: h.url, text: h.text })),
-        (url) => {
-          const cached = pageContentCache.getByUrl(url);
-          if (!cached) return null;
-          return {
-            url: cached.url,
-            title: cached.title,
-            text: cached.text,
-            truncated: cached.truncated,
-          };
-        },
-      );
+      const built = buildMarkedPageContext(highlights, (url) => {
+        const cached = pageContentCache.getByUrl(url);
+        if (!cached) return null;
+        return {
+          url: cached.url,
+          title: cached.title,
+          text: cached.text,
+          truncated: cached.truncated,
+        };
+      });
+      const { excerpts: highlightExcerpts, cacheMissUrls: excerptMisses } =
+        buildHighlightExcerpts(
+          highlights.map((h, i) => ({ id: h.id ?? `hl-${i}`, url: h.url, text: h.text })),
+          (url) => {
+            const cached = pageContentCache.getByUrl(url);
+            if (!cached) return null;
+            return {
+              url: cached.url,
+              title: cached.title,
+              text: cached.text,
+              truncated: cached.truncated,
+            };
+          }
+        );
       const cacheMissUrls = [...new Set([...built.cacheMissUrls, ...excerptMisses])];
       return createSuccessResponse({ ...built, highlightExcerpts, cacheMissUrls });
     } catch (err) {

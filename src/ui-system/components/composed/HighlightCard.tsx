@@ -71,10 +71,7 @@ export function HighlightCard({
 
   return (
     <div
-      className={cn(
-        'group relative p-4 border rounded min-h-[44px]',
-        className
-      )}
+      className={cn('group relative p-4 border rounded min-h-[44px]', className)}
       style={{
         backgroundColor: 'var(--paper)',
         borderColor: 'var(--rule-soft)',

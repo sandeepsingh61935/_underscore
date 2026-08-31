@@ -12,7 +12,9 @@ describe('connect-to-ai-nav', () => {
   it('titles hub, picker, and setup by app name', () => {
     expect(connectToAiPageTitle({ kind: 'hub' })).toBe('Integrations');
     expect(connectToAiPageTitle({ kind: 'picker' })).toBe('Add an AI app');
-    expect(connectToAiPageTitle({ kind: 'setup', appId: 'cursor' })).toBe('Connect Cursor');
+    expect(connectToAiPageTitle({ kind: 'setup', appId: 'cursor' })).toBe(
+      'Connect Cursor'
+    );
   });
 
   it('uses contextual back labels for Setup → Picker → Hub', () => {

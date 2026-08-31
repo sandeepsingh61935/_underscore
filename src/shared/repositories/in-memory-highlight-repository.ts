@@ -49,12 +49,18 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
     this.logger.debug('Added highlight', {
       id: highlight.id,
-      contentHash: highlight.contentHash ? highlight.contentHash.substring(0, 16) + '...' : 'undefined',
+      contentHash: highlight.contentHash
+        ? highlight.contentHash.substring(0, 16) + '...'
+        : 'undefined',
       totalCount: this.highlights.size,
     });
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
+  async update(
+    id: string,
+    updates: Partial<HighlightDataV2>,
+    _options?: RepositoryOptions
+  ): Promise<void> {
     const existing = this.highlights.get(id);
 
     if (!existing) {
@@ -146,7 +152,7 @@ export class InMemoryHighlightRepository implements IHighlightRepository {
 
   async findByUrl(url: string): Promise<HighlightDataV2[]> {
     const all = Array.from(this.highlights.values());
-    const matches = all.filter(h => h.url === url);
+    const matches = all.filter((h) => h.url === url);
 
     this.logger.debug('Found highlights by URL', {
       url,

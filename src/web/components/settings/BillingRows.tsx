@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 
 export interface BillingRowsProps {

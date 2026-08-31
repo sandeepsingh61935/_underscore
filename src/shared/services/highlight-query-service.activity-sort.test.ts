@@ -3,7 +3,9 @@ import { HighlightQueryService } from './highlight-query-service';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
-function hl(over: Partial<HighlightDataV2> & { id: string; text: string }): HighlightDataV2 {
+function hl(
+  over: Partial<HighlightDataV2> & { id: string; text: string }
+): HighlightDataV2 {
   return {
     contentHash: over.id.padEnd(64, 'a'),
     colorRole: 'yellow',
@@ -51,7 +53,7 @@ describe('HighlightQueryService activity sort', () => {
           createdAt: new Date('2024-01-01T00:00:00.000Z'),
           updatedAt: new Date('2024-12-01T00:00:00.000Z'),
         }),
-      ]),
+      ])
     );
 
     const list = await service.getHighlightsByDomain('example.com');
@@ -72,7 +74,7 @@ describe('HighlightQueryService activity sort', () => {
           createdAt: new Date('2024-01-01T00:00:00.000Z'),
           updatedAt: new Date('2024-12-01T00:00:00.000Z'),
         }),
-      ]),
+      ])
     );
 
     const dash = await service.getDashboardData();
@@ -95,7 +97,7 @@ describe('HighlightQueryService activity sort', () => {
           createdAt: new Date('2024-01-01T00:00:00.000Z'),
           updatedAt: new Date('2024-12-01T00:00:00.000Z'),
         }),
-      ]),
+      ])
     );
 
     const collections = await service.getCollections();

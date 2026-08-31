@@ -48,7 +48,7 @@ export function parseCssColor(input: string): Rgb | null {
   }
 
   const rgb = s.match(
-    /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/,
+    /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/
   );
   if (rgb) {
     const a = rgb[4] !== undefined ? Number(rgb[4]) : 1;
@@ -99,7 +99,7 @@ export function resolveDeleteIconChrome(pageBg: Rgb | null): DeleteIconChrome {
 export function samplePageBackgroundAt(
   clientX: number,
   clientY: number,
-  doc: Document = document,
+  doc: Document = document
 ): Rgb | null {
   if (typeof doc.elementFromPoint !== 'function') return null;
   const stack: Element[] = [];

@@ -3,31 +3,40 @@
  * @description Routes MCP bridge method calls to background services (ADR-023).
  */
 
+import { browser } from 'wxt/browser';
+
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
-import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
-import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import { getModeBranding } from '@/shared/constants/mode-branding';
+import type { TagService } from '@/background/services/tag-service';
 import { MCP_BRIDGE_STORAGE_KEYS } from '@/shared/constants/mcp-bridge';
-import { MODE_STORAGE_KEY, AUTH_REQUIRED_MODES, VALID_MODES } from '@/shared/constants/mode-storage';
+import { getModeBranding } from '@/shared/constants/mode-branding';
+import {
+  MODE_STORAGE_KEY,
+  AUTH_REQUIRED_MODES,
+  VALID_MODES,
+} from '@/shared/constants/mode-storage';
 import { buildMarkdownExport, toExportableHighlight } from '@/shared/highlight-export';
 import type { ExportScope } from '@/shared/highlight-export';
-import type { TagService } from '@/background/services/tag-service';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
+import {
+  featureGateErrorCode,
+  featureGateSubtitle,
+} from '@/shared/utils/feature-gate-copy';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import { searchHighlights } from '@/shared/utils/highlight-search';
 import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
-import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import { normalizeMode } from '@/shared/utils/normalize-mode';
 import {
   buildMcpCapabilities,
   canUseFeature,
   canUseMcp,
   getCapabilitiesForMode,
 } from '@/shared/utils/mode-capabilities';
-import { featureGateErrorCode, featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { normalizeMode } from '@/shared/utils/normalize-mode';
 import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
 import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
 import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
@@ -36,7 +45,6 @@ import { getSectionKey } from '@/shared/utils/section-key';
 import type { McpSessionSnapshot } from '@/shared/mcp/session-types';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
-import { browser } from 'wxt/browser';
 
 export interface McpBridgeHandlerDeps {
   authManager: IAuthManager;
@@ -47,7 +55,10 @@ export interface McpBridgeHandlerDeps {
   tagService: TagService;
   cloudHydrationService: ICloudHydrationService;
   librarySyncCursor: LibrarySyncCursor;
-  llmChat?: (payload: { provider?: ProviderName; request: LLMRequest }) => Promise<{ text: string }>;
+  llmChat?: (payload: {
+    provider?: ProviderName;
+    request: LLMRequest;
+  }) => Promise<{ text: string }>;
   getActiveMode?: () => Promise<ModeType>;
   getIsPaidActive: () => Promise<boolean>;
 }
@@ -91,7 +102,9 @@ export class McpBridgeHandler {
       case 'synthesize_domain':
         return this.synthesizeDomain(payload);
       default:
-        throw Object.assign(new Error(`Unknown bridge method: ${method}`), { code: 'UNKNOWN_METHOD' });
+        throw Object.assign(new Error(`Unknown bridge method: ${method}`), {
+          code: 'UNKNOWN_METHOD',
+        });
     }
   }
 
@@ -104,13 +117,15 @@ export class McpBridgeHandler {
   }
 
   private dataCoverage(): McpSessionSnapshot['dataCoverage'] {
-    return this.deps.scopedHighlightRepository.getActiveScope() === 'pro' ? 'pro_local' : 'basic_local';
+    return this.deps.scopedHighlightRepository.getActiveScope() === 'pro'
+      ? 'pro_local'
+      : 'basic_local';
   }
 
   private async capabilitiesForSession(
     mode: ModeType,
     signedIn: boolean,
-    storageScope: 'basic' | 'pro',
+    storageScope: 'basic' | 'pro'
   ): Promise<McpSessionSnapshot['capabilities']> {
     const isPaidActive = await this.deps.getIsPaidActive();
     return buildMcpCapabilities({
@@ -139,7 +154,11 @@ export class McpBridgeHandler {
         userId: authState.user?.id,
         email: authState.user?.email,
       },
-      capabilities: await this.capabilitiesForSession(mode, authState.isAuthenticated, storageScope),
+      capabilities: await this.capabilitiesForSession(
+        mode,
+        authState.isAuthenticated,
+        storageScope
+      ),
       sync: cursor ? { lastHydratedAt: cursor.toISOString() } : undefined,
       dataCoverage: this.dataCoverage(),
       bridgeConnected: true,
@@ -147,9 +166,10 @@ export class McpBridgeHandler {
   }
 
   async listCollections(payload: unknown): Promise<unknown> {
-    const mode = typeof (payload as { mode?: string })?.mode === 'string'
-      ? normalizeMode((payload as { mode: string }).mode)
-      : await this.readMode();
+    const mode =
+      typeof (payload as { mode?: string })?.mode === 'string'
+        ? normalizeMode((payload as { mode: string }).mode)
+        : await this.readMode();
     const collections = await this.deps.getHighlightQueryService().getCollections(mode);
     return {
       collections,
@@ -169,8 +189,11 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('Invalid cursor'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
-    const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+    const highlights = await this.deps
+      .getHighlightQueryService()
+      .getHighlightsByDomain(input.domain);
+    const enriched =
+      await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const page = enriched.slice(offset, offset + limit);
     const nextOffset = offset + limit;
     const nextCursor = nextOffset < enriched.length ? String(nextOffset) : undefined;
@@ -185,7 +208,12 @@ export class McpBridgeHandler {
   }
 
   async searchHighlights(payload: unknown): Promise<unknown> {
-    const input = payload as { query?: string; domain?: string; limit?: number; cursor?: string };
+    const input = payload as {
+      query?: string;
+      domain?: string;
+      limit?: number;
+      cursor?: string;
+    };
     const query = input?.query?.trim().toLowerCase();
     if (!query) {
       throw Object.assign(new Error('query is required'), { code: 'INVALID_ARGUMENT' });
@@ -195,12 +223,16 @@ export class McpBridgeHandler {
 
     let candidates;
     if (input.domain) {
-      candidates = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
+      candidates = await this.deps
+        .getHighlightQueryService()
+        .getHighlightsByDomain(input.domain);
     } else {
       const collections = await this.deps.getHighlightQueryService().getCollections();
       const merged = [];
       for (const c of collections) {
-        const rows = await this.deps.getHighlightQueryService().getHighlightsByDomain(c.domain);
+        const rows = await this.deps
+          .getHighlightQueryService()
+          .getHighlightsByDomain(c.domain);
         merged.push(...rows);
       }
       candidates = merged;
@@ -209,7 +241,7 @@ export class McpBridgeHandler {
     const matches = searchHighlights(candidates, query).map((match) => match.highlight);
 
     const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(
-      matches.slice(offset, offset + limit),
+      matches.slice(offset, offset + limit)
     );
     const nextOffset = offset + limit;
 
@@ -229,14 +261,18 @@ export class McpBridgeHandler {
 
     const collections = await this.deps.getHighlightQueryService().getCollections();
     for (const collection of collections) {
-      const rows = await this.deps.getHighlightQueryService().getHighlightsByDomain(collection.domain);
+      const rows = await this.deps
+        .getHighlightQueryService()
+        .getHighlightsByDomain(collection.domain);
       const match = rows.find((hl) => hl.id === input.id);
       if (!match) continue;
 
       return match;
     }
 
-    throw Object.assign(new Error(`Highlight not found: ${input.id}`), { code: 'NOT_FOUND' });
+    throw Object.assign(new Error(`Highlight not found: ${input.id}`), {
+      code: 'NOT_FOUND',
+    });
   }
 
   async exportHighlights(payload: unknown): Promise<unknown> {
@@ -260,12 +296,16 @@ export class McpBridgeHandler {
     }
 
     if (input.notes === undefined && input.tags === undefined) {
-      throw Object.assign(new Error('No notes or tags to update'), { code: 'INVALID_ARGUMENT' });
+      throw Object.assign(new Error('No notes or tags to update'), {
+        code: 'INVALID_ARGUMENT',
+      });
     }
 
     const existing = this.deps.repositoryFacade.get(input.id);
     if (!existing) {
-      throw Object.assign(new Error(`Highlight not found: ${input.id}`), { code: 'NOT_FOUND' });
+      throw Object.assign(new Error(`Highlight not found: ${input.id}`), {
+        code: 'NOT_FOUND',
+      });
     }
 
     // Dual-write metadata.tags + junction table (same as popup UPDATE_HIGHLIGHT_METADATA).
@@ -285,7 +325,9 @@ export class McpBridgeHandler {
 
   async syncLibrary(): Promise<unknown> {
     if (!this.deps.authManager.isAuthenticated) {
-      throw Object.assign(new Error('Sign in to sync library with cloud'), { code: 'NOT_AUTHENTICATED' });
+      throw Object.assign(new Error('Sign in to sync library with cloud'), {
+        code: 'NOT_AUTHENTICATED',
+      });
     }
     const result = await this.deps.cloudHydrationService.hydrate();
     if (result.error) {
@@ -315,7 +357,9 @@ export class McpBridgeHandler {
     }
     const signedIn = this.deps.authManager.isAuthenticated;
     if (!signedIn && AUTH_REQUIRED_MODES.includes(mode)) {
-      throw Object.assign(new Error('Sign in required for Pro modes'), { code: 'NOT_AUTHENTICATED' });
+      throw Object.assign(new Error('Sign in required for Pro modes'), {
+        code: 'NOT_AUTHENTICATED',
+      });
     }
     if (signedIn && mode === 'basic') {
       throw Object.assign(new Error('Signed-in users cannot switch to Basic via MCP'), {
@@ -330,7 +374,7 @@ export class McpBridgeHandler {
   private filterBySection<T extends { url: string; path: string }>(
     highlights: T[],
     _domain: string,
-    sectionKey: string,
+    sectionKey: string
   ): T[] {
     return highlights.filter((hl) => {
       const key = getSectionKey({ url: hl.url, path: hl.path });
@@ -339,7 +383,7 @@ export class McpBridgeHandler {
   }
 
   private toPromptHighlights(
-    highlights: Array<{ id: string; text: string; url: string; path: string }>,
+    highlights: Array<{ id: string; text: string; url: string; path: string }>
   ): Array<{ id: string; text: string; url: string; title: string }> {
     return highlights.map((hl) => ({
       id: hl.id,
@@ -352,7 +396,7 @@ export class McpBridgeHandler {
   private buildSectionExcerpts(
     highlights: Array<{ id: string; text: string; url: string; path: string }>,
     domain: string,
-    sectionKey: string,
+    sectionKey: string
   ): HighlightExcerpt[] {
     const filtered = this.filterBySection(highlights, domain, sectionKey);
     return buildFallbackExcerpts(this.toPromptHighlights(filtered)).excerpts;
@@ -433,8 +477,11 @@ export class McpBridgeHandler {
       });
     }
 
-    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
-    const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+    const highlights = await this.deps
+      .getHighlightQueryService()
+      .getHighlightsByDomain(input.domain);
+    const enriched =
+      await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const excerpts = this.buildSectionExcerpts(enriched, input.domain, input.sectionKey);
     const scope = {
       scopeLabel: input.sectionKey,
@@ -461,15 +508,24 @@ export class McpBridgeHandler {
   }
 
   async summarizeSection(payload: unknown): Promise<unknown> {
-    const input = payload as { domain?: string; sectionKey?: string; useOrchestrator?: boolean };
+    const input = payload as {
+      domain?: string;
+      sectionKey?: string;
+      useOrchestrator?: boolean;
+    };
     await this.assertAiFeature();
 
     if (!input?.domain || !input?.sectionKey) {
-      throw Object.assign(new Error('domain and sectionKey are required'), { code: 'INVALID_ARGUMENT' });
+      throw Object.assign(new Error('domain and sectionKey are required'), {
+        code: 'INVALID_ARGUMENT',
+      });
     }
 
-    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
-    const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+    const highlights = await this.deps
+      .getHighlightQueryService()
+      .getHighlightsByDomain(input.domain);
+    const enriched =
+      await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const sectionItems = this.filterBySection(enriched, input.domain, input.sectionKey);
     const promptHighlights = this.toPromptHighlights(sectionItems);
     const systemPrompt = PROMPT_TEMPLATES.summarizeExcerpts({
@@ -493,7 +549,12 @@ export class McpBridgeHandler {
       return { mode: 'orchestrator', summary: result.text };
     }
 
-    return { mode: 'context_only', systemPrompt, userContent, excerptCount: promptHighlights.length };
+    return {
+      mode: 'context_only',
+      systemPrompt,
+      userContent,
+      excerptCount: promptHighlights.length,
+    };
   }
 
   async synthesizeDomain(payload: unknown): Promise<unknown> {
@@ -504,8 +565,11 @@ export class McpBridgeHandler {
       throw Object.assign(new Error('domain is required'), { code: 'INVALID_ARGUMENT' });
     }
 
-    const highlights = await this.deps.getHighlightQueryService().getHighlightsByDomain(input.domain);
-    const enriched = await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
+    const highlights = await this.deps
+      .getHighlightQueryService()
+      .getHighlightsByDomain(input.domain);
+    const enriched =
+      await this.deps.backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
     const bySection = new Map<string, typeof enriched>();
     for (const hl of enriched) {
       const key = hl.path || '/';
@@ -517,13 +581,16 @@ export class McpBridgeHandler {
     const sections = [...bySection.entries()].map(([sectionKey, items]) => ({
       sectionKey,
       excerptCount: items.length,
-      preview: items.slice(0, 3).map((i) => i.text).join('\n'),
+      preview: items
+        .slice(0, 3)
+        .map((i) => i.text)
+        .join('\n'),
     }));
 
     const systemPrompt = PROMPT_TEMPLATES.reduceDomainSynthesis(
       input.domain,
       enriched.length,
-      sections.length,
+      sections.length
     );
     const userContent = sections
       .map((s) => `## ${s.sectionKey}\n${s.preview}`)
@@ -541,6 +608,11 @@ export class McpBridgeHandler {
       return { mode: 'orchestrator', synthesis: result.text };
     }
 
-    return { mode: 'context_only', systemPrompt, userContent, sectionCount: sections.length };
+    return {
+      mode: 'context_only',
+      systemPrompt,
+      userContent,
+      sectionCount: sections.length,
+    };
   }
 }

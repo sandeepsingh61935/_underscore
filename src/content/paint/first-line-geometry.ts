@@ -75,11 +75,12 @@ export function positionExteriorIcon(
 ): ExteriorIconPosition {
   const iconSize = options.iconSize ?? DEFAULT_ICON_SIZE;
   const gap = options.gap ?? DEFAULT_GAP;
-  const scrollX = options.scrollX ?? (typeof window !== 'undefined' ? window.scrollX || 0 : 0);
-  const scrollY = options.scrollY ?? (typeof window !== 'undefined' ? window.scrollY || 0 : 0);
+  const scrollX =
+    options.scrollX ?? (typeof window !== 'undefined' ? window.scrollX || 0 : 0);
+  const scrollY =
+    options.scrollY ?? (typeof window !== 'undefined' ? window.scrollY || 0 : 0);
   const viewportWidth =
-    options.viewportWidth ??
-    (typeof window !== 'undefined' ? window.innerWidth : 1024);
+    options.viewportWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   const midY = firstLineEnd.top + scrollY + (firstLineEnd.height - iconSize) / 2;
 

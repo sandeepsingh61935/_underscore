@@ -26,7 +26,7 @@ describe('executeUpdateHighlightMetadata', () => {
     const ok = await executeUpdateHighlightMetadata(
       'h-1',
       { notes: 'Key point', tags: ['research'] },
-      sendUpdate,
+      sendUpdate
     );
 
     expect(ok).toBe(true);
@@ -39,9 +39,16 @@ describe('executeUpdateHighlightMetadata', () => {
   });
 
   it('surfaces errors when the update fails', async () => {
-    const sendUpdate = vi.fn(async () => ({ success: false, error: 'Highlight not found' }));
+    const sendUpdate = vi.fn(async () => ({
+      success: false,
+      error: 'Highlight not found',
+    }));
 
-    const ok = await executeUpdateHighlightMetadata('missing', { notes: 'x' }, sendUpdate);
+    const ok = await executeUpdateHighlightMetadata(
+      'missing',
+      { notes: 'x' },
+      sendUpdate
+    );
 
     expect(ok).toBe(false);
     expect(toast.error).toHaveBeenCalledWith('Highlight not found');

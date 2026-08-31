@@ -44,7 +44,7 @@ export function exportScopeFromSelection(opts: {
 export function exportWebHighlights(
   rows: WebHighlight[],
   format: ExportFormat,
-  scope: ExportScope = { kind: 'library' },
+  scope: ExportScope = { kind: 'library' }
 ): void {
   if (rows.length === 0) return;
   const exportable = rows.map(webHighlightToExportable);
@@ -53,7 +53,7 @@ export function exportWebHighlights(
     downloadBinaryFile(
       result.filename,
       result.xlsxBuffer,
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
     return;
   }

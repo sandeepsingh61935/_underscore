@@ -51,14 +51,11 @@ describe('typography-value-step', () => {
   });
 
   it('parses and formats using spec decimals', () => {
-    for (const kind of Object.keys(TYPOGRAPHY_VALUE_SPECS) as Array<keyof typeof TYPOGRAPHY_VALUE_SPECS>) {
+    for (const kind of Object.keys(TYPOGRAPHY_VALUE_SPECS) as Array<
+      keyof typeof TYPOGRAPHY_VALUE_SPECS
+    >) {
       const spec = TYPOGRAPHY_VALUE_SPECS[kind];
-      const sample =
-        spec.unit === 'px'
-          ? '16px'
-          : spec.unit === 'em'
-            ? '0.12em'
-            : '1.2';
+      const sample = spec.unit === 'px' ? '16px' : spec.unit === 'em' ? '0.12em' : '1.2';
       const parsed = parseTypographyNumeric(sample, kind);
       expect(parsed).not.toBeNull();
       expect(formatTypographyValue(parsed!, kind)).toContain(spec.unit);

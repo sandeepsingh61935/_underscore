@@ -24,13 +24,17 @@ export function createExtensionLlmRuntime(): ILlmRuntime {
         if (!hasChromeRuntime()) {
           onEvent({
             type: 'ERROR',
-            payload: { message: 'Chrome extension runtime is unavailable in this context.' },
+            payload: {
+              message: 'Chrome extension runtime is unavailable in this context.',
+            },
           });
           resolve();
           return;
         }
 
-        const port = chrome.runtime.connect({ name: 'llm-stream' }) as unknown as StreamingPort;
+        const port = chrome.runtime.connect({
+          name: 'llm-stream',
+        }) as unknown as StreamingPort;
         let settled = false;
 
         const settle = (): void => {

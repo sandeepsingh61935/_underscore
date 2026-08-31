@@ -3,10 +3,16 @@
  * @description Pure markdown formatter for highlight export/copy.
  */
 
-import type { ExportArtifactsBundle } from '@/shared/llm/llm-artifact-service';
-import type { ExportableHighlight, ExportResult, ExportScope, ExportStats } from './types';
 import { buildFilename } from './filename';
 import { partitionExportable } from './normalize';
+import type {
+  ExportableHighlight,
+  ExportResult,
+  ExportScope,
+  ExportStats,
+} from './types';
+
+import type { ExportArtifactsBundle } from '@/shared/llm/llm-artifact-service';
 
 function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -23,7 +29,11 @@ export function formatSourceAnnotation(url: string): string {
 function formatHighlightBody(text: string): string {
   const trimmed = text.trimEnd();
   // Multi-line / structured markdown: blockquote each line so fences and lists survive export.
-  if (trimmed.includes('\n') || /```|^\s*[-*]\s+/m.test(trimmed) || /^\s*\d+\.\s+/m.test(trimmed)) {
+  if (
+    trimmed.includes('\n') ||
+    /```|^\s*[-*]\s+/m.test(trimmed) ||
+    /^\s*\d+\.\s+/m.test(trimmed)
+  ) {
     return trimmed
       .split('\n')
       .map((line) => `> ${line}`)
@@ -72,7 +82,9 @@ function buildHeaderTitle(scope: ExportScope): string {
   }
 }
 
-function groupHighlights(highlights: ExportableHighlight[]): Map<string, Map<string, ExportableHighlight[]>> {
+function groupHighlights(
+  highlights: ExportableHighlight[]
+): Map<string, Map<string, ExportableHighlight[]>> {
   const byDomain = new Map<string, Map<string, ExportableHighlight[]>>();
 
   for (const h of highlights) {
@@ -88,7 +100,9 @@ function groupHighlights(highlights: ExportableHighlight[]): Map<string, Map<str
 
   for (const sections of byDomain.values()) {
     for (const list of sections.values()) {
-      list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      list.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
     }
   }
 
@@ -145,10 +159,11 @@ export function formatMarkdown(
   highlights: ExportableHighlight[],
   scope: ExportScope,
   omitted = 0,
-  artifacts?: ExportArtifactsBundle,
+  artifacts?: ExportArtifactsBundle
 ): string {
   const { included } = partitionExportable(highlights);
-  const exportable = included.length > 0 ? included : highlights.filter((h) => h.text.trim());
+  const exportable =
+    included.length > 0 ? included : highlights.filter((h) => h.text.trim());
 
   if (exportable.length === 0) {
     return '# No highlights\n\nNothing to export in this scope.';
@@ -165,7 +180,9 @@ export function formatMarkdown(
 
   lines.push(`# ${title}`);
   lines.push(`[exported] ${exportedDate}`);
-  lines.push(`[count] ${exportable.length} highlight${exportable.length === 1 ? '' : 's'} · ${domainCount} domain${domainCount === 1 ? '' : 's'}`);
+  lines.push(
+    `[count] ${exportable.length} highlight${exportable.length === 1 ? '' : 's'} · ${domainCount} domain${domainCount === 1 ? '' : 's'}`
+  );
   lines.push('');
 
   const artifactLines = formatArtifactSections(artifacts);
@@ -202,7 +219,9 @@ export function formatMarkdown(
 
   if (omitted > 0) {
     lines.push('---');
-    lines.push(`*[omitted] ${omitted} highlight${omitted === 1 ? '' : 's'} (vault locked or unavailable).*`);
+    lines.push(
+      `*[omitted] ${omitted} highlight${omitted === 1 ? '' : 's'} (vault locked or unavailable).*`
+    );
   }
 
   return lines.join('\n').trimEnd();
@@ -211,7 +230,7 @@ export function formatMarkdown(
 export function buildMarkdownExport(
   highlights: ExportableHighlight[],
   scope: ExportScope,
-  artifacts?: ExportArtifactsBundle,
+  artifacts?: ExportArtifactsBundle
 ): ExportResult {
   const { included, omitted } = partitionExportable(highlights);
   const markdown = formatMarkdown(highlights, scope, omitted, artifacts);
@@ -227,7 +246,7 @@ export function buildMarkdownExport(
 export function buildExport(
   highlights: ExportableHighlight[],
   scope: ExportScope,
-  artifacts?: ExportArtifactsBundle,
+  artifacts?: ExportArtifactsBundle
 ): ExportResult {
   return buildMarkdownExport(highlights, scope, artifacts);
 }

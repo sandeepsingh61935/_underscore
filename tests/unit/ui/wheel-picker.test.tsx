@@ -40,7 +40,11 @@ describe('WheelPicker', () => {
     const picker = container.firstChild as HTMLElement;
     fireEvent.pointerDown(picker);
 
-    const wheel = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true });
+    const wheel = new WheelEvent('wheel', {
+      deltaY: 100,
+      bubbles: true,
+      cancelable: true,
+    });
     const prevented = !picker.dispatchEvent(wheel);
     expect(prevented).toBe(true);
     expect(onSelect).toHaveBeenCalledWith(1);

@@ -32,11 +32,13 @@ function makeHighlight(): HighlightDataV2 {
   };
 }
 
-function makeDeps(overrides: Partial<{
-  has: boolean;
-  getHighlight: ReturnType<typeof vi.fn>;
-  messageBus: IMessageBus;
-}> = {}) {
+function makeDeps(
+  overrides: Partial<{
+    has: boolean;
+    getHighlight: ReturnType<typeof vi.fn>;
+    messageBus: IMessageBus;
+  }> = {}
+) {
   const modeManager = {
     detachHighlightFromPage: vi.fn().mockResolvedValue(undefined),
     getHighlight: overrides.getHighlight ?? vi.fn().mockReturnValue(null),
@@ -75,7 +77,7 @@ describe('handleLibraryDataChanged', () => {
 
     await handleLibraryDataChanged(
       { source: 'delete', removedIds: [HIGHLIGHT_ID] },
-      deps,
+      deps
     );
 
     expect(modeManager.detachHighlightFromPage).toHaveBeenCalledWith(HIGHLIGHT_ID);
@@ -86,12 +88,12 @@ describe('handleLibraryDataChanged', () => {
 
     await handleLibraryDataChanged(
       { source: 'undo_delete', restoredIds: [HIGHLIGHT_ID] },
-      deps,
+      deps
     );
 
     expect(repositoryFacade.rehydrate).not.toHaveBeenCalled();
     expect(modeManager.createFromData).toHaveBeenCalledWith(
-      expect.objectContaining({ id: HIGHLIGHT_ID, liveRanges: [expect.any(Range)] }),
+      expect.objectContaining({ id: HIGHLIGHT_ID, liveRanges: [expect.any(Range)] })
     );
   });
 
@@ -106,7 +108,7 @@ describe('handleLibraryDataChanged', () => {
 
     await handleLibraryDataChanged(
       { source: 'undo_delete', restoredIds: [HIGHLIGHT_ID] },
-      deps,
+      deps
     );
 
     expect(repositoryFacade.rehydrate).toHaveBeenCalled();
@@ -118,7 +120,7 @@ describe('handleLibraryDataChanged', () => {
 
     await handleLibraryDataChanged(
       { source: 'auth_sign_out', removedIds: [HIGHLIGHT_ID] },
-      deps,
+      deps
     );
 
     expect(modeManager.detachHighlightFromPage).toHaveBeenCalledWith(HIGHLIGHT_ID);

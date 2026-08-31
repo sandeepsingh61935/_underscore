@@ -9,23 +9,27 @@ export interface PrepareExcerptsResult {
 }
 
 export type FetchPageContextFn = (
-  highlights: Array<{ id?: string; url: string; text: string }>,
+  highlights: Array<{ id?: string; url: string; text: string }>
 ) => Promise<
-  | { success: true; data: { highlightExcerpts?: HighlightExcerpt[]; cacheMissUrls: string[] } }
+  | {
+      success: true;
+      data: { highlightExcerpts?: HighlightExcerpt[]; cacheMissUrls: string[] };
+    }
   | { success: false; error: string }
 >;
 
 export async function prepareHighlightExcerpts(
   highlights: PromptHighlight[],
-  fetchPageContext: FetchPageContextFn,
+  fetchPageContext: FetchPageContextFn
 ): Promise<PrepareExcerptsResult> {
   const pageCtxResult = await fetchPageContext(
-    highlights.map(h => ({ id: h.id, url: h.url, text: h.text })),
+    highlights.map((h) => ({ id: h.id, url: h.url, text: h.text }))
   );
 
-  const excerpts = pageCtxResult.success && pageCtxResult.data.highlightExcerpts?.length
-    ? pageCtxResult.data.highlightExcerpts
-    : buildFallbackExcerpts(highlights).excerpts;
+  const excerpts =
+    pageCtxResult.success && pageCtxResult.data.highlightExcerpts?.length
+      ? pageCtxResult.data.highlightExcerpts
+      : buildFallbackExcerpts(highlights).excerpts;
 
   let cacheNote: string | null = null;
   let errorNote: string | null = null;

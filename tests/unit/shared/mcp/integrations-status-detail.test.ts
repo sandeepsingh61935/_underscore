@@ -4,15 +4,15 @@ import { integrationsStatusDetail } from '@/shared/mcp/integrations-status';
 
 describe('integrationsStatusDetail', () => {
   it('tells a Ready user to add an AI app and approve when asked', () => {
-    expect(
-      integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 }),
-    ).toMatch(/add an ai app/i);
-    expect(
-      integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 }),
-    ).toMatch(/approve/i);
-    expect(
-      integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 }),
-    ).not.toMatch(/copied the snippet|get_session|jwt|bearer/i);
+    expect(integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 })).toMatch(
+      /add an ai app/i
+    );
+    expect(integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 })).toMatch(
+      /approve/i
+    );
+    expect(integrationsStatusDetail({ status: 'ready', oauthGrantCount: 0 })).not.toMatch(
+      /copied the snippet|get_session|jwt|bearer/i
+    );
   });
 
   it('names approved clients when Connected with grants', () => {
@@ -21,7 +21,7 @@ describe('integrationsStatusDetail', () => {
         status: 'connected',
         oauthGrantCount: 1,
         grantTitles: ['ChatGPT'],
-      }),
+      })
     ).toBe('ChatGPT');
   });
 

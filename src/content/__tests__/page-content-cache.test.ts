@@ -36,7 +36,11 @@ describe('PageContentCache', () => {
     activeCache = cache;
     cache.start();
     const firstCall = send.mock.calls[0];
-    const payload = (firstCall?.[0] as { payload: { text: string; truncated: boolean; originalLength: number } }).payload;
+    const payload = (
+      firstCall?.[0] as {
+        payload: { text: string; truncated: boolean; originalLength: number };
+      }
+    ).payload;
     expect(payload.truncated).toBe(true);
     expect(payload.text.length).toBe(MAX_BYTES);
     expect(payload.originalLength).toBe(longText.length);
@@ -47,12 +51,13 @@ describe('PageContentCache', () => {
     const cache = new PageContentCache(
       send,
       { debounceMs: 0, maxBytes: MAX_BYTES },
-      { title: 'Test Page', url: 'https://example.com/x' },
+      { title: 'Test Page', url: 'https://example.com/x' }
     );
     activeCache = cache;
     cache.start();
     const firstCall = send.mock.calls[0];
-    const payload = (firstCall?.[0] as { payload: { title: string; url: string } }).payload;
+    const payload = (firstCall?.[0] as { payload: { title: string; url: string } })
+      .payload;
     expect(payload.title).toBe('Test Page');
     expect(payload.url).toBe('https://example.com/x');
   });

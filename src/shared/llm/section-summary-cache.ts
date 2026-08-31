@@ -25,7 +25,7 @@ async function readStore(): Promise<CacheStore> {
   const store = result[CACHE_KEY] as CacheStore | undefined;
   if (!store?.entries) return { entries: [] };
   const cutoff = Date.now() - CACHE_TTL_MS;
-  return { entries: store.entries.filter(e => e.updatedAt >= cutoff) };
+  return { entries: store.entries.filter((e) => e.updatedAt >= cutoff) };
 }
 
 async function writeStore(store: CacheStore): Promise<void> {
@@ -36,11 +36,14 @@ async function writeStore(store: CacheStore): Promise<void> {
 export async function getCachedSectionSummary(
   domain: string,
   sectionKey: string,
-  highlightCount: number,
+  highlightCount: number
 ): Promise<string | null> {
   const store = await readStore();
   const entry = store.entries.find(
-    e => e.domain === domain && e.sectionKey === sectionKey && e.highlightCount === highlightCount,
+    (e) =>
+      e.domain === domain &&
+      e.sectionKey === sectionKey &&
+      e.highlightCount === highlightCount
   );
   return entry?.summary ?? null;
 }
@@ -49,11 +52,11 @@ export async function setCachedSectionSummary(
   domain: string,
   sectionKey: string,
   highlightCount: number,
-  summary: string,
+  summary: string
 ): Promise<void> {
   const store = await readStore();
   const key = cacheKey(domain, sectionKey);
-  const filtered = store.entries.filter(e => cacheKey(e.domain, e.sectionKey) !== key);
+  const filtered = store.entries.filter((e) => cacheKey(e.domain, e.sectionKey) !== key);
   filtered.push({
     domain,
     sectionKey,
@@ -65,9 +68,9 @@ export async function setCachedSectionSummary(
 }
 
 export function toSectionDigests(
-  items: Array<{ sectionKey: string; summary: string; highlightCount: number }>,
+  items: Array<{ sectionKey: string; summary: string; highlightCount: number }>
 ): SectionDigest[] {
-  return items.map(item => ({
+  return items.map((item) => ({
     sectionKey: item.sectionKey,
     summary: item.summary,
     highlightCount: item.highlightCount,

@@ -29,10 +29,7 @@ describe('useLLMStream', () => {
   });
 
   function wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(
-      LlmRuntimeProvider,
-      { runtime, children },
-    );
+    return React.createElement(LlmRuntimeProvider, { runtime, children });
   }
 
   it('accumulates chunks and flips status to done', async () => {

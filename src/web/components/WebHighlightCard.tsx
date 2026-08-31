@@ -56,7 +56,14 @@ function normalizeTagInput(raw: string): string {
 
 function PencilIco(): React.ReactElement {
   return (
-    <svg className="ico" width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <svg
+      className="ico"
+      width="11"
+      height="11"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M8.5 1.6 10.4 3.5 4 9.9 1.8 10.4l.5-2.2L8.5 1.6z"
         stroke="currentColor"
@@ -69,15 +76,34 @@ function PencilIco(): React.ReactElement {
 
 function PlusIco(): React.ReactElement {
   return (
-    <svg className="hl-tag-add-ico" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <svg
+      className="hl-tag-add-ico"
+      width="9"
+      height="9"
+      viewBox="0 0 10 10"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M5 1v8M1 5h8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 function TrashIco(): React.ReactElement {
   return (
-    <svg className="ico" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <svg
+      className="ico"
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
         stroke="currentColor"
@@ -109,7 +135,7 @@ export function WebHighlightCard({
   const [tagInput, setTagInput] = useState('');
   /** Local tag list so add/remove feels instant; synced from props when idle. */
   const [localTags, setLocalTags] = useState<string[]>(() =>
-    normalizeHighlightTags(h.tags),
+    normalizeHighlightTags(h.tags)
   );
   const [tagError, setTagError] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
@@ -232,7 +258,7 @@ export function WebHighlightCard({
         tagsBusyRef.current = false;
       }
     },
-    [h.id, onTagsChange],
+    [h.id, onTagsChange]
   );
 
   const addTag = useCallback(async () => {
@@ -271,11 +297,11 @@ export function WebHighlightCard({
       if (!onTagsChange || tagsBusyRef.current) return;
       const previous = localTags;
       const next = normalizeHighlightTags(
-        localTags.filter((t) => tagKey(t) !== tagKey(tag)),
+        localTags.filter((t) => tagKey(t) !== tagKey(tag))
       );
       await persistTags(next, previous);
     },
-    [localTags, onTagsChange, persistTags],
+    [localTags, onTagsChange, persistTags]
   );
 
   const startTagEdit = useCallback(
@@ -286,7 +312,7 @@ export function WebHighlightCard({
       setTagError(null);
       setTagEditing(true);
     },
-    [canEdit, onTagsChange],
+    [canEdit, onTagsChange]
   );
 
   const note = h.note.trim();
@@ -312,9 +338,9 @@ export function WebHighlightCard({
   const showEmptyNote = Boolean(canEdit && onNoteSave && !isRail);
   const showNoteBlock = Boolean(
     (noteEditing && canEdit && onNoteSave) ||
-      showEmptyNote ||
-      (canEdit && onNoteSave && note) ||
-      note,
+    showEmptyNote ||
+    (canEdit && onNoteSave && note) ||
+    note
   );
   const showTagsBlock = tags.length > 0 || showTagAdd || tagEditing;
   const showFoot = showTagsBlock || Boolean(tagError) || showNoteBlock;
@@ -337,9 +363,7 @@ export function WebHighlightCard({
             <div className="hl-meta">
               {showDomain ? <span className="src">{h.domain}</span> : null}
               {/* Rail shows domain only — path wastes a line and is in Library. */}
-              {!isRail && h.path ? (
-                <span className="hl-path">{h.path}</span>
-              ) : null}
+              {!isRail && h.path ? <span className="hl-path">{h.path}</span> : null}
               <span>{relativeTime(h.savedAt)}</span>
             </div>
           ) : null}
@@ -364,188 +388,188 @@ export function WebHighlightCard({
       </div>
 
       {showFoot ? (
-      <div className="hl-foot">
-        {showTagsBlock ? (
-        <div
-          className="hl-tags"
-          data-od-id={`hl-tags-${h.id}`}
-          ref={tagsRowRef}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {tags.map((t) => {
-            const active = activeSet.has(tagKey(t));
-            const slug = tagKey(t).replace(/[^a-z0-9]+/g, '-');
-            if (tagEditing && canEdit && onTagsChange) {
-              return (
-                <span
-                  key={t}
-                  className="hl-tag-chip"
-                  data-od-id={`hl-tag-chip-${h.id}-${slug}`}
-                >
-                  <span>{t}</span>
+        <div className="hl-foot">
+          {showTagsBlock ? (
+            <div
+              className="hl-tags"
+              data-od-id={`hl-tags-${h.id}`}
+              ref={tagsRowRef}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {tags.map((t) => {
+                const active = activeSet.has(tagKey(t));
+                const slug = tagKey(t).replace(/[^a-z0-9]+/g, '-');
+                if (tagEditing && canEdit && onTagsChange) {
+                  return (
+                    <span
+                      key={t}
+                      className="hl-tag-chip"
+                      data-od-id={`hl-tag-chip-${h.id}-${slug}`}
+                    >
+                      <span>{t}</span>
+                      <button
+                        type="button"
+                        className="hl-tag-rm"
+                        aria-label={`Remove tag ${t}`}
+                        disabled={savingTags}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void removeTag(t);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                }
+                return (
                   <button
+                    key={t}
                     type="button"
-                    className="hl-tag-rm"
-                    aria-label={`Remove tag ${t}`}
-                    disabled={savingTags}
+                    className={`hl-tag${active ? ' active' : ''}`}
+                    data-od-id={`hl-tag-${h.id}-${slug}`}
+                    aria-pressed={active}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      void removeTag(t);
+                      onToggleTagFilter?.(t);
                     }}
                   >
-                    ×
+                    {t}
+                  </button>
+                );
+              })}
+              {tagEditing && canEdit && onTagsChange ? (
+                <span className="hl-tag-edit" data-od-id={`hl-tag-edit-${h.id}`}>
+                  <input
+                    id={tagFieldId}
+                    ref={tagInputRef}
+                    className="hl-tag-input"
+                    placeholder="Add tag…"
+                    aria-label="New tag name"
+                    autoComplete="off"
+                    value={tagInput}
+                    disabled={savingTags}
+                    onChange={(e) => {
+                      setTagInput(e.target.value);
+                      if (tagError) setTagError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void addTag();
+                      }
+                      if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setTagEditing(false);
+                        setTagInput('');
+                        setTagError(null);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn sm"
+                    data-od-id={`hl-tag-addbtn-${h.id}`}
+                    disabled={savingTags}
+                    onMouseDown={(e) => {
+                      // Keep focus path stable; don't let document handlers steal the click.
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void addTag();
+                    }}
+                  >
+                    {savingTags ? 'Saving…' : 'Add'}
                   </button>
                 </span>
-              );
-            }
-            return (
-              <button
-                key={t}
-                type="button"
-                className={`hl-tag${active ? ' active' : ''}`}
-                data-od-id={`hl-tag-${h.id}-${slug}`}
-                aria-pressed={active}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleTagFilter?.(t);
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
-          {tagEditing && canEdit && onTagsChange ? (
-            <span className="hl-tag-edit" data-od-id={`hl-tag-edit-${h.id}`}>
-              <input
-                id={tagFieldId}
-                ref={tagInputRef}
-                className="hl-tag-input"
-                placeholder="Add tag…"
-                aria-label="New tag name"
-                autoComplete="off"
-                value={tagInput}
-                disabled={savingTags}
-                onChange={(e) => {
-                  setTagInput(e.target.value);
-                  if (tagError) setTagError(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+              ) : showTagAdd ? (
+                <button
+                  type="button"
+                  className="hl-tag-add"
+                  data-od-id={`hl-tag-add-${h.id}`}
+                  aria-label="Add tag"
+                  onMouseDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    void addTag();
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setTagEditing(false);
-                    setTagInput('');
-                    setTagError(null);
-                  }
+                  }}
+                  onClick={startTagEdit}
+                >
+                  <PlusIco />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {tagError ? (
+            <p className="hl-tag-error" data-od-id={`hl-tag-error-${h.id}`} role="alert">
+              {tagError}
+            </p>
+          ) : null}
+
+          {noteEditing && canEdit && onNoteSave ? (
+            <div className="hl-note-edit" data-od-id={`hl-note-edit-${h.id}`}>
+              <textarea
+                id={noteFieldId}
+                ref={noteRef}
+                className="hl-note-input"
+                rows={2}
+                placeholder="Add a note…"
+                aria-label="Note"
+                value={noteDraft}
+                disabled={savingNote}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') cancelNote();
                 }}
               />
-              <button
-                type="button"
-                className="btn sm"
-                data-od-id={`hl-tag-addbtn-${h.id}`}
-                disabled={savingTags}
-                onMouseDown={(e) => {
-                  // Keep focus path stable; don't let document handlers steal the click.
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void addTag();
-                }}
-              >
-                {savingTags ? 'Saving…' : 'Add'}
-              </button>
-            </span>
-          ) : showTagAdd ? (
+              <div className="hl-note-actions">
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  data-od-id={`hl-note-cancel-${h.id}`}
+                  disabled={savingNote}
+                  onClick={cancelNote}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn sm"
+                  data-od-id={`hl-note-save-${h.id}`}
+                  disabled={savingNote}
+                  onClick={() => void saveNote()}
+                >
+                  {savingNote ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : showEmptyNote || (canEdit && onNoteSave && note) ? (
             <button
               type="button"
-              className="hl-tag-add"
-              data-od-id={`hl-tag-add-${h.id}`}
-              aria-label="Add tag"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+              className={`hl-note-btn ${note ? 'has-note' : 'is-empty'}`}
+              data-action="edit-note"
+              data-od-id={`hl-note-${h.id}`}
+              onClick={() => {
+                setNoteDraft(h.note);
+                setNoteEditing(true);
               }}
-              onClick={startTagEdit}
             >
-              <PlusIco />
+              <PencilIco />
+              <span className="txt">{note || 'Add note'}</span>
             </button>
+          ) : note ? (
+            <div className="hl-note-btn has-note" data-od-id={`hl-note-${h.id}`}>
+              <PencilIco />
+              <span className="txt">{note}</span>
+            </div>
           ) : null}
         </div>
-        ) : null}
-        {tagError ? (
-          <p className="hl-tag-error" data-od-id={`hl-tag-error-${h.id}`} role="alert">
-            {tagError}
-          </p>
-        ) : null}
-
-        {noteEditing && canEdit && onNoteSave ? (
-          <div className="hl-note-edit" data-od-id={`hl-note-edit-${h.id}`}>
-            <textarea
-              id={noteFieldId}
-              ref={noteRef}
-              className="hl-note-input"
-              rows={2}
-              placeholder="Add a note…"
-              aria-label="Note"
-              value={noteDraft}
-              disabled={savingNote}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') cancelNote();
-              }}
-            />
-            <div className="hl-note-actions">
-              <button
-                type="button"
-                className="btn sm ghost"
-                data-od-id={`hl-note-cancel-${h.id}`}
-                disabled={savingNote}
-                onClick={cancelNote}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn sm"
-                data-od-id={`hl-note-save-${h.id}`}
-                disabled={savingNote}
-                onClick={() => void saveNote()}
-              >
-                {savingNote ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </div>
-        ) : showEmptyNote || (canEdit && onNoteSave && note) ? (
-          <button
-            type="button"
-            className={`hl-note-btn ${note ? 'has-note' : 'is-empty'}`}
-            data-action="edit-note"
-            data-od-id={`hl-note-${h.id}`}
-            onClick={() => {
-              setNoteDraft(h.note);
-              setNoteEditing(true);
-            }}
-          >
-            <PencilIco />
-            <span className="txt">{note || 'Add note'}</span>
-          </button>
-        ) : note ? (
-          <div className="hl-note-btn has-note" data-od-id={`hl-note-${h.id}`}>
-            <PencilIco />
-            <span className="txt">{note}</span>
-          </div>
-        ) : null}
-      </div>
       ) : null}
 
       {canDelete ? (

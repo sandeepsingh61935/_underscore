@@ -21,12 +21,14 @@ describe('llm proxy CORS', () => {
     });
     const headers = llmProxyCorsHeaders(req, allowed);
     expect(headers['access-control-allow-origin']).toBe(
-      'https://underscore-web.pages.dev',
+      'https://underscore-web.pages.dev'
     );
 
     const bad = new Request('https://evil.example/', {
       headers: { Origin: 'https://evil.example' },
     });
-    expect(llmProxyCorsHeaders(bad, allowed)['access-control-allow-origin']).toBeUndefined();
+    expect(
+      llmProxyCorsHeaders(bad, allowed)['access-control-allow-origin']
+    ).toBeUndefined();
   });
 });

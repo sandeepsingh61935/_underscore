@@ -46,9 +46,7 @@ export function resolveSettingsBillingCta(input: {
     return {
       kind: 'manage',
       title: 'Billing',
-      sub: cancelAtPeriodEnd
-        ? 'Cancels at period end'
-        : 'Invoices & payment',
+      sub: cancelAtPeriodEnd ? 'Cancels at period end' : 'Invoices & payment',
       ctaLabel: 'Manage',
       action: 'portal',
       showSync: false,

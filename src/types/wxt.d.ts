@@ -37,4 +37,4 @@ declare global {
   const defineBackground: typeof defineBackground;
 }
 
-export { };
+export {};

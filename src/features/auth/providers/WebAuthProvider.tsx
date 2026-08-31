@@ -1,3 +1,4 @@
+import type { Session } from '@supabase/supabase-js';
 import React, {
   createContext,
   useCallback,
@@ -6,10 +7,12 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import type { Session } from '@supabase/supabase-js';
 
 import type { User } from '@/background/auth/interfaces/i-auth-manager';
-import { clearExtensionSession, syncSessionToExtension } from '@/shared/auth/session-bridge';
+import {
+  clearExtensionSession,
+  syncSessionToExtension,
+} from '@/shared/auth/session-bridge';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
 
 export type WebAuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -92,17 +95,19 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
         refreshFromSession(null);
       });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
-      refreshFromSession(session);
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        refreshFromSession(session);
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await syncSessionToExtension(session);
-      }
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await syncSessionToExtension(session);
+        }
 
-      if (event === 'SIGNED_OUT') {
-        await clearExtensionSession();
+        if (event === 'SIGNED_OUT') {
+          await clearExtensionSession();
+        }
       }
-    });
+    );
 
     return () => {
       subscription.subscription.unsubscribe();
@@ -137,7 +142,7 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
       refreshFromSession,
       clearError,
     }),
-    [user, status, error, login, logout, refreshFromSession, clearError],
+    [user, status, error, login, logout, refreshFromSession, clearError]
   );
 
   return <WebAuthContext.Provider value={value}>{children}</WebAuthContext.Provider>;

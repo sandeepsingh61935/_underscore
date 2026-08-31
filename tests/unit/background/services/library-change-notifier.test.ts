@@ -28,11 +28,14 @@ describe('notifyLibraryDataChanged', () => {
   });
 
   it('defers broadcast until after the current task (IPC sendResponse can finish first)', async () => {
-    const { notifyLibraryDataChanged } = await import(
-      '@/background/services/library-change-notifier'
-    );
+    const { notifyLibraryDataChanged } =
+      await import('@/background/services/library-change-notifier');
 
-    notifyLibraryDataChanged({ source: 'delete', deletedCount: 2, removedIds: ['a', 'b'] });
+    notifyLibraryDataChanged({
+      source: 'delete',
+      deletedCount: 2,
+      removedIds: ['a', 'b'],
+    });
 
     expect(sendMessage).not.toHaveBeenCalled();
 
@@ -42,14 +45,13 @@ describe('notifyLibraryDataChanged', () => {
       expect.objectContaining({
         type: LIBRARY_DATA_CHANGED,
         payload: { source: 'delete', deletedCount: 2, removedIds: ['a', 'b'] },
-      }),
+      })
     );
   });
 
   it('includes timestamp so ChromeMessageBus MessageSchema accepts the broadcast', async () => {
-    const { notifyLibraryDataChanged } = await import(
-      '@/background/services/library-change-notifier'
-    );
+    const { notifyLibraryDataChanged } =
+      await import('@/background/services/library-change-notifier');
 
     notifyLibraryDataChanged({ source: 'highlight-bridge-update' });
     await Promise.resolve();

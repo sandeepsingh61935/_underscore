@@ -5,8 +5,7 @@
 
 export const BILLING_UPCOMING_TITLE = 'Billing';
 
-export const BILLING_UPCOMING_SUB =
-  'Upcoming — available in a few months.';
+export const BILLING_UPCOMING_SUB = 'Upcoming — available in a few months.';
 
 export type BillingUpcomingCopy = {
   title: string;

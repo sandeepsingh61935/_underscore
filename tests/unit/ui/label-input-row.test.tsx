@@ -24,7 +24,7 @@ describe('LabelInputRow', () => {
         draft="new-label"
         onAddLabel={onAddLabel}
         onDraftChange={onDraftChange}
-      />,
+      />
     );
 
     const input = screen.getByLabelText('Add tag');
@@ -37,22 +37,14 @@ describe('LabelInputRow', () => {
 
   it('picks a ghost suggestion inline', () => {
     const onAddLabel = vi.fn();
-    render(
-      <LabelInputRow
-        {...baseProps}
-        draft="bo"
-        onAddLabel={onAddLabel}
-      />,
-    );
+    render(<LabelInputRow {...baseProps} draft="bo" onAddLabel={onAddLabel} />);
 
     fireEvent.click(screen.getByText('+ book'));
     expect(onAddLabel).toHaveBeenCalledWith('book');
   });
 
   it('embedded variant has no own border chrome', () => {
-    const { container } = render(
-      <LabelInputRow {...baseProps} variant="embedded" />,
-    );
+    const { container } = render(<LabelInputRow {...baseProps} variant="embedded" />);
 
     const root = container.firstElementChild as HTMLElement;
     expect(root.getAttribute('data-variant')).toBe('embedded');

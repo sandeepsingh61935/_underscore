@@ -8,8 +8,8 @@ function isMessage(value: unknown): value is LLMMessage {
   if (!value || typeof value !== 'object') return false;
   const m = value as Record<string, unknown>;
   return (
-    (m['role'] === 'user' || m['role'] === 'assistant')
-    && typeof m['content'] === 'string'
+    (m['role'] === 'user' || m['role'] === 'assistant') &&
+    typeof m['content'] === 'string'
   );
 }
 
@@ -30,7 +30,10 @@ export function parseLlmRequest(value: unknown): LLMRequest | null {
   if (typeof v['temperature'] === 'number' && Number.isFinite(v['temperature'])) {
     request.temperature = v['temperature'];
   }
-  if (Array.isArray(v['stopSequences']) && v['stopSequences'].every((s) => typeof s === 'string')) {
+  if (
+    Array.isArray(v['stopSequences']) &&
+    v['stopSequences'].every((s) => typeof s === 'string')
+  ) {
     request.stopSequences = v['stopSequences'] as string[];
   }
   return request;

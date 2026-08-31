@@ -8,15 +8,15 @@
  * Reads come from the local cache only.
  */
 
-import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import { sendBackgroundIpcWithRetry } from '@/shared/messaging/send-background-ipc-with-retry';
 import type {
   IHighlightRepository,
   RepositoryOptions,
 } from '@/shared/repositories/i-highlight-repository';
+import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
 import { LoggerFactory } from '@/shared/utils/logger';
-import { sendBackgroundIpcWithRetry } from '@/shared/messaging/send-background-ipc-with-retry';
 
 export class LocalCacheIpcRepository implements IHighlightRepository {
   private readonly cache = new InMemoryHighlightRepository();
@@ -101,10 +101,13 @@ export class LocalCacheIpcRepository implements IHighlightRepository {
       {
         onExhausted: 'log',
         onLogExhausted: (error, attempts) => {
-          this.logger.warn(`IPC ${type} failed after retries (cache write already succeeded)`, {
-            error: error instanceof Error ? error.message : String(error),
-            attempts,
-          });
+          this.logger.warn(
+            `IPC ${type} failed after retries (cache write already succeeded)`,
+            {
+              error: error instanceof Error ? error.message : String(error),
+              attempts,
+            }
+          );
         },
       }
     );

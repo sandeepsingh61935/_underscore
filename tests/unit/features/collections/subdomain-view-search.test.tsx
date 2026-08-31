@@ -23,7 +23,8 @@ vi.mock('@/core/context/AppProvider', () => ({
 }));
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -112,18 +113,24 @@ describe('SubDomainView search wiring', () => {
       isAuthenticated: true,
       currentMode: 'pro',
     } as ReturnType<typeof useApp>);
-    vi.mocked(useHighlightSearch).mockReturnValue({ results: [], isLoading: false, error: null });
+    vi.mocked(useHighlightSearch).mockReturnValue({
+      results: [],
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('searches within the current section only, with no scope pill', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(vi.mocked(useHighlightSearch)).toHaveBeenCalledWith(
-      expect.objectContaining({ scope: { kind: 'section', domain: 'example.com', section: '/blog' } }),
+      expect.objectContaining({
+        scope: { kind: 'section', domain: 'example.com', section: '/blog' },
+      })
     );
     expect(screen.queryByText(/^in: /)).toBeNull();
     expect(screen.queryByRole('listbox')).toBeNull();
@@ -138,7 +145,7 @@ describe('SubDomainView search wiring', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -151,7 +158,7 @@ describe('SubDomainView search wiring', () => {
         expect.objectContaining({
           query: 'quote',
           scope: { kind: 'section', domain: 'example.com', section: '/blog' },
-        }),
+        })
       );
     });
   });
@@ -178,7 +185,7 @@ describe('SubDomainView search wiring', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -212,7 +219,7 @@ describe('SubDomainView search wiring', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     const input = screen.getByLabelText('Search');
@@ -231,7 +238,7 @@ describe('SubDomainView search wiring', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/blog" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.getByText('A highlighted quote')).toBeTruthy();

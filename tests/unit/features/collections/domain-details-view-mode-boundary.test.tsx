@@ -19,7 +19,8 @@ vi.mock('@/core/context/AppProvider', () => ({
 }));
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => vi.fn(),
@@ -115,7 +116,7 @@ describe('DomainDetailsView basic mode boundaries', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.getByTestId('export-menu-trigger')).toBeDisabled();
@@ -125,7 +126,7 @@ describe('DomainDetailsView basic mode boundaries', () => {
     render(
       <MemoryRouter>
         <DomainDetailsView domain="example.com" />
-      </MemoryRouter>,
+      </MemoryRouter>
     );
 
     expect(screen.queryByText('Synthesize this domain')).toBeNull();

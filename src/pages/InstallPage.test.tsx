@@ -8,7 +8,9 @@ vi.mock('@/core/context/AppProvider', () => ({
 }));
 
 vi.mock('@/shared/extension/extension-presence', async () => {
-  const actual = (await vi.importActual('@/shared/extension/extension-presence')) as Record<string, unknown>;
+  const actual = (await vi.importActual(
+    '@/shared/extension/extension-presence'
+  )) as Record<string, unknown>;
   return {
     ...actual,
     pingExtensionPresence: vi.fn(async () => ({ presence: 'missing' as const })),
@@ -25,7 +27,7 @@ function renderInstall(initial = '/install') {
         <Route path="/" element={<div data-od-id="welcome-stub">Welcome</div>} />
         <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 

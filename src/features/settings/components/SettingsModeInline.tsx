@@ -34,7 +34,10 @@ export function SettingsModeInline({
         title="Mode"
         sub="Guest · local only"
         right={
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+          <span
+            className="u-mono"
+            style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+          >
             Local
           </span>
         }
@@ -42,7 +45,8 @@ export function SettingsModeInline({
     );
   }
 
-  const freeActive = currentMode === 'pro' || (currentMode === 'pro_xai' && !isPaidActive);
+  const freeActive =
+    currentMode === 'pro' || (currentMode === 'pro_xai' && !isPaidActive);
   const paidActive = currentMode === 'pro_xai' && isPaidActive;
 
   return (
@@ -163,7 +167,9 @@ function ModeOption({
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <div
+          style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}
+        >
           <div
             style={{
               fontSize: 'var(--step-0)',

@@ -46,7 +46,7 @@ export function getExtensionSupabaseClient(): SupabaseClient {
   const { url, anonKey } = getSupabaseEnv();
   if (!url || !anonKey) {
     throw new Error(
-      'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for extension chat',
+      'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for extension chat'
     );
   }
 

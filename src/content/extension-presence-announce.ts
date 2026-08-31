@@ -12,7 +12,7 @@ export function announceExtensionPresence(version: string): void {
     const v = version.trim() || '1';
     document.documentElement.setAttribute(UNDERSCORE_EXT_ATTR, v);
     window.dispatchEvent(
-      new CustomEvent(UNDERSCORE_EXT_EVENT, { detail: { version: v } }),
+      new CustomEvent(UNDERSCORE_EXT_EVENT, { detail: { version: v } })
     );
   } catch {
     // Page may be locked down; detection falls back to runtime ping.
@@ -20,7 +20,7 @@ export function announceExtensionPresence(version: string): void {
 }
 
 export function readAnnouncedExtensionVersion(
-  root: ParentNode = document,
+  root: ParentNode = document
 ): string | null {
   try {
     const el =

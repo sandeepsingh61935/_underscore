@@ -1,10 +1,10 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
+import { resolveSafeReturnTo } from './safe-return-to';
+
 import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
 import { WelcomePage } from '@/pages/WelcomePage';
-
-import { resolveSafeReturnTo } from './safe-return-to';
 
 /**
  * `/` boot matrix (PRD 2026-08-30):

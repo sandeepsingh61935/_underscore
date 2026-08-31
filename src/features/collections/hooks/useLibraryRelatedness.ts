@@ -14,7 +14,7 @@ import {
 } from '@/shared/relatedness/to-relatedness-doc';
 
 export function useLibraryRelatednessService(
-  highlights: readonly RelatednessHighlightInput[],
+  highlights: readonly RelatednessHighlightInput[]
 ): RelatednessQueryService {
   return useMemo(() => {
     return new RelatednessQueryService(toRelatednessDocs(highlights));
@@ -23,7 +23,7 @@ export function useLibraryRelatednessService(
 
 export function useRelatedTags(
   service: RelatednessQueryService,
-  tagFilters: readonly string[],
+  tagFilters: readonly string[]
 ): RelatedTagResult[] {
   return useMemo(() => {
     if (tagFilters.length !== 1) return [];
@@ -35,7 +35,7 @@ export function useRelatedTags(
 
 export function useRelatedHighlights(
   service: RelatednessQueryService,
-  highlightId: string | null | undefined,
+  highlightId: string | null | undefined
 ): RelatedHighlightResult[] {
   return useMemo(() => {
     if (!highlightId) return [];

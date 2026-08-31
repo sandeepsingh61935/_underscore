@@ -9,15 +9,15 @@
  * @see docs/04-adrs/004-highlight-bridge-wiring.md
  */
 
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 import {
   normalizePageUrl,
   resolveHighlightPageUrl,
 } from '@/shared/utils/normalize-page-url';
-import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 
 export class BackgroundHighlightOrchestrator {
   constructor(
@@ -32,7 +32,10 @@ export class BackgroundHighlightOrchestrator {
     this.messageBus.subscribe('IPC_HIGHLIGHT_UPDATE', this.onUpdate.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHT_REMOVE', this.onRemove.bind(this));
     this.messageBus.subscribe('IPC_HIGHLIGHTS_FIND_BY_URL', this.onFindByUrl.bind(this));
-    this.messageBus.subscribe('IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH', this.onFindByContentHash.bind(this));
+    this.messageBus.subscribe(
+      'IPC_HIGHLIGHT_FIND_BY_CONTENT_HASH',
+      this.onFindByContentHash.bind(this)
+    );
     this.messageBus.subscribe('IPC_HIGHLIGHT_GET', this.onGetHighlight.bind(this));
   }
 
@@ -49,7 +52,7 @@ export class BackgroundHighlightOrchestrator {
    */
   private withTabPageUrl(
     highlight: HighlightDataV2,
-    sender?: chrome.runtime.MessageSender,
+    sender?: chrome.runtime.MessageSender
   ): HighlightDataV2 {
     const tabUrl = sender?.tab?.url;
     const resolved = resolveHighlightPageUrl({
@@ -68,10 +71,7 @@ export class BackgroundHighlightOrchestrator {
     return { ...highlight, url: resolved };
   }
 
-  private async onAdd(
-    highlight: HighlightDataV2,
-    sender?: chrome.runtime.MessageSender,
-  ) {
+  private async onAdd(highlight: HighlightDataV2, sender?: chrome.runtime.MessageSender) {
     const stamped = this.withTabPageUrl(highlight, sender);
     this.logger.info('[bridge] add', { id: stamped.id, url: stamped.url });
     try {
@@ -89,7 +89,7 @@ export class BackgroundHighlightOrchestrator {
 
   private async onAddMany(
     { highlights }: { highlights: HighlightDataV2[] },
-    sender?: chrome.runtime.MessageSender,
+    sender?: chrome.runtime.MessageSender
   ) {
     const stamped = highlights.map((h) => this.withTabPageUrl(h, sender));
     this.logger.info('[bridge] addMany', { count: stamped.length });
@@ -105,7 +105,13 @@ export class BackgroundHighlightOrchestrator {
     }
   }
 
-  private async onUpdate({ id, updates }: { id: string; updates: Partial<HighlightDataV2> }) {
+  private async onUpdate({
+    id,
+    updates,
+  }: {
+    id: string;
+    updates: Partial<HighlightDataV2>;
+  }) {
     this.logger.info('[bridge] update', { id });
     try {
       if (typeof updates.text === 'string' && !this.facade.get(id)) {
@@ -142,7 +148,7 @@ export class BackgroundHighlightOrchestrator {
       url: string;
       mode?: 'basic' | 'pro' | 'pro_xai';
     },
-    sender?: chrome.runtime.MessageSender,
+    sender?: chrome.runtime.MessageSender
   ) {
     const tabUrl = sender?.tab?.url;
     const resolved = resolveHighlightPageUrl({ contentUrl: url, tabUrl });

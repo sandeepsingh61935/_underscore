@@ -22,7 +22,7 @@ const MIN_JACCARD = 0.15;
 export function relatedTags(
   index: RelatednessIndex,
   tagName: string,
-  limit: number = DEFAULT_LIMIT,
+  limit: number = DEFAULT_LIMIT
 ): RelatedTagResult[] {
   const tag = tagName.trim().toLowerCase();
   if (!tag) return [];
@@ -57,6 +57,8 @@ export function relatedTags(
     ranked.push({ tag: other, cooccur: c, score: jaccard });
   }
 
-  ranked.sort((a, b) => b.score - a.score || b.cooccur - a.cooccur || a.tag.localeCompare(b.tag));
+  ranked.sort(
+    (a, b) => b.score - a.score || b.cooccur - a.cooccur || a.tag.localeCompare(b.tag)
+  );
   return ranked.slice(0, Math.max(0, limit));
 }

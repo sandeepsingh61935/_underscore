@@ -11,12 +11,12 @@
  */
 
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { MessageResponse } from '@/shared/schemas/message-schemas';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type {
   IWritableHighlightRepository,
   RepositoryOptions,
 } from '@/shared/repositories/i-highlight-repository';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { MessageResponse } from '@/shared/schemas/message-schemas';
 
 export class IpcHighlightRepository implements IWritableHighlightRepository {
   constructor(private readonly messageBus: IMessageBus) {}
@@ -29,7 +29,11 @@ export class IpcHighlightRepository implements IWritableHighlightRepository {
     });
   }
 
-  async update(id: string, updates: Partial<HighlightDataV2>, _options?: RepositoryOptions): Promise<void> {
+  async update(
+    id: string,
+    updates: Partial<HighlightDataV2>,
+    _options?: RepositoryOptions
+  ): Promise<void> {
     await this.messageBus.send<MessageResponse<void>>('background', {
       type: 'IPC_HIGHLIGHT_UPDATE',
       payload: { id, updates } as unknown as object,

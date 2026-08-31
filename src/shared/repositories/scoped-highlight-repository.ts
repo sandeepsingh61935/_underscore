@@ -1,4 +1,7 @@
-import type { IHighlightRepository, IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type {
+  IHighlightRepository,
+  IReadableHighlightRepository,
+} from '@/shared/repositories/i-highlight-repository';
 
 export type HighlightStorageScope = 'basic' | 'pro';
 
@@ -12,7 +15,7 @@ export class ScopedHighlightRepository implements IHighlightRepository {
   constructor(
     private readonly basicRepository: IHighlightRepository,
     private readonly proRepository: IHighlightRepository,
-    initialScope: HighlightStorageScope = 'basic',
+    initialScope: HighlightStorageScope = 'basic'
   ) {
     this.activeScope = initialScope;
   }
@@ -38,15 +41,25 @@ export class ScopedHighlightRepository implements IHighlightRepository {
     return this.activeScope === 'pro' ? this.proRepository : this.basicRepository;
   }
 
-  async add(highlight: Parameters<IHighlightRepository['add']>[0], options?: Parameters<IHighlightRepository['add']>[1]): Promise<void> {
+  async add(
+    highlight: Parameters<IHighlightRepository['add']>[0],
+    options?: Parameters<IHighlightRepository['add']>[1]
+  ): Promise<void> {
     await this.activeRepository().add(highlight, options);
   }
 
-  async update(id: string, updates: Parameters<IHighlightRepository['update']>[1], options?: Parameters<IHighlightRepository['update']>[2]): Promise<void> {
+  async update(
+    id: string,
+    updates: Parameters<IHighlightRepository['update']>[1],
+    options?: Parameters<IHighlightRepository['update']>[2]
+  ): Promise<void> {
     await this.activeRepository().update(id, updates, options);
   }
 
-  async remove(id: string, options?: Parameters<IHighlightRepository['remove']>[1]): Promise<void> {
+  async remove(
+    id: string,
+    options?: Parameters<IHighlightRepository['remove']>[1]
+  ): Promise<void> {
     await this.activeRepository().remove(id, options);
   }
 
@@ -54,11 +67,15 @@ export class ScopedHighlightRepository implements IHighlightRepository {
     await this.activeRepository().clear();
   }
 
-  async addMany(highlights: Parameters<IHighlightRepository['addMany']>[0]): Promise<void> {
+  async addMany(
+    highlights: Parameters<IHighlightRepository['addMany']>[0]
+  ): Promise<void> {
     await this.activeRepository().addMany(highlights);
   }
 
-  async findById(id: string): Promise<Awaited<ReturnType<IHighlightRepository['findById']>>> {
+  async findById(
+    id: string
+  ): Promise<Awaited<ReturnType<IHighlightRepository['findById']>>> {
     return this.activeRepository().findById(id);
   }
 
@@ -66,15 +83,21 @@ export class ScopedHighlightRepository implements IHighlightRepository {
     return this.activeRepository().findAll();
   }
 
-  async findByUrl(url: string): Promise<Awaited<ReturnType<IHighlightRepository['findByUrl']>>> {
+  async findByUrl(
+    url: string
+  ): Promise<Awaited<ReturnType<IHighlightRepository['findByUrl']>>> {
     return this.activeRepository().findByUrl(url);
   }
 
-  async findByContentHash(hash: string): Promise<Awaited<ReturnType<IHighlightRepository['findByContentHash']>>> {
+  async findByContentHash(
+    hash: string
+  ): Promise<Awaited<ReturnType<IHighlightRepository['findByContentHash']>>> {
     return this.activeRepository().findByContentHash(hash);
   }
 
-  async findOverlapping(range: Parameters<IHighlightRepository['findOverlapping']>[0]): Promise<Awaited<ReturnType<IHighlightRepository['findOverlapping']>>> {
+  async findOverlapping(
+    range: Parameters<IHighlightRepository['findOverlapping']>[0]
+  ): Promise<Awaited<ReturnType<IHighlightRepository['findOverlapping']>>> {
     return this.activeRepository().findOverlapping(range);
   }
 

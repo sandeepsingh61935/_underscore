@@ -33,7 +33,7 @@ export function ModelsProviderSetup({
   const [catalog, setCatalog] = useState(() => getProviderModels(provider));
   const [apiKey, setApiKey] = useState(existing?.apiKey ?? '');
   const [apiBase, setApiBase] = useState(
-    existing?.apiBase ?? (provider === 'ollama' ? 'http://localhost:11434' : ''),
+    existing?.apiBase ?? (provider === 'ollama' ? 'http://localhost:11434' : '')
   );
   const [model, setModel] = useState(existing?.model ?? getDefaultModelId(provider));
   const [busy, setBusy] = useState(false);
@@ -50,7 +50,7 @@ export function ModelsProviderSetup({
         apiKey: configured ? existing?.apiKey : undefined,
         apiBase: provider === 'ollama' ? apiBase : undefined,
       },
-      { fetchLive: fetchProviderModels },
+      { fetchLive: fetchProviderModels }
     ).then((presented) => {
       if (!cancelled && presented.models.length > 0) setCatalog(presented.models);
     });
@@ -195,7 +195,9 @@ export function ModelsProviderSetup({
           className="btn primary sm"
           disabled={!canConfigure || busy}
           data-od-id="provider-save-check"
-          onClick={() => { void saveAndCheck(); }}
+          onClick={() => {
+            void saveAndCheck();
+          }}
         >
           {busy ? 'Checking…' : 'Save & check'}
         </button>

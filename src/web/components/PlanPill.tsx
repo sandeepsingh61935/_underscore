@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { WebPlanLabel } from '@/web/caps/resolveWebCaps';
 
 export interface PlanPillProps {

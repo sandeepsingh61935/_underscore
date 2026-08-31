@@ -29,7 +29,7 @@ export class RelatednessQueryService {
 
   constructor(
     docs: readonly RelatednessDoc[] = [],
-    opts: RelatednessQueryServiceOptions = {},
+    opts: RelatednessQueryServiceOptions = {}
   ) {
     this.tagLimit = opts.tagLimit ?? 5;
     this.highlightLimit = opts.highlightLimit ?? 5;
@@ -57,7 +57,7 @@ export class RelatednessQueryService {
 
   relatedHighlights(
     highlightId: string,
-    limit = this.highlightLimit,
+    limit = this.highlightLimit
   ): RelatedHighlightResult[] {
     return relatedHighlights(this.index, highlightId, limit);
   }

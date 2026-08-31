@@ -46,8 +46,7 @@ const CLOUD_JSON = `{
 const CLOUD_TOML = `[mcp_servers.underscore]
 url = "{{MCP_URL}}"`;
 
-const STEP_RETURN =
-  'Return here — status becomes Connected after the agent finishes.';
+const STEP_RETURN = 'Return here — status becomes Connected after the agent finishes.';
 
 function stepsOpenApprove(where: string): readonly string[] {
   return [
@@ -84,8 +83,7 @@ export const MCP_AI_APPS: readonly McpAiAppDef[] = [
     sub: 'CLI · one command',
     handoff: 'copy_command',
     primaryLabel: 'Copy install command',
-    commandTemplate:
-      'claude mcp add --transport http underscore {{MCP_URL}}',
+    commandTemplate: 'claude mcp add --transport http underscore {{MCP_URL}}',
     steps: stepsCopyCommand('Claude Code'),
     configLabel: 'Project .mcp.json (or ~/.claude.json)',
     hint: 'Or add the remote URL in Project .mcp.json (or ~/.claude.json).',
@@ -135,9 +133,7 @@ export const MCP_AI_APPS: readonly McpAiAppDef[] = [
     sub: 'IDE · one-click install',
     handoff: 'deep_link',
     primaryLabel: 'Open in Cursor',
-    steps: stepsOpenApprove(
-      'Open Cursor with _underscore pre-filled (button below).',
-    ),
+    steps: stepsOpenApprove('Open Cursor with _underscore pre-filled (button below).'),
     configLabel: '~/.cursor/mcp.json',
     hint: 'If Cursor did not open, use Manual to copy the install link or config.',
     configTemplate: CLOUD_JSON,
@@ -202,7 +198,5 @@ export function getMcpAiApp(id: McpAiAppId): McpAiAppDef {
 }
 
 export function fillMcpConfigTemplate(template: string, url: string): string {
-  return template
-    .split('{{MCP_URL}}')
-    .join(url.trim() || 'https://YOUR-WORKER/mcp');
+  return template.split('{{MCP_URL}}').join(url.trim() || 'https://YOUR-WORKER/mcp');
 }

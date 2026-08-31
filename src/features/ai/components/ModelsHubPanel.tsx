@@ -20,7 +20,10 @@ export interface ModelsHubPanelProps {
   onChangeActiveModel: () => void;
 }
 
-function providerSubtitle(provider: ProviderName, snapshot: ProviderStatusSnapshot | undefined): string {
+function providerSubtitle(
+  provider: ProviderName,
+  snapshot: ProviderStatusSnapshot | undefined
+): string {
   const meta: ProviderMeta = PROVIDER_META[provider];
   if (provider === 'ollama') return snapshot?.configured ? 'Local' : 'Not connected';
   if (snapshot?.configured && snapshot.model) {
@@ -37,7 +40,9 @@ export function ModelsHubPanel({
   onChangeActiveModel,
 }: ModelsHubPanelProps): React.ReactElement {
   const hasActive = Boolean(activeProvider && activeModelId);
-  const activeLabel = activeModelId ? formatModelDisplayName(activeModelId) : 'None selected';
+  const activeLabel = activeModelId
+    ? formatModelDisplayName(activeModelId)
+    : 'None selected';
   const activeProviderLabel = activeProvider ? PROVIDER_META[activeProvider].label : null;
 
   return (
@@ -46,7 +51,10 @@ export function ModelsHubPanel({
       style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
     >
       <div style={{ padding: '12px 16px 10px' }}>
-        <div className="u-serif" style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}>
+        <div
+          className="u-serif"
+          style={{ fontSize: 'var(--step-2)', letterSpacing: '-0.02em' }}
+        >
           Models &amp; providers
         </div>
         <p
@@ -72,7 +80,9 @@ export function ModelsHubPanel({
           width: 'calc(100% - 24px)',
         }}
       >
-        <div className="u-kicker" style={{ fontSize: 'var(--step--2)' }}>Active</div>
+        <div className="u-kicker" style={{ fontSize: 'var(--step--2)' }}>
+          Active
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
           <StatusDot connected={hasActive} />
           <div style={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
@@ -89,12 +99,22 @@ export function ModelsHubPanel({
               {activeLabel}
             </div>
             {activeProviderLabel ? (
-              <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 2 }}>
+              <div
+                className="u-mono"
+                style={{
+                  fontSize: 'var(--step--2)',
+                  color: 'var(--ink-3)',
+                  marginTop: 2,
+                }}
+              >
                 {activeProviderLabel}
               </div>
             ) : null}
           </div>
-          <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', flexShrink: 0 }}>
+          <span
+            className="u-mono"
+            style={{ fontSize: 'var(--step--2)', color: 'var(--accent)', flexShrink: 0 }}
+          >
             Change
           </span>
         </div>
@@ -105,7 +125,7 @@ export function ModelsHubPanel({
       </div>
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0 }}>
-        {SETUP_PROVIDERS.map(provider => {
+        {SETUP_PROVIDERS.map((provider) => {
           const snapshot = statuses[provider];
           const configured = snapshot?.configured ?? null;
           const isActive = activeProvider === provider;
@@ -131,14 +151,30 @@ export function ModelsHubPanel({
             >
               <StatusDot connected={Boolean(configured)} pending={configured === null} />
               <div style={{ minWidth: 0, textAlign: 'left' }}>
-                <div style={{ fontSize: 'var(--step-0)', color: 'var(--ink)', fontWeight: 500 }}>
+                <div
+                  style={{
+                    fontSize: 'var(--step-0)',
+                    color: 'var(--ink)',
+                    fontWeight: 500,
+                  }}
+                >
                   {PROVIDER_META[provider].label}
                 </div>
-                <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 2 }}>
+                <div
+                  className="u-mono"
+                  style={{
+                    fontSize: 'var(--step--2)',
+                    color: 'var(--ink-3)',
+                    marginTop: 2,
+                  }}
+                >
                   {providerSubtitle(provider, snapshot)}
                 </div>
               </div>
-              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}>
+              <span
+                className="u-mono"
+                style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)' }}
+              >
                 {providerStatusLabel(provider, configured)}
               </span>
             </button>

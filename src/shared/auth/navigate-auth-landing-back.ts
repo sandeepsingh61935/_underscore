@@ -5,9 +5,7 @@
  * otherwise fall back to returnTo (if present) or /settings.
  */
 
-export type AuthLandingBackTarget =
-  | { kind: 'history' }
-  | { kind: 'path'; path: string };
+export type AuthLandingBackTarget = { kind: 'history' } | { kind: 'path'; path: string };
 
 export interface ResolveAuthLandingBackInput {
   /** Query param returnTo (may be relative or absolute same-app path). */
@@ -45,7 +43,7 @@ function readOrigin(): string {
  * Pure given inputs (defaults read from the browser when omitted).
  */
 export function resolveAuthLandingBack(
-  input: ResolveAuthLandingBackInput = {},
+  input: ResolveAuthLandingBackInput = {}
 ): AuthLandingBackTarget {
   const historyLength = input.historyLength ?? readHistoryLength();
   const referrer = input.referrer ?? readReferrer();
@@ -64,9 +62,7 @@ export function resolveAuthLandingBack(
 
   const returnTo = input.returnTo?.trim();
   if (returnTo) {
-    const path = input.resolveReturnTo
-      ? input.resolveReturnTo(returnTo)
-      : returnTo;
+    const path = input.resolveReturnTo ? input.resolveReturnTo(returnTo) : returnTo;
     return { kind: 'path', path };
   }
 

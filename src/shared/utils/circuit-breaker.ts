@@ -114,10 +114,10 @@ export class CircuitBreaker {
         if (this.config.isFailure(error)) {
           this.onFailure();
         } else {
-          // If not a failure, treat as success for circuit state? 
+          // If not a failure, treat as success for circuit state?
           // Usually we just ignore it (don't trip, but don't close if half-open?)
           // For simplicity, if it's not a failure, we do nothing to state.
-          // Or should we count it as success? 
+          // Or should we count it as success?
           // If a call fails with 400 Bad Request, the system is UP.
           // So it SHOULD count as success for Half-Open state.
           this.onSuccess();

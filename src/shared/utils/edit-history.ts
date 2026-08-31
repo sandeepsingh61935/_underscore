@@ -29,7 +29,7 @@ export function pushEditHistory(
   history: EditHistory,
   current: EditSnapshot,
   nextText: string,
-  maxDepth: number = DEFAULT_MAX_DEPTH,
+  maxDepth: number = DEFAULT_MAX_DEPTH
 ): EditHistory {
   if (current.text === nextText) {
     return history;
@@ -43,7 +43,7 @@ export function pushEditHistory(
 
 export function undoEdit(
   history: EditHistory,
-  current: EditSnapshot,
+  current: EditSnapshot
 ): { history: EditHistory; snapshot: EditSnapshot } | null {
   if (history.undo.length === 0) return null;
   const undo = history.undo.slice();
@@ -54,7 +54,7 @@ export function undoEdit(
 
 export function redoEdit(
   history: EditHistory,
-  current: EditSnapshot,
+  current: EditSnapshot
 ): { history: EditHistory; snapshot: EditSnapshot } | null {
   if (history.redo.length === 0) return null;
   const redo = history.redo.slice();

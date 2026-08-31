@@ -11,7 +11,7 @@ import type { SearchField } from '@/shared/utils/highlight-search';
 import type { RefineFilter } from '@/shared/utils/highlight-filter';
 
 function baseProps(
-  overrides: Partial<React.ComponentProps<typeof HighlightSearchBar>> = {},
+  overrides: Partial<React.ComponentProps<typeof HighlightSearchBar>> = {}
 ): React.ComponentProps<typeof HighlightSearchBar> {
   return {
     query: '',
@@ -102,7 +102,7 @@ describe('HighlightSearchBar', () => {
     fireEvent.click(filtersBtn);
     expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute(
       'aria-expanded',
-      'true',
+      'true'
     );
     expect(screen.getByLabelText('Fields')).toBeInTheDocument();
     expect(screen.getByLabelText('Status')).toBeInTheDocument();
@@ -143,7 +143,12 @@ describe('HighlightSearchBar', () => {
     render(<HighlightSearchBar {...props} />);
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
-    expect(props.onFieldsChange).toHaveBeenCalledWith(['text', 'notes', 'tags', 'domain']);
+    expect(props.onFieldsChange).toHaveBeenCalledWith([
+      'text',
+      'notes',
+      'tags',
+      'domain',
+    ]);
     expect(props.onRefineChange).toHaveBeenCalledWith([]);
     expect(props.onTagFiltersChange).toHaveBeenCalledWith([]);
   });
@@ -168,7 +173,7 @@ describe('HighlightSearchBar', () => {
 
   it('renders singular, plural, and zero result counts', () => {
     const { rerender } = render(
-      <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />,
+      <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />
     );
     expect(screen.getByText('1')).toBeInTheDocument();
 
@@ -183,7 +188,7 @@ describe('HighlightSearchBar', () => {
     render(
       <HighlightSearchBar
         {...baseProps({ query: '', resultCount: 5, refine: [], tagFilters: [] })}
-      />,
+      />
     );
     expect(screen.queryByText(/results?/)).not.toBeInTheDocument();
   });
@@ -192,7 +197,7 @@ describe('HighlightSearchBar', () => {
     render(
       <HighlightSearchBar
         {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })}
-      />,
+      />
     );
     expect(screen.getByText('0')).toBeInTheDocument();
   });

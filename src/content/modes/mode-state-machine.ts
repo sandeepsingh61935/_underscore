@@ -82,7 +82,7 @@ export class ModeStateMachine {
   async executeGuards(
     from: ModeType,
     to: ModeType,
-    ctx: TransitionGuardContext,
+    ctx: TransitionGuardContext
   ): Promise<boolean> {
     const rule = getTransitionRule(from, to);
 

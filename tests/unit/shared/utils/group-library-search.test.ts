@@ -8,12 +8,7 @@ import {
   matchSectionNames,
 } from '@/shared/utils/group-library-search';
 
-const hit = (
-  id: string,
-  domain: string,
-  path: string,
-  url?: string,
-) => ({
+const hit = (id: string, domain: string, path: string, url?: string) => ({
   id,
   domain,
   path,
@@ -25,9 +20,9 @@ const hit = (
 
 describe('matchDomainNames', () => {
   it('matches hostname substrings case-insensitively', () => {
-    expect(matchDomainNames(['example.com', 'docs.mozilla.org', 'other.io'], 'MOZ')).toEqual([
-      'docs.mozilla.org',
-    ]);
+    expect(
+      matchDomainNames(['example.com', 'docs.mozilla.org', 'other.io'], 'MOZ')
+    ).toEqual(['docs.mozilla.org']);
   });
 });
 
@@ -35,7 +30,7 @@ describe('matchSectionNames', () => {
   it('matches path and optional display title', () => {
     expect(matchSectionNames(['/docs/css', '/about'], 'css')).toEqual(['/docs/css']);
     expect(
-      matchSectionNames(['/a', '/b'], 'Cascade', (k) => (k === '/a' ? 'CSS Cascade' : k)),
+      matchSectionNames(['/a', '/b'], 'Cascade', (k) => (k === '/a' ? 'CSS Cascade' : k))
     ).toEqual(['/a']);
   });
 });
@@ -72,7 +67,9 @@ describe('groupSearchResultsByDomainAndSection', () => {
     });
     const sectionKeys = groups[0]!.sections.map((s) => s.sectionKey);
     expect(sectionKeys).toContain('/named');
-    expect(groups[0]!.sections.find((s) => s.sectionKey === '/named')!.nameMatched).toBe(true);
+    expect(groups[0]!.sections.find((s) => s.sectionKey === '/named')!.nameMatched).toBe(
+      true
+    );
   });
 });
 

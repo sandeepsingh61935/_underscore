@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 
 import { ModelsHubPanel } from '../components/ModelsHubPanel';
 import { ProviderDetailPanel } from '../components/ProviderDetailPanel';
+import { SETUP_PROVIDERS } from '../constants/provider-setup';
 import { useActiveLLMProvider } from '../hooks/useActiveLLMProvider';
 import { useAllProviderStatuses } from '../hooks/useAllProviderStatuses';
-import { SETUP_PROVIDERS } from '../constants/provider-setup';
+
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import type { ProviderName } from '@/shared/interfaces/i-llm-service';
 import { IPC_AI_SYNC_PREFS } from '@/shared/schemas/message-schemas';
@@ -16,7 +17,10 @@ interface APIKeySetupViewProps {
 
 type SetupScreen = 'hub' | 'provider';
 
-export function APIKeySetupView({ initialProvider, onClose: _onClose }: APIKeySetupViewProps): React.ReactElement {
+export function APIKeySetupView({
+  initialProvider,
+  onClose: _onClose,
+}: APIKeySetupViewProps): React.ReactElement {
   const active = useActiveLLMProvider();
   const { statuses, refresh: refreshStatuses } = useAllProviderStatuses(SETUP_PROVIDERS);
   const syncPrefs = useIpcAction<
@@ -47,7 +51,9 @@ export function APIKeySetupView({ initialProvider, onClose: _onClose }: APIKeySe
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional once on open
   }, []);
 
-  const activeModelId = active.provider ? statuses[active.provider]?.model ?? null : null;
+  const activeModelId = active.provider
+    ? (statuses[active.provider]?.model ?? null)
+    : null;
 
   const openProvider = (next: ProviderName): void => {
     setProvider(next);
@@ -68,9 +74,10 @@ export function APIKeySetupView({ initialProvider, onClose: _onClose }: APIKeySe
   };
 
   const handleChangeActiveModel = (): void => {
-    const target = active.provider && SETUP_PROVIDERS.includes(active.provider)
-      ? active.provider
-      : SETUP_PROVIDERS.find(p => statuses[p]?.configured) ?? 'anthropic';
+    const target =
+      active.provider && SETUP_PROVIDERS.includes(active.provider)
+        ? active.provider
+        : (SETUP_PROVIDERS.find((p) => statuses[p]?.configured) ?? 'anthropic');
     openProvider(target);
   };
 

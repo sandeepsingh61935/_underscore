@@ -83,7 +83,7 @@ describe('supabase-highlight-row', () => {
       serializeHighlightMetadataForCloud({
         notes: 'Key definition',
         tags: ['research'],
-      }),
+      })
     ).toEqual({ notes: 'Key definition', tags: ['research'] });
 
     expect(
@@ -91,7 +91,7 @@ describe('supabase-highlight-row', () => {
         sourceKind: 'code',
         language: 'js',
         presentation: { format: 'code', language: 'js' },
-      }),
+      })
     ).toEqual({
       sourceKind: 'code',
       language: 'js',
@@ -101,10 +101,10 @@ describe('supabase-highlight-row', () => {
 
   it('serializes timestamps from Date or ISO string', () => {
     expect(serializeTimestampForCloud(new Date('2024-01-01T00:00:00Z'))).toBe(
-      '2024-01-01T00:00:00.000Z',
+      '2024-01-01T00:00:00.000Z'
     );
     expect(serializeTimestampForCloud('2024-01-01T00:00:00.000Z')).toBe(
-      '2024-01-01T00:00:00.000Z',
+      '2024-01-01T00:00:00.000Z'
     );
   });
 });

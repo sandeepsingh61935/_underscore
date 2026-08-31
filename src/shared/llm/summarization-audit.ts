@@ -6,14 +6,14 @@
 import { buildHighlightExcerpts } from '@/shared/llm/highlight-excerpts';
 import { type PromptContext, type PromptHighlight } from '@/shared/llm/prompts';
 import {
+  computeDomainOutputTokens,
+  MAX_OUTPUT_TOKENS,
+} from '@/shared/llm/summarization-tokens';
+import {
   buildExcerptSummaryRequest,
   buildReduceDomainRequest,
   formatExcerptUserContent,
 } from '@/shared/llm/summary-request';
-import {
-  computeDomainOutputTokens,
-  MAX_OUTPUT_TOKENS,
-} from '@/shared/llm/summarization-tokens';
 import { getSectionKey } from '@/shared/utils/section-key';
 
 export interface AuditHighlight {
@@ -69,10 +69,10 @@ function simulateCourseraPageBody(seed: string, maxBytes: number): string {
   ].join('\n');
 
   const paragraph = (n: number) =>
-    `Module ${n}: This lecture introduces core concepts, definitions, and worked examples. `
-    + `Learners review prerequisites, watch video segments, and complete practice quizzes. `
-    + `Key terms include hypothesis testing, confidence intervals, and regression assumptions. `
-    + `The instructor emphasizes intuition before formulas and connects ideas to real datasets.`;
+    `Module ${n}: This lecture introduces core concepts, definitions, and worked examples. ` +
+    `Learners review prerequisites, watch video segments, and complete practice quizzes. ` +
+    `Key terms include hypothesis testing, confidence intervals, and regression assumptions. ` +
+    `The instructor emphasizes intuition before formulas and connects ideas to real datasets.`;
 
   let body = `${boilerplate}\n\n${seed}\n\n`;
   let i = 1;
@@ -85,7 +85,7 @@ function simulateCourseraPageBody(seed: string, maxBytes: number): string {
 
 export function defaultPageCacheSimulator(
   highlights: AuditHighlight[],
-  maxBytes = 100 * 1024,
+  maxBytes = 100 * 1024
 ): PageCacheSimulator {
   const byUrl = new Map<string, AuditHighlight[]>();
   for (const h of highlights) {
@@ -99,14 +99,16 @@ export function defaultPageCacheSimulator(
       const urlHighlights = byUrl.get(url);
       if (!urlHighlights) return null;
       const title = `Coursera | ${url.split('/').filter(Boolean).slice(-2).join(' / ') || 'Course'}`;
-      const seed = urlHighlights.map(h => h.text).join(' ');
+      const seed = urlHighlights.map((h) => h.text).join(' ');
       const full = simulateCourseraPageBody(seed, maxBytes);
       return { title, text: full, truncated: full.length >= maxBytes };
     },
   };
 }
 
-export function groupHighlightsBySection(highlights: AuditHighlight[]): Map<string, AuditHighlight[]> {
+export function groupHighlightsBySection(
+  highlights: AuditHighlight[]
+): Map<string, AuditHighlight[]> {
   const map = new Map<string, AuditHighlight[]>();
   for (const h of highlights) {
     const key = getSectionKey({ url: h.url, path: h.path });
@@ -118,7 +120,7 @@ export function groupHighlightsBySection(highlights: AuditHighlight[]): Map<stri
 }
 
 function toPromptHighlights(items: AuditHighlight[], title: string): PromptHighlight[] {
-  return items.map(h => ({
+  return items.map((h) => ({
     id: h.id,
     text: h.text,
     url: h.url,
@@ -129,18 +131,19 @@ function toPromptHighlights(items: AuditHighlight[], title: string): PromptHighl
 export function auditSectionSummarize(
   sectionKey: string,
   sectionHighlights: AuditHighlight[],
-  input: SummarizationAuditInput,
+  input: SummarizationAuditInput
 ): FlowAudit {
-  const pageCache = input.pageCache ?? defaultPageCacheSimulator(input.highlights, input.pageMaxBytes);
+  const pageCache =
+    input.pageCache ?? defaultPageCacheSimulator(input.highlights, input.pageMaxBytes);
   const promptHighlights = toPromptHighlights(sectionHighlights, sectionKey);
 
   const { excerpts, cacheMissUrls } = buildHighlightExcerpts(
-    promptHighlights.map(h => ({ id: h.id, url: h.url, text: h.text })),
+    promptHighlights.map((h) => ({ id: h.id, url: h.url, text: h.text })),
     (url) => {
       const cached = pageCache.get(url);
       if (!cached) return null;
       return { url, title: cached.title, text: cached.text, truncated: cached.truncated };
-    },
+    }
   );
 
   const ctx: PromptContext = {
@@ -163,30 +166,33 @@ export function auditSectionSummarize(
 
   if (hCount > 40 && maxOutput < MAX_OUTPUT_TOKENS) {
     issues.push(
-      `${hCount} highlights — output budget ${maxOutput} tokens may be tight; consider long length mode.`,
+      `${hCount} highlights — output budget ${maxOutput} tokens may be tight; consider long length mode.`
     );
   }
   if (cacheMissUrls.length > 0) {
     issues.push(
-      `${cacheMissUrls.length} URL(s) missing page cache — excerpt windows use highlight quotes only.`,
+      `${cacheMissUrls.length} URL(s) missing page cache — excerpt windows use highlight quotes only.`
     );
   }
   const totalExcerptChars = excerpts.reduce((sum, e) => sum + e.excerpt.length, 0);
   if (totalExcerptChars > 40_000) {
-    issues.push('Excerpt windows are very large — consider smaller radius or stricter page cache trimming.');
+    issues.push(
+      'Excerpt windows are very large — consider smaller radius or stricter page cache trimming.'
+    );
   }
 
   return {
     flow: 'section-summarize',
     scopeLabel: sectionKey,
     highlightCount: hCount,
-    uniqueUrlCount: new Set(sectionHighlights.map(h => h.url)).size,
+    uniqueUrlCount: new Set(sectionHighlights.map((h) => h.url)).size,
     systemPromptChars: systemPrompt.length,
     userMessageChars: userMessage.length,
     totalInputChars: systemPrompt.length + userMessage.length,
     estimatedInputTokens: estimateTokens(systemPrompt + userMessage),
     maxOutputTokens: maxOutput,
-    outputTokensPerHighlight: hCount > 0 ? Math.round((maxOutput / hCount) * 10) / 10 : maxOutput,
+    outputTokensPerHighlight:
+      hCount > 0 ? Math.round((maxOutput / hCount) * 10) / 10 : maxOutput,
     cacheMissUrlCount: cacheMissUrls.length,
     pageBodyChars: totalExcerptChars,
     numberedHighlightChars: excerptBlock.length,
@@ -196,9 +202,9 @@ export function auditSectionSummarize(
 
 export function auditDomainSynthesize(
   highlights: AuditHighlight[],
-  input: SummarizationAuditInput,
+  input: SummarizationAuditInput
 ): FlowAudit {
-  const uniqueUrls = new Set(highlights.map(h => h.url)).size;
+  const uniqueUrls = new Set(highlights.map((h) => h.url)).size;
   const bySection = groupHighlightsBySection(highlights);
   const sectionCount = bySection.size;
 
@@ -209,7 +215,11 @@ export function auditDomainSynthesize(
     highlightCount: items.length,
   }));
 
-  const request = buildReduceDomainRequest(input.domain, placeholderDigests, highlights.length);
+  const request = buildReduceDomainRequest(
+    input.domain,
+    placeholderDigests,
+    highlights.length
+  );
   const systemPrompt = request.systemPrompt;
   const userMessage = request.messages[0]?.content ?? '';
 
@@ -218,12 +228,12 @@ export function auditDomainSynthesize(
 
   if (hCount > 30) {
     issues.push(
-      `${hCount} highlights across ${sectionCount} sections — one batched excerpt call per section, then domain reduce.`,
+      `${hCount} highlights across ${sectionCount} sections — one batched excerpt call per section, then domain reduce.`
     );
   }
   if (maxOutput < hCount * 8) {
     issues.push(
-      `Only ${maxOutput} output tokens for ${hCount} highlights (~${Math.floor(maxOutput / hCount)} tokens each).`,
+      `Only ${maxOutput} output tokens for ${hCount} highlights (~${Math.floor(maxOutput / hCount)} tokens each).`
     );
   }
 
@@ -237,7 +247,8 @@ export function auditDomainSynthesize(
     totalInputChars: systemPrompt.length + userMessage.length,
     estimatedInputTokens: estimateTokens(systemPrompt + userMessage),
     maxOutputTokens: maxOutput,
-    outputTokensPerHighlight: hCount > 0 ? Math.round((maxOutput / hCount) * 10) / 10 : maxOutput,
+    outputTokensPerHighlight:
+      hCount > 0 ? Math.round((maxOutput / hCount) * 10) / 10 : maxOutput,
     cacheMissUrlCount: 0,
     pageBodyChars: 0,
     numberedHighlightChars: userMessage.length,
@@ -255,7 +266,7 @@ export function auditCourseraScale(input: SummarizationAuditInput): {
 } {
   const bySection = groupHighlightsBySection(input.highlights);
   const allSections = [...bySection.entries()].map(([key, items]) =>
-    auditSectionSummarize(key, items, input),
+    auditSectionSummarize(key, items, input)
   );
   allSections.sort((a, b) => b.highlightCount - a.highlightCount);
   const busiestSection = allSections[0] ?? auditSectionSummarize('/', [], input);

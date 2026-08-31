@@ -3,8 +3,8 @@
  * @description Cloud implementation of ITagRepository via Supabase tables.
  */
 
-import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { SupabaseClient } from '@/background/api/supabase-client';
+import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import type { TagEntity } from '@/shared/types/tag-entity';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
@@ -14,7 +14,7 @@ export class SupabaseTagRepository implements ITagRepository {
   constructor(
     private readonly supabaseClient: SupabaseClient,
     private readonly authManager: IAuthManager,
-    private readonly logger: ILogger,
+    private readonly logger: ILogger
   ) {}
 
   private getUserId(): string | null {
@@ -131,7 +131,8 @@ export class SupabaseTagRepository implements ITagRepository {
         .maybeSingle();
 
       if (raceError || !raced?.id) {
-        const err = insertError ?? raceError ?? new Error(`Failed to ensure tag: ${name}`);
+        const err =
+          insertError ?? raceError ?? new Error(`Failed to ensure tag: ${name}`);
         this.logger.error('[SupabaseTagRepo] insert tag failed', err as Error);
         throw err;
       }
@@ -163,6 +164,9 @@ export class SupabaseTagRepository implements ITagRepository {
       throw insertError;
     }
 
-    this.logger.debug('[SupabaseTagRepo] setHighlightLabels', { highlightId, count: normalized.length });
+    this.logger.debug('[SupabaseTagRepo] setHighlightLabels', {
+      highlightId,
+      count: normalized.length,
+    });
   }
 }

@@ -23,7 +23,13 @@ export interface TagPillProps {
   onPick?: () => void;
 }
 
-export function TagPill({ label, onRemove, readonly, ghost, onPick }: TagPillProps): React.ReactElement {
+export function TagPill({
+  label,
+  onRemove,
+  readonly,
+  ghost,
+  onPick,
+}: TagPillProps): React.ReactElement {
   const inner = (
     <span
       style={{
@@ -88,7 +94,13 @@ export function TagPill({ label, onRemove, readonly, ghost, onPick }: TagPillPro
       <button
         type="button"
         onClick={onPick}
-        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', display: 'inline-flex' }}
+        style={{
+          border: 'none',
+          background: 'transparent',
+          padding: 0,
+          cursor: 'pointer',
+          display: 'inline-flex',
+        }}
       >
         {inner}
       </button>

@@ -14,7 +14,7 @@ interface StreamingPort {
 export async function handleStreamChat(
   port: StreamingPort,
   provider: ILLMService,
-  request: LLMRequest,
+  request: LLMRequest
 ): Promise<void> {
   const controller = new AbortController();
   let disconnected = false;
@@ -35,6 +35,6 @@ export async function handleStreamChat(
         controller.abort();
       }
     },
-    controller.signal,
+    controller.signal
   );
 }

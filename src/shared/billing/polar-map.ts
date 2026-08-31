@@ -94,9 +94,7 @@ export function extractPolarEntitlementSource(event: {
   if (type === 'customer.state_changed' || type === 'customer.updated') {
     const customer = data;
     const externalId =
-      typeof customer['external_id'] === 'string'
-        ? customer['external_id']
-        : null;
+      typeof customer['external_id'] === 'string' ? customer['external_id'] : null;
     const activeSubs = Array.isArray(customer['active_subscriptions'])
       ? (customer['active_subscriptions'] as Record<string, unknown>[])
       : [];
@@ -109,10 +107,8 @@ export function extractPolarEntitlementSource(event: {
         return {
           userId: externalId,
           polarStatus: String(sub['status'] ?? 'active'),
-          polarCustomerId:
-            typeof customer['id'] === 'string' ? customer['id'] : null,
-          polarSubscriptionId:
-            typeof sub['id'] === 'string' ? sub['id'] : null,
+          polarCustomerId: typeof customer['id'] === 'string' ? customer['id'] : null,
+          polarSubscriptionId: typeof sub['id'] === 'string' ? sub['id'] : null,
           currentPeriodEnd:
             typeof sub['current_period_end'] === 'string'
               ? sub['current_period_end']
@@ -126,8 +122,7 @@ export function extractPolarEntitlementSource(event: {
       return {
         userId: externalId,
         polarStatus: 'canceled',
-        polarCustomerId:
-          typeof customer['id'] === 'string' ? customer['id'] : null,
+        polarCustomerId: typeof customer['id'] === 'string' ? customer['id'] : null,
         polarSubscriptionId: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
@@ -138,9 +133,7 @@ export function extractPolarEntitlementSource(event: {
   return null;
 }
 
-function parseSubscriptionLike(
-  data: Record<string, unknown>
-): {
+function parseSubscriptionLike(data: Record<string, unknown>): {
   userId: string;
   polarStatus: string;
   polarCustomerId: string | null;
@@ -173,9 +166,7 @@ function parseSubscriptionLike(
     polarCustomerId,
     polarSubscriptionId: typeof data['id'] === 'string' ? data['id'] : null,
     currentPeriodEnd:
-      typeof data['current_period_end'] === 'string'
-        ? data['current_period_end']
-        : null,
+      typeof data['current_period_end'] === 'string' ? data['current_period_end'] : null,
     cancelAtPeriodEnd: Boolean(data['cancel_at_period_end']),
   };
 }

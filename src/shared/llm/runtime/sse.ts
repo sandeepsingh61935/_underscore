@@ -2,8 +2,9 @@
  * SSE encode/decode for normalized LLM stream events (ADR-027).
  */
 
-import type { LLMResult } from '@/shared/interfaces/i-llm-service';
 import type { LlmStreamEvent } from './stream-protocol';
+
+import type { LLMResult } from '@/shared/interfaces/i-llm-service';
 
 const EVENT_NAME: Record<LlmStreamEvent['type'], string> = {
   CHUNK: 'chunk',

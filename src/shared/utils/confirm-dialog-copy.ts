@@ -41,13 +41,10 @@ export function deleteDomainCopy(domain: string, count: number): ConfirmDialogCo
 export function deleteSectionCopy(
   domain: string,
   sectionPath: string,
-  count: number,
+  count: number
 ): ConfirmDialogCopy {
   const pathLabel = sectionPath === '/' ? domain : sectionPath;
-  const names =
-    sectionPath === '/'
-      ? [domain]
-      : [sectionPath, domain];
+  const names = sectionPath === '/' ? [domain] : [sectionPath, domain];
   return {
     severity: 'danger',
     title: 'Delete this section?',
@@ -91,8 +88,7 @@ export function deleteLibraryCopy(isSignedIn: boolean): ConfirmDialogCopy {
   return {
     severity: 'danger',
     title: 'Delete entire library?',
-    message:
-      'This permanently removes all highlights stored on this device as a guest.',
+    message: 'This permanently removes all highlights stored on this device as a guest.',
     note: DANGER_NOTE,
     cancelLabel: 'Cancel',
     confirmLabel: 'Delete permanently',

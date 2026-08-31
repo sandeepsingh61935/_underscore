@@ -12,7 +12,9 @@ export interface SectionValueColumnsProps {
   values: string[];
 }
 
-export function SectionValueColumns({ values }: SectionValueColumnsProps): React.ReactElement {
+export function SectionValueColumns({
+  values,
+}: SectionValueColumnsProps): React.ReactElement {
   return (
     <div
       style={{
@@ -130,7 +132,9 @@ export function EditableControlRow({
             <WheelPicker
               items={wheelItems}
               selectedIndex={selectedIndex}
-              onSelectIndex={(index) => onChange(indexToTypographyValue(index, valueKind))}
+              onSelectIndex={(index) =>
+                onChange(indexToTypographyValue(index, valueKind))
+              }
               renderItem={monoWheelLabel}
               compact
               aria-label={`${label} value. Click to arm, then scroll or use arrow keys.`}
@@ -139,7 +143,9 @@ export function EditableControlRow({
         ) : (
           <input
             value={value}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value)
+            }
             className="u-mono"
             aria-label={label}
             style={{
@@ -209,7 +215,11 @@ export function CollapsibleSection({
         >
           ›
         </span>
-        <span style={{ fontSize: 'var(--step--1)', fontWeight: 500, color: 'var(--ink)' }}>{title}</span>
+        <span
+          style={{ fontSize: 'var(--step--1)', fontWeight: 500, color: 'var(--ink)' }}
+        >
+          {title}
+        </span>
         {trailing}
       </button>
       {open ? (

@@ -14,10 +14,9 @@
 
 import { useCallback } from 'react';
 
+import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { MessageResponse } from '@/shared/schemas/message-schemas';
-
-import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 
 /**
  * Result of an IPC action. Mirrors the bus's MessageResponse envelope so
@@ -32,7 +31,9 @@ export type ActionResult<T> =
  * Returns false in web app context or in tests.
  */
 export function hasChromeRuntime(): boolean {
-  return typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function';
+  return (
+    typeof chrome !== 'undefined' && typeof chrome.runtime?.sendMessage === 'function'
+  );
 }
 
 interface UseIpcActionOptions {
@@ -47,15 +48,24 @@ export function useIpcAction<TPayload = void, TResponse = unknown>(
   options: UseIpcActionOptions = {}
 ) {
   const busFromContext = useMessageBus();
-  const messageBus = options.messageBusOverride !== undefined ? options.messageBusOverride : busFromContext;
+  const messageBus =
+    options.messageBusOverride !== undefined
+      ? options.messageBusOverride
+      : busFromContext;
 
   return useCallback(
     async (payload: TPayload): Promise<ActionResult<TResponse>> => {
       if (!hasChromeRuntime()) {
-        return { success: false, error: 'Chrome extension runtime is unavailable in this context.' };
+        return {
+          success: false,
+          error: 'Chrome extension runtime is unavailable in this context.',
+        };
       }
       if (!messageBus) {
-        return { success: false, error: 'MessageBus not initialized. Wrap app in MessageBusProvider.' };
+        return {
+          success: false,
+          error: 'MessageBus not initialized. Wrap app in MessageBusProvider.',
+        };
       }
       try {
         const response = await messageBus.send<MessageResponse<TResponse>>('background', {
@@ -74,7 +84,10 @@ export function useIpcAction<TPayload = void, TResponse = unknown>(
           retryAfterMs: response?.retryAfterMs,
         };
       } catch (err) {
-        return { success: false, error: err instanceof Error ? err.message : String(err) };
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
     },
     [messageBus, messageType]

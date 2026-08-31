@@ -1,9 +1,13 @@
-import { MultiSelectorEngine, type MultiSelector } from './multi-selector-engine';
+import type { MultiSelectorEngine } from './multi-selector-engine';
+import { type MultiSelector } from './multi-selector-engine';
 
-import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { HighlightDataV2, TextQuoteSelector } from '@/shared/schemas/highlight-schema';
-import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { TextQuoteFinder } from '@/content/utils/text-quote-finder';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type {
+  HighlightDataV2,
+  TextQuoteSelector,
+} from '@/shared/schemas/highlight-schema';
 import { getCapturePageUrl, normalizePageUrl } from '@/shared/utils/normalize-page-url';
 
 /**
@@ -44,7 +48,6 @@ export class CloudModeService {
     this.logger = logger;
   }
 
-
   /**
    * Save a highlight via the facade
    *
@@ -60,10 +63,7 @@ export class CloudModeService {
    *
    * @throws Error if highlight cannot be saved
    */
-  async saveHighlight(
-    highlight: HighlightDataV2,
-    _range: Range
-  ): Promise<void> {
+  async saveHighlight(highlight: HighlightDataV2, _range: Range): Promise<void> {
     try {
       // Store using repository pattern (local, cloud, or dual-write)
       // Note: We embed a W3C TextQuoteSelector directly into the highlight
@@ -99,8 +99,7 @@ export class CloudModeService {
 
       // Library / restore-by-url require url; never persist without it.
       if (!payload.url) {
-        payload.url =
-          typeof window !== 'undefined' ? getCapturePageUrl() : '';
+        payload.url = typeof window !== 'undefined' ? getCapturePageUrl() : '';
       }
 
       // Activity sort (library Recent / sections) uses updatedAt when present.
@@ -124,7 +123,6 @@ export class CloudModeService {
       throw error;
     }
   }
-
 
   /**
    * Restore highlights for the current URL
@@ -154,7 +152,9 @@ export class CloudModeService {
         .getAll()
         .filter((h) => h.url && normalizePageUrl(h.url) === url);
 
-      this.logger.info(`[VAULT] [HIT] Found ${highlights.length} highlights from repository`);
+      this.logger.info(
+        `[VAULT] [HIT] Found ${highlights.length} highlights from repository`
+      );
 
       // Restore Ranges — tolerate missing/legacy shapes so one bad row
       // cannot abort the whole page restore (ranges undefined → [0] crash).
@@ -222,7 +222,7 @@ export class CloudModeService {
   /**
    * Restore a single highlight (Public API)
    * Useful for real-time sync / instant rendering
-   * 
+   *
    * @param highlight - Highlight to restore
    * @returns Restoration result with range and tier used
    */
@@ -235,7 +235,7 @@ export class CloudModeService {
         id: highlight.id,
         hasRanges: !!highlight.ranges,
         rangesType: typeof highlight.ranges,
-        rangesIsArray: Array.isArray(highlight.ranges)
+        rangesIsArray: Array.isArray(highlight.ranges),
       });
 
       const selector = this.extractSelector(highlight);
@@ -272,7 +272,9 @@ export class CloudModeService {
    * @param selectors - The serialized selector carried in the highlight range
    * @returns Restored Range or null
    */
-  private async restoreHighlightRange(selectors: HighlightSelector): Promise<Range | null> {
+  private async restoreHighlightRange(
+    selectors: HighlightSelector
+  ): Promise<Range | null> {
     try {
       if (this.isTextQuoteSelector(selectors)) {
         return this.quoteFinder.find(selectors);
@@ -397,7 +399,7 @@ export class CloudModeService {
       eventCount: 0,
       collectionCount: 0,
       tagCount: 0,
-      unsyncedCount: 0
+      unsyncedCount: 0,
     };
   }
 
@@ -406,7 +408,9 @@ export class CloudModeService {
    * @deprecated Sync is now handled automatically by DualWriteRepository
    */
   async syncToServer(): Promise<string[]> {
-    this.logger.info('[VAULT] Manual sync requested - handled by repository automatically');
+    this.logger.info(
+      '[VAULT] Manual sync requested - handled by repository automatically'
+    );
     return [];
   }
 

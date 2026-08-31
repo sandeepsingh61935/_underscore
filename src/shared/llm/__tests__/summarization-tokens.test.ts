@@ -19,8 +19,12 @@ describe('summarization-tokens', () => {
   });
 
   it('respects length preference', () => {
-    expect(computeSectionOutputTokens(11, 'short')).toBeLessThan(computeSectionOutputTokens(11, 'medium'));
-    expect(computeSectionOutputTokens(11, 'long')).toBeGreaterThan(computeSectionOutputTokens(11, 'medium'));
+    expect(computeSectionOutputTokens(11, 'short')).toBeLessThan(
+      computeSectionOutputTokens(11, 'medium')
+    );
+    expect(computeSectionOutputTokens(11, 'long')).toBeGreaterThan(
+      computeSectionOutputTokens(11, 'medium')
+    );
   });
 
   it('caps at 16384 for very large jobs', () => {

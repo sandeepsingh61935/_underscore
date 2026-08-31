@@ -26,18 +26,20 @@ describe('DeleteConfirmDialog', () => {
         confirmLabel={copy.confirmLabel}
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(copy.title)).toBeInTheDocument();
     expect(screen.getByTestId('confirm-dialog-message').textContent).toContain(
-      'news.ycombinator.com',
+      'news.ycombinator.com'
     );
-    expect(screen.getByTestId('confirm-dialog-message').querySelector('strong')?.textContent).toBe(
-      'news.ycombinator.com',
+    expect(
+      screen.getByTestId('confirm-dialog-message').querySelector('strong')?.textContent
+    ).toBe('news.ycombinator.com');
+    expect(screen.getByTestId('confirm-dialog-note').textContent).toMatch(
+      /cannot be undone/i
     );
-    expect(screen.getByTestId('confirm-dialog-note').textContent).toMatch(/cannot be undone/i);
   });
 
   it('Cancel is safe — does not call onConfirm', () => {
@@ -50,7 +52,7 @@ describe('DeleteConfirmDialog', () => {
         message="Gone forever."
         onClose={onClose}
         onConfirm={onConfirm}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByTestId('confirm-dialog-cancel'));
@@ -70,7 +72,7 @@ describe('DeleteConfirmDialog', () => {
         onClose={onClose}
         onConfirm={onConfirm}
         isConfirming
-      />,
+      />
     );
 
     const cancel = screen.getByTestId('confirm-dialog-cancel');
@@ -96,15 +98,12 @@ describe('DeleteConfirmDialog', () => {
         onClose={() => {}}
         onConfirm={onConfirm}
         isConfirming
-      />,
+      />
     );
 
     const confirm = screen.getByTestId('confirm-dialog-confirm');
     // forceEvent: bypass disabled so handler guard is exercised
-    fireEvent(
-      confirm,
-      new MouseEvent('click', { bubbles: true, cancelable: true }),
-    );
+    fireEvent(confirm, new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
@@ -118,7 +117,7 @@ describe('DeleteConfirmDialog', () => {
         note={guest.note}
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
     expect(screen.getByTestId('confirm-dialog-message').textContent).toMatch(/guest/i);
 
@@ -131,10 +130,12 @@ describe('DeleteConfirmDialog', () => {
         note={signedIn.note}
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
     expect(screen.getByTestId('confirm-dialog-message').textContent).toMatch(/cloud/i);
-    expect(screen.getByTestId('confirm-dialog-message').textContent).not.toMatch(/guest/i);
+    expect(screen.getByTestId('confirm-dialog-message').textContent).not.toMatch(
+      /guest/i
+    );
   });
 
   it('confirmText challenge disables confirm until exact match', () => {
@@ -147,7 +148,7 @@ describe('DeleteConfirmDialog', () => {
         confirmText="DELETE"
         onClose={() => {}}
         onConfirm={onConfirm}
-      />,
+      />
     );
 
     const confirm = screen.getByTestId('confirm-dialog-confirm');
@@ -172,7 +173,7 @@ describe('DeleteConfirmDialog', () => {
         message="Bulk"
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
     expect(screen.queryByTestId('confirm-dialog-export')).toBeNull();
 
@@ -184,9 +185,11 @@ describe('DeleteConfirmDialog', () => {
         onClose={() => {}}
         onConfirm={() => {}}
         exportFooter={<button type="button">MD</button>}
-      />,
+      />
     );
-    expect(screen.getByTestId('confirm-dialog-export').textContent).toMatch(/Export first/i);
+    expect(screen.getByTestId('confirm-dialog-export').textContent).toMatch(
+      /Export first/i
+    );
     expect(screen.getByRole('button', { name: 'MD' })).toBeInTheDocument();
   });
 
@@ -201,11 +204,11 @@ describe('DeleteConfirmDialog', () => {
         confirmLabel={danger.confirmLabel}
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
     expect(screen.getByTestId('confirm-dialog-confirm')).toHaveAttribute(
       'data-severity',
-      'danger',
+      'danger'
     );
 
     const caution = signOutCopy();
@@ -220,13 +223,15 @@ describe('DeleteConfirmDialog', () => {
         confirmLabel={caution.confirmLabel}
         onClose={() => {}}
         onConfirm={() => {}}
-      />,
+      />
     );
     expect(screen.getByTestId('confirm-dialog-confirm')).toHaveAttribute(
       'data-severity',
-      'caution',
+      'caution'
     );
-    expect(screen.getByTestId('confirm-dialog-cancel').textContent).toBe('Stay signed in');
+    expect(screen.getByTestId('confirm-dialog-cancel').textContent).toBe(
+      'Stay signed in'
+    );
     expect(screen.getByTestId('confirm-dialog-confirm').textContent).toBe('Sign out');
     expect(screen.getByTestId('confirm-dialog-note').textContent).toMatch(/stay/i);
   });

@@ -13,7 +13,7 @@ export function highlightActivityMs(input: {
 /** Newest activity first. */
 export function compareByHighlightActivityDesc(
   a: { updatedAt?: Date | string | null; createdAt: Date | string },
-  b: { updatedAt?: Date | string | null; createdAt: Date | string },
+  b: { updatedAt?: Date | string | null; createdAt: Date | string }
 ): number {
   return highlightActivityMs(b) - highlightActivityMs(a);
 }

@@ -4,8 +4,9 @@
  * Non-stream chat stays on sendLlmChat / IPC (extension), not this port.
  */
 
-import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import type { LlmStreamEvent } from './stream-protocol';
+
+import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 
 export interface LlmStreamArgs {
   request: LLMRequest;
@@ -20,6 +21,6 @@ export interface ILlmRuntime {
   streamChat(
     args: LlmStreamArgs,
     onEvent: (event: LlmStreamEvent) => void,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<void>;
 }

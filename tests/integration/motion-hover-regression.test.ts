@@ -15,7 +15,6 @@ const auditedFiles = [
   'src/ui-system/pages/DomainDetailsView.tsx',
 ];
 
-
 const bannedHoverHandlers = /\bonMouseEnter\b|\bonMouseLeave\b/;
 const bannedVisualMutation =
   /currentTarget\.style\.(boxShadow|transform|borderColor)|style\.(boxShadow|transform|borderColor)\s*=|boxShadow\s*=|transform\s*=|borderColor\s*=/;

@@ -12,33 +12,33 @@ import { describe, expect, it } from 'vitest';
 import { TrustSignal } from './TrustSignal';
 
 describe('TrustSignal (V2 wireframe contract)', () => {
-    it('renders the trust copy', () => {
-        const { container } = render(<TrustSignal />);
-        expect(container.textContent).toMatch(/Your highlights stay on your device/);
-    });
+  it('renders the trust copy', () => {
+    const { container } = render(<TrustSignal />);
+    expect(container.textContent).toMatch(/Your highlights stay on your device/);
+  });
 
-    it('renders the lock icon SVG', () => {
-        const { container } = render(<TrustSignal />);
-        const svg = container.querySelector('svg');
-        expect(svg).not.toBeNull();
-        expect(svg?.getAttribute('stroke')).toBe('var( --ink-3 )');
-        expect(svg?.getAttribute('stroke-width')).toBe('1.6');
-    });
+  it('renders the lock icon SVG', () => {
+    const { container } = render(<TrustSignal />);
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute('stroke')).toBe('var( --ink-3 )');
+    expect(svg?.getAttribute('stroke-width')).toBe('1.6');
+  });
 
-    it('uses inline-flex layout with 8px gap', () => {
-        const { container } = render(<TrustSignal />);
-        const root = container.firstElementChild as HTMLElement;
-        expect(root.style.display).toBe('inline-flex');
-        expect(root.style.gap).toBe('8px');
-    });
+  it('uses inline-flex layout with 8px gap', () => {
+    const { container } = render(<TrustSignal />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.display).toBe('inline-flex');
+    expect(root.style.gap).toBe('8px');
+  });
 
-    it('uses correct typography and color tokens', () => {
-        const { container } = render(<TrustSignal />);
-        const span = container.querySelector('span');
-        expect(span).not.toBeNull();
-        expect(span?.className).toContain('u-sans');
-        expect(span?.style.color).toBe('var( --ink-3 )');
-        expect(span?.style.fontSize).toBe('11px');
-        expect(span?.style.letterSpacing).toBe('0.02em');
-    });
+  it('uses correct typography and color tokens', () => {
+    const { container } = render(<TrustSignal />);
+    const span = container.querySelector('span');
+    expect(span).not.toBeNull();
+    expect(span?.className).toContain('u-sans');
+    expect(span?.style.color).toBe('var( --ink-3 )');
+    expect(span?.style.fontSize).toBe('11px');
+    expect(span?.style.letterSpacing).toBe('0.02em');
+  });
 });

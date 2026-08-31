@@ -8,9 +8,11 @@ import {
 } from '@/shared/schemas/message-schemas';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 
-function makeBus(
-  response: { success: boolean; data?: DeleteResult; error?: string },
-): IMessageBus {
+function makeBus(response: {
+  success: boolean;
+  data?: DeleteResult;
+  error?: string;
+}): IMessageBus {
   return {
     send: vi.fn().mockResolvedValue(response),
     subscribe: vi.fn(),

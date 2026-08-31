@@ -6,7 +6,10 @@
 import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import type { ITagLabelResolver } from '@/shared/services/i-tag-label-resolver';
 import type { TagEntity } from '@/shared/types/tag-entity';
-import { mergeHighlightLabels, normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
+import {
+  mergeHighlightLabels,
+  normalizeHighlightTags,
+} from '@/shared/utils/highlight-metadata';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class TagService implements ITagLabelResolver {
@@ -14,7 +17,7 @@ export class TagService implements ITagLabelResolver {
     private readonly localRepository: ITagRepository,
     private readonly cloudRepository: ITagRepository | null,
     private readonly isAuthenticated: () => boolean,
-    private readonly logger: ILogger,
+    private readonly logger: ILogger
   ) {}
 
   async listByUser(): Promise<TagEntity[]> {
@@ -46,7 +49,10 @@ export class TagService implements ITagLabelResolver {
   }
 
   /** Dual-read during migration: union junction labels with legacy metadata.tags. */
-  mergeWithMetadataFallback(junctionLabels?: string[], metadataTags?: string[]): string[] | undefined {
+  mergeWithMetadataFallback(
+    junctionLabels?: string[],
+    metadataTags?: string[]
+  ): string[] | undefined {
     return mergeHighlightLabels(junctionLabels, metadataTags);
   }
 }

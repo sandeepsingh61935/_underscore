@@ -4,9 +4,9 @@
  */
 
 export const Theme = {
-    LIGHT: 'light',
-    DARK: 'dark',
-    SYSTEM: 'system',
+  LIGHT: 'light',
+  DARK: 'dark',
+  SYSTEM: 'system',
 } as const;
 
 export type ThemeType = (typeof Theme)[keyof typeof Theme];
@@ -15,8 +15,5 @@ export type ThemeType = (typeof Theme)[keyof typeof Theme];
  * Type guard for ThemeType
  */
 export function isValidTheme(value: unknown): value is ThemeType {
-    return (
-        typeof value === 'string' &&
-        Object.values(Theme).includes(value as ThemeType)
-    );
+  return typeof value === 'string' && Object.values(Theme).includes(value as ThemeType);
 }

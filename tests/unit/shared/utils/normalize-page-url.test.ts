@@ -9,8 +9,7 @@ import {
 
 describe('normalizePageUrl', () => {
   it('treats same resource with utm params as equal to resource without them', () => {
-    const withUtm =
-      'https://example.com/article?id=1&utm_source=twitter&utm_campaign=x';
+    const withUtm = 'https://example.com/article?id=1&utm_source=twitter&utm_campaign=x';
     const clean = 'https://example.com/article?id=1';
 
     expect(normalizePageUrl(withUtm)).toBe(normalizePageUrl(clean));
@@ -29,8 +28,7 @@ describe('normalizePageUrl', () => {
   });
 
   it('strips click ids (gclid, fbclid)', () => {
-    const noisy =
-      'https://example.com/item?v=1&gclid=abc&fbclid=def';
+    const noisy = 'https://example.com/item?v=1&gclid=abc&fbclid=def';
     expect(normalizePageUrl(noisy)).toBe(
       normalizePageUrl('https://example.com/item?v=1')
     );
@@ -51,9 +49,9 @@ describe('normalizePageUrl', () => {
   });
 
   it('merges landing pages that only differ by tracking params', () => {
-    expect(
-      normalizePageUrl('https://example.com/landing?utm_source=ad')
-    ).toBe(normalizePageUrl('https://example.com/landing'));
+    expect(normalizePageUrl('https://example.com/landing?utm_source=ad')).toBe(
+      normalizePageUrl('https://example.com/landing')
+    );
   });
 
   it('returns invalid input without throwing', () => {
@@ -62,9 +60,9 @@ describe('normalizePageUrl', () => {
   });
 
   it('strips cache-buster param names', () => {
-    expect(
-      normalizePageUrl('https://example.com/p?id=1&_=123&cachebuster=9')
-    ).toBe(normalizePageUrl('https://example.com/p?id=1'));
+    expect(normalizePageUrl('https://example.com/p?id=1&_=123&cachebuster=9')).toBe(
+      normalizePageUrl('https://example.com/p?id=1')
+    );
   });
 });
 
@@ -76,16 +74,14 @@ describe('getSectionPath', () => {
   });
 
   it('drops tracking from section path', () => {
-    expect(
-      getSectionPath('https://example.com/transcript?v=AAA&utm_source=x')
-    ).toBe('/transcript?v=AAA');
+    expect(getSectionPath('https://example.com/transcript?v=AAA&utm_source=x')).toBe(
+      '/transcript?v=AAA'
+    );
   });
 
   it('returns pathname only when no meaningful search remains', () => {
     expect(getSectionPath('https://example.com/docs#top')).toBe('/docs');
-    expect(getSectionPath('https://example.com/landing?utm_source=x')).toBe(
-      '/landing'
-    );
+    expect(getSectionPath('https://example.com/landing?utm_source=x')).toBe('/landing');
   });
 
   it('splits different resource ids on the same path shell', () => {
@@ -114,9 +110,7 @@ describe('getCapturePageUrl', () => {
       'https://youtubetotranscript.com/transcript',
       'https://youtubetotranscript.com/transcript?v=0F8REGux8qs',
     ]);
-    expect(href).toBe(
-      'https://youtubetotranscript.com/transcript?v=0F8REGux8qs'
-    );
+    expect(href).toBe('https://youtubetotranscript.com/transcript?v=0F8REGux8qs');
     expect(getSectionPath(href)).toBe('/transcript?v=0F8REGux8qs');
   });
 

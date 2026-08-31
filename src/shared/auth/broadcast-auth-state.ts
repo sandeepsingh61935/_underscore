@@ -1,7 +1,7 @@
-import type { AuthState } from '@/background/auth/interfaces/i-auth-manager';
-
-import { AUTH_SESSION_CLEARED, AUTH_STATE_CHANGED } from './constants';
 import { toAuthStatePayload } from './auth-state-payload';
+import { AUTH_SESSION_CLEARED, AUTH_STATE_CHANGED } from './constants';
+
+import type { AuthState } from '@/background/auth/interfaces/i-auth-manager';
 
 function runtimeMessage(payload: Record<string, unknown>): void {
   if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {

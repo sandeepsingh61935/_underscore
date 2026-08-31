@@ -5,21 +5,21 @@
 
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
-import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { ILogger } from '@/shared/interfaces/i-logger';
-import { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import {
-  highlightTimestampMs,
-  isRemoteHighlightNewer,
-} from '@/shared/utils/supabase-highlight-row';
-import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type {
   CloudHydrationProgress,
   CloudHydrationResult,
   ICloudHydrationService,
 } from '@/background/services/interfaces/i-cloud-hydration-service';
+import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import {
+  highlightTimestampMs,
+  isRemoteHighlightNewer,
+} from '@/shared/utils/supabase-highlight-row';
 
 const LARGE_LIBRARY_WARN_THRESHOLD = 500;
 
@@ -59,7 +59,9 @@ export class CloudHydrationService implements ICloudHydrationService {
     };
   }
 
-  private async runHydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult> {
+  private async runHydrate(
+    onProgress?: CloudHydrationProgress
+  ): Promise<CloudHydrationResult> {
     const report = (percent: number, phase?: string): void => {
       onProgress?.(Math.min(100, Math.max(0, Math.round(percent))), phase);
     };
@@ -79,7 +81,10 @@ export class CloudHydrationService implements ICloudHydrationService {
       localHighlights = await this.highlightRepository.findAll();
     } catch (error) {
       const message = (error as Error).message;
-      this.logger.error('[CloudHydration] Failed to read local highlights', error as Error);
+      this.logger.error(
+        '[CloudHydration] Failed to read local highlights',
+        error as Error
+      );
       return { ...this.emptyResult(), error: message };
     }
 
@@ -138,7 +143,9 @@ export class CloudHydrationService implements ICloudHydrationService {
 
     for (const highlight of cloudHighlights) {
       if (!this.authManager.currentUser) {
-        this.logger.warn('[CloudHydration] Auth lost mid-hydration; aborting remaining backfill');
+        this.logger.warn(
+          '[CloudHydration] Auth lost mid-hydration; aborting remaining backfill'
+        );
         break;
       }
 
@@ -167,7 +174,9 @@ export class CloudHydrationService implements ICloudHydrationService {
           continue;
         }
 
-        await this.highlightRepository.update(highlight.id, highlight, { skipSync: true });
+        await this.highlightRepository.update(highlight.id, highlight, {
+          skipSync: true,
+        });
         localById.set(highlight.id, highlight);
         updatedCount++;
       } catch (error) {
@@ -191,7 +200,11 @@ export class CloudHydrationService implements ICloudHydrationService {
         deletedCount++;
       } catch (error) {
         failedCount++;
-        this.logger.error('[CloudHydration] Failed to remove deleted highlight', error as Error, { id });
+        this.logger.error(
+          '[CloudHydration] Failed to remove deleted highlight',
+          error as Error,
+          { id }
+        );
       }
       bump();
     }
@@ -202,7 +215,10 @@ export class CloudHydrationService implements ICloudHydrationService {
       await this.repositoryFacade.reload();
     } catch (error) {
       const message = (error as Error).message;
-      this.logger.error('[CloudHydration] Facade reload failed after backfill', error as Error);
+      this.logger.error(
+        '[CloudHydration] Facade reload failed after backfill',
+        error as Error
+      );
       return {
         localCountBefore,
         cloudCount: cloudHighlights.length,

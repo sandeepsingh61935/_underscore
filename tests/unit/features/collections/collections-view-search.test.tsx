@@ -46,7 +46,12 @@ import { useCollections } from '@/features/collections/hooks/useCollections';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 
 const sampleCollections = [
-  { id: '1', domain: 'example.com', highlightCount: 2, lastActive: new Date('2026-01-01') },
+  {
+    id: '1',
+    domain: 'example.com',
+    highlightCount: 2,
+    lastActive: new Date('2026-01-01'),
+  },
 ];
 
 describe('CollectionsView search wiring', () => {
@@ -57,7 +62,11 @@ describe('CollectionsView search wiring', () => {
       isLoading: false,
       error: null,
     });
-    vi.mocked(useHighlightSearch).mockReturnValue({ results: [], isLoading: false, error: null });
+    vi.mocked(useHighlightSearch).mockReturnValue({
+      results: [],
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('shows the domain list and runs no search when the query is empty', () => {
@@ -71,7 +80,7 @@ describe('CollectionsView search wiring', () => {
 
     expect(screen.getByText('example.com')).toBeTruthy();
     expect(vi.mocked(useHighlightSearch)).toHaveBeenCalledWith(
-      expect.objectContaining({ query: '', scope: { kind: 'library' } }),
+      expect.objectContaining({ query: '', scope: { kind: 'library' } })
     );
     // Single-scope root: the scope pill never renders here.
     expect(screen.queryByText(/^in: /)).toBeNull();
@@ -119,8 +128,18 @@ describe('CollectionsView search wiring', () => {
     });
     vi.mocked(useCollections).mockReturnValue({
       collections: [
-        { id: '1', domain: 'example.com', highlightCount: 2, lastActive: new Date('2026-01-01') },
-        { id: '2', domain: 'other.com', highlightCount: 1, lastActive: new Date('2026-01-02') },
+        {
+          id: '1',
+          domain: 'example.com',
+          highlightCount: 2,
+          lastActive: new Date('2026-01-01'),
+        },
+        {
+          id: '2',
+          domain: 'other.com',
+          highlightCount: 1,
+          lastActive: new Date('2026-01-02'),
+        },
       ],
       isLoading: false,
       error: null,
@@ -140,7 +159,9 @@ describe('CollectionsView search wiring', () => {
     // Hierarchical headers, not a flat list that drops domain context.
     expect(screen.getAllByTestId('search-domain-group')).toHaveLength(2);
     expect(screen.getAllByTestId('search-group-domain').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByTestId('search-section-group').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByTestId('search-section-group').length).toBeGreaterThanOrEqual(
+      2
+    );
     // notes-only match gets the field badge; pure text match does not.
     expect(screen.getByText('Notes')).toBeTruthy();
     expect(screen.getByTestId('highlight-match-badge').textContent).toBe('Notes');
@@ -152,7 +173,11 @@ describe('CollectionsView search wiring', () => {
       currentMode: 'pro',
       dataProvider: {} as ReturnType<typeof useApp>['dataProvider'],
     } as ReturnType<typeof useApp>);
-    vi.mocked(useHighlightSearch).mockReturnValue({ results: [], isLoading: false, error: null });
+    vi.mocked(useHighlightSearch).mockReturnValue({
+      results: [],
+      isLoading: false,
+      error: null,
+    });
 
     render(<CollectionsView isAuthenticated />);
 
@@ -165,7 +190,10 @@ describe('CollectionsView search wiring', () => {
     // Empty-state CTA text (shared product copy: Clear search).
     const emptyClear = screen
       .getAllByRole('button')
-      .find((el) => el.textContent?.trim() === 'Clear search' || el.textContent?.trim() === 'Clear');
+      .find(
+        (el) =>
+          el.textContent?.trim() === 'Clear search' || el.textContent?.trim() === 'Clear'
+      );
     expect(emptyClear).toBeTruthy();
   });
 
@@ -211,7 +239,7 @@ describe('CollectionsView search wiring', () => {
 
     await waitFor(() => {
       expect(vi.mocked(useHighlightSearch)).toHaveBeenLastCalledWith(
-        expect.objectContaining({ query: 'match' }),
+        expect.objectContaining({ query: 'match' })
       );
     });
 

@@ -11,17 +11,17 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
  * Contains complete highlight data for initial creation
  */
 export interface HighlightCreatedPayload {
-    /** Highlight entity ID */
-    readonly id: string;
+  /** Highlight entity ID */
+  readonly id: string;
 
-    /** Complete highlight data */
-    readonly data: HighlightDataV2;
+  /** Complete highlight data */
+  readonly data: HighlightDataV2;
 
-    /** URL where highlight was created */
-    readonly url: string;
+  /** URL where highlight was created */
+  readonly url: string;
 
-    /** Page title at creation time */
-    readonly pageTitle?: string;
+  /** Page title at creation time */
+  readonly pageTitle?: string;
 }
 
 /**
@@ -29,14 +29,14 @@ export interface HighlightCreatedPayload {
  * Contains only the fields that changed (partial update)
  */
 export interface HighlightUpdatedPayload {
-    /** Highlight entity ID */
-    readonly id: string;
+  /** Highlight entity ID */
+  readonly id: string;
 
-    /** Partial highlight data (only changed fields) */
-    readonly changes: Partial<HighlightDataV2>;
+  /** Partial highlight data (only changed fields) */
+  readonly changes: Partial<HighlightDataV2>;
 
-    /** Timestamp of previous version (for conflict detection) */
-    readonly previousVersion: number;
+  /** Timestamp of previous version (for conflict detection) */
+  readonly previousVersion: number;
 }
 
 /**
@@ -44,14 +44,14 @@ export interface HighlightUpdatedPayload {
  * Soft delete - keeps event in log but marks as deleted
  */
 export interface HighlightDeletedPayload {
-    /** Highlight entity ID */
-    readonly id: string;
+  /** Highlight entity ID */
+  readonly id: string;
 
-    /** Reason for deletion (user action, sync, etc.) */
-    readonly reason: 'user' | 'sync';
+  /** Reason for deletion (user action, sync, etc.) */
+  readonly reason: 'user' | 'sync';
 
-    /** Timestamp when deleted */
-    readonly deletedAt: number;
+  /** Timestamp when deleted */
+  readonly deletedAt: number;
 }
 
 /**
@@ -59,65 +59,65 @@ export interface HighlightDeletedPayload {
  * Groups related highlights together
  */
 export interface CollectionData {
-    /** Collection ID */
-    readonly id: string;
+  /** Collection ID */
+  readonly id: string;
 
-    /** Collection name */
-    readonly name: string;
+  /** Collection name */
+  readonly name: string;
 
-    /** Optional description */
-    readonly description?: string;
+  /** Optional description */
+  readonly description?: string;
 
-    /** Highlight IDs in this collection */
-    readonly highlightIds: readonly string[];
+  /** Highlight IDs in this collection */
+  readonly highlightIds: readonly string[];
 
-    /** Creation timestamp */
-    readonly createdAt: number;
+  /** Creation timestamp */
+  readonly createdAt: number;
 
-    /** Last update timestamp */
-    readonly updatedAt: number;
+  /** Last update timestamp */
+  readonly updatedAt: number;
 
-    /** User who owns this collection */
-    readonly userId: string;
+  /** User who owns this collection */
+  readonly userId: string;
 }
 
 /**
  * Payload for COLLECTION_CREATED event
  */
 export interface CollectionCreatedPayload {
-    /** Collection entity ID */
-    readonly id: string;
+  /** Collection entity ID */
+  readonly id: string;
 
-    /** Complete collection data */
-    readonly data: CollectionData;
+  /** Complete collection data */
+  readonly data: CollectionData;
 }
 
 /**
  * Payload for COLLECTION_UPDATED event
  */
 export interface CollectionUpdatedPayload {
-    /** Collection entity ID */
-    readonly id: string;
+  /** Collection entity ID */
+  readonly id: string;
 
-    /** Partial collection data (only changed fields) */
-    readonly changes: Partial<Omit<CollectionData, 'id' | 'createdAt' | 'userId'>>;
+  /** Partial collection data (only changed fields) */
+  readonly changes: Partial<Omit<CollectionData, 'id' | 'createdAt' | 'userId'>>;
 
-    /** Timestamp of previous version */
-    readonly previousVersion: number;
+  /** Timestamp of previous version */
+  readonly previousVersion: number;
 }
 
 /**
  * Payload for COLLECTION_DELETED event
  */
 export interface CollectionDeletedPayload {
-    /** Collection entity ID */
-    readonly id: string;
+  /** Collection entity ID */
+  readonly id: string;
 
-    /** What happens to highlights in this collection */
-    readonly highlightAction: 'keep' | 'delete';
+  /** What happens to highlights in this collection */
+  readonly highlightAction: 'keep' | 'delete';
 
-    /** Timestamp when deleted */
-    readonly deletedAt: number;
+  /** Timestamp when deleted */
+  readonly deletedAt: number;
 }
 
 /**
@@ -125,9 +125,9 @@ export interface CollectionDeletedPayload {
  * Useful for type-safe event handling
  */
 export type EventPayload =
-    | HighlightCreatedPayload
-    | HighlightUpdatedPayload
-    | HighlightDeletedPayload
-    | CollectionCreatedPayload
-    | CollectionUpdatedPayload
-    | CollectionDeletedPayload;
+  | HighlightCreatedPayload
+  | HighlightUpdatedPayload
+  | HighlightDeletedPayload
+  | CollectionCreatedPayload
+  | CollectionUpdatedPayload
+  | CollectionDeletedPayload;

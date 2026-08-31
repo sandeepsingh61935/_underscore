@@ -29,9 +29,7 @@ describe('billing rate limit (WP-5)', () => {
       expect(r.allowed).toBe(true);
       bucket = r.bucket;
     }
-    expect(tryConsumeRateLimit(bucket, syncMax, syncMax, windowMs).allowed).toBe(
-      false
-    );
+    expect(tryConsumeRateLimit(bucket, syncMax, syncMax, windowMs).allowed).toBe(false);
   });
 
   it('resets after window elapses', () => {
@@ -53,15 +51,17 @@ describe('billing rate limit (WP-5)', () => {
 
 describe('parseBillingRateLimitRpc (durable edge response)', () => {
   it('maps allowed true', () => {
-    expect(parseBillingRateLimitRpc({ allowed: true, retryAfterMs: 0 })).toEqual(
-      { allowed: true, retryAfterMs: 0 }
-    );
+    expect(parseBillingRateLimitRpc({ allowed: true, retryAfterMs: 0 })).toEqual({
+      allowed: true,
+      retryAfterMs: 0,
+    });
   });
 
   it('maps allowed false with retry', () => {
-    expect(
-      parseBillingRateLimitRpc({ allowed: false, retryAfterMs: 12_000 })
-    ).toEqual({ allowed: false, retryAfterMs: 12_000 });
+    expect(parseBillingRateLimitRpc({ allowed: false, retryAfterMs: 12_000 })).toEqual({
+      allowed: false,
+      retryAfterMs: 12_000,
+    });
   });
 
   it('fails open on malformed payload (availability over lockout)', () => {

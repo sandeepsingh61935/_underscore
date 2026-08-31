@@ -1,5 +1,5 @@
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { LLMKeyStore } from '@/background/services/llm/llm-key-store';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 type KeyStoreTier = 'basic' | 'pro';
 

@@ -37,7 +37,10 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function findSpanMatchesInPageText(pageText: string, highlight: string): Array<{ start: number; end: number }> {
+export function findSpanMatchesInPageText(
+  pageText: string,
+  highlight: string
+): Array<{ start: number; end: number }> {
   if (!highlight) return [];
 
   const matches: Array<{ start: number; end: number }> = [];
@@ -66,8 +69,13 @@ export function findSpanMatchesInPageText(pageText: string, highlight: string): 
  * Wrap every occurrence of each highlight span in `<mark>` within page text.
  * Longer spans are processed first; replacements apply right-to-left to preserve indices.
  */
-export function injectMarksIntoPageText(pageText: string, highlightTexts: string[]): string {
-  const unique = [...new Set(highlightTexts.filter(Boolean))].sort((a, b) => b.length - a.length);
+export function injectMarksIntoPageText(
+  pageText: string,
+  highlightTexts: string[]
+): string {
+  const unique = [...new Set(highlightTexts.filter(Boolean))].sort(
+    (a, b) => b.length - a.length
+  );
   const spans: Array<{ start: number; end: number }> = [];
 
   for (const text of unique) {
@@ -90,7 +98,7 @@ export function injectMarksIntoPageText(pageText: string, highlightTexts: string
  */
 export function buildMarkedPageContext(
   highlights: HighlightForContext[],
-  getContent: (normalizedUrl: string) => PageContentEntry | null,
+  getContent: (normalizedUrl: string) => PageContentEntry | null
 ): BuiltPageContext {
   const byUrl = new Map<string, HighlightForContext[]>();
   for (const highlight of highlights) {
@@ -110,7 +118,7 @@ export function buildMarkedPageContext(
   for (const [normalizedUrl, urlHighlights] of byUrl) {
     const cached = getContent(normalizedUrl);
     const displayUrl = cached?.url ?? urlHighlights[0]?.url ?? normalizedUrl;
-    const highlightTexts = [...new Set(urlHighlights.map(h => h.text).filter(Boolean))];
+    const highlightTexts = [...new Set(urlHighlights.map((h) => h.text).filter(Boolean))];
 
     if (urlHighlights.length > maxHighlights) {
       maxHighlights = urlHighlights.length;
@@ -122,13 +130,15 @@ export function buildMarkedPageContext(
       const compressed = compressPageText(cached.text);
       const marked = injectMarksIntoPageText(compressed, highlightTexts);
       const truncatedNote = cached.truncated ? ' [truncated]' : '';
-      markedSections.push(`Page: ${cached.title} (${cached.url})${truncatedNote}\n${marked}`);
+      markedSections.push(
+        `Page: ${cached.title} (${cached.url})${truncatedNote}\n${marked}`
+      );
       plainSections.push(compressed);
     } else {
       cacheMissUrls.push(displayUrl);
-      const fallback = highlightTexts.map(text => `<mark>${text}</mark>`).join('\n\n');
+      const fallback = highlightTexts.map((text) => `<mark>${text}</mark>`).join('\n\n');
       markedSections.push(
-        `Page: ${displayUrl} [page content not cached — using highlights only]\n${fallback}`,
+        `Page: ${displayUrl} [page content not cached — using highlights only]\n${fallback}`
       );
       plainSections.push(highlightTexts.join('\n\n'));
     }

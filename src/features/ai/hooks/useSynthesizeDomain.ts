@@ -5,13 +5,13 @@ import { useLLMChat } from './useLLMChat';
 import { useLLMStream } from './useLLMStream';
 
 import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
+import { saveLlmArtifact } from '@/shared/llm/llm-artifact-store';
 import type { PromptContext, PromptHighlight } from '@/shared/llm/prompts';
 import {
   getCachedSectionSummary,
   setCachedSectionSummary,
   toSectionDigests,
 } from '@/shared/llm/section-summary-cache';
-import { saveLlmArtifact } from '@/shared/llm/llm-artifact-store';
 import { summarizeSectionText } from '@/shared/llm/summarization-pipeline';
 import { buildReduceDomainRequest } from '@/shared/llm/summary-request';
 import { getSectionPath } from '@/shared/utils/normalize-page-url';
@@ -38,82 +38,88 @@ export function useSynthesizeDomain(): Omit<StreamAPI, 'start'> & {
   const [phase, setPhase] = useState<SynthesizePhase>('idle');
   const [sectionProgress, setSectionProgress] = useState({ current: 0, total: 0 });
 
-  const start = useCallback(async ({ ctx, excerpts, paths }: SynthesizeStartInput) => {
-    const activeProvider = provider ?? undefined;
-    const domain = ctx.domain ?? 'this domain';
+  const start = useCallback(
+    async ({ ctx, excerpts, paths }: SynthesizeStartInput) => {
+      const activeProvider = provider ?? undefined;
+      const domain = ctx.domain ?? 'this domain';
 
-    const bySection = new Map<string, { highlights: PromptHighlight[]; excerpts: HighlightExcerpt[] }>();
-    for (const excerpt of excerpts) {
-      const path = paths?.[excerpt.id] ?? getSectionPath(excerpt.url);
-      const sectionKey = getSectionKey({ url: excerpt.url, path });
-      const bucket = bySection.get(sectionKey) ?? { highlights: [], excerpts: [] };
-      const hl = ctx.highlights.find(h => h.id === excerpt.id);
-      if (hl) bucket.highlights.push(hl);
-      bucket.excerpts.push(excerpt);
-      bySection.set(sectionKey, bucket);
-    }
-
-    const sections = [...bySection.entries()];
-    setPhase('sections');
-    setSectionProgress({ current: 0, total: sections.length });
-
-    const digests: Array<{ sectionKey: string; summary: string; highlightCount: number }> = [];
-
-    try {
-      for (let i = 0; i < sections.length; i += 1) {
-        const [sectionKey, bucket] = sections[i]!;
-        const count = bucket.excerpts.length;
-        const cached = await getCachedSectionSummary(domain, sectionKey, count);
-        if (cached) {
-          digests.push({ sectionKey, summary: cached, highlightCount: count });
-        } else {
-          const sectionCtx: PromptContext = {
-            ...ctx,
-            pageTitle: sectionKey,
-            pageUrl: bucket.excerpts[0]?.url ?? '',
-            highlights: bucket.highlights,
-          };
-          const summary = await summarizeSectionText(
-            sectionCtx,
-            bucket.excerpts,
-            (request, prov) => chat(request, prov ?? activeProvider),
-            activeProvider,
-          );
-          await setCachedSectionSummary(domain, sectionKey, count, summary);
-          await saveLlmArtifact({
-            kind: 'section_summary',
-            scope: { kind: 'section', domain, sectionKey },
-            content: summary,
-            highlightCountAtGeneration: count,
-            provider: activeProvider,
-          });
-          digests.push({ sectionKey, summary, highlightCount: count });
-        }
-        setSectionProgress({ current: i + 1, total: sections.length });
+      const bySection = new Map<
+        string,
+        { highlights: PromptHighlight[]; excerpts: HighlightExcerpt[] }
+      >();
+      for (const excerpt of excerpts) {
+        const path = paths?.[excerpt.id] ?? getSectionPath(excerpt.url);
+        const sectionKey = getSectionKey({ url: excerpt.url, path });
+        const bucket = bySection.get(sectionKey) ?? { highlights: [], excerpts: [] };
+        const hl = ctx.highlights.find((h) => h.id === excerpt.id);
+        if (hl) bucket.highlights.push(hl);
+        bucket.excerpts.push(excerpt);
+        bySection.set(sectionKey, bucket);
       }
 
-      setPhase('streaming');
-      stream.start({
-        request: buildReduceDomainRequest(
-          domain,
-          toSectionDigests(digests),
-          ctx.highlights.length,
-        ),
-        provider: activeProvider,
-      });
+      const sections = [...bySection.entries()];
+      setPhase('sections');
+      setSectionProgress({ current: 0, total: sections.length });
 
-    } catch (err) {
-      setPhase('error');
-      stream.abort();
-      throw err;
-    }
-  }, [stream, chat, provider]);
+      const digests: Array<{
+        sectionKey: string;
+        summary: string;
+        highlightCount: number;
+      }> = [];
 
-  const derivedPhase: SynthesizePhase = stream.status === 'done'
-    ? 'done'
-    : stream.status === 'error'
-      ? 'error'
-      : phase;
+      try {
+        for (let i = 0; i < sections.length; i += 1) {
+          const [sectionKey, bucket] = sections[i]!;
+          const count = bucket.excerpts.length;
+          const cached = await getCachedSectionSummary(domain, sectionKey, count);
+          if (cached) {
+            digests.push({ sectionKey, summary: cached, highlightCount: count });
+          } else {
+            const sectionCtx: PromptContext = {
+              ...ctx,
+              pageTitle: sectionKey,
+              pageUrl: bucket.excerpts[0]?.url ?? '',
+              highlights: bucket.highlights,
+            };
+            const summary = await summarizeSectionText(
+              sectionCtx,
+              bucket.excerpts,
+              (request, prov) => chat(request, prov ?? activeProvider),
+              activeProvider
+            );
+            await setCachedSectionSummary(domain, sectionKey, count, summary);
+            await saveLlmArtifact({
+              kind: 'section_summary',
+              scope: { kind: 'section', domain, sectionKey },
+              content: summary,
+              highlightCountAtGeneration: count,
+              provider: activeProvider,
+            });
+            digests.push({ sectionKey, summary, highlightCount: count });
+          }
+          setSectionProgress({ current: i + 1, total: sections.length });
+        }
+
+        setPhase('streaming');
+        stream.start({
+          request: buildReduceDomainRequest(
+            domain,
+            toSectionDigests(digests),
+            ctx.highlights.length
+          ),
+          provider: activeProvider,
+        });
+      } catch (err) {
+        setPhase('error');
+        stream.abort();
+        throw err;
+      }
+    },
+    [stream, chat, provider]
+  );
+
+  const derivedPhase: SynthesizePhase =
+    stream.status === 'done' ? 'done' : stream.status === 'error' ? 'error' : phase;
 
   return {
     ...stream,

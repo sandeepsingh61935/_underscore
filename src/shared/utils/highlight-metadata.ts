@@ -48,19 +48,25 @@ export type HighlightStoredMetadata = {
 /** Union junction labels with legacy metadata.tags during migration cutover. */
 export function mergeHighlightLabels(
   junctionLabels?: string[],
-  metadataTags?: string[],
+  metadataTags?: string[]
 ): string[] | undefined {
-  const merged = normalizeHighlightTags([...(junctionLabels ?? []), ...(metadataTags ?? [])]);
+  const merged = normalizeHighlightTags([
+    ...(junctionLabels ?? []),
+    ...(metadataTags ?? []),
+  ]);
   return merged.length > 0 ? merged : undefined;
 }
 
 export function buildHighlightMetadataUpdate(
-  input: HighlightMetadataInput,
+  input: HighlightMetadataInput
 ): HighlightStoredMetadata | undefined {
-  const notes = input.notes !== undefined ? sanitizeHighlightNote(input.notes) : undefined;
+  const notes =
+    input.notes !== undefined ? sanitizeHighlightNote(input.notes) : undefined;
   const tags = input.tags !== undefined ? normalizeHighlightTags(input.tags) : undefined;
   const presentation =
-    input.presentation !== undefined ? normalizePresentation(input.presentation) : undefined;
+    input.presentation !== undefined
+      ? normalizePresentation(input.presentation)
+      : undefined;
 
   if (
     !notes &&
@@ -86,7 +92,7 @@ export function buildHighlightMetadataUpdate(
  */
 export function mergeHighlightMetadataPatch(
   existing: HighlightStoredMetadata | null | undefined,
-  input: HighlightMetadataInput,
+  input: HighlightMetadataInput
 ): HighlightStoredMetadata {
   const notes =
     input.notes !== undefined

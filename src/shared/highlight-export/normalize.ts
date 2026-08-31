@@ -3,15 +3,13 @@
  * @description Map repository records to export DTOs and filter by scope.
  */
 
+import type { ExportableHighlight, ExportScope } from './types';
+
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 
-import type { ExportableHighlight, ExportScope } from './types';
-
-export function toExportableHighlight(
-  hl: HighlightDataV2,
-): ExportableHighlight | null {
+export function toExportableHighlight(hl: HighlightDataV2): ExportableHighlight | null {
   if (!hl.url) return null;
 
   const domain = getDomainFromUrl(hl.url);
@@ -34,7 +32,7 @@ export function toExportableHighlight(
 
 export function filterRawHighlightsByScope(
   highlights: HighlightDataV2[],
-  scope: ExportScope,
+  scope: ExportScope
 ): HighlightDataV2[] {
   switch (scope.kind) {
     case 'library':
@@ -53,7 +51,7 @@ export function filterRawHighlightsByScope(
 
 export function filterExportableByScope(
   highlights: ExportableHighlight[],
-  scope: ExportScope,
+  scope: ExportScope
 ): ExportableHighlight[] {
   switch (scope.kind) {
     case 'library':
@@ -62,7 +60,7 @@ export function filterExportableByScope(
       return highlights.filter((h) => h.domain === scope.domain);
     case 'section':
       return highlights.filter(
-        (h) => h.domain === scope.domain && h.sectionKey === scope.sectionKey,
+        (h) => h.domain === scope.domain && h.sectionKey === scope.sectionKey
       );
     case 'highlight':
       return highlights.filter((h) => h.id === scope.highlightId);

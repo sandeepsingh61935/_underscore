@@ -38,6 +38,6 @@ export function toRelatednessDocs(rows: readonly WebHighlight[]): RelatednessDoc
       path: h.path,
       tags: h.tags,
       encrypted: h.encrypted,
-    })),
+    }))
   );
 }

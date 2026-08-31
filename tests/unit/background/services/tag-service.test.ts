@@ -18,7 +18,12 @@ describe('TagService', () => {
   it('writes labels locally and to cloud when authenticated', async () => {
     const local = createRepo();
     const cloud = createRepo();
-    const service = new TagService(local, cloud, () => true, LoggerFactory.getLogger('test'));
+    const service = new TagService(
+      local,
+      cloud,
+      () => true,
+      LoggerFactory.getLogger('test')
+    );
 
     await service.setHighlightLabels('hl-1', ['Alpha', 'alpha']);
 
@@ -27,7 +32,15 @@ describe('TagService', () => {
   });
 
   it('merges junction labels with legacy metadata tags', () => {
-    const service = new TagService(createRepo(), null, () => false, LoggerFactory.getLogger('test'));
-    expect(service.mergeWithMetadataFallback(['todo'], ['Read'])).toEqual(['todo', 'read']);
+    const service = new TagService(
+      createRepo(),
+      null,
+      () => false,
+      LoggerFactory.getLogger('test')
+    );
+    expect(service.mergeWithMetadataFallback(['todo'], ['Read'])).toEqual([
+      'todo',
+      'read',
+    ]);
   });
 });

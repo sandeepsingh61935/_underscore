@@ -232,12 +232,12 @@ describe('SelectionDetector', () => {
         toString: () => 'double clicked word',
         rangeCount: 1,
         getRangeAt: () => ({
-          compareBoundaryPoints: () => 0
-        })
+          compareBoundaryPoints: () => 0,
+        }),
       };
 
       vi.spyOn(document, 'createRange').mockReturnValue({
-        selectNode: () => { },
+        selectNode: () => {},
         compareBoundaryPoints: () => 0,
       } as unknown as Range);
 
@@ -251,7 +251,9 @@ describe('SelectionDetector', () => {
 
       // Click event coming immediately after
       const clickEvent = new MouseEvent('click', { bubbles: true });
-      Object.defineProperty(clickEvent, 'target', { value: document.createElement('div') });
+      Object.defineProperty(clickEvent, 'target', {
+        value: document.createElement('div'),
+      });
       document.dispatchEvent(clickEvent);
 
       // Should only fire once because of 200ms debounce

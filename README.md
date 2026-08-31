@@ -1,14 +1,15 @@
 # Underscore Highlighter
 
-**Highlight the web. Save passages to a library you can search, export, and sync.**
+**Highlight the web. Save passages to a library you can search, export, and
+sync.**
 
 Browser extension (Chrome + Firefox, Manifest V3) and companion web app.
 
-| | |
-|---|---|
-| **Version** | 0.1.3 |
-| **License** | [GPL-3.0-only](./LICENSE) |
-| **Privacy** | [PRIVACY.md](./PRIVACY.md) |
+|                |                                    |
+| -------------- | ---------------------------------- |
+| **Version**    | 0.1.3                              |
+| **License**    | [GPL-3.0-only](./LICENSE)          |
+| **Privacy**    | [PRIVACY.md](./PRIVACY.md)         |
 | **Docs index** | [docs/README.md](./docs/README.md) |
 
 ---
@@ -18,10 +19,10 @@ Browser extension (Chrome + Firefox, Manifest V3) and companion web app.
 Underscore lets you highlight text on any page and keep those passages in a
 searchable library — on-device as a guest, or synced when you sign in.
 
-| Mode | Who | Persistence |
-|------|-----|-------------|
-| **Guest** | No account | Permanent on this device |
-| **Account (Free)** | Signed in | Synced across devices |
+| Mode               | Who              | Persistence                                  |
+| ------------------ | ---------------- | -------------------------------------------- |
+| **Guest**          | No account       | Permanent on this device                     |
+| **Account (Free)** | Signed in        | Synced across devices                        |
 | **Account (Paid)** | Signed in + plan | Sync, Integrations (MCP), in-app chat (BYOK) |
 
 AI features use your own keys or agents — Underscore does not bill model tokens.
@@ -49,16 +50,16 @@ AI features use your own keys or agents — Underscore does not bill model token
   </sub>
 </p>
 
-| Piece | Role |
-|-------|------|
-| **Content script** | Capture and paint highlights on the page |
-| **Background SW** | Auth, local library, cloud sync, IPC hub |
-| **Web app** | Searchable library, install, account settings |
-| **Supabase** | Identity + cloud source of truth when signed in |
-| **Workers / MCP** | Edge API and agent access to **synced** library |
+| Piece              | Role                                            |
+| ------------------ | ----------------------------------------------- |
+| **Content script** | Capture and paint highlights on the page        |
+| **Background SW**  | Auth, local library, cloud sync, IPC hub        |
+| **Web app**        | Searchable library, install, account settings   |
+| **Supabase**       | Identity + cloud source of truth when signed in |
+| **Workers / MCP**  | Edge API and agent access to **synced** library |
 
-Guest data stays on-device. Signed-in library syncs to the cloud. Agents only see
-synced data via Cloud MCP.
+Guest data stays on-device. Signed-in library syncs to the cloud. Agents only
+see synced data via Cloud MCP.
 
 ---
 
@@ -119,8 +120,8 @@ _underscore/
 └── public-web/            # Web static assets and download zips
 ```
 
-Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/) →
-[`docs/superpowers/specs/`](./docs/superpowers/specs/). Start at
+Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/)
+→ [`docs/superpowers/specs/`](./docs/superpowers/specs/). Start at
 [`docs/README.md`](./docs/README.md).
 
 ---
@@ -144,19 +145,19 @@ Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/
 
 ### Common scripts
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Extension dev (WXT) |
-| `npm run dev:web` | Web app dev server |
-| `npm run build` | Production extension zips (all targets) |
-| `npm run zip:chrome` / `zip:firefox` | Browser-specific packages |
-| `npm run type-check` | TypeScript |
-| `npm run lint` / `lint:fix` | ESLint |
-| `npm run format` / `format:check` | Prettier |
-| `npm test` | Unit tests (Vitest) |
-| `npm run test:coverage` | Coverage report |
-| `npm run test:e2e` | Playwright e2e |
-| `npm run quality` | type-check + lint + format + unit tests + legacy-DS check |
+| Script                               | Purpose                                                   |
+| ------------------------------------ | --------------------------------------------------------- |
+| `npm run dev`                        | Extension dev (WXT)                                       |
+| `npm run dev:web`                    | Web app dev server                                        |
+| `npm run build`                      | Production extension zips (all targets)                   |
+| `npm run zip:chrome` / `zip:firefox` | Browser-specific packages                                 |
+| `npm run type-check`                 | TypeScript                                                |
+| `npm run lint` / `lint:fix`          | ESLint                                                    |
+| `npm run format` / `format:check`    | Prettier                                                  |
+| `npm test`                           | Unit tests (Vitest)                                       |
+| `npm run test:coverage`              | Coverage report                                           |
+| `npm run test:e2e`                   | Playwright e2e                                            |
+| `npm run quality`                    | type-check + lint + format + unit tests + legacy-DS check |
 
 ### Configuration
 
@@ -184,20 +185,20 @@ Details: [Quality framework](./docs/05-quality-framework/README.md).
 
 ## Documentation map
 
-| Need | Location |
-|------|----------|
-| Doc routing / SSOT | [docs/README.md](./docs/README.md) |
-| System architecture (C4) | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
-| ADRs | [docs/04-adrs/](./docs/04-adrs/) |
-| Feature specs | [docs/superpowers/specs/](./docs/superpowers/specs/) |
-| Implementation plans | [docs/superpowers/plans/](./docs/superpowers/plans/) |
-| Coding / testing standards | [docs/05-quality-framework/](./docs/05-quality-framework/) |
-| Security / threat model | [docs/06-security/](./docs/06-security/) |
-| Policies (commits, etc.) | [docs/00-policies/](./docs/00-policies/) |
-| Dev runbooks | [docs/01-development/](./docs/01-development/) |
-| Privacy policy | [PRIVACY.md](./PRIVACY.md) |
-| Changelog | [CHANGELOG.md](./CHANGELOG.md) |
-| Contributing | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| Need                       | Location                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| Doc routing / SSOT         | [docs/README.md](./docs/README.md)                                                         |
+| System architecture (C4)   | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
+| ADRs                       | [docs/04-adrs/](./docs/04-adrs/)                                                           |
+| Feature specs              | [docs/superpowers/specs/](./docs/superpowers/specs/)                                       |
+| Implementation plans       | [docs/superpowers/plans/](./docs/superpowers/plans/)                                       |
+| Coding / testing standards | [docs/05-quality-framework/](./docs/05-quality-framework/)                                 |
+| Security / threat model    | [docs/06-security/](./docs/06-security/)                                                   |
+| Policies (commits, etc.)   | [docs/00-policies/](./docs/00-policies/)                                                   |
+| Dev runbooks               | [docs/01-development/](./docs/01-development/)                                             |
+| Privacy policy             | [PRIVACY.md](./PRIVACY.md)                                                                 |
+| Changelog                  | [CHANGELOG.md](./CHANGELOG.md)                                                             |
+| Contributing               | [CONTRIBUTING.md](./CONTRIBUTING.md)                                                       |
 
 Agent/editor project rules live in [`CLAUDE.md`](./CLAUDE.md) (file map, UI
 contracts, backend rules). They are not a substitute for `docs/`.
@@ -227,4 +228,5 @@ than a public issue when exploit detail is involved. Threat model and controls:
 
 ## Author
 
-Sandeep Singh — [github.com/sandeepsingh61935](https://github.com/sandeepsingh61935)
+Sandeep Singh —
+[github.com/sandeepsingh61935](https://github.com/sandeepsingh61935)

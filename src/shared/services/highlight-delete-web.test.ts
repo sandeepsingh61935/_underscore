@@ -47,7 +47,7 @@ describe('softDeleteHighlightsWeb', () => {
       expect(r.removedIds).toEqual(['a', 'b']);
     }
     expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({ deleted_at: expect.any(String) }),
+      expect.objectContaining({ deleted_at: expect.any(String) })
     );
     expect(updateEq).toHaveBeenCalledWith('user_id', 'user-1');
     expect(updateIn).toHaveBeenCalledWith('id', ['a', 'b']);

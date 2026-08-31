@@ -14,7 +14,9 @@ function normalizeTag(raw: string): string {
  * Normalize docs and build inverted tag → id maps.
  * Tags are lowercased; empty ids are dropped.
  */
-export function buildRelatednessIndex(input: readonly RelatednessDoc[]): RelatednessIndex {
+export function buildRelatednessIndex(
+  input: readonly RelatednessDoc[]
+): RelatednessIndex {
   const docs: RelatednessDoc[] = [];
   const tagToIds = new Map<string, Set<string>>();
   const tagDf = new Map<string, number>();
@@ -23,11 +25,7 @@ export function buildRelatednessIndex(input: readonly RelatednessDoc[]): Related
   for (const raw of input) {
     if (!raw?.id) continue;
     const tags = [
-      ...new Set(
-        (raw.tags ?? [])
-          .map(normalizeTag)
-          .filter((t) => t.length > 0),
-      ),
+      ...new Set((raw.tags ?? []).map(normalizeTag).filter((t) => t.length > 0)),
     ].sort();
 
     const doc: RelatednessDoc = {

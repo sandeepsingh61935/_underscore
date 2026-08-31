@@ -37,9 +37,9 @@ describe('MCP_AI_APPS', () => {
 
   it('fills remote Cloud MCP URL in config templates', () => {
     const app = getMcpAiApp('cursor');
-    expect(fillMcpConfigTemplate(app.configTemplate, 'https://mcp.example/mcp')).toContain(
-      '"url": "https://mcp.example/mcp"',
-    );
+    expect(
+      fillMcpConfigTemplate(app.configTemplate, 'https://mcp.example/mcp')
+    ).toContain('"url": "https://mcp.example/mcp"');
     expect(app.configTemplate).not.toContain('UNDERSCORE_MCP_TOKEN');
     expect(app.configTemplate).not.toContain('{{TOKEN}}');
     expect(app.configTemplate).not.toContain('--adapter=bridge');
@@ -50,11 +50,11 @@ describe('MCP_AI_APPS', () => {
     expect(app.name).toBe('Grok (xAI)');
     expect(app.configLabel).toMatch(/grok/i);
     expect(app.restartLabel).toMatch(/restart|reload/i);
-    expect(fillMcpConfigTemplate(app.configTemplate, 'https://mcp.example/mcp')).toContain(
-      'url = "https://mcp.example/mcp"',
-    );
+    expect(
+      fillMcpConfigTemplate(app.configTemplate, 'https://mcp.example/mcp')
+    ).toContain('url = "https://mcp.example/mcp"');
     expect(`${app.hint} ${app.configLabel} ${app.restartLabel}`).not.toMatch(
-      /jwt|bearer|get_session/i,
+      /jwt|bearer|get_session/i
     );
   });
 

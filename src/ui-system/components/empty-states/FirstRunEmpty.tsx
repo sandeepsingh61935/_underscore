@@ -12,9 +12,7 @@ export interface FirstRunEmptyProps {
  * Calm first-run empty for Home (v3 mock: No highlights yet).
  * Body-only; parent supplies optional Sign in CTA via onSignIn.
  */
-export function FirstRunEmpty({
-  guest = true,
-}: FirstRunEmptyProps): React.ReactElement {
+export function FirstRunEmpty({ guest = true }: FirstRunEmptyProps): React.ReactElement {
   const copy = homeFirstRunCopy({ guest });
   return (
     <div

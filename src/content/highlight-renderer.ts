@@ -428,7 +428,10 @@ export class HighlightRenderer {
     const element = this.highlightElements.get(id);
 
     if (!element) {
-      this.logger.debug('Attempted to remove non-existent highlight (may already be removed)', { id });
+      this.logger.debug(
+        'Attempted to remove non-existent highlight (may already be removed)',
+        { id }
+      );
       return;
     }
 

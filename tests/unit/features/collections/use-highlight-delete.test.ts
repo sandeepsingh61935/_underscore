@@ -21,13 +21,17 @@ import { toast } from 'sonner';
 
 function makeBus(handler: (type: string) => Promise<unknown>): IMessageBus {
   return {
-    send: vi.fn(async (_target, message: { type: string }) => handler(message.type)) as IMessageBus['send'],
+    send: vi.fn(async (_target, message: { type: string }) =>
+      handler(message.type)
+    ) as IMessageBus['send'],
     subscribe: vi.fn(() => () => undefined),
     publish: vi.fn(async () => undefined),
   };
 }
 
-function wrap(bus: IMessageBus): ({ children }: { children: ReactNode }) => React.ReactElement {
+function wrap(
+  bus: IMessageBus
+): ({ children }: { children: ReactNode }) => React.ReactElement {
   return ({ children }: { children: ReactNode }) =>
     React.createElement(MessageBusProvider, { messageBus: bus, children });
 }
@@ -46,7 +50,10 @@ describe('useHighlightDelete', () => {
   it('sends scoped delete IPC for a single highlight', async () => {
     const bus = makeBus(async (type) => {
       if (type === IPC_HIGHLIGHT_DELETE_SCOPE) {
-        return { success: true, data: { success: true, deletedCount: 1, removedIds: ['h-1'] } };
+        return {
+          success: true,
+          data: { success: true, deletedCount: 1, removedIds: ['h-1'] },
+        };
       }
       return { success: false, error: 'unexpected' };
     });
@@ -66,14 +73,17 @@ describe('useHighlightDelete', () => {
       'Highlight deleted',
       expect.objectContaining({
         action: expect.objectContaining({ label: 'Undo' }),
-      }),
+      })
     );
   });
 
   it('sends undo IPC and shows success toast when undo succeeds', async () => {
     const bus = makeBus(async (type) => {
       if (type === IPC_HIGHLIGHT_UNDO_DELETE) {
-        return { success: true, data: { success: true, deletedCount: 0, restoredIds: ['h-1'] } };
+        return {
+          success: true,
+          data: { success: true, deletedCount: 0, restoredIds: ['h-1'] },
+        };
       }
       return { success: true, data: { success: true, deletedCount: 1 } };
     });

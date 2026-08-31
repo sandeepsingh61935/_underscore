@@ -134,7 +134,7 @@ export class IndexedDBStorage extends Dexie {
 
   /**
    * Save a highlight to IndexedDB
-   * 
+   *
    * Note: Strips out liveRanges (non-serializable DOM Range objects)
    * They will be recreated during restoration from the serialized ranges
    */

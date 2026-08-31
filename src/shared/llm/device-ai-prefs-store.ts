@@ -58,13 +58,12 @@ export async function reconcileAiPreferences(
   supabase: SupabaseClient,
   userId: string,
   device: DeviceAiPrefsStore,
-  opts: ReconcileAiPreferencesOptions = {},
+  opts: ReconcileAiPreferencesOptions = {}
 ): Promise<AiPreferencesSyncResult> {
   let local = opts.local ?? (await device.read());
 
   const needsBump =
-    opts.bumpClock === true ||
-    (local.updatedAtMs <= 0 && hasPrefsContent(local));
+    opts.bumpClock === true || (local.updatedAtMs <= 0 && hasPrefsContent(local));
 
   if (needsBump) {
     local = touchPrefs(local);

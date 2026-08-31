@@ -7,13 +7,16 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useIpcAction } from '@/shared/hooks/useIpcAction';
-import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
-import { fetchHighlightLabelsWeb, mergeLabelsForHighlight } from '@/shared/services/tag-query-web';
-import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
-import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
+import { useLibraryDataChanged } from '@/features/collections/hooks/use-library-data-changed';
+import { useIpcAction } from '@/shared/hooks/useIpcAction';
+import {
+  fetchHighlightLabelsWeb,
+  mergeLabelsForHighlight,
+} from '@/shared/services/tag-query-web';
+import { compareByHighlightActivityDesc } from '@/shared/utils/highlight-activity';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
 export interface Highlight {
   id: string;
@@ -57,7 +60,7 @@ const sessionByKey = new Map<SessionKey, Highlight[]>();
 function sessionKey(
   domain: string,
   isAuthenticated: boolean,
-  context: 'extension' | 'web',
+  context: 'extension' | 'web'
 ): SessionKey {
   return `${context}:${domain}:${isAuthenticated ? 'auth' : 'guest'}`;
 }
@@ -72,7 +75,7 @@ export function clearHighlightsByDomainSessionMemory(): void {
  */
 export function useHighlightsByDomain(
   domain: string | undefined,
-  isAuthenticated = true,
+  isAuthenticated = true
 ): HighlightsResult {
   const context = isExtensionContext() ? 'extension' : 'web';
   const bootKey = domain ? sessionKey(domain, isAuthenticated, context) : null;
@@ -145,7 +148,9 @@ export function useHighlightsByDomain(
         let highlights: Highlight[];
 
         if (context === 'extension') {
-          const ipcResult = await getHighlightsActionRef.current({ domain: activeDomain });
+          const ipcResult = await getHighlightsActionRef.current({
+            domain: activeDomain,
+          });
 
           if (!ipcResult.success) {
             throw new Error(ipcResult.error || 'Failed to fetch highlights');
@@ -167,7 +172,8 @@ export function useHighlightsByDomain(
             }))
             .sort(compareByHighlightActivityDesc);
         } else {
-          const { getWebSupabaseClient } = await import('@/shared/auth/supabase-web-client');
+          const { getWebSupabaseClient } =
+            await import('@/shared/auth/supabase-web-client');
           const supabase = getWebSupabaseClient();
           const {
             data: { session },
@@ -192,7 +198,7 @@ export function useHighlightsByDomain(
           const labelMap = await fetchHighlightLabelsWeb(
             supabase,
             session.user.id,
-            highlightIds,
+            highlightIds
           );
 
           highlights = (data || [])
@@ -234,7 +240,8 @@ export function useHighlightsByDomain(
         if (gen !== genRef.current) return;
         if (domainRef.current !== activeDomain || authRef.current !== auth) return;
 
-        const error = err instanceof Error ? err : new Error('Failed to fetch highlights');
+        const error =
+          err instanceof Error ? err : new Error('Failed to fetch highlights');
         if (hasWarm) {
           setResult((prev) => ({
             ...prev,
@@ -250,7 +257,7 @@ export function useHighlightsByDomain(
         });
       }
     },
-    [context],
+    [context]
   );
 
   useEffect(() => {

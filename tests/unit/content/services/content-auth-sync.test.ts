@@ -5,11 +5,13 @@ import type { ModeManager } from '@/content/modes/mode-manager';
 import type { ModeStateManager } from '@/content/modes/mode-state-manager';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 
-function makeDeps(overrides: Partial<{
-  modeName: string;
-  setMode: ReturnType<typeof vi.fn>;
-  restore: ReturnType<typeof vi.fn>;
-}> = {}) {
+function makeDeps(
+  overrides: Partial<{
+    modeName: string;
+    setMode: ReturnType<typeof vi.fn>;
+    restore: ReturnType<typeof vi.fn>;
+  }> = {}
+) {
   const modeStateManager = {
     setMode: overrides.setMode ?? vi.fn().mockResolvedValue(undefined),
   } as unknown as ModeStateManager;
@@ -60,7 +62,9 @@ describe('handleContentAuthStateChanged', () => {
 
     await handleContentAuthStateChanged(false, deps);
 
-    expect(modeStateManager.setMode).toHaveBeenCalledWith('basic', { isAuthenticated: false });
+    expect(modeStateManager.setMode).toHaveBeenCalledWith('basic', {
+      isAuthenticated: false,
+    });
     expect(deps.repositoryFacade.reload).toHaveBeenCalled();
     expect(deps.broadcastCount).toHaveBeenCalled();
     expect(currentMode.restore).not.toHaveBeenCalled();
@@ -68,7 +72,10 @@ describe('handleContentAuthStateChanged', () => {
 
   it('on sign-in restores Pro highlights when Pro mode is active', async () => {
     const restore = vi.fn().mockResolvedValue(undefined);
-    const { currentMode, modeStateManager, deps } = makeDeps({ modeName: 'pro', restore });
+    const { currentMode, modeStateManager, deps } = makeDeps({
+      modeName: 'pro',
+      restore,
+    });
 
     await handleContentAuthStateChanged(true, deps);
 

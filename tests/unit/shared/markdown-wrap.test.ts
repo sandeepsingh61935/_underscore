@@ -129,7 +129,7 @@ describe('applyMarkdownShortcut', () => {
         metaKey: false,
         ctrlKey: false,
         shiftKey: false,
-      }),
+      })
     ).toBeNull();
   });
 });
@@ -178,7 +178,12 @@ describe('toggleWrapSelection', () => {
 
   it('does not nest bold on already-bold selection (inner)', () => {
     const once = applyMarkdownFormatAction('hello', 0, 5, 'bold');
-    const twice = applyMarkdownFormatAction(once.text, once.selStart, once.selEnd, 'bold');
+    const twice = applyMarkdownFormatAction(
+      once.text,
+      once.selStart,
+      once.selEnd,
+      'bold'
+    );
     expect(twice.text).toBe('hello');
   });
 
@@ -269,7 +274,12 @@ describe('toggleStarEmphasis (no star stacking)', () => {
     expect(r.text).toBe('hello');
     // Five more alternations stay bounded
     for (let i = 0; i < 5; i++) {
-      r = applyMarkdownFormatAction(r.text, 0, r.text.length, i % 2 === 0 ? 'bold' : 'italic');
+      r = applyMarkdownFormatAction(
+        r.text,
+        0,
+        r.text.length,
+        i % 2 === 0 ? 'bold' : 'italic'
+      );
     }
     expect(r.text.replace(/[^*]/g, '').length).toBeLessThanOrEqual(6);
   });
@@ -323,7 +333,12 @@ describe('fence toggle', () => {
   it('fence action twice returns to plain (no double fence)', () => {
     const once = applyMarkdownFormatAction('a();', 0, 4, 'fence');
     expect(once.text).toContain('```');
-    const twice = applyMarkdownFormatAction(once.text, once.selStart, once.selEnd, 'fence');
+    const twice = applyMarkdownFormatAction(
+      once.text,
+      once.selStart,
+      once.selEnd,
+      'fence'
+    );
     expect(twice.text).toBe('a();');
   });
 });

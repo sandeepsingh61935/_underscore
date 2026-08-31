@@ -1,6 +1,6 @@
-import type { ProviderModelOption } from '@/shared/llm/provider-models';
-
 import type { ModelDiscoveryResult } from './types';
+
+import type { ProviderModelOption } from '@/shared/llm/provider-models';
 
 const DEFAULT_API_BASE = 'http://localhost:11434';
 
@@ -13,9 +13,11 @@ export async function fetchOllamaModels(apiBase?: string): Promise<ModelDiscover
     if (!response.ok) {
       return { models: [], error: `Ollama HTTP ${response.status}` };
     }
-    const json = await response.json() as { models?: Array<{ name: string; details?: { family?: string } }> };
+    const json = (await response.json()) as {
+      models?: Array<{ name: string; details?: { family?: string } }>;
+    };
     const models: ProviderModelOption[] = (json.models ?? [])
-      .map(m => ({
+      .map((m) => ({
         id: m.name,
         label: m.name,
         hint: m.details?.family,

@@ -4,5 +4,8 @@
  */
 export interface ITagLabelResolver {
   getLabelsForHighlights(highlightIds: string[]): Promise<Map<string, string[]>>;
-  mergeWithMetadataFallback(junctionLabels?: string[], metadataTags?: string[]): string[] | undefined;
+  mergeWithMetadataFallback(
+    junctionLabels?: string[],
+    metadataTags?: string[]
+  ): string[] | undefined;
 }

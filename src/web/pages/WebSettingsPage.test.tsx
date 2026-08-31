@@ -39,7 +39,7 @@ const mockFetch = vi.fn<() => Promise<WebHighlight[]>>();
 
 vi.mock('@/web/hooks/useWebLibrary', async () => {
   const actual = await vi.importActual<typeof import('@/web/hooks/useWebLibrary')>(
-    '@/web/hooks/useWebLibrary',
+    '@/web/hooks/useWebLibrary'
   );
   return {
     ...actual,
@@ -70,7 +70,7 @@ function renderSettings(initialPath: string, authenticated = false) {
 
   const router = createMemoryRouter(
     [{ path: '/settings', element: <WebSettingsPage /> }],
-    { initialEntries: [initialPath] },
+    { initialEntries: [initialPath] }
   );
 
   const result = render(<RouterProvider router={router} />);
@@ -93,7 +93,9 @@ describe('WebSettingsPage', () => {
     expect(plan?.querySelector('h2')?.textContent?.trim()).toBe('Plan');
     expect(document.querySelector('[data-od-id="settings-account"]')).toBeNull();
     expect(
-      document.querySelector('[data-od-id="settings-tab-plan"]')?.classList.contains('active'),
+      document
+        .querySelector('[data-od-id="settings-tab-plan"]')
+        ?.classList.contains('active')
     ).toBe(true);
   });
 
@@ -204,13 +206,17 @@ describe('WebSettingsPage', () => {
 
     expect(document.querySelector('[data-od-id="settings-ai"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="ai-lock-banner"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="settings-ai-see-plan"]')?.textContent).toMatch(
-      /Sign in/i,
-    );
+    expect(
+      document.querySelector('[data-od-id="settings-ai-see-plan"]')?.textContent
+    ).toMatch(/Sign in/i);
     expect(document.querySelector('[data-od-id="ai-seg-models"]')).toBeNull();
     expect(document.querySelector('[data-od-id="provider-openai"]')).toBeNull();
     // Integrations catalog may still render locked for guest
-    expect(document.querySelector('[data-od-id="settings-connect-ai"], [data-od-id="settings-mcp"]')).toBeTruthy();
+    expect(
+      document.querySelector(
+        '[data-od-id="settings-connect-ai"], [data-od-id="settings-mcp"]'
+      )
+    ).toBeTruthy();
   });
 
   it('AI tab past_due: no Polar lock CTA — shows Upcoming copy', () => {
@@ -223,7 +229,7 @@ describe('WebSettingsPage', () => {
 
     expect(document.querySelector('[data-testid="settings-ai-billing-cta"]')).toBeNull();
     expect(document.querySelector('[data-od-id="ai-lock-banner"]')?.textContent).toMatch(
-      /Upcoming/i,
+      /Upcoming/i
     );
     expect(openPortal).not.toHaveBeenCalled();
     expect(startCheckout).not.toHaveBeenCalled();
@@ -242,13 +248,13 @@ describe('WebSettingsPage', () => {
     expect(about?.textContent).toMatch(/Legal/i);
 
     const privacy = document.querySelector(
-      '[data-od-id="settings-legal-privacy"]',
+      '[data-od-id="settings-legal-privacy"]'
     ) as HTMLAnchorElement | null;
     const terms = document.querySelector(
-      '[data-od-id="settings-legal-terms"]',
+      '[data-od-id="settings-legal-terms"]'
     ) as HTMLAnchorElement | null;
     const help = document.querySelector(
-      '[data-od-id="settings-legal-help"]',
+      '[data-od-id="settings-legal-help"]'
     ) as HTMLAnchorElement | null;
 
     expect(privacy?.getAttribute('href')).toBe('/privacy');
@@ -264,10 +270,14 @@ describe('WebSettingsPage', () => {
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="settings-data"]')).toBeTruthy();
     });
-    const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+    const btn = document.querySelector(
+      '[data-od-id="settings-delete"]'
+    ) as HTMLButtonElement;
     expect(btn).toBeTruthy();
     expect(btn.disabled).toBe(true);
-    expect(document.body.textContent).toMatch(/Sign in to manage or delete your cloud library/i);
+    expect(document.body.textContent).toMatch(
+      /Sign in to manage or delete your cloud library/i
+    );
   });
 
   it('data tab: signed-in empty library disables delete', async () => {
@@ -276,7 +286,9 @@ describe('WebSettingsPage', () => {
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="settings-data"]')).toBeTruthy();
     });
-    const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+    const btn = document.querySelector(
+      '[data-od-id="settings-delete"]'
+    ) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     expect(btn.title).toMatch(/Nothing to delete/i);
   });
@@ -297,16 +309,22 @@ describe('WebSettingsPage', () => {
     renderSettings('/settings?tab=data', true);
 
     await waitFor(() => {
-      const btn = document.querySelector('[data-od-id="settings-delete"]') as HTMLButtonElement;
+      const btn = document.querySelector(
+        '[data-od-id="settings-delete"]'
+      ) as HTMLButtonElement;
       expect(btn?.disabled).toBe(false);
     });
 
     fireEvent.click(document.querySelector('[data-od-id="settings-delete"]')!);
 
     await waitFor(() => {
-      expect(document.querySelector('[data-testid="confirm-dialog-challenge"]')).toBeTruthy();
+      expect(
+        document.querySelector('[data-testid="confirm-dialog-challenge"]')
+      ).toBeTruthy();
     });
-    expect(document.querySelector('[data-testid="confirm-dialog-confirm"]')).toBeDisabled();
+    expect(
+      document.querySelector('[data-testid="confirm-dialog-confirm"]')
+    ).toBeDisabled();
     expect(document.body.textContent).toMatch(/Type DELETE to confirm/i);
   });
 });

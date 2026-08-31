@@ -17,8 +17,7 @@ export const CURRENT_STATE_VERSION = 2;
  * Result type for migration operations
  */
 export type MigrationResult<T> =
-  | { success: true; value: T }
-  | { success: false; error: Error };
+  { success: true; value: T } | { success: false; error: Error };
 
 /**
  * Represents a single state migration

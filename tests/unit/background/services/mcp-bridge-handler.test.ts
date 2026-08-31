@@ -1,11 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { McpBridgeHandler, type McpBridgeHandlerDeps } from '@/background/services/mcp-bridge-handler';
+import {
+  McpBridgeHandler,
+  type McpBridgeHandlerDeps,
+} from '@/background/services/mcp-bridge-handler';
 import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
 
 function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridgeHandler {
   const highlightQueryService = {
-    getCollections: vi.fn().mockResolvedValue([{ domain: 'example.com', highlightCount: 2, mode: 'basic' }]),
+    getCollections: vi
+      .fn()
+      .mockResolvedValue([{ domain: 'example.com', highlightCount: 2, mode: 'basic' }]),
     getHighlightsByDomain: vi.fn().mockResolvedValue([]),
     findAllForExport: vi.fn().mockResolvedValue([]),
     getDashboardData: vi.fn().mockResolvedValue({
@@ -31,14 +36,19 @@ function createHandler(overrides: Partial<McpBridgeHandlerDeps> = {}): McpBridge
     scopedHighlightRepository: {
       getActiveScope: () => 'basic',
     } as unknown as McpBridgeHandlerDeps['scopedHighlightRepository'],
-    repositoryFacade: { update: vi.fn(), get: vi.fn() } as unknown as McpBridgeHandlerDeps['repositoryFacade'],
+    repositoryFacade: {
+      update: vi.fn(),
+      get: vi.fn(),
+    } as unknown as McpBridgeHandlerDeps['repositoryFacade'],
     tagService: {
       setHighlightLabels: vi.fn().mockResolvedValue(undefined),
       listByUser: vi.fn().mockResolvedValue([]),
       getLabelsForHighlights: vi.fn().mockResolvedValue(new Map()),
       mergeWithMetadataFallback: vi.fn(),
     } as unknown as McpBridgeHandlerDeps['tagService'],
-    cloudHydrationService: { hydrate: vi.fn() } as unknown as McpBridgeHandlerDeps['cloudHydrationService'],
+    cloudHydrationService: {
+      hydrate: vi.fn(),
+    } as unknown as McpBridgeHandlerDeps['cloudHydrationService'],
     librarySyncCursor: {
       get: vi.fn().mockResolvedValue(null),
       clear: vi.fn(),
@@ -66,7 +76,10 @@ describe('McpBridgeHandler', () => {
 
   it('get_session returns basic_local dataCoverage for guest', async () => {
     const handler = createHandler();
-    const session = (await handler.getSession()) as { dataCoverage: string; mode: string };
+    const session = (await handler.getSession()) as {
+      dataCoverage: string;
+      mode: string;
+    };
     expect(session.dataCoverage).toBe('basic_local');
     expect(session.mode).toBe('basic');
   });
@@ -80,7 +93,7 @@ describe('McpBridgeHandler', () => {
   it('ask_scope rejects when not entitled', async () => {
     const handler = createHandler();
     await expect(
-      handler.askScope({ domain: 'example.com', sectionKey: '/', question: 'test' }),
+      handler.askScope({ domain: 'example.com', sectionKey: '/', question: 'test' })
     ).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   });
 
@@ -161,7 +174,7 @@ describe('McpBridgeHandler', () => {
         domain: 'example.com',
         sectionKey: '/',
         question: 'What is this about?',
-      }),
+      })
     ).rejects.toThrow(/Paid|Account/i);
   });
 

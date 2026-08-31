@@ -1,15 +1,19 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
-import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
-
 import { resolveSafeReturnTo } from './safe-return-to';
+
+import { useWebAuth } from '@/features/auth/providers/WebAuthProvider';
 
 /**
  * Wraps /sign-in (and similar): boot skeleton while loading;
  * send already-authenticated users to Home / safe returnTo.
  */
-export function AuthPageEntry({ children }: { children: React.ReactNode }): React.ReactElement {
+export function AuthPageEntry({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.ReactElement {
   const { status } = useWebAuth();
   const location = useLocation();
 

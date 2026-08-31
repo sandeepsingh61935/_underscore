@@ -31,14 +31,17 @@ export function HighlightMetadataEditor({
     setTags(initialTags);
   }, [highlightId, initialNotes, initialTags]);
 
-  const persist = useCallback(async (nextNotes: string, nextTags: string[]) => {
-    setIsSaving(true);
-    try {
-      await updateMetadata(highlightId, { notes: nextNotes, tags: nextTags });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [highlightId, updateMetadata]);
+  const persist = useCallback(
+    async (nextNotes: string, nextTags: string[]) => {
+      setIsSaving(true);
+      try {
+        await updateMetadata(highlightId, { notes: nextNotes, tags: nextTags });
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [highlightId, updateMetadata]
+  );
 
   const addTag = useCallback(() => {
     const trimmed = tagDraft.trim();
@@ -49,11 +52,14 @@ export function HighlightMetadataEditor({
     void persist(notes, next);
   }, [notes, persist, tagDraft, tags]);
 
-  const removeTag = useCallback((index: number) => {
-    const next = tags.filter((_, i) => i !== index);
-    setTags(next);
-    void persist(notes, next);
-  }, [notes, persist, tags]);
+  const removeTag = useCallback(
+    (index: number) => {
+      const next = tags.filter((_, i) => i !== index);
+      setTags(next);
+      void persist(notes, next);
+    },
+    [notes, persist, tags]
+  );
 
   const handleNotesBlur = useCallback(() => {
     if (notes === initialNotes) return;
@@ -65,7 +71,9 @@ export function HighlightMetadataEditor({
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        onBlur={() => { void handleNotesBlur(); }}
+        onBlur={() => {
+          void handleNotesBlur();
+        }}
         disabled={disabled || isSaving}
         placeholder="Add a note…"
         rows={2}
@@ -105,7 +113,9 @@ export function HighlightMetadataEditor({
               addTag();
             }
           }}
-          onBlur={() => { addTag(); }}
+          onBlur={() => {
+            addTag();
+          }}
           disabled={disabled || isSaving}
           placeholder="Add tag…"
           aria-label="Add tag"

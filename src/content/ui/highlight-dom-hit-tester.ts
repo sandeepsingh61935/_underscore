@@ -3,10 +3,10 @@
  * Facade supplies metadata; painter owns live Range geometry.
  */
 
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
-import type { RepositoryFacade } from '@/shared/repositories';
 import type { HighlightPainter } from '@/content/paint/highlight-painter';
 import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
+import type { RepositoryFacade } from '@/shared/repositories';
+import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 export class HighlightDOMHitTester {
   constructor(

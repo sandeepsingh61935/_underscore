@@ -4,9 +4,7 @@ import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import { InMemoryHighlightRepository } from '@/shared/repositories/in-memory-highlight-repository';
 import { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import {
-  handleAuthStorageEvent,
-} from '@/background/services/auth-storage-lifecycle';
+import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
 
 vi.mock('@/background/services/library-change-notifier', () => ({
   notifyLibraryDataChanged: vi.fn(),
@@ -60,7 +58,7 @@ describe('handleAuthStorageEvent', () => {
         syncCursor,
         echoTracker,
         persistGuestMode,
-      },
+      }
     );
 
     expect(await pro.count()).toBe(0);
@@ -101,7 +99,7 @@ describe('handleAuthStorageEvent', () => {
         scopedRepository: scoped,
         repositoryFacade: new RepositoryFacade(scoped),
         cloudHydration: { hydrate },
-      },
+      }
     );
 
     expect(scoped.getActiveScope()).toBe('pro');
@@ -126,7 +124,7 @@ describe('handleAuthStorageEvent', () => {
         scopedRepository: scoped,
         repositoryFacade: facade,
         cloudHydration: { hydrate },
-      },
+      }
     );
 
     expect(scoped.getActiveScope()).toBe('pro');

@@ -19,15 +19,19 @@ import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
 import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
+import { MODE_NAMES } from '@/content/modes/mode-constants';
 import { SelectionDetector } from '@/content/selection-detector';
 import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
-import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 import { getHighlightsInRange } from '@/content/utils/get-highlights-in-range';
+import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
+import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
+import { AUTH_STATE_CHANGED } from '@/shared/auth/constants';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
 // (no repository type import — restoreHighlights reads via the facade)
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
@@ -36,19 +40,14 @@ import type {
   HighlightClickedEvent,
 } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
-import { AUTH_STATE_CHANGED } from '@/shared/auth/constants';
-import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
-import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
 import type { EventBus } from '@/shared/utils/event-bus';
 import { LoggerFactory } from '@/shared/utils/logger';
+import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 import {
   subtractRange,
   filterTinyRanges,
   mergeAdjacentRanges,
 } from '@/shared/utils/range-algebra';
-
-import { MODE_NAMES } from '@/content/modes/mode-constants';
-import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
 const logger = LoggerFactory.getLogger('ContentScript');
 
@@ -70,9 +69,8 @@ export default defineContentScript({
 
     // Early presence mark for web install gate (before heavy DI init).
     try {
-      const { announceExtensionPresence } = await import(
-        '@/content/extension-presence-announce'
-      );
+      const { announceExtensionPresence } =
+        await import('@/content/extension-presence-announce');
       let version = '1';
       try {
         version = browser.runtime.getManifest().version;
@@ -92,9 +90,8 @@ export default defineContentScript({
       // Create shared event bus
       // ===== DEPENDENCY INJECTION: Initialize IoC Container =====
       const { Container } = await import('@/shared/di/container');
-      const { registerContentServices } = await import(
-        '@/shared/di/content-service-registration'
-      );
+      const { registerContentServices } =
+        await import('@/shared/di/content-service-registration');
 
       const container = new Container();
       registerContentServices(container);
@@ -105,8 +102,12 @@ export default defineContentScript({
       const modeManager = container.resolve<ModeManager>('modeManager');
       const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
       const commandFactory = container.resolve<CommandFactory>('commandFactory');
-      const ipcReadableHighlightRepository = container.resolve<IReadableHighlightRepository>('ipcReadableHighlightRepository');
-      const messageBus = container.resolve<import('@/shared/interfaces/i-message-bus').IMessageBus>('messageBus');
+      const ipcReadableHighlightRepository =
+        container.resolve<IReadableHighlightRepository>('ipcReadableHighlightRepository');
+      const messageBus =
+        container.resolve<import('@/shared/interfaces/i-message-bus').IMessageBus>(
+          'messageBus'
+        );
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
@@ -167,7 +168,8 @@ export default defineContentScript({
       const detector = new SelectionDetector(eventBus);
 
       // Click detector: plain click toggles delete-icon pin; Ctrl+Click deletes
-      const { HighlightDOMHitTester } = await import('@/content/ui/highlight-dom-hit-tester');
+      const { HighlightDOMHitTester } =
+        await import('@/content/ui/highlight-dom-hit-tester');
       const hitTester = new HighlightDOMHitTester(repositoryFacade);
 
       const clickDetector = new HighlightClickDetector(eventBus, hitTester);
@@ -175,24 +177,19 @@ export default defineContentScript({
 
       // Delete icon: click-to-pin (not hover) so moving to the exterior icon keeps it
       const { DeleteIconOverlay } = await import('@/content/ui/delete-icon-overlay');
-      const {
-        HIGHLIGHT_DELETE_ICON_TOGGLE,
-        HIGHLIGHT_DELETE_ICON_DISMISS,
-      } = await import('@/content/highlight-click-detector');
+      const { HIGHLIGHT_DELETE_ICON_TOGGLE, HIGHLIGHT_DELETE_ICON_DISMISS } =
+        await import('@/content/highlight-click-detector');
 
       const deleteIconOverlay = new DeleteIconOverlay(
         modeManager,
         repositoryFacade,
         logger,
-        messageBus,
+        messageBus
       );
 
-      eventBus.on(
-        HIGHLIGHT_DELETE_ICON_TOGGLE,
-        (event: { highlightId: string }) => {
-          deleteIconOverlay.togglePin(event.highlightId);
-        }
-      );
+      eventBus.on(HIGHLIGHT_DELETE_ICON_TOGGLE, (event: { highlightId: string }) => {
+        deleteIconOverlay.togglePin(event.highlightId);
+      });
 
       eventBus.on(HIGHLIGHT_DELETE_ICON_DISMISS, () => {
         deleteIconOverlay.dismissPin();
@@ -237,7 +234,9 @@ export default defineContentScript({
       // - Future Modes: Implement IMode.shouldRestore() accordingly.
       const shouldRestore = currentMode.shouldRestore();
 
-      logger.info(`[DEBUG] Page Load: Mode=${currentMode.name} shouldRestore=${shouldRestore}`);
+      logger.info(
+        `[DEBUG] Page Load: Mode=${currentMode.name} shouldRestore=${shouldRestore}`
+      );
 
       if (shouldRestore) {
         logger.info('[DEBUG] Starting default restoration...');
@@ -303,7 +302,8 @@ export default defineContentScript({
                 const serializedRanges = mergedRanges.map((r) => serializeRange(r));
 
                 // Generate new ID for split highlight (UUID for cloud highlights.id)
-                const { generateHighlightId } = await import('@/shared/utils/generate-highlight-id');
+                const { generateHighlightId } =
+                  await import('@/shared/utils/generate-highlight-id');
                 const newId = generateHighlightId();
 
                 const { generateContentHash } =
@@ -314,9 +314,14 @@ export default defineContentScript({
                   id: newId,
                   text,
                   contentHash,
-                  colorRole: (existingHighlight.colorRole || existingHighlight.color || 'yellow') as 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
+                  colorRole: (existingHighlight.colorRole ||
+                    existingHighlight.color ||
+                    'yellow') as
+                    'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
                   type: 'underscore' as const,
-                  ranges: serializedRanges.filter((r): r is NonNullable<typeof r> => r != null),
+                  ranges: serializedRanges.filter(
+                    (r): r is NonNullable<typeof r> => r != null
+                  ),
                   liveRanges: mergedRanges,
                   createdAt: new Date(),
                   url: existingHighlight.url,
@@ -381,12 +386,10 @@ export default defineContentScript({
       });
 
       // ===== Handle highlight removal (Ctrl+Click) =====
-      const { ContentHighlightDeleteClient } = await import(
-        '@/content/services/content-highlight-delete'
-      );
-      const { performContentHighlightDelete } = await import(
-        '@/content/services/content-highlight-delete-flow'
-      );
+      const { ContentHighlightDeleteClient } =
+        await import('@/content/services/content-highlight-delete');
+      const { performContentHighlightDelete } =
+        await import('@/content/services/content-highlight-delete-flow');
       const contentDeleteClient = new ContentHighlightDeleteClient(messageBus);
 
       eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
@@ -469,7 +472,6 @@ export default defineContentScript({
         }
 
         // Removed: mode switching shortcuts (Ctrl+U/H/B) - single mode only
-
         // Ctrl+Shift+U - Clear all
         else if (e.ctrlKey && e.shiftKey && e.code === 'KeyU') {
           e.preventDefault();
@@ -494,8 +496,10 @@ export default defineContentScript({
       // Push page body text to background for LLM context (ADR-021 §4).
       const { PageContentCache } = await import('@/content/page-content-cache');
       const pageContentCache = new PageContentCache(
-        (msg) => { void browser.runtime.sendMessage(msg).catch(() => {}); },
-        { debounceMs: 2_000, maxBytes: 100 * 1024 },
+        (msg) => {
+          void browser.runtime.sendMessage(msg).catch(() => {});
+        },
+        { debounceMs: 2_000, maxBytes: 100 * 1024 }
       );
       pageContentCache.start();
       window.addEventListener('pagehide', () => pageContentCache.stop(), { once: false });
@@ -519,9 +523,8 @@ export default defineContentScript({
       eventBus.on(EventName.HIGHLIGHTS_CLEARED, () => broadcastCount());
 
       const handleAuthStateChanged = async (isAuthenticated: boolean): Promise<void> => {
-        const { handleContentAuthStateChanged } = await import(
-          '@/content/services/content-auth-sync'
-        );
+        const { handleContentAuthStateChanged } =
+          await import('@/content/services/content-auth-sync');
         await handleContentAuthStateChanged(isAuthenticated, {
           modeStateManager,
           modeManager,
@@ -547,9 +550,8 @@ export default defineContentScript({
         }
         if (msg?.type === LIBRARY_DATA_CHANGED && msg.payload?.source) {
           void (async () => {
-            const { handleLibraryDataChanged } = await import(
-              '@/content/services/content-library-sync'
-            );
+            const { handleLibraryDataChanged } =
+              await import('@/content/services/content-library-sync');
             await handleLibraryDataChanged(
               {
                 source: msg.payload!.source!,
@@ -564,7 +566,7 @@ export default defineContentScript({
                 currentUrl: getCapturePageUrl(),
                 deserializeRange,
                 logger,
-              },
+              }
             );
             broadcastCount();
           })();
@@ -572,9 +574,12 @@ export default defineContentScript({
       });
 
       // Legacy local EventBus hook (kept for in-process tests).
-      eventBus.on(EventName.AUTH_STATE_CHANGED, async (event: { isAuthenticated: boolean }) => {
-        await handleAuthStateChanged(event.isAuthenticated);
-      });
+      eventBus.on(
+        EventName.AUTH_STATE_CHANGED,
+        async (event: { isAuthenticated: boolean }) => {
+          await handleAuthStateChanged(event.isAuthenticated);
+        }
+      );
 
       // Listen for count/mode requests from popup
       browser.runtime.onMessage.addListener(
@@ -601,7 +606,8 @@ export default defineContentScript({
             });
           } else if (msg && msg.type === 'SET_MODE') {
             // Support both top-level mode (legacy) and payload.mode (schema-compliant)
-            const payloadMode = (msg.payload as { mode?: 'basic' | 'pro' | 'pro_xai' })?.mode;
+            const payloadMode = (msg.payload as { mode?: 'basic' | 'pro' | 'pro_xai' })
+              ?.mode;
             const newMode = msg.mode || payloadMode;
 
             if (!newMode) {
@@ -610,7 +616,7 @@ export default defineContentScript({
             }
 
             const isAuthenticated = Boolean(
-              (msg as { isAuthenticated?: boolean }).isAuthenticated,
+              (msg as { isAuthenticated?: boolean }).isAuthenticated
             );
 
             logger.info(`[IPC] Handling SET_MODE: ${newMode}`);
@@ -643,7 +649,9 @@ export default defineContentScript({
                   // Pro / 10x-Pro Mode handles its own restoration via
                   // onActivate() -> restore(). Do NOT clear here - it would
                   // wipe the highlights that were just loaded!
-                  logger.info('[IPC] Pro Mode - skipping clear (self-managed restoration)');
+                  logger.info(
+                    '[IPC] Pro Mode - skipping clear (self-managed restoration)'
+                  );
                 }
 
                 // 3. Get final count after restoration/clearing
@@ -729,8 +737,13 @@ interface RestoreContext {
  * Restore highlights from storage on page load
  */
 async function restoreHighlights(context: RestoreContext): Promise<void> {
-  const { repositoryFacade, highlightManager, modeManager, commandFactory, ipcReadableHighlightRepository } =
-    context;
+  const {
+    repositoryFacade,
+    highlightManager,
+    modeManager,
+    commandFactory,
+    ipcReadableHighlightRepository,
+  } = context;
   try {
     const currentUrl = getCapturePageUrl();
     // Reads go through the read-side IPC adapter, not the local in-memory
@@ -839,9 +852,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
         `${failed} highlights could not be restored (content may have changed)`
       );
     }
-    logger.info(
-      `Restored ${restored}/${activeHighlights.length} highlights`
-    );
+    logger.info(`Restored ${restored}/${activeHighlights.length} highlights`);
   } catch (error) {
     logger.error('Failed to restore highlights', error as Error);
   }

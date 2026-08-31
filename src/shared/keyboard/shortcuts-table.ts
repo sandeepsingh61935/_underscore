@@ -18,13 +18,13 @@ function mod(platform: ShortcutPlatform): string {
 }
 
 export function detectShortcutPlatform(
-  ua: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+  ua: string = typeof navigator !== 'undefined' ? navigator.userAgent : ''
 ): ShortcutPlatform {
   return /Mac|iPhone|iPad|iPod/i.test(ua) ? 'mac' : 'other';
 }
 
 export function buildShortcutsTable(
-  platform: ShortcutPlatform = detectShortcutPlatform(),
+  platform: ShortcutPlatform = detectShortcutPlatform()
 ): ShortcutRow[] {
   const m = mod(platform);
   return [
@@ -70,7 +70,7 @@ export function buildShortcutsTable(
 
 /** Empty-state / first-run keyboard hint — matches real highlight chord. */
 export function highlightKeyboardHint(
-  platform: ShortcutPlatform = detectShortcutPlatform(),
+  platform: ShortcutPlatform = detectShortcutPlatform()
 ): string {
   return `Select text · press ${mod(platform)}+U`;
 }

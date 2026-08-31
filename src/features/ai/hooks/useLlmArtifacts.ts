@@ -44,27 +44,30 @@ export function useLlmArtifacts(scope: LlmArtifactScope | null): {
     void reload();
   }, [reload]);
 
-  const save = useCallback(async (input: SaveLlmArtifactInput): Promise<LlmArtifact | null> => {
-    try {
-      const saved = await saveLlmArtifact(input);
-      await reload();
-      return saved;
-    } catch {
-      return null;
-    }
-  }, [reload]);
+  const save = useCallback(
+    async (input: SaveLlmArtifactInput): Promise<LlmArtifact | null> => {
+      try {
+        const saved = await saveLlmArtifact(input);
+        await reload();
+        return saved;
+      } catch {
+        return null;
+      }
+    },
+    [reload]
+  );
 
   const getByKind = useCallback(
     (kind: LlmArtifactKind) => {
       const matches = artifacts.filter((a) => a.kind === kind);
       return matches.length > 0 ? matches[matches.length - 1] : undefined;
     },
-    [artifacts],
+    [artifacts]
   );
 
   const getQueries = useCallback(
     () => artifacts.filter((a) => a.kind === 'scope_query'),
-    [artifacts],
+    [artifacts]
   );
 
   return {

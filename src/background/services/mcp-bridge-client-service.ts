@@ -3,6 +3,9 @@
  * @description Outbound WebSocket client from extension background to MCP Node bridge (ADR-023).
  */
 
+import { browser } from 'wxt/browser';
+
+import type { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import {
   MCP_BRIDGE_STORAGE_KEYS,
   MCP_BRIDGE_WS_URL,
@@ -16,10 +19,8 @@ import type {
   BridgeServerMessage,
 } from '@/shared/mcp/bridge-protocol';
 import { BRIDGE_PROTOCOL_VERSION } from '@/shared/mcp/bridge-protocol';
-import type { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
-import type { ILogger } from '@/shared/utils/logger';
 import { ensureMcpBridgeOrigins } from '@/shared/permissions/ensure-origins';
-import { browser } from 'wxt/browser';
+import type { ILogger } from '@/shared/utils/logger';
 
 const RECONNECT_BASE_MS = 5_000;
 const RECONNECT_MAX_MS = 60_000;
@@ -31,7 +32,8 @@ export class McpBridgeClientService {
   private state: BridgeConnectionState = 'disconnected';
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private startupTimer: ReturnType<typeof setTimeout> | null = null;
-  private storageListener: ((changes: Record<string, chrome.storage.StorageChange>) => void) | null = null;
+  private storageListener:
+    ((changes: Record<string, chrome.storage.StorageChange>) => void) | null = null;
   private suspendListener: (() => void) | null = null;
   private activeToken = '';
   private reconnectAttempt = 0;
@@ -39,7 +41,7 @@ export class McpBridgeClientService {
 
   constructor(
     private readonly handler: McpBridgeHandler,
-    private readonly logger: ILogger,
+    private readonly logger: ILogger
   ) {}
 
   private setConnectionState(state: BridgeConnectionState): void {
@@ -117,9 +119,10 @@ export class McpBridgeClientService {
       MCP_BRIDGE_STORAGE_KEYS.token,
     ]);
     const enabled = allowed && stored[MCP_BRIDGE_STORAGE_KEYS.enabled] === true;
-    const token = typeof stored[MCP_BRIDGE_STORAGE_KEYS.token] === 'string'
-      ? (stored[MCP_BRIDGE_STORAGE_KEYS.token] as string).trim()
-      : '';
+    const token =
+      typeof stored[MCP_BRIDGE_STORAGE_KEYS.token] === 'string'
+        ? (stored[MCP_BRIDGE_STORAGE_KEYS.token] as string).trim()
+        : '';
 
     if (!enabled || !token) {
       this.activeToken = '';
@@ -162,7 +165,10 @@ export class McpBridgeClientService {
   }
 
   private connect(token: string): void {
-    if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
+    if (
+      this.ws?.readyState === WebSocket.OPEN ||
+      this.ws?.readyState === WebSocket.CONNECTING
+    ) {
       return;
     }
 
@@ -209,7 +215,7 @@ export class McpBridgeClientService {
     this.clearReconnect();
     const delay = Math.min(
       RECONNECT_BASE_MS * 2 ** this.reconnectAttempt,
-      RECONNECT_MAX_MS,
+      RECONNECT_MAX_MS
     );
     this.reconnectAttempt += 1;
     this.reconnectTimer = setTimeout(() => {

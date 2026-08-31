@@ -63,7 +63,7 @@ describe('WebAuthProvider', () => {
     render(
       <WebAuthProvider>
         <StatusProbe />
-      </WebAuthProvider>,
+      </WebAuthProvider>
     );
 
     const el = () => document.querySelector('[data-od-id="probe"]') as HTMLElement;
@@ -82,13 +82,13 @@ describe('WebAuthProvider', () => {
     render(
       <WebAuthProvider>
         <StatusProbe />
-      </WebAuthProvider>,
+      </WebAuthProvider>
     );
 
     await waitFor(() => {
-      expect(document.querySelector('[data-od-id="probe"]')?.getAttribute('data-status')).toBe(
-        'unauthenticated',
-      );
+      expect(
+        document.querySelector('[data-od-id="probe"]')?.getAttribute('data-status')
+      ).toBe('unauthenticated');
     });
   });
 
@@ -101,13 +101,13 @@ describe('WebAuthProvider', () => {
     render(
       <WebAuthProvider>
         <StatusProbe />
-      </WebAuthProvider>,
+      </WebAuthProvider>
     );
 
     await waitFor(() => {
-      expect(document.querySelector('[data-od-id="probe"]')?.getAttribute('data-status')).toBe(
-        'unauthenticated',
-      );
+      expect(
+        document.querySelector('[data-od-id="probe"]')?.getAttribute('data-status')
+      ).toBe('unauthenticated');
     });
   });
 });

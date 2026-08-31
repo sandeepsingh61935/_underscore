@@ -13,7 +13,7 @@ export const springs = {
   bounce: { type: 'spring', stiffness: 400, damping: 22, mass: 0.7 } as const,
 
   /** Background/ambient effects — slow, gentle drift */
-  slow:   { type: 'spring', stiffness:  80, damping: 20, mass: 1.2 } as const,
+  slow: { type: 'spring', stiffness: 80, damping: 20, mass: 1.2 } as const,
 } as const;
 
 export type SpringPreset = keyof typeof springs;

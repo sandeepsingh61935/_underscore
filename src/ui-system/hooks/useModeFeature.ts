@@ -26,55 +26,46 @@ export interface ModeFeatureResult {
 export function useModeFeature(
   feature: FeatureKey,
   isAuthenticated: boolean,
-  isPaidActive = false,
+  isPaidActive = false
 ): ModeFeatureResult {
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
   const storageScope = isAuthenticated ? 'pro' : 'basic';
 
-  return useMemo(
-    () => {
-      const ctx: FeatureGateContext = {
-        mode: currentMode,
-        capabilities,
-        isAuthenticated,
-        storageScope,
-        isPaidActive,
-      };
-      const gate = canUseFeature(feature, ctx);
-      return { allowed: gate.allowed, reason: gate.reason, capabilities };
-    },
-    [feature, currentMode, capabilities, isAuthenticated, storageScope, isPaidActive],
-  );
+  return useMemo(() => {
+    const ctx: FeatureGateContext = {
+      mode: currentMode,
+      capabilities,
+      isAuthenticated,
+      storageScope,
+      isPaidActive,
+    };
+    const gate = canUseFeature(feature, ctx);
+    return { allowed: gate.allowed, reason: gate.reason, capabilities };
+  }, [feature, currentMode, capabilities, isAuthenticated, storageScope, isPaidActive]);
 }
 
 export function useConfigureAiProvidersGate(
   isAuthenticated: boolean,
-  isPaidActive: boolean,
+  isPaidActive: boolean
 ): ModeFeatureResult {
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
-  return useMemo(
-    () => {
-      const gate = canConfigureAiProviders({ isAuthenticated, isPaidActive });
-      return { allowed: gate.allowed, reason: gate.reason, capabilities };
-    },
-    [currentMode, capabilities, isAuthenticated, isPaidActive],
-  );
+  return useMemo(() => {
+    const gate = canConfigureAiProviders({ isAuthenticated, isPaidActive });
+    return { allowed: gate.allowed, reason: gate.reason, capabilities };
+  }, [currentMode, capabilities, isAuthenticated, isPaidActive]);
 }
 
 export function useMcpGate(
   isAuthenticated: boolean,
   isPaidActive: boolean,
-  isPastDue = false,
+  isPastDue = false
 ): ModeFeatureResult {
   const { currentMode } = usePersistedMode(isAuthenticated);
   const capabilities = getCapabilitiesForMode(currentMode);
-  return useMemo(
-    () => {
-      const gate = canUseMcp({ isAuthenticated, isPaidActive, isPastDue });
-      return { allowed: gate.allowed, reason: gate.reason, capabilities };
-    },
-    [currentMode, capabilities, isAuthenticated, isPaidActive, isPastDue],
-  );
+  return useMemo(() => {
+    const gate = canUseMcp({ isAuthenticated, isPaidActive, isPastDue });
+    return { allowed: gate.allowed, reason: gate.reason, capabilities };
+  }, [currentMode, capabilities, isAuthenticated, isPaidActive, isPastDue]);
 }

@@ -3,14 +3,15 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { ILogger } from '@/shared/interfaces/i-logger';
 import {
   freeEntitlement,
   getBillingAppOrigin,
   SupabaseBillingPort,
 } from '@/shared/billing';
+import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import {
   IPC_BILLING_GET_ENTITLEMENT,
   IPC_BILLING_OPEN_PORTAL,
@@ -66,11 +67,9 @@ export function registerBillingHandlers(deps: BillingHandlerDeps): void {
         }
         const origin = getBillingAppOrigin();
         const successUrl =
-          payload?.successUrl ??
-          `${origin}/settings?billing=success&client=extension`;
+          payload?.successUrl ?? `${origin}/settings?billing=success&client=extension`;
         const cancelUrl =
-          payload?.cancelUrl ??
-          `${origin}/settings?billing=cancel&client=extension`;
+          payload?.cancelUrl ?? `${origin}/settings?billing=cancel&client=extension`;
         // Return URL only — useBilling opens once (avoid double tabs).
         const { url } = await port().createCheckout({ successUrl, cancelUrl });
         return { success: true, data: { url } };

@@ -30,7 +30,8 @@ export const MODE_BRANDING: Record<ModeType, ModeBranding> = {
     planName: 'underscore-basic',
     family: 'device',
     tagline: 'Local only',
-    description: 'Highlights live permanently on this device. Sign in to sync across devices.',
+    description:
+      'Highlights live permanently on this device. Sign in to sync across devices.',
   },
   pro: {
     displayName: 'Account (Free)',

@@ -57,8 +57,8 @@ export function McpConnectionsHub({
           className="u-sans"
           style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}
         >
-          Use your highlights in the agent you already use. OAuth happens in your agent — not in this
-          app.
+          Use your highlights in the agent you already use. OAuth happens in your agent —
+          not in this app.
         </div>
       </div>
 
@@ -71,12 +71,20 @@ export function McpConnectionsHub({
               background: 'var(--paper-2)',
             }}
           >
-            <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}>
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)' }}
+            >
               Locked
             </div>
             <div
               className="u-sans"
-              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink)',
+                marginTop: 4,
+                lineHeight: 1.45,
+              }}
             >
               {lockMessage}
             </div>
@@ -105,16 +113,30 @@ export function McpConnectionsHub({
 
       {locked ? (
         <div style={{ padding: '0 16px 10px' }}>
-          <div style={{ padding: 14, border: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}>
-            <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
+          <div
+            style={{
+              padding: 14,
+              border: '1px solid var(--rule-soft)',
+              background: 'var(--paper-2)',
+            }}
+          >
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}
+            >
               Included with Account (Paid)
             </div>
             <div
               className="u-sans"
-              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 6, lineHeight: 1.45 }}
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink)',
+                marginTop: 6,
+                lineHeight: 1.45,
+              }}
             >
-              Integrations stay visible so you can see what Paid unlocks. Setup does not ask for model
-              keys.
+              Integrations stay visible so you can see what Paid unlocks. Setup does not
+              ask for model keys.
             </div>
             <button
               type="button"
@@ -138,8 +160,15 @@ export function McpConnectionsHub({
       ) : null}
 
       {grantsError && !locked ? (
-        <div style={{ padding: '0 16px 10px' }} role="status" data-testid="mcp-grants-error">
-          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}>
+        <div
+          style={{ padding: '0 16px 10px' }}
+          role="status"
+          data-testid="mcp-grants-error"
+        >
+          <div
+            className="u-sans"
+            style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}
+          >
             {grantsError}
           </div>
         </div>
@@ -147,16 +176,30 @@ export function McpConnectionsHub({
 
       {showLegacyNotice && !locked ? (
         <div style={{ padding: '0 16px 10px' }} data-testid="mcp-legacy-bridge-notice">
-          <div style={{ padding: 12, border: '1px solid var(--rule)', background: 'var(--paper-2)' }}>
-            <div className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
+          <div
+            style={{
+              padding: 12,
+              border: '1px solid var(--rule)',
+              background: 'var(--paper-2)',
+            }}
+          >
+            <div
+              className="u-sans"
+              style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}
+            >
               Local bridge is no longer the product path
             </div>
             <div
               className="u-sans"
-              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', marginTop: 4, lineHeight: 1.45 }}
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink)',
+                marginTop: 4,
+                lineHeight: 1.45,
+              }}
             >
-              Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge may still run
-              until it is removed.
+              Move hosts to Cloud MCP (remote URL + OAuth or Bearer JWT). The local bridge
+              may still run until it is removed.
             </div>
           </div>
         </div>
@@ -176,7 +219,10 @@ export function McpConnectionsHub({
       </div>
       {connectedApps.length === 0 || locked ? (
         <div style={{ padding: '8px 16px 12px' }}>
-          <div className="u-sans" style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}>
+          <div
+            className="u-sans"
+            style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45 }}
+          >
             {locked
               ? 'Connections unlock with Account (Paid).'
               : 'Nothing connected yet. Add an AI app, then approve when the browser opens.'}
@@ -189,7 +235,10 @@ export function McpConnectionsHub({
             title={app.title}
             sub={app.sub}
             right={
-              <span className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}>
+              <span
+                className="u-mono"
+                style={{ fontSize: 'var(--step--2)', color: 'var(--accent)' }}
+              >
                 Connected
               </span>
             }
@@ -236,7 +285,12 @@ export function McpConnectionsHub({
             </summary>
             <div
               className="u-sans"
-              style={{ fontSize: 'var(--step-0)', fontWeight: 500, color: 'var(--ink)', marginTop: 4 }}
+              style={{
+                fontSize: 'var(--step-0)',
+                fontWeight: 500,
+                color: 'var(--ink)',
+                marginTop: 4,
+              }}
             >
               Remote MCP URL
             </div>
@@ -277,7 +331,12 @@ export function McpConnectionsHub({
             </button>
             <p
               className="u-sans type-sub"
-              style={{ fontSize: 'var(--step--1)', color: 'var(--ink)', lineHeight: 1.45, margin: '12px 0 0' }}
+              style={{
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink)',
+                lineHeight: 1.45,
+                margin: '12px 0 0',
+              }}
             >
               {INTEGRATIONS_ADVANCED_COPY}
             </p>

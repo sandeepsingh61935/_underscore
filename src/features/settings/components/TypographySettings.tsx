@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { TypeSpecimen } from '@/features/settings/components/TypeSpecimen';
 import {
   BUILTIN_TYPE_PRESET_LIST,
   BUILTIN_TYPE_PRESETS,
@@ -18,7 +19,6 @@ import {
   getFontFile,
   storeFontFile,
 } from '@/shared/services/font-import-store';
-import { TypeSpecimen } from '@/features/settings/components/TypeSpecimen';
 import {
   abbreviateLabel,
   CollapsibleSection,
@@ -99,7 +99,10 @@ function FontUploadZone({
       <div style={{ fontSize: 'var(--step--1)', fontWeight: 500, color: 'var(--ink)' }}>
         {fileName ?? 'Drop .woff2 or .ttf'}
       </div>
-      <div className="u-mono" style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4 }}>
+      <div
+        className="u-mono"
+        style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 4 }}
+      >
         Assigns to {activeRole} role
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
@@ -169,47 +172,61 @@ export interface TypographySettingsProps {
   onToggle: () => void;
 }
 
-export function TypographySettings({ expanded, onToggle }: TypographySettingsProps): React.ReactElement {
+export function TypographySettings({
+  expanded,
+  onToggle,
+}: TypographySettingsProps): React.ReactElement {
   const { selection, displayName, setSelection, resetToDefault } = useTypePreset();
 
-  const [draft, setDraft] = useState<TypographyTokens>(() => resolveBuiltinTokens('editorial'));
+  const [draft, setDraft] = useState<TypographyTokens>(() =>
+    resolveBuiltinTokens('editorial')
+  );
   const [isCustom, setIsCustom] = useState(false);
   const [fontRole, setFontRole] = useState<FontRole>('serif');
   const [importError, setImportError] = useState<string | null>(null);
-  const [importedNames, setImportedNames] = useState<Partial<Record<FontRole, string>>>({});
+  const [importedNames, setImportedNames] = useState<Partial<Record<FontRole, string>>>(
+    {}
+  );
 
-  const syncFromSelection = useCallback(async (sel: TypePresetSelection): Promise<void> => {
-    if (sel.kind === 'builtin') {
-      setDraft(resolveBuiltinTokens(sel.id));
-      setIsCustom(false);
-    } else {
-      setDraft({
-        fonts: { ...sel.preset.fonts },
-        scale: { ...sel.preset.scale },
-        spacing: { ...sel.preset.spacing },
-        margins: { ...sel.preset.margins },
-      });
-      setIsCustom(true);
-    }
-
-    const names: Partial<Record<FontRole, string>> = {};
-    if (sel.kind === 'custom' && sel.importedFonts) {
-      for (const role of FONT_ROLES) {
-        const id = sel.importedFonts[role];
-        if (!id) continue;
-        const stored = await getFontFile(id);
-        if (stored) names[role] = stored.fileName;
+  const syncFromSelection = useCallback(
+    async (sel: TypePresetSelection): Promise<void> => {
+      if (sel.kind === 'builtin') {
+        setDraft(resolveBuiltinTokens(sel.id));
+        setIsCustom(false);
+      } else {
+        setDraft({
+          fonts: { ...sel.preset.fonts },
+          scale: { ...sel.preset.scale },
+          spacing: { ...sel.preset.spacing },
+          margins: { ...sel.preset.margins },
+        });
+        setIsCustom(true);
       }
-    }
-    setImportedNames(names);
-  }, []);
+
+      const names: Partial<Record<FontRole, string>> = {};
+      if (sel.kind === 'custom' && sel.importedFonts) {
+        for (const role of FONT_ROLES) {
+          const id = sel.importedFonts[role];
+          if (!id) continue;
+          const stored = await getFontFile(id);
+          if (stored) names[role] = stored.fileName;
+        }
+      }
+      setImportedNames(names);
+    },
+    []
+  );
 
   useEffect(() => {
     void syncFromSelection(selection);
   }, [selection, syncFromSelection]);
 
   const presetItems = useMemo(
-    () => BUILTIN_TYPE_PRESET_LIST.map((id) => ({ id, label: BUILTIN_TYPE_PRESETS[id].name })),
+    () =>
+      BUILTIN_TYPE_PRESET_LIST.map((id) => ({
+        id,
+        label: BUILTIN_TYPE_PRESETS[id].name,
+      })),
     []
   );
 
@@ -230,7 +247,8 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
   const scaleHeaderValues = SCALE_META.map((s) => draft.scale[s.id]);
   const spacingHeaderValues = SPACING_META.map((s) => draft.spacing[s.key]);
   const marginHeaderValues = MARGIN_META.map((m) => draft.margins[m.key]);
-  const importSummary = importedNames.serif ?? importedNames.sans ?? importedNames.mono ?? 'None';
+  const importSummary =
+    importedNames.serif ?? importedNames.sans ?? importedNames.mono ?? 'None';
 
   const applyBuiltin = (id: BuiltinTypePresetId): void => {
     const tokens = resolveBuiltinTokens(id);
@@ -250,7 +268,8 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
       applyBuiltin(selection.id);
       return;
     }
-    const importedFonts = selection.kind === 'custom' ? selection.importedFonts : undefined;
+    const importedFonts =
+      selection.kind === 'custom' ? selection.importedFonts : undefined;
     void setSelection({ kind: 'custom', preset: draft, importedFonts });
   };
 
@@ -347,7 +366,11 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
         }}
       >
         <div>
-          <div style={{ fontSize: 'var(--step-1)', color: 'var(--ink)', fontWeight: 500 }}>Typography</div>
+          <div
+            style={{ fontSize: 'var(--step-1)', color: 'var(--ink)', fontWeight: 500 }}
+          >
+            Typography
+          </div>
           <div
             className="u-mono"
             data-testid="typography-summary"
@@ -371,7 +394,10 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
       {expanded ? (
         <div
           data-testid="typography-panel"
-          style={{ borderBottom: '1px solid var(--rule-soft)', background: 'var(--paper-2)' }}
+          style={{
+            borderBottom: '1px solid var(--rule-soft)',
+            background: 'var(--paper-2)',
+          }}
         >
           <div style={{ padding: '12px 16px 0' }}>
             <TypeSpecimen tokens={draft} />
@@ -405,7 +431,8 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               >
                 {BUILTIN_TYPE_PRESET_LIST.map((id) => {
                   const name = BUILTIN_TYPE_PRESETS[id].name;
-                  const active = !isCustom && selection.kind === 'builtin' && selection.id === id;
+                  const active =
+                    !isCustom && selection.kind === 'builtin' && selection.id === id;
                   return (
                     <button
                       key={id}
@@ -437,7 +464,11 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
                 <div
                   className="u-mono"
                   data-testid="typography-custom-hint"
-                  style={{ fontSize: 'var(--step--2)', color: 'var(--ink-3)', marginTop: 8 }}
+                  style={{
+                    fontSize: 'var(--step--2)',
+                    color: 'var(--ink-3)',
+                    marginTop: 8,
+                  }}
                 >
                   Custom — fonts or scale edited manually
                 </div>
@@ -527,7 +558,10 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               />
             </CollapsibleSection>
 
-            <CollapsibleSection title="Scale" trailing={<SectionValueColumns values={scaleHeaderValues} />}>
+            <CollapsibleSection
+              title="Scale"
+              trailing={<SectionValueColumns values={scaleHeaderValues} />}
+            >
               {SCALE_META.map((s) => (
                 <EditableControlRow
                   key={s.id}
@@ -546,14 +580,21 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               ))}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Spacing" trailing={<SectionValueColumns values={spacingHeaderValues} />}>
+            <CollapsibleSection
+              title="Spacing"
+              trailing={<SectionValueColumns values={spacingHeaderValues} />}
+            >
               {SPACING_META.map((s) => (
                 <EditableControlRow
                   key={s.key}
                   label={s.label}
                   value={draft.spacing[s.key]}
                   inputWidth={80}
-                  valueKind={s.key === 'displayLh' || s.key === 'bodyLh' ? 'line-height' : 'em-tracking'}
+                  valueKind={
+                    s.key === 'displayLh' || s.key === 'bodyLh'
+                      ? 'line-height'
+                      : 'em-tracking'
+                  }
                   onChange={(v) =>
                     markCustom({
                       ...draft,
@@ -564,7 +605,10 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
               ))}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Margins" trailing={<SectionValueColumns values={marginHeaderValues} />}>
+            <CollapsibleSection
+              title="Margins"
+              trailing={<SectionValueColumns values={marginHeaderValues} />}
+            >
               {MARGIN_META.map((m) => (
                 <EditableControlRow
                   key={m.key}
@@ -584,7 +628,9 @@ export function TypographySettings({ expanded, onToggle }: TypographySettingsPro
 
             <CollapsibleSection
               title="Import fonts"
-              trailing={<SectionValueColumns values={[abbreviateLabel(importSummary, 14)]} />}
+              trailing={
+                <SectionValueColumns values={[abbreviateLabel(importSummary, 14)]} />
+              }
             >
               <FontUploadZone
                 fileName={importedNames[fontRole] ?? null}

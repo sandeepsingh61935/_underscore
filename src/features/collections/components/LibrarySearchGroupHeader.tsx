@@ -69,10 +69,7 @@ export function LibrarySearchGroupHeader({
   );
 }
 
-export function formatSearchMatchMeta(
-  matchCount: number,
-  nameMatched: boolean,
-): string {
+export function formatSearchMatchMeta(matchCount: number, nameMatched: boolean): string {
   if (matchCount > 0) return String(matchCount);
   if (nameMatched) return 'Name';
   return '0';

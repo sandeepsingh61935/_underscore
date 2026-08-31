@@ -11,12 +11,7 @@ import React from 'react';
 import { cn } from '../../utils/cn';
 
 export type EmptyStateVariant =
-  | 'no-highlights'
-  | 'no-collections'
-  | 'no-results'
-  | 'welcome'
-  | 'error'
-  | 'custom';
+  'no-highlights' | 'no-collections' | 'no-results' | 'welcome' | 'error' | 'custom';
 
 export interface EmptyStateProps {
   /** Pre-defined variant for common use cases */
@@ -123,10 +118,7 @@ export function EmptyState({
     <div
       role="status"
       aria-live="polite"
-      className={cn(
-        'flex flex-col items-center justify-center text-center',
-        className
-      )}
+      className={cn('flex flex-col items-center justify-center text-center', className)}
       style={{ ...styles.container, gap: '8px' }}
     >
       <h3
@@ -159,22 +151,17 @@ export function EmptyState({
       )}
 
       {(action || secondaryAction) && (
-        <div className="flex flex-wrap items-center justify-center gap-2" style={{ marginTop: '14px' }}>
+        <div
+          className="flex flex-wrap items-center justify-center gap-2"
+          style={{ marginTop: '14px' }}
+        >
           {action && (
-            <button
-              type="button"
-              onClick={action.onClick}
-              className="btn primary sm"
-            >
+            <button type="button" onClick={action.onClick} className="btn primary sm">
               {action.label}
             </button>
           )}
           {secondaryAction && (
-            <button
-              type="button"
-              onClick={secondaryAction.onClick}
-              className="btn sm"
-            >
+            <button type="button" onClick={secondaryAction.onClick} className="btn sm">
               {secondaryAction.label}
             </button>
           )}

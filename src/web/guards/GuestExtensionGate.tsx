@@ -30,7 +30,7 @@ export function GuestExtensionGate({
   const { status: authStatus } = useWebAuth();
   const location = useLocation();
   const [presence, setPresence] = useState<ExtensionPresence | null>(
-    presenceOverride ?? null,
+    presenceOverride ?? null
   );
 
   useEffect(() => {
@@ -43,7 +43,13 @@ export function GuestExtensionGate({
     void ping().then((r) => {
       if (!cancelled) {
         // Signed-in may use the app without extension; record real presence for UI.
-        setPresence(r.presence === 'installed' ? 'installed' : isAuthenticated ? 'missing' : r.presence);
+        setPresence(
+          r.presence === 'installed'
+            ? 'installed'
+            : isAuthenticated
+              ? 'missing'
+              : r.presence
+        );
       }
     });
     return () => {
@@ -89,7 +95,11 @@ export function GuestExtensionGate({
       <Navigate
         to="/"
         replace
-        state={{ from: location.pathname, gateOpen: true, toast: 'Install the extension to use the app' }}
+        state={{
+          from: location.pathname,
+          gateOpen: true,
+          toast: 'Install the extension to use the app',
+        }}
       />
     );
   }

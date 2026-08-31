@@ -24,10 +24,7 @@ import {
   shouldRunFocusBillingSync,
 } from '@/shared/billing/polar-sync';
 import { decideWebhookEntitlementWrite } from '@/shared/billing/webhook-product-gate';
-import {
-  createEmptyRateBucket,
-  tryConsumeRateLimit,
-} from '@/shared/billing/rate-limit';
+import { createEmptyRateBucket, tryConsumeRateLimit } from '@/shared/billing/rate-limit';
 import type { BillingEntitlementRow } from '@/shared/billing';
 
 const PRODUCT = 'prod-paid-uuid';
@@ -220,10 +217,7 @@ describe('security: origin & redirect (open redirect / CSRF surface)', () => {
 
   it('S2: success/cancel redirect URLs cannot leave allowlist', () => {
     expect(
-      isAllowedBillingRedirectUrl(
-        `${WEB_ORIGIN}/settings?billing=success`,
-        ALLOWED
-      )
+      isAllowedBillingRedirectUrl(`${WEB_ORIGIN}/settings?billing=success`, ALLOWED)
     ).toBe(true);
     expect(
       isAllowedBillingRedirectUrl('https://evil.com/phish?billing=success', ALLOWED)
@@ -237,18 +231,12 @@ describe('security: origin & redirect (open redirect / CSRF surface)', () => {
   });
 
   it('S3: rejects javascript: and data: redirect schemes', () => {
-    expect(isAllowedBillingRedirectUrl('javascript:alert(1)', ALLOWED)).toBe(
-      false
-    );
+    expect(isAllowedBillingRedirectUrl('javascript:alert(1)', ALLOWED)).toBe(false);
     expect(isAllowedBillingRedirectUrl('data:text/html,x', ALLOWED)).toBe(false);
   });
 
   it('S4: resolveBillingRedirectUrl fails closed when client supplies evil URL', () => {
-    const r = resolveBillingRedirectUrl(
-      'https://evil.com/steal',
-      ALLOWED,
-      'success'
-    );
+    const r = resolveBillingRedirectUrl('https://evil.com/steal', ALLOWED, 'success');
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toMatch(/Invalid/i);
@@ -264,10 +252,9 @@ describe('security: origin & redirect (open redirect / CSRF surface)', () => {
     // Real gate: isAllowedBillingCorsOrigin checks BILLING_ALLOWED_EXTENSION_IDS
     expect(isAllowedBillingCorsOrigin(EXT_ORIGIN, [WEB_ORIGIN])).toBe(true);
     expect(
-      isAllowedBillingCorsOrigin(
-        'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        [WEB_ORIGIN]
-      )
+      isAllowedBillingCorsOrigin('chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', [
+        WEB_ORIGIN,
+      ])
     ).toBe(false);
     // Path after extension id is not a valid Origin value clients send
     expect(EXT_ORIGIN.includes('/popup')).toBe(false);
@@ -320,9 +307,7 @@ describe('security: product allowlist (privilege escalation / cross-product)', (
     const r = resolveBillingSyncFromSubscriptions({
       allowedProductId: PRODUCT,
       customerExists: true,
-      subscriptions: [
-        { id: 's_other', status: 'active', product_id: 'foreign-prod' },
-      ],
+      subscriptions: [{ id: 's_other', status: 'active', product_id: 'foreign-prod' }],
     });
     expect(r.action).toBe('upsert_free');
   });
@@ -331,9 +316,7 @@ describe('security: product allowlist (privilege escalation / cross-product)', (
     const r = resolveBillingSyncFromSubscriptions({
       allowedProductId: '',
       customerExists: true,
-      subscriptions: [
-        { id: 's1', status: 'active', product_id: PRODUCT },
-      ],
+      subscriptions: [{ id: 's1', status: 'active', product_id: PRODUCT }],
     });
     expect(r).toEqual({
       action: 'upsert_free',
@@ -344,15 +327,9 @@ describe('security: product allowlist (privilege escalation / cross-product)', (
 
 describe('security: checkout URL hardening', () => {
   it('S11: only polar.sh / sandbox.polar.sh https checkout hosts', () => {
-    expect(assertPolarCheckoutUrl('https://polar.sh/checkout/x')).toContain(
-      'polar.sh'
-    );
-    expect(() =>
-      assertPolarCheckoutUrl('https://evil.com/checkout')
-    ).toThrow();
-    expect(() =>
-      assertPolarCheckoutUrl('http://polar.sh/checkout')
-    ).toThrow();
+    expect(assertPolarCheckoutUrl('https://polar.sh/checkout/x')).toContain('polar.sh');
+    expect(() => assertPolarCheckoutUrl('https://evil.com/checkout')).toThrow();
+    expect(() => assertPolarCheckoutUrl('http://polar.sh/checkout')).toThrow();
   });
 });
 

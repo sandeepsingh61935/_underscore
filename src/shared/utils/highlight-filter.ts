@@ -79,7 +79,7 @@ export function defaultLibraryFilterState(): LibraryFilterState {
  */
 export function matchesRefine(
   item: FilterableHighlight,
-  refine: RefineFilter[],
+  refine: RefineFilter[]
 ): boolean {
   if (refine.length === 0) return true;
 
@@ -110,7 +110,7 @@ export function matchesRefine(
  */
 export function matchesTagFilters(
   item: FilterableHighlight,
-  tagFilters: string[],
+  tagFilters: string[]
 ): boolean {
   if (tagFilters.length === 0) return true;
   const tags = (item.tags ?? []).map((t) => t.toLowerCase());
@@ -123,22 +123,19 @@ export function matchesTagFilters(
  */
 export function filterHighlightsByRefineAndTags<T extends FilterableHighlight>(
   items: T[],
-  options: { refine?: RefineFilter[]; tagFilters?: string[] },
+  options: { refine?: RefineFilter[]; tagFilters?: string[] }
 ): T[] {
   const refine = options.refine ?? [];
   const tagFilters = options.tagFilters ?? [];
   if (refine.length === 0 && tagFilters.length === 0) return items;
 
   return items.filter(
-    (item) => matchesRefine(item, refine) && matchesTagFilters(item, tagFilters),
+    (item) => matchesRefine(item, refine) && matchesTagFilters(item, tagFilters)
   );
 }
 
 /** Toggle a refine chip; exclusive within a pair (has_notes/needs_note, has_tags/untagged). */
-export function toggleRefine(
-  current: RefineFilter[],
-  id: RefineFilter,
-): RefineFilter[] {
+export function toggleRefine(current: RefineFilter[], id: RefineFilter): RefineFilter[] {
   if (current.includes(id)) {
     return current.filter((r) => r !== id);
   }
@@ -149,9 +146,7 @@ export function toggleRefine(
     untagged: 'has_tags',
   };
   const opposite = pair[id];
-  const withoutOpposite = opposite
-    ? current.filter((r) => r !== opposite)
-    : current;
+  const withoutOpposite = opposite ? current.filter((r) => r !== opposite) : current;
   return [...withoutOpposite, id];
 }
 
@@ -172,7 +167,7 @@ export function toggleTagFilter(current: string[], tag: string): string[] {
  */
 export function toggleSearchField(
   current: SearchField[],
-  field: SearchField,
+  field: SearchField
 ): SearchField[] {
   const base = current.length === 0 ? [...USER_SEARCH_FIELDS] : [...current];
   const idx = base.indexOf(field);

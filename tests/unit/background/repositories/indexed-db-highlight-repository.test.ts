@@ -1,92 +1,94 @@
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import 'fake-indexeddb/auto';
 import { deleteDB } from 'idb';
-import { IndexedDBHighlightRepository, DB_NAME } from '@/background/repositories/indexed-db-highlight-repository';
+import {
+  IndexedDBHighlightRepository,
+  DB_NAME,
+} from '@/background/repositories/indexed-db-highlight-repository';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
 describe('IndexedDBHighlightRepository', () => {
-    let repo: IndexedDBHighlightRepository;
-    let mockLogger: any;
+  let repo: IndexedDBHighlightRepository;
+  let mockLogger: any;
 
-    const mockHighlight: HighlightDataV2 = {
-        id: 'hl-1',
-        url: 'https://example.com',
-        text: 'Test Highlight',
-        ranges: [],
-        contentHash: 'hash-1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId: 'user-1',
-        colorRole: 'yellow',
-        type: 'underscore'
+  const mockHighlight: HighlightDataV2 = {
+    id: 'hl-1',
+    url: 'https://example.com',
+    text: 'Test Highlight',
+    ranges: [],
+    contentHash: 'hash-1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    userId: 'user-1',
+    colorRole: 'yellow',
+    type: 'underscore',
+  };
+
+  beforeEach(async () => {
+    await deleteDB(DB_NAME);
+
+    mockLogger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
     };
 
-    beforeEach(async () => {
-        await deleteDB(DB_NAME);
+    repo = new IndexedDBHighlightRepository(mockLogger as unknown as ILogger);
+  });
 
-        mockLogger = {
-            debug: vi.fn(),
-            info: vi.fn(),
-            warn: vi.fn(),
-            error: vi.fn()
-        };
+  afterEach(async () => {
+    await repo.close();
+    await deleteDB(DB_NAME);
+  });
 
-        repo = new IndexedDBHighlightRepository(mockLogger as unknown as ILogger);
-    });
+  it('should add and retrieve a highlight', async () => {
+    await repo.add(mockHighlight);
 
-    afterEach(async () => {
-        await repo.close();
-        await deleteDB(DB_NAME);
-    });
+    const found = await repo.findById('hl-1');
+    expect(found).toEqual(mockHighlight);
 
-    it('should add and retrieve a highlight', async () => {
-        await repo.add(mockHighlight);
+    const count = await repo.count();
+    expect(count).toBe(1);
+  });
 
-        const found = await repo.findById('hl-1');
-        expect(found).toEqual(mockHighlight);
+  it('should find by URL', async () => {
+    await repo.add(mockHighlight);
+    await repo.add({ ...mockHighlight, id: 'hl-2', url: 'https://other.com' });
 
-        const count = await repo.count();
-        expect(count).toBe(1);
-    });
+    const results = await repo.findByUrl('https://example.com');
+    expect(results).toHaveLength(1);
+    expect(results[0]!.id).toBe('hl-1');
+  });
 
-    it('should find by URL', async () => {
-        await repo.add(mockHighlight);
-        await repo.add({ ...mockHighlight, id: 'hl-2', url: 'https://other.com' });
+  it('should update a highlight', async () => {
+    await repo.add(mockHighlight);
 
-        const results = await repo.findByUrl('https://example.com');
-        expect(results).toHaveLength(1);
-        expect(results[0]!.id).toBe('hl-1');
-    });
+    const updates = { text: 'Updated Text' };
+    await repo.update('hl-1', updates);
 
-    it('should update a highlight', async () => {
-        await repo.add(mockHighlight);
+    const found = await repo.findById('hl-1');
+    expect(found?.text).toBe('Updated Text');
+    expect(found?.updatedAt).not.toEqual(mockHighlight.updatedAt);
+  });
 
-        const updates = { text: 'Updated Text' };
-        await repo.update('hl-1', updates);
+  it('should remove a highlight', async () => {
+    await repo.add(mockHighlight);
+    await repo.remove('hl-1');
 
-        const found = await repo.findById('hl-1');
-        expect(found?.text).toBe('Updated Text');
-        expect(found?.updatedAt).not.toEqual(mockHighlight.updatedAt);
-    });
+    const found = await repo.findById('hl-1');
+    expect(found).toBeNull();
 
-    it('should remove a highlight', async () => {
-        await repo.add(mockHighlight);
-        await repo.remove('hl-1');
+    const exists = await repo.exists('hl-1');
+    expect(exists).toBe(false);
+  });
 
-        const found = await repo.findById('hl-1');
-        expect(found).toBeNull();
+  it('should handle findByContentHash', async () => {
+    await repo.add(mockHighlight);
 
-        const exists = await repo.exists('hl-1');
-        expect(exists).toBe(false);
-    });
-
-    it('should handle findByContentHash', async () => {
-        await repo.add(mockHighlight);
-
-        const found = await repo.findByContentHash('hash-1');
-        expect(found).toBeDefined();
-        expect(found?.id).toBe('hl-1');
-    });
+    const found = await repo.findByContentHash('hash-1');
+    expect(found).toBeDefined();
+    expect(found?.id).toBe('hl-1');
+  });
 });

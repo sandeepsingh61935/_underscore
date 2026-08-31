@@ -12,11 +12,9 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
+import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
 import type { ExportFormat } from '@/shared/highlight-export';
-import {
-  deleteDomainCopy,
-  deleteSectionCopy,
-} from '@/shared/utils/confirm-dialog-copy';
+import { deleteDomainCopy, deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
@@ -28,31 +26,27 @@ import {
   searchHighlights,
   type SearchField,
 } from '@/shared/utils/highlight-search';
-import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
-import { useExtensionPresence } from '@/web/extension-presence-context';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { LibraryHighlightDetail } from '@/web/components/LibraryHighlightDetail';
 import { RelatedTagsSection } from '@/web/components/RelatedTagsSection';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
+import { useExtensionPresence } from '@/web/extension-presence-context';
 import {
   useRelatedHighlights,
   useRelatednessService,
   useRelatedTags,
 } from '@/web/hooks/useRelatedness';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
-import {
-  useWebLibrary,
-  type WebHighlight,
-} from '@/web/hooks/useWebLibrary';
+import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
+import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
+import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
   exportScopeFromSelection,
   exportWebHighlights,
 } from '@/web/lib/webHighlightExport';
-import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
-import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
   buildLibrarySearch,
   parseLibrarySelection,
@@ -78,7 +72,14 @@ const SORT_FNS: Record<LibSort, (a: WebHighlight, b: WebHighlight) => number> = 
 
 function ChevDown(): React.ReactElement {
   return (
-    <svg className="chev" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <svg
+      className="chev"
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M3 4.5 6 8l3-3.5"
         stroke="currentColor"
@@ -134,7 +135,7 @@ function toSearchable(h: WebHighlight): SearchableRow {
 function filterBySelection(
   rows: WebHighlight[],
   domain: string | null,
-  section: string | null,
+  section: string | null
 ): WebHighlight[] {
   if (!domain) return rows;
   let list = rows.filter((h) => h.domain === domain);
@@ -153,9 +154,7 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
       counts.set(k, { label: prev?.label ?? t, n: (prev?.n ?? 0) + 1 });
     }
   }
-  return [...counts.values()].sort(
-    (a, b) => b.n - a.n || a.label.localeCompare(b.label),
-  );
+  return [...counts.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
 }
 
 type LibraryPagerProps = {
@@ -173,10 +172,7 @@ function LibraryPager({
   totalPages,
   onPageChange,
 }: LibraryPagerProps): React.ReactElement {
-  const items = useMemo(
-    () => buildPagerItems(page, totalPages),
-    [page, totalPages],
-  );
+  const items = useMemo(() => buildPagerItems(page, totalPages), [page, totalPages]);
   const [gotoDraft, setGotoDraft] = useState(String(page));
 
   useEffect(() => {
@@ -188,7 +184,7 @@ function LibraryPager({
       const n = typeof raw === 'number' ? raw : Number.parseInt(String(raw).trim(), 10);
       onPageChange(clampPage(n, totalPages));
     },
-    [onPageChange, totalPages],
+    [onPageChange, totalPages]
   );
 
   const commitGoto = useCallback(() => {
@@ -223,9 +219,7 @@ function LibraryPager({
               key={item.page}
               type="button"
               role="listitem"
-              className={
-                item.page === page ? 'pager-page is-active' : 'pager-page'
-              }
+              className={item.page === page ? 'pager-page is-active' : 'pager-page'}
               aria-label={`Page ${item.page}`}
               aria-current={item.page === page ? 'page' : undefined}
               data-od-id={`library-pager-page-${item.page}`}
@@ -233,7 +227,7 @@ function LibraryPager({
             >
               {item.page}
             </button>
-          ),
+          )
         )}
       </div>
 
@@ -301,7 +295,11 @@ function LibraryEmptyInstall({ isGuest }: { isGuest: boolean }): React.ReactElem
             </Link>
           ) : null}
           {copy.signInLabel ? (
-            <Link to="/sign-in" className="btn accent sm" data-od-id="library-guest-signin">
+            <Link
+              to="/sign-in"
+              className="btn accent sm"
+              data-od-id="library-guest-signin"
+            >
               {copy.signInLabel}
             </Link>
           ) : null}
@@ -325,7 +323,7 @@ export function LibraryPage(): React.ReactElement {
         isPaidActive,
         billingStatus: billing?.snapshot.entitlement.status ?? null,
       }),
-    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status],
+    [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status]
   );
 
   const lib = useWebLibrary({
@@ -341,7 +339,7 @@ export function LibraryPage(): React.ReactElement {
 
   const selection = useMemo(
     () => parseLibrarySelection(location.search),
-    [location.search],
+    [location.search]
   );
 
   /** Optional `?tag=` from Home chip navigation (seed into filters once). */
@@ -355,7 +353,7 @@ export function LibraryPage(): React.ReactElement {
   const [fields, setFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>(() =>
-    initialTagFromUrl ? [initialTagFromUrl] : [],
+    initialTagFromUrl ? [initialTagFromUrl] : []
   );
   const [sort, setSort] = useState<LibSort>('newest');
   const [sortOpen, setSortOpen] = useState(false);
@@ -391,7 +389,7 @@ export function LibraryPage(): React.ReactElement {
   useEffect(() => {
     if (selection.domain) {
       setExpanded((prev) =>
-        prev[selection.domain!] ? prev : { ...prev, [selection.domain!]: true },
+        prev[selection.domain!] ? prev : { ...prev, [selection.domain!]: true }
       );
     }
   }, [selection.domain]);
@@ -413,21 +411,17 @@ export function LibraryPage(): React.ReactElement {
   }, [sortOpen, exportOpen]);
 
   const setSelection = useCallback(
-    (
-      domain: string | null,
-      section: string | null,
-      highlight: string | null = null,
-    ) => {
+    (domain: string | null, section: string | null, highlight: string | null = null) => {
       const search = buildLibrarySearch({ domain, section, highlight });
       void navigate(
         { pathname: '/library', search: search ? `?${search}` : '' },
-        { replace: false },
+        { replace: false }
       );
       if (domain) {
         setExpanded((prev) => ({ ...prev, [domain]: true }));
       }
     },
-    [navigate],
+    [navigate]
   );
 
   const selectAll = useCallback(() => {
@@ -438,14 +432,14 @@ export function LibraryPage(): React.ReactElement {
     (domain: string) => {
       setSelection(domain, null, null);
     },
-    [setSelection],
+    [setSelection]
   );
 
   const selectSection = useCallback(
     (domain: string, path: string) => {
       setSelection(domain, path, null);
     },
-    [setSelection],
+    [setSelection]
   );
 
   const highlightDetailHref = useCallback(
@@ -457,9 +451,11 @@ export function LibraryPage(): React.ReactElement {
         section: row ? row.path || null : selection.section,
         highlight: id,
       });
-      return search ? `/library?${search}` : `/library?highlight=${encodeURIComponent(id)}`;
+      return search
+        ? `/library?${search}`
+        : `/library?highlight=${encodeURIComponent(id)}`;
     },
-    [lib.highlights, selection.domain, selection.section],
+    [lib.highlights, selection.domain, selection.section]
   );
 
   const openHighlightDetail = useCallback(
@@ -469,10 +465,10 @@ export function LibraryPage(): React.ReactElement {
       setSelection(
         row?.domain ?? selection.domain,
         row ? row.path || null : selection.section,
-        id,
+        id
       );
     },
-    [lib.highlights, selection.domain, selection.section, setSelection],
+    [lib.highlights, selection.domain, selection.section, setSelection]
   );
 
   const closeHighlightDetail = useCallback(() => {
@@ -489,7 +485,7 @@ export function LibraryPage(): React.ReactElement {
         patchHighlight,
         updateMetadata,
       }),
-    [patchHighlight, updateMetadata],
+    [patchHighlight, updateMetadata]
   );
 
   const handleHighlightDelete = useCallback(
@@ -500,7 +496,7 @@ export function LibraryPage(): React.ReactElement {
       }
       return result.success;
     },
-    [deleteScope, selection.domain, selection.highlight, selection.section, setSelection],
+    [deleteScope, selection.domain, selection.highlight, selection.section, setSelection]
   );
 
   const confirmDeleteDomain = useCallback(async (): Promise<void> => {
@@ -543,7 +539,14 @@ export function LibraryPage(): React.ReactElement {
     } finally {
       setIsDeletingScope(false);
     }
-  }, [deleteScope, deleteSectionTarget, isDeletingScope, selection.domain, selection.section, setSelection]);
+  }, [
+    deleteScope,
+    deleteSectionTarget,
+    isDeletingScope,
+    selection.domain,
+    selection.section,
+    setSelection,
+  ]);
 
   const handleToggleTagFilter = useCallback((tag: string) => {
     setTagFilters((prev) => toggleTagFilter(prev, tag));
@@ -559,7 +562,7 @@ export function LibraryPage(): React.ReactElement {
     (domain: string, path: string) => {
       selectSection(domain, path);
     },
-    [selectSection],
+    [selectSection]
   );
 
   const toggleDomain = useCallback((domain: string) => {
@@ -568,11 +571,10 @@ export function LibraryPage(): React.ReactElement {
 
   const scoped = useMemo(
     () => filterBySelection(lib.highlights, selection.domain, selection.section),
-    [lib.highlights, selection.domain, selection.section],
+    [lib.highlights, selection.domain, selection.section]
   );
 
-  const filtering =
-    query.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
+  const filtering = query.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
 
   const filtered = useMemo(() => {
     const base = [...scoped].sort(SORT_FNS.newest);
@@ -606,10 +608,7 @@ export function LibraryPage(): React.ReactElement {
 
   const relatedness = useRelatednessService(lib.highlights);
   const relatedTagResults = useRelatedTags(relatedness, tagFilters);
-  const relatedHighlightResults = useRelatedHighlights(
-    relatedness,
-    selection.highlight,
-  );
+  const relatedHighlightResults = useRelatedHighlights(relatedness, selection.highlight);
 
   const detailHighlight = useMemo(() => {
     if (!selection.highlight) return null;
@@ -630,7 +629,7 @@ export function LibraryPage(): React.ReactElement {
       // Navigation is handled by the <Link href>; this only records analytics.
       trackEvent('related_highlight_clicked', { rank, reason });
     },
-    [],
+    []
   );
 
   const title = selection.section
@@ -656,11 +655,11 @@ export function LibraryPage(): React.ReactElement {
         exportScopeFromSelection({
           domain: selection.domain,
           section: selection.section,
-        }),
+        })
       );
       setExportOpen(false);
     },
-    [caps.flags.export, filtered, selection.domain, selection.section],
+    [caps.flags.export, filtered, selection.domain, selection.section]
   );
 
   if (lib.status === 'loading') {
@@ -689,7 +688,11 @@ export function LibraryPage(): React.ReactElement {
   if (lib.status === 'error') {
     return (
       <div className="lib-shell" data-od-id="library">
-        <div className="state-box" data-od-id="error-state" style={{ gridColumn: '1 / -1' }}>
+        <div
+          className="state-box"
+          data-od-id="error-state"
+          style={{ gridColumn: '1 / -1' }}
+        >
           <h3>Library unavailable</h3>
           <p>{lib.error || 'Try again in a moment.'}</p>
           <div className="actions">
@@ -725,88 +728,84 @@ export function LibraryPage(): React.ReactElement {
       onDelete={caps.isGuest ? undefined : handleHighlightDelete}
     />
   ) : filtered.length > 0 ? (
-      <>
-        <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
-        <div className="lib-toolbar" data-od-id="library-toolbar">
-          <span className="lib-toolbar-meta" data-od-id="library-result-count">
-            {filtered.length} highlight{filtered.length === 1 ? '' : 's'}
-          </span>
-          <div className="sort-menu" data-od-id="library-sort" ref={sortRef}>
-            <button
-              type="button"
-              className="sort-trigger"
-              aria-haspopup="menu"
-              aria-expanded={sortOpen}
-              onClick={() => {
-                setSortOpen((o) => !o);
-                setExportOpen(false);
-              }}
-            >
-              <span>Sort: {SORT_LABELS[sort]}</span>
-              <ChevDown />
-            </button>
-            {sortOpen ? (
-              <div className="sort-menu-pop" role="menu" data-od-id="library-sort-menu">
-                {(Object.keys(SORT_LABELS) as LibSort[]).map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    className={`sort-menu-item${sort === k ? ' active' : ''}`}
-                    role="menuitem"
-                    onClick={() => {
-                      setSort(k);
-                      setSortOpen(false);
-                    }}
-                  >
-                    {SORT_LABELS[k]}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+    <>
+      <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
+      <div className="lib-toolbar" data-od-id="library-toolbar">
+        <span className="lib-toolbar-meta" data-od-id="library-result-count">
+          {filtered.length} highlight{filtered.length === 1 ? '' : 's'}
+        </span>
+        <div className="sort-menu" data-od-id="library-sort" ref={sortRef}>
+          <button
+            type="button"
+            className="sort-trigger"
+            aria-haspopup="menu"
+            aria-expanded={sortOpen}
+            onClick={() => {
+              setSortOpen((o) => !o);
+              setExportOpen(false);
+            }}
+          >
+            <span>Sort: {SORT_LABELS[sort]}</span>
+            <ChevDown />
+          </button>
+          {sortOpen ? (
+            <div className="sort-menu-pop" role="menu" data-od-id="library-sort-menu">
+              {(Object.keys(SORT_LABELS) as LibSort[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`sort-menu-item${sort === k ? ' active' : ''}`}
+                  role="menuitem"
+                  onClick={() => {
+                    setSort(k);
+                    setSortOpen(false);
+                  }}
+                >
+                  {SORT_LABELS[k]}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
-        <div className="stack">
-          {pageRows.map(({ highlight: h, matchedFields }) => {
-            const badge = formatMatchBadge(matchedFields);
-            return (
-              <WebHighlightCard
-                key={h.id}
-                highlight={h}
-                showDomain={showDomainSrc}
-                matchBadge={badge}
-                readOnly={caps.isGuest}
-                activeTagFilters={tagFilters}
-                onOpenHighlight={openHighlightDetail}
-                onOpenPage={openPage}
-                onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
-                onNoteSave={caps.isGuest ? undefined : handleNoteSave}
-                onTagsChange={caps.isGuest ? undefined : handleTagsChange}
-                onDelete={caps.isGuest ? undefined : handleHighlightDelete}
-              />
-            );
-          })}
-        </div>
-        {totalPages > 1 ? (
-          <LibraryPager
-            page={safePage}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        ) : null}
-      </>
-    ) : (
-      <div className="state-box" data-od-id="library-empty">
-        <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
-        {filtering ? (
-          <>
-            <h3>No matches</h3>
-            <p>Clear filters or try another query.</p>
-          </>
-        ) : (
-          <LibraryEmptyInstall isGuest={caps.isGuest} />
-        )}
       </div>
-    );
+      <div className="stack">
+        {pageRows.map(({ highlight: h, matchedFields }) => {
+          const badge = formatMatchBadge(matchedFields);
+          return (
+            <WebHighlightCard
+              key={h.id}
+              highlight={h}
+              showDomain={showDomainSrc}
+              matchBadge={badge}
+              readOnly={caps.isGuest}
+              activeTagFilters={tagFilters}
+              onOpenHighlight={openHighlightDetail}
+              onOpenPage={openPage}
+              onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
+              onNoteSave={caps.isGuest ? undefined : handleNoteSave}
+              onTagsChange={caps.isGuest ? undefined : handleTagsChange}
+              onDelete={caps.isGuest ? undefined : handleHighlightDelete}
+            />
+          );
+        })}
+      </div>
+      {totalPages > 1 ? (
+        <LibraryPager page={safePage} totalPages={totalPages} onPageChange={setPage} />
+      ) : null}
+    </>
+  ) : (
+    <div className="state-box" data-od-id="library-empty">
+      <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
+      {filtering ? (
+        <>
+          <h3>No matches</h3>
+          <p>Clear filters or try another query.</p>
+        </>
+      ) : (
+        <LibraryEmptyInstall isGuest={caps.isGuest} />
+      )}
+    </div>
+  );
 
   return (
     <div className="lib-shell" data-od-id="library">
@@ -832,14 +831,9 @@ export function LibraryPage(): React.ReactElement {
 
           {lib.domains.map((d) => {
             const open = !!expanded[d.domain];
-            const activeDom =
-              selection.domain === d.domain && !selection.section;
+            const activeDom = selection.domain === d.domain && !selection.section;
             return (
-              <div
-                key={d.domain}
-                className="tree-group"
-                data-tree-group={d.domain}
-              >
+              <div key={d.domain} className="tree-group" data-tree-group={d.domain}>
                 <div className="tree-row">
                   <button
                     type="button"
@@ -900,8 +894,7 @@ export function LibraryPage(): React.ReactElement {
                   <div className="tree-children-inner">
                     {d.sections.map((s) => {
                       const activeSec =
-                        selection.domain === d.domain &&
-                        selection.section === s.path;
+                        selection.domain === d.domain && selection.section === s.path;
                       return (
                         <div key={s.path} className="tree-row is-child">
                           <button
@@ -958,84 +951,84 @@ export function LibraryPage(): React.ReactElement {
         <div className="lib-main-head">
           <h2 data-od-id="library-scope-title">{title}</h2>
           <div className="lib-main-head-actions">
-          {!caps.isGuest && selection.domain && !selection.highlight ? (
-            <button
-              type="button"
-              className="sr-icon is-delete"
-              data-od-id="library-scope-delete"
-              aria-label={
-                selection.section
-                  ? `Delete page ${selection.section}`
-                  : `Delete site ${selection.domain}`
-              }
-              title={selection.section ? 'Delete page' : 'Delete site'}
-              disabled={scoped.length === 0}
-              onClick={() => {
-                if (!selection.domain) return;
-                if (selection.section) {
-                  setDeleteSectionTarget({
-                    domain: selection.domain,
-                    path: selection.section,
-                    count: scoped.length,
-                  });
-                } else {
-                  setDeleteDomainTarget({
-                    domain: selection.domain,
-                    count: scoped.length,
-                  });
-                }
-              }}
-            >
-              <TrashIco />
-            </button>
-          ) : null}
-          {caps.flags.export ? (
-            <div className="export-menu" data-od-id="library-export" ref={exportRef}>
+            {!caps.isGuest && selection.domain && !selection.highlight ? (
               <button
                 type="button"
-                className="btn sm ghost"
-                data-od-id="library-export-btn"
-                aria-haspopup="menu"
-                aria-expanded={exportOpen}
-                disabled={filtered.length === 0}
+                className="sr-icon is-delete"
+                data-od-id="library-scope-delete"
+                aria-label={
+                  selection.section
+                    ? `Delete page ${selection.section}`
+                    : `Delete site ${selection.domain}`
+                }
+                title={selection.section ? 'Delete page' : 'Delete site'}
+                disabled={scoped.length === 0}
                 onClick={() => {
-                  setExportOpen((o) => !o);
-                  setSortOpen(false);
+                  if (!selection.domain) return;
+                  if (selection.section) {
+                    setDeleteSectionTarget({
+                      domain: selection.domain,
+                      path: selection.section,
+                      count: scoped.length,
+                    });
+                  } else {
+                    setDeleteDomainTarget({
+                      domain: selection.domain,
+                      count: scoped.length,
+                    });
+                  }
                 }}
               >
-                Download
-                <ChevDown />
+                <TrashIco />
               </button>
-              {exportOpen ? (
-                <div
-                  className="export-menu-pop"
-                  role="menu"
-                  data-od-id="library-export-menu"
+            ) : null}
+            {caps.flags.export ? (
+              <div className="export-menu" data-od-id="library-export" ref={exportRef}>
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  data-od-id="library-export-btn"
+                  aria-haspopup="menu"
+                  aria-expanded={exportOpen}
+                  disabled={filtered.length === 0}
+                  onClick={() => {
+                    setExportOpen((o) => !o);
+                    setSortOpen(false);
+                  }}
                 >
-                  <button
-                    type="button"
-                    className="export-menu-item"
-                    role="menuitem"
-                    data-od-id="library-export-md"
-                    disabled={filtered.length === 0}
-                    onClick={() => handleExport('md')}
+                  Download
+                  <ChevDown />
+                </button>
+                {exportOpen ? (
+                  <div
+                    className="export-menu-pop"
+                    role="menu"
+                    data-od-id="library-export-menu"
                   >
-                    Markdown
-                  </button>
-                  <button
-                    type="button"
-                    className="export-menu-item"
-                    role="menuitem"
-                    data-od-id="library-export-xlsx"
-                    disabled={filtered.length === 0}
-                    onClick={() => handleExport('xlsx')}
-                  >
-                    Spreadsheet
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+                    <button
+                      type="button"
+                      className="export-menu-item"
+                      role="menuitem"
+                      data-od-id="library-export-md"
+                      disabled={filtered.length === 0}
+                      onClick={() => handleExport('md')}
+                    >
+                      Markdown
+                    </button>
+                    <button
+                      type="button"
+                      className="export-menu-item"
+                      role="menuitem"
+                      data-od-id="library-export-xlsx"
+                      disabled={filtered.length === 0}
+                      onClick={() => handleExport('xlsx')}
+                    >
+                      Spreadsheet
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="lib-search-wrap" data-od-id="library-search">
@@ -1087,7 +1080,7 @@ export function LibraryPage(): React.ReactElement {
           ? deleteSectionCopy(
               deleteSectionTarget.domain,
               deleteSectionTarget.path,
-              deleteSectionTarget.count,
+              deleteSectionTarget.count
             )
           : null;
         return (

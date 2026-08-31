@@ -2,41 +2,41 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
-import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
-import { ExportActions } from '@/features/collections/components/ExportActions';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
-import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { ExportActions } from '@/features/collections/components/ExportActions';
+import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
 import { LibraryRelatedHighlights } from '@/features/collections/components/LibraryRelatedHighlights';
 import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
 import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
-import { useUserTags } from '@/features/collections/hooks/useUserTags';
-import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
+import { useHighlightDelete } from '@/features/collections/hooks/use-highlight-delete';
+import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import {
   useLibraryRelatednessService,
   useRelatedHighlights,
   useRelatedTags,
 } from '@/features/collections/hooks/useLibraryRelatedness';
+import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
+import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
 import {
   sortLibraryHighlights,
   type LibrarySortKey,
 } from '@/shared/library/library-sort';
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
+import { deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
-import { getSectionKey } from '@/shared/utils/section-key';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
-import { deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
-import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
+import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface SubDomainViewProps {
   domain?: string;
@@ -54,7 +54,8 @@ export function SubDomainView({
 }: SubDomainViewProps): React.ReactElement {
   const params = useParams<{ domain: string; section: string }>();
   const domain = propDomain ?? params.domain ?? '';
-  const section = propSection ?? (params.section ? decodeURIComponent(params.section) : '/');
+  const section =
+    propSection ?? (params.section ? decodeURIComponent(params.section) : '/');
 
   const navigate = useNavigate();
   const { isAuthenticated, currentMode } = useApp();
@@ -77,11 +78,15 @@ export function SubDomainView({
   const { tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
   const sectionHighlights = useMemo(() => {
-    return highlights.filter((h) => getSectionKey({ url: h.url, path: h.path }) === section);
+    return highlights.filter(
+      (h) => getSectionKey({ url: h.url, path: h.path }) === section
+    );
   }, [highlights, section]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
+  const [searchFields, setSearchFields] = useState<SearchField[]>([
+    ...DEFAULT_SEARCH_FIELDS,
+  ]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<LibrarySortKey>('newest');
@@ -101,25 +106,22 @@ export function SubDomainView({
   });
   const filteredSearchResults = useMemo(
     () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
-    [searchResults, refine, tagFilters],
+    [searchResults, refine, tagFilters]
   );
   const filteredSectionHighlights = useMemo(
     () => filterHighlightsByRefineAndTags(sectionHighlights, { refine, tagFilters }),
-    [sectionHighlights, refine, tagFilters],
+    [sectionHighlights, refine, tagFilters]
   );
   const isSearching = searchQuery.trim().length > 0;
   const hasRefineOrTags = refine.length > 0 || tagFilters.length > 0;
   const availableTags = useMemo(
     () => labelSuggestions.map((name) => ({ label: name })),
-    [labelSuggestions],
+    [labelSuggestions]
   );
 
   const relatedness = useLibraryRelatednessService(sectionHighlights);
   const relatedTagResults = useRelatedTags(relatedness, tagFilters);
-  const relatedHighlightResults = useRelatedHighlights(
-    relatedness,
-    expandedHighlightId,
-  );
+  const relatedHighlightResults = useRelatedHighlights(relatedness, expandedHighlightId);
 
   const sortedSectionHighlights = useMemo(() => {
     const rows = filteredSectionHighlights.map((h) => ({
@@ -201,7 +203,15 @@ export function SubDomainView({
 
   if (!isLoading && highlights.length > 0 && sectionHighlights.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+          minHeight: 0,
+        }}
+      >
         <EmptySubDomain domain={domain} section={section} onBack={handleBackToDomain} />
       </div>
     );
@@ -210,7 +220,15 @@ export function SubDomainView({
   const sectionTitle = section === '/' ? '/' : section;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minHeight: 0,
+      }}
+    >
       <LibraryScopeChrome
         testId="section-sticky-chrome"
         toolbarTestId="section-scope-toolbar"
@@ -245,7 +263,6 @@ export function SubDomainView({
       />
 
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-
         <LibraryRelatedTags
           tags={relatedTagResults}
           onSelectTag={(tag) => setTagFilters([tag])}
@@ -253,12 +270,16 @@ export function SubDomainView({
 
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-            <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+            <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+              Loading...
+            </span>
           </div>
         ) : isSearching ? (
           isSearchLoading ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>Loading...</span>
+              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
+                Loading...
+              </span>
             </div>
           ) : sortedSearchResults.length === 0 ? (
             <EmptyState
@@ -368,7 +389,9 @@ export function SubDomainView({
             strongNames={copy.strongNames}
             confirmLabel={copy.confirmLabel}
             cancelLabel={copy.cancelLabel}
-            onConfirm={() => { void handleDeleteSection(); }}
+            onConfirm={() => {
+              void handleDeleteSection();
+            }}
             isConfirming={isDeletingSection}
             exportFooter={
               <ExportActions

@@ -44,16 +44,18 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
           transition: 'background 0.15s ease',
         }}
       >
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 9999,
-          background: 'var(--accent-tint-18)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--accent)',
-        }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 9999,
+            background: 'var(--accent-tint-18)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
+          }}
+        >
           {user.photoUrl ? (
             <img
               src={user.photoUrl}
@@ -61,7 +63,10 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
               style={{ width: '100%', height: '100%', borderRadius: 9999 }}
             />
           ) : (
-            <span className="u-sans" style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}>
+            <span
+              className="u-sans"
+              style={{ fontSize: 'var(--step-0)', fontWeight: 500 }}
+            >
               {user.displayName?.[0] || 'U'}
             </span>
           )}
@@ -71,30 +76,55 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
           style={{
             color: 'var(--ink-3)',
             transition: 'transform 0.15s ease',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
         />
       </button>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          right: 0,
-          top: '100%',
-          marginTop: 8,
-          width: 224,
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--rule)',
-          background: 'var(--paper)',
-          boxShadow: '0 8px 24px var(--utility-overlay-08), 0 1px 0 var(--utility-overlay-06)',
-          padding: 8,
-          zIndex: 50,
-        }}>
-          <div style={{ padding: '8px 12px 12px', borderBottom: '1px solid var(--rule-soft)', marginBottom: 8 }}>
-            <Text variant="small" style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 8,
+            width: 224,
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--rule)',
+            background: 'var(--paper)',
+            boxShadow:
+              '0 8px 24px var(--utility-overlay-08), 0 1px 0 var(--utility-overlay-06)',
+            padding: 8,
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              padding: '8px 12px 12px',
+              borderBottom: '1px solid var(--rule-soft)',
+              marginBottom: 8,
+            }}
+          >
+            <Text
+              variant="small"
+              style={{
+                fontWeight: 500,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {user.displayName}
             </Text>
-            <Text variant="tiny" muted style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Text
+              variant="tiny"
+              muted
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {user.email}
             </Text>
           </div>
@@ -117,7 +147,9 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
             }}
           >
             <Settings size={16} />
-            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>Settings</span>
+            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>
+              Settings
+            </span>
           </button>
 
           <button
@@ -139,7 +171,9 @@ export function UserMenu({ user, onLogout }: UserMenuProps): React.ReactElement 
             }}
           >
             <LogOut size={16} />
-            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>Sign Out</span>
+            <span className="u-sans" style={{ fontSize: 'var(--step-0)' }}>
+              Sign Out
+            </span>
           </button>
         </div>
       )}

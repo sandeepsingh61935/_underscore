@@ -1,7 +1,12 @@
 import { OpenAIProvider } from './openai-provider';
-import type { HealthCheckResult, ILLMService, LLMCapabilities } from '@/shared/interfaces/i-llm-service';
-import { getDefaultModelId } from '@/shared/llm/provider-models';
+
+import type {
+  HealthCheckResult,
+  ILLMService,
+  LLMCapabilities,
+} from '@/shared/interfaces/i-llm-service';
 import { isOpenRouterModelFree } from '@/shared/llm/openrouter-models';
+import { getDefaultModelId } from '@/shared/llm/provider-models';
 
 interface OpenRouterProviderConfig {
   /** Required for all models — free means $0 credits, not keyless auth. */
@@ -41,8 +46,8 @@ export class OpenRouterProvider implements ILLMService {
     const key = config.apiKey?.trim();
     if (!key) {
       throw new Error(
-        'OpenRouter API key required (free at openrouter.ai/keys). '
-        + 'Free models do not charge credits but still need a key.',
+        'OpenRouter API key required (free at openrouter.ai/keys). ' +
+          'Free models do not charge credits but still need a key.'
       );
     }
     this.model = config.model ?? getDefaultModelId('openrouter');
@@ -60,7 +65,11 @@ export class OpenRouterProvider implements ILLMService {
     });
   }
 
-  streamChat(req: Parameters<ILLMService['streamChat']>[0], onChunk: Parameters<ILLMService['streamChat']>[1], signal: AbortSignal) {
+  streamChat(
+    req: Parameters<ILLMService['streamChat']>[0],
+    onChunk: Parameters<ILLMService['streamChat']>[1],
+    signal: AbortSignal
+  ) {
     return this.delegate.streamChat(req, onChunk, signal);
   }
 

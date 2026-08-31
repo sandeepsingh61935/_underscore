@@ -23,7 +23,7 @@ export interface SettingsModeSegProps {
 
 function resolveActive(
   currentMode: ModeType,
-  isAuthenticated: boolean,
+  isAuthenticated: boolean
 ): SettingsIdentitySeg {
   if (!isAuthenticated || currentMode === 'basic') return 'guest';
   return 'account';
@@ -83,10 +83,7 @@ export function SettingsModeSeg({
       data-testid="settings-section-mode"
       style={{ padding: '8px 16px 12px' }}
     >
-      <div
-        className="u-caps"
-        style={{ color: 'var(--ink-3)', marginBottom: 8 }}
-      >
+      <div className="u-caps" style={{ color: 'var(--ink-3)', marginBottom: 8 }}>
         Mode
       </div>
       <div

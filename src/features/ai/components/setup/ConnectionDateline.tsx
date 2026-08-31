@@ -17,7 +17,10 @@ const STATE_LABEL: Record<ConnectionDatelineState, string> = {
 };
 
 /** Signature status rail between credentials and the model catalog. */
-export function ConnectionDateline({ state, detail }: ConnectionDatelineProps): React.ReactElement {
+export function ConnectionDateline({
+  state,
+  detail,
+}: ConnectionDatelineProps): React.ReactElement {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
       <StatusDot connected={state === 'connected'} pending={state === 'checking'} />

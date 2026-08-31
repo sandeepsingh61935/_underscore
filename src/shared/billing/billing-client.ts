@@ -3,6 +3,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { getSupabaseAnonKey, getSupabaseUrl } from './config';
 import { freeEntitlement, rowToEntitlement } from './entitlement';
 import { assertPolarCheckoutUrl } from './polar-checkout-url';
@@ -59,9 +60,7 @@ export class SupabaseBillingPort implements IBillingPort {
     if (!token) {
       throw new Error('Sign in required for billing');
     }
-    const base = (
-      this.opts.functionsBaseUrl ?? getSupabaseUrl()
-    ).replace(/\/$/, '');
+    const base = (this.opts.functionsBaseUrl ?? getSupabaseUrl()).replace(/\/$/, '');
     const res = await fetch(`${base}/functions/v1/billing-sync`, {
       method: 'POST',
       headers: {
@@ -91,9 +90,7 @@ export class SupabaseBillingPort implements IBillingPort {
       throw new Error('Sign in required for billing');
     }
 
-    const base = (
-      this.opts.functionsBaseUrl ?? getSupabaseUrl()
-    ).replace(/\/$/, '');
+    const base = (this.opts.functionsBaseUrl ?? getSupabaseUrl()).replace(/\/$/, '');
 
     const res = await fetch(`${base}/functions/v1/${path}`, {
       method: 'POST',

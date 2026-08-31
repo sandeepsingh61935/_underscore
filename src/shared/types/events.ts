@@ -135,7 +135,7 @@ export interface ErrorEvent extends BaseEvent {
 export interface AuthStateChangedEvent extends BaseEvent {
   type: 'auth:state:changed';
   isAuthenticated: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   user?: any;
 }
 

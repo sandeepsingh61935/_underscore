@@ -11,13 +11,16 @@ import { join } from 'node:path';
 
 import { describe, it, expect } from 'vitest';
 
-import { auditCourseraScale, type AuditHighlight } from '@/shared/llm/summarization-audit';
+import {
+  auditCourseraScale,
+  type AuditHighlight,
+} from '@/shared/llm/summarization-audit';
 import { getSectionKey } from '@/shared/utils/section-key';
 
 const DEFAULT_IDB_DIRS = [
   join(
     homedir(),
-    '.config/google-chrome/Default/IndexedDB/chrome-extension_hecejpjekcgpifnemddfmkjmphmgljlm_0.indexeddb.leveldb',
+    '.config/google-chrome/Default/IndexedDB/chrome-extension_hecejpjekcgpifnemddfmkjmphmgljlm_0.indexeddb.leveldb'
   ),
 ];
 
@@ -32,9 +35,9 @@ function resolveIdbDir(): string | null {
 
 function readStringsDump(dir: string): string {
   const ldbFiles = readdirSync(dir)
-    .filter(f => f.endsWith('.ldb'))
-    .map(f => join(dir, f));
-  return execSync(`strings ${ldbFiles.map(f => JSON.stringify(f)).join(' ')}`, {
+    .filter((f) => f.endsWith('.ldb'))
+    .map((f) => join(dir, f));
+  return execSync(`strings ${ldbFiles.map((f) => JSON.stringify(f)).join(' ')}`, {
     encoding: 'utf8',
     maxBuffer: 120 * 1024 * 1024,
   });
@@ -53,22 +56,24 @@ function parseHighlightsFromDump(dump: string): {
   const textRe = /text"([^"]{1,5000})/g;
   const idRe = /"id"\s*([a-f0-9-]{36})/gi;
 
-  const courseraUrlOccurrences = [...dump.matchAll(urlRe)].map(m => m[0]!);
+  const courseraUrlOccurrences = [...dump.matchAll(urlRe)].map((m) => m[0]!);
   const courseraUrlsUnique = [...new Set(courseraUrlOccurrences)];
-  const exacts = [...dump.matchAll(exactRe)].map(m => m[1]!.trim()).filter(Boolean);
+  const exacts = [...dump.matchAll(exactRe)].map((m) => m[1]!.trim()).filter(Boolean);
   const plainTexts = [...dump.matchAll(textRe)]
-    .map(m => m[1]!.trim())
-    .filter(t => !t.startsWith('http') && t.length > 2);
-  const ids = [...dump.matchAll(idRe)].map(m => m[1]!);
+    .map((m) => m[1]!.trim())
+    .filter((t) => !t.startsWith('http') && t.length > 2);
+  const ids = [...dump.matchAll(idRe)].map((m) => m[1]!);
 
   const texts = exacts.length > 0 ? exacts : plainTexts;
-  const encryptedCount = (dump.match(/textEncrypted/g) ?? []).length
-    + (dump.match(/ciphertext/g) ?? []).length;
+  const encryptedCount =
+    (dump.match(/textEncrypted/g) ?? []).length +
+    (dump.match(/ciphertext/g) ?? []).length;
 
   const highlights: AuditHighlight[] = [];
-  const urlList = courseraUrlOccurrences.length >= texts.length
-    ? courseraUrlOccurrences
-    : texts.map((_, i) => courseraUrlsUnique[i % courseraUrlsUnique.length]!);
+  const urlList =
+    courseraUrlOccurrences.length >= texts.length
+      ? courseraUrlOccurrences
+      : texts.map((_, i) => courseraUrlsUnique[i % courseraUrlsUnique.length]!);
   const pairCount = Math.min(urlList.length, texts.length);
 
   for (let i = 0; i < pairCount; i += 1) {
@@ -90,7 +95,7 @@ function parseHighlightsFromDump(dump: string): {
   }
 
   const seen = new Set<string>();
-  const deduped = highlights.filter(h => {
+  const deduped = highlights.filter((h) => {
     const key = `${h.url}\0${h.text}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -116,7 +121,14 @@ describe('Coursera real IDB audit', () => {
     }
 
     const parsed = parseHighlightsFromDump(readStringsDump(dir));
-    const { highlights, encryptedCount, courseraUrlCount, courseraUrlOccurrences, exactCount, plainTextCount } = parsed;
+    const {
+      highlights,
+      encryptedCount,
+      courseraUrlCount,
+      courseraUrlOccurrences,
+      exactCount,
+      plainTextCount,
+    } = parsed;
     expect(highlights.length).toBeGreaterThan(0);
 
     const bySection = new Map<string, number>();
@@ -126,7 +138,7 @@ describe('Coursera real IDB audit', () => {
     }
 
     const report = auditCourseraScale({ domain: 'www.coursera.org', highlights });
-    const textLengths = highlights.map(h => h.text.length);
+    const textLengths = highlights.map((h) => h.text.length);
 
     const snapshot = {
       source: {
@@ -139,11 +151,13 @@ describe('Coursera real IDB audit', () => {
         encryptedMarkers: encryptedCount,
       },
       highlightStats: {
-        uniqueUrls: new Set(highlights.map(h => h.url)).size,
+        uniqueUrls: new Set(highlights.map((h) => h.url)).size,
         sections: [...bySection.entries()]
           .sort((a, b) => b[1] - a[1])
           .map(([section, count]) => ({ section, count })),
-        avgTextChars: Math.round(textLengths.reduce((a, b) => a + b, 0) / textLengths.length),
+        avgTextChars: Math.round(
+          textLengths.reduce((a, b) => a + b, 0) / textLengths.length
+        ),
         maxTextChars: Math.max(...textLengths),
         totalTextChars: textLengths.reduce((a, b) => a + b, 0),
       },
@@ -167,7 +181,7 @@ describe('Coursera real IDB audit', () => {
 
     writeFileSync(
       join(process.cwd(), 'tests/integration/coursera-real-idb-report.json'),
-      `${JSON.stringify(snapshot, null, 2)}\n`,
+      `${JSON.stringify(snapshot, null, 2)}\n`
     );
     console.info('[coursera-real-idb-audit]\n', JSON.stringify(snapshot, null, 2));
     expect(snapshot.sectionSummarize.issues.length).toBeGreaterThan(0);

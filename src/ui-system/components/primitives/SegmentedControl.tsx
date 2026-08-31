@@ -52,7 +52,7 @@ export function SegmentedControl({
             className={cn(
               'relative flex-1 py-[6px] px-2 rounded border-0 cursor-pointer',
               'transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-1',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-1'
             )}
             style={{
               color: isActive ? 'var(--paper)' : 'var(--ink-2)',

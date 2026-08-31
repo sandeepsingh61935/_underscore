@@ -43,7 +43,7 @@ export class OpenAIProvider implements ILLMService {
     supportsStreaming: true,
     supportsToolUse: true,
     costPerInputToken: 0.15 / 1_000_000,
-    costPerOutputToken: 0.60 / 1_000_000,
+    costPerOutputToken: 0.6 / 1_000_000,
   };
 
   private readonly apiKey: string;
@@ -75,12 +75,13 @@ export class OpenAIProvider implements ILLMService {
   async streamChat(
     request: LLMRequest,
     onChunk: (chunk: LLMChunk) => void,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<LLMResult> {
     const start = Date.now();
     const messages: Array<{ role: string; content: string }> = [];
-    if (request.systemPrompt) messages.push({ role: 'system', content: request.systemPrompt });
-    messages.push(...request.messages.map(m => ({ role: m.role, content: m.content })));
+    if (request.systemPrompt)
+      messages.push({ role: 'system', content: request.systemPrompt });
+    messages.push(...request.messages.map((m) => ({ role: m.role, content: m.content })));
 
     const response = await fetch(`${this.apiBase}/chat/completions`, {
       method: 'POST',
@@ -100,9 +101,13 @@ export class OpenAIProvider implements ILLMService {
     if (!response.ok || !response.body) {
       const errorText = await response.text().catch(() => '');
       let host = this.apiBase;
-      try { host = new URL(this.apiBase).host; } catch { /* keep raw */ }
+      try {
+        host = new URL(this.apiBase).host;
+      } catch {
+        /* keep raw */
+      }
       throw new Error(
-        `LLM request failed (${response.status}) at ${host} model=${this.model}: ${errorText}`,
+        `LLM request failed (${response.status}) at ${host} model=${this.model}: ${errorText}`
       );
     }
 
@@ -123,12 +128,16 @@ export class OpenAIProvider implements ILLMService {
       buffer = events.pop() ?? '';
 
       for (const raw of events) {
-        const dataLine = raw.split('\n').find(l => l.startsWith('data:'));
+        const dataLine = raw.split('\n').find((l) => l.startsWith('data:'));
         if (!dataLine) continue;
         const json = dataLine.slice(5).trim();
         if (!json || json === '[DONE]') continue;
         let parsed: OpenAIChunk;
-        try { parsed = JSON.parse(json); } catch { continue; }
+        try {
+          parsed = JSON.parse(json);
+        } catch {
+          continue;
+        }
         const text = parsed.choices?.[0]?.delta?.content;
         if (text) {
           accumulated += text;
@@ -141,7 +150,12 @@ export class OpenAIProvider implements ILLMService {
       }
     }
 
-    return { text: accumulated, inputTokens, outputTokens, durationMs: Date.now() - start };
+    return {
+      text: accumulated,
+      inputTokens,
+      outputTokens,
+      durationMs: Date.now() - start,
+    };
   }
 
   async chat(request: LLMRequest): Promise<LLMResult> {
@@ -149,8 +163,10 @@ export class OpenAIProvider implements ILLMService {
     let accumulated = '';
     const result = await this.streamChat(
       request,
-      chunk => { accumulated += chunk.delta; },
-      controller.signal,
+      (chunk) => {
+        accumulated += chunk.delta;
+      },
+      controller.signal
     );
     return { ...result, text: accumulated };
   }

@@ -3,16 +3,14 @@
  * Ollama → direct fetch; cloud → same-origin Pages Function SSE proxy.
  */
 
-import type { ProviderName } from '@/shared/interfaces/i-llm-service';
-import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 import type { ILlmRuntime, LlmStreamArgs } from './i-llm-runtime';
-import {
-  LLM_PROXY_STREAM_PATH,
-  usesWebProxy,
-} from './proxy-policy';
+import { LLM_PROXY_STREAM_PATH, usesWebProxy } from './proxy-policy';
 import { runProviderStream } from './run-provider-stream';
 import { parseSseBuffer } from './sse';
 import type { LlmStreamEvent } from './stream-protocol';
+
+import type { ProviderName } from '@/shared/interfaces/i-llm-service';
+import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-from-config';
 
 export interface BrowserLlmCredentials {
   apiKey?: string;
@@ -34,13 +32,13 @@ export interface BrowserLlmRuntimeOptions {
 
 function resolveProvider(
   args: LlmStreamArgs,
-  getDefaultProvider: () => ProviderName | null,
+  getDefaultProvider: () => ProviderName | null
 ): ProviderName {
   if (args.provider) return args.provider;
   const d = getDefaultProvider();
   if (!d) {
     throw new Error(
-      'No model configured. Open Settings → Models & providers and add a provider.',
+      'No model configured. Open Settings → Models & providers and add a provider.'
     );
   }
   return d;
@@ -48,7 +46,7 @@ function resolveProvider(
 
 async function readProxySse(
   response: Response,
-  onEvent: (e: LlmStreamEvent) => void,
+  onEvent: (e: LlmStreamEvent) => void
 ): Promise<void> {
   if (!response.body) {
     onEvent({ type: 'ERROR', payload: { message: 'Empty stream response' } });

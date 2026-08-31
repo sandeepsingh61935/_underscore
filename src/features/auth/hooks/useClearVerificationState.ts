@@ -7,5 +7,5 @@ import { useIpcAction } from '@/shared/hooks/useIpcAction';
  * This hook is the canonical caller.
  */
 export function useClearVerificationState() {
-    return useIpcAction<void, void>('CLEAR_VERIFICATION_STATE');
+  return useIpcAction<void, void>('CLEAR_VERIFICATION_STATE');
 }

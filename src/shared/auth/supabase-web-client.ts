@@ -22,7 +22,7 @@ export function getWebSupabaseClient(): SupabaseClient {
     // clear warning and create a placeholder client so the app can still
     // render (auth calls will fail with a network error until env is set).
     console.warn(
-      '[supabase-web] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing — web auth will fail. Copy .env.production to .env.development or set env vars (see .env.production.example).',
+      '[supabase-web] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing — web auth will fail. Copy .env.production to .env.development or set env vars (see .env.production.example).'
     );
     url = url || 'https://placeholder.supabase.co';
     anonKey = anonKey || 'placeholder-anon-key';

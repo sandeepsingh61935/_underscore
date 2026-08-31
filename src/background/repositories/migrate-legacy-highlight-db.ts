@@ -1,9 +1,9 @@
-import type { ILogger } from '@/shared/interfaces/i-logger';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import {
   BASIC_HIGHLIGHT_DB_NAME,
   LEGACY_HIGHLIGHT_DB_NAME,
 } from '@/shared/constants/highlight-storage-scope';
+import type { ILogger } from '@/shared/interfaces/i-logger';
 
 /**
  * One-time migration: move pre-isolation `underscore_vault` rows into Basic DB.

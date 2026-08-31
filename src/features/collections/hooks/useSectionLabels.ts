@@ -7,12 +7,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { isExtensionContext } from '@/features/collections/hooks/useHighlightExport';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import {
   getDomainSectionLabels,
   sectionLabelScopeFromMode,
   setDomainSectionLabel,
 } from '@/shared/services/section-label-store';
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 
 export interface UseSectionLabelsResult {
   labels: Record<string, string>;
@@ -24,7 +24,7 @@ export interface UseSectionLabelsResult {
 
 export function useSectionLabels(
   domain: string,
-  mode: ModeType | string | null | undefined,
+  mode: ModeType | string | null | undefined
 ): UseSectionLabelsResult {
   const scope = sectionLabelScopeFromMode(mode);
   const canEdit = isExtensionContext();
@@ -63,7 +63,7 @@ export function useSectionLabels(
         return false;
       }
     },
-    [canEdit, domain, scope],
+    [canEdit, domain, scope]
   );
 
   return { labels, canEdit, isLoading, saveLabel };
