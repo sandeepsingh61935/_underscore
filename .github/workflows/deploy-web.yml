@@ -215,9 +215,7 @@ jobs:
       - name: Deploy
         run: bash scripts/deploy-vercel-web.sh
         env:
-          ENV_FILE: /dev/null
           SKIP_BUILD: '1'
-          # deploy script requires ENV_FILE to exist; use empty stub
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

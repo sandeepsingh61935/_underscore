@@ -7,12 +7,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 ENV_FILE="${ENV_FILE:-.env.production}"
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Missing $ENV_FILE (copy from .env.development / set VITE_* vars)." >&2
-  exit 1
-fi
 
 if [[ "${SKIP_BUILD:-}" != "1" ]]; then
+  if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Missing $ENV_FILE (copy from .env.development / set VITE_* vars)." >&2
+    exit 1
+  fi
   node --env-file="$ENV_FILE" ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production
 fi
 

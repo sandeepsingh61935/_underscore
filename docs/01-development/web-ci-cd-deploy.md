@@ -62,11 +62,16 @@ Create token: [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-to
 
 | Secret | Notes |
 |--------|--------|
-| `VERCEL_TOKEN` | [Account tokens](https://vercel.com/account/tokens) |
+| `VERCEL_TOKEN` | **Account** token from [vercel.com/account/tokens](https://vercel.com/account/tokens) — **not** the local CLI session token (`vca_*` in `~/.local/share/com.vercel.cli/auth.json`). Those expire and fail in CI. |
 | `VERCEL_ORG_ID` | From `.vercel/project.json` → `orgId` (after `vercel link`) |
 | `VERCEL_PROJECT_ID` | From `.vercel/project.json` → `projectId` |
 
-`.vercel/` is gitignored; CI synthesizes the link file from these secrets.
+```bash
+# After creating the token in the Vercel dashboard:
+printf '%s' 'YOUR_ACCOUNT_TOKEN' | gh secret set VERCEL_TOKEN
+```
+
+`.vercel/` is gitignored; CI synthesizes the link file from org/project secrets.
 
 Local reference (do not commit):
 
