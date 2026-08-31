@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" role="img" aria-labelledby="title desc">
+  <title id="title">Underscore Highlighter — high-level architecture</title>
+  <desc id="desc">User interacts with browser extension and web app. Content script and popup talk to the background service worker. Background and web app use Supabase. Web and AI hosts reach Cloudflare Workers for edge API and MCP. Optional BYOK paths reach LLM providers.</desc>
+
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #fafaf8; }
+      .frame { fill: #ffffff; stroke: #1a1a1a; stroke-width: 1.5; }
+      .frame-soft { fill: #f3f1eb; stroke: #1a1a1a; stroke-width: 1.25; stroke-dasharray: 4 3; }
+      .box { fill: #ffffff; stroke: #1a1a1a; stroke-width: 1.25; }
+      .box-accent { fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 1.25; }
+      .box-data { fill: #eef2ff; stroke: #1a1a1a; stroke-width: 1.25; }
+      .box-edge { fill: #ecfdf3; stroke: #1a1a1a; stroke-width: 1.25; }
+      .box-ext { fill: #fff7ed; stroke: #1a1a1a; stroke-width: 1.25; }
+      .title { font: 700 13px ui-sans-serif, system-ui, sans-serif; fill: #1a1a1a; }
+      .title-inv { font: 700 12px ui-sans-serif, system-ui, sans-serif; fill: #fafaf8; }
+      .label { font: 600 12px ui-sans-serif, system-ui, sans-serif; fill: #1a1a1a; }
+      .sub { font: 400 10px ui-sans-serif, system-ui, sans-serif; fill: #4a4a4a; }
+      .kicker { font: 600 10px ui-sans-serif, system-ui, sans-serif; fill: #6b6b6b; letter-spacing: 0.04em; }
+      .edge { stroke: #1a1a1a; stroke-width: 1.35; fill: none; }
+      .edge-soft { stroke: #1a1a1a; stroke-width: 1.2; fill: none; stroke-dasharray: 5 4; }
+    ]]></style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="920" height="420" rx="8"/>
+
+  <!-- User -->
+  <rect class="box-accent" x="24" y="178" width="88" height="56" rx="8"/>
+  <text class="title-inv" x="68" y="204" text-anchor="middle">User</text>
+  <text class="sub" x="68" y="222" text-anchor="middle" fill="#d4d4d4">reader</text>
+
+  <!-- Browser frame -->
+  <rect class="frame-soft" x="140" y="36" width="360" height="348" rx="12"/>
+  <text class="kicker" x="156" y="56">BROWSER</text>
+
+  <rect class="box" x="164" y="72" width="140" height="52" rx="8"/>
+  <text class="label" x="234" y="94" text-anchor="middle">Web page</text>
+  <text class="sub" x="234" y="110" text-anchor="middle">any site</text>
+
+  <rect class="box" x="164" y="144" width="140" height="58" rx="8"/>
+  <text class="label" x="234" y="166" text-anchor="middle">Content script</text>
+  <text class="sub" x="234" y="182" text-anchor="middle">highlight + paint</text>
+
+  <rect class="box" x="164" y="222" width="140" height="58" rx="8"/>
+  <text class="label" x="234" y="244" text-anchor="middle">Popup / UI</text>
+  <text class="sub" x="234" y="260" text-anchor="middle">library · settings</text>
+
+  <rect class="box" x="340" y="144" width="140" height="136" rx="8"/>
+  <text class="label" x="410" y="196" text-anchor="middle">Background SW</text>
+  <text class="sub" x="410" y="214" text-anchor="middle">auth · sync · IPC</text>
+  <text class="sub" x="410" y="230" text-anchor="middle">local library · AI</text>
+
+  <!-- Web app -->
+  <rect class="box" x="540" y="56" width="150" height="64" rx="8"/>
+  <text class="label" x="615" y="82" text-anchor="middle">Web app</text>
+  <text class="sub" x="615" y="100" text-anchor="middle">library · install</text>
+
+  <!-- Workers -->
+  <rect class="box-edge" x="540" y="150" width="150" height="64" rx="8"/>
+  <text class="label" x="615" y="176" text-anchor="middle">CF Workers</text>
+  <text class="sub" x="615" y="194" text-anchor="middle">edge API · MCP</text>
+
+  <!-- Supabase -->
+  <rect class="box-data" x="540" y="250" width="150" height="64" rx="8"/>
+  <text class="label" x="615" y="276" text-anchor="middle">Supabase</text>
+  <text class="sub" x="615" y="294" text-anchor="middle">auth · cloud library</text>
+
+  <!-- External -->
+  <rect class="box-ext" x="740" y="56" width="156" height="64" rx="8"/>
+  <text class="label" x="818" y="82" text-anchor="middle">AI hosts</text>
+  <text class="sub" x="818" y="100" text-anchor="middle">ChatGPT · Cursor</text>
+
+  <rect class="box-ext" x="740" y="200" width="156" height="64" rx="8"/>
+  <text class="label" x="818" y="226" text-anchor="middle">LLM providers</text>
+  <text class="sub" x="818" y="244" text-anchor="middle">BYOK / Ollama</text>
+
+  <!-- Edges: User -->
+  <path class="edge" marker-end="url(#arrow)" d="M 112 190 C 130 160, 145 120, 164 98"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 112 206 L 164 248"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 112 220 C 200 320, 420 40, 540 88"/>
+
+  <!-- Page -> CS -> BG -->
+  <path class="edge" marker-end="url(#arrow)" d="M 234 124 L 234 144"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 304 173 L 340 173"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 304 248 L 340 248"/>
+
+  <!-- BG / Web -> Supabase -->
+  <path class="edge" marker-end="url(#arrow)" d="M 480 250 C 500 270, 520 280, 540 282"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 615 120 L 615 150"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 615 214 L 615 250"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 690 88 L 740 88"/>
+  <path class="edge" marker-end="url(#arrow)" d="M 690 182 L 740 88"/>
+
+  <!-- optional LLM -->
+  <path class="edge-soft" marker-end="url(#arrow)" d="M 480 200 C 560 200, 680 220, 740 232"/>
+  <path class="edge-soft" marker-end="url(#arrow)" d="M 690 200 C 710 210, 720 220, 740 232"/>
+
+  <!-- caption -->
+  <text class="sub" x="460" y="404" text-anchor="middle">Solid = primary path · Dashed = optional BYOK / model calls · Guest data stays on-device</text>
+</svg>

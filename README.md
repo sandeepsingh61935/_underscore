@@ -30,37 +30,24 @@ AI features use your own keys or agents — Underscore does not bill model token
 
 ## Architecture at a glance
 
-```mermaid
-flowchart LR
-  U[User]
+<!-- SVG scales to the README column; open the file for full-resolution zoom. -->
+<p align="center">
+  <a href="./docs/assets/architecture-overview.svg">
+    <img
+      src="./docs/assets/architecture-overview.svg"
+      alt="High-level architecture: browser extension, web app, Supabase, Workers/MCP, LLMs"
+      width="100%"
+    />
+  </a>
+</p>
 
-  subgraph Browser["Browser"]
-    Page[Web page]
-    CS[Content script<br/>highlight + paint]
-    UI[Popup / extension UI]
-    BG[Background SW<br/>auth · library · sync · AI]
-  end
-
-  Web[Web app<br/>library · settings · install]
-  API[Cloudflare Workers<br/>edge API · MCP]
-  SB[(Supabase<br/>auth · cloud library)]
-  LLM[LLM providers<br/>BYOK / Ollama]
-  Agents[AI hosts<br/>ChatGPT · Cursor · …]
-
-  U --> Page
-  U --> UI
-  U --> Web
-  Page --> CS
-  CS <--> BG
-  UI <--> BG
-  BG --> SB
-  Web --> SB
-  Web --> API
-  API --> SB
-  BG -.-> LLM
-  API -.-> LLM
-  Agents --> API
-```
+<p align="center">
+  <sub>
+    Diagram scales with the page ·
+    <a href="./docs/assets/architecture-overview.svg">Open SVG</a> (browser zoom) ·
+    <a href="./docs/01-development/system-architecture.md">Full architecture</a>
+  </sub>
+</p>
 
 | Piece | Role |
 |-------|------|
@@ -72,9 +59,6 @@ flowchart LR
 
 Guest data stays on-device. Signed-in library syncs to the cloud. Agents only see
 synced data via Cloud MCP.
-
-Deeper C4 view and flows:
-[docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md).
 
 ---
 
