@@ -28,6 +28,56 @@ AI features use your own keys or agents — Underscore does not bill model token
 
 ---
 
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  U[User]
+
+  subgraph Browser["Browser"]
+    Page[Web page]
+    CS[Content script<br/>highlight + paint]
+    UI[Popup / extension UI]
+    BG[Background SW<br/>auth · library · sync · AI]
+  end
+
+  Web[Web app<br/>library · settings · install]
+  API[Cloudflare Workers<br/>edge API · MCP]
+  SB[(Supabase<br/>auth · cloud library)]
+  LLM[LLM providers<br/>BYOK / Ollama]
+  Agents[AI hosts<br/>ChatGPT · Cursor · …]
+
+  U --> Page
+  U --> UI
+  U --> Web
+  Page --> CS
+  CS <--> BG
+  UI <--> BG
+  BG --> SB
+  Web --> SB
+  Web --> API
+  API --> SB
+  BG -.-> LLM
+  API -.-> LLM
+  Agents --> API
+```
+
+| Piece | Role |
+|-------|------|
+| **Content script** | Capture and paint highlights on the page |
+| **Background SW** | Auth, local library, cloud sync, IPC hub |
+| **Web app** | Searchable library, install, account settings |
+| **Supabase** | Identity + cloud source of truth when signed in |
+| **Workers / MCP** | Edge API and agent access to **synced** library |
+
+Guest data stays on-device. Signed-in library syncs to the cloud. Agents only see
+synced data via Cloud MCP.
+
+Deeper C4 view and flows:
+[docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md).
+
+---
+
 ## Try it
 
 ### From a release zip
