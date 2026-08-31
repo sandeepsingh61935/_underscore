@@ -278,7 +278,6 @@ export function HighlightCard({
       setDraft(quote);
       resetHistory();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when leaving edit or quote identity while not editing
   }, [quote, editing]);
 
   const metaText = `${domain}${section ?? ''}`;

@@ -210,7 +210,6 @@ export function BillingProvider({
       cancelled = true;
     };
     // Run once when authenticated + success query present; callbacks via stable refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot per auth
   }, [isAuthenticated]);
 
   const value = useMemo<BillingContextValue>(

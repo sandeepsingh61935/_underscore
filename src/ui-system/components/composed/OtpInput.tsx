@@ -41,7 +41,6 @@ export function OtpInput({
       refs.current[0]?.focus();
     }
     // Only run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When the parent clears the code (e.g. wrong OTP), restore focus to digit 1.

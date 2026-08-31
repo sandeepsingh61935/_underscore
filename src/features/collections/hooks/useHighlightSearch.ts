@@ -275,7 +275,6 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
     // scope/fields are captured by value via scopeKey/fieldsKey below; the
     // callback identity (and therefore the effect) only changes when those
     // serialized values change, not on every re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, scopeKey, fieldsKey, context, searchAction]);
 
   useEffect(() => {

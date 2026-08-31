@@ -21,7 +21,17 @@ import type { HighlightDeleteService } from '@/background/services/highlight-del
 import { type DeleteRequest } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
+import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import { notifyLibrarySyncProgress } from '@/background/services/library-sync-progress';
 import type { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
+import type { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
+import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
+import type { LLMRegistry } from '@/background/services/llm/llm-registry';
+import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
+import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
+import { registerOAuthGrantHandlers } from '@/background/services/oauth-grant-handlers';
+import { resolveBackgroundPaidActive } from '@/background/services/resolve-paid-active';
+import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
 import { authStateResponseData } from '@/shared/auth/auth-state-payload';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import {
@@ -59,20 +69,10 @@ import {
   CLEAR_HIGHLIGHT_DATA,
   SEARCH_HIGHLIGHTS,
 } from '@/shared/schemas/message-schemas';
-import { registerOAuthGrantHandlers } from '@/background/services/oauth-grant-handlers';
-import { resolveBackgroundPaidActive } from '@/background/services/resolve-paid-active';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { validateHighlightText } from '@/shared/utils/highlight-text';
-import { notifyLibrarySyncProgress } from '@/background/services/library-sync-progress';
-import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
-import { McpBridgeClientService } from '@/background/services/mcp-bridge-client-service';
-import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
-import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
-import type { LLMRegistry } from '@/background/services/llm/llm-registry';
-import type { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';

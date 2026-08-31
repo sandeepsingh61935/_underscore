@@ -20,8 +20,16 @@ import {
 } from '@/shared/constants/mode-storage';
 import { buildMarkdownExport, toExportableHighlight } from '@/shared/highlight-export';
 import type { ExportScope } from '@/shared/highlight-export';
+import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
+import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
+import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
+import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
+import type { McpSessionSnapshot } from '@/shared/mcp/session-types';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import type { ModeType } from '@/shared/schemas/mode-state-schemas';
+import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 import type { HighlightQueryService } from '@/shared/services/highlight-query-service';
 import {
   featureGateErrorCode,
@@ -29,7 +37,6 @@ import {
 } from '@/shared/utils/feature-gate-copy';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import { searchHighlights } from '@/shared/utils/highlight-search';
-import { broadcastModeToTabs } from '@/shared/services/broadcast-mode-to-tabs';
 import {
   buildMcpCapabilities,
   canUseFeature,
@@ -37,14 +44,7 @@ import {
   getCapabilitiesForMode,
 } from '@/shared/utils/mode-capabilities';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
-import { buildScopeQueryRequest } from '@/shared/llm/scope-query-request';
-import { buildFallbackExcerpts } from '@/shared/llm/summarization-fallback';
-import { PROMPT_TEMPLATES } from '@/shared/llm/prompts';
-import type { HighlightExcerpt } from '@/shared/llm/highlight-excerpts';
 import { getSectionKey } from '@/shared/utils/section-key';
-import type { McpSessionSnapshot } from '@/shared/mcp/session-types';
-import type { ModeType } from '@/shared/schemas/mode-state-schemas';
-import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
 
 export interface McpBridgeHandlerDeps {
   authManager: IAuthManager;

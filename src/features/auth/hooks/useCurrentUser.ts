@@ -153,7 +153,6 @@ export function useCurrentUser(): UseCurrentUserResult {
       mounted = false;
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = useCallback(

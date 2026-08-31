@@ -48,7 +48,6 @@ export function APIKeySetupView({
       }
     })();
     // Mount-only pull; refresh helpers are stable enough for hub open.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional once on open
   }, []);
 
   const activeModelId = active.provider

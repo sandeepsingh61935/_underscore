@@ -4,24 +4,24 @@
  * @architecture Dependency Injection - registers highlight repositories for storage
  */
 
-import { OfflineQueueService } from '@/background/services/offline-queue-service';
-import { SupabaseClient } from '@/background/api/supabase-client';
+import type { SupabaseClient } from '@/background/api/supabase-client';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { Container } from '@/background/di/container';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
-import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
-import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
-import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
 import { IndexedDBTagRepository } from '@/background/repositories/indexed-db-tag-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { SupabaseTagRepository } from '@/background/repositories/supabase-tag-repository';
+import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { CloudHydrationService } from '@/background/services/cloud-hydration-service';
+import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
+import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
-import { TagService } from '@/background/services/tag-service';
 import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import { OfflineQueueService } from '@/background/services/offline-queue-service';
 import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import { TagService } from '@/background/services/tag-service';
 import {
   BASIC_HIGHLIGHT_DB_NAME,
   PRO_HIGHLIGHT_DB_NAME,
