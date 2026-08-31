@@ -153,6 +153,7 @@ Details: [Quality framework](./docs/05-quality-framework/README.md).
 | Need | Location |
 |------|----------|
 | Doc routing / SSOT | [docs/README.md](./docs/README.md) |
+| System architecture (C4) | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
 | ADRs | [docs/04-adrs/](./docs/04-adrs/) |
 | Feature specs | [docs/superpowers/specs/](./docs/superpowers/specs/) |
 | Implementation plans | [docs/superpowers/plans/](./docs/superpowers/plans/) |

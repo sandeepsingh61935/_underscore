@@ -11,12 +11,14 @@ history only (`git log --all -- docs/`).
 |---|---|
 | Project policies (commits, emoji ban) | `00-policies/` |
 | Development setup & workflows (auth, git, billing, AMO, web CI/CD) | `01-development/` (web deploy: `web-ci-cd-deploy.md`) |
+| System architecture (C4 context/containers, flows) | `01-development/system-architecture.md` |
 | Architectural decisions (ADRs) | `04-adrs/` |
 | Coding/testing/design standards | `05-quality-framework/` |
 | Security (threat model, RLS, schema) | `06-security/` |
 | Feature PRDs & design specs (dated) | `superpowers/specs/` |
 | Implementation plans (dated) | `superpowers/plans/` |
 | Design mockups & wireframes | `mockups/` |
+| Code-level call-flow diagrams (local graphify) | `graphify-out/callflow.html` (gitignored; regenerate) |
 
 ## Where New Documents Go
 
@@ -33,13 +35,17 @@ history only (`git log --all -- docs/`).
 
 ## Architecture
 
-There is intentionally **no monolithic architecture document** — previous
-ones drifted out of sync with the code and were removed. Architecture
-truth is, in order of authority:
+Architecture truth is, in order of authority:
 
 1. The codebase itself (`src/`, see `CLAUDE.md` for the file-structure map)
 2. `04-adrs/` — the decisions that shaped it
 3. `superpowers/specs/` — feature-level designs
+4. `01-development/system-architecture.md` — thin C4 orientation (context,
+   containers, key flows). **Orientation only**; it must not contradict 1–3.
+
+There is intentionally **no encyclopedia-style architecture book**. A prior
+monolith drifted and was purged (2026-08-17). Keep the C4 doc short; put new
+decisions in ADRs.
 
 ## Rules
 
