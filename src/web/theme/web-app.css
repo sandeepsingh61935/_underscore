@@ -40,13 +40,38 @@
   --dur-shell: 280ms;
   --rise: 8px;
   --side: 248px;
-  --top: 56px;
+  /* Product topbar removed — keep 0 so viewport math stays correct. */
+  --top: 0px;
   --max: 1120px;
   --focus: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
   --control-h-sm: 32px;
   --control-h: 44px;
   --danger: oklch(52% 0.16 25);
   --danger-soft: color-mix(in oklch, var(--danger) 12%, transparent);
+
+  /* Button interaction tokens — one family per role, rest→hover→active stays in-family */
+  --btn-radius: 10px;
+  --btn-radius-sm: 8px;
+  --btn-fg-on-solid: var(--paper); /* text on primary solid ink */
+  --btn-fg-on-accent: #fff; /* text on terracotta CTA */
+  --btn-default-bg: var(--paper);
+  --btn-default-bg-hover: var(--paper-2);
+  --btn-default-bg-active: color-mix(in oklch, var(--ink) 7%, var(--paper));
+  --btn-default-border: var(--rule-soft);
+  --btn-default-border-hover: color-mix(in oklch, var(--ink) 22%, var(--rule-soft));
+  --btn-default-border-focus-edge: color-mix(in oklch, var(--accent) 40%, var(--rule-soft));
+  --btn-primary-bg: var(--ink);
+  --btn-primary-bg-hover: color-mix(in oklch, var(--ink) 88%, var(--paper));
+  --btn-primary-bg-active: color-mix(in oklch, var(--ink) 96%, var(--paper));
+  --btn-accent-bg: var(--accent);
+  --btn-accent-bg-hover: color-mix(in oklch, var(--accent) 82%, var(--accent-ink, #2a1208));
+  --btn-accent-bg-active: color-mix(in oklch, var(--accent) 70%, var(--accent-ink, #2a1208));
+  --btn-danger-fg: var(--danger);
+  --btn-danger-bg: color-mix(in oklch, var(--danger) 8%, var(--paper));
+  --btn-danger-bg-hover: color-mix(in oklch, var(--danger) 14%, var(--paper));
+  --btn-danger-bg-active: color-mix(in oklch, var(--danger) 20%, var(--paper));
+  --btn-danger-border: color-mix(in oklch, var(--danger) 30%, var(--rule-soft));
+  --btn-danger-border-hover: color-mix(in oklch, var(--danger) 48%, var(--rule-soft));
 }
 
 @property --side {
@@ -92,7 +117,7 @@
   align-items: center;
   gap: 10px;
   padding: 16px 14px 12px;
-  min-height: var(--top);
+  min-height: 56px;
 }
 
 .logo {
@@ -361,71 +386,6 @@ button.nav-item,
   background: var(--paper-2);
 }
 
-.topbar {
-  height: var(--top);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 20px 0 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--paper);
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
-.mobile-menu {
-  display: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  place-items: center;
-  color: var(--ink-2);
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.mobile-menu:hover {
-  background: var(--paper-3);
-}
-
-.topbar-context {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  justify-content: center;
-}
-
-.topbar-route {
-  font-family: var(--serif);
-  font-size: var(--type-title-row);
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  color: var(--ink);
-  line-height: 1.2;
-}
-
-.topbar-hint {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-4);
-  line-height: 1.2;
-}
-
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
 .badge-pill {
   display: inline-flex;
   align-items: center;
@@ -522,7 +482,7 @@ button.nav-item,
   align-items: center;
 }
 
-/* Text action — mono caps */
+/* Text action — mono caps; accent family only (not ink flash on hover) */
 .btn-text {
   font-family: var(--mono);
   font-size: var(--type-label);
@@ -536,7 +496,7 @@ button.nav-item,
   border-radius: 2px;
   display: inline-flex;
   align-items: center;
-  transition: color 120ms var(--ease);
+  transition: color var(--dur-fast) var(--ease);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -544,8 +504,17 @@ button.nav-item,
 }
 
 .btn-text:hover {
-  color: var(--ink);
+  color: color-mix(in oklch, var(--accent) 75%, var(--accent-ink, #2a1208));
   background: transparent;
+}
+
+.btn-text:active {
+  color: color-mix(in oklch, var(--accent) 60%, var(--accent-ink, #2a1208));
+}
+
+.btn-text:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Home — equal two-up (Pages | Recent) */
@@ -1500,24 +1469,39 @@ div.hl-note-btn:hover {
   height: 20px;
 }
 
-/* ── Controls (product shell only — do not restyle Welcome/auth/legal) ── */
-.app .btn {
+/* ── Controls (product shell) ───────────────────────────────────────────
+ * Editorial interaction model: each role keeps one color family end-to-end.
+ * rest → hover (deepen same family) → active (press) → disabled (mute).
+ * Never borrow another role’s fill on hover (no orange flash on default,
+ * no cream text on cream, no brightness filters that wash contrast).
+ *
+ * Roles:
+ *   default  outline paper — Sync, Download, Sign out, Clear
+ *   primary  solid ink — rare main affirmative (Save & check)
+ *   accent   solid terracotta — Sign in / Upgrade only
+ *   ghost    bare — dismiss / quiet
+ *   danger   rust channel — Delete only
+ */
+.app .btn,
+.app a.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   min-height: var(--control-h);
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--btn-radius);
   font-family: var(--sans);
   font-weight: 500;
   font-size: var(--type-body);
-  border: 1px solid var(--border);
-  background: var(--paper);
+  letter-spacing: -0.005em;
+  border: 1px solid var(--btn-default-border);
+  background: var(--btn-default-bg);
   color: var(--ink);
   transition:
     background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
     transform var(--dur-instant) var(--ease);
   white-space: nowrap;
   text-decoration: none;
@@ -1525,65 +1509,240 @@ div.hl-note-btn:hover {
   box-sizing: border-box;
 }
 
-.app .btn:hover:not(:disabled) {
-  background: var(--paper-2);
-  border-color: var(--border-strong);
+.app a.btn:visited {
+  color: var(--ink);
 }
 
-.app .btn:active:not(:disabled) {
+/* default — paper family */
+.app .btn:hover:not(:disabled),
+.app a.btn:hover:not(:disabled) {
+  background: var(--btn-default-bg-hover);
+  border-color: var(--btn-default-border-hover);
+  color: var(--ink);
+}
+
+.app .btn:active:not(:disabled),
+.app a.btn:active:not(:disabled) {
+  background: var(--btn-default-bg-active);
+  border-color: var(--btn-default-border-hover);
+  color: var(--ink);
   transform: scale(0.98);
 }
 
-.app .btn.primary {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+.app .btn:disabled,
+.app .btn[aria-disabled='true'],
+.app a.btn[aria-disabled='true'] {
+  background: var(--paper-2);
+  color: var(--ink-4);
+  border-color: var(--rule-soft);
+  opacity: 1;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.app .btn.primary:hover:not(:disabled) {
-  background: var(--ink-2);
-  border-color: var(--ink-2);
+.app .btn:focus-visible,
+.app a.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--btn-default-border-focus-edge);
 }
 
-.app .btn.accent {
-  background: var(--accent);
-  color: var(--paper);
-  border-color: var(--accent);
+/* primary — ink family, on-color always cream paper */
+.app .btn.primary,
+.app a.btn.primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-fg-on-solid);
+  border-color: var(--btn-primary-bg);
 }
 
-.app .btn.accent:hover:not(:disabled) {
-  filter: brightness(0.96);
+.app .btn.primary:visited,
+.app a.btn.primary:visited {
+  color: var(--btn-fg-on-solid);
 }
 
-.app .btn.ghost {
+.app .btn.primary:hover:not(:disabled),
+.app a.btn.primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+  border-color: var(--btn-primary-bg-hover);
+  color: var(--btn-fg-on-solid);
+}
+
+.app .btn.primary:active:not(:disabled),
+.app a.btn.primary:active:not(:disabled) {
+  background: var(--btn-primary-bg-active);
+  border-color: var(--btn-primary-bg-active);
+  color: var(--btn-fg-on-solid);
+}
+
+.app .btn.primary:focus-visible,
+.app a.btn.primary:focus-visible {
+  border-color: var(--btn-primary-bg);
+}
+
+.app .btn.primary:disabled,
+.app .btn.primary[aria-disabled='true'] {
+  background: color-mix(in oklch, var(--ink) 32%, var(--paper-2));
+  color: var(--btn-fg-on-solid);
+  border-color: transparent;
+}
+
+/* accent — terracotta family only (brand CTA) */
+.app .btn.accent,
+.app a.btn.accent {
+  background: var(--btn-accent-bg);
+  color: var(--btn-fg-on-accent);
+  border-color: var(--btn-accent-bg);
+}
+
+.app .btn.accent:visited,
+.app a.btn.accent:visited {
+  color: var(--btn-fg-on-accent);
+}
+
+.app .btn.accent:hover:not(:disabled),
+.app a.btn.accent:hover:not(:disabled) {
+  background: var(--btn-accent-bg-hover);
+  border-color: var(--btn-accent-bg-hover);
+  color: var(--btn-fg-on-accent);
+}
+
+.app .btn.accent:active:not(:disabled),
+.app a.btn.accent:active:not(:disabled) {
+  background: var(--btn-accent-bg-active);
+  border-color: var(--btn-accent-bg-active);
+  color: var(--btn-fg-on-accent);
+}
+
+.app .btn.accent:focus-visible,
+.app a.btn.accent:focus-visible {
+  border-color: var(--btn-accent-bg);
+}
+
+.app .btn.accent:disabled,
+.app .btn.accent[aria-disabled='true'] {
+  background: color-mix(in oklch, var(--accent) 42%, var(--paper-2));
+  color: var(--btn-fg-on-accent);
+  border-color: transparent;
+}
+
+/* ghost — bare paper wash */
+.app .btn.ghost,
+.app a.btn.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--ink-2);
 }
 
-.app .btn.ghost:hover:not(:disabled) {
-  background: var(--paper-3);
+.app .btn.ghost:hover:not(:disabled),
+.app a.btn.ghost:hover:not(:disabled) {
+  background: var(--overlay-06);
+  border-color: transparent;
   color: var(--ink);
 }
 
-.app .btn.danger {
-  background: var(--danger-soft);
-  color: var(--danger);
+.app .btn.ghost:active:not(:disabled),
+.app a.btn.ghost:active:not(:disabled) {
+  background: var(--overlay-08);
+  color: var(--ink);
+}
+
+.app .btn.ghost:focus-visible,
+.app a.btn.ghost:focus-visible {
   border-color: transparent;
 }
 
-.app .btn.sm {
+/* danger — rust family, outline-first like default */
+.app .btn.danger,
+.app a.btn.danger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border-color: var(--btn-danger-border);
+}
+
+.app .btn.danger:visited,
+.app a.btn.danger:visited {
+  color: var(--btn-danger-fg);
+}
+
+.app .btn.danger:hover:not(:disabled),
+.app a.btn.danger:hover:not(:disabled) {
+  background: var(--btn-danger-bg-hover);
+  border-color: var(--btn-danger-border-hover);
+  color: var(--btn-danger-fg);
+}
+
+.app .btn.danger:active:not(:disabled),
+.app a.btn.danger:active:not(:disabled) {
+  background: var(--btn-danger-bg-active);
+  border-color: var(--btn-danger-border-hover);
+  color: var(--btn-danger-fg);
+}
+
+.app .btn.danger:focus-visible,
+.app a.btn.danger:focus-visible {
+  outline-color: var(--danger);
+  border-color: var(--btn-danger-border-hover);
+}
+
+.app .btn.danger:disabled,
+.app .btn.danger[aria-disabled='true'] {
+  background: var(--paper-2);
+  color: color-mix(in oklch, var(--danger) 45%, var(--ink-4));
+  border-color: var(--rule-soft);
+}
+
+.app .btn.sm,
+.app a.btn.sm {
   min-height: var(--control-h-sm);
   padding: 6px 10px;
   font-size: var(--type-meta);
-  border-radius: 8px;
+  border-radius: var(--btn-radius-sm);
+}
+
+/* Non-action status (Cloud sync On/Off) — chip, not a button role */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-h-sm);
+  padding: 6px 10px;
+  border-radius: var(--btn-radius-sm);
+  border: 1px solid var(--rule-soft);
+  background: var(--paper);
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: var(--type-label);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.status-chip.is-on {
+  color: var(--ink-2);
+  border-color: color-mix(in oklch, var(--ink) 18%, var(--rule-soft));
+  background: var(--paper-2);
+}
+
+/* Dark mode: on-solid text stays cream paper; accent on-color stays high-contrast */
+.dark {
+  --btn-fg-on-solid: var(--paper);
+  --btn-fg-on-accent: #fff;
+  --btn-primary-bg: var(--ink);
+  --btn-primary-bg-hover: color-mix(in oklch, var(--ink) 90%, var(--paper));
+  --btn-primary-bg-active: color-mix(in oklch, var(--ink) 84%, var(--paper));
+  --btn-default-border-hover: color-mix(in oklch, var(--ink) 28%, var(--rule-soft));
 }
 
 /* ── Guest / page banners ─────────────────────────────────── */
 .banner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 12px 16px;
   flex-wrap: wrap;
   padding: 12px 16px;
   border-radius: var(--r-md);
@@ -1595,9 +1754,28 @@ div.hl-note-btn:hover {
   color: var(--ink-2);
 }
 
+/* Copy takes the row; CTA stays end-aligned (Sign in, Upgrade, etc.). */
+.banner .grow {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.banner > .btn,
+.banner > a.btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-self: center;
+}
+
 .banner strong {
   color: var(--ink);
   font-weight: 500;
+}
+
+.banner .sub {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
 }
 
 /* ── Mobile drawer overlay ──────────────────────────────────
@@ -3128,10 +3306,6 @@ html[data-density='roomy'] {
     transform: none;
   }
 
-  .mobile-menu {
-    display: grid;
-  }
-
   .tabbar {
     display: grid;
   }
@@ -3154,14 +3328,6 @@ html[data-density='roomy'] {
 
   .lib-main {
     min-height: 360px;
-  }
-
-  .topbar {
-    padding: 0 12px;
-  }
-
-  .badge-pill span:not(.dot) {
-    display: none;
   }
 
   .sb-collapse {

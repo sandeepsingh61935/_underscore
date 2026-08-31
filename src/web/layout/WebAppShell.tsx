@@ -1,38 +1,25 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Link,
-  NavLink,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
-import { PlanPill } from '@/web/components/PlanPill';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 
 type ProductRoute = 'home' | 'library' | 'settings';
 
-const ROUTE_META: Record<
-  ProductRoute,
-  { label: string; hint: string; path: string }
-> = {
+const ROUTE_META: Record<ProductRoute, { label: string; path: string }> = {
   home: {
     label: 'Home',
-    hint: '',
     path: '/home',
   },
   library: {
     label: 'Library',
-    hint: 'Search & filter highlights',
     path: '/library',
   },
   settings: {
     label: 'Settings',
-    hint: 'Account · plan · type · data · Integrations',
     path: '/settings',
   },
 };
@@ -83,7 +70,8 @@ const NAV_ITEMS: Array<{
 ];
 
 /**
- * Product chrome shell: sidebar (248→72), topbar, mobile tabbar, guest-aware foot.
+ * Product chrome shell: sidebar (248→72), mobile tabbar, guest-aware foot.
+ * No product topbar — page titles live in each route body.
  * Outlet renders product pages. Public auth routes stay outside this layout.
  */
 export function WebAppShell(): React.ReactElement {
@@ -93,7 +81,6 @@ export function WebAppShell(): React.ReactElement {
   const navigate = useNavigate();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Density (and future prefs) on shell mount — not only when Appearance tab opens.
   useEffect(() => {
@@ -112,7 +99,6 @@ export function WebAppShell(): React.ReactElement {
   );
 
   const activeRoute = routeFromPathname(location.pathname);
-  const meta = ROUTE_META[activeRoute];
 
   /** OD: library always flush. */
   const workspaceFlush = activeRoute === 'library';
@@ -123,22 +109,6 @@ export function WebAppShell(): React.ReactElement {
   const avatarText = isAuthenticated
     ? initialsFromEmail(user?.email)
     : 'G';
-
-  const closeMobileSidebar = useCallback(() => setSidebarOpen(false), []);
-
-  const primaryCta = useMemo(() => {
-    if (caps.isGuest) {
-      return { label: 'Sign in', to: '/sign-in' as const };
-    }
-    if (caps.isPaidActive) {
-      return null;
-    }
-    // Free window: no aggressive Upgrade CTA for unpaid signed-in users.
-    if (caps.freeWindow && !caps.isPastDue) {
-      return null;
-    }
-    return { label: 'Upgrade', to: '/settings?tab=plan' as const };
-  }, [caps.isGuest, caps.isPaidActive, caps.freeWindow, caps.isPastDue]);
 
   const shellClass = [
     'app',
@@ -160,11 +130,7 @@ export function WebAppShell(): React.ReactElement {
   return (
     <>
       <div className={shellClass} data-od-id="app-shell">
-        <aside
-          className={sidebarOpen ? 'sidebar open' : 'sidebar'}
-          data-od-id="sidebar"
-          aria-label="Primary"
-        >
+        <aside className="sidebar" data-od-id="sidebar" aria-label="Primary">
           <div className="sb-top">
             <div className="logo" data-od-id="brand">
               <div
@@ -239,7 +205,6 @@ export function WebAppShell(): React.ReactElement {
                 to={ROUTE_META[item.route].path}
                 className={navClass}
                 data-od-id={item.odId}
-                onClick={closeMobileSidebar}
               >
                 <span className="nav-ico" aria-hidden="true">
                   {item.icon}
@@ -252,7 +217,6 @@ export function WebAppShell(): React.ReactElement {
               to={ROUTE_META.settings.path}
               className={navClass}
               data-od-id="nav-settings"
-              onClick={closeMobileSidebar}
             >
               <span className="nav-ico" aria-hidden="true">
                 <IconSettings />
@@ -267,7 +231,6 @@ export function WebAppShell(): React.ReactElement {
               className="sb-user"
               data-od-id="sidebar-user"
               onClick={() => {
-                closeMobileSidebar();
                 void navigate('/settings');
               }}
             >
@@ -286,42 +249,6 @@ export function WebAppShell(): React.ReactElement {
         </aside>
 
         <div className="main">
-          <header className="topbar" data-od-id="topbar">
-            <button
-              type="button"
-              className="mobile-menu"
-              aria-label="Open menu"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                <path
-                  d="M3 5h12M3 9h12M3 13h12"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-            <div className="topbar-context" data-od-id="topbar-context">
-              <span className="topbar-route">{meta.label}</span>
-              {meta.hint ? <span className="topbar-hint">{meta.hint}</span> : null}
-            </div>
-            <div className="top-actions">
-              <PlanPill label={caps.planLabel} />
-              {primaryCta ? (
-                <Link
-                  to={primaryCta.to}
-                  className="btn sm primary"
-                  data-od-id="top-cta"
-                >
-                  {primaryCta.label}
-                </Link>
-              ) : (
-                <span data-od-id="top-cta" hidden />
-              )}
-            </div>
-          </header>
-
           <main className={workspaceClass} data-od-id="workspace">
             <div className="workspace-inner">
               <Outlet />
@@ -334,7 +261,6 @@ export function WebAppShell(): React.ReactElement {
                 key={item.route}
                 to={ROUTE_META[item.route].path}
                 className={tabClass}
-                onClick={closeMobileSidebar}
               >
                 {item.icon}
                 {ROUTE_META[item.route].label}
@@ -343,15 +269,6 @@ export function WebAppShell(): React.ReactElement {
           </nav>
         </div>
       </div>
-
-      <div
-        className={sidebarOpen ? 'overlay-side open' : 'overlay-side'}
-        role="presentation"
-        onClick={closeMobileSidebar}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') closeMobileSidebar();
-        }}
-      />
 
       <Toaster
         position="bottom-center"

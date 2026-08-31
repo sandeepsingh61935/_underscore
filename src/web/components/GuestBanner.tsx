@@ -18,7 +18,7 @@ export function GuestBanner({
   const copy = guestBannerCopy();
   return (
     <div className="banner" data-od-id="guest-banner">
-      <div style={{ flex: 1, minWidth: 0 }} data-od-id="guest-passive">
+      <div className="grow" data-od-id="guest-passive">
         {copy.body}
       </div>
       <Link to={signInTo} className="btn accent sm">

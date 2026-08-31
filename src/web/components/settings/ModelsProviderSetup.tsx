@@ -192,7 +192,7 @@ export function ModelsProviderSetup({
       <div className="ai-setup-actions">
         <button
           type="button"
-          className="btn accent sm"
+          className="btn primary sm"
           disabled={!canConfigure || busy}
           data-od-id="provider-save-check"
           onClick={() => { void saveAndCheck(); }}

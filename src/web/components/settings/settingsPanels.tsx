@@ -447,23 +447,11 @@ export function DataPanel({
             </div>
             <button
               type="button"
-              className={`btn sm${caps.flags.sync ? ' primary' : ''}`}
+              className="btn accent sm"
               data-od-id="settings-sync"
-              disabled={!caps.flags.sync}
-              aria-disabled={!caps.flags.sync}
-            >
-              {caps.flags.sync ? 'On' : 'Off'}
-            </button>
-          </div>
-          <div className="setting-row">
-            <div className="grow">
-              <div className="title">Sync now</div>
-            </div>
-            <button
-              type="button"
-              className="btn sm primary"
               disabled={!caps.flags.sync || syncing}
               aria-busy={syncing}
+              aria-label="Sync library now"
               onClick={onSync}
             >
               {syncing ? '…' : 'Sync'}

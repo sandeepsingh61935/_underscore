@@ -59,12 +59,11 @@ describe('WebAppShell', () => {
     expect(shell?.classList.contains('sidebar-collapsed')).toBe(false);
   });
 
-  it('shows Sign in top CTA for guest', () => {
+  it('does not render the product topbar', () => {
     renderShell('/home');
-    const cta = document.querySelector('[data-od-id="top-cta"]');
-    expect(cta).toBeTruthy();
-    expect(cta?.textContent?.trim()).toBe('Sign in');
-    expect((cta as HTMLElement).hidden).toBe(false);
+    expect(document.querySelector('[data-od-id="topbar"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="top-cta"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="mode-badge"]')).toBeNull();
   });
 
   it('sets workspace is-flush on /library, not on /home', () => {
