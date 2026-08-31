@@ -24,6 +24,7 @@
 - Threat model: [`docs/06-security/threat-model.md`](../06-security/threat-model.md)
 - Agent file map / UI contracts: [`CLAUDE.md`](../../CLAUDE.md)
 - Interactive call-flow (local): `npx`/`graphify` → `graphify-out/callflow.html` (gitignored)
+- README diagram (scalable SVG): [`docs/assets/architecture-overview.svg`](../assets/architecture-overview.svg)
 
 ---
 
