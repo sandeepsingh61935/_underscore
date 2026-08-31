@@ -1,5 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 import { AppRoutes } from './core/routing/AppRoutes';
 import './ui-system/theme/global.css';
 import './web/theme/web-app.css';
@@ -73,6 +74,7 @@ root.render(
     <React.StrictMode>
         <RootErrorBoundary>
           <AppRoutes />
+          <Analytics />
         </RootErrorBoundary>
     </React.StrictMode>
 );
