@@ -75,6 +75,14 @@ export class SupabaseMcpAdapter implements McpAdapter {
         return this.listTags();
       case 'get_highlights_by_tag':
         return this.getHighlightsByTag(payload);
+      case 'get_highlights_with_notes':
+        return this.getHighlightsWithNotes(payload);
+      case 'search_notes':
+        return this.searchNotes(payload);
+      case 'get_highlight_note':
+        return this.getHighlightNote(payload);
+      case 'export_notes_digest':
+        return this.exportNotesDigest(payload);
       case 'search_highlights':
         return this.searchHighlights(payload);
       case 'fetch_highlight':
@@ -357,6 +365,94 @@ export class SupabaseMcpAdapter implements McpAdapter {
       highlights: page,
       nextCursor: nextOffset < all.length ? String(nextOffset) : undefined,
       total: all.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async getHighlightsWithNotes(payload?: unknown): Promise<unknown> {
+    const input = (payload ?? {}) as { domain?: string; limit?: number; cursor?: string };
+    const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
+    const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
+
+    let all = (await this.fetchHighlights()).filter((hl) => Boolean(hl.notes?.trim()));
+    if (input.domain) {
+      all = all.filter((hl) => hl.domain === input.domain);
+    }
+    all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const page = all.slice(offset, offset + limit);
+    const nextOffset = offset + limit;
+
+    return {
+      highlights: page,
+      nextCursor: nextOffset < all.length ? String(nextOffset) : undefined,
+      total: all.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async searchNotes(payload: unknown): Promise<unknown> {
+    const input = payload as { query?: string; domain?: string; limit?: number; cursor?: string };
+    const query = input?.query?.trim().toLowerCase();
+    if (!query) {
+      throw Object.assign(new Error('query is required'), { code: 'INVALID_ARGUMENT' });
+    }
+    const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
+    const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
+
+    let all = (await this.fetchHighlights()).filter((hl) => Boolean(hl.notes?.trim()));
+    if (input.domain) {
+      all = all.filter((hl) => hl.domain === input.domain);
+    }
+    const matches = all.filter((hl) => hl.notes?.toLowerCase().includes(query));
+
+    return {
+      query,
+      highlights: matches.slice(offset, offset + limit),
+      nextCursor: offset + limit < matches.length ? String(offset + limit) : undefined,
+      total: matches.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async getHighlightNote(payload: unknown): Promise<unknown> {
+    const input = payload as { id?: string };
+    if (!input?.id?.trim()) {
+      throw Object.assign(new Error('id is required'), { code: 'INVALID_ARGUMENT' });
+    }
+
+    const hl = (await this.fetchHighlight({ id: input.id })) as ReturnType<typeof rowToSummary>;
+    return {
+      id: hl.id,
+      url: hl.url,
+      domain: hl.domain,
+      text: hl.text,
+      note: hl.notes || null,
+      tags: hl.tags ?? [],
+      createdAt: hl.createdAt,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async exportNotesDigest(payload?: unknown): Promise<unknown> {
+    const input = (payload ?? {}) as { domain?: string };
+    let highlights = (await this.fetchHighlights()).filter((hl) => Boolean(hl.notes?.trim()));
+    if (input.domain) {
+      highlights = highlights.filter((hl) => hl.domain === input.domain);
+    }
+
+    const markdown = highlights
+      .map(
+        (hl, i) =>
+          `### ${i + 1}. ${hl.domain} — [Source](${hl.url})\n\n> "${hl.text}"\n\n💡 **Personal Note / Marginalia**:\n${hl.notes}\n`,
+      )
+      .join('\n---\n\n');
+
+    return {
+      format: 'md',
+      markdown: markdown || 'No notes found.',
+      filename: input.domain ? `underscore-notes-${input.domain}.md` : 'underscore-notes-digest.md',
+      stats: { notesCount: highlights.length, domains: new Set(highlights.map((h) => h.domain)).size },
       dataCoverage: 'pro_cloud',
     };
   }

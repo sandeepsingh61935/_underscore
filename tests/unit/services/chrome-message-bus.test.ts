@@ -270,8 +270,9 @@ describe('ChromeMessageBus', () => {
       ).rejects.toThrow(/timeout/);
 
       const elapsed = Date.now() - startTime;
-      expect(elapsed).toBeGreaterThanOrEqual(1000); // Timeout enforced
-      expect(elapsed).toBeLessThan(1500); // Not hanging forever
+      // timeoutMs is 1000; allow timer slack (CI often reports 999ms).
+      expect(elapsed).toBeGreaterThanOrEqual(950);
+      expect(elapsed).toBeLessThan(1600); // Not hanging forever
     }, 2000);
 
     it('EDGE: should handle rapid concurrent sends', async () => {

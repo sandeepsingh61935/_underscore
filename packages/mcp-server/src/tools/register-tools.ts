@@ -138,6 +138,61 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
   );
 
   server.tool(
+    'get_highlights_with_notes',
+    'Get only highlights where you wrote personal notes, commentary, or marginalia.',
+    {
+      domain: z.string().optional().describe('Optional domain filter'),
+      ...paginationSchema,
+    },
+    readOnlyAnnotation,
+    async ({ domain, limit, cursor }) => {
+      const data = await adapter.dispatch('get_highlights_with_notes', { domain, limit, cursor });
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'search_notes',
+    'Search specifically through your personal commentary, reflections, and marginalia notes.',
+    {
+      query: z.string().describe('Search query to match against notes'),
+      domain: z.string().optional().describe('Optional domain filter'),
+      ...paginationSchema,
+    },
+    readOnlyAnnotation,
+    async ({ query, domain, limit, cursor }) => {
+      const data = await adapter.dispatch('search_notes', { query, domain, limit, cursor });
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_highlight_note',
+    'Get the note, marginalia, and full metadata for a specific highlight ID.',
+    {
+      id: z.string().describe('The unique ID of the highlight'),
+    },
+    readOnlyAnnotation,
+    async ({ id }) => {
+      const data = await adapter.dispatch('get_highlight_note', { id });
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'export_notes_digest',
+    'Export a curated markdown digest of all your personal notes and marginalia paired with quotes.',
+    {
+      domain: z.string().optional().describe('Optional domain filter'),
+    },
+    readOnlyAnnotation,
+    async ({ domain }) => {
+      const data = await adapter.dispatch('export_notes_digest', { domain });
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.tool(
     'export_highlights',
     'Export highlights as markdown for a scope.',
     {
@@ -168,6 +223,21 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
 
   server.resource('collections', 'underscore://collections', async (uri) => {
     const data = await adapter.dispatch('list_collections');
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          text: JSON.stringify(data, null, 2),
+          mimeType: 'application/json',
+        },
+      ],
+    };
+  });
+
+  server.resource('notes', 'underscore://notes', async (uri) => {
+    const data = (await adapter.dispatch('get_highlights_with_notes', { limit: 50 })) as {
+      highlights?: unknown[];
+    };
     return {
       contents: [
         {
