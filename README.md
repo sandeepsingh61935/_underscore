@@ -1,37 +1,44 @@
 # Underscore Highlighter
 
-**Highlight the web. Save passages to a library you can search, export, and
-sync.**
+**Highlight the web. Save passages to a library you can search, export, and sync.**
 
-Browser extension (Chrome + Firefox, Manifest V3) and companion web app.
+Browser extension (**Chrome** + **Firefox**, Manifest V3) and companion **web app**.
 
-|                |                                    |
-| -------------- | ---------------------------------- |
-| **Version**    | 0.1.3                              |
-| **License**    | [GPL-3.0-only](./LICENSE)          |
-| **Privacy**    | [PRIVACY.md](./PRIVACY.md)         |
-| **Docs index** | [docs/README.md](./docs/README.md) |
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.3-informational.svg)](./package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](./package.json)
+[![Quality](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml/badge.svg)](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
+
+| | |
+|---|---|
+| **Web app** | [underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev) |
+| **Privacy** | [PRIVACY.md](./PRIVACY.md) · [hosted /privacy](https://underscore-web-3i0.pages.dev/privacy) |
+| **License** | [GPL-3.0-only](./LICENSE) |
+| **Docs** | [docs/README.md](./docs/README.md) |
+| **Architecture** | [C4 overview](./docs/01-development/system-architecture.md) · [diagram SVG](./docs/assets/architecture-overview.svg) |
 
 ---
 
 ## What it does
 
-Underscore lets you highlight text on any page and keep those passages in a
-searchable library — on-device as a guest, or synced when you sign in.
+Capture text on any page into a searchable library. Use it signed out on one
+device, or sign in to sync. Paid unlocks Integrations (Cloud MCP) and in-app
+chat with **your** models (BYOK / Ollama) — Underscore does not sell tokens.
 
-| Mode               | Who              | Persistence                                  |
-| ------------------ | ---------------- | -------------------------------------------- |
-| **Guest**          | No account       | Permanent on this device                     |
-| **Account (Free)** | Signed in        | Synced across devices                        |
-| **Account (Paid)** | Signed in + plan | Sync, Integrations (MCP), in-app chat (BYOK) |
+| Mode | Who | What you get |
+|------|-----|--------------|
+| **Guest** | No account | Permanent highlights on this device only |
+| **Account (Free)** | Signed in | Cloud library sync across devices |
+| **Account (Paid)** | Signed in + plan | Sync + Cloud MCP integrations + in-app Ask (BYOK) |
 
-AI features use your own keys or agents — Underscore does not bill model tokens.
+**Product rules (short):** guest data never goes to the cloud; agents only see
+**synced** library rows via Cloud MCP
+([ADR-029](./docs/04-adrs/029-cloud-first-library-and-integrations.md)).
 
 ---
 
 ## Architecture at a glance
 
-<!-- SVG scales to the README column; open the file for full-resolution zoom. -->
 <p align="center">
   <a href="./docs/assets/architecture-overview.svg">
     <img
@@ -44,95 +51,109 @@ AI features use your own keys or agents — Underscore does not bill model token
 
 <p align="center">
   <sub>
-    Diagram scales with the page ·
-    <a href="./docs/assets/architecture-overview.svg">Open SVG</a> (browser zoom) ·
+    Scales with the page ·
+    <a href="./docs/assets/architecture-overview.svg">Open SVG</a> ·
     <a href="./docs/01-development/system-architecture.md">Full architecture</a>
   </sub>
 </p>
 
-| Piece              | Role                                            |
-| ------------------ | ----------------------------------------------- |
-| **Content script** | Capture and paint highlights on the page        |
-| **Background SW**  | Auth, local library, cloud sync, IPC hub        |
-| **Web app**        | Searchable library, install, account settings   |
-| **Supabase**       | Identity + cloud source of truth when signed in |
-| **Workers / MCP**  | Edge API and agent access to **synced** library |
+| Piece | Role |
+|-------|------|
+| **Content script** | Selection, highlight paint, mode behavior on the page |
+| **Background SW** | Auth, repositories, sync, IPC, billing hooks, AI orchestration |
+| **Popup / extension UI** | Dashboard, library, settings (React, V2 Editorial) |
+| **Web app** | Library, install onboarding, account, OAuth consent |
+| **Supabase** | Auth + cloud source of truth (RLS) when signed in |
+| **Cloudflare Workers** | Edge API, LLM proxy, **Cloud MCP** |
+| **Local stores** | IndexedDB scopes (`basic` / `pro`) + `chrome.storage` |
 
-Guest data stays on-device. Signed-in library syncs to the cloud. Agents only
-see synced data via Cloud MCP.
+```text
+Page → Content script ⇄ Background SW → IndexedDB
+                         ↓
+                   Supabase (signed-in)
+                         ↑
+User → Web app ⇄ Workers / MCP → AI hosts (optional)
+```
 
 ---
 
 ## Try it
 
-### From a release zip
+### Web
 
-1. Download a build from the web app install page, or use artifacts under
-   `public-web/downloads/` after `npm run zip:chrome` / `npm run zip:firefox`.
-2. **Chrome**: `chrome://extensions` → Developer mode → Load unpacked → select
-   the unzipped extension directory (or packed `.zip` where supported).
-3. **Firefox**: temporary add-on via `about:debugging`, or follow
-   [Firefox / AMO notes](./docs/01-development/firefox-amo-publish.md).
+Open the app: [https://underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev)
 
-### From source (extension)
+Use **/install** for browser-specific sideload steps when distribution is manual.
+
+### Extension from zip (v0.1.3)
+
+Prebuilt archives (also produced by `npm run zip:chrome` / `zip:firefox`):
+
+- [`public-web/downloads/underscore-highlighter-0.1.3-chrome.zip`](./public-web/downloads/underscore-highlighter-0.1.3-chrome.zip)
+- [`public-web/downloads/underscore-highlighter-0.1.3-firefox.zip`](./public-web/downloads/underscore-highlighter-0.1.3-firefox.zip)
+
+1. **Chrome / Chromium:** `chrome://extensions` → Developer mode → **Load unpacked**
+   (unzip first) or install the packaged build as your browser allows.
+2. **Firefox:** temporary add-on via `about:debugging`, or follow
+   [AMO publish notes](./docs/01-development/firefox-amo-publish.md).
+
+### From source
 
 ```bash
 git clone git@github.com:sandeepsingh61935/_underscore.git
 cd _underscore
 npm install
+
+# Extension (WXT) — load the printed .output path as unpacked
 npm run dev
-```
 
-WXT prints the extension output path (typically under `.output/`). Load that
-directory as an unpacked extension in Chrome or Firefox.
-
-### From source (web app)
-
-```bash
+# Web app (Vite) — needs env; see Configuration
 npm run dev:web
 ```
-
-Requires env vars (see [Configuration](#configuration)). Deploy path:
-[Web CI/CD](./docs/01-development/web-ci-cd-deploy.md).
-
----
-
-## Repository layout
-
-```
-_underscore/
-├── src/
-│   ├── entrypoints/       # WXT entrypoints (background, content, popup)
-│   ├── content/           # Content-script highlight runtime
-│   ├── background/        # Service worker services
-│   ├── features/          # Feature modules (modes, vault, settings, oauth, …)
-│   ├── ui-system/         # Design system, primitives, theme
-│   ├── shared/            # Types, schemas, DI, platform-agnostic services
-│   ├── pages/             # Extension page-level views
-│   └── web/               # Web app (pages, API workers, app shell)
-├── packages/              # Workspace packages (e.g. MCP server)
-├── tests/                 # Unit / integration / e2e helpers
-├── docs/                  # Policies, ADRs, security, specs, plans
-├── store/                 # Store listing copy and screenshots
-├── ui_kits/               # Wireframe / design references (V2 Editorial)
-├── supabase/              # Schema and migrations
-├── public/                # Extension static assets
-└── public-web/            # Web static assets and download zips
-```
-
-Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/)
-→ [`docs/superpowers/specs/`](./docs/superpowers/specs/). Start at
-[`docs/README.md`](./docs/README.md).
 
 ---
 
 ## Stack
 
-- **Extension**: WXT, React 19, TypeScript (strict), Chrome/Firefox MV3
-- **Web**: Vite SPA, Cloudflare Pages + Workers
-- **Backend**: Supabase (auth, data), event-sourced sync
-- **UI**: CSS custom properties (V2 Editorial) — no Tailwind
-- **Quality**: ESLint, Prettier, Vitest, Playwright
+| Layer | Choices |
+|-------|---------|
+| Extension | WXT, React 19, TypeScript strict, MV3 (Chrome + Firefox) |
+| Web | Vite SPA → **Cloudflare Pages** (primary) and **Vercel** (CI mirror) |
+| API / MCP | Cloudflare Workers, `packages/mcp-server` |
+| Data | Supabase (Auth, Postgres, Realtime, RLS), event-sourced sync |
+| UI | CSS custom properties **V2 Editorial** (no Tailwind) |
+| Quality | ESLint, Prettier, Vitest, Playwright, GitHub Actions |
+
+---
+
+## Repository layout
+
+```text
+_underscore/
+├── src/
+│   ├── entrypoints/     # background, content, popup (WXT)
+│   ├── content/         # in-page highlight runtime + modes
+│   ├── background/      # SW services, auth, sync, repos
+│   ├── features/        # product features (auth, library, billing, MCP, …)
+│   ├── ui-system/       # design system + theme tokens
+│   ├── shared/          # schemas, DI, repositories, platform-agnostic code
+│   ├── pages/           # extension full-page views
+│   └── web/             # web SPA + edge-facing pieces
+├── packages/mcp-server  # Cloud MCP server package
+├── supabase/            # migrations / schema
+├── docs/                # SSOT index, ADRs, security, specs, plans
+│   └── assets/          # diagrams (e.g. architecture-overview.svg)
+├── store/               # AMO/CWS listing copy + screenshots
+├── ui_kits/             # V2 wireframe reference
+├── public/              # extension static assets
+├── public-web/          # web static + download zips
+└── .github/workflows/   # quality.yml, deploy-web.yml
+```
+
+**Architecture authority:** code → [ADRs](./docs/04-adrs/) →
+[specs](./docs/superpowers/specs/) →
+[C4 orientation doc](./docs/01-development/system-architecture.md).  
+Start at [docs/README.md](./docs/README.md).
 
 ---
 
@@ -143,65 +164,71 @@ Architecture truth, in order: **codebase** → [`docs/04-adrs/`](./docs/04-adrs/
 - Node.js >= 20
 - npm >= 10
 
-### Common scripts
+### Scripts
 
-| Script                               | Purpose                                                   |
-| ------------------------------------ | --------------------------------------------------------- |
-| `npm run dev`                        | Extension dev (WXT)                                       |
-| `npm run dev:web`                    | Web app dev server                                        |
-| `npm run build`                      | Production extension zips (all targets)                   |
-| `npm run zip:chrome` / `zip:firefox` | Browser-specific packages                                 |
-| `npm run type-check`                 | TypeScript                                                |
-| `npm run lint` / `lint:fix`          | ESLint                                                    |
-| `npm run format` / `format:check`    | Prettier                                                  |
-| `npm test`                           | Unit tests (Vitest)                                       |
-| `npm run test:coverage`              | Coverage report                                           |
-| `npm run test:e2e`                   | Playwright e2e                                            |
-| `npm run quality`                    | type-check + lint + format + unit tests + legacy-DS check |
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Extension dev server (WXT) |
+| `npm run dev:web` | Web app dev server |
+| `npm run build` / `zip:all` | Production extension packages |
+| `npm run zip:chrome` / `zip:firefox` | Per-browser zips + download sync |
+| `npm run web:build` | Production web bundle (`dist-web`) |
+| `npm run web:deploy` | Build + deploy Cloudflare Pages |
+| `npm run web:deploy:vercel` | Deploy web to Vercel |
+| `npm run mcp:dev` / `mcp:build` | MCP package |
+| `npm run type-check` | TypeScript |
+| `npm run lint` / `lint:fix` | ESLint |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` / `test:coverage` | Vitest |
+| `npm run test:e2e` | Playwright |
+| `npm run quality` | type-check + lint + format + unit tests + legacy-DS gate |
+
+CI: [Quality Checks](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
+on `main`/`dev` and PRs; [Deploy Web](https://github.com/sandeepsingh61935/_underscore/actions/workflows/deploy-web.yml)
+on `main` (Cloudflare + Vercel).
 
 ### Configuration
 
-Copy and fill environment files for local web/extension builds that talk to
-backend services (never commit secrets):
+Do not commit secrets. Use:
 
-- `.env.development` — local dev
-- `.env.production` / `.env.production.example` — production web / CI
+- `.env.development` — local extension/web
+- `.env.production` / [`.env.production.example`](./.env.production.example) — production builds
+- GitHub Actions secrets — see [web CI/CD](./docs/01-development/web-ci-cd-deploy.md)
 
-Typical variables include `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
-`VITE_WEB_APP_URL`, `VITE_MCP_CLOUD_URL`, and OAuth client IDs. See
-[authentication architecture](./docs/01-development/authentication-architecture.md)
-and [web deploy](./docs/01-development/web-ci-cd-deploy.md).
+Common vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WEB_APP_URL`,
+`VITE_MCP_CLOUD_URL`, `VITE_GOOGLE_CLIENT_ID`.
 
-### Tests and quality bar
+Auth deep-dive:
+[authentication-architecture.md](./docs/01-development/authentication-architecture.md).
 
-- Unit/integration: Vitest — target >= 80% overall coverage on services and
-  repositories
-- E2E: Playwright for critical flows
-- Before merge: `npm run quality`
+### Quality bar
 
-Details: [Quality framework](./docs/05-quality-framework/README.md).
+- Vitest for unit/integration (target >= 80% on services/repositories)
+- Playwright for critical e2e flows
+- Run `npm run quality` before merge
 
 ---
 
 ## Documentation map
 
-| Need                       | Location                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| Doc routing / SSOT         | [docs/README.md](./docs/README.md)                                                         |
-| System architecture (C4)   | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
-| ADRs                       | [docs/04-adrs/](./docs/04-adrs/)                                                           |
-| Feature specs              | [docs/superpowers/specs/](./docs/superpowers/specs/)                                       |
-| Implementation plans       | [docs/superpowers/plans/](./docs/superpowers/plans/)                                       |
-| Coding / testing standards | [docs/05-quality-framework/](./docs/05-quality-framework/)                                 |
-| Security / threat model    | [docs/06-security/](./docs/06-security/)                                                   |
-| Policies (commits, etc.)   | [docs/00-policies/](./docs/00-policies/)                                                   |
-| Dev runbooks               | [docs/01-development/](./docs/01-development/)                                             |
-| Privacy policy             | [PRIVACY.md](./PRIVACY.md)                                                                 |
-| Changelog                  | [CHANGELOG.md](./CHANGELOG.md)                                                             |
-| Contributing               | [CONTRIBUTING.md](./CONTRIBUTING.md)                                                       |
+| Need | Location |
+|------|----------|
+| Doc routing / SSOT | [docs/README.md](./docs/README.md) |
+| System architecture (C4) | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
+| Architecture diagram (SVG) | [docs/assets/architecture-overview.svg](./docs/assets/architecture-overview.svg) |
+| ADRs | [docs/04-adrs/](./docs/04-adrs/) |
+| Feature specs | [docs/superpowers/specs/](./docs/superpowers/specs/) |
+| Plans | [docs/superpowers/plans/](./docs/superpowers/plans/) |
+| Quality framework | [docs/05-quality-framework/](./docs/05-quality-framework/) |
+| Security | [docs/06-security/](./docs/06-security/) |
+| Policies | [docs/00-policies/](./docs/00-policies/) |
+| Dev runbooks | [docs/01-development/](./docs/01-development/) |
+| Store listing | [store/amo/](./store/amo/) |
+| Privacy | [PRIVACY.md](./PRIVACY.md) |
+| Changelog | [CHANGELOG.md](./CHANGELOG.md) |
+| Contributing | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 
-Agent/editor project rules live in [`CLAUDE.md`](./CLAUDE.md) (file map, UI
-contracts, backend rules). They are not a substitute for `docs/`.
+Editor/agent conventions: [`CLAUDE.md`](./CLAUDE.md) (supports docs; does not replace them).
 
 ---
 
@@ -209,14 +236,12 @@ contracts, backend rules). They are not a substitute for `docs/`.
 
 1. Read [CONTRIBUTING.md](./CONTRIBUTING.md) and the
    [quality framework](./docs/05-quality-framework/README.md).
-2. Use conventional commits (`feat|fix|docs|…`) — see
-   [git commit strategy](./docs/01-development/git-commit-strategy.md).
+2. Conventional commits — [git commit strategy](./docs/01-development/git-commit-strategy.md).
 3. One logical change per commit; no emoji in commits or source.
-4. Add tests for behavior changes; run `npm run quality` before opening a PR.
+4. Tests for behavior changes; `npm run quality` before PR.
 
-Security-sensitive findings: prefer a private report to the maintainer rather
-than a public issue when exploit detail is involved. Threat model and controls:
-[docs/06-security/](./docs/06-security/).
+Security-sensitive reports: contact the maintainer privately when exploit detail
+is involved. See [docs/06-security/](./docs/06-security/).
 
 ---
 
@@ -226,7 +251,7 @@ than a public issue when exploit detail is involved. Threat model and controls:
 
 ---
 
-## Author
+## Maintainer
 
-Sandeep Singh —
-[github.com/sandeepsingh61935](https://github.com/sandeepsingh61935)
+Sandeep Singh ([sandeepsingh61935](https://github.com/sandeepsingh61935))  
+Privacy: [privacy@underscore.dev](mailto:privacy@underscore.dev)
