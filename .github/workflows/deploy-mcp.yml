@@ -45,7 +45,7 @@ jobs:
 
       - name: Install MCP server dependencies
         working-directory: packages/mcp-server
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Run MCP tests
         working-directory: packages/mcp-server
