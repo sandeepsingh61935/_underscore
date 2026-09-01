@@ -3,10 +3,10 @@
  * Prefer plain outcomes over protocol tokens (no raw offline_access, etc.).
  */
 const SCOPE_LABELS: Record<string, string> = {
-  openid: 'Confirm it is you signing in',
-  email: 'See the email on your account',
-  profile: 'See your name and avatar',
-  phone: 'See your phone number',
+  openid: 'Authenticate your session',
+  email: 'Verify your account identity',
+  profile: 'Display your name and avatar',
+  phone: 'Verify your phone number',
   offline_access: 'Stay connected until you revoke access',
   'highlights:read': 'Read your synced Pro highlight library',
 };
