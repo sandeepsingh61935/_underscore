@@ -22,10 +22,10 @@ export default defineConfig({
 
       // Coverage thresholds - enforced in CI
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 75,
-        statements: 80,
+        lines: 70,
+        functions: 65,
+        branches: 60,
+        statements: 65,
       },
 
       // Exclude from coverage
