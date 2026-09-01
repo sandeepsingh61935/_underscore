@@ -1,20 +1,22 @@
 # Underscore Highlighter
 
-**Highlight the web. Save passages to a library you can search, export, and sync.**
+**Highlight the web. Save passages to a library you can search, export, and
+sync.**
 
-Browser extension (**Chrome** + **Firefox**, Manifest V3) and companion **web app**.
+Browser extension (**Chrome** + **Firefox**, Manifest V3) and companion **web
+app**.
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.3-informational.svg)](./package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](./package.json)
 [![Quality](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml/badge.svg)](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
 
-| | |
-|---|---|
-| **Web app** | [underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev) |
-| **Privacy** | [PRIVACY.md](./PRIVACY.md) · [hosted /privacy](https://underscore-web-3i0.pages.dev/privacy) |
-| **License** | [GPL-3.0-only](./LICENSE) |
-| **Docs** | [docs/README.md](./docs/README.md) |
+|                  |                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Web app**      | [underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev)                                                 |
+| **Privacy**      | [PRIVACY.md](./PRIVACY.md) · [hosted /privacy](https://underscore-web-3i0.pages.dev/privacy)                         |
+| **License**      | [GPL-3.0-only](./LICENSE)                                                                                            |
+| **Docs**         | [docs/README.md](./docs/README.md)                                                                                   |
 | **Architecture** | [C4 overview](./docs/01-development/system-architecture.md) · [diagram SVG](./docs/assets/architecture-overview.svg) |
 
 ---
@@ -25,10 +27,10 @@ Capture text on any page into a searchable library. Use it signed out on one
 device, or sign in to sync. Paid unlocks Integrations (Cloud MCP) and in-app
 chat with **your** models (BYOK / Ollama) — Underscore does not sell tokens.
 
-| Mode | Who | What you get |
-|------|-----|--------------|
-| **Guest** | No account | Permanent highlights on this device only |
-| **Account (Free)** | Signed in | Cloud library sync across devices |
+| Mode               | Who              | What you get                                      |
+| ------------------ | ---------------- | ------------------------------------------------- |
+| **Guest**          | No account       | Permanent highlights on this device only          |
+| **Account (Free)** | Signed in        | Cloud library sync across devices                 |
 | **Account (Paid)** | Signed in + plan | Sync + Cloud MCP integrations + in-app Ask (BYOK) |
 
 **Product rules (short):** guest data never goes to the cloud; agents only see
@@ -57,15 +59,15 @@ chat with **your** models (BYOK / Ollama) — Underscore does not sell tokens.
   </sub>
 </p>
 
-| Piece | Role |
-|-------|------|
-| **Content script** | Selection, highlight paint, mode behavior on the page |
-| **Background SW** | Auth, repositories, sync, IPC, billing hooks, AI orchestration |
-| **Popup / extension UI** | Dashboard, library, settings (React, V2 Editorial) |
-| **Web app** | Library, install onboarding, account, OAuth consent |
-| **Supabase** | Auth + cloud source of truth (RLS) when signed in |
-| **Cloudflare Workers** | Edge API, LLM proxy, **Cloud MCP** |
-| **Local stores** | IndexedDB scopes (`basic` / `pro`) + `chrome.storage` |
+| Piece                    | Role                                                           |
+| ------------------------ | -------------------------------------------------------------- |
+| **Content script**       | Selection, highlight paint, mode behavior on the page          |
+| **Background SW**        | Auth, repositories, sync, IPC, billing hooks, AI orchestration |
+| **Popup / extension UI** | Dashboard, library, settings (React, V2 Editorial)             |
+| **Web app**              | Library, install onboarding, account, OAuth consent            |
+| **Supabase**             | Auth + cloud source of truth (RLS) when signed in              |
+| **Cloudflare Workers**   | Edge API, LLM proxy, **Cloud MCP**                             |
+| **Local stores**         | IndexedDB scopes (`basic` / `pro`) + `chrome.storage`          |
 
 ```text
 Page → Content script ⇄ Background SW → IndexedDB
@@ -81,9 +83,11 @@ User → Web app ⇄ Workers / MCP → AI hosts (optional)
 
 ### Web
 
-Open the app: [https://underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev)
+Open the app:
+[https://underscore-web-3i0.pages.dev](https://underscore-web-3i0.pages.dev)
 
-Use **/install** for browser-specific sideload steps when distribution is manual.
+Use **/install** for browser-specific sideload steps when distribution is
+manual.
 
 ### Extension from zip (v0.1.3)
 
@@ -92,8 +96,9 @@ Prebuilt archives (also produced by `npm run zip:chrome` / `zip:firefox`):
 - [`public-web/downloads/underscore-highlighter-0.1.3-chrome.zip`](./public-web/downloads/underscore-highlighter-0.1.3-chrome.zip)
 - [`public-web/downloads/underscore-highlighter-0.1.3-firefox.zip`](./public-web/downloads/underscore-highlighter-0.1.3-firefox.zip)
 
-1. **Chrome / Chromium:** `chrome://extensions` → Developer mode → **Load unpacked**
-   (unzip first) or install the packaged build as your browser allows.
+1. **Chrome / Chromium:** `chrome://extensions` → Developer mode → **Load
+   unpacked** (unzip first) or install the packaged build as your browser
+   allows.
 2. **Firefox:** temporary add-on via `about:debugging`, or follow
    [AMO publish notes](./docs/01-development/firefox-amo-publish.md).
 
@@ -115,14 +120,14 @@ npm run dev:web
 
 ## Stack
 
-| Layer | Choices |
-|-------|---------|
-| Extension | WXT, React 19, TypeScript strict, MV3 (Chrome + Firefox) |
-| Web | Vite SPA → **Cloudflare Pages** (primary) and **Vercel** (CI mirror) |
-| API / MCP | Cloudflare Workers, `packages/mcp-server` |
-| Data | Supabase (Auth, Postgres, Realtime, RLS), event-sourced sync |
-| UI | CSS custom properties **V2 Editorial** (no Tailwind) |
-| Quality | ESLint, Prettier, Vitest, Playwright, GitHub Actions |
+| Layer     | Choices                                                              |
+| --------- | -------------------------------------------------------------------- |
+| Extension | WXT, React 19, TypeScript strict, MV3 (Chrome + Firefox)             |
+| Web       | Vite SPA → **Cloudflare Pages** (primary) and **Vercel** (CI mirror) |
+| API / MCP | Cloudflare Workers, `packages/mcp-server`                            |
+| Data      | Supabase (Auth, Postgres, Realtime, RLS), event-sourced sync         |
+| UI        | CSS custom properties **V2 Editorial** (no Tailwind)                 |
+| Quality   | ESLint, Prettier, Vitest, Playwright, GitHub Actions                 |
 
 ---
 
@@ -166,25 +171,27 @@ Start at [docs/README.md](./docs/README.md).
 
 ### Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Extension dev server (WXT) |
-| `npm run dev:web` | Web app dev server |
-| `npm run build` / `zip:all` | Production extension packages |
-| `npm run zip:chrome` / `zip:firefox` | Per-browser zips + download sync |
-| `npm run web:build` | Production web bundle (`dist-web`) |
-| `npm run web:deploy` | Build + deploy Cloudflare Pages |
-| `npm run web:deploy:vercel` | Deploy web to Vercel |
-| `npm run mcp:dev` / `mcp:build` | MCP package |
-| `npm run type-check` | TypeScript |
-| `npm run lint` / `lint:fix` | ESLint |
-| `npm run format` / `format:check` | Prettier |
-| `npm test` / `test:coverage` | Vitest |
-| `npm run test:e2e` | Playwright |
-| `npm run quality` | type-check + lint + format + unit tests + legacy-DS gate |
+| Script                               | Purpose                                                  |
+| ------------------------------------ | -------------------------------------------------------- |
+| `npm run dev`                        | Extension dev server (WXT)                               |
+| `npm run dev:web`                    | Web app dev server                                       |
+| `npm run build` / `zip:all`          | Production extension packages                            |
+| `npm run zip:chrome` / `zip:firefox` | Per-browser zips + download sync                         |
+| `npm run web:build`                  | Production web bundle (`dist-web`)                       |
+| `npm run web:deploy`                 | Build + deploy Cloudflare Pages                          |
+| `npm run web:deploy:vercel`          | Deploy web to Vercel                                     |
+| `npm run mcp:dev` / `mcp:build`      | MCP package                                              |
+| `npm run type-check`                 | TypeScript                                               |
+| `npm run lint` / `lint:fix`          | ESLint                                                   |
+| `npm run format` / `format:check`    | Prettier                                                 |
+| `npm test` / `test:coverage`         | Vitest                                                   |
+| `npm run test:e2e`                   | Playwright                                               |
+| `npm run quality`                    | type-check + lint + format + unit tests + legacy-DS gate |
 
-CI: [Quality Checks](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
-on `main`/`dev` and PRs; [Deploy Web](https://github.com/sandeepsingh61935/_underscore/actions/workflows/deploy-web.yml)
+CI:
+[Quality Checks](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
+on `main`/`dev` and PRs;
+[Deploy Web](https://github.com/sandeepsingh61935/_underscore/actions/workflows/deploy-web.yml)
 on `main` (Cloudflare + Vercel).
 
 ### Configuration
@@ -192,8 +199,10 @@ on `main` (Cloudflare + Vercel).
 Do not commit secrets. Use:
 
 - `.env.development` — local extension/web
-- `.env.production` / [`.env.production.example`](./.env.production.example) — production builds
-- GitHub Actions secrets — see [web CI/CD](./docs/01-development/web-ci-cd-deploy.md)
+- `.env.production` / [`.env.production.example`](./.env.production.example) —
+  production builds
+- GitHub Actions secrets — see
+  [web CI/CD](./docs/01-development/web-ci-cd-deploy.md)
 
 Common vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WEB_APP_URL`,
 `VITE_MCP_CLOUD_URL`, `VITE_GOOGLE_CLIENT_ID`.
@@ -211,24 +220,25 @@ Auth deep-dive:
 
 ## Documentation map
 
-| Need | Location |
-|------|----------|
-| Doc routing / SSOT | [docs/README.md](./docs/README.md) |
-| System architecture (C4) | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
-| Architecture diagram (SVG) | [docs/assets/architecture-overview.svg](./docs/assets/architecture-overview.svg) |
-| ADRs | [docs/04-adrs/](./docs/04-adrs/) |
-| Feature specs | [docs/superpowers/specs/](./docs/superpowers/specs/) |
-| Plans | [docs/superpowers/plans/](./docs/superpowers/plans/) |
-| Quality framework | [docs/05-quality-framework/](./docs/05-quality-framework/) |
-| Security | [docs/06-security/](./docs/06-security/) |
-| Policies | [docs/00-policies/](./docs/00-policies/) |
-| Dev runbooks | [docs/01-development/](./docs/01-development/) |
-| Store listing | [store/amo/](./store/amo/) |
-| Privacy | [PRIVACY.md](./PRIVACY.md) |
-| Changelog | [CHANGELOG.md](./CHANGELOG.md) |
-| Contributing | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| Need                       | Location                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| Doc routing / SSOT         | [docs/README.md](./docs/README.md)                                                         |
+| System architecture (C4)   | [docs/01-development/system-architecture.md](./docs/01-development/system-architecture.md) |
+| Architecture diagram (SVG) | [docs/assets/architecture-overview.svg](./docs/assets/architecture-overview.svg)           |
+| ADRs                       | [docs/04-adrs/](./docs/04-adrs/)                                                           |
+| Feature specs              | [docs/superpowers/specs/](./docs/superpowers/specs/)                                       |
+| Plans                      | [docs/superpowers/plans/](./docs/superpowers/plans/)                                       |
+| Quality framework          | [docs/05-quality-framework/](./docs/05-quality-framework/)                                 |
+| Security                   | [docs/06-security/](./docs/06-security/)                                                   |
+| Policies                   | [docs/00-policies/](./docs/00-policies/)                                                   |
+| Dev runbooks               | [docs/01-development/](./docs/01-development/)                                             |
+| Store listing              | [store/amo/](./store/amo/)                                                                 |
+| Privacy                    | [PRIVACY.md](./PRIVACY.md)                                                                 |
+| Changelog                  | [CHANGELOG.md](./CHANGELOG.md)                                                             |
+| Contributing               | [CONTRIBUTING.md](./CONTRIBUTING.md)                                                       |
 
-Editor/agent conventions: [`CLAUDE.md`](./CLAUDE.md) (supports docs; does not replace them).
+Editor/agent conventions: [`CLAUDE.md`](./CLAUDE.md) (supports docs; does not
+replace them).
 
 ---
 
@@ -236,7 +246,8 @@ Editor/agent conventions: [`CLAUDE.md`](./CLAUDE.md) (supports docs; does not re
 
 1. Read [CONTRIBUTING.md](./CONTRIBUTING.md) and the
    [quality framework](./docs/05-quality-framework/README.md).
-2. Conventional commits — [git commit strategy](./docs/01-development/git-commit-strategy.md).
+2. Conventional commits —
+   [git commit strategy](./docs/01-development/git-commit-strategy.md).
 3. One logical change per commit; no emoji in commits or source.
 4. Tests for behavior changes; `npm run quality` before PR.
 
