@@ -238,4 +238,128 @@ describe('SupabaseMcpAdapter', () => {
       message: 'column highlights.metadata does not exist',
     });
   });
+
+  it('get_recent_highlights sorts highlights descending and applies limit', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        { id: 'hl-1', url: 'https://a.com', text: 'Older', created_at: '2026-01-01T00:00:00.000Z' },
+        { id: 'hl-2', url: 'https://b.com', text: 'Newer', created_at: '2026-02-01T00:00:00.000Z' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('get_recent_highlights', { limit: 1 })) as {
+      highlights: Array<{ id: string; text: string }>;
+      total: number;
+    };
+
+    expect(result.highlights).toHaveLength(1);
+    expect(result.highlights[0].id).toBe('hl-2');
+    expect(result.total).toBe(2);
+  });
+
+  it('get_page_highlights filters highlights matching the target page URL', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        { id: 'hl-1', url: 'https://example.com/docs/intro', text: 'Intro highlight', created_at: '2026-01-01T00:00:00.000Z' },
+        { id: 'hl-2', url: 'https://example.com/other', text: 'Other page', created_at: '2026-01-01T00:00:00.000Z' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('get_page_highlights', {
+      url: 'https://example.com/docs/intro',
+    })) as { highlights: Array<{ id: string }>; total: number };
+
+    expect(result.highlights).toHaveLength(1);
+    expect(result.highlights[0].id).toBe('hl-1');
+  });
+
+  it('get_related_highlights scores relevance based on query terms', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        { id: 'hl-1', url: 'https://a.com', text: 'Distributed systems and consensus algorithms', created_at: '2026-01-01T00:00:00.000Z' },
+        { id: 'hl-2', url: 'https://b.com', text: 'Cooking pasta and making sauce', created_at: '2026-01-01T00:00:00.000Z' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('get_related_highlights', {
+      query: 'distributed consensus',
+    })) as { highlights: Array<{ id: string }>; total: number };
+
+    expect(result.highlights).toHaveLength(1);
+    expect(result.highlights[0].id).toBe('hl-1');
+  });
+
+  it('list_tags returns unique tags with usage counts', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        { id: 'hl-1', url: 'https://a.com', text: 'H1', metadata: { tags: ['react', 'frontend'] }, created_at: '2026-01-01T00:00:00.000Z' },
+        { id: 'hl-2', url: 'https://b.com', text: 'H2', metadata: { tags: ['react', 'ai'] }, created_at: '2026-01-01T00:00:00.000Z' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('list_tags')) as {
+      tags: Array<{ tag: string; count: number }>;
+      totalTags: number;
+    };
+
+    expect(result.totalTags).toBe(3);
+    expect(result.tags[0]).toEqual({ tag: 'react', count: 2 });
+  });
+
+  it('get_highlights_by_tag filters highlights containing the specified tag', async () => {
+    const chain = createHighlightsQueryChain('is', {
+      data: [
+        { id: 'hl-1', url: 'https://a.com', text: 'H1', metadata: { tags: ['architecture'] }, created_at: '2026-01-01T00:00:00.000Z' },
+        { id: 'hl-2', url: 'https://b.com', text: 'H2', metadata: { tags: ['frontend'] }, created_at: '2026-01-01T00:00:00.000Z' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(chain);
+
+    const adapter = new SupabaseMcpAdapter({
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      accessToken: 'token',
+    });
+
+    const result = (await adapter.dispatch('get_highlights_by_tag', { tag: 'architecture' })) as {
+      highlights: Array<{ id: string }>;
+      total: number;
+    };
+
+    expect(result.highlights).toHaveLength(1);
+    expect(result.highlights[0].id).toBe('hl-1');
+  });
 });

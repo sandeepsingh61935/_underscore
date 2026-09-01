@@ -184,7 +184,7 @@ describe('IPC Layer - Integration Tests', () => {
       let attemptCount = 0;
 
       mockChromeRuntime.sendMessage.mockImplementation((_msg, callback) => {
-        callTimestamps.push(Date.now());
+        callTimestamps.push(performance.now());
         attemptCount++;
 
         if (attemptCount === 1) {
@@ -196,19 +196,20 @@ describe('IPC Layer - Integration Tests', () => {
         }
       });
 
-      const startTime = Date.now();
-
       await messageBus.send('background', {
         type: 'TEST',
         payload: {},
         timestamp: Date.now(),
       });
 
-      const elapsed = Date.now() - startTime;
-
-      // Should have delay between attempts (exponential backoff)
+      // DEFAULT_RETRY_POLICY.initialDelayMs === 100 before first retry.
+      // Assert gap between chrome.runtime calls (not total wall time), with slack
+      // for timer/coalescing jitter on CI (failures like expected 99 >= 100).
       expect(attemptCount).toBe(2);
-      expect(elapsed).toBeGreaterThanOrEqual(100); // At least initial delay (100ms)
+      expect(callTimestamps).toHaveLength(2);
+      const gapMs = callTimestamps[1]! - callTimestamps[0]!;
+      expect(gapMs).toBeGreaterThanOrEqual(75);
+      expect(gapMs).toBeLessThan(2000);
     });
 
     it('SCENARIO: Retry exhausted, circuit breaker NOT triggered (within threshold)', async () => {

@@ -65,6 +65,16 @@ export class SupabaseMcpAdapter implements McpAdapter {
         return this.listCollections();
       case 'get_highlights':
         return this.getHighlights(payload);
+      case 'get_recent_highlights':
+        return this.getRecentHighlights(payload);
+      case 'get_page_highlights':
+        return this.getPageHighlights(payload);
+      case 'get_related_highlights':
+        return this.getRelatedHighlights(payload);
+      case 'list_tags':
+        return this.listTags();
+      case 'get_highlights_by_tag':
+        return this.getHighlightsByTag(payload);
       case 'search_highlights':
         return this.searchHighlights(payload);
       case 'fetch_highlight':
@@ -209,6 +219,146 @@ export class SupabaseMcpAdapter implements McpAdapter {
     }
 
     return rowToSummary(data as Record<string, unknown>);
+  }
+
+  async getRecentHighlights(payload?: unknown): Promise<unknown> {
+    const input = (payload ?? {}) as { limit?: number; sinceDays?: number; cursor?: string };
+    const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
+    const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
+
+    let all = await this.fetchHighlights();
+    all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (input.sinceDays && input.sinceDays > 0) {
+      const threshold = Date.now() - input.sinceDays * 24 * 60 * 60 * 1000;
+      all = all.filter((hl) => new Date(hl.createdAt).getTime() >= threshold);
+    }
+
+    const page = all.slice(offset, offset + limit);
+    const nextOffset = offset + limit;
+
+    return {
+      highlights: page,
+      nextCursor: nextOffset < all.length ? String(nextOffset) : undefined,
+      total: all.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async getPageHighlights(payload: unknown): Promise<unknown> {
+    const input = payload as { url?: string; limit?: number; cursor?: string };
+    const targetUrl = input?.url?.trim();
+    if (!targetUrl) {
+      throw Object.assign(new Error('url is required'), { code: 'INVALID_ARGUMENT' });
+    }
+
+    const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
+    const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
+
+    const normalizedTarget = targetUrl.replace(/\/+$/, '').toLowerCase();
+    const all = (await this.fetchHighlights()).filter((hl) => {
+      const normalizedHl = hl.url.replace(/\/+$/, '').toLowerCase();
+      return normalizedHl === normalizedTarget || normalizedHl.startsWith(normalizedTarget);
+    });
+
+    const page = all.slice(offset, offset + limit);
+    const nextOffset = offset + limit;
+
+    return {
+      url: targetUrl,
+      highlights: page,
+      nextCursor: nextOffset < all.length ? String(nextOffset) : undefined,
+      total: all.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async getRelatedHighlights(payload: unknown): Promise<unknown> {
+    const input = payload as { query?: string; limit?: number };
+    const query = input?.query?.trim().toLowerCase();
+    if (!query) {
+      throw Object.assign(new Error('query is required'), { code: 'INVALID_ARGUMENT' });
+    }
+    const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+
+    const terms = query
+      .split(/[\s,.-]+/)
+      .filter((t) => t.length >= 3);
+
+    const all = await this.fetchHighlights();
+    const scored = all.map((hl) => {
+      const text = `${hl.text} ${hl.notes ?? ''} ${(hl.tags ?? []).join(' ')} ${hl.domain}`.toLowerCase();
+      let score = 0;
+      for (const term of terms) {
+        if (text.includes(term)) score += 1;
+      }
+      return { hl, score };
+    });
+
+    const relevant = scored
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((item) => item.hl);
+
+    return {
+      query,
+      highlights: relevant,
+      total: relevant.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async listTags(): Promise<unknown> {
+    const highlights = await this.fetchHighlights();
+    const tagCountMap = new Map<string, number>();
+
+    for (const hl of highlights) {
+      if (Array.isArray(hl.tags)) {
+        for (const tag of hl.tags) {
+          const normalized = tag.trim();
+          if (normalized) {
+            tagCountMap.set(normalized, (tagCountMap.get(normalized) ?? 0) + 1);
+          }
+        }
+      }
+    }
+
+    const tags = [...tagCountMap.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      tags,
+      totalTags: tags.length,
+      dataCoverage: 'pro_cloud',
+    };
+  }
+
+  async getHighlightsByTag(payload: unknown): Promise<unknown> {
+    const input = payload as { tag?: string; limit?: number; cursor?: string };
+    const tag = input?.tag?.trim().toLowerCase();
+    if (!tag) {
+      throw Object.assign(new Error('tag is required'), { code: 'INVALID_ARGUMENT' });
+    }
+    const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
+    const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
+
+    const all = (await this.fetchHighlights()).filter((hl) => {
+      if (!Array.isArray(hl.tags)) return false;
+      return hl.tags.some((t) => t.toLowerCase() === tag);
+    });
+
+    const page = all.slice(offset, offset + limit);
+    const nextOffset = offset + limit;
+
+    return {
+      tag,
+      highlights: page,
+      nextCursor: nextOffset < all.length ? String(nextOffset) : undefined,
+      total: all.length,
+      dataCoverage: 'pro_cloud',
+    };
   }
 
   async exportHighlights(payload: unknown): Promise<unknown> {
