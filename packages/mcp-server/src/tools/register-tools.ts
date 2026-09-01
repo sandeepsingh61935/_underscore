@@ -8,6 +8,13 @@ const paginationSchema = {
   cursor: z.string().optional().describe('Opaque pagination cursor from previous response'),
 };
 
+const readOnlyAnnotation = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
   registerChatGptConnectorTools(server, adapter);
 
@@ -15,6 +22,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
     'get_session',
     'Returns current _underscore session: mode, storage scope, auth, capabilities, and dataCoverage. Call this first.',
     {},
+    readOnlyAnnotation,
     async () => {
       const data = await adapter.dispatch('get_session');
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
@@ -25,6 +33,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
     'list_collections',
     `List highlight collections grouped by domain. dataCoverage: ${adapter.dataCoverage}.`,
     {},
+    readOnlyAnnotation,
     async () => {
       const data = await adapter.dispatch('list_collections');
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
@@ -38,6 +47,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
       domain: z.string().describe('Domain hostname (e.g. github.com)'),
       ...paginationSchema,
     },
+    readOnlyAnnotation,
     async ({ domain, limit, cursor }) => {
       const data = await adapter.dispatch('get_highlights', { domain, limit, cursor });
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
@@ -52,6 +62,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
       domain: z.string().optional().describe('Optional domain filter'),
       ...paginationSchema,
     },
+    readOnlyAnnotation,
     async ({ query, domain, limit, cursor }) => {
       const data = await adapter.dispatch('search_highlights', { query, domain, limit, cursor });
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
@@ -65,6 +76,7 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
       kind: z.enum(['library', 'domain']).describe('Export scope kind'),
       domain: z.string().optional().describe('Required when kind is domain'),
     },
+    readOnlyAnnotation,
     async ({ kind, domain }) => {
       const scope = kind === 'domain' ? { kind, domain: domain ?? '' } : { kind: 'library' };
       const data = await adapter.dispatch('export_highlights', { scope });

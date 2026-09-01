@@ -36,6 +36,13 @@ function chatGptToolResult(structuredContent: Record<string, unknown>) {
   };
 }
 
+const readOnlyAnnotation = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 /**
  * ChatGPT connectors require `search` and `fetch` tools with MCP-standard inputs.
  * @see https://developers.openai.com/apps-sdk/build/mcp-server#company-knowledge-compatibility
@@ -45,6 +52,7 @@ export function registerChatGptConnectorTools(server: McpServer, adapter: McpAda
     'search',
     'Search _underscore highlights. Required for ChatGPT connector compatibility.',
     { query: z.string().describe('Search query') },
+    readOnlyAnnotation,
     async ({ query }) => {
       const data = (await adapter.dispatch('search_highlights', {
         query,
@@ -67,6 +75,7 @@ export function registerChatGptConnectorTools(server: McpServer, adapter: McpAda
     'fetch',
     'Fetch a highlight by ID from search results. Required for ChatGPT connector compatibility.',
     { id: z.string().describe('Highlight ID from search results') },
+    readOnlyAnnotation,
     async ({ id }) => {
       const hl = (await adapter.dispatch('fetch_highlight', { id })) as HighlightSummary;
 

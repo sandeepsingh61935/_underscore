@@ -1,0 +1,29 @@
+version: 1.0.0
+name: underscore
+title: "_underscore Highlights"
+description: "Query, search, filter, and export your synced web highlights and marginalia directly inside AI agents."
+homepage: "https://underscore-web-3i0.pages.dev"
+icon: "https://raw.githubusercontent.com/sandeepsingh61935/_underscore/main/packages/mcp-server/assets/underscore-mcp-icon-256.png"
+repository: "https://github.com/sandeepsingh61935/_underscore"
+keywords:
+  - web-highlighter
+  - annotations
+  - research
+  - knowledge-base
+  - bookmarks
+  - mcp-server
+  - search-highlights
+
+transport:
+  type: http
+  url: "https://underscore-mcp.sandeepsingh128961.workers.dev/mcp"
+  headers:
+    Authorization: "Bearer {{accessToken}}"
+
+config:
+  accessToken:
+    type: string
+    title: "_underscore Pro Access Token"
+    description: "Your _underscore Pro session access token for synced highlights."
+    required: true
+    secret: true
