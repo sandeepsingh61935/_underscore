@@ -147,8 +147,10 @@ export class OfflineQueue {
 
       this.logger.info('Syncing offline events', { count: entries.length });
 
-      // Sort by queuedAt (chronological order)
-      entries.sort((a, b) => a.queuedAt - b.queuedAt);
+      // Event time first (sync chronology), then queue time, then id (stable).
+      // queuedAt alone is wrong when many events share the same ms and getAll
+      // returns UUID key order — flaky "oldest" (e.g. ts 1001 before 1000).
+      entries.sort((a, b) => this.compareOfflineEntries(a, b));
 
       // Emit sync start event
       this.eventBus.emit('OFFLINE_SYNC_STARTED', {
@@ -226,13 +228,27 @@ export class OfflineQueue {
         return null;
       }
 
-      // Sort by queuedAt
-      entries.sort((a, b) => a.queuedAt - b.queuedAt);
+      entries.sort((a, b) => this.compareOfflineEntries(a, b));
       return entries[0].event;
     } catch (error) {
       this.logger.error('Failed to get oldest offline event', error as Error);
       throw new Error('Failed to get oldest offline event');
     }
+  }
+
+  /**
+   * Chronological order for offline replay: event.timestamp, then queuedAt, then id.
+   */
+  private compareOfflineEntries(a: OfflineEntry, b: OfflineEntry): number {
+    const byEventTs = a.event.timestamp - b.event.timestamp;
+    if (byEventTs !== 0) {
+      return byEventTs;
+    }
+    const byQueuedAt = a.queuedAt - b.queuedAt;
+    if (byQueuedAt !== 0) {
+      return byQueuedAt;
+    }
+    return a.id.localeCompare(b.id);
   }
 
   /**

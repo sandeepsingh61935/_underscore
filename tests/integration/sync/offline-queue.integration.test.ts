@@ -99,24 +99,23 @@ describe('OfflineQueue Integration Tests', () => {
     });
 
     it('should maintain chronological order (Realistic: User creates 10 highlights offline)', async () => {
-      const events: SyncEvent[] = [];
-
-      // User creates 10 highlights while offline
+      // User creates 10 highlights while offline (explicit event times — not wall clock).
+      // Queue must order by event.timestamp; queuedAt can collide in the same ms.
       for (let i = 0; i < 10; i++) {
         const event = await createTestEvent({
           timestamp: 1000 + i,
           payload: { id: `highlight-${i}`, text: `Event ${i}` },
         });
-        events.push(event);
         await queue.queueOffline(event);
       }
 
       const size = await queue.getOfflineQueueSize();
       expect(size).toBe(10);
 
-      // Oldest should be first event
       const oldest = await queue.getOldestOfflineEvent();
+      expect(oldest).not.toBeNull();
       expect(oldest!.timestamp).toBe(1000);
+      expect((oldest!.payload as { id: string }).id).toBe('highlight-0');
     });
 
     it('should emit OFFLINE_EVENT_QUEUED event', async () => {
