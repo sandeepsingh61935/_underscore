@@ -141,25 +141,46 @@ Legacy path `workers/mcp/wrangler.toml` forwards to the same entry — prefer `p
 
 Clients send `Authorization: Bearer <supabase_access_token>`.
 
-## Tools
+## MCP Capabilities
 
-### All adapters
-- `get_session` — mode, scope, auth, `dataCoverage`
-- `list_collections`
-- `get_highlights` — paginated
-- `search_highlights`
-- `export_highlights`
+### 1. Highlight & Knowledge Query Tools
+- `get_session` — Returns session auth, mode, storage scope, capabilities, and `dataCoverage`.
+- `list_collections` — List highlight collections grouped by domain with item counts.
+- `get_highlights` — Paginated highlights for a specific domain.
+- `get_recent_highlights` — Reverse chronological highlights with optional `sinceDays` filter.
+- `get_page_highlights` — Get highlights and annotations for an exact URL / webpage.
+- `get_related_highlights` — Relevance-scored highlights matching a query across all domains.
+- `search_highlights` — Full-text search across highlight text, notes, tags, and URLs.
+- `list_tags` — List all user tags across the library with usage counts.
+- `get_highlights_by_tag` — Filter highlights by tag name.
+- `export_highlights` — Export library or domain highlights as Markdown.
 
-### Bridge only
-- `sync_library`, `get_sync_status`
-- `get_mode`, `set_mode`
-- `update_highlight_metadata`
-- `ask_scope`, `summarize_section`, `synthesize_domain` (requires `pro_xai`; context-only by default, `useOrchestrator: true` for extension LLM)
+### 2. Notes & Marginalia Tools
+- `get_highlights_with_notes` — Get only highlights where you wrote personal reflections or marginalia.
+- `search_notes` — Search specifically within your personal notes and reflections.
+- `get_highlight_note` — Get the full note, marginalia, and metadata for a specific highlight ID.
+- `export_notes_digest` — Export a curated Markdown digest of quotes paired with your personal notes.
+
+### 3. ChatGPT Connector Compatibility Tools
+- `search` — Standard OpenAI Apps SDK search tool.
+- `fetch` — Standard OpenAI Apps SDK fetch tool for individual highlights.
+
+### 4. Native MCP Resources
+Direct context streaming for Claude Desktop, Cursor, and MCP clients:
+- `underscore://recent` — Live stream of the latest 20 highlights from your library.
+- `underscore://collections` — Directory of all highlighted domains and counts.
+- `underscore://notes` — Stream of all highlights containing user-written notes.
+
+### 5. Native MCP Prompt Templates
+Appears in agent slash-command / prompt menus:
+- `summarize_domain` (`domain`) — Synthesize all highlights from a website into key takeaways.
+- `review_recent_reading` (`days`) — Synthesize recently captured highlights and notes by topic.
+
+## Registry & Configuration
+
+- **Smithery.ai**: Configured via [`smithery.yaml`](../../smithery.yaml) with automatic OAuth and HTTP streaming transport.
+- **Glama.ai / Open MCP**: Registered as `underscore` with standard OpenID Connect discovery.
 
 ## Architecture
 
-See [ADR-029](../../docs/04-adrs/029-cloud-first-library-and-integrations.md) (product path) and [ADR-023](../../docs/04-adrs/023-mcp-server-architecture.md) (dual-adapter code; bridge is compat).
-
-## Legacy: local bridge (compat)
-
-Stdio `--adapter=bridge` is removed. Existing installs must switch to Cloud MCP.
+See [ADR-029](../../docs/04-adrs/029-cloud-first-library-and-integrations.md) (product path), [ADR-023](../../docs/04-adrs/023-mcp-server-architecture.md) (MCP server architecture), and [ADR-024](../../docs/04-adrs/024-mcp-cloud-oauth.md) (OAuth 2.1 authentication).
