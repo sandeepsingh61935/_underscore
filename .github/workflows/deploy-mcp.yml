@@ -77,6 +77,17 @@ jobs:
             echo "$SUPABASE_ANON_KEY" | npx wrangler secret put SUPABASE_ANON_KEY || true
           fi
 
+      - name: Notify & Publish to Smithery.ai
+        working-directory: packages/mcp-server
+        if: success()
+        run: |
+          if [ -n "${{ secrets.SMITHERY_API_KEY }}" ]; then
+            echo "Publishing updated server card to Smithery.ai..."
+            npx -y @smithery/cli@latest mcp publish "https://underscore-mcp.sandeepsingh128961.workers.dev/mcp" -n sandeepss128961/underscore || true
+          fi
+        env:
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+
       - name: Summary
         run: |
           echo "### Cloudflare Worker Deployed" >> "$GITHUB_STEP_SUMMARY"
