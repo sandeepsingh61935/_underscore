@@ -173,9 +173,10 @@ Start at [docs/README.md](./docs/README.md).
 
 | Script                               | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `bun run dev`                        | Extension dev server (WXT)                               |
+| `bun run dev`                        | Extension dev server (WXT with live reload)              |
 | `bun run dev:web`                    | Web app dev server                                       |
-| `bun run build` / `zip:all`          | Production extension packages (parallel build)           |
+| `bun run build`                      | Build Chrome extension (`.output/chrome-mv3`)            |
+| `bun run build:all` / `zip:all`      | Production extension packages (Chrome + Firefox zips)    |
 | `bun run zip:chrome` / `zip:firefox` | Per-browser zips + download sync                         |
 | `bun run web:build`                  | Production web bundle (`dist-web`)                       |
 | `bun run web:deploy`                 | Build + deploy Cloudflare Pages                          |
