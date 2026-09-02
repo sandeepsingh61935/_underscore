@@ -12,6 +12,7 @@ import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { EXISTING_ACCOUNT_CODE, mapAuthError } from '@/shared/auth/auth-error-messages';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
+import { Logo } from '@/ui-system/components/primitives/Logo';
 
 type AuthStep = 'auth' | 'forgot-password' | 'reset-password';
 
@@ -231,28 +232,8 @@ export function AuthView({ onLoginSuccess, onBack }: AuthViewProps): React.React
             boxSizing: 'border-box',
           }}
         >
-          <div
-            aria-hidden
-            style={{
-              width: 44,
-              height: 44,
-              margin: '0 0 18px',
-              border: '1px solid var(--ink)',
-              borderRadius: 'var(--radius)',
-              background: 'var(--ink)',
-              color: 'var(--paper)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: 'var(--serif)',
-              fontSize: 22,
-              fontWeight: 500,
-              lineHeight: 1,
-              letterSpacing: '-0.04em',
-              boxShadow: '0 0 0 1px color-mix(in oklch, var(--ink) 10%, transparent)',
-            }}
-          >
-            _
+          <div aria-hidden style={{ margin: '0 0 18px' }}>
+            <Logo size="md" showText={false} />
           </div>
 
           <div style={{ textAlign: 'center', width: '100%', margin: '0 0 22px' }}>
