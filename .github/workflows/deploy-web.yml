@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: "22"
 
 jobs:
   build:
@@ -50,14 +50,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Setup Node.js (Runtime fallback)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: bun install --frozen-lockfile
 
       - name: Verify build secrets
         run: |
@@ -93,10 +97,10 @@ jobs:
           } > .env.production
 
       - name: Package extension zips for /install
-        run: npm run zip:all
+        run: bun run zip:all
 
       - name: Build web app (production)
-        run: node --env-file=.env.production ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production
+        run: bun run vite build --config vite.config.web.ts --mode production
 
       - name: Upload dist-web
         uses: actions/upload-artifact@v4
@@ -122,14 +126,18 @@ jobs:
       - name: Checkout (for wrangler project metadata)
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Setup Node.js (Runtime fallback)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
-      - name: Install wrangler
-        run: npm ci --no-audit --no-fund
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
       - name: Verify Cloudflare secrets
         run: |
@@ -149,7 +157,7 @@ jobs:
 
       - name: Deploy
         run: |
-          npx wrangler pages deploy dist-web \
+          bunx wrangler pages deploy dist-web \
             --project-name=underscore-web \
             --branch=main \
             --commit-dirty=true
@@ -178,14 +186,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Setup Node.js (Runtime fallback)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: bun install --frozen-lockfile
 
       - name: Verify Vercel secrets
         run: |
@@ -215,7 +227,7 @@ jobs:
       - name: Deploy
         run: bash scripts/deploy-vercel-web.sh
         env:
-          SKIP_BUILD: '1'
+          SKIP_BUILD: "1"
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

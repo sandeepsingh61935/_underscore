@@ -1,4 +1,0 @@
-allowBuilds:
-  esbuild: true
-  spawn-sync: true
-  unrs-resolver: true

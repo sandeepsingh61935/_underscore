@@ -20,13 +20,13 @@ git clone <repository-url>
 cd _underscore
 
 # Install dependencies
-npm install
+bun install
 
 # Run WXT in development mode
-npm run dev
+bun run dev
 
 # Run tests
-npm test
+bun test
 ```
 
 ### 2. Before You Start
@@ -46,7 +46,7 @@ npm test
 1. Create a feature branch: `git checkout -b feature/your-feature-name`
 2. Make your changes following coding standards
 3. Write/update tests (maintain 80%+ coverage)
-4. Run quality checks: `npm run quality`
+4. Run quality checks: `bun run quality`
 5. Commit with descriptive messages
 
 ### 2. Commit Messages
@@ -84,20 +84,20 @@ test(errors): add coverage for NotFoundError
 
 ```bash
 # Run all tests
-npm test
+bun test
 
 # Watch mode
-npm run test:watch
+bun run test:watch
 
 # With coverage
-npm run test:coverage
+bun run test:coverage
 
 # E2E tests
-npm run test:e2e
+bun run test:e2e
 ```
 
 E2E tests are local-only and are not run in GitHub Actions. Run
-`npm run test:e2e` before pushing changes that affect end-to-end flows.
+`bun run test:e2e` before pushing changes that affect end-to-end flows.
 
 **Requirements**:
 
@@ -124,10 +124,10 @@ To check locally before pushing:
 
 ```bash
 # Check the whole project (warnings during migration)
-npm run lint
+bun run lint
 
 # Check only the files you changed (mirrors CI)
-npx eslint --max-warnings 0 <your changed files>
+bunx eslint --max-warnings 0 <your changed files>
 ```
 
 For the full replacement table (banned Style C vars and their MD3 equivalents),
@@ -136,20 +136,20 @@ see `.agent/workflows/ui-code-contracts.md §2`.
 ### Pre-Commit Checklist
 
 - [ ] Code follows TypeScript strict mode
-- [ ] No ESLint errors (`npm run lint`)
+- [ ] No ESLint errors (`bun run lint`)
 - [ ] No design system violations in changed files
-      (`npx eslint --max-warnings 0 <changed files>`)
-- [ ] Code is formatted (`npm run format`)
-- [ ] Tests pass (`npm test`)
+      (`bunx eslint --max-warnings 0 <changed files>`)
+- [ ] Code is formatted (`bun run format`)
+- [ ] Tests pass (`bun test`)
 - [ ] Coverage maintained (≥80%)
-- [ ] Type check passes (`npm run type-check`)
+- [ ] Type check passes (`bun run type-check`)
 - [ ] E2E tests run locally when changing end-to-end behavior
-      (`npm run test:e2e`)
+      (`bun run test:e2e`)
 
 ### Run All Quality Checks
 
 ```bash
-npm run quality
+bun run quality
 ```
 
 This runs:

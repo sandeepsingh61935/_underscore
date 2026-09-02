@@ -24,12 +24,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx src/index.ts",
+    "dev": "bun src/index.ts",
     "type-check": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "worker:secret:url": "wrangler secret put SUPABASE_URL",
     "worker:secret:key": "wrangler secret put SUPABASE_ANON_KEY",
-    "worker:deploy": "npm run build && wrangler deploy",
+    "worker:deploy": "bun run build && wrangler deploy",
     "worker:dev": "wrangler dev"
   },
   "dependencies": {
@@ -39,12 +39,12 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
-    "tsx": "^4.19.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16",
     "wrangler": "^4.14.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "bun": ">=1.4.0"
   }
 }

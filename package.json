@@ -11,25 +11,36 @@
     "reading"
   ],
   "type": "module",
+  "packageManager": "bun@1.4.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "trustedDependencies": [
+    "wxt",
+    "esbuild",
+    "workerd",
+    "unrs-resolver",
+    "spawn-sync"
+  ],
   "scripts": {
     "dev": "wxt",
     "dev:web": "vite --config vite.config.web.ts --mode development",
-    "web:dev": "node scripts/sync-extension-downloads.mjs && ./node_modules/.bin/vite --config vite.config.web.ts --mode development",
-    "build:web": "npm run zip:all && vite build --config vite.config.web.ts",
-    "web:build": "npm run zip:all && ./node_modules/.bin/vite build --config vite.config.web.ts",
-    "web:pages-dev": "npm run web:build && npx wrangler pages dev dist-web --project-name=underscore-web --compatibility-date=2024-12-01",
-    "web:deploy": "npm run zip:all && node --env-file=.env.production ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production && npx wrangler pages deploy dist-web --project-name=underscore-web --branch=main --commit-dirty=true",
-    "supabase:link": "npx supabase link --project-ref cuzwaukxagefyvtxbqmi",
-    "supabase:push": "npx supabase db push --linked --yes",
-    "supabase:migrate": "npm run supabase:link && npm run supabase:push",
-    "build": "npm run zip:all",
-    "build:firefox": "wxt build --browser firefox && node scripts/sync-extension-downloads.mjs",
-    "sync:downloads": "node scripts/sync-extension-downloads.mjs",
-    "zip": "npm run zip:all",
-    "zip:all": "wxt zip --browser chrome && wxt zip --browser firefox && node scripts/sync-extension-downloads.mjs",
-    "zip:firefox": "wxt zip --browser firefox && node scripts/sync-extension-downloads.mjs",
-    "zip:chrome": "wxt zip --browser chrome && node scripts/sync-extension-downloads.mjs",
-    "store:amo-screenshots": "node scripts/generate-amo-screenshots.mjs",
+    "web:dev": "bun scripts/sync-extension-downloads.mjs && vite --config vite.config.web.ts --mode development",
+    "build:web": "bun run zip:all && vite build --config vite.config.web.ts",
+    "web:build": "bun run zip:all && vite build --config vite.config.web.ts",
+    "web:pages-dev": "bun run web:build && bunx wrangler pages dev dist-web --project-name=underscore-web --compatibility-date=2024-12-01",
+    "web:deploy": "bun run zip:all && vite build --config vite.config.web.ts --mode production && bunx wrangler pages deploy dist-web --project-name=underscore-web --branch=main --commit-dirty=true",
+    "supabase:link": "bunx supabase link --project-ref cuzwaukxagefyvtxbqmi",
+    "supabase:push": "bunx supabase db push --linked --yes",
+    "supabase:migrate": "bun run supabase:link && bun run supabase:push",
+    "build": "bun run zip:all",
+    "build:firefox": "wxt build --browser firefox && bun scripts/sync-extension-downloads.mjs",
+    "sync:downloads": "bun scripts/sync-extension-downloads.mjs",
+    "zip": "bun run zip:all",
+    "zip:all": "bun run --parallel \"wxt zip --browser chrome\" \"wxt zip --browser firefox\" && bun scripts/sync-extension-downloads.mjs",
+    "zip:firefox": "wxt zip --browser firefox && bun scripts/sync-extension-downloads.mjs",
+    "zip:chrome": "wxt zip --browser chrome && bun scripts/sync-extension-downloads.mjs",
+    "store:amo-screenshots": "bun scripts/generate-amo-screenshots.mjs",
     "clean": "rm -rf .wxt dist .output",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
@@ -47,16 +58,16 @@
     "check:legacy-ds:src": "bash scripts/check-legacy-ds.sh --soft src/",
     "check:legacy-ds:strict": "bash scripts/check-legacy-ds.sh --strict src/",
     "check:legacy-ds:test": "vitest run tests/unit/harness/check-legacy-ds.test.ts",
-    "quality": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:legacy-ds:src",
-    "quality:full": "npm run type-check && npm run lint && npm run format:check && npm run test:coverage:check && npm run check:legacy-ds:src",
+    "quality": "bun run type-check && bun run lint && bun run format:check && bun run test && bun run check:legacy-ds:src",
+    "quality:full": "bun run type-check && bun run lint && bun run format:check && bun run test:coverage:check && bun run check:legacy-ds:src",
     "postinstall": "wxt prepare",
     "test:visual": "playwright test --project=visual",
     "test:visual:update": "playwright test --project=visual --update-snapshots",
     "test:visual:ui": "playwright test --project=visual --ui",
     "test:visual:report": "playwright show-report",
-    "mcp:build": "npm run build --prefix packages/mcp-server",
-    "mcp:dev": "npm run dev --prefix packages/mcp-server",
-    "web:deploy:vercel": "npm run zip:all && bash scripts/deploy-vercel-web.sh"
+    "mcp:build": "bun run --cwd packages/mcp-server build",
+    "mcp:dev": "bun run --cwd packages/mcp-server dev",
+    "web:deploy:vercel": "bun run zip:all && bash scripts/deploy-vercel-web.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -98,7 +109,7 @@
   },
   "engines": {
     "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+    "bun": ">=1.4.0"
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",

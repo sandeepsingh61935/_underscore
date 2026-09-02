@@ -13,7 +13,11 @@ if [[ "${SKIP_BUILD:-}" != "1" ]]; then
     echo "Missing $ENV_FILE (copy from .env.development / set VITE_* vars)." >&2
     exit 1
   fi
-  node --env-file="$ENV_FILE" ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production
+  if command -v bun &>/dev/null; then
+    bun run vite build --config vite.config.web.ts --mode production
+  else
+    node --env-file="$ENV_FILE" ./node_modules/vite/bin/vite.js build --config vite.config.web.ts --mode production
+  fi
 fi
 
 if [[ ! -d dist-web ]] || [[ ! -f dist-web/index.html ]]; then

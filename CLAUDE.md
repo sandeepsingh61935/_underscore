@@ -176,7 +176,7 @@ the contract established on `feature/v2-popup-redesign` (spec at
 - Unit tests: Vitest, 80%+ coverage target for services/repositories
 - E2E: Playwright for critical user flows
 - Every new service: unit test file
-- Run `npm run build && npm run type-check` before marking any task complete
+- Run `bun run build && bun run type-check` before marking any task complete
 - No Storybook — removed from this project
 
 **Reference**: `docs/05-quality-framework/05-testing-framework.md`

@@ -91,7 +91,7 @@ manual.
 
 ### Extension from zip (v0.1.3)
 
-Prebuilt archives (also produced by `npm run zip:chrome` / `zip:firefox`):
+Prebuilt archives (also produced by `bun run zip:chrome` / `zip:firefox`):
 
 - [`public-web/downloads/underscore-highlighter-0.1.3-chrome.zip`](./public-web/downloads/underscore-highlighter-0.1.3-chrome.zip)
 - [`public-web/downloads/underscore-highlighter-0.1.3-firefox.zip`](./public-web/downloads/underscore-highlighter-0.1.3-firefox.zip)
@@ -107,13 +107,13 @@ Prebuilt archives (also produced by `npm run zip:chrome` / `zip:firefox`):
 ```bash
 git clone git@github.com:sandeepsingh61935/_underscore.git
 cd _underscore
-npm install
+bun install
 
 # Extension (WXT) — load the printed .output path as unpacked
-npm run dev
+bun run dev
 
 # Web app (Vite) — needs env; see Configuration
-npm run dev:web
+bun run dev:web
 ```
 
 ---
@@ -166,27 +166,27 @@ Start at [docs/README.md](./docs/README.md).
 
 ### Prerequisites
 
-- Node.js >= 20
-- npm >= 10
+- Bun >= 1.4.0 (primary package manager & script runner)
+- Node.js >= 20 (runtime fallback for Playwright browser drivers)
 
 ### Scripts
 
 | Script                               | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `npm run dev`                        | Extension dev server (WXT)                               |
-| `npm run dev:web`                    | Web app dev server                                       |
-| `npm run build` / `zip:all`          | Production extension packages                            |
-| `npm run zip:chrome` / `zip:firefox` | Per-browser zips + download sync                         |
-| `npm run web:build`                  | Production web bundle (`dist-web`)                       |
-| `npm run web:deploy`                 | Build + deploy Cloudflare Pages                          |
-| `npm run web:deploy:vercel`          | Deploy web to Vercel                                     |
-| `npm run mcp:dev` / `mcp:build`      | MCP package                                              |
-| `npm run type-check`                 | TypeScript                                               |
-| `npm run lint` / `lint:fix`          | ESLint                                                   |
-| `npm run format` / `format:check`    | Prettier                                                 |
-| `npm test` / `test:coverage`         | Vitest                                                   |
-| `npm run test:e2e`                   | Playwright                                               |
-| `npm run quality`                    | type-check + lint + format + unit tests + legacy-DS gate |
+| `bun run dev`                        | Extension dev server (WXT)                               |
+| `bun run dev:web`                    | Web app dev server                                       |
+| `bun run build` / `zip:all`          | Production extension packages (parallel build)           |
+| `bun run zip:chrome` / `zip:firefox` | Per-browser zips + download sync                         |
+| `bun run web:build`                  | Production web bundle (`dist-web`)                       |
+| `bun run web:deploy`                 | Build + deploy Cloudflare Pages                          |
+| `bun run web:deploy:vercel`          | Deploy web to Vercel                                     |
+| `bun run mcp:dev` / `mcp:build`      | MCP package (native Bun TS execution)                    |
+| `bun run type-check`                 | TypeScript                                               |
+| `bun run lint` / `lint:fix`          | ESLint                                                   |
+| `bun run format` / `format:check`    | Prettier                                                 |
+| `bun test` / `test:coverage`         | Vitest                                                   |
+| `bun run test:e2e`                   | Playwright                                               |
+| `bun run quality`                    | type-check + lint + format + unit tests + legacy-DS gate |
 
 CI:
 [Quality Checks](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
@@ -214,7 +214,7 @@ Auth deep-dive:
 
 - Vitest for unit/integration (target >= 80% on services/repositories)
 - Playwright for critical e2e flows
-- Run `npm run quality` before merge
+- Run `bun run quality` before merge
 
 ---
 
@@ -249,7 +249,7 @@ replace them).
 2. Conventional commits —
    [git commit strategy](./docs/01-development/git-commit-strategy.md).
 3. One logical change per commit; no emoji in commits or source.
-4. Tests for behavior changes; `npm run quality` before PR.
+4. Tests for behavior changes; `bun run quality` before PR.
 
 Security-sensitive reports: contact the maintainer privately when exploit detail
 is involved. See [docs/06-security/](./docs/06-security/).
