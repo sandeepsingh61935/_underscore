@@ -20,7 +20,10 @@ import type {
 
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { ILogger } from '@/shared/interfaces/i-logger';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import {
+  DEFAULT_COLOR_ROLE,
+  type HighlightDataV2,
+} from '@/shared/schemas/highlight-schema';
 import {
   serializeHighlightMetadataForCloud,
   serializeHighlightTextForCloud,
@@ -316,7 +319,7 @@ export class SupabaseClient implements IAPIClient {
           user_id: user.id,
           url: data.url || '', // Use URL from highlight data, not background context
           text: serializeHighlightTextForCloud(data),
-          color_role: data.colorRole,
+          color_role: DEFAULT_COLOR_ROLE,
           selectors: data.ranges[0]?.selector,
           content_hash: data.contentHash,
           metadata: serializeHighlightMetadataForCloud(data.metadata),
@@ -356,7 +359,6 @@ export class SupabaseClient implements IAPIClient {
           text: updates.text,
         } as HighlightDataV2);
       }
-      if (updates.colorRole !== undefined) payload['color_role'] = updates.colorRole;
       if (updates.contentHash !== undefined)
         payload['content_hash'] = updates.contentHash;
       if ('metadata' in updates) {

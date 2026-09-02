@@ -23,7 +23,6 @@ export function toExportableHighlight(hl: HighlightDataV2): ExportableHighlight 
     url: hl.url,
     domain,
     sectionKey,
-    colorRole: hl.colorRole,
     createdAt: hl.createdAt,
     tags: hl.metadata?.tags,
     note: hl.metadata?.notes,

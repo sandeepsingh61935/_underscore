@@ -26,7 +26,10 @@ import { CloudModeService } from '@/services/cloud-mode-service';
 import { MultiSelectorEngine } from '@/services/multi-selector-engine';
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import {
+  DEFAULT_COLOR_ROLE,
+  type HighlightDataV2,
+} from '@/shared/schemas/highlight-schema';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
@@ -240,22 +243,10 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     // Session cache only — background already applied via RealtimeIngest.
     this.facade.rehydrate(highlight);
 
-    if (
-      highlight.colorRole &&
-      localHighlight &&
-      highlight.colorRole !== localHighlight.colorRole
-    ) {
-      await super.removeHighlight(id);
-      await this.renderAndRegister({
-        ...localHighlight,
-        ...highlight,
-      } as unknown as HighlightData);
-    } else {
-      this.data.set(id, {
-        ...(localHighlight ?? {}),
-        ...highlight,
-      } as unknown as HighlightData);
-    }
+    this.data.set(id, {
+      ...(localHighlight ?? {}),
+      ...highlight,
+    } as unknown as HighlightData);
   }
 
   readonly capabilities: ModeCapabilities = {
@@ -342,13 +333,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
     const updated = { ...existing, ...updates };
 
-    // Update runtime
-    if (updates.colorRole && updates.colorRole !== existing.colorRole) {
-      await super.removeHighlight(id);
-      await this.renderAndRegister(updated);
-    } else {
-      this.data.set(id, updated);
-    }
+    this.data.set(id, updated);
 
     // Strip runtime-only fields (liveRanges) before persisting — Bug A.
     // `updated` carries liveRanges from `existing`; we must remove them so the
@@ -415,7 +400,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
    * 2. Persist to IndexedDB (via CloudModeService) with robust selectors
    * 3. Update Runtime State (CSS.highlights, Repository)
    */
-  async createHighlight(selection: Selection, colorRole: string): Promise<string> {
+  async createHighlight(selection: Selection, _colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
     }
@@ -451,7 +436,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
       id,
       text,
       contentHash,
-      colorRole: colorRole || 'yellow',
+      colorRole: DEFAULT_COLOR_ROLE,
       type: 'underscore' as const,
       createdAt: now,
       updatedAt: now,

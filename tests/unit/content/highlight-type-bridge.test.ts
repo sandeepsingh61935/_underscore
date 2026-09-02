@@ -35,12 +35,13 @@ describe('Highlight Type Bridge', () => {
         expect.objectContaining({
           id: 'hl-123',
           text: 'test text',
-          color: 'yellow',
+          colorRole: 'yellow',
           type: 'underscore',
           createdAt: new Date('2024-01-01'),
           ranges: [mockSerializedRange],
         })
       );
+      expect(stored).not.toHaveProperty('color');
       expect(stored.contentHash).toBeDefined();
     });
 
@@ -94,7 +95,7 @@ describe('Highlight Type Bridge', () => {
       expect(runtime).toEqual({
         id: 'hl-789',
         text: 'stored text',
-        color: 'purple',
+        color: 'yellow',
         type: 'underscore',
         createdAt: new Date('2024-01-03'),
         range: mockSerializedRange,

@@ -13,11 +13,8 @@
  */
 
 import type { HighlightWithRange } from '@/content/highlight-renderer';
-import type {
-  HighlightDataV2,
-  ColorRole,
-  SerializedRange,
-} from '@/shared/schemas/highlight-schema';
+import type { HighlightDataV2, SerializedRange } from '@/shared/schemas/highlight-schema';
+import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
 import { generateContentHash } from '@/shared/utils/content-hash';
 
 /**
@@ -64,8 +61,7 @@ export async function toStorageFormat(
     id: highlight.id,
     text: highlight.text,
     contentHash,
-    colorRole: (highlight.color || 'yellow') as ColorRole,
-    color: highlight.color,
+    colorRole: DEFAULT_COLOR_ROLE,
     type: 'underscore' as const,
     ranges: ranges,
     createdAt: highlight.createdAt,
@@ -108,7 +104,7 @@ export function fromStorageFormat(data: HighlightDataV2): Partial<HighlightWithR
   return {
     id: data.id,
     text: data.text,
-    color: data.color || 'yellow', // Default fallback
+    color: DEFAULT_COLOR_ROLE,
     type: 'underscore',
     createdAt: data.createdAt,
     range: range,

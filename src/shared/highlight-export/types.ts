@@ -3,8 +3,6 @@
  * @description Scope and DTO types for highlight copy/export.
  */
 
-import type { ColorRole } from '@/shared/schemas/highlight-schema';
-
 export type ExportFormat = 'md' | 'xlsx';
 
 export type ExportScope =
@@ -19,7 +17,6 @@ export interface ExportableHighlight {
   url: string;
   domain: string;
   sectionKey: string;
-  colorRole: ColorRole;
   createdAt: Date;
   tags?: string[];
   note?: string;

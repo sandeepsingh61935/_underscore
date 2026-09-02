@@ -71,6 +71,9 @@ export const ColorRoleSchema = z.enum([
 
 export type ColorRole = z.infer<typeof ColorRoleSchema>;
 
+/** On-page stroke is computed at paint time; stored role is a schema/DB placeholder. */
+export const DEFAULT_COLOR_ROLE: ColorRole = 'yellow';
+
 // ============================================
 // HIGHLIGHT DATA SCHEMA
 // ============================================
@@ -89,7 +92,7 @@ export const HighlightDataSchemaV2 = z.object({
   contentHash: z.string().length(64), // SHA-256 = 64 hex chars
 
   // Semantic color role (CSS design token)
-  colorRole: ColorRoleSchema,
+  colorRole: ColorRoleSchema.default(DEFAULT_COLOR_ROLE),
 
   // Deprecated but kept for backward compatibility
   color: z.string().optional(),

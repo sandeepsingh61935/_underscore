@@ -13,7 +13,6 @@ import '@/content/styles/highlight-paint.css';
 
 import { browser } from 'wxt/browser';
 
-import { ColorManager } from '@/content/color-manager';
 import type { CommandFactory } from '@/content/commands/command-factory';
 import { HighlightClickDetector } from '@/content/highlight-click-detector';
 import { HighlightManager } from '@/content/highlight-manager';
@@ -21,7 +20,6 @@ import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
 import { MODE_NAMES } from '@/content/modes/mode-constants';
 import { SelectionDetector } from '@/content/selection-detector';
-import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import { getHighlightsInRange } from '@/content/utils/get-highlights-in-range';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
@@ -31,6 +29,7 @@ import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
 // (no repository type import — restoreHighlights reads via the facade)
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
 import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
@@ -111,10 +110,6 @@ export default defineContentScript({
 
       // Initialize Command Stack (Scope: Content Script)
       const commandStack = new CommandStack(50);
-
-      // Initialize components
-      const colorManager = new ColorManager();
-      await colorManager.initialize();
 
       // Initialize Repository Facade (Asynchronous cache hydration)
       await repositoryFacade.initialize();
@@ -314,10 +309,7 @@ export default defineContentScript({
                   id: newId,
                   text,
                   contentHash,
-                  colorRole: (existingHighlight.colorRole ||
-                    existingHighlight.color ||
-                    'yellow') as
-                    'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal' | 'yellow',
+                  colorRole: DEFAULT_COLOR_ROLE,
                   type: 'underscore' as const,
                   ranges: serializedRanges.filter(
                     (r): r is NonNullable<typeof r> => r != null
@@ -366,14 +358,16 @@ export default defineContentScript({
           }
 
           // No overlaps - create new highlight as normal
-          const colorRole = await colorManager.getCurrentColorRole();
-
           const command = commandFactory.createCreateHighlightCommand(
             event.selection,
-            colorRole
+            DEFAULT_COLOR_ROLE
           );
 
           await commandStack.execute(command);
+
+          const { scheduleDomainFaviconCapture } =
+            await import('@/content/favicon/capture-domain-favicon');
+          scheduleDomainFaviconCapture(getCapturePageUrl());
 
           logger.info('Highlight created successfully', {
             api: highlightManager ? 'Custom Highlight API' : 'Legacy',
@@ -709,7 +703,6 @@ export default defineContentScript({
       );
 
       logger.info('Web Highlighter Extension initialized successfully');
-      logger.info(`Default color role: ${await colorManager.getCurrentColorRole()}`);
       logger.info(
         'Features: Undo (Ctrl+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), permanent local storage'
       );
@@ -801,10 +794,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
             id: highlightData.id,
             text: highlightData.text,
             contentHash,
-            colorRole: resolveColorRoleForPaint(
-              highlightData.colorRole,
-              highlightData.color
-            ),
+            colorRole: DEFAULT_COLOR_ROLE,
             type: 'underscore' as const,
             ranges: serializedRanges,
             liveRanges,
@@ -825,7 +815,7 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
             const createCommand = commandFactory.createCreateHighlightCommand(
               selection,
-              resolveColorRoleForPaint(highlightData.colorRole, highlightData.color)
+              DEFAULT_COLOR_ROLE
             );
 
             await createCommand.execute();

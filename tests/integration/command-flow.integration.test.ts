@@ -174,7 +174,7 @@ describe('Command Flow Integration', () => {
       // 4. Undo Remove (Restore)
       await commandStack.undo();
       expect(proMode.getAllHighlights()).toHaveLength(1);
-      expect(proMode.getHighlight(hlId)?.colorRole).toBe('green');
+      expect(proMode.getHighlight(hlId)?.colorRole).toBe('yellow');
     });
   });
 

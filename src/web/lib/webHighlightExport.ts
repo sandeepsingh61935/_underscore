@@ -21,7 +21,6 @@ export function webHighlightToExportable(h: WebHighlight): ExportableHighlight {
     url: `https://${h.domain}${path.startsWith('/') ? path : `/${path}`}`,
     domain: h.domain,
     sectionKey: path,
-    colorRole: 'yellow',
     createdAt: new Date(h.savedAt),
     tags: h.tags,
     note: h.note || undefined,

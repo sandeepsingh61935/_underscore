@@ -35,7 +35,6 @@ const sampleHighlight: ExportableHighlight = {
   url: 'https://example.com/docs',
   domain: 'example.com',
   sectionKey: '/docs',
-  colorRole: 'yellow',
   createdAt: new Date('2026-06-13'),
 };
 

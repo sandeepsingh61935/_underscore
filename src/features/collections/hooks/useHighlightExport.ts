@@ -20,7 +20,6 @@ import {
 import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { bundleArtifactsForExport } from '@/shared/llm/llm-artifact-service';
 import { loadAllLlmArtifacts } from '@/shared/llm/llm-artifact-store';
-import type { ColorRole } from '@/shared/schemas/highlight-schema';
 import { GET_EXPORTABLE_HIGHLIGHTS } from '@/shared/schemas/message-schemas';
 
 /** Scopes where file export is allowed in the UI. */
@@ -70,7 +69,6 @@ interface ExportableHighlightPayload {
   url: string;
   domain: string;
   sectionKey: string;
-  colorRole: ColorRole;
   createdAt: string;
   tags?: string[];
   note?: string;
@@ -87,7 +85,6 @@ function mapPayload(items: ExportableHighlightPayload[]): ExportableHighlight[] 
     url: item.url,
     domain: item.domain,
     sectionKey: item.sectionKey,
-    colorRole: item.colorRole,
     createdAt: new Date(item.createdAt),
     tags: item.tags,
     note: item.note,
@@ -106,7 +103,7 @@ export async function fetchExportableHighlightsWeb(
 
   let query = supabase
     .from('highlights')
-    .select('id, url, text, color_role, metadata, created_at')
+    .select('id, url, text, metadata, created_at')
     .eq('user_id', session.user.id)
     .is('deleted_at', null);
 
@@ -127,7 +124,7 @@ export async function fetchExportableHighlightsWeb(
         text: row.text ?? '',
         url: row.url ?? '',
         contentHash: '',
-        colorRole: (row.color_role ?? 'yellow') as ColorRole,
+        colorRole: 'yellow',
         type: 'underscore',
         ranges: [],
         createdAt: new Date(row.created_at ?? Date.now()),

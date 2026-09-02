@@ -62,35 +62,75 @@ export function parseCssColor(input: string): Rgb | null {
   return null;
 }
 
-export const FALLBACK_DELETE_ICON_CHROME: DeleteIconChrome = {
+/** White + black rings so the chip stays visible even if tone guess is wrong. */
+const KNOCKOUT_ON_DARK =
+  '0 0 0 1px #ffffff, 0 0 0 2px #111111, 0 2px 10px rgba(0,0,0,0.35)';
+const KNOCKOUT_ON_LIGHT =
+  '0 0 0 1px #111111, 0 0 0 2px #ffffff, 0 2px 10px rgba(0,0,0,0.45)';
+
+export const DARK_DELETE_ICON_CHROME: DeleteIconChrome = {
   background: '#1a1a1a',
-  color: '#f5f5f5',
-  border: '1px solid rgba(255,255,255,0.35)',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+  color: '#fafafa',
+  border: '1px solid rgba(255,255,255,0.4)',
+  boxShadow: KNOCKOUT_ON_DARK,
   tone: 'dark',
 };
 
-export function resolveDeleteIconChrome(pageBg: Rgb | null): DeleteIconChrome {
-  if (!pageBg) return { ...FALLBACK_DELETE_ICON_CHROME };
+export const LIGHT_DELETE_ICON_CHROME: DeleteIconChrome = {
+  background: '#f5f5f5',
+  color: '#141414',
+  border: '1px solid rgba(0,0,0,0.35)',
+  boxShadow: KNOCKOUT_ON_LIGHT,
+  tone: 'light',
+};
+
+/** Default when sample is missing on a light (or unknown) page. */
+export const FALLBACK_DELETE_ICON_CHROME: DeleteIconChrome = {
+  ...DARK_DELETE_ICON_CHROME,
+};
+
+export function resolveDeleteIconChrome(
+  pageBg: Rgb | null,
+  options?: { prefersDark?: boolean }
+): DeleteIconChrome {
+  if (!pageBg) {
+    return options?.prefersDark
+      ? { ...LIGHT_DELETE_ICON_CHROME }
+      : { ...FALLBACK_DELETE_ICON_CHROME };
+  }
 
   const L = relativeLuminance(pageBg);
   // Light page → dark chip; dark page → light chip
-  if (L >= 0.45) {
-    return {
-      background: '#1a1a1a',
-      color: '#fafafa',
-      border: '1px solid rgba(255,255,255,0.4)',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.28)',
-      tone: 'dark',
-    };
+  return L >= 0.45
+    ? { ...DARK_DELETE_ICON_CHROME }
+    : { ...LIGHT_DELETE_ICON_CHROME };
+}
+
+/** Apply chrome with !important so host `button { color: #000 !important }` cannot hide it. */
+export function applyDeleteIconChrome(
+  el: HTMLElement,
+  chrome: DeleteIconChrome
+): void {
+  el.style.setProperty('background', chrome.background, 'important');
+  el.style.setProperty('color', chrome.color, 'important');
+  el.style.setProperty('border', chrome.border, 'important');
+  el.style.setProperty('box-shadow', chrome.boxShadow, 'important');
+  el.dataset['chromeTone'] = chrome.tone;
+}
+
+/** Prefer document color-scheme, then OS preference. */
+export function pagePrefersDark(doc: Document = document): boolean {
+  try {
+    const view = doc.defaultView;
+    const scheme = view
+      ? view.getComputedStyle(doc.documentElement).colorScheme
+      : '';
+    if (/\bdark\b/i.test(scheme) && !/\blight\b/i.test(scheme)) return true;
+    if (/\blight\b/i.test(scheme) && !/\bdark\b/i.test(scheme)) return false;
+    return view?.matchMedia?.('(prefers-color-scheme: dark)')?.matches === true;
+  } catch {
+    return false;
   }
-  return {
-    background: '#f5f5f5',
-    color: '#141414',
-    border: '1px solid rgba(0,0,0,0.35)',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
-    tone: 'light',
-  };
 }
 
 /**

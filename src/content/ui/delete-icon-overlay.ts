@@ -13,6 +13,8 @@ import { getHighlightPainter } from '@/content/paint/range-overlay-painter';
 import { ContentHighlightDeleteClient } from '@/content/services/content-highlight-delete';
 import { performContentHighlightDelete } from '@/content/services/content-highlight-delete-flow';
 import {
+  applyDeleteIconChrome,
+  pagePrefersDark,
   resolveDeleteIconChrome,
   samplePageBackgroundAt,
 } from '@/content/ui/delete-icon-contrast';
@@ -23,7 +25,6 @@ import {
 } from '@/content/ui/delete-icon-geometry';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { RepositoryFacade } from '@/shared/repositories';
-import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 
 export class DeleteIconOverlay {
@@ -100,7 +101,11 @@ export class DeleteIconOverlay {
     const highlight = this.repositoryFacade.get(highlightId);
     if (!highlight) return;
 
-    const icon = this.createIconElement(highlightId, highlight, config);
+    const icon = this.createIconElement(
+      highlightId,
+      config,
+      this.samplePointFromRect(boundingRect)
+    );
     this.applyExteriorPosition(icon, boundingRect, boundingRect);
     document.body.appendChild(icon);
     this.activeIcons.set(highlightId, icon);
@@ -118,7 +123,11 @@ export class DeleteIconOverlay {
     const highlight = this.repositoryFacade.get(highlightId);
     if (!highlight) return;
 
-    const icon = this.createIconElement(highlightId, highlight, config);
+    const icon = this.createIconElement(
+      highlightId,
+      config,
+      this.samplePointFromRect(firstLineEnd)
+    );
     this.applyExteriorPosition(icon, firstLineStart, firstLineEnd);
     document.body.appendChild(icon);
     this.activeIcons.set(highlightId, icon);
@@ -180,12 +189,11 @@ export class DeleteIconOverlay {
     }
     const start = edges?.start ?? fallback!;
     const end = edges?.end ?? fallback!;
-    const sampleX = end.right + DELETE_ICON_GAP_PX + DELETE_ICON_HIT_PX / 2;
-    const sampleY = end.top + end.height / 2;
-    const icon = this.createIconElement(highlightId, highlight, config, {
-      x: Math.min(Math.max(0, sampleX), window.innerWidth - 1),
-      y: Math.min(Math.max(0, sampleY), window.innerHeight - 1),
-    });
+    const icon = this.createIconElement(
+      highlightId,
+      config,
+      this.samplePointFromRect(end)
+    );
     this.applyExteriorPosition(icon, start, end);
     document.body.appendChild(icon);
     this.activeIcons.set(highlightId, icon);
@@ -202,7 +210,6 @@ export class DeleteIconOverlay {
 
   private createIconElement(
     id: string,
-    highlight: HighlightDataV2,
     config: DeletionConfig,
     samplePoint?: { x: number; y: number }
   ): HTMLElement {
@@ -212,16 +219,13 @@ export class DeleteIconOverlay {
     button.setAttribute('aria-label', 'Delete highlight');
     button.setAttribute('data-highlight-id', id);
 
-    // Dynamic contrast from page (not pastel highlight-role tints).
+    // Runtime contrast from the highlight's page bg (not stored colorRole).
     const sx = samplePoint?.x ?? window.innerWidth / 2;
     const sy = samplePoint?.y ?? 24;
-    const chrome = resolveDeleteIconChrome(samplePageBackgroundAt(sx, sy));
-    button.style.background = chrome.background;
-    button.style.color = chrome.color;
-    button.style.border = chrome.border;
-    button.style.boxShadow = chrome.boxShadow;
-    button.dataset['chromeTone'] = chrome.tone;
-    void highlight.colorRole;
+    const chrome = resolveDeleteIconChrome(samplePageBackgroundAt(sx, sy), {
+      prefersDark: pagePrefersDark(),
+    });
+    applyDeleteIconChrome(button, chrome);
 
     button.innerHTML = this.getIconSVG(config.iconType || 'trash');
 
@@ -342,6 +346,14 @@ export class DeleteIconOverlay {
     } catch (error) {
       this.logger.error('Delete icon handler failed', error as Error);
     }
+  }
+
+  /** Sample on the text, not the icon hole (margin is often transparent). */
+  private samplePointFromRect(rect: DOMRect): { x: number; y: number } {
+    return {
+      x: Math.min(Math.max(0, rect.left + rect.width / 2), window.innerWidth - 1),
+      y: Math.min(Math.max(0, rect.top + rect.height / 2), window.innerHeight - 1),
+    };
   }
 
   private applyExteriorPosition(

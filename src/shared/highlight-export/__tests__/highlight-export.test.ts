@@ -37,6 +37,7 @@ describe('highlight-export', () => {
         tags: ['physics'],
         note: 'Key definition',
       });
+      expect(result).not.toHaveProperty('colorRole');
     });
 
     it('returns null when URL is missing', () => {

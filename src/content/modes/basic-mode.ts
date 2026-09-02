@@ -17,6 +17,7 @@ import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/type
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
+import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 
@@ -52,7 +53,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     await super.onActivate();
   }
 
-  async createHighlight(selection: Selection, colorRole: string): Promise<string> {
+  async createHighlight(selection: Selection, _colorRole: string): Promise<string> {
     if (selection.rangeCount === 0) {
       throw new Error('No range in selection');
     }
@@ -89,7 +90,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     const runtimeHighlight = {
       id,
       text,
-      colorRole,
+      colorRole: DEFAULT_COLOR_ROLE,
       type: 'underscore' as const,
       createdAt: now,
       updatedAt: now,
@@ -111,7 +112,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     const { toStorageFormat } = await import('@/content/highlight-type-bridge');
     const storageData = await toStorageFormat({
       ...runtimeHighlight,
-      color: colorRole,
+      color: DEFAULT_COLOR_ROLE,
     });
 
     await this.facade.addPersisted({
@@ -177,12 +178,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
 
     const updated = { ...existing, ...updates };
 
-    if (updates.colorRole && updates.colorRole !== existing.colorRole) {
-      await super.removeHighlight(id);
-      await this.renderAndRegister(updated);
-    } else {
-      this.data.set(id, updated);
-    }
+    this.data.set(id, updated);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.facade.update(id, updates as any);

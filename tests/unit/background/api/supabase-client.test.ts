@@ -183,8 +183,7 @@ describe('SupabaseClient', () => {
   });
 
   describe('Test 2: updateHighlight() patches only specified fields', () => {
-    it('should only update color field when only color provided', async () => {
-      // Arrange
+    it('does not persist colorRole updates (stroke is computed at paint time)', async () => {
       const updates: Partial<HighlightDataV2> = {
         colorRole: 'blue',
       };
@@ -198,16 +197,13 @@ describe('SupabaseClient', () => {
         update: mockUpdate,
       });
 
-      // Act
       await client.updateHighlight('highlight-123', updates);
 
-      // Assert
       expect(mockUpdate).toHaveBeenCalledWith({
-        color_role: 'blue',
         updated_at: expect.any(String),
       });
-      // Verify text and content_hash NOT in payload
       const payload = mockUpdate.mock.calls[0]![0];
+      expect(payload).not.toHaveProperty('color_role');
       expect(payload).not.toHaveProperty('text');
       expect(payload).not.toHaveProperty('content_hash');
     });

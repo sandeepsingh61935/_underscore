@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   FALLBACK_DELETE_ICON_CHROME,
+  LIGHT_DELETE_ICON_CHROME,
   parseCssColor,
   relativeLuminance,
   resolveDeleteIconChrome,
@@ -33,5 +34,20 @@ describe('resolveDeleteIconChrome', () => {
 
   it('falls back when sample missing', () => {
     expect(resolveDeleteIconChrome(null)).toEqual(FALLBACK_DELETE_ICON_CHROME);
+  });
+
+  it('uses light chip when sample missing on a dark color-scheme page', () => {
+    expect(resolveDeleteIconChrome(null, { prefersDark: true })).toEqual(
+      LIGHT_DELETE_ICON_CHROME
+    );
+  });
+
+  it('always includes a knockout ring so the chip is visible on either tone', () => {
+    const dark = resolveDeleteIconChrome({ r: 250, g: 250, b: 250 });
+    const light = resolveDeleteIconChrome({ r: 20, g: 20, b: 20 });
+    expect(dark.boxShadow).toContain('#ffffff');
+    expect(dark.boxShadow).toContain('#111111');
+    expect(light.boxShadow).toContain('#ffffff');
+    expect(light.boxShadow).toContain('#111111');
   });
 });
