@@ -5,17 +5,20 @@
 
 import { buildRelatednessIndex } from './build-relatedness-index';
 import { relatedHighlights } from './related-highlights';
+import { relatedPages } from './related-pages';
 import { relatedTags } from './related-tags';
 import type {
   RelatedHighlightResult,
   RelatednessDoc,
   RelatednessIndex,
+  RelatedPageResult,
   RelatedTagResult,
 } from './types';
 
 export type RelatednessQueryServiceOptions = {
   tagLimit?: number;
   highlightLimit?: number;
+  pageLimit?: number;
 };
 
 /**
@@ -26,6 +29,7 @@ export class RelatednessQueryService {
   private index: RelatednessIndex;
   private readonly tagLimit: number;
   private readonly highlightLimit: number;
+  private readonly pageLimit: number;
 
   constructor(
     docs: readonly RelatednessDoc[] = [],
@@ -33,6 +37,7 @@ export class RelatednessQueryService {
   ) {
     this.tagLimit = opts.tagLimit ?? 5;
     this.highlightLimit = opts.highlightLimit ?? 5;
+    this.pageLimit = opts.pageLimit ?? 3;
     this.index = buildRelatednessIndex(docs);
   }
 
@@ -60,6 +65,14 @@ export class RelatednessQueryService {
     limit = this.highlightLimit
   ): RelatedHighlightResult[] {
     return relatedHighlights(this.index, highlightId, limit);
+  }
+
+  relatedPages(
+    seedDomain: string,
+    seedSection: string,
+    limit = this.pageLimit
+  ): RelatedPageResult[] {
+    return relatedPages(this.index, seedDomain, seedSection, limit);
   }
 
   /** Lookup a doc already in the index (for UI snippets). */

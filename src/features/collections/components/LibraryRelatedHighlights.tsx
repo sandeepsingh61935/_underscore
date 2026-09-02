@@ -104,18 +104,6 @@ export function LibraryRelatedHighlights({
                   {row.domain}
                   {row.path && row.path !== '/' ? row.path : ''}
                 </span>
-                <span
-                  className="u-mono"
-                  style={{
-                    fontSize: 'var(--step--2)',
-                    letterSpacing: '0.04em',
-                    padding: '1px 6px',
-                    border: '1px solid var(--rule-soft)',
-                    color: 'var(--ink-3)',
-                  }}
-                >
-                  {row.reason}
-                </span>
               </div>
             </button>
           </li>

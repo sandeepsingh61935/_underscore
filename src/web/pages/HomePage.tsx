@@ -5,8 +5,10 @@ import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { webHomeEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
+import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
+import { DomainFavicon } from '@/web/components/DomainFavicon';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
@@ -33,13 +35,6 @@ function greetingFor(name: string | null): string {
   const h = new Date().getHours();
   const when = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   return name ? `${when}, ${name}` : when;
-}
-
-function relativeTime(ts: number, now = Date.now()): string {
-  const d = now - ts;
-  if (d < 3600e3) return `${Math.max(1, Math.round(d / 60e3))}m ago`;
-  if (d < 86400e3) return `${Math.round(d / 3600e3)}h ago`;
-  return `${Math.round(d / 86400e3)}d ago`;
 }
 
 function shortPath(p: string): string {
@@ -382,14 +377,12 @@ export function HomePage(): React.ReactElement {
               data-od-id={`page-${id}`}
               onClick={() => openLibraryPage(p.domain, p.path)}
             >
-              <div className="page-row-ico" aria-hidden="true">
-                {p.domain.slice(0, 2)}
-              </div>
+              <DomainFavicon domain={p.domain} className="page-row-ico" />
               <div className="page-row-body">
                 <div className="page-row-title">{p.domain}</div>
                 <div className="page-row-meta">
                   {path ? `${shortPath(path)} · ` : ''}
-                  {relativeTime(p.lastActive)}
+                  {formatHighlightWhen(p.lastActive)}
                 </div>
               </div>
               <span className="page-row-count">{p.count}</span>

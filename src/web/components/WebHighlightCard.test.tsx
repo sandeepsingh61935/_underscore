@@ -16,7 +16,7 @@ const base: WebHighlight = {
 };
 
 describe('WebHighlightCard', () => {
-  it('renders quote, tag chips, and Add note when editable', () => {
+  it('renders quote, tag chips, and compact Note action when editable', () => {
     render(
       <WebHighlightCard
         highlight={base}
@@ -31,6 +31,31 @@ describe('WebHighlightCard', () => {
     expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
       /Add note/
     );
+    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.className).toContain(
+      'hl-ghost'
+    );
+  });
+
+  it('empty card keeps Add tag / Add note on the meta row (no dashed foot)', () => {
+    render(
+      <WebHighlightCard
+        highlight={{ ...base, note: '', tags: [] }}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    expect(document.querySelector('.hl-foot')).toBeNull();
+    expect(document.querySelector('.hl-meta-invites')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="hl-tag-add-h1"]')?.textContent).toMatch(
+      /Add tag/
+    );
+    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
+      /Add note/
+    );
+
+    fireEvent.click(document.querySelector('[data-od-id="hl-note-h1"]')!);
+    expect(document.querySelector('[data-od-id="hl-note-edit-h1"]')).toBeTruthy();
   });
 
   it('opens note editor and saves via callback', async () => {
@@ -191,9 +216,9 @@ describe('WebHighlightCard', () => {
       />
     );
 
-    const main = document.querySelector('[data-od-id="hl-main-h1"]');
-    expect(main?.textContent).toContain('example.com');
-    expect(main?.textContent).not.toContain('/docs/deep/path');
+    const card = document.querySelector('[data-od-id="hl-h1"]');
+    expect(card?.textContent).toContain('example.com');
+    expect(card?.textContent).not.toContain('/docs/deep/path');
     expect(document.querySelector('.hl-path')).toBeNull();
     expect(document.querySelector('[data-od-id="hl-extras-toggle-h1"]')).toBeNull();
     expect(document.querySelector('[data-od-id="hl-tag-h1-craft"]')).toBeTruthy();

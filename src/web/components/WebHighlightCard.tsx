@@ -1,7 +1,8 @@
 /**
  * @file WebHighlightCard.tsx
  * @description OD-parity highlight card for the web app: quote/meta main region
- * plus foot with inline tags and notes (edit when signed-in).
+ * plus tags/notes. Empty state: compact Tag/Note actions on the meta row
+ * (no dashed fields). Foot only for chips, a saved note, or an open editor.
  * Persist via parent callbacks (useUpdateHighlightMetadata / library patch).
  */
 
@@ -9,7 +10,12 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
+import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
+import {
+  displaySectionPath,
+  pageHrefForLibrary,
+} from '@/shared/utils/page-href';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
@@ -38,13 +44,6 @@ export type WebHighlightCardProps = {
   /** Soft-delete this highlight after confirm. */
   onDelete?: (id: string) => Promise<boolean>;
 };
-
-function relativeTime(ts: number, now = Date.now()): string {
-  const d = now - ts;
-  if (d < 3600e3) return `${Math.max(1, Math.round(d / 60e3))}m ago`;
-  if (d < 86400e3) return `${Math.round(d / 3600e3)}h ago`;
-  return `${Math.round(d / 86400e3)}d ago`;
-}
 
 function tagKey(t: string): string {
   return t.trim().toLowerCase();
@@ -91,6 +90,40 @@ function PlusIco(): React.ReactElement {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+function GhostAction({
+  odId,
+  kind,
+  onClick,
+}: {
+  odId: string;
+  kind: 'tag' | 'note';
+  onClick: (e: React.MouseEvent) => void;
+}): React.ReactElement {
+  const isTag = kind === 'tag';
+  return (
+    <button
+      type="button"
+      className={`hl-ghost hl-ghost--${kind}`}
+      data-od-id={odId}
+      aria-label={isTag ? 'Add tag' : 'Add note'}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={onClick}
+    >
+      {isTag ? (
+        <span className="hl-ghost-mark" aria-hidden="true">
+          #
+        </span>
+      ) : (
+        <PencilIco />
+      )}
+      <span>{isTag ? 'Add tag' : 'Add note'}</span>
+    </button>
   );
 }
 
@@ -315,6 +348,17 @@ export function WebHighlightCard({
     [canEdit, onTagsChange]
   );
 
+  const startNoteEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!canEdit || !onNoteSave) return;
+      setNoteDraft(h.note);
+      setNoteEditing(true);
+    },
+    [canEdit, h.note, onNoteSave]
+  );
+
   const note = h.note.trim();
   const tags = localTags;
   const deleteCopy = deleteHighlightCopy();
@@ -333,17 +377,33 @@ export function WebHighlightCard({
   }, [h.id, onDelete]);
 
   const isRail = density === 'rail';
-  // Rail: show existing tags/note only — no empty add chrome, no expand/collapse.
-  const showTagAdd = Boolean(canEdit && onTagsChange && !isRail);
-  const showEmptyNote = Boolean(canEdit && onNoteSave && !isRail);
-  const showNoteBlock = Boolean(
-    (noteEditing && canEdit && onNoteSave) ||
-    showEmptyNote ||
-    (canEdit && onNoteSave && note) ||
-    note
+  const sourceHref =
+    !isRail && h.path ? pageHrefForLibrary(h.domain, h.path) : null;
+  // Rail: existing tags/note only. Library empty: Tag/Note on the meta row.
+  const hasTags = tags.length > 0;
+  const hasNote = Boolean(note);
+  const canTag = Boolean(canEdit && onTagsChange && !isRail);
+  const canNote = Boolean(canEdit && onNoteSave && !isRail);
+  const annotating = tagEditing || noteEditing;
+  const isEmptyAnnot = !hasTags && !hasNote && !annotating;
+  const showMetaInvites = Boolean((canTag || canNote) && isEmptyAnnot);
+  const showTagAdd = Boolean(canTag && (hasTags || tagEditing));
+  const showTagGhost = Boolean(canTag && !hasTags && !tagEditing && hasNote);
+  const showNoteGhost = Boolean(
+    canNote && !hasNote && !noteEditing && (hasTags || tagEditing)
   );
-  const showTagsBlock = tags.length > 0 || showTagAdd || tagEditing;
-  const showFoot = showTagsBlock || Boolean(tagError) || showNoteBlock;
+  const showTagsRow = Boolean(
+    hasTags ||
+      tagEditing ||
+      showTagAdd ||
+      showTagGhost ||
+      showNoteGhost ||
+      (hasNote && !noteEditing)
+  );
+  const showNoteBlock = Boolean(
+    (noteEditing && canNote) || (canEdit && onNoteSave && hasNote) || hasNote
+  );
+  const showFoot = showTagsRow || Boolean(tagError) || showNoteBlock;
 
   return (
     <div
@@ -352,23 +412,62 @@ export function WebHighlightCard({
       data-density={density}
     >
       <div className="hl-top">
-        <button
-          type="button"
-          className="hl-main"
-          data-od-id={`hl-main-${h.id}`}
-          onClick={openMain}
-        >
-          <p className="hl-quote">“{h.quote}”</p>
-          {showMeta ? (
+        <div className="hl-main-col">
+          <button
+            type="button"
+            className="hl-main"
+            data-od-id={`hl-main-${h.id}`}
+            onClick={openMain}
+          >
+            <p className="hl-quote">“{h.quote}”</p>
+            {matchBadge ? <div className="match-badge">{matchBadge}</div> : null}
+          </button>
+          {showMeta || showMetaInvites ? (
             <div className="hl-meta">
-              {showDomain ? <span className="src">{h.domain}</span> : null}
-              {/* Rail shows domain only — path wastes a line and is in Library. */}
-              {!isRail && h.path ? <span className="hl-path">{h.path}</span> : null}
-              <span>{relativeTime(h.savedAt)}</span>
+              {showMeta ? (
+                <>
+                  {showDomain ? <span className="src">{h.domain}</span> : null}
+                  {!isRail && h.path ? (
+                    sourceHref ? (
+                      <a
+                        className="hl-path hl-path-link"
+                        href={sourceHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={h.path}
+                      >
+                        {displaySectionPath(h.path)}
+                      </a>
+                    ) : (
+                      <span className="hl-path" title={h.path}>
+                        {displaySectionPath(h.path)}
+                      </span>
+                    )
+                  ) : null}
+                  <span>{formatHighlightWhen(h.savedAt)}</span>
+                </>
+              ) : null}
+              {showMetaInvites ? (
+                <span className="hl-meta-invites">
+                  {canTag ? (
+                    <GhostAction
+                      odId={`hl-tag-add-${h.id}`}
+                      kind="tag"
+                      onClick={startTagEdit}
+                    />
+                  ) : null}
+                  {canNote ? (
+                    <GhostAction
+                      odId={`hl-note-${h.id}`}
+                      kind="note"
+                      onClick={startNoteEdit}
+                    />
+                  ) : null}
+                </span>
+              ) : null}
             </div>
           ) : null}
-          {matchBadge ? <div className="match-badge">{matchBadge}</div> : null}
-        </button>
+        </div>
         {canDelete ? (
           <button
             type="button"
@@ -389,7 +488,7 @@ export function WebHighlightCard({
 
       {showFoot ? (
         <div className="hl-foot">
-          {showTagsBlock ? (
+          {showTagsRow ? (
             <div
               className="hl-tags"
               data-od-id={`hl-tags-${h.id}`}
@@ -503,6 +602,35 @@ export function WebHighlightCard({
                 >
                   <PlusIco />
                 </button>
+              ) : showTagGhost ? (
+                <GhostAction
+                  odId={`hl-tag-add-${h.id}`}
+                  kind="tag"
+                  onClick={startTagEdit}
+                />
+              ) : null}
+              {showNoteGhost ? (
+                <GhostAction
+                  odId={`hl-note-${h.id}`}
+                  kind="note"
+                  onClick={startNoteEdit}
+                />
+              ) : !noteEditing && hasNote && canEdit && onNoteSave ? (
+                <button
+                  type="button"
+                  className="hl-note-btn has-note"
+                  data-action="edit-note"
+                  data-od-id={`hl-note-${h.id}`}
+                  onClick={startNoteEdit}
+                >
+                  <PencilIco />
+                  <span className="txt">{note}</span>
+                </button>
+              ) : !noteEditing && hasNote ? (
+                <div className="hl-note-btn has-note" data-od-id={`hl-note-${h.id}`}>
+                  <PencilIco />
+                  <span className="txt">{note}</span>
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -548,25 +676,6 @@ export function WebHighlightCard({
                   {savingNote ? 'Saving…' : 'Save'}
                 </button>
               </div>
-            </div>
-          ) : showEmptyNote || (canEdit && onNoteSave && note) ? (
-            <button
-              type="button"
-              className={`hl-note-btn ${note ? 'has-note' : 'is-empty'}`}
-              data-action="edit-note"
-              data-od-id={`hl-note-${h.id}`}
-              onClick={() => {
-                setNoteDraft(h.note);
-                setNoteEditing(true);
-              }}
-            >
-              <PencilIco />
-              <span className="txt">{note || 'Add note'}</span>
-            </button>
-          ) : note ? (
-            <div className="hl-note-btn has-note" data-od-id={`hl-note-${h.id}`}>
-              <PencilIco />
-              <span className="txt">{note}</span>
             </div>
           ) : null}
         </div>

@@ -31,6 +31,23 @@ export type RelatedHighlightReason =
   | 'Shared tags · Similar text'
   | 'Same page · Shared tags · Similar text';
 
+export type RelatedPageReason =
+  | 'Shared tags'
+  | 'Similar text'
+  | 'Shared tags · Similar text';
+
+export type RelatedPageResult = {
+  domain: string;
+  section: string;
+  score: number;
+  highlightCount: number;
+  reason: RelatedPageReason;
+  signals: {
+    sharedTags: boolean;
+    similarText: boolean;
+  };
+};
+
 export type RelatedHighlightResult = {
   id: string;
   score: number;

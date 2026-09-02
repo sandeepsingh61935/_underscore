@@ -72,7 +72,6 @@ export function RelatedHighlightsSection({
                       {h.path && h.path !== '/' ? h.path : ''}
                     </span>
                   )}
-                  <span className="related-reason-pill u-mono">{row.reason}</span>
                 </span>
               </Link>
             </li>

@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 import {
   RelatednessQueryService,
   type RelatedHighlightResult,
+  type RelatedPageResult,
   type RelatedTagResult,
 } from '@/shared/relatedness';
 import type { WebHighlight } from '@/web/lib/aggregateLibrary';
@@ -51,4 +52,21 @@ export function useRelatedHighlights(
     if (!highlightId) return [];
     return service.relatedHighlights(highlightId);
   }, [service, highlightId]);
+}
+
+/**
+ * Related pages for a selected library section. Empty on All, domain-root,
+ * highlight detail, or when nothing qualifies.
+ */
+export function useRelatedPages(
+  service: RelatednessQueryService,
+  domain: string | null | undefined,
+  section: string | null | undefined,
+  highlightId?: string | null
+): RelatedPageResult[] {
+  return useMemo(() => {
+    if (highlightId) return [];
+    if (!domain || !section) return [];
+    return service.relatedPages(domain, section);
+  }, [service, domain, section, highlightId]);
 }

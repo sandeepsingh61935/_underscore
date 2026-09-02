@@ -157,7 +157,9 @@ export function highlightTimestampMs(
       const t = v.getTime();
       return Number.isFinite(t) ? t : null;
     }
-    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      return v > 0 && v < 1e12 ? v * 1000 : v;
+    }
     if (typeof v === 'string' && v.length > 0) {
       const t = new Date(v).getTime();
       return Number.isFinite(t) ? t : null;

@@ -129,7 +129,8 @@ export function mapSupabaseRowToWebHighlight(row: {
     quote: body.text,
     note,
     tags,
-    savedAt: highlightTimestampMs(row.updated_at, row.created_at),
+    // Card/sort time = capture. updated_at is last write (sync can stamp a whole site).
+    savedAt: highlightTimestampMs(row.created_at, row.updated_at),
     encrypted: body.encrypted ? true : undefined,
   };
 }

@@ -13,6 +13,7 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
+import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import type { ExportFormat } from '@/shared/highlight-export';
 import { deleteDomainCopy, deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
@@ -28,14 +29,17 @@ import {
 } from '@/shared/utils/highlight-search';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
+import { DomainFavicon } from '@/web/components/DomainFavicon';
 import { GuestBanner } from '@/web/components/GuestBanner';
 import { LibraryHighlightDetail } from '@/web/components/LibraryHighlightDetail';
+import { RelatedPagesSection } from '@/web/components/RelatedPagesSection';
 import { RelatedTagsSection } from '@/web/components/RelatedTagsSection';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
 import {
   useRelatedHighlights,
   useRelatednessService,
+  useRelatedPages,
   useRelatedTags,
 } from '@/web/hooks/useRelatedness';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
@@ -102,11 +106,6 @@ function TrashIco(): React.ReactElement {
       />
     </svg>
   );
-}
-
-function shortPath(p: string): string {
-  const parts = String(p).split('/').filter(Boolean);
-  return parts.length ? parts[parts.length - 1]! : p;
 }
 
 function domainOdId(domain: string): string {
@@ -609,6 +608,12 @@ export function LibraryPage(): React.ReactElement {
   const relatedness = useRelatednessService(lib.highlights);
   const relatedTagResults = useRelatedTags(relatedness, tagFilters);
   const relatedHighlightResults = useRelatedHighlights(relatedness, selection.highlight);
+  const relatedPageResults = useRelatedPages(
+    relatedness,
+    selection.domain,
+    selection.section,
+    selection.highlight
+  );
 
   const detailHighlight = useMemo(() => {
     if (!selection.highlight) return null;
@@ -624,6 +629,22 @@ export function LibraryPage(): React.ReactElement {
     });
   }, [lib.highlights, relatedHighlightResults]);
 
+  const relatedPageHref = useCallback((domain: string, section: string) => {
+    const search = buildLibrarySearch({
+      domain,
+      section,
+      highlight: null,
+    });
+    return search ? `/library?${search}` : '/library';
+  }, []);
+
+  const handleOpenRelatedPage = useCallback(
+    (_domain: string, _section: string, rank: number, reason: string) => {
+      trackEvent('related_page_clicked', { rank, reason });
+    },
+    []
+  );
+
   const handleOpenRelatedHighlight = useCallback(
     (_id: string, rank: number, reason: string) => {
       // Navigation is handled by the <Link href>; this only records analytics.
@@ -633,10 +654,14 @@ export function LibraryPage(): React.ReactElement {
   );
 
   const title = selection.section
-    ? shortPath(selection.section)
+    ? displaySectionPath(selection.section)
     : selection.domain
       ? selection.domain
       : 'All highlights';
+  const openPageHref =
+    selection.domain && selection.section
+      ? pageHrefForLibrary(selection.domain, selection.section)
+      : null;
 
   const totalCount = lib.highlights.length;
   const showDomainSrc = !selection.domain;
@@ -728,8 +753,13 @@ export function LibraryPage(): React.ReactElement {
       onDelete={caps.isGuest ? undefined : handleHighlightDelete}
     />
   ) : filtered.length > 0 ? (
-    <>
+    <div className="lib-reading">
       <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
+      <RelatedPagesSection
+        pages={relatedPageResults}
+        hrefFor={relatedPageHref}
+        onOpen={handleOpenRelatedPage}
+      />
       <div className="lib-toolbar" data-od-id="library-toolbar">
         <span className="lib-toolbar-meta" data-od-id="library-result-count">
           {filtered.length} highlight{filtered.length === 1 ? '' : 's'}
@@ -792,7 +822,7 @@ export function LibraryPage(): React.ReactElement {
       {totalPages > 1 ? (
         <LibraryPager page={safePage} totalPages={totalPages} onPageChange={setPage} />
       ) : null}
-    </>
+    </div>
   ) : (
     <div className="state-box" data-od-id="library-empty">
       <RelatedTagsSection tags={relatedTagResults} onSelectTag={handleRelatedTag} />
@@ -865,9 +895,7 @@ export function LibraryPage(): React.ReactElement {
                     data-od-id={domainOdId(d.domain)}
                     onClick={() => selectDomain(d.domain)}
                   >
-                    <span className="folder-ico" aria-hidden="true">
-                      {d.domain.slice(0, 1)}
-                    </span>
+                    <DomainFavicon domain={d.domain} />
                     <span className="tree-label">{d.domain}</span>
                   </button>
                   {!caps.isGuest && d.count > 0 ? (
@@ -903,7 +931,9 @@ export function LibraryPage(): React.ReactElement {
                             data-od-id={sectionOdId(s.path)}
                             onClick={() => selectSection(d.domain, s.path)}
                           >
-                            <span className="tree-label">{s.path}</span>
+                            <span className="tree-label" title={s.path}>
+                              {displaySectionPath(s.path)}
+                            </span>
                           </button>
                           {!caps.isGuest && s.count > 0 ? (
                             <button
@@ -949,8 +979,25 @@ export function LibraryPage(): React.ReactElement {
           </div>
         ) : null}
         <div className="lib-main-head">
-          <h2 data-od-id="library-scope-title">{title}</h2>
+          <h2
+            data-od-id="library-scope-title"
+            className="lib-scope-title"
+            title={selection.section ?? selection.domain ?? undefined}
+          >
+            {title}
+          </h2>
           <div className="lib-main-head-actions">
+            {openPageHref ? (
+              <a
+                className="btn sm ghost"
+                href={openPageHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-od-id="library-open-page"
+              >
+                Open
+              </a>
+            ) : null}
             {!caps.isGuest && selection.domain && !selection.highlight ? (
               <button
                 type="button"

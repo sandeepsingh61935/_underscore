@@ -165,6 +165,10 @@ describe('LibraryPage', () => {
       ).toBe('docs');
     });
 
+    expect(
+      document.querySelector('[data-od-id="library-open-page"]')?.getAttribute('href')
+    ).toBe('https://example.com/docs');
+
     fireEvent.click(document.querySelector('[data-od-id="lib-all"]')!);
 
     await waitFor(() => {
@@ -316,9 +320,9 @@ describe('LibraryPage', () => {
       expect(document.querySelector('[data-od-id="related-highlights"]')).toBeTruthy();
     });
 
-    // Sibling on same URL should appear with a reason pill
     expect(document.querySelector('[data-od-id="related-hl-r2"]')).toBeTruthy();
-    expect(document.querySelector('.related-reason-pill')).toBeTruthy();
+    expect(document.querySelector('.related-reason-pill')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Same page|Shared tags|Similar text/i);
   });
 
   it('lets the user jump to any page via number buttons and go-to input', async () => {
@@ -370,6 +374,102 @@ describe('LibraryPage', () => {
           .querySelector('[data-od-id="library-pager-page-3"]')
           ?.getAttribute('aria-current')
       ).toBe('page');
+    });
+  });
+
+  const PAGE_RELATED: WebHighlight[] = [
+    {
+      id: 's1',
+      domain: 'docs.example.com',
+      path: '/guide',
+      quote: 'neural network backpropagation hidden layers training',
+      note: '',
+      tags: [],
+      savedAt: Date.now() - 1000,
+    },
+    {
+      id: 's2',
+      domain: 'docs.example.com',
+      path: '/other',
+      quote: 'neural network backpropagation hidden layers training',
+      note: '',
+      tags: [],
+      savedAt: Date.now() - 2000,
+    },
+    {
+      id: 's3',
+      domain: 'ml.org',
+      path: '/n',
+      quote: 'neural network backpropagation training schedule',
+      note: '',
+      tags: [],
+      savedAt: Date.now() - 3000,
+    },
+  ];
+
+  it('shows Related pages on a section listing and hides same-domain siblings', async () => {
+    mockFetch.mockResolvedValue(PAGE_RELATED);
+    renderLibrary('/library?domain=docs.example.com&section=%2Fguide');
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="related-pages"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="related-page-ml-org-n"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-od-id="related-page-docs-example-com-other"]')
+    ).toBeNull();
+    expect(document.querySelector('.related-reason-pill')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Same page|Shared tags|Similar text/i);
+  });
+
+  it('hides Related pages on All and on domain root', async () => {
+    mockFetch.mockResolvedValue(PAGE_RELATED);
+    const all = renderLibrary('/library');
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="library"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="related-pages"]')).toBeNull();
+    all.unmount();
+
+    clearWebLibrarySessionMemory();
+    mockFetch.mockResolvedValue(PAGE_RELATED);
+    renderLibrary('/library?domain=docs.example.com');
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="library"]')).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="related-pages"]')).toBeNull();
+  });
+
+  it('hides Related pages on highlight detail', async () => {
+    mockFetch.mockResolvedValue(PAGE_RELATED);
+    renderLibrary(
+      '/library?domain=docs.example.com&section=%2Fguide&highlight=s1'
+    );
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-od-id="library-highlight-detail"]')
+      ).toBeTruthy();
+    });
+    expect(document.querySelector('[data-od-id="related-pages"]')).toBeNull();
+  });
+
+  it('clicking a related page opens that page listing', async () => {
+    mockFetch.mockResolvedValue(PAGE_RELATED);
+    const { router } = renderLibrary(
+      '/library?domain=docs.example.com&section=%2Fguide'
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="related-page-ml-org-n"]')).toBeTruthy();
+    });
+
+    fireEvent.click(document.querySelector('[data-od-id="related-page-ml-org-n"]')!);
+
+    await waitFor(() => {
+      expect(router.state.location.search).toContain('domain=ml.org');
+      expect(router.state.location.search).toContain('section=%2Fn');
+      expect(router.state.location.search).not.toContain('highlight=');
     });
   });
 });

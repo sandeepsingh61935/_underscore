@@ -3,6 +3,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 import {
   clearWebLibrarySessionMemory,
+  mapSupabaseRowToWebHighlight,
   mergeLibraryRowsWithLocal,
   useWebLibrary,
   type WebHighlight,
@@ -438,5 +439,20 @@ describe('useWebLibrary', () => {
     expect(result.current.highlights.map((h) => h.id)).toEqual(['new-a', 'new-b']);
     expect(result.current.stats.highlightCount).toBe(2);
     expect(result.current.domains.map((d) => d.domain)).toEqual(['new.com']);
+  });
+});
+
+describe('mapSupabaseRowToWebHighlight', () => {
+  it('uses created_at for savedAt so a later site-wide sync does not collapse times', () => {
+    const created = '2026-08-20T12:00:00.000Z';
+    const updated = '2026-09-02T21:00:00.000Z';
+    const row = mapSupabaseRowToWebHighlight({
+      id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+      url: 'https://amazon.in/dp/x',
+      text: 'quote',
+      created_at: created,
+      updated_at: updated,
+    });
+    expect(row?.savedAt).toBe(Date.parse(created));
   });
 });

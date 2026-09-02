@@ -6,6 +6,7 @@
 export { buildRelatednessIndex } from './build-relatedness-index';
 export { relatedTags } from './related-tags';
 export { relatedHighlights } from './related-highlights';
+export { relatedPages } from './related-pages';
 export { RelatednessQueryService } from './relatedness-query-service';
 export { RELATED_TAG_STOPLIST, isStoplistTag } from './stoplist';
 export type {
@@ -14,4 +15,6 @@ export type {
   RelatedTagResult,
   RelatedHighlightResult,
   RelatedHighlightReason,
+  RelatedPageResult,
+  RelatedPageReason,
 } from './types';
