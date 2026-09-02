@@ -48,6 +48,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,html,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,html,css}\"",
     "test": "vitest run",
+    "test:bun": "bun test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:coverage:check": "vitest run --coverage --run",

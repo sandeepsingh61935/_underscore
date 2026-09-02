@@ -11,6 +11,9 @@ export default defineConfig({
     // Test environment
     environment: 'jsdom',
 
+    // Use worker threads pool for faster multi-core execution
+    pool: 'threads',
+
     // Global setup
     globals: true,
 
