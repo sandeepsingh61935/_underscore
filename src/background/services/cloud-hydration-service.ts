@@ -14,6 +14,7 @@ import { notifyLibraryDataChanged } from '@/background/services/library-change-n
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 import {
@@ -32,7 +33,9 @@ export class CloudHydrationService implements ICloudHydrationService {
     private readonly cloudRepository: SupabaseHighlightRepository,
     private readonly repositoryFacade: RepositoryFacade,
     private readonly syncCursor: LibrarySyncCursor,
-    private readonly logger: ILogger
+    private readonly logger: ILogger,
+    private readonly localTags?: ITagRepository,
+    private readonly cloudTags?: ITagRepository
   ) {}
 
   hydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult> {
@@ -209,6 +212,9 @@ export class CloudHydrationService implements ICloudHydrationService {
       bump();
     }
 
+    report(88, 'tags');
+    await this.hydrateTags(Array.from(localById.keys()));
+
     report(92, 'reloading');
 
     try {
@@ -257,5 +263,42 @@ export class CloudHydrationService implements ICloudHydrationService {
     report(100, 'done');
 
     return result;
+  }
+
+  private async hydrateTags(highlightIds: string[]): Promise<void> {
+    if (!this.localTags || !this.cloudTags || highlightIds.length === 0) {
+      return;
+    }
+    if (!this.authManager.currentUser) {
+      return;
+    }
+
+    const CHUNK = 100;
+    for (let i = 0; i < highlightIds.length; i += CHUNK) {
+      const chunk = highlightIds.slice(i, i + CHUNK);
+      let cloudLabels: Map<string, string[]>;
+      try {
+        cloudLabels = await this.cloudTags.getLabelsForHighlights(chunk);
+      } catch (error) {
+        this.logger.error(
+          '[CloudHydration] Tag fetch failed',
+          error as Error
+        );
+        return;
+      }
+
+      for (const [id, names] of cloudLabels) {
+        if (names.length === 0) continue;
+        try {
+          await this.localTags.setHighlightLabels(id, names);
+        } catch (error) {
+          this.logger.error(
+            '[CloudHydration] Failed to backfill tags',
+            error as Error,
+            { id }
+          );
+        }
+      }
+    }
   }
 }

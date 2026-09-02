@@ -37,6 +37,8 @@ import { DashboardView } from './views/DashboardView';
 
 import { ExtensionDataProviderAdapter } from '@/core/data/ExtensionDataProviderAdapter';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
+import { UploadFromDeviceDialog } from '@/features/settings/components/UploadFromDeviceDialog';
+import { useDeviceUploadPrompt } from '@/features/settings/hooks/use-device-upload-prompt';
 import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
@@ -118,6 +120,7 @@ class ErrorBoundary extends Component<
 
 function PopupApp(): React.ReactElement {
   const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
+  const deviceUploadPrompt = useDeviceUploadPrompt(Boolean(user));
   const { verificationStatus } = useExtensionAuth();
   const billing = useBillingContextOptional();
   // Auth sync is now handled by PopupAppProvider via props
@@ -391,6 +394,17 @@ function PopupApp(): React.ReactElement {
           onSignIn={() => setCurrentView(View.AUTH)}
         />
       )}
+      <UploadFromDeviceDialog
+        open={deviceUploadPrompt.open}
+        email={deviceUploadPrompt.email}
+        pendingCount={deviceUploadPrompt.pendingCount}
+        isUploading={deviceUploadPrompt.isUploading}
+        error={deviceUploadPrompt.error}
+        onClose={deviceUploadPrompt.dismiss}
+        onConfirm={() => {
+          void deviceUploadPrompt.confirm();
+        }}
+      />
     </PopupShell>
   );
 }

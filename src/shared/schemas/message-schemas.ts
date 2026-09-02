@@ -86,6 +86,12 @@ export const LIBRARY_DATA_CHANGED = 'LIBRARY_DATA_CHANGED' as const;
 /** Request a manual cloud → local library sync from Settings. */
 export const SYNC_LIBRARY = 'SYNC_LIBRARY' as const;
 
+/** Copy Guest library rows not already in the account (Settings / sign-in prompt). */
+export const UPLOAD_FROM_DEVICE = 'UPLOAD_FROM_DEVICE' as const;
+
+/** Count of Guest rows that would be uploaded. */
+export const DEVICE_UPLOAD_PREVIEW = 'DEVICE_UPLOAD_PREVIEW' as const;
+
 /**
  * Progress while SYNC_LIBRARY hydrate runs (0–100).
  * Payload: { percent: number; phase?: string }.

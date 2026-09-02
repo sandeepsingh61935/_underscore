@@ -32,6 +32,18 @@ vi.mock('@/features/collections/hooks/use-sync-library', () => ({
   formatLastSyncedAt: vi.fn(() => 'Never synced'),
 }));
 
+vi.mock('@/features/collections/hooks/use-upload-from-device', () => ({
+  useUploadFromDevice: vi.fn(() => ({
+    upload: vi.fn(),
+    preview: vi.fn(),
+    status: 'idle',
+    lastResult: null,
+    error: null,
+    isUploading: false,
+  })),
+  formatUploadSubtitle: vi.fn(() => ''),
+}));
+
 vi.mock('@/features/collections/hooks/use-highlight-delete', () => ({
   useHighlightDelete: vi.fn(() => ({ deleteScope: vi.fn() })),
 }));
@@ -94,11 +106,11 @@ describe('SettingsPage action click targets', () => {
     mockAuthedApp();
   });
 
-  it('does not start sync when row title is clicked; Sync button does', () => {
+  it('does not start merge when row title is clicked; Merge button does', () => {
     render(<SettingsPage />);
-    fireEvent.click(screen.getByText('Library sync'));
+    fireEvent.click(screen.getByText('Merge from account'));
     expect(syncMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Sync library' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Merge from account' }));
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
 
@@ -207,6 +219,6 @@ describe('SettingsPage action click targets', () => {
     expect(screen.getByTestId('sync-progress-bar').getAttribute('aria-valuenow')).toBe(
       '42'
     );
-    expect(screen.getByText(/Syncing · 42%/)).toBeTruthy();
+    expect(screen.getByText(/Merging · 42%/)).toBeTruthy();
   });
 });

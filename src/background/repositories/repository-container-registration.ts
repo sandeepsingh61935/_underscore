@@ -14,9 +14,11 @@ import { SupabaseHighlightRepository } from '@/background/repositories/supabase-
 import { SupabaseTagRepository } from '@/background/repositories/supabase-tag-repository';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { CloudHydrationService } from '@/background/services/cloud-hydration-service';
+import { DeviceLibraryUpload } from '@/background/services/device-library-upload';
 import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
 import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-device-library-upload';
 import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { OfflineQueueService } from '@/background/services/offline-queue-service';
@@ -197,13 +199,20 @@ export function registerRepositoryComponents(container: Container): void {
     const syncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor' as any);
     const logger = container.resolve<ILogger>('logger');
 
+    const proTags = container.resolve<ITagRepository>('proTagRepository' as never);
+    const cloudTags = container.resolve<SupabaseTagRepository>(
+      'supabaseTagRepository' as never
+    );
+
     return new CloudHydrationService(
       authManager,
       highlightRepository,
       cloudRepository,
       repositoryFacade,
       syncCursor,
-      logger
+      logger,
+      proTags,
+      cloudTags
     );
   });
 
@@ -281,6 +290,40 @@ export function registerRepositoryComponents(container: Container): void {
       scopedTagRepository,
       cloudTagRepository,
       () => authManager.isAuthenticated,
+      logger
+    );
+  });
+
+  container.registerSingleton<IDeviceLibraryUpload>('deviceLibraryUpload', () => {
+    const authManager = container.resolve<IAuthManager>('authManager');
+    const basicHighlights = container.resolve<IHighlightRepository>(
+      'basicHighlightRepository' as never
+    );
+    const proHighlights = container.resolve<IHighlightRepository>(
+      'proHighlightRepository' as never
+    );
+    const cloudHighlights = container.resolve<SupabaseHighlightRepository>(
+      'supabaseHighlightRepository' as never
+    );
+    const basicTags = container.resolve<ITagRepository>('basicTagRepository' as never);
+    const proTags = container.resolve<ITagRepository>('proTagRepository' as never);
+    const cloudTags = container.resolve<SupabaseTagRepository>(
+      'supabaseTagRepository' as never
+    );
+    const offlineQueue = container.resolve<OfflineQueueService>('offlineQueueService');
+    const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
+    const logger = container.resolve<ILogger>('logger');
+
+    return new DeviceLibraryUpload(
+      authManager,
+      basicHighlights,
+      proHighlights,
+      cloudHighlights,
+      basicTags,
+      proTags,
+      cloudTags,
+      offlineQueue,
+      repositoryFacade,
       logger
     );
   });

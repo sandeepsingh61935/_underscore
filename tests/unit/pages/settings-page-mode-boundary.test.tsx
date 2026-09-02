@@ -25,6 +25,18 @@ vi.mock('@/ui-system/hooks/usePersistedMode', () => ({
   })),
 }));
 
+vi.mock('@/features/collections/hooks/use-upload-from-device', () => ({
+  useUploadFromDevice: vi.fn(() => ({
+    upload: vi.fn(),
+    preview: vi.fn(),
+    status: 'idle',
+    lastResult: null,
+    error: null,
+    isUploading: false,
+  })),
+  formatUploadSubtitle: vi.fn(() => ''),
+}));
+
 vi.mock('@/features/collections/hooks/use-sync-library', () => ({
   useSyncLibrary: vi.fn(() => ({
     sync: vi.fn(),

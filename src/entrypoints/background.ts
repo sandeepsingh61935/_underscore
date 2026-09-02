@@ -20,6 +20,7 @@ import { clearHighlightData } from '@/background/services/clear-highlight-data';
 import type { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import { type DeleteRequest } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-device-library-upload';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { notifyLibrarySyncProgress } from '@/background/services/library-sync-progress';
@@ -60,6 +61,8 @@ import { toExportableHighlight, type ExportScope } from '@/shared/highlight-expo
 import { LoggerFactory } from '@/shared/utils/logger';
 import {
   SYNC_LIBRARY,
+  UPLOAD_FROM_DEVICE,
+  DEVICE_UPLOAD_PREVIEW,
   GET_EXPORTABLE_HIGHLIGHTS,
   UPDATE_HIGHLIGHT_METADATA,
   UPDATE_HIGHLIGHT_TEXT,
@@ -74,6 +77,13 @@ import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { validateHighlightText } from '@/shared/utils/highlight-text';
 import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-prompt';
+import {
+  DEVICE_UPLOAD_JOB_KEY,
+  LIBRARY_DOWNLOAD_JOB_KEY,
+  writeLastSyncedAt,
+  writeLibraryTransferJob,
+} from '@/shared/constants/library-transfer-job';
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { canUseFeature } from '@/shared/utils/mode-capabilities';
@@ -536,6 +546,8 @@ export default defineBackground({
       const cloudHydrationService = container.resolve<ICloudHydrationService>(
         'cloudHydrationService'
       );
+      const deviceLibraryUpload =
+        container.resolve<IDeviceLibraryUpload>('deviceLibraryUpload');
 
       const librarySyncCursor = container.resolve<LibrarySyncCursor>('librarySyncCursor');
       const llmRegistry = container.resolve<LLMRegistry>('llmRegistry');
@@ -570,22 +582,114 @@ export default defineBackground({
         mcpBridgeClient.revalidateEligibility();
       });
 
-      // Manual library sync (Settings → Sync library)
+      // Manual library sync (Settings → Merge from account).
+      // Start hydrate and return immediately so popup close cannot abort the wait.
       messageBus.subscribe(SYNC_LIBRARY, async () => {
         logger.info('Handling SYNC_LIBRARY request');
         try {
           if (!authManager.isAuthenticated) {
-            return { success: false, error: 'Sign in to sync library with cloud' };
+            return { success: false, error: 'Sign in to merge from your account' };
           }
-          const result = await cloudHydrationService.hydrate((percent, phase) => {
-            notifyLibrarySyncProgress(percent, phase);
+          await writeLibraryTransferJob(LIBRARY_DOWNLOAD_JOB_KEY, {
+            status: 'running',
+            startedAt: Date.now(),
           });
-          if (result.error) {
-            return { success: false, error: result.error };
-          }
-          return { success: true, data: result };
+          void cloudHydrationService
+            .hydrate((percent, phase) => {
+              if (percent >= 100) return;
+              notifyLibrarySyncProgress(percent, phase);
+            })
+            .then(async (result) => {
+              if (result.error) {
+                await writeLibraryTransferJob(LIBRARY_DOWNLOAD_JOB_KEY, {
+                  status: 'error',
+                  error: result.error,
+                  finishedAt: Date.now(),
+                });
+                return;
+              }
+              const iso = new Date().toISOString();
+              await writeLastSyncedAt(iso);
+              await writeLibraryTransferJob(LIBRARY_DOWNLOAD_JOB_KEY, {
+                status: 'success',
+                finishedAt: Date.now(),
+                backfilledCount: result.backfilledCount,
+                updatedCount: result.updatedCount,
+                deletedCount: result.deletedCount,
+                skippedCount: result.skippedCount,
+                failedCount: result.failedCount,
+              });
+            })
+            .catch(async (error: unknown) => {
+              logger.error('SYNC_LIBRARY failed', error as Error);
+              await writeLibraryTransferJob(LIBRARY_DOWNLOAD_JOB_KEY, {
+                status: 'error',
+                error: error instanceof Error ? error.message : String(error),
+                finishedAt: Date.now(),
+              });
+            });
+          return { success: true, data: { started: true } };
         } catch (error) {
           logger.error('SYNC_LIBRARY failed', error as Error);
+          throw error;
+        }
+      });
+
+      messageBus.subscribe(DEVICE_UPLOAD_PREVIEW, async () => {
+        try {
+          if (!authManager.isAuthenticated) {
+            return { success: true, data: { pendingCount: 0, email: null } };
+          }
+          const preview = await deviceLibraryUpload.preview();
+          return { success: true, data: preview };
+        } catch (error) {
+          logger.error('DEVICE_UPLOAD_PREVIEW failed', error as Error);
+          throw error;
+        }
+      });
+
+      messageBus.subscribe(UPLOAD_FROM_DEVICE, async () => {
+        logger.info('Handling UPLOAD_FROM_DEVICE request');
+        try {
+          if (!authManager.isAuthenticated) {
+            return { success: false, error: 'Sign in to upload from this device' };
+          }
+          await setDeviceUploadPromptPending(false);
+          await writeLibraryTransferJob(DEVICE_UPLOAD_JOB_KEY, {
+            status: 'running',
+            startedAt: Date.now(),
+          });
+          void deviceLibraryUpload
+            .upload()
+            .then(async (result) => {
+              if (result.error) {
+                await writeLibraryTransferJob(DEVICE_UPLOAD_JOB_KEY, {
+                  status: 'error',
+                  error: result.error,
+                  finishedAt: Date.now(),
+                });
+                return;
+              }
+              await writeLibraryTransferJob(DEVICE_UPLOAD_JOB_KEY, {
+                status: 'success',
+                finishedAt: Date.now(),
+                copiedCount: result.copiedCount,
+                skippedCount: result.skippedCount,
+                failedCount: result.failedCount,
+                tagsCopiedCount: result.tagsCopiedCount,
+              });
+            })
+            .catch(async (error: unknown) => {
+              logger.error('UPLOAD_FROM_DEVICE failed', error as Error);
+              await writeLibraryTransferJob(DEVICE_UPLOAD_JOB_KEY, {
+                status: 'error',
+                error: error instanceof Error ? error.message : String(error),
+                finishedAt: Date.now(),
+              });
+            });
+          return { success: true, data: { started: true } };
+        } catch (error) {
+          logger.error('UPLOAD_FROM_DEVICE failed', error as Error);
           throw error;
         }
       });

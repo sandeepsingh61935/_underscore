@@ -10,6 +10,10 @@ import {
   formatSyncSubtitle,
   useSyncLibrary,
 } from '@/features/collections/hooks/use-sync-library';
+import {
+  formatUploadSubtitle,
+  useUploadFromDevice,
+} from '@/features/collections/hooks/use-upload-from-device';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
@@ -83,6 +87,13 @@ export function SettingsPage({
     progressPercent,
     lastSyncedAt,
   } = useSyncLibrary();
+  const {
+    upload: uploadFromDevice,
+    isUploading,
+    lastResult: uploadResult,
+    error: uploadError,
+    status: uploadStatus,
+  } = useUploadFromDevice();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [typographyExpanded, setTypographyExpanded] = useState(false);
@@ -122,15 +133,19 @@ export function SettingsPage({
     }
   };
 
+  const transferLocked = !syncGate.allowed || !user;
+  const transferLockSubtitle = !user
+    ? 'Sign in to upload or merge your library'
+    : featureGateSubtitle(syncGate.reason);
+
   const syncSubtitle = ((): string => {
-    if (!syncGate.allowed) return featureGateSubtitle(syncGate.reason);
-    if (!user) return featureGateSubtitle('AUTH_REQUIRED');
+    if (transferLocked) return transferLockSubtitle;
     if (isSyncing) {
       const pct =
         progressPercent !== null && progressPercent !== undefined
           ? ` · ${progressPercent}%`
           : '';
-      return `Syncing${pct}`;
+      return `Merging${pct}`;
     }
     if (syncError) return syncError;
     if (syncStatus === 'success' && lastResult) {
@@ -141,9 +156,24 @@ export function SettingsPage({
     return formatLastSyncedAt(lastSyncedAt);
   })();
 
+  const uploadSubtitle = ((): string => {
+    if (transferLocked) return transferLockSubtitle;
+    if (isUploading) return 'Uploading';
+    if (uploadError) return uploadError;
+    if (uploadStatus === 'success' && uploadResult) {
+      return formatUploadSubtitle(uploadResult);
+    }
+    return 'Add guest highlights on this device to your account';
+  })();
+
   const handleSyncLibrary = async (): Promise<void> => {
-    if (!syncGate.allowed || !user || isSyncing) return;
+    if (transferLocked || isSyncing || isUploading) return;
     await sync();
+  };
+
+  const handleUploadFromDevice = async (): Promise<void> => {
+    if (transferLocked || isSyncing || isUploading) return;
+    await uploadFromDevice();
   };
 
   const handleDeleteLibrary = async (): Promise<void> => {
@@ -428,81 +458,103 @@ export function SettingsPage({
               onToggle={() => setLibraryStatsOpen((o) => !o)}
             />
           ) : null}
-          {isAuthenticated ? (
-            <>
-              <div
-                className="row"
-                style={{ cursor: 'default' }}
-                data-od-id="settings-sync"
-              >
-                <div>
-                  <div className="title">Library sync</div>
-                  <div className="sub">{syncSubtitle}</div>
-                </div>
-                <span className="row-end">
-                  {isSyncing ? (
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      disabled
-                      data-testid="settings-sync-btn"
-                      data-od-id="settings-sync-btn"
-                      aria-busy="true"
-                    >
-                      <span
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                        data-testid="sync-progress"
-                      >
-                        <span className="state-dot-spin" aria-hidden="true" />
-                        <span className="u-mono" style={{ fontSize: 'var(--step--2)' }}>
-                          {progressPercent !== null ? `${progressPercent}%` : '…'}
-                        </span>
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      data-testid="settings-sync-btn"
-                      data-od-id="settings-sync-btn"
-                      disabled={!syncGate.allowed || !user}
-                      aria-label="Sync library"
-                      onClick={() => {
-                        void handleSyncLibrary();
-                      }}
-                    >
-                      Sync
-                    </button>
-                  )}
-                </span>
-              </div>
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-sync"
+          >
+            <div>
+              <div className="title">Merge from account</div>
+              <div className="sub">{syncSubtitle}</div>
+            </div>
+            <span className="row-end">
               {isSyncing ? (
-                <div
-                  data-testid="sync-progress-bar"
-                  data-od-id="sync-progress-bar"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={progressPercent ?? 0}
-                  style={{
-                    margin: '0 16px 8px',
-                    height: 3,
-                    background: 'var(--rule-soft)',
-                    overflow: 'hidden',
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  disabled
+                  data-testid="settings-sync-btn"
+                  data-od-id="settings-sync-btn"
+                  aria-busy="true"
+                >
+                  <span
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    data-testid="sync-progress"
+                  >
+                    <span className="state-dot-spin" aria-hidden="true" />
+                    <span className="u-mono" style={{ fontSize: 'var(--step--2)' }}>
+                      {progressPercent !== null ? `${progressPercent}%` : '…'}
+                    </span>
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  data-testid="settings-sync-btn"
+                  data-od-id="settings-sync-btn"
+                  disabled={transferLocked || isUploading}
+                  aria-label="Merge from account"
+                  onClick={() => {
+                    void handleSyncLibrary();
                   }}
                 >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${progressPercent ?? 8}%`,
-                      background: 'var(--accent)',
-                      transition: 'width 120ms linear',
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
+                  Merge
+                </button>
+              )}
+            </span>
+          </div>
+          {isSyncing ? (
+            <div
+              data-testid="sync-progress-bar"
+              data-od-id="sync-progress-bar"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent ?? 0}
+              style={{
+                margin: '0 16px 8px',
+                height: 3,
+                background: 'var(--rule-soft)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${progressPercent ?? 8}%`,
+                  background: 'var(--accent)',
+                  transition: 'width 120ms linear',
+                }}
+              />
+            </div>
           ) : null}
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-upload-device"
+          >
+            <div>
+              <div className="title">Upload from this device</div>
+              <div className="sub">{uploadSubtitle}</div>
+            </div>
+            <span className="row-end">
+              <button
+                type="button"
+                className="btn ghost sm"
+                data-testid="settings-upload-btn"
+                data-od-id="settings-upload-btn"
+                disabled={transferLocked || isSyncing || isUploading}
+                aria-label="Upload from this device"
+                aria-busy={isUploading}
+                onClick={() => {
+                  void handleUploadFromDevice();
+                }}
+              >
+                {isUploading ? 'Uploading' : 'Upload'}
+              </button>
+            </span>
+          </div>
           <div className="row" style={{ cursor: 'default' }} data-od-id="settings-export">
             <div>
               <div className="title">Download</div>

@@ -12,11 +12,13 @@ import { registerRepositoryComponents } from '@/background/repositories/reposito
 import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
 import type { EventBridge } from '@/background/services/event-bridge';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
+import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-device-library-upload';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import type { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import type { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
+import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-prompt';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import type { ScopedTagRepository } from '@/shared/repositories/scoped-tag-repository';
@@ -84,6 +86,20 @@ export async function initializeBackground(): Promise<Container> {
   const realtimeHighlightIngestService =
     container.resolve<RealtimeHighlightIngestService>('realtimeHighlightIngestService');
   const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
+  const deviceLibraryUpload =
+    container.resolve<IDeviceLibraryUpload>('deviceLibraryUpload');
+
+  const flagDeviceUploadPrompt = async (): Promise<void> => {
+    try {
+      const preview = await deviceLibraryUpload.preview();
+      await setDeviceUploadPromptPending(preview.pendingCount > 0);
+    } catch (err) {
+      logger.error(
+        '[BOOTSTRAP] Device upload preview failed',
+        err instanceof Error ? err : new Error(String(err))
+      );
+    }
+  };
 
   const configureLlmKeyTier = (isAuthenticated: boolean): void => {
     llmKeyStoreHolder.configureForAuth(isAuthenticated);
@@ -138,6 +154,7 @@ export async function initializeBackground(): Promise<Container> {
         { type: 'SIGNED_IN', userId: currentUser.id },
         authStorageDeps
       );
+      await flagDeviceUploadPrompt();
     } catch (err) {
       logger.error('[BOOTSTRAP] Auth storage sign-in failed on startup', err as Error);
       // Fallback: still open pro scope + load local cache so restore works offline
@@ -166,6 +183,7 @@ export async function initializeBackground(): Promise<Container> {
           { type: 'SIGNED_IN', userId: state.user.id },
           authStorageDeps
         );
+        await flagDeviceUploadPrompt();
         configureLlmKeyTier(true);
       } catch (err) {
         logger.error('[BOOTSTRAP] Auth storage sign-in failed on login', err as Error);
@@ -175,6 +193,7 @@ export async function initializeBackground(): Promise<Container> {
       connectionManager.disconnect();
       try {
         await handleAuthStorageEvent({ type: 'SIGNED_OUT' }, authStorageDeps);
+        await setDeviceUploadPromptPending(false);
         configureLlmKeyTier(false);
       } catch (err) {
         logger.error('[BOOTSTRAP] Auth storage sign-out failed', err as Error);
