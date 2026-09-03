@@ -175,6 +175,18 @@ export const IPC_OAUTH_REVOKE_GRANT = 'IPC_OAUTH_REVOKE_GRANT' as const;
 export const IPC_MCP_LAST_SESSION = 'IPC_MCP_LAST_SESSION' as const;
 export const PAGE_CONTENT_CACHED = 'PAGE_CONTENT_CACHED' as const;
 
+/** Anchor drift and orphaned highlight recovery IPC channels */
+export const PAGE_RESTORATION_STATUS = 'PAGE_RESTORATION_STATUS' as const;
+export const GET_RESTORATION_STATUS = 'GET_RESTORATION_STATUS' as const;
+export const CHECK_PAGE_SELECTION = 'CHECK_PAGE_SELECTION' as const;
+export const REANCHOR_HIGHLIGHT = 'REANCHOR_HIGHLIGHT' as const;
+
+export interface PageRestorationStatusPayload {
+  url: string;
+  anchoredCount: number;
+  unanchoredIds: string[];
+}
+
 /**
  * Validates message target
  * @throws {z.ZodError} if target is invalid

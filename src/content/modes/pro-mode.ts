@@ -39,15 +39,18 @@ import {
   transformHighlightRow,
   type SupabaseHighlightRow,
 } from '@/shared/utils/supabase-highlight-row';
+import type { RestorationCoordinator } from '@/content/services/restoration-coordinator';
 
 export interface ProModeDeps {
   /** IPC read path to hydrate the facade after page reload (empty local cache). */
   highlightReader?: IReadableHighlightRepository;
+  restorationCoordinator?: RestorationCoordinator;
 }
 
 export class ProMode extends BaseHighlightMode implements IPersistentMode {
   protected cloudService: CloudModeService;
   private readonly highlightReader?: IReadableHighlightRepository;
+  private restorationCoordinator?: RestorationCoordinator;
 
   // Widened to 'pro' | 'pro_xai' so ProXaiMode (which extends this class and
   // shares all its persistence/sync behavior) can override with its own
@@ -64,8 +67,13 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
   ) {
     super(eventBus, logger, facade);
     this.highlightReader = deps.highlightReader;
+    this.restorationCoordinator = deps.restorationCoordinator;
     // Same DI facade as modes — never a private empty InMemory store.
     this.cloudService = new CloudModeService(facade, new MultiSelectorEngine(), logger);
+  }
+
+  setRestorationCoordinator(coordinator: RestorationCoordinator): void {
+    this.restorationCoordinator = coordinator;
   }
 
   override async onActivate(): Promise<void> {
@@ -539,11 +547,13 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
 
         await this.renderAndRegister(fullData);
         this.facade.rehydrate(storedData);
+        this.restorationCoordinator?.markAnchored(storedData.id);
 
         this.logger.info(
           `[PRO] [OK] Restored highlight: ${storedData.id} (${storedData.text.substring(0, 30)}...)`
         );
       } else {
+        this.restorationCoordinator?.markUnanchored(storedData.id);
         this.logger.warn(
           `[PRO] [FAIL] Failed to restore range for highlight: ${storedData.id}`
         );

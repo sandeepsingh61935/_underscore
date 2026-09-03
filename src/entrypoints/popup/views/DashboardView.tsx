@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from '@/core/context/PopupAppProvider';
 import { useDashboardData } from '@/features/collections/hooks/useDashboardData';
 import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlightsByDomainFactory';
+import { usePageRestorationStatus } from '@/features/collections/hooks/usePageRestorationStatus';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import {
   buildActivePages,
@@ -99,17 +100,21 @@ function ThisPageLine({
   count,
   canOpen,
   onOpen,
+  unanchoredCount = 0,
 }: {
   domain: string | null;
   path: string;
   count: number;
   canOpen: boolean;
   onOpen?: () => void;
+  unanchoredCount?: number;
 }): React.ReactElement {
   const empty = !domain;
+  const unanchoredSuffix =
+    unanchoredCount > 0 ? ` (${unanchoredCount} unanchored)` : '';
   const label = empty
     ? 'This page · none open'
-    : `This page · ${domain}${path !== '/' ? path : ''} · ${count}`;
+    : `This page · ${domain}${path !== '/' ? path : ''} · ${count}${unanchoredSuffix}`;
 
   const inner = (
     <span
@@ -259,6 +264,7 @@ export function DashboardView({
     tabContext.domain || undefined,
     isAuthenticated
   );
+  const { unanchoredCount } = usePageRestorationStatus(tabContext.url);
   const [recentExpanded, setRecentExpanded] = useState(false);
 
   const currentSectionKey = useMemo(() => {
@@ -372,6 +378,7 @@ export function DashboardView({
           count={currentPageHighlightsCount}
           canOpen={canOpenSection}
           onOpen={openCurrentPage}
+          unanchoredCount={unanchoredCount}
         />
       </div>
 

@@ -27,10 +27,16 @@ import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
 import { AUTH_STATE_CHANGED } from '@/shared/auth/constants';
 import { CommandStack } from '@/shared/patterns/command';
 import type { RepositoryFacade } from '@/shared/repositories';
-// (no repository type import — restoreHighlights reads via the facade)
 import type { IReadableHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import { RestorationCoordinator } from '@/content/services/restoration-coordinator';
 import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
-import { LIBRARY_DATA_CHANGED } from '@/shared/schemas/message-schemas';
+import {
+  LIBRARY_DATA_CHANGED,
+  PAGE_RESTORATION_STATUS,
+  GET_RESTORATION_STATUS,
+  CHECK_PAGE_SELECTION,
+  REANCHOR_HIGHLIGHT,
+} from '@/shared/schemas/message-schemas';
 import type { StorageService } from '@/shared/services/storage-service';
 import type {
   SelectionCreatedEvent,
@@ -162,6 +168,60 @@ export default defineContentScript({
       const renderer = new HighlightRenderer(eventBus);
       const detector = new SelectionDetector(eventBus);
 
+      const restorationCoordinator = new RestorationCoordinator({
+        logger,
+        url: getCapturePageUrl(),
+        renderAndRegister: async (highlightData) => {
+          if (highlightManager) {
+            const contentHash = highlightData.contentHash || highlightData.id;
+            await modeManager.createFromData({
+              id: highlightData.id,
+              text: highlightData.text,
+              contentHash,
+              colorRole: DEFAULT_COLOR_ROLE,
+              type: 'underscore' as const,
+              ranges: highlightData.ranges,
+              liveRanges: highlightData.liveRanges,
+              createdAt: highlightData.createdAt,
+              url: highlightData.url,
+            });
+          } else {
+            const selection = window.getSelection();
+            if (selection && highlightData.liveRanges?.[0]) {
+              selection.removeAllRanges();
+              selection.addRange(highlightData.liveRanges[0]);
+              const createCommand = commandFactory.createCreateHighlightCommand(
+                selection,
+                DEFAULT_COLOR_ROLE
+              );
+              await createCommand.execute();
+            }
+          }
+        },
+        onUpdateHighlight: async (id, updates) => {
+          const current = modeManager.getCurrentMode();
+          await current.updateHighlight(id, updates as any);
+        },
+      });
+
+      proMode.setRestorationCoordinator?.(restorationCoordinator);
+      proXaiMode.setRestorationCoordinator?.(restorationCoordinator);
+
+      const broadcastRestorationStatus = (): void => {
+        const rep = restorationCoordinator.getReport();
+        browser.runtime
+          .sendMessage({
+            type: PAGE_RESTORATION_STATUS,
+            payload: {
+              url: rep.url,
+              anchoredCount: rep.anchoredIds.length,
+              unanchoredIds: rep.unanchoredIds,
+            },
+            timestamp: Date.now(),
+          })
+          .catch(() => {});
+      };
+
       // Click detector: plain click toggles delete-icon pin; Ctrl+Click deletes
       const { HighlightDOMHitTester } =
         await import('@/content/ui/highlight-dom-hit-tester');
@@ -243,6 +303,8 @@ export default defineContentScript({
           modeManager,
           commandFactory,
           ipcReadableHighlightRepository,
+          restorationCoordinator,
+          broadcastRestorationStatus,
         });
       } else {
         logger.info(
@@ -637,6 +699,8 @@ export default defineContentScript({
                     modeManager,
                     commandFactory,
                     ipcReadableHighlightRepository,
+                    restorationCoordinator,
+                    broadcastRestorationStatus,
                   });
                   logger.info('[IPC] Restoration complete');
                 } else {
@@ -696,6 +760,95 @@ export default defineContentScript({
             })();
 
             return true; // Keep channel open for async response
+          } else if (msg && msg.type === GET_RESTORATION_STATUS) {
+            const rep = restorationCoordinator.getReport();
+            const selection = window.getSelection();
+            const hasSelection = Boolean(
+              selection &&
+                !selection.isCollapsed &&
+                selection.rangeCount > 0 &&
+                selection.toString().trim().length > 0
+            );
+            sendResponse({
+              success: true,
+              data: {
+                url: rep.url,
+                anchoredCount: rep.anchoredIds.length,
+                unanchoredIds: rep.unanchoredIds,
+                hasSelection,
+              },
+            });
+            return false;
+          } else if (msg && msg.type === CHECK_PAGE_SELECTION) {
+            const selection = window.getSelection();
+            const hasSelection = Boolean(
+              selection &&
+                !selection.isCollapsed &&
+                selection.rangeCount > 0 &&
+                selection.toString().trim().length > 0
+            );
+            sendResponse({
+              success: true,
+              data: {
+                hasSelection,
+                text: hasSelection ? selection!.toString() : undefined,
+              },
+            });
+            return false;
+          } else if (msg && msg.type === REANCHOR_HIGHLIGHT) {
+            (async () => {
+              try {
+                const payload = msg.payload as { highlightId?: string } | undefined;
+                const highlightId = payload?.highlightId || (msg as any).highlightId;
+                const selection = window.getSelection();
+                if (
+                  !selection ||
+                  selection.isCollapsed ||
+                  selection.rangeCount === 0 ||
+                  !selection.toString().trim()
+                ) {
+                  sendResponse({
+                    success: false,
+                    error: 'No text selected on page',
+                  });
+                  return;
+                }
+
+                const existing =
+                  repositoryFacade.get(highlightId) ||
+                  (modeManager.getHighlight(highlightId) as any);
+
+                if (!existing) {
+                  sendResponse({
+                    success: false,
+                    error: 'Highlight not found on current page',
+                  });
+                  return;
+                }
+
+                const range = selection.getRangeAt(0);
+                const updated = await restorationCoordinator.reanchorHighlight(
+                  existing,
+                  range
+                );
+                broadcastCount();
+                broadcastRestorationStatus();
+                sendResponse({
+                  success: true,
+                  data: {
+                    highlightId: updated.id,
+                    text: updated.text,
+                  },
+                });
+              } catch (error) {
+                sendResponse({
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
+            })();
+
+            return true;
           }
 
           return false;
@@ -724,6 +877,8 @@ interface RestoreContext {
   modeManager: ModeManager;
   commandFactory: CommandFactory;
   ipcReadableHighlightRepository: IReadableHighlightRepository;
+  restorationCoordinator: RestorationCoordinator;
+  broadcastRestorationStatus: () => void;
 }
 
 /**
@@ -736,6 +891,8 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
     modeManager,
     commandFactory,
     ipcReadableHighlightRepository,
+    restorationCoordinator,
+    broadcastRestorationStatus,
   } = context;
   try {
     const currentUrl = getCapturePageUrl();
@@ -750,85 +907,9 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
 
     logger.warn(`[TARGET] Found ${activeHighlights.length} highlights to restore`);
 
-    // Render active highlights at their original positions
-    let restored = 0;
-    let failed = 0;
-
-    for (const highlightData of activeHighlights) {
-      try {
-        // Support both old (single range) and new (multi-range) formats
-        // Cast to any to access legacy 'range' property if present
-        const legacyData = highlightData as unknown as Record<string, unknown>;
-        const serializedRanges =
-          highlightData.ranges || (legacyData['range'] ? [legacyData['range']] : []);
-
-        if (serializedRanges.length === 0) {
-          logger.warn('No ranges to restore', { id: highlightData.id });
-          failed++;
-          continue;
-        }
-
-        // Deserialize all ranges
-        const liveRanges: Range[] = [];
-        for (const serializedRange of serializedRanges) {
-          const range = deserializeRange(serializedRange);
-          if (range) {
-            liveRanges.push(range);
-          }
-        }
-
-        if (liveRanges.length === 0) {
-          logger.warn('Failed to deserialize any ranges', { id: highlightData.id });
-          failed++;
-          continue;
-        }
-
-        // Use Custom Highlight API if available
-        if (highlightManager) {
-          // [OK] CRITICAL FIX: Use mode's unified creation path!
-          // This ensures the highlight is registered in mode's internal maps
-          // PERFORMANCE: Use stored contentHash instead of regenerating it
-          const contentHash = highlightData.contentHash || highlightData.id;
-
-          await modeManager.createFromData({
-            id: highlightData.id,
-            text: highlightData.text,
-            contentHash,
-            colorRole: DEFAULT_COLOR_ROLE,
-            type: 'underscore' as const,
-            ranges: serializedRanges,
-            liveRanges,
-            createdAt: highlightData.createdAt,
-            url: highlightData.url,
-          });
-
-          // Mode's createFromData() already adds to repository - no duplication needed
-          // Repository persistence is handled internally by the mode
-
-          restored++;
-        } else {
-          // Legacy: only restore first range
-          const selection = window.getSelection();
-          if (selection && liveRanges[0]) {
-            selection.removeAllRanges();
-            selection.addRange(liveRanges[0]); // Legacy: only first range
-
-            const createCommand = commandFactory.createCreateHighlightCommand(
-              selection,
-              DEFAULT_COLOR_ROLE
-            );
-
-            await createCommand.execute();
-            restored++;
-          }
-        }
-      } catch (error) {
-        logger.error('Failed to restore highlight', error as Error, {
-          id: highlightData.id,
-        });
-        failed++;
-      }
-    }
+    const report = await restorationCoordinator.restorePageHighlights(activeHighlights);
+    const restored = report.anchoredIds.length;
+    const failed = report.unanchoredIds.length;
 
     logger.info('Restoration complete', {
       restored,
@@ -843,6 +924,58 @@ async function restoreHighlights(context: RestoreContext): Promise<void> {
       );
     }
     logger.info(`Restored ${restored}/${activeHighlights.length} highlights`);
+
+    broadcastRestorationStatus();
+
+    // Deferred retry for dynamic content when DOM is still loading (User Story 22)
+    if (document.readyState === 'loading' && failed > 0) {
+      const retryDeferred = async () => {
+        document.removeEventListener('DOMContentLoaded', retryDeferred);
+        const unanchored = activeHighlights.filter((h) =>
+          restorationCoordinator.isUnanchored(h.id)
+        );
+        for (const highlightData of unanchored) {
+          const legacyData = highlightData as unknown as Record<string, unknown>;
+          const serializedRanges =
+            highlightData.ranges || (legacyData['range'] ? [legacyData['range']] : []);
+          const liveRanges: Range[] = [];
+          for (const serializedRange of serializedRanges) {
+            const range = deserializeRange(serializedRange);
+            if (range) liveRanges.push(range);
+          }
+          if (liveRanges.length > 0) {
+            if (highlightManager) {
+              const contentHash = highlightData.contentHash || highlightData.id;
+              await modeManager.createFromData({
+                id: highlightData.id,
+                text: highlightData.text,
+                contentHash,
+                colorRole: DEFAULT_COLOR_ROLE,
+                type: 'underscore' as const,
+                ranges: serializedRanges,
+                liveRanges,
+                createdAt: highlightData.createdAt,
+                url: highlightData.url,
+              });
+            } else {
+              const selection = window.getSelection();
+              if (selection && liveRanges[0]) {
+                selection.removeAllRanges();
+                selection.addRange(liveRanges[0]);
+                const createCommand = commandFactory.createCreateHighlightCommand(
+                  selection,
+                  DEFAULT_COLOR_ROLE
+                );
+                await createCommand.execute();
+              }
+            }
+            restorationCoordinator.markAnchored(highlightData.id);
+          }
+        }
+        broadcastRestorationStatus();
+      };
+      document.addEventListener('DOMContentLoaded', retryDeferred);
+    }
   } catch (error) {
     logger.error('Failed to restore highlights', error as Error);
   }
