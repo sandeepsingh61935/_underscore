@@ -4,18 +4,13 @@ import { displaySectionPath, pageHrefForLibrary } from './page-href';
 
 describe('pageHrefForLibrary', () => {
   it('joins https + host + path and query', () => {
-    expect(
-      pageHrefForLibrary(
-        'www.google.com',
-        '/search?q=char+at&udm=50'
-      )
-    ).toBe('https://www.google.com/search?q=char+at&udm=50');
+    expect(pageHrefForLibrary('www.google.com', '/search?q=char+at&udm=50')).toBe(
+      'https://www.google.com/search?q=char+at&udm=50'
+    );
   });
 
   it('adds a leading slash when missing', () => {
-    expect(pageHrefForLibrary('github.com', 'docs')).toBe(
-      'https://github.com/docs'
-    );
+    expect(pageHrefForLibrary('github.com', 'docs')).toBe('https://github.com/docs');
   });
 
   it('returns null for an empty host', () => {
@@ -29,8 +24,6 @@ describe('displaySectionPath', () => {
   });
 
   it('collapses a query to pathname?…', () => {
-    expect(
-      displaySectionPath('/search?aep=10&q=char+at+in+c%2B%2B')
-    ).toBe('/search?…');
+    expect(displaySectionPath('/search?aep=10&q=char+at+in+c%2B%2B')).toBe('/search?…');
   });
 });

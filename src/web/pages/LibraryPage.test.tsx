@@ -442,9 +442,7 @@ describe('LibraryPage', () => {
 
   it('hides Related pages on highlight detail', async () => {
     mockFetch.mockResolvedValue(PAGE_RELATED);
-    renderLibrary(
-      '/library?domain=docs.example.com&section=%2Fguide&highlight=s1'
-    );
+    renderLibrary('/library?domain=docs.example.com&section=%2Fguide&highlight=s1');
 
     await waitFor(() => {
       expect(
@@ -456,9 +454,7 @@ describe('LibraryPage', () => {
 
   it('clicking a related page opens that page listing', async () => {
     mockFetch.mockResolvedValue(PAGE_RELATED);
-    const { router } = renderLibrary(
-      '/library?domain=docs.example.com&section=%2Fguide'
-    );
+    const { router } = renderLibrary('/library?domain=docs.example.com&section=%2Fguide');
 
     await waitFor(() => {
       expect(document.querySelector('[data-od-id="related-page-ml-org-n"]')).toBeTruthy();

@@ -48,32 +48,30 @@ describe('RelatednessQueryService', () => {
     expect(svc.relatedTags('t').map((r) => r.tag)).toContain('u');
   });
 
-  it('relatedPages returns cross-domain pages and defaults to 3',
-    () => {
-      const docs: RelatednessDoc[] = [
-        {
-          id: 'seed',
-          text: 'shared wording abcdefghijk neural',
-          notes: '',
-          url: 'https://a.com/p',
-          domain: 'a.com',
-          tags: ['x'],
-        },
-      ];
-      for (let i = 0; i < 5; i++) {
-        docs.push({
-          id: `r${i}`,
-          text: `shared wording abcdefghijk extra ${i}`,
-          notes: '',
-          url: `https://n${i}.com/p`,
-          domain: `n${i}.com`,
-          tags: ['x'],
-        });
-      }
-      const svc = new RelatednessQueryService(docs);
-      const pages = svc.relatedPages('a.com', '/p');
-      expect(pages).toHaveLength(3);
-      expect(pages.every((p) => p.domain !== 'a.com')).toBe(true);
+  it('relatedPages returns cross-domain pages and defaults to 3', () => {
+    const docs: RelatednessDoc[] = [
+      {
+        id: 'seed',
+        text: 'shared wording abcdefghijk neural',
+        notes: '',
+        url: 'https://a.com/p',
+        domain: 'a.com',
+        tags: ['x'],
+      },
+    ];
+    for (let i = 0; i < 5; i++) {
+      docs.push({
+        id: `r${i}`,
+        text: `shared wording abcdefghijk extra ${i}`,
+        notes: '',
+        url: `https://n${i}.com/p`,
+        domain: `n${i}.com`,
+        tags: ['x'],
+      });
     }
-  );
+    const svc = new RelatednessQueryService(docs);
+    const pages = svc.relatedPages('a.com', '/p');
+    expect(pages).toHaveLength(3);
+    expect(pages.every((p) => p.domain !== 'a.com')).toBe(true);
+  });
 });

@@ -33,8 +33,8 @@ import { McpBridgeHandler } from '@/background/services/mcp-bridge-handler';
 import { registerOAuthGrantHandlers } from '@/background/services/oauth-grant-handlers';
 import { resolveBackgroundPaidActive } from '@/background/services/resolve-paid-active';
 import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
+import type { TagService } from '@/background/services/tag-service';
 import { authStateResponseData } from '@/shared/auth/auth-state-payload';
-import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import {
   broadcastAuthSessionCleared,
   broadcastAuthStateChange,
@@ -49,6 +49,19 @@ import {
   VERIFY_RECOVERY_OTP,
   UPDATE_PASSWORD,
 } from '@/shared/auth/constants';
+import { isAllowedExternalAuthOrigin } from '@/shared/auth/external-origin';
+import { validateHighlightText } from '@/shared/utils/highlight-text';
+import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
+import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-prompt';
+import {
+  DEVICE_UPLOAD_JOB_KEY,
+  LIBRARY_DOWNLOAD_JOB_KEY,
+  writeLastSyncedAt,
+  writeLibraryTransferJob,
+} from '@/shared/constants/library-transfer-job';
+import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
+import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
+import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import {
   SyncAuthSessionPayloadSchema,
@@ -56,9 +69,6 @@ import {
   VerifyOtpPayloadSchema,
   UpdatePasswordPayloadSchema,
 } from '@/shared/schemas/auth-schemas';
-import { isAllowedExternalAuthOrigin } from '@/shared/auth/external-origin';
-import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
-import { LoggerFactory } from '@/shared/utils/logger';
 import {
   SYNC_LIBRARY,
   UPLOAD_FROM_DEVICE,
@@ -72,23 +82,13 @@ import {
   CLEAR_HIGHLIGHT_DATA,
   SEARCH_HIGHLIGHTS,
 } from '@/shared/schemas/message-schemas';
-import type { SearchField } from '@/shared/utils/highlight-search';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
-import { validateHighlightText } from '@/shared/utils/highlight-text';
-import type { LLMRequest, ProviderName } from '@/shared/interfaces/i-llm-service';
-import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-prompt';
-import {
-  DEVICE_UPLOAD_JOB_KEY,
-  LIBRARY_DOWNLOAD_JOB_KEY,
-  writeLastSyncedAt,
-  writeLibraryTransferJob,
-} from '@/shared/constants/library-transfer-job';
-import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
+import type { SearchField } from '@/shared/utils/highlight-search';
+import { LoggerFactory } from '@/shared/utils/logger';
 import { getCapabilitiesForMode } from '@/shared/utils/mode-capabilities';
 import { canUseFeature } from '@/shared/utils/mode-capabilities';
 import { normalizeMode } from '@/shared/utils/normalize-mode';
-import type { TagService } from '@/background/services/tag-service';
 
 const logger = LoggerFactory.getLogger('Background');
 

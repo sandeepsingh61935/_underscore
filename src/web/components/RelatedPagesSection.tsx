@@ -41,9 +41,7 @@ export function RelatedPagesSection({
             '-'
           );
           const count =
-            row.highlightCount === 1
-              ? '1 highlight'
-              : `${row.highlightCount} highlights`;
+            row.highlightCount === 1 ? '1 highlight' : `${row.highlightCount} highlights`;
           return (
             <li key={`${row.domain}${row.section}`}>
               <Link

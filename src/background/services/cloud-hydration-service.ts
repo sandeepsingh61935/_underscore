@@ -280,10 +280,7 @@ export class CloudHydrationService implements ICloudHydrationService {
       try {
         cloudLabels = await this.cloudTags.getLabelsForHighlights(chunk);
       } catch (error) {
-        this.logger.error(
-          '[CloudHydration] Tag fetch failed',
-          error as Error
-        );
+        this.logger.error('[CloudHydration] Tag fetch failed', error as Error);
         return;
       }
 
@@ -292,11 +289,9 @@ export class CloudHydrationService implements ICloudHydrationService {
         try {
           await this.localTags.setHighlightLabels(id, names);
         } catch (error) {
-          this.logger.error(
-            '[CloudHydration] Failed to backfill tags',
-            error as Error,
-            { id }
-          );
+          this.logger.error('[CloudHydration] Failed to backfill tags', error as Error, {
+            id,
+          });
         }
       }
     }

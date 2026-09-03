@@ -85,8 +85,8 @@ export function UploadFromDeviceDialog({
           lineHeight: 1.45,
         }}
       >
-        This device has {pendingCount} guest {noun} not in {account}. Add them to
-        this account?
+        This device has {pendingCount} guest {noun} not in {account}. Add them to this
+        account?
       </p>
       {error ? (
         <p

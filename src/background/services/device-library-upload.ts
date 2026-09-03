@@ -129,11 +129,9 @@ export class DeviceLibraryUpload implements IDeviceLibraryUpload {
         try {
           await this.cloudTags.setHighlightLabels(row.id, labels);
         } catch (tagError) {
-          this.logger.error(
-            '[DeviceUpload] Cloud tag write failed',
-            tagError as Error,
-            { id: row.id }
-          );
+          this.logger.error('[DeviceUpload] Cloud tag write failed', tagError as Error, {
+            id: row.id,
+          });
         }
         result.tagsCopiedCount++;
       } catch (error) {

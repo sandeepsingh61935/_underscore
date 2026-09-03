@@ -3,14 +3,14 @@
  * @description Page-as-seed related pages (cross-domain, max pair score).
  */
 
-import { getSectionPath } from '@/shared/utils/normalize-page-url';
-
 import type {
   RelatednessDoc,
   RelatednessIndex,
   RelatedPageReason,
   RelatedPageResult,
 } from './types';
+
+import { getSectionPath } from '@/shared/utils/normalize-page-url';
 
 const DEFAULT_LIMIT = 3;
 
@@ -56,7 +56,10 @@ function pageKey(doc: RelatednessDoc): string {
   return `${doc.domain}\0${pageSection(doc)}`;
 }
 
-function buildReason(sharedTags: boolean, similarText: boolean): RelatedPageReason | null {
+function buildReason(
+  sharedTags: boolean,
+  similarText: boolean
+): RelatedPageReason | null {
   if (sharedTags && similarText) return 'Shared tags · Similar text';
   if (sharedTags) return 'Shared tags';
   if (similarText) return 'Similar text';

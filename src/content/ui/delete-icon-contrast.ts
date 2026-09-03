@@ -101,16 +101,11 @@ export function resolveDeleteIconChrome(
 
   const L = relativeLuminance(pageBg);
   // Light page → dark chip; dark page → light chip
-  return L >= 0.45
-    ? { ...DARK_DELETE_ICON_CHROME }
-    : { ...LIGHT_DELETE_ICON_CHROME };
+  return L >= 0.45 ? { ...DARK_DELETE_ICON_CHROME } : { ...LIGHT_DELETE_ICON_CHROME };
 }
 
 /** Apply chrome with !important so host `button { color: #000 !important }` cannot hide it. */
-export function applyDeleteIconChrome(
-  el: HTMLElement,
-  chrome: DeleteIconChrome
-): void {
+export function applyDeleteIconChrome(el: HTMLElement, chrome: DeleteIconChrome): void {
   el.style.setProperty('background', chrome.background, 'important');
   el.style.setProperty('color', chrome.color, 'important');
   el.style.setProperty('border', chrome.border, 'important');
@@ -122,9 +117,7 @@ export function applyDeleteIconChrome(
 export function pagePrefersDark(doc: Document = document): boolean {
   try {
     const view = doc.defaultView;
-    const scheme = view
-      ? view.getComputedStyle(doc.documentElement).colorScheme
-      : '';
+    const scheme = view ? view.getComputedStyle(doc.documentElement).colorScheme : '';
     if (/\bdark\b/i.test(scheme) && !/\blight\b/i.test(scheme)) return true;
     if (/\blight\b/i.test(scheme) && !/\bdark\b/i.test(scheme)) return false;
     return view?.matchMedia?.('(prefers-color-scheme: dark)')?.matches === true;

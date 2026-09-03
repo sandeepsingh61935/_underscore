@@ -13,7 +13,6 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
-import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import type { ExportFormat } from '@/shared/highlight-export';
 import { deleteDomainCopy, deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
@@ -27,6 +26,7 @@ import {
   searchHighlights,
   type SearchField,
 } from '@/shared/utils/highlight-search';
+import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { DomainFavicon } from '@/web/components/DomainFavicon';

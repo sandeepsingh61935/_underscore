@@ -13,11 +13,11 @@ import { serializeRange } from '@/content/utils/range-converter';
 import { resolveCaptureBodyText } from '@/content/utils/resolve-capture-body-text';
 import type { IStorage } from '@/shared/interfaces/i-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
+import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
 import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/types/events';
 import { EventName } from '@/shared/types/events';
 import { generateContentHash } from '@/shared/utils/content-hash';
 import type { EventBus } from '@/shared/utils/event-bus';
-import { DEFAULT_COLOR_ROLE } from '@/shared/schemas/highlight-schema';
 import type { ILogger } from '@/shared/utils/logger';
 import { getCapturePageUrl } from '@/shared/utils/normalize-page-url';
 

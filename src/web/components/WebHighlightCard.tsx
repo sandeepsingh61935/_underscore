@@ -12,10 +12,7 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
-import {
-  displaySectionPath,
-  pageHrefForLibrary,
-} from '@/shared/utils/page-href';
+import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
@@ -377,8 +374,7 @@ export function WebHighlightCard({
   }, [h.id, onDelete]);
 
   const isRail = density === 'rail';
-  const sourceHref =
-    !isRail && h.path ? pageHrefForLibrary(h.domain, h.path) : null;
+  const sourceHref = !isRail && h.path ? pageHrefForLibrary(h.domain, h.path) : null;
   // Rail: existing tags/note only. Library empty: Tag/Note on the meta row.
   const hasTags = tags.length > 0;
   const hasNote = Boolean(note);
@@ -394,11 +390,11 @@ export function WebHighlightCard({
   );
   const showTagsRow = Boolean(
     hasTags ||
-      tagEditing ||
-      showTagAdd ||
-      showTagGhost ||
-      showNoteGhost ||
-      (hasNote && !noteEditing)
+    tagEditing ||
+    showTagAdd ||
+    showTagGhost ||
+    showNoteGhost ||
+    (hasNote && !noteEditing)
   );
   const showNoteBlock = Boolean(
     (noteEditing && canNote) || (canEdit && onNoteSave && hasNote) || hasNote

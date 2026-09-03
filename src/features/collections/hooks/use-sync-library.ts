@@ -18,8 +18,6 @@ import { LIBRARY_SYNC_PROGRESS, SYNC_LIBRARY } from '@/shared/schemas/message-sc
 
 export type SyncLibraryStatus = 'idle' | 'syncing' | 'success' | 'error';
 
-
-
 export interface UseSyncLibraryResult {
   sync: () => Promise<void>;
   status: SyncLibraryStatus;

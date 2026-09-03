@@ -36,9 +36,7 @@ export async function writeLibraryTransferJob(
   await area.set({ [key]: job });
 }
 
-export async function readLibraryTransferJob(
-  key: string
-): Promise<LibraryTransferJob> {
+export async function readLibraryTransferJob(key: string): Promise<LibraryTransferJob> {
   const area = localStorageArea();
   if (!area) return { status: 'idle' };
   const stored = await area.get(key);

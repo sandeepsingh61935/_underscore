@@ -32,9 +32,7 @@ export type RelatedHighlightReason =
   | 'Same page · Shared tags · Similar text';
 
 export type RelatedPageReason =
-  | 'Shared tags'
-  | 'Similar text'
-  | 'Shared tags · Similar text';
+  'Shared tags' | 'Similar text' | 'Shared tags · Similar text';
 
 export type RelatedPageResult = {
   domain: string;

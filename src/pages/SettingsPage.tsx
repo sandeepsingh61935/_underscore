@@ -458,11 +458,7 @@ export function SettingsPage({
               onToggle={() => setLibraryStatsOpen((o) => !o)}
             />
           ) : null}
-          <div
-            className="row"
-            style={{ cursor: 'default' }}
-            data-od-id="settings-sync"
-          >
+          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-sync">
             <div>
               <div className="title">Merge from account</div>
               <div className="sub">{syncSubtitle}</div>
