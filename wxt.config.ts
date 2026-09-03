@@ -115,6 +115,18 @@ export default defineConfig({
   },
   vite: () => ({
     plugins: [react()],
+    server: {
+      watch: {
+        ignored: [
+          '**/graphify-out/**',
+          '**/.cache/**',
+          '**/dist/**',
+          '**/dist-web/**',
+          '**/.output/**',
+          '**/.git/**',
+        ],
+      },
+    },
     build: {
       target: 'esnext', // Use modern JS
       modulePreload: {
