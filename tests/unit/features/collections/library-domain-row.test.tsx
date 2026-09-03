@@ -11,9 +11,7 @@ vi.mock('@/shared/favicon/domain-favicon-store', () => ({
 
 describe('LibraryDomainRow', () => {
   it('renders a 16px domain favicon beside the title', () => {
-    render(
-      <LibraryDomainRow domain="github.com" count={3} onOpen={() => undefined} />
-    );
+    render(<LibraryDomainRow domain="github.com" count={3} onOpen={() => undefined} />);
 
     const icon = screen.getByRole('button', { name: 'github.com' }).querySelector('img');
     expect(icon).not.toBeNull();
@@ -24,9 +22,7 @@ describe('LibraryDomainRow', () => {
   });
 
   it('falls back to a letter when the host has no public icon', () => {
-    render(
-      <LibraryDomainRow domain="localhost" count={1} onOpen={() => undefined} />
-    );
+    render(<LibraryDomainRow domain="localhost" count={1} onOpen={() => undefined} />);
 
     const row = screen.getByRole('button', { name: 'localhost' });
     expect(row.querySelector('img')).toBeNull();
