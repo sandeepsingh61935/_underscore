@@ -236,6 +236,7 @@ export function WebSettingsPage(): React.ReactElement {
           highlightCount={isAuthenticated ? lib.highlights.length : 0}
           onDeleteLibrary={isAuthenticated ? () => setDeleteLibraryOpen(true) : undefined}
           deleteLibraryBusy={deleteLibraryBusy}
+          highlights={lib.highlights}
         />
       );
       break;

@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { type BillingReturnKind } from './BillingReturnBanners';
+import { VaultSyncPanel } from './VaultSyncPanel';
 
 import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import {
@@ -18,6 +19,8 @@ import type { ThemeType } from '@/shared/types/theme';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
 import { useTypePreset } from '@/ui-system/hooks/useTypePreset';
 import type { WebCaps, WebPlanLabel } from '@/web/caps/resolveWebCaps';
+import { useVaultSync } from '@/web/hooks/useVaultSync';
+import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 import {
   applyWebPrefs,
   readWebPrefs,
@@ -401,6 +404,7 @@ export function DataPanel({
   highlightCount = 0,
   onDeleteLibrary,
   deleteLibraryBusy = false,
+  highlights = [],
 }: {
   caps: WebCaps;
   isAuthenticated: boolean;
@@ -413,9 +417,16 @@ export function DataPanel({
   /** Opens confirm + performs wipe. Parent owns dialog. */
   onDeleteLibrary?: () => void;
   deleteLibraryBusy?: boolean;
+  highlights?: WebHighlight[];
 }): React.ReactElement {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = React.useRef<HTMLDivElement>(null);
+
+  const vaultSync = useVaultSync({
+    highlights,
+    isAuthenticated,
+    autoSync: true,
+  });
 
   const canDeleteLibrary =
     isAuthenticated && highlightCount > 0 && typeof onDeleteLibrary === 'function';
@@ -537,6 +548,20 @@ export function DataPanel({
           </div>
         </div>
       </div>
+      <VaultSyncPanel
+        isSupported={vaultSync.isSupported}
+        connectionState={vaultSync.connectionState}
+        vaultName={vaultSync.vaultName}
+        lastSyncedAt={vaultSync.lastSyncedAt}
+        isSyncing={vaultSync.isSyncing}
+        syncResult={vaultSync.syncResult}
+        error={vaultSync.error}
+        onSelectFolder={vaultSync.selectVaultFolder}
+        onAuthorize={vaultSync.authorizeVault}
+        onDisconnect={vaultSync.disconnectVault}
+        onSyncNow={vaultSync.syncNow}
+        onFallbackDownload={() => onExport('md')}
+      />
       <div className="block">
         <p className="block-label">Danger zone</p>
         <div className="danger-zone">

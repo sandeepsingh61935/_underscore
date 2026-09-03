@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { LibraryPage } from './LibraryPage';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
+import type { UseVaultSyncReturn } from '@/web/hooks/useVaultSync';
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -17,6 +18,24 @@ vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
   useUpdateHighlightMetadata: () => ({
     updateMetadata: vi.fn().mockResolvedValue(true),
   }),
+}));
+
+const mockVaultSync = vi.fn((_opts?: any): UseVaultSyncReturn => ({
+  isSupported: true,
+  connectionState: 'disconnected',
+  vaultName: null,
+  lastSyncedAt: null,
+  isSyncing: false,
+  syncResult: null,
+  error: null,
+  selectVaultFolder: vi.fn(),
+  authorizeVault: vi.fn(),
+  disconnectVault: vi.fn(),
+  syncNow: vi.fn(),
+}));
+
+vi.mock('@/web/hooks/useVaultSync', () => ({
+  useVaultSync: (opts: any) => mockVaultSync(opts),
 }));
 
 const mockFetch = vi.fn<() => Promise<WebHighlight[]>>();
@@ -467,5 +486,34 @@ describe('LibraryPage', () => {
       expect(router.state.location.search).toContain('section=%2Fn');
       expect(router.state.location.search).not.toContain('highlight=');
     });
+  });
+
+  it('renders Sync Vault button when vault is connected and triggers sync on click', async () => {
+    const syncNow = vi.fn().mockResolvedValue(null);
+    mockVaultSync.mockReturnValue({
+      isSupported: true,
+      connectionState: 'connected',
+      vaultName: 'ObsidianNotes',
+      lastSyncedAt: '2026-09-03T12:00:00Z',
+      isSyncing: false,
+      syncResult: null,
+      error: null,
+      selectVaultFolder: vi.fn(),
+      authorizeVault: vi.fn(),
+      disconnectVault: vi.fn(),
+      syncNow,
+    });
+    mockFetch.mockResolvedValue(SAMPLE);
+    renderLibrary('/library');
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="library-vault-sync"]')).toBeTruthy();
+    });
+
+    const syncBtn = document.querySelector('[data-od-id="library-vault-sync"]') as HTMLButtonElement;
+    expect(syncBtn.textContent).toMatch(/Sync Vault/i);
+
+    fireEvent.click(syncBtn);
+    expect(syncNow).toHaveBeenCalled();
   });
 });

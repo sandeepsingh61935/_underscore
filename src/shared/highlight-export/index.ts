@@ -14,6 +14,7 @@ export {
 export { buildFilename } from './filename';
 export {
   formatMarkdown,
+  formatHighlightBlock,
   formatSingleHighlightMarkdown,
   formatSourceAnnotation,
   buildExport,

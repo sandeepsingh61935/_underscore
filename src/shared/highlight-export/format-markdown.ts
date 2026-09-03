@@ -56,7 +56,7 @@ function formatHighlightBody(text: string): string {
   return `> "${quote}"`;
 }
 
-function formatHighlightBlock(h: ExportableHighlight, index: number): string {
+export function formatHighlightBlock(h: ExportableHighlight, index: number): string {
   const lines: string[] = [
     `**${index}.**`,
     '',

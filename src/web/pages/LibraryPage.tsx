@@ -42,6 +42,7 @@ import {
   useRelatedPages,
   useRelatedTags,
 } from '@/web/hooks/useRelatedness';
+import { useVaultSync } from '@/web/hooks/useVaultSync';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
@@ -334,6 +335,12 @@ export function LibraryPage(): React.ReactElement {
   const { deleteScope } = useWebHighlightDelete({
     highlights: lib.highlights,
     removeHighlights: lib.removeHighlights,
+  });
+
+  const vault = useVaultSync({
+    highlights: lib.highlights,
+    isAuthenticated: !caps.isGuest,
+    autoSync: true,
   });
 
   const selection = useMemo(
@@ -1027,6 +1034,25 @@ export function LibraryPage(): React.ReactElement {
                 }}
               >
                 <TrashIco />
+              </button>
+            ) : null}
+            {vault.connectionState === 'connected' ? (
+              <button
+                type="button"
+                className="btn sm ghost"
+                data-od-id="library-vault-sync"
+                data-testid="library-vault-sync"
+                disabled={vault.isSyncing}
+                title={
+                  vault.isSyncing
+                    ? 'Syncing to vault…'
+                    : vault.lastSyncedAt
+                      ? `Vault last synced: ${vault.lastSyncedAt}`
+                      : 'Sync to local vault'
+                }
+                onClick={() => void vault.syncNow()}
+              >
+                {vault.isSyncing ? '…' : 'Sync Vault'}
               </button>
             ) : null}
             {caps.flags.export ? (

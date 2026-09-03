@@ -327,4 +327,12 @@ describe('WebSettingsPage', () => {
     ).toBeDisabled();
     expect(document.body.textContent).toMatch(/Type DELETE to confirm/i);
   });
+
+  it('data tab: renders Local Vault Mirror (Obsidian / Logseq) section', async () => {
+    renderSettings('/settings?tab=data', true);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="settings-vault-mirror-block"]')).toBeTruthy();
+    });
+    expect(document.body.textContent).toMatch(/Local Vault Mirror \(Obsidian \/ Logseq\)/i);
+  });
 });
