@@ -97,6 +97,8 @@ export default [
         btoa: 'readonly',
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
+        createImageBitmap: 'readonly',
+        ImageBitmap: 'readonly',
         // Vitest globals
         describe: 'readonly',
         it: 'readonly',
