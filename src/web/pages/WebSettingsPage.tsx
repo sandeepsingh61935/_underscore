@@ -83,6 +83,22 @@ export function WebSettingsPage(): React.ReactElement {
   const [returnKind, setReturnKind] = useState<BillingReturnKind>(null);
   const [returnDismissed, setReturnDismissed] = useState(false);
 
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<
+    'idle' | 'syncing' | 'success' | 'error'
+  >('idle');
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
+  const [lastCloudSyncedAt, setLastCloudSyncedAt] = useState<string | null>(() => {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        return localStorage.getItem('underscore_cloud_sync_last_at');
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const flag = new URLSearchParams(window.location.search).get('billing');
@@ -157,8 +173,48 @@ export function WebSettingsPage(): React.ReactElement {
     [caps.flags.export, lib.highlights]
   );
 
-  const handleDataSync = useCallback(() => {
-    void lib.refresh();
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      lib.status === 'ready' &&
+      !lastCloudSyncedAt &&
+      lib.highlights.length > 0
+    ) {
+      const nowIso = new Date().toISOString();
+      setLastCloudSyncedAt(nowIso);
+    }
+  }, [isAuthenticated, lib.status, lastCloudSyncedAt, lib.highlights.length]);
+
+  const handleDataSync = useCallback(async () => {
+    setCloudSyncing(true);
+    setCloudSyncStatus('syncing');
+    setCloudSyncError(null);
+    const start = Date.now();
+    try {
+      await lib.refresh();
+      const elapsed = Date.now() - start;
+      if (elapsed < 350) {
+        await new Promise((resolve) => setTimeout(resolve, 350 - elapsed));
+      }
+      const nowIso = new Date().toISOString();
+      setLastCloudSyncedAt(nowIso);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('underscore_cloud_sync_last_at', nowIso);
+        } catch {
+          // ignore
+        }
+      }
+      setCloudSyncStatus('success');
+      setTimeout(() => {
+        setCloudSyncStatus('idle');
+      }, 3000);
+    } catch (e) {
+      setCloudSyncStatus('error');
+      setCloudSyncError(e instanceof Error ? e.message : 'Sync failed');
+    } finally {
+      setCloudSyncing(false);
+    }
   }, [lib]);
 
   const handleConfirmDeleteLibrary = useCallback(async () => {
@@ -227,7 +283,10 @@ export function WebSettingsPage(): React.ReactElement {
           isAuthenticated={isAuthenticated}
           onExport={handleExport}
           onSync={handleDataSync}
-          syncing={lib.status === 'loading'}
+          syncing={cloudSyncing || lib.status === 'loading'}
+          syncStatus={cloudSyncStatus}
+          lastSyncedAt={lastCloudSyncedAt}
+          syncError={cloudSyncError}
           lastSyncedLabel={
             lib.status === 'ready' && isAuthenticated
               ? `${lib.highlights.length} highlights loaded`

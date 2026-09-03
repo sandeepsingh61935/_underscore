@@ -335,4 +335,42 @@ describe('WebSettingsPage', () => {
     });
     expect(document.body.textContent).toMatch(/Local Vault Mirror \(Obsidian \/ Logseq\)/i);
   });
+
+  it('data tab: clicking Sync shows active feedback and updates last synced status', async () => {
+    mockFetch.mockResolvedValue([
+      {
+        id: 'h1',
+        domain: 'example.com',
+        path: '/',
+        quote: 'q',
+        note: '',
+        tags: [],
+        savedAt: Date.now(),
+      },
+    ]);
+    renderSettings('/settings?tab=data', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="settings-sync"]')).toBeTruthy();
+    });
+
+    const syncBtn = document.querySelector(
+      '[data-od-id="settings-sync"]'
+    ) as HTMLButtonElement;
+    expect(syncBtn.disabled).toBe(false);
+    expect(syncBtn.textContent?.trim()).toBe('Sync');
+
+    fireEvent.click(syncBtn);
+
+    // Active state
+    await waitFor(() => {
+      expect(syncBtn.textContent?.trim()).toMatch(/Syncing…|Synced/);
+    });
+
+    // Updated status in sub
+    await waitFor(() => {
+      const sub = document.querySelector('[data-od-id="settings-sync-sub"]');
+      expect(sub?.textContent).toMatch(/Synced just now|1 highlight up to date/i);
+    });
+  });
 });

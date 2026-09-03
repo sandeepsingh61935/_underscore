@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { type BillingReturnKind } from './BillingReturnBanners';
-import { VaultSyncPanel } from './VaultSyncPanel';
+import { VaultSyncPanel, formatSyncTime } from './VaultSyncPanel';
 
 import { billingUpcomingCopy } from '@/shared/billing/billing-upcoming-copy';
 import {
@@ -399,12 +399,15 @@ export function DataPanel({
   isAuthenticated,
   onExport,
   onSync,
-  syncing,
+  syncing = false,
   lastSyncedLabel,
   highlightCount = 0,
   onDeleteLibrary,
   deleteLibraryBusy = false,
   highlights = [],
+  syncStatus = 'idle',
+  lastSyncedAt = null,
+  syncError = null,
 }: {
   caps: WebCaps;
   isAuthenticated: boolean;
@@ -418,6 +421,9 @@ export function DataPanel({
   onDeleteLibrary?: () => void;
   deleteLibraryBusy?: boolean;
   highlights?: WebHighlight[];
+  syncStatus?: 'idle' | 'syncing' | 'success' | 'error';
+  lastSyncedAt?: string | null;
+  syncError?: string | null;
 }): React.ReactElement {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = React.useRef<HTMLDivElement>(null);
@@ -458,22 +464,33 @@ export function DataPanel({
           <div className="setting-row">
             <div className="grow">
               <div className="title">Cloud sync</div>
-              <div className="sub">
-                {caps.flags.sync
-                  ? lastSyncedLabel || 'Library loads from cloud on this device'
-                  : 'Sign in on Starter+'}
+              <div className="sub" data-od-id="settings-sync-sub">
+                {!caps.flags.sync
+                  ? 'Sign in on Starter+'
+                  : syncing || syncStatus === 'syncing'
+                    ? 'Syncing library with cloud…'
+                    : syncStatus === 'error' && syncError
+                      ? `Sync failed: ${syncError}`
+                      : syncStatus === 'success'
+                        ? `Synced just now · ${highlightCount} highlight${highlightCount === 1 ? '' : 's'} up to date`
+                        : lastSyncedAt
+                          ? `Last synced: ${formatSyncTime(lastSyncedAt)} · ${highlightCount} highlight${highlightCount === 1 ? '' : 's'} up to date`
+                          : lastSyncedLabel ||
+                            (highlightCount > 0
+                              ? `${highlightCount} highlight${highlightCount === 1 ? '' : 's'} loaded from cloud`
+                              : 'Library loads from cloud on this device')}
               </div>
             </div>
             <button
               type="button"
-              className="btn accent sm"
+              className={`btn ${syncStatus === 'success' ? 'ghost' : 'accent'} sm`}
               data-od-id="settings-sync"
               disabled={!caps.flags.sync || syncing}
               aria-busy={syncing}
               aria-label="Sync library now"
               onClick={onSync}
             >
-              {syncing ? '…' : 'Sync'}
+              {syncing ? 'Syncing…' : syncStatus === 'success' ? 'Synced' : 'Sync'}
             </button>
           </div>
         </div>

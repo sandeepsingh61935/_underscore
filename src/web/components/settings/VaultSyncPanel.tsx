@@ -22,7 +22,7 @@ export interface VaultSyncPanelProps {
   onFallbackDownload?: () => void;
 }
 
-function formatSyncTime(isoString: string): string {
+export function formatSyncTime(isoString: string): string {
   try {
     const date = new Date(isoString);
     const now = new Date();
