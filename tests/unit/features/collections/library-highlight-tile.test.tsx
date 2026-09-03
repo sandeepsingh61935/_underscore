@@ -15,11 +15,16 @@ vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
 }));
 
 const copyQuoteLinkMock = vi.fn();
+const openExternalUrlMock = vi.fn();
 
 vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
   copyHighlightPlainText: vi.fn(),
   copyQuoteLink: (...args: unknown[]) => copyQuoteLinkMock(...args),
   isExtensionContext: () => true,
+}));
+
+vi.mock('@/shared/utils/open-external-url', () => ({
+  openExternalUrl: (...args: unknown[]) => openExternalUrlMock(...args),
 }));
 
 describe('LibraryHighlightTile', () => {
@@ -217,6 +222,32 @@ describe('LibraryHighlightTile', () => {
     fireEvent.click(linkBtn);
 
     expect(copyQuoteLinkMock).toHaveBeenCalledWith(
+      'https://example.com/article#:~:text=this%20is%20a%20-,great%20passage,-%20in%20the%20book'
+    );
+  });
+
+  it('renders Open in new tab action and opens text fragment URL on click', () => {
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'great passage',
+          domain: 'example.com',
+          path: '/article',
+          selector: {
+            exact: 'great passage',
+            prefix: 'this is a ',
+            suffix: ' in the book',
+          },
+        }}
+      />
+    );
+
+    const openBtn = screen.getByRole('button', { name: /Open highlight in browser tab/i });
+    expect(openBtn).toBeInTheDocument();
+    fireEvent.click(openBtn);
+
+    expect(openExternalUrlMock).toHaveBeenCalledWith(
       'https://example.com/article#:~:text=this%20is%20a%20-,great%20passage,-%20in%20the%20book'
     );
   });

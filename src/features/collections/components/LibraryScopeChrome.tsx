@@ -19,6 +19,7 @@ export type LibraryScopeChromeProps = {
   exportDisabled?: boolean;
   onDelete?: () => void;
   deleteAriaLabel: string;
+  onOpenPage?: () => void;
   sort: LibrarySortKey;
   onSortChange: (next: LibrarySortKey) => void;
   /** Search + filters slot (full flex of instrument bar) */
@@ -26,6 +27,20 @@ export type LibraryScopeChromeProps = {
   testId?: string;
   toolbarTestId?: string;
 };
+
+function IconExternalLink(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M10 2.5h3.5v3.5M6.5 9.5l7-7M11.5 8.5v4a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h4"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function IconTrash(): React.ReactElement {
   return (
@@ -35,6 +50,7 @@ function IconTrash(): React.ReactElement {
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -47,6 +63,7 @@ export function LibraryScopeChrome({
   exportDisabled,
   onDelete,
   deleteAriaLabel,
+  onOpenPage,
   sort,
   onSortChange,
   searchSlot,
@@ -129,6 +146,18 @@ export function LibraryScopeChrome({
               disabled={exportDisabled}
               variant="menu"
             />
+            {onOpenPage ? (
+              <button
+                type="button"
+                className="sr-icon"
+                aria-label="Open page in new browser tab"
+                title="Open page"
+                onClick={onOpenPage}
+                style={{ minWidth: 32, minHeight: 32 }}
+              >
+                <IconExternalLink />
+              </button>
+            ) : null}
             {onDelete ? (
               <button
                 type="button"

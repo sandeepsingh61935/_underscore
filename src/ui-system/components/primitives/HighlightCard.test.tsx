@@ -295,6 +295,21 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
+  it('renders Open in new tab action and calls onOpen when clicked', () => {
+    const onOpen = vi.fn();
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onOpen={onOpen}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /Open highlight in browser tab/i });
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn);
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
   it('renders match badge under the action row when provided', () => {
     render(
       <HighlightCard

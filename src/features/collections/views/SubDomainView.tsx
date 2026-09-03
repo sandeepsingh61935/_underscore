@@ -33,9 +33,13 @@ import {
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { openExternalUrl } from '@/shared/utils/open-external-url';
 import { getSectionKey } from '@/shared/utils/section-key';
+import { toast } from 'sonner';
+import { usePageRestorationStatus } from '@/features/collections/hooks/usePageRestorationStatus';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { EmptySubDomain } from '@/ui-system/components/empty-states/EmptySubDomain';
+import { useCurrentTabContext } from '@/ui-system/hooks/useCurrentTabContext';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface SubDomainViewProps {
@@ -76,6 +80,20 @@ export function SubDomainView({
   const [isDeletingSection, setIsDeletingSection] = useState(false);
   const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
   const { tagNames: labelSuggestions } = useUserTags(isAuthenticated);
+
+  const tabContext = useCurrentTabContext();
+  const isCurrentPage = Boolean(
+    tabContext.domain &&
+      tabContext.domain === domain &&
+      (tabContext.path || '/') === (section || '/')
+  );
+  const {
+    isUnanchored,
+    hasPageSelection,
+    reanchorHighlight,
+    checkSelection,
+    unanchoredCount,
+  } = usePageRestorationStatus(isCurrentPage ? tabContext.url : null);
 
   const sectionHighlights = useMemo(() => {
     return highlights.filter(
@@ -219,6 +237,14 @@ export function SubDomainView({
 
   const sectionTitle = section === '/' ? '/' : section;
 
+  const pageUrl = useMemo(() => {
+    if (!domain) return null;
+    const withUrl = sectionHighlights.find((h) => h.url);
+    if (withUrl?.url) return withUrl.url;
+    const path = section.startsWith('/') ? section : `/${section}`;
+    return `https://${domain}${path === '/' ? '' : path}`;
+  }, [domain, section, sectionHighlights]);
+
   return (
     <div
       style={{
@@ -236,6 +262,7 @@ export function SubDomainView({
         highlightCount={sectionHighlights.length}
         exportScope={{ kind: 'section', domain, sectionKey: section }}
         exportDisabled={exportDisabled}
+        onOpenPage={pageUrl ? () => openExternalUrl(pageUrl) : undefined}
         onDelete={() => setDeleteSectionOpen(true)}
         deleteAriaLabel="Delete section"
         sort={sort}
@@ -268,6 +295,30 @@ export function SubDomainView({
           onSelectTag={(tag) => setTagFilters([tag])}
         />
 
+        {isCurrentPage && unanchoredCount > 0 && (
+          <div
+            data-testid="unanchored-page-banner"
+            className="u-mono"
+            style={{
+              padding: '8px 16px',
+              fontSize: 'var(--step--2)',
+              letterSpacing: '0.04em',
+              background: 'var(--paper-2)',
+              borderBottom: '1px solid var(--rule)',
+              color: 'var(--ink-3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>
+              {unanchoredCount === 1
+                ? '1 unanchored highlight on this page'
+                : `${unanchoredCount} unanchored highlights on this page`}
+            </span>
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
@@ -298,6 +349,7 @@ export function SubDomainView({
                     text: r.text,
                     domain: r.domain,
                     path: r.path,
+                    url: r.url,
                     notes: r.notes,
                     tags: r.tags,
                     sourceKind: r.sourceKind,
@@ -345,6 +397,7 @@ export function SubDomainView({
                   text: h.text,
                   domain,
                   path: section,
+                  url: h.url,
                   notes: h.notes,
                   tags: h.tags,
                   sourceKind: h.sourceKind,
@@ -358,6 +411,21 @@ export function SubDomainView({
                   setExpandedHighlightId((prev) => (prev === h.id ? null : h.id));
                 }}
                 suggestions={labelSuggestions}
+                isUnanchored={isCurrentPage && isUnanchored(h.id)}
+                canReanchor={hasPageSelection}
+                onReanchor={async () => {
+                  const hasSel = await checkSelection();
+                  if (!hasSel) {
+                    toast.error('Select text on the page first to re-anchor');
+                    return;
+                  }
+                  const ok = await reanchorHighlight(h.id);
+                  if (ok) {
+                    toast.success('Highlight re-anchored');
+                  } else {
+                    toast.error('Failed to re-anchor highlight');
+                  }
+                }}
                 onDelete={async () => {
                   const result = await deleteScope({ scope: 'highlight', id: h.id });
                   if (!result?.success) {

@@ -67,6 +67,12 @@ export interface HighlightCardProps {
    * format tools mutate markdown source instead.
    */
   presentation?: HighlightPresentation | null;
+  /** When true, marks highlight as unanchored due to DOM drift */
+  isUnanchored?: boolean;
+  /** Callback to re-anchor highlight to current DOM selection */
+  onReanchor?: () => void | Promise<void>;
+  /** Whether re-anchoring is currently available (false if page has no selection) */
+  canReanchor?: boolean;
 }
 
 /** Quiet text for Save / Cancel while editing. */
@@ -145,6 +151,20 @@ function IconLink(): React.ReactElement {
   );
 }
 
+function IconExternalLink(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M10 2.5h3.5v3.5M6.5 9.5l7-7M11.5 8.5v4a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h4"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const formatBtnStyle: React.CSSProperties = {
   all: 'unset',
   cursor: 'pointer',
@@ -195,7 +215,7 @@ export function HighlightCard({
   onSectionClick,
   onCopy,
   onCopyQuoteLink,
-  onOpen: _onOpen,
+  onOpen,
   onDelete,
   onSaveQuote,
   showLocationMeta = true,
@@ -204,6 +224,9 @@ export function HighlightCard({
   sourceKind,
   language,
   presentation,
+  isUnanchored = false,
+  onReanchor,
+  canReanchor = true,
 }: HighlightCardProps): React.ReactElement {
   const padTop = density === 'compact' ? 10 : 12;
   const padBottom = 8;
@@ -409,7 +432,14 @@ export function HighlightCard({
   };
 
   const hasTileActions =
-    Boolean(onSaveQuote || onCopy || onCopyQuoteLink || onDelete) || editing;
+    Boolean(
+      onSaveQuote ||
+        onCopy ||
+        onCopyQuoteLink ||
+        onOpen ||
+        onDelete ||
+        (isUnanchored && onReanchor)
+    ) || editing;
   const showActionRow = hasTileActions || footerStart != null;
 
   const discardCopy = discardEditsCopy();
@@ -633,6 +663,29 @@ export function HighlightCard({
             </div>
           )}
 
+          {isUnanchored && (
+            <div style={{ marginTop: 6, marginBottom: showActionRow ? 6 : 0 }}>
+              <span
+                data-testid="highlight-unanchored-pill"
+                className="u-mono"
+                style={{
+                  display: 'inline-block',
+                  fontSize: 10,
+                  lineHeight: 1.2,
+                  letterSpacing: '0.04em',
+                  padding: '2px 6px',
+                  border: '1px solid var(--rule)',
+                  color: 'var(--ink-3)',
+                  background: 'var(--paper-2)',
+                  borderRadius: 2,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Unanchored (Page modified)
+              </span>
+            </div>
+          )}
+
           {showActionRow && (
             <div
               data-testid="highlight-action-row"
@@ -733,6 +786,54 @@ export function HighlightCard({
                         title="Copy quote link"
                       >
                         <IconLink />
+                      </button>
+                    )}
+                    {onOpen && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpen();
+                        }}
+                        className="hl-icon"
+                        aria-label="Open highlight in browser tab"
+                        title="Open in new tab"
+                      >
+                        <IconExternalLink />
+                      </button>
+                    )}
+                    {isUnanchored && onReanchor && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void onReanchor();
+                        }}
+                        disabled={canReanchor === false}
+                        className="u-mono"
+                        aria-label="Re-anchor to selection"
+                        title={
+                          canReanchor === false
+                            ? 'Select text on the page first to re-anchor'
+                            : 'Re-anchor to selection'
+                        }
+                        style={{
+                          all: 'unset',
+                          cursor: canReanchor === false ? 'not-allowed' : 'pointer',
+                          padding: '3px 8px',
+                          border: '1px solid var(--rule)',
+                          background: 'transparent',
+                          color: canReanchor === false ? 'var(--ink-4)' : 'var(--ink)',
+                          opacity: canReanchor === false ? 0.45 : 1,
+                          fontSize: 10,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          marginRight: 4,
+                        }}
+                      >
+                        Re-anchor to selection
                       </button>
                     )}
                     {onDelete && (

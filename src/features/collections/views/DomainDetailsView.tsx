@@ -35,6 +35,7 @@ import {
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { openExternalUrl } from '@/shared/utils/open-external-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
@@ -230,6 +231,7 @@ export function DomainDetailsView({
         highlightCount={highlights.length}
         exportScope={{ kind: 'domain', domain }}
         exportDisabled={exportDisabled}
+        onOpenPage={domain ? () => openExternalUrl(`https://${domain}`) : undefined}
         onDelete={() => setDeleteDomainOpen(true)}
         deleteAriaLabel="Delete domain"
         sort={sort}

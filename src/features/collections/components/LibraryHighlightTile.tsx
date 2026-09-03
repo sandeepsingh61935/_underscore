@@ -14,6 +14,7 @@ import {
 import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { openExternalUrl } from '@/shared/utils/open-external-url';
 import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
@@ -51,6 +52,12 @@ export interface LibraryHighlightTileProps {
   suggestions?: string[];
   /** Search hit badge (e.g. "Notes · Tags"); omit when not searching. */
   matchBadge?: string | null;
+  /** When true, marks highlight as unanchored on the active page */
+  isUnanchored?: boolean;
+  /** Callback to re-anchor highlight to current DOM selection */
+  onReanchor?: () => void | Promise<void>;
+  /** Whether re-anchoring is currently available (false if page has no selection) */
+  canReanchor?: boolean;
 }
 
 function sectionFromPath(path: string | undefined): string | undefined {
@@ -68,6 +75,9 @@ export function LibraryHighlightTile({
   onToggleExpand,
   suggestions,
   matchBadge,
+  isUnanchored = false,
+  onReanchor,
+  canReanchor = true,
 }: LibraryHighlightTileProps): React.ReactElement {
   const { updateText } = useUpdateHighlightText();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -97,6 +107,20 @@ export function LibraryHighlightTile({
             suffix: highlight.selector?.suffix,
           });
           void copyQuoteLink(fragmentUrl);
+        }
+      : undefined;
+
+  const onOpen =
+    highlight.text && (highlight.url || highlight.domain)
+      ? () => {
+          const baseUrl =
+            highlight.url || `https://${highlight.domain}${highlight.path || ''}`;
+          const fragmentUrl = buildTextFragmentUrl(baseUrl, {
+            exact: highlight.selector?.exact || highlight.text,
+            prefix: highlight.selector?.prefix,
+            suffix: highlight.selector?.suffix,
+          });
+          openExternalUrl(fragmentUrl);
         }
       : undefined;
 
@@ -143,10 +167,14 @@ export function LibraryHighlightTile({
         onSectionClick={onSectionClick}
         onCopy={onCopy}
         onCopyQuoteLink={onCopyQuoteLink}
+        onOpen={onOpen}
         onDelete={onDelete ? () => setDeleteOpen(true) : undefined}
         onSaveQuote={onSaveQuote}
         footerStart={footerStart}
         matchBadge={matchBadge}
+        isUnanchored={isUnanchored}
+        onReanchor={onReanchor}
+        canReanchor={canReanchor}
       />
       <DeleteConfirmDialog
         open={deleteOpen}
