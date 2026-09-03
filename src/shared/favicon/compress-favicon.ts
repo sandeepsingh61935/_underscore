@@ -3,7 +3,10 @@
  * Never persist an original ico/png dump — always recompress.
  */
 
+/** Stored raster edge. 32px is the high-DPI 16px favicon (ICO / Windows). */
 export const FAVICON_EDGE_PX = 32;
+/** On-screen list size in CSS px — browser tab / bookmark standard. */
+export const FAVICON_DISPLAY_PX = 16;
 export const FAVICON_MAX_BYTES = 4 * 1024;
 
 export type CompressedFavicon = {

@@ -1,11 +1,12 @@
 /**
  * @file LibraryDomainRow.tsx
- * @description Domain list row: title + highlight count; optional Paid quiet actions.
+ * @description Domain list row: 16px favicon + title + highlight count; optional Paid quiet actions.
  * Disclosure is the row itself (no action verb).
  */
 
 import React from 'react';
 
+import { DomainFavicon } from '@/features/collections/components/DomainFavicon';
 import { ScopeRowActions } from '@/features/collections/components/ScopeRowActions';
 
 export interface LibraryDomainRowProps {
@@ -29,7 +30,8 @@ export function LibraryDomainRow({
   return (
     <div className="domain-item">
       <button type="button" className="domain-main" onClick={onOpen} aria-label={domain}>
-        <div style={{ minWidth: 0 }}>
+        <DomainFavicon domain={domain} className="domain-favicon" />
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div className="title">{domain}</div>
           {sub ? <div className="sub">{sub}</div> : null}
         </div>

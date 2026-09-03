@@ -1532,6 +1532,25 @@ button.hl-icon.is-danger:active {
   text-align: left;
   min-width: 0;
 }
+.domain-item .domain-favicon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.domain-item .domain-favicon img {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
 .domain-item .domain-main .title {
   font-size: 14px;
   font-weight: 500;

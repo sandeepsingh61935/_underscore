@@ -814,7 +814,10 @@ function DomainRow({ domain, count, showActions = true }) {
   return (
     <div className="domain-item">
       <button type="button" className="domain-main">
-        <div style={{ minWidth: 0 }}>
+        <span className="domain-favicon" aria-hidden="true">
+          {String(domain).replace(/^www\./i, "").slice(0, 1).toUpperCase()}
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div className="title">{domain}</div>
           <div className="sub">
             {count} highlight{count === 1 ? "" : "s"}
