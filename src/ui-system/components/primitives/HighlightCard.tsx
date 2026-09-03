@@ -43,6 +43,7 @@ export interface HighlightCardProps {
   density?: 'compact' | 'comfortable';
   onSectionClick?: () => void;
   onCopy?: () => void;
+  onCopyQuoteLink?: () => void;
   /** Open source URL (home Recent stream). */
   onOpen?: () => void;
   onDelete?: () => void;
@@ -130,6 +131,20 @@ function IconDelete(): React.ReactElement {
   );
 }
 
+function IconLink(): React.ReactElement {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5L7 4M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5L9 12"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const formatBtnStyle: React.CSSProperties = {
   all: 'unset',
   cursor: 'pointer',
@@ -179,6 +194,7 @@ export function HighlightCard({
   density = 'comfortable',
   onSectionClick,
   onCopy,
+  onCopyQuoteLink,
   onOpen: _onOpen,
   onDelete,
   onSaveQuote,
@@ -392,7 +408,8 @@ export function HighlightCard({
     setEditing(true);
   };
 
-  const hasTileActions = Boolean(onSaveQuote || onCopy || onDelete) || editing;
+  const hasTileActions =
+    Boolean(onSaveQuote || onCopy || onCopyQuoteLink || onDelete) || editing;
   const showActionRow = hasTileActions || footerStart != null;
 
   const discardCopy = discardEditsCopy();
@@ -702,6 +719,20 @@ export function HighlightCard({
                         title="Copy"
                       >
                         <IconCopy />
+                      </button>
+                    )}
+                    {onCopyQuoteLink && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCopyQuoteLink();
+                        }}
+                        className="hl-icon"
+                        aria-label="Copy direct link to quote"
+                        title="Copy quote link"
+                      >
+                        <IconLink />
                       </button>
                     )}
                     {onDelete && (

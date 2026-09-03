@@ -7,20 +7,31 @@ import React, { useCallback, useRef, useState } from 'react';
 
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
-import { copyHighlightPlainText } from '@/features/collections/hooks/useHighlightExport';
+import {
+  copyHighlightPlainText,
+  copyQuoteLink,
+} from '@/features/collections/hooks/useHighlightExport';
 import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
+import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
 import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 export interface LibraryHighlightFields {
   id: string;
   text: string;
   domain: string;
+  /** Full URL if known for direct navigation / deep-linking */
+  url?: string;
   /** URL path; omit or "/" hides section segment. */
   path?: string;
   notes?: string;
   tags?: string[];
+  selector?: {
+    exact: string;
+    prefix?: string;
+    suffix?: string;
+  };
   sourceKind?: 'code';
   language?: string;
   /** Display-only legacy/capture hint — not edited via chip UI. */
@@ -75,6 +86,20 @@ export function LibraryHighlightTile({
       }
     : undefined;
 
+  const onCopyQuoteLink =
+    highlight.text && (highlight.url || highlight.domain)
+      ? () => {
+          const baseUrl =
+            highlight.url || `https://${highlight.domain}${highlight.path || ''}`;
+          const fragmentUrl = buildTextFragmentUrl(baseUrl, {
+            exact: highlight.selector?.exact || highlight.text,
+            prefix: highlight.selector?.prefix,
+            suffix: highlight.selector?.suffix,
+          });
+          void copyQuoteLink(fragmentUrl);
+        }
+      : undefined;
+
   const handleConfirmDelete = useCallback(async (): Promise<void> => {
     if (!onDelete || isDeletingRef.current) return;
     isDeletingRef.current = true;
@@ -117,6 +142,7 @@ export function LibraryHighlightTile({
         presentation={highlight.presentation}
         onSectionClick={onSectionClick}
         onCopy={onCopy}
+        onCopyQuoteLink={onCopyQuoteLink}
         onDelete={onDelete ? () => setDeleteOpen(true) : undefined}
         onSaveQuote={onSaveQuote}
         footerStart={footerStart}

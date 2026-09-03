@@ -13,6 +13,7 @@ import type {
 } from './types';
 
 import type { ExportArtifactsBundle } from '@/shared/llm/llm-artifact-service';
+import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
 
 function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -20,10 +21,22 @@ function formatDate(date: Date): string {
 
 /**
  * Source annotation: plain URL only (no markdown link — the URL is the citation).
- * Example: `[source] https://chatgpt.com/g/...`
+ * Deep-linked with W3C text fragment when highlight text/selector is available.
+ * Example: `[source] https://example.com/article#:~:text=exact%20quote`
  */
-export function formatSourceAnnotation(url: string): string {
-  return `[source] ${url}`;
+export function formatSourceAnnotation(
+  url: string,
+  highlight?: ExportableHighlight
+): string {
+  if (!highlight) {
+    return `[source] ${url}`;
+  }
+  const deepUrl = buildTextFragmentUrl(url, {
+    exact: highlight.selector?.exact || highlight.text,
+    prefix: highlight.selector?.prefix,
+    suffix: highlight.selector?.suffix,
+  });
+  return `[source] ${deepUrl}`;
 }
 
 function formatHighlightBody(text: string): string {
@@ -50,7 +63,7 @@ function formatHighlightBlock(h: ExportableHighlight, index: number): string {
     formatHighlightBody(h.text),
     '',
     `[date] ${formatDate(h.createdAt)}`,
-    formatSourceAnnotation(h.url),
+    formatSourceAnnotation(h.url, h),
   ];
 
   if (h.tags && h.tags.length > 0) {

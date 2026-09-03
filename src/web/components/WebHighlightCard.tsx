@@ -13,6 +13,7 @@ import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
+import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
@@ -144,6 +145,27 @@ function TrashIco(): React.ReactElement {
   );
 }
 
+function LinkIco(): React.ReactElement {
+  return (
+    <svg
+      className="ico"
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5L7 4M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5L9 12"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function WebHighlightCard({
   highlight: h,
   showDomain = true,
@@ -172,6 +194,7 @@ export function WebHighlightCard({
   const [savingTags, setSavingTags] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const tagsRowRef = useRef<HTMLDivElement>(null);
@@ -179,6 +202,22 @@ export function WebHighlightCard({
   const noteFieldId = useId();
   const tagFieldId = useId();
   const tagsBusyRef = useRef(false);
+
+  const handleCopyLink = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const baseUrl = `https://${h.domain}${h.path || ''}`;
+      const fragmentUrl = buildTextFragmentUrl(baseUrl, { exact: h.quote });
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(fragmentUrl).then(() => {
+          setCopiedLink(true);
+          setTimeout(() => setCopiedLink(false), 2000);
+        });
+      }
+    },
+    [h.domain, h.path, h.quote]
+  );
 
   const activeSet = new Set(activeTagFilters.map(tagKey));
   const canEdit = !readOnly && Boolean(onNoteSave || onTagsChange);
@@ -464,22 +503,34 @@ export function WebHighlightCard({
             </div>
           ) : null}
         </div>
-        {canDelete ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
             type="button"
-            className="hl-delete sr-icon is-delete"
-            data-od-id={`hl-delete-${h.id}`}
-            aria-label="Delete highlight"
-            title="Delete highlight"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDeleteOpen(true);
-            }}
+            className="hl-delete sr-icon"
+            data-od-id={`hl-link-${h.id}`}
+            aria-label={copiedLink ? 'Quote link copied' : 'Copy direct link to quote'}
+            title={copiedLink ? 'Copied link!' : 'Copy quote link'}
+            onClick={handleCopyLink}
           >
-            <TrashIco />
+            <LinkIco />
           </button>
-        ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              className="hl-delete sr-icon is-delete"
+              data-od-id={`hl-delete-${h.id}`}
+              aria-label="Delete highlight"
+              title="Delete highlight"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeleteOpen(true);
+              }}
+            >
+              <TrashIco />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showFoot ? (

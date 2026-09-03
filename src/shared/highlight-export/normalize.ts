@@ -26,6 +26,7 @@ export function toExportableHighlight(hl: HighlightDataV2): ExportableHighlight 
     createdAt: hl.createdAt,
     tags: hl.metadata?.tags,
     note: hl.metadata?.notes,
+    selector: hl.ranges?.[0]?.selector,
   };
 }
 

@@ -63,6 +63,19 @@ export async function copyHighlightPlainText(text: string): Promise<void> {
   }
 }
 
+/** Copies direct quote link to the clipboard with confirmation toast. */
+export async function copyQuoteLink(url: string): Promise<void> {
+  const trimmed = url.trim();
+  if (!trimmed) return;
+
+  try {
+    await copyTextToClipboard(trimmed);
+    toast.success('Quote link copied to clipboard');
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Copy failed');
+  }
+}
+
 interface ExportableHighlightPayload {
   id: string;
   text: string;

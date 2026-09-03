@@ -242,4 +242,33 @@ describe('WebHighlightCard', () => {
     expect(document.querySelector('[data-od-id="hl-note-h1"]')).toBeNull();
     expect(document.querySelector('.hl-foot')).toBeNull();
   });
+
+  it('renders copy quote link button and writes fragment URL to clipboard', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <WebHighlightCard
+        highlight={{
+          ...base,
+          quote: 'remarkable insight',
+          domain: 'example.com',
+          path: '/article',
+        }}
+      />
+    );
+
+    const linkBtn = document.querySelector('[data-od-id="hl-link-h1"]') as HTMLButtonElement;
+    expect(linkBtn).toBeTruthy();
+    expect(linkBtn.getAttribute('aria-label')).toBe('Copy direct link to quote');
+
+    fireEvent.click(linkBtn);
+    expect(writeTextMock).toHaveBeenCalledWith(
+      'https://example.com/article#:~:text=remarkable%20insight'
+    );
+  });
 });

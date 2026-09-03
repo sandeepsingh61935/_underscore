@@ -20,6 +20,11 @@ export interface ExportableHighlight {
   createdAt: Date;
   tags?: string[];
   note?: string;
+  selector?: {
+    exact: string;
+    prefix?: string;
+    suffix?: string;
+  };
 }
 
 export interface ExportStats {

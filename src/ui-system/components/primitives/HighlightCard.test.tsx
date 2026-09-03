@@ -276,9 +276,23 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     );
     const row = screen.getByTestId('highlight-action-row');
     expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Copy highlight text/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Delete highlight/i })).toBeTruthy();
     expect(row.querySelectorAll('button.hl-icon').length).toBe(3);
+  });
+
+  it('renders Copy quote link action and calls onCopyQuoteLink when clicked', () => {
+    const handler = vi.fn();
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onCopyQuoteLink={handler}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /Copy direct link to quote/i });
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn);
+    expect(handler).toHaveBeenCalledOnce();
   });
 
   it('renders match badge under the action row when provided', () => {

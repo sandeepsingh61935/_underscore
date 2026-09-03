@@ -14,8 +14,11 @@ vi.mock('@/features/collections/hooks/useUpdateHighlightMetadata', () => ({
   useUpdateHighlightMetadata: () => ({ updateMetadata: vi.fn().mockResolvedValue(true) }),
 }));
 
+const copyQuoteLinkMock = vi.fn();
+
 vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
   copyHighlightPlainText: vi.fn(),
+  copyQuoteLink: (...args: unknown[]) => copyQuoteLinkMock(...args),
   isExtensionContext: () => true,
 }));
 
@@ -190,5 +193,31 @@ describe('LibraryHighlightTile', () => {
     expect(
       screen.getByRole('button', { name: /Edit highlight text/i })
     ).toBeInTheDocument();
+  });
+
+  it('renders Copy quote link action and copies text fragment URL on click', () => {
+    render(
+      <LibraryHighlightTile
+        highlight={{
+          id: 'hl-1',
+          text: 'great passage',
+          domain: 'example.com',
+          path: '/article',
+          selector: {
+            exact: 'great passage',
+            prefix: 'this is a ',
+            suffix: ' in the book',
+          },
+        }}
+      />
+    );
+
+    const linkBtn = screen.getByRole('button', { name: /Copy direct link to quote/i });
+    expect(linkBtn).toBeInTheDocument();
+    fireEvent.click(linkBtn);
+
+    expect(copyQuoteLinkMock).toHaveBeenCalledWith(
+      'https://example.com/article#:~:text=this%20is%20a%20-,great%20passage,-%20in%20the%20book'
+    );
   });
 });
