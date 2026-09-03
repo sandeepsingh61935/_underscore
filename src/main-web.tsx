@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -74,6 +75,7 @@ root.render(
     <RootErrorBoundary>
       <AppRoutes />
       <Analytics />
+      <SpeedInsights />
     </RootErrorBoundary>
   </React.StrictMode>
 );
