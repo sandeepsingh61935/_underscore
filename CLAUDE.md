@@ -3,8 +3,14 @@
 ## Project Overview
 
 - **What**: Chrome Extension + Web App for intelligent web highlighting
-- **Modes**: Ephemeral (no persistence) → Local (24h TTL) → Cloud (permanent
-  sync) → AI (future)
+- **Modes**: `basic` (Guest, permanent device-local storage, no TTL) → `pro`
+  (Account Free, cloud sync) → `pro_xai` (Account Paid, Integrations/MCP). Default:
+  `basic`. In-app Ask/Chat is retired (`ai` flag always false; `/ask` and `/insights`
+  redirect to `/home`). Paid/AI surface is Integrations (MCP); early-access free
+  window is currently enabled (`COMMERCIAL_FREE_WINDOW_ENABLED`). Guests never
+  get MCP. "Vault" in web is an Obsidian/Logseq folder mirror (not passphrase unlock).
+  Popup tabs: Home / Library / Settings (`ModeHeader` is nested back-only chrome,
+  not a mode switcher). Legacy mode strings are normalized at read boundaries only.
 - **Stack**: React 19, TypeScript, CSS Custom Properties (V2 Editorial),
   Supabase, Cloudflare Workers, WXT
 
