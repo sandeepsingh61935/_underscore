@@ -117,9 +117,7 @@
   --mode-basic: var(--accent);
   --mode-pro: var(--accent);
   --mode-pro-xai: var(--accent);
-  /* Legacy aliases (pre-v3 mode consolidation) — kept briefly for any
-     stragglers; prefer --mode-basic/--mode-pro/--mode-pro-xai above. */
-  --mode-ephemeral: var(--mode-basic);
+  /* Legacy aliases (pre-v3 mode consolidation) — prefer --mode-basic/--mode-pro/--mode-pro-xai above. */
   --mode-local: var(--mode-basic);
   --mode-cloud: var(--mode-pro);
   --mode-ai: var(--mode-pro-xai);
