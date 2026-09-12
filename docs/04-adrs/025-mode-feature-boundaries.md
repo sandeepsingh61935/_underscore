@@ -1,8 +1,12 @@
 # ADR-025: Mode Feature Boundaries and Prerequisites
 
-**Status**: Proposed  
-**Date**: 2026-07-11  
+**Status**: Superseded by [ADR-030: Live Mode and Product Capability Matrix](./030-live-mode-and-capability-matrix.md)  
+**Date**: 2026-07-11 (Superseded: 2026-09-12)  
 **Context**: v3 mode consolidation (`basic` | `pro` | `pro_xai`) is complete at the schema/DI layer, but feature gating is inconsistent. UI and IPC often check auth or hardcoded mode strings instead of `ModeCapabilities`. This ADR defines the canonical feature matrix, prerequisites, and worktree isolation strategy for parallel enforcement.
+
+> [!NOTE]
+> **Historical Record**: This ADR has been superseded by [ADR-030](./030-live-mode-and-capability-matrix.md) to reflect the running product contracts in `src/` (permanent device-local guest storage without TTL, retired in-app Ask/Chat, Integrations via MCP with commercial free window).
+
 
 ---
 
