@@ -3,16 +3,15 @@
  * @description Segregated interfaces for highlight modes (Quality Framework compliant)
  *
  * Architecture:
- * - IBasicMode: Core operations (ALL modes)
- * - IPersistentMode: Storage/restore (Vault/Gen modes)
- * - ICollaborativeMode: Sync/conflicts (Vault/Gen modes)
- * - IAIMode: AI features (Gen mode only)
+ * - IBasicMode: Core operations (ALL modes: basic, pro, pro_xai)
+ * - IPersistentMode: Persistent storage/restore (pro, pro_xai)
+ * - ICollaborativeMode: Sync/conflicts (sync services / pro modes)
+ * - IAIMode: Non-product / leftover AI interface (retained for type compatibility)
  *
  * Follows Interface Segregation Principle (ISP):
- * - Walk Mode: IBasicMode only
- * - Sprint Mode: IBasicMode only
- * - Vault Mode: IBasicMode + IPersistentMode + ICollaborativeMode
- * - Gen Mode: All interfaces
+ * - Basic Mode: IBasicMode only (permanent device-local storage)
+ * - Pro Mode: IBasicMode + IPersistentMode
+ * - Pro-XAI Mode: Extends ProMode with AI/MCP capability overlay
  *
  * @see docs/05-quality-framework/03-architecture-principles.md#interface-segregation-principle
  */
@@ -26,7 +25,7 @@ import type { HighlightCreatedEvent, HighlightRemovedEvent } from '@/shared/type
  * Allows UI to query what features a mode supports
  */
 export interface ModeCapabilities {
-  /** Storage type: none (Walk), local (Sprint), remote (Vault/Gen) */
+  /** Storage type: local (device-only basic), indexeddb (pro / pro_xai) */
   persistence: 'none' | 'local' | 'remote' | 'indexeddb';
 
   /** Undo/redo support */
@@ -94,7 +93,7 @@ export interface IBasicMode {
 }
 
 /**
- * Persistent storage operations - Vault/Gen modes only
+ * Persistent storage operations - Pro and Pro-XAI modes
  *
  * Features:
  * - Highlight restoration from storage
@@ -116,7 +115,7 @@ export interface IPersistentMode {
 
   /**
    * Save highlight to persistent storage
-   * (Local IndexedDB for Vault, Remote for Gen)
+   * (IndexedDB underscored_pro for Pro / Pro-XAI)
    */
   saveToStorage(highlight: HighlightData): Promise<void>;
 
@@ -127,7 +126,7 @@ export interface IPersistentMode {
 }
 
 /**
- * Collaborative features - Vault/Gen modes only
+ * Collaborative features - Pro and Pro-XAI modes
  *
  * Features:
  * - Cross-device synchronization
@@ -154,13 +153,11 @@ export interface ICollaborativeMode {
 }
 
 /**
- * AI-powered features - Gen mode only
+ * AI-powered features - Non-product / leftover interface
  *
- * Features:
- * - Mindmap generation
- * - Smart summaries
- * - Question generation
- * - Knowledge synthesis
+ * Note: Retained for type compatibility with background AIMode. In-app Ask/Chat
+ * and mindmap synthesis are retired from shipping UI (external agent access
+ * is provided via Integrations / MCP).
  */
 export interface IAIMode {
   /**

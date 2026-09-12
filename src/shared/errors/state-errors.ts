@@ -23,7 +23,7 @@ import { AppError, type ErrorContext } from './app-error';
  * throw new StateValidationError('Invalid mode value', {
  *   field: 'defaultMode',
  *   value: 'invalid',
- *   validValues: ['ephemeral', 'local', 'cloud', 'ai']
+ *   validValues: ['basic', 'pro', 'pro_xai']
  * });
  * ```
  */
@@ -93,9 +93,9 @@ function safeStringify(obj: any): any {
  * @example
  * ```typescript
  * throw new StateTransitionError(
- *   'Cannot transition from ephemeral to ai',
- *   'ephemeral',
- *   'ai'
+ *   'Cannot transition from basic to pro_xai',
+ *   'basic',
+ *   'pro_xai'
  * );
  * ```
  */
