@@ -14,9 +14,9 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
+import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
 import type { WebClientKind } from '@/web/lib/classify-web-client';
-import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
   highlight: WebHighlight;
