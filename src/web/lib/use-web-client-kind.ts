@@ -21,7 +21,7 @@ function readKind(): WebClientKind {
 }
 
 export function useWebClientKind(): WebClientKind {
-  const [kind, setKind] = useState<WebClientKind>('desktop');
+  const [kind, setKind] = useState<WebClientKind>(readKind);
   useEffect(() => {
     const update = () => setKind(readKind());
     update();

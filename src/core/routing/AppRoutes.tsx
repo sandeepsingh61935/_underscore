@@ -22,6 +22,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { TermsPage } from '@/pages/TermsPage';
 import { ExtensionPresenceBoot } from '@/web/guards/ExtensionPresenceBoot';
+import { HandheldAuthGate } from '@/web/guards/HandheldAuthGate';
 import { WebAppShell } from '@/web/layout/WebAppShell';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
@@ -95,16 +96,18 @@ export function AppRoutes() {
               <Route path="/help" element={<HelpPage />} />
               <Route path="/install" element={<InstallPage />} />
 
-              {/* Product shell — presence is chrome, not a route wall */}
-              <Route element={<ExtensionPresenceBoot />}>
-                <Route element={<WebAppShell />}>
-                  <Route path="/home" element={<HomePage />} />
-                  <Route path="/library" element={<LibraryPage />} />
-                  <Route path="/settings" element={<WebSettingsPage />} />
-                  <Route path="/ask" element={<Navigate to="/home" replace />} />
-                  <Route path="/ask/*" element={<Navigate to="/home" replace />} />
-                  <Route path="/insights" element={<Navigate to="/home" replace />} />
-                  <Route path="/insights/*" element={<Navigate to="/home" replace />} />
+              {/* Handheld unsigned → sign-in; presence is chrome, not a route wall */}
+              <Route element={<HandheldAuthGate />}>
+                <Route element={<ExtensionPresenceBoot />}>
+                  <Route element={<WebAppShell />}>
+                    <Route path="/home" element={<HomePage />} />
+                    <Route path="/library" element={<LibraryPage />} />
+                    <Route path="/settings" element={<WebSettingsPage />} />
+                    <Route path="/ask" element={<Navigate to="/home" replace />} />
+                    <Route path="/ask/*" element={<Navigate to="/home" replace />} />
+                    <Route path="/insights" element={<Navigate to="/home" replace />} />
+                    <Route path="/insights/*" element={<Navigate to="/home" replace />} />
+                  </Route>
                 </Route>
               </Route>
 

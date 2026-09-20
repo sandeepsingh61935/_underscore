@@ -12,9 +12,10 @@ describe('trackEvent', () => {
     vi.stubGlobal('navigator', { sendBeacon });
     trackEvent('library_open', { client: 'phone', quote: 'nope' });
     expect(sendBeacon).toHaveBeenCalledTimes(1);
-    const blob = sendBeacon.mock.calls[0]?.[1] as Blob;
-    expect(sendBeacon.mock.calls[0]?.[0]).toBe('/api/analytics');
-    expect(blob).toBeInstanceOf(Blob);
+    expect(sendBeacon).toHaveBeenCalledWith(
+      '/api/analytics',
+      expect.any(Blob)
+    );
   });
 
   it('does not beacon unknown names', () => {

@@ -20,8 +20,9 @@ export function parseAnalyticsEvent(
     }
   | { ok: false; error: string } {
   if (!raw || typeof raw !== 'object') return { ok: false, error: 'invalid' };
-  const rec = raw as Record<string, unknown>;
-  if (typeof rec.name !== 'string' || !NAME_SET.has(rec.name)) {
+  const rec = raw as { name?: unknown; props?: unknown };
+  const name = rec.name;
+  if (typeof name !== 'string' || !NAME_SET.has(name)) {
     return { ok: false, error: 'unknown_event' };
   }
   const propsIn =
@@ -36,5 +37,5 @@ export function parseAnalyticsEvent(
       props[k] = v;
     }
   }
-  return { ok: true, name: rec.name as AnalyticsEventName, props };
+  return { ok: true, name: name as AnalyticsEventName, props };
 }
