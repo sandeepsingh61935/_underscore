@@ -45,6 +45,8 @@ import { useVaultSync } from '@/web/hooks/useVaultSync';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
+import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
@@ -325,6 +327,10 @@ export function LibraryPage(): React.ReactElement {
       }),
     [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status]
   );
+
+  const clientKind = useWebClientKind();
+  const handheld = isHandheldClient(clientKind);
+  const consumeOnly = caps.isGuest || handheld;
 
   const lib = useWebLibrary({
     isAuthenticated,
@@ -680,7 +686,7 @@ export function LibraryPage(): React.ReactElement {
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
-      if (!caps.flags.export || filtered.length === 0) return;
+      if (consumeOnly || !caps.flags.export || filtered.length === 0) return;
       exportWebHighlights(
         filtered.map((m) => m.highlight),
         format,
@@ -691,7 +697,7 @@ export function LibraryPage(): React.ReactElement {
       );
       setExportOpen(false);
     },
-    [caps.flags.export, filtered, selection.domain, selection.section]
+    [consumeOnly, caps.flags.export, filtered, selection.domain, selection.section]
   );
 
   if (lib.status === 'loading') {
@@ -748,16 +754,16 @@ export function LibraryPage(): React.ReactElement {
       key={detailHighlight.id}
       highlight={detailHighlight}
       related={relatedHighlightRows}
-      readOnly={caps.isGuest}
+      readOnly={consumeOnly}
       activeTagFilters={tagFilters}
       onBack={closeHighlightDetail}
       relatedHrefFor={highlightDetailHref}
       onOpenRelated={handleOpenRelatedHighlight}
       onOpenPage={openPage}
-      onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
-      onNoteSave={caps.isGuest ? undefined : handleNoteSave}
-      onTagsChange={caps.isGuest ? undefined : handleTagsChange}
-      onDelete={caps.isGuest ? undefined : handleHighlightDelete}
+      onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+      onNoteSave={consumeOnly ? undefined : handleNoteSave}
+      onTagsChange={consumeOnly ? undefined : handleTagsChange}
+      onDelete={consumeOnly ? undefined : handleHighlightDelete}
     />
   ) : filtered.length > 0 ? (
     <div className="lib-reading">
@@ -814,14 +820,14 @@ export function LibraryPage(): React.ReactElement {
               highlight={h}
               showDomain={showDomainSrc}
               matchBadge={badge}
-              readOnly={caps.isGuest}
+              readOnly={consumeOnly}
               activeTagFilters={tagFilters}
               onOpenHighlight={openHighlightDetail}
               onOpenPage={openPage}
-              onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
-              onNoteSave={caps.isGuest ? undefined : handleNoteSave}
-              onTagsChange={caps.isGuest ? undefined : handleTagsChange}
-              onDelete={caps.isGuest ? undefined : handleHighlightDelete}
+              onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+              onNoteSave={consumeOnly ? undefined : handleNoteSave}
+              onTagsChange={consumeOnly ? undefined : handleTagsChange}
+              onDelete={consumeOnly ? undefined : handleHighlightDelete}
             />
           );
         })}
@@ -905,7 +911,7 @@ export function LibraryPage(): React.ReactElement {
                     <DomainFavicon domain={d.domain} />
                     <span className="tree-label">{d.domain}</span>
                   </button>
-                  {!caps.isGuest && d.count > 0 ? (
+                  {!consumeOnly && d.count > 0 ? (
                     <button
                       type="button"
                       className="tree-delete sr-icon is-delete"
@@ -942,7 +948,7 @@ export function LibraryPage(): React.ReactElement {
                               {displaySectionPath(s.path)}
                             </span>
                           </button>
-                          {!caps.isGuest && s.count > 0 ? (
+                          {!consumeOnly && s.count > 0 ? (
                             <button
                               type="button"
                               className="tree-delete sr-icon is-delete"
@@ -1000,7 +1006,7 @@ export function LibraryPage(): React.ReactElement {
                 Open
               </a>
             ) : null}
-            {!caps.isGuest && selection.domain && !selection.highlight ? (
+            {!consumeOnly && selection.domain && !selection.highlight ? (
               <button
                 type="button"
                 className="sr-icon is-delete"
@@ -1031,7 +1037,7 @@ export function LibraryPage(): React.ReactElement {
                 <TrashIco />
               </button>
             ) : null}
-            {vault.connectionState === 'connected' ? (
+            {!consumeOnly && vault.connectionState === 'connected' ? (
               <button
                 type="button"
                 className="btn sm ghost"
@@ -1050,7 +1056,7 @@ export function LibraryPage(): React.ReactElement {
                 {vault.isSyncing ? '…' : 'Sync Vault'}
               </button>
             ) : null}
-            {caps.flags.export ? (
+            {!consumeOnly && caps.flags.export ? (
               <div className="export-menu" data-od-id="library-export" ref={exportRef}>
                 <button
                   type="button"

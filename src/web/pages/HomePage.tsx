@@ -16,7 +16,9 @@ import {
   type WebCurrentPage,
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
+import { isHandheldClient } from '@/web/lib/classify-web-client';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildLibrarySearch } from '@/web/routing/librarySelection';
 
 /** Denser rail cards fit more rows; keep in sync with aggregateLibrary default. */
@@ -157,7 +159,9 @@ export function HomePage(): React.ReactElement {
 
   const empty = lib.highlights.length === 0;
   const guest = caps.isGuest;
-  const showIntegrationsCta = caps.flags.mcp;
+  const clientKind = useWebClientKind();
+  const consumeOnly = guest || isHandheldClient(clientKind);
+  const showIntegrationsCta = caps.flags.mcp && !consumeOnly;
 
   const patchHighlight = lib.patchHighlight;
   const highlightsRef = useRef(lib.highlights);
@@ -426,11 +430,11 @@ export function HomePage(): React.ReactElement {
         highlight={h}
         density="rail"
         showDomain
-        readOnly={guest}
+        readOnly={consumeOnly}
         onOpenPage={openLibraryPage}
-        onToggleTagFilter={guest ? undefined : handleToggleTagFilter}
-        onNoteSave={guest ? undefined : handleNoteSave}
-        onTagsChange={guest ? undefined : handleTagsChange}
+        onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+        onNoteSave={consumeOnly ? undefined : handleNoteSave}
+        onTagsChange={consumeOnly ? undefined : handleTagsChange}
       />
     ))
   );
