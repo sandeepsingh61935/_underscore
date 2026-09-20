@@ -1,12 +1,17 @@
 /**
  * @file analytics.ts
- * @description Minimal product analytics for the web app (non-PII props only).
- * No network backend in v1 — emits on the shared event bus for future sinks.
+ * @description Product analytics. Allowlisted consume events beacon to
+ * POST /api/analytics. Unknown names stay on the in-process event bus only.
+ * Never pass highlight text or other PII.
  */
 
+import { parseAnalyticsEvent } from '@/shared/analytics/parse-analytics-event';
 import { eventBus } from '@/shared/utils/event-bus';
 
-export type AnalyticsProps = Record<string, string | number | boolean | null | undefined>;
+export type AnalyticsProps = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
 
 /**
  * Fire a named product event. Never pass highlight text or other PII.
@@ -21,5 +26,25 @@ export function trackEvent(name: string, props: AnalyticsProps = {}): void {
     eventBus.emit('analytics:event', payload);
   } catch {
     // Analytics must never break UX.
+  }
+  const parsed = parseAnalyticsEvent({ name, props });
+  if (!parsed.ok) return;
+  try {
+    const body = JSON.stringify({ name: parsed.name, props: parsed.props });
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      const blob = new Blob([body], { type: 'application/json' });
+      navigator.sendBeacon('/api/analytics', blob);
+      return;
+    }
+    if (typeof fetch === 'function') {
+      void fetch('/api/analytics', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+        keepalive: true,
+      });
+    }
+  } catch {
+    // ignore
   }
 }

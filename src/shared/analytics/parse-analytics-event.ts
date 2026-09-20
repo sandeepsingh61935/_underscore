@@ -1,0 +1,40 @@
+export const ANALYTICS_EVENT_NAMES = [
+  'library_open',
+  'highlight_open_source',
+  'library_search',
+] as const;
+
+export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
+
+const NAME_SET = new Set<string>(ANALYTICS_EVENT_NAMES);
+const PROP_ALLOW = new Set(['client', 'result_count', 'rank', 'reason']);
+const PROP_DENY = new Set(['quote', 'q', 'query', 'email', 'text']);
+
+export function parseAnalyticsEvent(
+  raw: unknown
+):
+  | {
+      ok: true;
+      name: AnalyticsEventName;
+      props: Record<string, string | number | boolean>;
+    }
+  | { ok: false; error: string } {
+  if (!raw || typeof raw !== 'object') return { ok: false, error: 'invalid' };
+  const rec = raw as Record<string, unknown>;
+  if (typeof rec.name !== 'string' || !NAME_SET.has(rec.name)) {
+    return { ok: false, error: 'unknown_event' };
+  }
+  const propsIn =
+    rec.props && typeof rec.props === 'object' && !Array.isArray(rec.props)
+      ? (rec.props as Record<string, unknown>)
+      : {};
+  const props: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(propsIn)) {
+    if (PROP_DENY.has(k)) continue;
+    if (!PROP_ALLOW.has(k)) continue;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      props[k] = v;
+    }
+  }
+  return { ok: true, name: rec.name as AnalyticsEventName, props };
+}
