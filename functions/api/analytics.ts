@@ -26,7 +26,8 @@ export async function onRequest(context: PagesContext): Promise<Response> {
   }
   let raw: unknown;
   try {
-    raw = await context.request.json();
+    const text = await context.request.text();
+    raw = JSON.parse(text) as unknown;
   } catch {
     return envelope(null, { message: 'invalid_json' }, 400);
   }

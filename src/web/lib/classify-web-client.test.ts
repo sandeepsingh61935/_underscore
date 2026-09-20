@@ -64,6 +64,30 @@ describe('classifyWebClient', () => {
   it('does not treat a narrow desktop window as phone', () => {
     expect(classifyWebClient({ ...desktop, viewportWidth: 500 })).toBe('desktop');
   });
+
+  it('does not treat Windows coarse-pointer convertibles as tablet', () => {
+    expect(
+      classifyWebClient({
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0',
+        maxTouchPoints: 10,
+        pointerCoarse: true,
+        viewportWidth: 1366,
+      })
+    ).toBe('desktop');
+  });
+
+  it('does not treat Macintosh + touches without coarse pointer as tablet', () => {
+    expect(
+      classifyWebClient({
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        maxTouchPoints: 5,
+        pointerCoarse: false,
+        viewportWidth: 1440,
+      })
+    ).toBe('desktop');
+  });
 });
 
 describe('isHandheldClient', () => {

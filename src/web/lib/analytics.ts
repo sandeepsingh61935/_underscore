@@ -39,15 +39,16 @@ export function trackEvent(name: string, props: AnalyticsProps = {}): void {
     if (!origin) return;
     const url = `${origin}/api/analytics`;
     const body = JSON.stringify({ name: parsed.name, props: parsed.props });
+    // String payload → text/plain. JSON Blobs are rewritten by Chromium and
+    // then fail request.json() on the Pages Function.
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      const blob = new Blob([body], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
+      navigator.sendBeacon(url, body);
       return;
     }
     if (typeof fetch === 'function') {
       void fetch(url, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'text/plain' },
         body,
         keepalive: true,
       }).catch(() => undefined);

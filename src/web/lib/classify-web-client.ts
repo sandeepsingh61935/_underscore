@@ -20,9 +20,10 @@ export function classifyWebClient(input: ClassifyWebClientInput): WebClientKind 
   const androidMobile = android && /Mobile/i.test(ua);
 
   if (iPhone || androidMobile) return 'phone';
-  if (iPadToken || iPadOsDesktopUa) return 'tablet';
+  if (iPadToken) return 'tablet';
+  // iPadOS 13+ reports as Macintosh; require coarse pointer so touch
+  // laptops with a mouse as primary pointer stay desktop.
+  if (iPadOsDesktopUa && input.pointerCoarse) return 'tablet';
   if (android && !androidMobile) return 'tablet';
-  if (input.pointerCoarse && input.viewportWidth < 768) return 'phone';
-  if (input.pointerCoarse) return 'tablet';
   return 'desktop';
 }

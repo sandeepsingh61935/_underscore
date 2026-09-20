@@ -618,8 +618,21 @@ export function LibraryPage(): React.ReactElement {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    try {
+      if (
+        typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('underscore:library_open')
+      ) {
+        return;
+      }
+      sessionStorage.setItem('underscore:library_open', clientKind);
+    } catch {
+      // private mode: still emit
+    }
     trackEvent('library_open', { client: clientKind });
-  }, [isAuthenticated, clientKind]);
+    // First authenticated paint only — resize must not re-count the kill test.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- clientKind snapshot
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const q = query.trim();

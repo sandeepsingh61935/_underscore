@@ -14,7 +14,7 @@ describe('trackEvent', () => {
     expect(sendBeacon).toHaveBeenCalledTimes(1);
     expect(sendBeacon).toHaveBeenCalledWith(
       expect.stringMatching(/\/api\/analytics$/),
-      expect.any(Blob)
+      expect.stringContaining('"name":"library_open"')
     );
   });
 
