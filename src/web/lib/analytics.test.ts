@@ -13,7 +13,7 @@ describe('trackEvent', () => {
     trackEvent('library_open', { client: 'phone', quote: 'nope' });
     expect(sendBeacon).toHaveBeenCalledTimes(1);
     expect(sendBeacon).toHaveBeenCalledWith(
-      '/api/analytics',
+      expect.stringMatching(/\/api\/analytics$/),
       expect.any(Blob)
     );
   });

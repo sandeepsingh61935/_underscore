@@ -30,19 +30,27 @@ export function trackEvent(name: string, props: AnalyticsProps = {}): void {
   const parsed = parseAnalyticsEvent({ name, props });
   if (!parsed.ok) return;
   try {
+    const origin =
+      typeof window !== 'undefined' &&
+      typeof window.location?.origin === 'string' &&
+      /^https?:\/\//.test(window.location.origin)
+        ? window.location.origin
+        : '';
+    if (!origin) return;
+    const url = `${origin}/api/analytics`;
     const body = JSON.stringify({ name: parsed.name, props: parsed.props });
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
       const blob = new Blob([body], { type: 'application/json' });
-      navigator.sendBeacon('/api/analytics', blob);
+      navigator.sendBeacon(url, blob);
       return;
     }
     if (typeof fetch === 'function') {
-      void fetch('/api/analytics', {
+      void fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body,
         keepalive: true,
-      });
+      }).catch(() => undefined);
     }
   } catch {
     // ignore

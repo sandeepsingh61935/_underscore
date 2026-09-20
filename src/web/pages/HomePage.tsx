@@ -435,6 +435,7 @@ export function HomePage(): React.ReactElement {
         onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
         onNoteSave={consumeOnly ? undefined : handleNoteSave}
         onTagsChange={consumeOnly ? undefined : handleTagsChange}
+        clientKind={clientKind}
       />
     ))
   );

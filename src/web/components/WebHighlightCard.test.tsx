@@ -271,4 +271,23 @@ describe('WebHighlightCard', () => {
       'https://example.com/article#:~:text=remarkable%20insight'
     );
   });
+
+  it('uses a text-fragment href on the path link', () => {
+    render(
+      <WebHighlightCard
+        highlight={{
+          ...base,
+          quote: 'remarkable insight',
+          domain: 'example.com',
+          path: '/article',
+        }}
+      />
+    );
+    const path = document.querySelector('.hl-path-link') as HTMLAnchorElement;
+    expect(path).toBeTruthy();
+    expect(path.getAttribute('target')).toBe('_blank');
+    expect(path.getAttribute('href')).toBe(
+      'https://example.com/article#:~:text=remarkable%20insight'
+    );
+  });
 });

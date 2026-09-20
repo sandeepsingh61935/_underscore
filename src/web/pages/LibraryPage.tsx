@@ -616,6 +616,23 @@ export function LibraryPage(): React.ReactElement {
     setPage(1);
   }, [selection.domain, selection.section, query, refine, tagFilters, sort]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    trackEvent('library_open', { client: clientKind });
+  }, [isAuthenticated, clientKind]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) return;
+    const t = window.setTimeout(() => {
+      trackEvent('library_search', {
+        client: clientKind,
+        result_count: filtered.length,
+      });
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [query, filtered.length, clientKind]);
+
   const tags = useMemo(() => corpusTags(scoped), [scoped]);
 
   const relatedness = useRelatednessService(lib.highlights);
@@ -828,6 +845,7 @@ export function LibraryPage(): React.ReactElement {
               onNoteSave={consumeOnly ? undefined : handleNoteSave}
               onTagsChange={consumeOnly ? undefined : handleTagsChange}
               onDelete={consumeOnly ? undefined : handleHighlightDelete}
+              clientKind={clientKind}
             />
           );
         })}

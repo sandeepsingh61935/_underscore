@@ -14,6 +14,8 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href';
 import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
+import { trackEvent } from '@/web/lib/analytics';
+import type { WebClientKind } from '@/web/lib/classify-web-client';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 
 export type WebHighlightCardProps = {
@@ -41,6 +43,8 @@ export type WebHighlightCardProps = {
   onTagsChange?: (id: string, tags: string[]) => Promise<boolean>;
   /** Soft-delete this highlight after confirm. */
   onDelete?: (id: string) => Promise<boolean>;
+  /** For consume analytics on source open. */
+  clientKind?: WebClientKind;
 };
 
 function tagKey(t: string): string {
@@ -180,6 +184,7 @@ export function WebHighlightCard({
   onNoteSave,
   onTagsChange,
   onDelete,
+  clientKind = 'desktop',
 }: WebHighlightCardProps): React.ReactElement {
   const [noteEditing, setNoteEditing] = useState(false);
   const [tagEditing, setTagEditing] = useState(false);
@@ -413,7 +418,11 @@ export function WebHighlightCard({
   }, [h.id, onDelete]);
 
   const isRail = density === 'rail';
-  const sourceHref = !isRail && h.path ? pageHrefForLibrary(h.domain, h.path) : null;
+  const pageUrl = pageHrefForLibrary(h.domain, h.path);
+  const sourceHref =
+    !isRail && pageUrl
+      ? buildTextFragmentUrl(pageUrl, { exact: h.quote })
+      : null;
   // Rail: existing tags/note only. Library empty: Tag/Note on the meta row.
   const hasTags = tags.length > 0;
   const hasNote = Boolean(note);
@@ -470,6 +479,9 @@ export function WebHighlightCard({
                         target="_blank"
                         rel="noopener noreferrer"
                         title={h.path}
+                        onClick={() => {
+                          trackEvent('highlight_open_source', { client: clientKind });
+                        }}
                       >
                         {displaySectionPath(h.path)}
                       </a>
