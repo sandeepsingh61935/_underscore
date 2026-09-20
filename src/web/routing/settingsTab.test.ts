@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseSettingsTab, buildSettingsSearch, type SettingsTab } from './settingsTab';
+import {
+  parseSettingsTab,
+  buildSettingsSearch,
+  coerceSettingsTab,
+  visibleSettingsTabs,
+  type SettingsTab,
+} from './settingsTab';
 
 describe('parseSettingsTab', () => {
   it('defaults to account when empty', () => {
@@ -37,5 +43,31 @@ describe('buildSettingsSearch', () => {
   it('round-trips with parseSettingsTab', () => {
     const tab: SettingsTab = 'ai';
     expect(parseSettingsTab(buildSettingsSearch(tab))).toBe(tab);
+  });
+});
+
+describe('visibleSettingsTabs', () => {
+  it('hides integrations and data on handheld', () => {
+    expect(visibleSettingsTabs(true)).toEqual([
+      'account',
+      'plan',
+      'appearance',
+      'keyboard',
+    ]);
+    expect(visibleSettingsTabs(false)).toContain('ai');
+    expect(visibleSettingsTabs(false)).toContain('data');
+  });
+});
+
+describe('coerceSettingsTab', () => {
+  it('keeps desktop tabs', () => {
+    expect(coerceSettingsTab('ai', false)).toBe('ai');
+    expect(coerceSettingsTab('data', false)).toBe('data');
+  });
+
+  it('maps handheld ai/data to account', () => {
+    expect(coerceSettingsTab('ai', true)).toBe('account');
+    expect(coerceSettingsTab('data', true)).toBe('account');
+    expect(coerceSettingsTab('appearance', true)).toBe('appearance');
   });
 });
