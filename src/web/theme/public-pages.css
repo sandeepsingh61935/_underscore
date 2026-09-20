@@ -975,6 +975,20 @@ body {
   align-items: center;
 }
 
+.welcome__gate-continue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-3);
+  text-decoration: none;
+  font-size: var(--step--1);
+  letter-spacing: 0.02em;
+}
+
+.welcome__gate-continue:hover {
+  color: var(--ink);
+}
+
 .welcome__gate-success {
   display: flex;
   align-items: center;

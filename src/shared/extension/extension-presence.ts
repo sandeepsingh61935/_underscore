@@ -288,16 +288,6 @@ export async function pingExtensionPresence(
   }
 }
 
-export function shouldBlockGuestProductAccess(input: {
-  isAuthenticated: boolean;
-  presence: ExtensionPresence;
-}): boolean {
-  if (input.isAuthenticated) {
-    return false;
-  }
-  return input.presence !== 'installed';
-}
-
 export function formatPresenceDebug(debug: PresenceDebug | undefined): string {
   if (!debug) return '';
   return [

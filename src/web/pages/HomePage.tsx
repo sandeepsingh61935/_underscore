@@ -9,7 +9,6 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { DomainFavicon } from '@/web/components/DomainFavicon';
-import { GuestBanner } from '@/web/components/GuestBanner';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
 import {
@@ -109,7 +108,12 @@ function EmptyInline({
       {body ? <p>{body}</p> : null}
       {action ? (
         <div className="actions" style={{ marginTop: 12 }}>
-          <Link to={action.to} className="btn primary sm" data-od-id={action.odId}>
+          <Link
+            to={action.to}
+            state={{ from: '/home' }}
+            className="btn primary sm"
+            data-od-id={action.odId}
+          >
             {action.label}
           </Link>
         </div>
@@ -440,8 +444,6 @@ export function HomePage(): React.ReactElement {
           </h1>
         </div>
       </div>
-
-      {guest ? <GuestBanner /> : null}
 
       {!empty ? (
         <div className="stats-groups" data-od-id="home-stats">

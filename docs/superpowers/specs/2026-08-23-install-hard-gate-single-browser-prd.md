@@ -1,9 +1,10 @@
 # PRD: Install Hard Gate (Guest) + Single-Browser Download
 
-**Status:** Ready for agent  
+**Status:** Superseded (guest hard gate)  
 **Date:** 2026-08-23  
-**Triage:** `ready-for-agent` (local only — do not publish GitHub issue)  
+**Triage:** superseded  
 **Supersedes / amends:** `2026-08-23-web-install-extension-onboarding-prd.md` on soft gate, dual-browser always-on UI, and “Continue without installing” for guests. Phase-2 detection intent is pulled forward as a **guest route gate** (still not API attestation).  
+**Superseded by:** `2026-09-19-web-extension-soft-notice-prd.md` — product routes are ungated; extension presence is shell chrome, not a boot wall. Single-browser download UI on Welcome is unchanged.  
 **Source:** Grilling 2026-08-23 (Q1–Q12 locked).
 
 ---

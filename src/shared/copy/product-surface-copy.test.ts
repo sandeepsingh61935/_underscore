@@ -1,25 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  guestBannerCopy,
+  extensionMissingStripCopy,
+  extensionRemnantCopy,
+  guestInstalledShellCopy,
   guestLibraryLocalBannerCopy,
   homeFirstRunCopy,
   libraryEmptyGuestCopy,
   libraryEmptyInstallCopy,
   libraryNoMatchesCopy,
+  mobileGuestCaptureCopy,
   productSurfaceCopyHasRetiredChat,
   webHomeEmptyInstallCopy,
+  welcomeContinueWithoutCopy,
 } from './product-surface-copy';
 
 describe('product-surface-copy', () => {
-  it('guest banner never mentions Chat or Ask', () => {
-    const c = guestBannerCopy();
-    expect(c.body).toMatch(/sync/i);
-    expect(c.body).toMatch(/export/i);
-    expect(c.signInLabel).toBe('Sign in');
-    expect(productSurfaceCopyHasRetiredChat(c.body)).toBe(false);
-  });
-
   it('guest library local banner matches web tone without AI/Chat', () => {
     const c = guestLibraryLocalBannerCopy();
     expect(c.body).toMatch(/sync/i);
@@ -87,5 +83,33 @@ describe('product-surface-copy', () => {
     const c = libraryNoMatchesCopy();
     expect(c.title).toMatch(/No matches/i);
     expect(c.resetLabel).toBeTruthy();
+  });
+
+  it('extension missing strip is role-aware and never Chat/Ask', () => {
+    const guest = extensionMissingStripCopy({ guest: true });
+    expect(guest.body).toMatch(/Install the extension/i);
+    expect(guest.body).toMatch(/sign in/i);
+    expect(guest.installHref).toBe('/install');
+    expect(guest.signInLabel).toBe('Sign in');
+    expect(productSurfaceCopyHasRetiredChat(guest.body)).toBe(false);
+
+    const signedIn = extensionMissingStripCopy({ guest: false });
+    expect(signedIn.body).toBe(
+      'Highlighting lives in the extension. This is your library.'
+    );
+    expect(signedIn.signInLabel).toBeUndefined();
+    expect(signedIn.installLabel).toBe('Install');
+  });
+
+  it('remnant, guest-installed, mobile guest, and continue copy stay locked', () => {
+    expect(extensionRemnantCopy()).toEqual({
+      label: 'Install extension',
+      href: '/install',
+    });
+    const guestInstalled = guestInstalledShellCopy();
+    expect(guestInstalled.body).toMatch(/Guest captures stay in the extension/i);
+    expect(guestInstalled.signInLabel).toBe('Sign in');
+    expect(mobileGuestCaptureCopy().body).toMatch(/desktop Chrome or Firefox/i);
+    expect(welcomeContinueWithoutCopy().label).toBe('Continue without installing');
   });
 });

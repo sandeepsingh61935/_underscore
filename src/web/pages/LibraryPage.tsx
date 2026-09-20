@@ -30,7 +30,6 @@ import { displaySectionPath, pageHrefForLibrary } from '@/shared/utils/page-href
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { DomainFavicon } from '@/web/components/DomainFavicon';
-import { GuestBanner } from '@/web/components/GuestBanner';
 import { LibraryHighlightDetail } from '@/web/components/LibraryHighlightDetail';
 import { RelatedPagesSection } from '@/web/components/RelatedPagesSection';
 import { RelatedTagsSection } from '@/web/components/RelatedTagsSection';
@@ -288,6 +287,7 @@ function LibraryEmptyInstall({ isGuest }: { isGuest: boolean }): React.ReactElem
           {showInstall ? (
             <Link
               to={copy.installHref}
+              state={{ from: '/library' }}
               className="btn primary sm"
               data-od-id="library-empty-install"
             >
@@ -980,11 +980,6 @@ export function LibraryPage(): React.ReactElement {
       </div>
 
       <div className="lib-main" data-od-id="library-main">
-        {caps.isGuest ? (
-          <div style={{ padding: '12px 22px 0' }}>
-            <GuestBanner />
-          </div>
-        ) : null}
         <div className="lib-main-head">
           <h2
             data-od-id="library-scope-title"

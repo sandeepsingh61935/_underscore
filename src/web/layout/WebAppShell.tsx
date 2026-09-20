@@ -6,6 +6,7 @@ import { useApp } from '@/core/context/AppProvider';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
+import { useExtensionNoticeChrome } from '@/web/hooks/useExtensionNoticeChrome';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 
 type ProductRoute = 'home' | 'library' | 'settings';
@@ -104,6 +105,8 @@ export function WebAppShell(): React.ReactElement {
   const billing = useBillingContextOptional();
   const location = useLocation();
   const navigate = useNavigate();
+  const { strip: extNoticeStrip, remnant: extNoticeRemnant } =
+    useExtensionNoticeChrome();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -252,6 +255,7 @@ export function WebAppShell(): React.ReactElement {
           </nav>
 
           <div className="sb-foot">
+            {extNoticeRemnant}
             <button
               type="button"
               className="sb-user"
@@ -275,6 +279,7 @@ export function WebAppShell(): React.ReactElement {
         </aside>
 
         <div className="main">
+          {extNoticeStrip}
           <main className={workspaceClass} data-od-id="workspace">
             <div className="workspace-inner">
               <Outlet />

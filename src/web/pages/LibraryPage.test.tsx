@@ -222,7 +222,7 @@ describe('LibraryPage', () => {
       expect(document.querySelector('[data-od-id="library"]')).toBeTruthy();
     });
 
-    expect(document.querySelector('[data-od-id="guest-banner"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="guest-banner"]')).toBeNull();
     expect(document.querySelector('[data-od-id="library-export"]')).toBeNull();
     expect(document.querySelectorAll('.hl-quote').length).toBe(0);
     expect(screen.getByText('No highlights')).toBeTruthy();

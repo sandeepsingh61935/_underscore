@@ -56,6 +56,26 @@ describe('WelcomePage', () => {
     expect(document.querySelector('[data-od-id="welcome-already-setup"]')).toBeNull();
   });
 
+  it('does not open the install panel from leftover router gateOpen/toast state', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/',
+            state: { gateOpen: true, toast: 'Install the extension to use the app' },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/" element={<WelcomePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(document.querySelector('[data-gate="open"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="welcome-gate-toast"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="welcome-get-started"]')).toBeTruthy();
+  });
+
   it('Get started slides gate (no route change, data-gate=open)', async () => {
     wrap(<WelcomePage />);
     const btn = screen.getByRole('button', { name: /Get started/i });
@@ -127,7 +147,7 @@ describe('WelcomePage', () => {
     ).toMatch(/Desktop Chrome or Firefox required/i);
   });
 
-  it('Already set up opens gate when extension missing', async () => {
+  it('Already set up navigates to /home without a presence ping', async () => {
     wrap(<WelcomePage />);
     const link = document.querySelector(
       '[data-od-id="welcome-already-setup"]'
@@ -135,22 +155,44 @@ describe('WelcomePage', () => {
     expect(link).toBeTruthy();
     fireEvent.click(link);
     await waitFor(() => {
-      expect(document.querySelector('[data-gate="open"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
+    expect(pingExtensionPresence).not.toHaveBeenCalled();
+  });
+
+  it('Continue without installing goes to /home from the gate', async () => {
+    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    const cont = document.querySelector(
+      '[data-od-id="welcome-gate-continue"]'
+    ) as HTMLAnchorElement;
+    expect(cont).toBeTruthy();
+    expect(cont.textContent).toMatch(/Continue without installing/i);
+    fireEvent.click(cont);
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
     });
   });
 
-  it('Already set up navigates to /home when extension installed', async () => {
-    (pingExtensionPresence as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      presence: 'installed',
-      version: '0.1.1',
-    } as never);
-    wrap(<WelcomePage />);
-    const link = document.querySelector(
-      '[data-od-id="welcome-already-setup"]'
-    ) as HTMLElement;
-    fireEvent.click(link);
+  it('Continue without installing returns to from when it is a product route', async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: '/install', state: { from: '/library' } }]}
+      >
+        <Routes>
+          <Route
+            path="/install"
+            element={<WelcomePage initialGateOpen aliasMode />}
+          />
+          <Route path="/library" element={<div data-od-id="lib-stub">Lib</div>} />
+          <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    fireEvent.click(
+      document.querySelector('[data-od-id="welcome-gate-continue"]') as HTMLElement
+    );
     await waitFor(() => {
-      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="lib-stub"]')).toBeTruthy();
     });
   });
 

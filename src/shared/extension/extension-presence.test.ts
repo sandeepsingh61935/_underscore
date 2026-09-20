@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  pingExtensionPresence,
-  shouldBlockGuestProductAccess,
-} from './extension-presence';
+import { pingExtensionPresence } from './extension-presence';
 
 describe('extension-presence', () => {
   it('maps successful ping to installed', async () => {
@@ -63,23 +60,5 @@ describe('extension-presence', () => {
     });
     expect(r.presence).toBe('missing');
     expect(r.debug?.hasRuntimeSend).toBe(false);
-  });
-
-  it('shouldBlockGuestProductAccess: guest missing blocked, installed ok', () => {
-    expect(
-      shouldBlockGuestProductAccess({ isAuthenticated: false, presence: 'missing' })
-    ).toBe(true);
-    expect(
-      shouldBlockGuestProductAccess({ isAuthenticated: false, presence: 'unknown' })
-    ).toBe(true);
-    expect(
-      shouldBlockGuestProductAccess({ isAuthenticated: false, presence: 'installed' })
-    ).toBe(false);
-  });
-
-  it('shouldBlockGuestProductAccess: signed-in never blocked', () => {
-    expect(
-      shouldBlockGuestProductAccess({ isAuthenticated: true, presence: 'missing' })
-    ).toBe(false);
   });
 });

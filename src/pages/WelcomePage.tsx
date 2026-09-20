@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
+import { welcomeContinueWithoutCopy } from '@/shared/copy/product-surface-copy';
 import { pingExtensionPresence } from '@/shared/extension/extension-presence';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Logo } from '@/ui-system/components/primitives/Logo';
@@ -9,6 +10,10 @@ import {
   detectInstallBrowser,
   getInstallDistributionConfig,
 } from '@/web/install/install-distribution';
+import {
+  readInstallContinueFrom,
+  resolveInstallContinueTo,
+} from '@/web/routing/install-continue-to';
 
 export interface WelcomePageProps {
   onStartClick?: () => void;
@@ -45,22 +50,11 @@ export function WelcomePage({
   const { isAuthenticated } = useApp();
   const isWeb = !onStartClick;
 
-  const locationGateOpen =
-    (location.state as { gateOpen?: boolean } | null)?.gateOpen ?? false;
-  const [welcomeGateOpen, setWelcomeGateOpen] = useState(
-    initialGateOpen || locationGateOpen
-  );
+  const [welcomeGateOpen, setWelcomeGateOpen] = useState(initialGateOpen);
   const [welcomeGateHowOpen, setWelcomeGateHowOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [checkSuccess, setCheckSuccess] = useState(false);
-
-  // Sync when guard redirects to "/" with gateOpen state
-  useEffect(() => {
-    if (locationGateOpen && !welcomeGateOpen) {
-      setWelcomeGateOpen(true);
-    }
-  }, [locationGateOpen, welcomeGateOpen]);
 
   const firstCtaRef = useRef<HTMLAnchorElement>(null);
   const openLibraryRef = useRef<HTMLAnchorElement>(null);
@@ -80,7 +74,7 @@ export function WelcomePage({
     [distConfig]
   );
 
-  // Popup still honors auth redirect; web gate does not auto-redirect (guard handles it)
+  // Web: signed-in users should not sit on marketing Welcome. Stay if the install panel is open.
   useEffect(() => {
     if (isAuthenticated && !onStartClick && !welcomeGateOpen) {
       navigate('/home');
@@ -129,11 +123,6 @@ export function WelcomePage({
       const result = await pingExtensionPresence({ timeoutMs: GATE_TIMEOUT_MS });
       if (result.presence === 'installed') {
         setCheckSuccess(true);
-        try {
-          window.localStorage.setItem('_underscore_extension_gate_passed', '1');
-        } catch {
-          // ignore
-        }
         return;
       }
       setCheckError(
@@ -148,21 +137,24 @@ export function WelcomePage({
     }
   }, []);
 
+  const continueTo = resolveInstallContinueTo(
+    readInstallContinueFrom(location.state)
+  );
+
   const handleAlreadySetup = useCallback(
-    async (e: React.MouseEvent) => {
+    (e: React.MouseEvent) => {
       e.preventDefault();
-      try {
-        const result = await pingExtensionPresence({ timeoutMs: GATE_TIMEOUT_MS });
-        if (result.presence === 'installed') {
-          navigate('/home');
-          return;
-        }
-      } catch {
-        // fall through to gate
-      }
-      openGate();
+      navigate('/home');
     },
-    [navigate, openGate]
+    [navigate]
+  );
+
+  const handleContinueWithout = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      navigate(continueTo);
+    },
+    [continueTo, navigate]
   );
 
   // Popup mode: keep legacy compact layout, no gate
@@ -257,8 +249,7 @@ export function WelcomePage({
     );
   }
 
-  // Gate open: stage with left why-rail + right gate card
-  const gateToast = (location.state as { toast?: string } | null)?.toast ?? null;
+  // Install teaching: stage with left why-rail + right card
   return (
     <div
       className="welcome welcome--web welcome--gate"
@@ -267,24 +258,6 @@ export function WelcomePage({
       data-gate="open"
       {...(gateDataProps as Record<string, string>)}
     >
-      {gateToast ? (
-        <div
-          role="status"
-          aria-live="polite"
-          data-od-id="welcome-gate-toast"
-          style={{
-            textAlign: 'center',
-            padding: '10px 16px',
-            fontFamily: 'var(--sans)',
-            fontSize: '13px',
-            color: 'var(--ink-2)',
-            borderBottom: '1px solid var(--rule-soft)',
-            background: 'var(--paper-2)',
-          }}
-        >
-          {gateToast}
-        </div>
-      ) : null}
       <div className="welcome__stage">
         {/* Left rail — replicate [Image 1] */}
         <div className="welcome__hero welcome__hero--collapsed welcome__hero--why">
@@ -482,7 +455,7 @@ export function WelcomePage({
 
             <div className="welcome__gate-verify" data-od-id="welcome-gate-verify">
               <p className="welcome__gate-verify-hint">
-                After you add it, check below to open the app.
+                After you add it, check below — or continue without installing.
               </p>
               {!checkSuccess ? (
                 <>
@@ -535,7 +508,16 @@ export function WelcomePage({
                 >
                   Open library →
                 </a>
-              ) : null}
+              ) : (
+                <a
+                  href={continueTo}
+                  className="u-mono welcome__gate-continue"
+                  data-od-id="welcome-gate-continue"
+                  onClick={handleContinueWithout}
+                >
+                  {welcomeContinueWithoutCopy().label}
+                </a>
+              )}
             </div>
 
             <div className="welcome__gate-how" data-od-id="welcome-gate-how">

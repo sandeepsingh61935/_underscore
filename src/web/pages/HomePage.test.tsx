@@ -31,7 +31,7 @@ describe('HomePage', () => {
     });
   });
 
-  it('guest: Local Library title, guest banner, true empty (no seed quotes or stats)', () => {
+  it('guest: Local Library title, true empty (no seed quotes or stats)', () => {
     renderHome();
 
     const root = document.querySelector('[data-od-id="home"]');
@@ -41,10 +41,7 @@ describe('HomePage', () => {
     expect(title).toBeTruthy();
     expect(title?.textContent?.trim()).toBe('Local Library');
 
-    expect(document.querySelector('[data-od-id="guest-banner"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="guest-passive"]')?.textContent).toMatch(
-      /stored locally|Local only|Sign in to sync/i
-    );
+    expect(document.querySelector('[data-od-id="guest-banner"]')).toBeNull();
 
     // OD: stats-groups only when library has rows
     expect(document.querySelector('[data-od-id="home-stats"]')).toBeNull();

@@ -41,17 +41,67 @@ export type NoMatchesCopy = {
   resetLabel: string;
 };
 
+/** Shell strip / remnant for extension setup (web product chrome). */
+export type ExtensionNoticeCopy = {
+  body: string;
+  installLabel?: string;
+  installHref?: string;
+  signInLabel?: string;
+  hideAriaLabel: string;
+};
+
 /** True if string still advertises retired in-app Chat/Ask. */
 export function productSurfaceCopyHasRetiredChat(text: string): boolean {
   return /\bchat\b|\bask (this |the )?library\b|\bask this page\b/i.test(text);
 }
 
-/** Web GuestBanner + popup guest strip. */
-export function guestBannerCopy(): SurfaceCtaCopy {
+const HIDE_NOTICE_ARIA = 'Hide this notice';
+
+/** Desktop shell strip when this browser has no extension. */
+export function extensionMissingStripCopy(input: {
+  guest: boolean;
+}): ExtensionNoticeCopy {
+  if (input.guest) {
+    return {
+      body: 'Install the extension to highlight on other pages, or sign in to open a cloud library.',
+      installLabel: 'Install',
+      installHref: '/install',
+      signInLabel: 'Sign in',
+      hideAriaLabel: HIDE_NOTICE_ARIA,
+    };
+  }
   return {
-    body: 'Highlights are stored locally. Sign in to sync, export, and connect Integrations.',
-    signInLabel: 'Sign in',
+    body: 'Highlighting lives in the extension. This is your library.',
+    installLabel: 'Install',
+    installHref: '/install',
+    hideAriaLabel: HIDE_NOTICE_ARIA,
   };
+}
+
+export function extensionRemnantCopy(): { label: string; href: string } {
+  return { label: 'Install extension', href: '/install' };
+}
+
+/** Guest + extension installed (shell sign-in line). */
+export function guestInstalledShellCopy(): ExtensionNoticeCopy {
+  return {
+    body: 'Guest captures stay in the extension. Sign in to see them here.',
+    signInLabel: 'Sign in',
+    hideAriaLabel: HIDE_NOTICE_ARIA,
+  };
+}
+
+/** Guest on a mobile viewport — capture is desktop-only. */
+export function mobileGuestCaptureCopy(): ExtensionNoticeCopy {
+  return {
+    body: 'Capture needs desktop Chrome or Firefox. Sign in to browse a cloud library.',
+    signInLabel: 'Sign in',
+    hideAriaLabel: HIDE_NOTICE_ARIA,
+  };
+}
+
+export function welcomeContinueWithoutCopy(): { label: string } {
+  return { label: 'Continue without installing' };
 }
 
 /**
