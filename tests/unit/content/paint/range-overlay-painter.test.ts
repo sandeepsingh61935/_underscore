@@ -25,6 +25,11 @@ function stubClientRects(range: Range, rects: DOMRect[]): void {
   range.getClientRects = () => rects as unknown as DOMRectList;
 }
 
+function paintScope(): ParentNode {
+  const root = document.getElementById('underscore-paint-root');
+  return root?.shadowRoot ?? root ?? document;
+}
+
 describe('RangeOverlayPainter', () => {
   beforeEach(() => {
     document.body.innerHTML = '<p id="p">hello world of highlights</p>';
@@ -55,12 +60,17 @@ describe('RangeOverlayPainter', () => {
 
     const root = document.getElementById('underscore-paint-root');
     expect(root).toBeTruthy();
-    const rects = root!.querySelectorAll('.underscore-paint-rect');
+    expect(root?.hasAttribute('data-darkreader-ignore')).toBe(true);
+    expect(root?.shadowRoot).toBeTruthy();
+    const rects = paintScope().querySelectorAll('.underscore-paint-rect');
     expect(rects.length).toBeGreaterThan(0);
     expect(rects[0]?.getAttribute('data-highlight-id')).toBe('hl-1');
-    const shadow = (rects[0] as HTMLElement).style.boxShadow;
-    expect(shadow).toMatch(/inset 0 -2\.5px 0 #111111/);
-    expect(shadow).toMatch(/inset 0 -4px 0 #f5f5f5/);
+    const fill = (rects[0] as HTMLElement).style.background;
+    expect(fill).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
+    expect(fill).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
+    expect((rects[0] as HTMLElement).style.getPropertyPriority('background')).toBe(
+      'important'
+    );
     expect(painter.paintedCount).toBe(1);
   });
 
@@ -72,10 +82,11 @@ describe('RangeOverlayPainter', () => {
 
     painter.paint('hl-dark', [range], 'yellow');
 
-    const rect = document.querySelector('.underscore-paint-rect') as HTMLElement;
-    const shadow = rect.style.boxShadow;
-    expect(shadow).toContain('#111111');
-    expect(shadow).toContain('#f5f5f5');
+    const rect = paintScope().querySelector('.underscore-paint-rect') as HTMLElement;
+    const fill = rect.style.background;
+    expect(fill).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
+    expect(fill).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
+    expect(rect.hasAttribute('data-darkreader-ignore')).toBe(true);
   });
 
   it('hitTest returns id for point inside range geometry', () => {
@@ -113,8 +124,27 @@ describe('RangeOverlayPainter', () => {
 
     painter.unpaint('a');
     expect(painter.paintedCount).toBe(1);
-    expect(document.querySelectorAll('[data-highlight-id="a"]').length).toBe(0);
-    expect(document.querySelectorAll('[data-highlight-id="b"]').length).toBe(1);
+    expect(paintScope().querySelectorAll('[data-highlight-id="a"]').length).toBe(0);
+    expect(paintScope().querySelectorAll('[data-highlight-id="b"]').length).toBe(1);
+  });
+
+  it('keeps an entry when first layout has no rects so relayout can paint', () => {
+    const painter = RangeOverlayPainter.getInstance();
+    const range = rangeOver('hello');
+    stubClientRects(range, []);
+    painter.paint('hl-late', [range], 'yellow');
+    expect(painter.paintedCount).toBe(1);
+
+    stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+    window.dispatchEvent(new Event('resize'));
+
+    return new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        const rects = paintScope().querySelectorAll('[data-highlight-id="hl-late"]');
+        expect(rects.length).toBeGreaterThan(0);
+        resolve();
+      });
+    });
   });
 
   it('clear removes root and all rects', () => {

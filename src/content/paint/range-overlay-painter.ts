@@ -2,8 +2,9 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = fixed dual pair (near-black + near-white) so the mark
- * stays visible on light and dark paper (including Dark Reader).
+ * Underscore stroke = a 5px baseline strip (near-black + near-white) inside an
+ * open shadow root marked data-darkreader-ignore so Dark Reader cannot rewrite
+ * or invert the mark into the page background.
  * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
@@ -15,10 +16,33 @@ import type { ColorRole } from '@/shared/schemas/highlight-schema';
 
 const ROOT_ID = 'underscore-paint-root';
 const STROKE_THICKNESS_PX = 2.5;
-const HALO_THICKNESS_PX = 4;
+const STRIP_HEIGHT_PX = 5;
 const STROKE_ON_LIGHT = '#111111';
 const STROKE_ON_DARK = '#f5f5f5';
-const DUAL_STROKE = `inset 0 -${STROKE_THICKNESS_PX}px 0 ${STROKE_ON_LIGHT}, inset 0 -${HALO_THICKNESS_PX}px 0 ${STROKE_ON_DARK}`;
+const DUAL_FILL = `linear-gradient(to top, ${STROKE_ON_LIGHT} 0 ${STROKE_THICKNESS_PX}px, ${STROKE_ON_DARK} ${STROKE_THICKNESS_PX}px 100%)`;
+const PAINT_SHADOW_CSS = `
+:host {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2147483645;
+  filter: none !important;
+}
+.underscore-paint-rect {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-radius: 0;
+  height: ${STRIP_HEIGHT_PX}px;
+  background: ${DUAL_FILL} !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+`;
 
 interface OverlayEntry {
   id: string;
@@ -32,6 +56,7 @@ export class RangeOverlayPainter implements HighlightPainter {
 
   private readonly entries = new Map<string, OverlayEntry>();
   private root: HTMLElement | null = null;
+  private layer: ShadowRoot | null = null;
   private scrollScheduled = false;
   private listenersAttached = false;
 
@@ -64,9 +89,12 @@ export class RangeOverlayPainter implements HighlightPainter {
     for (const range of liveRanges) {
       elements.push(...this.createRectsForRange(id, range));
     }
-    if (elements.length === 0) return;
 
+    // Keep the entry even with 0 rects (layout not ready). relayoutAll can paint later.
     this.entries.set(id, { id, colorRole: role, ranges: liveRanges, elements });
+    if (elements.length === 0) {
+      this.onViewportChange();
+    }
   }
 
   unpaint(id: string): void {
@@ -93,6 +121,7 @@ export class RangeOverlayPainter implements HighlightPainter {
     this.teardownListeners();
     this.root?.remove();
     this.root = null;
+    this.layer = null;
   }
 
   hitTest(x: number, y: number): string | null {
@@ -159,7 +188,7 @@ export class RangeOverlayPainter implements HighlightPainter {
   }
 
   private ensureRoot(): HTMLElement {
-    if (this.root && document.contains(this.root)) return this.root;
+    if (this.root && document.contains(this.root) && this.layer) return this.root;
 
     let root = document.getElementById(ROOT_ID) as HTMLElement | null;
     if (!root) {
@@ -168,12 +197,36 @@ export class RangeOverlayPainter implements HighlightPainter {
       root.setAttribute('aria-hidden', 'true');
       (document.documentElement || document.body).appendChild(root);
     }
+    root.setAttribute('data-darkreader-ignore', '');
     this.root = root;
+    this.ensureLayer(root);
     return root;
   }
 
+  private ensureLayer(host: HTMLElement): ShadowRoot {
+    if (this.layer && this.layer.host === host) return this.layer;
+
+    if (host.shadowRoot) {
+      this.layer = host.shadowRoot;
+    } else {
+      host.replaceChildren();
+      this.layer = host.attachShadow({ mode: 'open' });
+    }
+
+    if (!this.layer.querySelector('style[data-underscore-paint]')) {
+      const style = document.createElement('style');
+      style.dataset['underscorePaint'] = '';
+      style.textContent = PAINT_SHADOW_CSS;
+      this.layer.appendChild(style);
+    }
+    return this.layer;
+  }
+
   private createRectsForRange(id: string, range: Range): HTMLElement[] {
-    const root = this.ensureRoot();
+    this.ensureRoot();
+    const layer = this.layer;
+    if (!layer) return [];
+
     let rects: DOMRectList | ArrayLike<DOMRect>;
     try {
       rects = typeof range.getClientRects === 'function' ? range.getClientRects() : [];
@@ -192,12 +245,13 @@ export class RangeOverlayPainter implements HighlightPainter {
       const el = document.createElement('div');
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
-      el.style.boxShadow = DUAL_STROKE;
+      el.setAttribute('data-darkreader-ignore', '');
+      el.style.setProperty('background', DUAL_FILL, 'important');
       el.style.left = `${rect.left + scrollX}px`;
-      el.style.top = `${rect.top + scrollY}px`;
+      el.style.top = `${rect.top + scrollY + rect.height - STRIP_HEIGHT_PX}px`;
       el.style.width = `${rect.width}px`;
-      el.style.height = `${Math.max(rect.height, 2)}px`;
-      root.appendChild(el);
+      el.style.height = `${STRIP_HEIGHT_PX}px`;
+      layer.appendChild(el);
       created.push(el);
     }
     return created;
