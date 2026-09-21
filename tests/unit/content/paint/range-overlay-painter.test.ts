@@ -59,8 +59,23 @@ describe('RangeOverlayPainter', () => {
     expect(rects.length).toBeGreaterThan(0);
     expect(rects[0]?.getAttribute('data-highlight-id')).toBe('hl-1');
     const shadow = (rects[0] as HTMLElement).style.boxShadow;
-    expect(shadow).toMatch(/inset 0 -2\.5px 0/);
+    expect(shadow).toMatch(/inset 0 -2\.5px 0 #111111/);
+    expect(shadow).toMatch(/inset 0 -4px 0 #f5f5f5/);
     expect(painter.paintedCount).toBe(1);
+  });
+
+  it('keeps both stroke colors even when the page background is dark', () => {
+    document.body.style.backgroundColor = 'rgb(18, 18, 18)';
+    const painter = RangeOverlayPainter.getInstance();
+    const range = rangeOver('hello');
+    stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+
+    painter.paint('hl-dark', [range], 'yellow');
+
+    const rect = document.querySelector('.underscore-paint-rect') as HTMLElement;
+    const shadow = rect.style.boxShadow;
+    expect(shadow).toContain('#111111');
+    expect(shadow).toContain('#f5f5f5');
   });
 
   it('hitTest returns id for point inside range geometry', () => {

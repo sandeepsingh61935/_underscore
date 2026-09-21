@@ -2,20 +2,23 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = invert of sampled page background (with contrast floor).
+ * Underscore stroke = fixed dual pair (near-black + near-white) so the mark
+ * stays visible on light and dark paper (including Dark Reader).
  * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
 import { getFirstLineEdgeRects } from './first-line-geometry';
-import { resolveUnderscoreStroke } from './highlight-contrast';
 import type { FirstLineEdges, HighlightPainter } from './highlight-painter';
-import { sampleBackgroundNearRange } from './sample-page-background';
 
 import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
 
 const ROOT_ID = 'underscore-paint-root';
 const STROKE_THICKNESS_PX = 2.5;
+const HALO_THICKNESS_PX = 4;
+const STROKE_ON_LIGHT = '#111111';
+const STROKE_ON_DARK = '#f5f5f5';
+const DUAL_STROKE = `inset 0 -${STROKE_THICKNESS_PX}px 0 ${STROKE_ON_LIGHT}, inset 0 -${HALO_THICKNESS_PX}px 0 ${STROKE_ON_DARK}`;
 
 interface OverlayEntry {
   id: string;
@@ -178,9 +181,6 @@ export class RangeOverlayPainter implements HighlightPainter {
       return [];
     }
 
-    const bg = sampleBackgroundNearRange(range);
-    const stroke = resolveUnderscoreStroke(bg);
-
     const created: HTMLElement[] = [];
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
@@ -192,7 +192,7 @@ export class RangeOverlayPainter implements HighlightPainter {
       const el = document.createElement('div');
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
-      el.style.boxShadow = `inset 0 -${STROKE_THICKNESS_PX}px 0 ${stroke}`;
+      el.style.boxShadow = DUAL_STROKE;
       el.style.left = `${rect.left + scrollX}px`;
       el.style.top = `${rect.top + scrollY}px`;
       el.style.width = `${rect.width}px`;
@@ -233,7 +233,6 @@ export class RangeOverlayPainter implements HighlightPainter {
       const next: HTMLElement[] = [];
       for (const range of entry.ranges) {
         if (!range || range.collapsed) continue;
-        // Re-sample + re-invert on relayout (bg may change with theme/scroll sections).
         next.push(...this.createRectsForRange(entry.id, range));
       }
       entry.elements = next;
