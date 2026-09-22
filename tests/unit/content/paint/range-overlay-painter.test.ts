@@ -74,6 +74,22 @@ describe('RangeOverlayPainter', () => {
     expect(painter.paintedCount).toBe(1);
   });
 
+  it('marks the paint stylesheet so Dark Reader will not rewrite the strip', () => {
+    const painter = RangeOverlayPainter.getInstance();
+    const range = rangeOver('hello');
+    stubClientRects(range, [stubRect(10, 20, 80, 16)]);
+    painter.paint('hl-dr', [range], 'yellow');
+
+    const shadow = document.getElementById('underscore-paint-root')?.shadowRoot;
+    const paintStyle = shadow?.querySelector('style[data-underscore-paint]');
+    expect(paintStyle?.classList.contains('darkreader')).toBe(true);
+
+    const rect = shadow?.querySelector('.underscore-paint-rect') as HTMLElement;
+    expect(rect.style.getPropertyPriority('background')).toBe('important');
+    expect(rect.style.background).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
+    expect(rect.style.background).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
+  });
+
   it('keeps both stroke colors even when the page background is dark', () => {
     document.body.style.backgroundColor = 'rgb(18, 18, 18)';
     const painter = RangeOverlayPainter.getInstance();

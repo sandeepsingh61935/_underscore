@@ -163,7 +163,10 @@ describe('BaseHighlightMode.renderAndRegister', () => {
 
     expect(mode.getHighlight('hl-paint')).toBeTruthy();
     expect(RangeOverlayPainter.getInstance().paintedCount).toBe(1);
-    expect(document.querySelectorAll('.underscore-paint-rect').length).toBeGreaterThan(0);
+    const paintRoot = document.getElementById('underscore-paint-root');
+    expect(
+      paintRoot?.shadowRoot?.querySelectorAll('.underscore-paint-rect').length
+    ).toBeGreaterThan(0);
   });
 
   it('clearPaint removes all overlays and session data', async () => {
@@ -210,7 +213,9 @@ describe('BaseHighlightMode.renderAndRegister', () => {
 
     const stored = mode.getHighlight('hl-hex');
     expect(stored?.colorRole).toBe('yellow');
-    const rect = document.querySelector('.underscore-paint-rect');
+    const rect = document
+      .getElementById('underscore-paint-root')
+      ?.shadowRoot?.querySelector('.underscore-paint-rect');
     expect(rect?.getAttribute('data-highlight-id')).toBe('hl-hex');
   });
 });

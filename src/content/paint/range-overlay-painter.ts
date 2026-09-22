@@ -2,10 +2,13 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = a 5px baseline strip (near-black + near-white) inside an
- * open shadow root marked data-darkreader-ignore so Dark Reader cannot rewrite
- * or invert the mark into the page background.
- * colorRole is accepted for API stability but does not tint the on-page stroke.
+ * Underscore stroke = a 5px baseline strip (near-black + near-white).
+ * Both stops are set as an inline background with !important so they beat
+ * Dark Reader's `[data-darkreader-inline-bgimage]` override, which otherwise
+ * rewrites both stops toward the dark page background. The strip lives in an
+ * open shadow root; its stylesheet is classed `darkreader` so Dark Reader's
+ * style manager skips it. colorRole is accepted for API stability but does
+ * not tint the on-page stroke.
  */
 
 import { getFirstLineEdgeRects } from './first-line-geometry';
@@ -216,6 +219,8 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (!this.layer.querySelector('style[data-underscore-paint]')) {
       const style = document.createElement('style');
       style.dataset['underscorePaint'] = '';
+      // Dark Reader's shouldManageStyle skips stylesheets with this class.
+      style.classList.add('darkreader');
       style.textContent = PAINT_SHADOW_CSS;
       this.layer.appendChild(style);
     }
