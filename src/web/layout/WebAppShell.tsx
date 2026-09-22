@@ -8,6 +8,8 @@ import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { useExtensionNoticeChrome } from '@/web/hooks/useExtensionNoticeChrome';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
+import { takeOauthReturnTo } from '@/web/routing/oauth-return-to';
+import { resolveSafeReturnTo } from '@/web/routing/safe-return-to';
 
 type ProductRoute = 'home' | 'library' | 'settings';
 
@@ -114,6 +116,15 @@ export function WebAppShell(): React.ReactElement {
   useEffect(() => {
     applyWebPrefs(readWebPrefs());
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const stashed = takeOauthReturnTo();
+    if (!stashed) return;
+    const target = resolveSafeReturnTo(stashed, '/home');
+    if (target === `${location.pathname}${location.search}`) return;
+    navigate(target, { replace: true });
+  }, [isAuthenticated, location.pathname, location.search, navigate]);
 
   const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
