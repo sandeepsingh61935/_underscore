@@ -17,9 +17,11 @@ import {
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
 import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildLibrarySearch } from '@/web/routing/librarySelection';
+import { PhoneHome } from '@/web/components/PhoneHome';
 
 /** Denser rail cards fit more rows; keep in sync with aggregateLibrary default. */
 const RECENT_CAP = 12;
@@ -161,6 +163,7 @@ export function HomePage(): React.ReactElement {
   const guest = caps.isGuest;
   const clientKind = useWebClientKind();
   const consumeOnly = guest || isHandheldClient(clientKind);
+  const phoneLayout = useMobileWebViewport();
   const showIntegrationsCta = caps.flags.mcp && !consumeOnly;
 
   const patchHighlight = lib.patchHighlight;
@@ -231,6 +234,39 @@ export function HomePage(): React.ReactElement {
     },
     [navigate]
   );
+
+  if (phoneLayout) {
+    if (lib.status === 'loading') {
+      return (
+        <div className="phone-home" data-od-id="phone-home-loading" aria-busy="true">
+          <p className="phone-empty">Loading…</p>
+        </div>
+      );
+    }
+    if (lib.status === 'error') {
+      return (
+        <div className="phone-home" data-od-id="phone-home-error">
+          <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
+          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return (
+      <PhoneHome
+        greeting={title}
+        count={lib.highlights.length}
+        recent={recent}
+        onOpenHighlight={(id, domain) => {
+          const h = lib.highlights.find((hl) => hl.id === id);
+          void navigate(
+            `/library?${buildLibrarySearch({ domain: h?.domain ?? domain, highlight: id })}`
+          );
+        }}
+      />
+    );
+  }
 
   if (lib.status === 'loading') {
     return (
