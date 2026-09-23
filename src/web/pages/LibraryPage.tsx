@@ -46,6 +46,7 @@ import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
 import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
@@ -57,6 +58,7 @@ import {
   buildLibrarySearch,
   parseLibrarySelection,
 } from '@/web/routing/librarySelection';
+import { PhoneLibrary } from '@/web/components/PhoneLibrary';
 
 type LibSort = 'newest' | 'oldest' | 'domain' | 'quote';
 
@@ -331,6 +333,7 @@ export function LibraryPage(): React.ReactElement {
   const clientKind = useWebClientKind();
   const handheld = isHandheldClient(clientKind);
   const consumeOnly = caps.isGuest || handheld;
+  const phoneLayout = useMobileWebViewport();
 
   const lib = useWebLibrary({
     isAuthenticated,
@@ -729,6 +732,52 @@ export function LibraryPage(): React.ReactElement {
     },
     [consumeOnly, caps.flags.export, filtered, selection.domain, selection.section]
   );
+
+  if (phoneLayout) {
+    if (lib.status === 'loading') {
+      return (
+        <div className="phone-library" data-od-id="phone-library-loading" aria-busy="true">
+          <p className="phone-empty">Loading…</p>
+        </div>
+      );
+    }
+    if (lib.status === 'error') {
+      return (
+        <div className="phone-library" data-od-id="phone-library-error">
+          <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
+          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return (
+      <PhoneLibrary
+        highlights={lib.highlights}
+        query={query}
+        onQueryChange={setQuery}
+        domain={selection.domain}
+        highlightId={selection.highlight}
+        onOpenDomain={(d) => {
+          const search = buildLibrarySearch({ domain: d });
+          void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
+        }}
+        onOpenHighlight={(id) => {
+          const search = buildLibrarySearch({ domain: selection.domain, highlight: id });
+          void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
+        }}
+        onBack={() => {
+          if (selection.highlight) {
+            const search = buildLibrarySearch({ domain: selection.domain });
+            void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
+          } else if (selection.domain) {
+            void navigate({ pathname: '/library', search: '' }, { replace: false });
+          }
+        }}
+        clientKind={clientKind}
+      />
+    );
+  }
 
   if (lib.status === 'loading') {
     return (
