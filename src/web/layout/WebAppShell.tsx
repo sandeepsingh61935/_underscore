@@ -7,6 +7,7 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { useExtensionNoticeChrome } from '@/web/hooks/useExtensionNoticeChrome';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 import { takeOauthReturnTo } from '@/web/routing/oauth-return-to';
 import { resolveSafeReturnTo } from '@/web/routing/safe-return-to';
@@ -109,6 +110,7 @@ export function WebAppShell(): React.ReactElement {
   const navigate = useNavigate();
   const { strip: extNoticeStrip, remnant: extNoticeRemnant } =
     useExtensionNoticeChrome();
+  const phoneLayout = useMobileWebViewport();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -290,7 +292,7 @@ export function WebAppShell(): React.ReactElement {
         </aside>
 
         <div className="main">
-          {extNoticeStrip}
+          {!phoneLayout && extNoticeStrip}
           <main className={workspaceClass} data-od-id="workspace">
             <div className="workspace-inner">
               <Outlet />

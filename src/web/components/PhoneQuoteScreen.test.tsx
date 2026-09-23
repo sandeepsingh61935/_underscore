@@ -34,7 +34,7 @@ describe('PhoneQuoteScreen', () => {
   });
 
   it('tracks highlight_open_source on click', () => {
-    const { container } = render(
+    render(
       <PhoneQuoteScreen highlight={highlight} onBack={() => undefined} clientKind="phone" />
     );
     const link = screen.getByRole('link', { name: 'Open' });

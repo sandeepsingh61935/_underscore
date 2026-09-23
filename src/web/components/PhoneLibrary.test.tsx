@@ -134,7 +134,7 @@ describe('PhoneLibrary', () => {
   });
 
   it('does not render delete, export, or vault UI', () => {
-    const { container } = render(
+    render(
       <PhoneLibrary
         highlights={HIGHLIGHTS}
         query=""
