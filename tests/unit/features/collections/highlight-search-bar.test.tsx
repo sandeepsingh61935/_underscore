@@ -171,40 +171,21 @@ describe('HighlightSearchBar', () => {
     expect(screen.getByLabelText('Search')).toBeDisabled();
   });
 
-  it('renders singular, plural, and zero result counts', () => {
-    const { rerender } = render(
+  it('does not render search-meta-row or search-count when resultCount is provided', () => {
+    const { container, rerender } = render(
       <HighlightSearchBar {...baseProps({ query: 'x', resultCount: 1 })} />
     );
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(container.querySelector('.search-meta-row')).toBeNull();
+    expect(container.querySelector('.search-count')).toBeNull();
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
 
     rerender(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: 12 })} />);
-    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(container.querySelector('.search-meta-row')).toBeNull();
+    expect(screen.queryByText('12')).not.toBeInTheDocument();
 
-    rerender(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: 0 })} />);
-    expect(screen.getByText('0')).toBeInTheDocument();
-  });
-
-  it('hides the result count when the query is empty and no filters are active, even if resultCount is defined', () => {
-    render(
-      <HighlightSearchBar
-        {...baseProps({ query: '', resultCount: 5, refine: [], tagFilters: [] })}
-      />
-    );
-    expect(screen.queryByText(/results?/)).not.toBeInTheDocument();
-  });
-
-  it('shows the result count for refine-only filtering without a query', () => {
-    render(
-      <HighlightSearchBar
-        {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })}
-      />
-    );
-    expect(screen.getByText('0')).toBeInTheDocument();
-  });
-
-  it('hides the result count when resultCount is undefined', () => {
-    render(<HighlightSearchBar {...baseProps({ query: 'x', resultCount: undefined })} />);
-    expect(screen.queryByText(/results?/)).not.toBeInTheDocument();
+    rerender(<HighlightSearchBar {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })} />);
+    expect(container.querySelector('.search-meta-row')).toBeNull();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
   it('selects a popular tag from the filter panel', () => {

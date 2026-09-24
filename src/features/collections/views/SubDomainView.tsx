@@ -6,6 +6,7 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import type { OpenedHighlight } from '@/features/collections/opened-highlight';
 import { LibraryRelatedHighlights } from '@/features/collections/components/LibraryRelatedHighlights';
 import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
 import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
@@ -48,6 +49,7 @@ export interface SubDomainViewProps {
   onBack?: () => void;
   /** When the domain has no highlights left, return to Library (Collections). */
   onDomainEmpty?: () => void;
+  onOpenHighlight?: (highlight: OpenedHighlight) => void;
 }
 
 export function SubDomainView({
@@ -55,6 +57,7 @@ export function SubDomainView({
   section: propSection,
   onBack: _onBack,
   onDomainEmpty,
+  onOpenHighlight,
 }: SubDomainViewProps): React.ReactElement {
   const params = useParams<{ domain: string; section: string }>();
   const domain = propDomain ?? params.domain ?? '';
@@ -357,6 +360,17 @@ export function SubDomainView({
                     presentation: r.presentation,
                   }}
                   showLocationMeta={false}
+                  onOpenDetail={() =>
+                    onOpenHighlight?.({
+                      id: r.id,
+                      text: r.text,
+                      domain: r.domain,
+                      path: r.path,
+                      url: r.url,
+                      notes: r.notes,
+                      tags: r.tags,
+                    })
+                  }
                   allowMarginalia={tagsGate.allowed}
                   isExpanded={expandedHighlightId === r.id}
                   onToggleExpand={() => {
@@ -405,6 +419,17 @@ export function SubDomainView({
                   presentation: h.presentation,
                 }}
                 showLocationMeta={false}
+                onOpenDetail={() =>
+                  onOpenHighlight?.({
+                    id: h.id,
+                    text: h.text,
+                    domain,
+                    path: section,
+                    url: h.url,
+                    notes: h.notes,
+                    tags: h.tags,
+                  })
+                }
                 allowMarginalia={tagsGate.allowed}
                 isExpanded={expandedHighlightId === h.id}
                 onToggleExpand={() => {

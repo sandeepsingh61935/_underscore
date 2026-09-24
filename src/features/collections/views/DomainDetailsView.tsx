@@ -6,6 +6,7 @@ import { DeleteConfirmDialog } from '@/features/collections/components/DeleteCon
 import { ExportActions } from '@/features/collections/components/ExportActions';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import type { OpenedHighlight } from '@/features/collections/opened-highlight';
 import { LibraryScopeChrome } from '@/features/collections/components/LibraryScopeChrome';
 import {
   formatSearchMatchMeta,
@@ -43,12 +44,14 @@ export interface DomainDetailsViewProps {
   domain?: string;
   onBack?: () => void;
   onSectionClick?: (domain: string, section: string) => void;
+  onOpenHighlight?: (highlight: OpenedHighlight) => void;
 }
 
 export function DomainDetailsView({
   domain: propDomain,
   onBack: _onBack,
   onSectionClick,
+  onOpenHighlight,
 }: DomainDetailsViewProps): React.ReactElement {
   const params = useParams<{ domain: string }>();
   const domain = propDomain ?? params.domain ?? '';
@@ -289,6 +292,17 @@ export function DomainDetailsView({
                   {section.highlights.map((r) => (
                     <LibraryHighlightTile
                       key={r.id}
+                      onOpenDetail={() =>
+                        onOpenHighlight?.({
+                          id: r.id,
+                          text: r.text,
+                          domain: r.domain,
+                          path: r.path,
+                          url: r.url,
+                          notes: r.notes,
+                          tags: r.tags,
+                        })
+                      }
                       highlight={{
                         id: r.id,
                         text: r.text,

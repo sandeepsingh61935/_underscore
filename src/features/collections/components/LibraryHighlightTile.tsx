@@ -43,6 +43,8 @@ export interface LibraryHighlightTileProps {
   highlight: LibraryHighlightFields;
   showLocationMeta?: boolean;
   onSectionClick?: () => void;
+  /** Opens the quote page for this highlight. */
+  onOpenDetail?: () => void;
   /** May be async; dialog stays busy until the promise settles. */
   onDelete?: () => void | Promise<void>;
   /** When true, embed notes/tags strip (tags feature gate). */
@@ -69,6 +71,7 @@ export function LibraryHighlightTile({
   highlight,
   showLocationMeta = true,
   onSectionClick,
+  onOpenDetail,
   onDelete,
   allowMarginalia = false,
   isExpanded = false,
@@ -165,6 +168,7 @@ export function LibraryHighlightTile({
         language={highlight.language}
         presentation={highlight.presentation}
         onSectionClick={onSectionClick}
+        onQuoteClick={onOpenDetail}
         onCopy={onCopy}
         onCopyQuoteLink={onCopyQuoteLink}
         onOpen={onOpen}

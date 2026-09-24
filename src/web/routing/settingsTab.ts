@@ -35,3 +35,19 @@ export function buildSettingsSearch(tab: SettingsTab): string {
   params.set('tab', tab);
   return params.toString();
 }
+
+export const HANDHELD_SETTINGS_TABS: readonly SettingsTab[] = [
+  'account',
+  'plan',
+  'appearance',
+  'keyboard',
+];
+
+export function visibleSettingsTabs(handheld: boolean): readonly SettingsTab[] {
+  return handheld ? HANDHELD_SETTINGS_TABS : VALID_TABS;
+}
+
+export function coerceSettingsTab(tab: SettingsTab, handheld: boolean): SettingsTab {
+  if (!handheld) return tab;
+  return tab === 'ai' || tab === 'data' ? 'account' : tab;
+}

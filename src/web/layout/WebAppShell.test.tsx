@@ -162,14 +162,10 @@ describe('WebAppShell', () => {
     expect(document.querySelector('[data-od-id="ext-notice-install"]')).toBeTruthy();
   });
 
-  it('guest on mobile with extension missing sees desktop-capture copy, not install strip', () => {
+  it('mobile viewport hides extension notice strip even when extension missing', () => {
     vi.mocked(useMobileWebViewport).mockReturnValue(true);
     renderShell('/home', 'missing');
-    const strip = document.querySelector('[data-od-id="ext-notice"]');
-    expect(strip?.getAttribute('data-kind')).toBe('mobile-guest');
-    expect(strip?.textContent).toMatch(/desktop Chrome or Firefox/i);
-    expect(document.querySelector('[data-od-id="ext-notice-signin"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="ext-notice-install"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="ext-notice"]')).toBeNull();
     expect(document.querySelector('[data-od-id="ext-notice-remnant"]')).toBeNull();
   });
 

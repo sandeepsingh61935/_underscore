@@ -42,6 +42,8 @@ export interface HighlightCardProps {
   url?: string;
   density?: 'compact' | 'comfortable';
   onSectionClick?: () => void;
+  /** Opens the quote page. The quote body is the control; action buttons stay separate. */
+  onQuoteClick?: () => void;
   onCopy?: () => void;
   onCopyQuoteLink?: () => void;
   /** Open source URL (home Recent stream). */
@@ -213,6 +215,7 @@ export function HighlightCard({
   section,
   density = 'comfortable',
   onSectionClick,
+  onQuoteClick,
   onCopy,
   onCopyQuoteLink,
   onOpen,
@@ -631,13 +634,30 @@ export function HighlightCard({
               </div>
             </div>
           ) : (
-            <HighlightMarkdownBody
-              source={quote}
-              clamp
-              sourceKind={sourceKind}
-              language={language}
-              presentation={presentation}
-            />
+            <div
+              role={onQuoteClick ? 'button' : undefined}
+              tabIndex={onQuoteClick ? 0 : undefined}
+              onClick={onQuoteClick}
+              onKeyDown={
+                onQuoteClick
+                  ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onQuoteClick();
+                      }
+                    }
+                  : undefined
+              }
+              style={onQuoteClick ? { cursor: 'pointer' } : undefined}
+            >
+              <HighlightMarkdownBody
+                source={quote}
+                clamp
+                sourceKind={sourceKind}
+                language={language}
+                presentation={presentation}
+              />
+            </div>
           )}
 
           {showLocationMeta && (

@@ -14,6 +14,7 @@ import {
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Logo } from '@/ui-system/components/primitives/Logo';
+import { stashOauthReturnTo } from '@/web/routing/oauth-return-to';
 
 function stashPendingAuthorizationIdFromReturnTo(returnTo: string): void {
   const parsed = new URL(returnTo, 'https://placeholder.local');
@@ -133,20 +134,15 @@ export function SignInView(): React.ReactElement {
       const params = new URLSearchParams(window.location.search);
       const intendedMode = params.get('intendedMode');
       const returnTo = params.get('returnTo');
-      const redirectUrl = new URL(window.location.origin);
-
+      // Always return to /home — that URL is on the Supabase allow list.
+      // returnTo is restored after session hydrate (see takeOauthReturnTo).
+      const redirectUrl = new URL('/home', window.location.origin);
       if (returnTo) {
         stashPendingAuthorizationIdFromReturnTo(returnTo);
-        const target = resolveAuthRedirectTarget(returnTo);
-        const parsed = new URL(target, window.location.origin);
-        redirectUrl.pathname = parsed.pathname;
-        redirectUrl.search = parsed.search;
-      } else {
-        // Land on product shell so OAuth return never paints Welcome.
-        redirectUrl.pathname = '/home';
-        if (intendedMode) {
-          redirectUrl.searchParams.set('intendedMode', intendedMode);
-        }
+        stashOauthReturnTo(resolveAuthRedirectTarget(returnTo));
+      }
+      if (intendedMode) {
+        redirectUrl.searchParams.set('intendedMode', intendedMode);
       }
 
       const { error } = await supabase.auth.signInWithOAuth({

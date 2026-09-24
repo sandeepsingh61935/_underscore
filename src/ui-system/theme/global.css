@@ -475,6 +475,43 @@
   color: #7a2418;
 }
 
+/* Confirm dialog actions. Cancel is neutral. Caution commits a reversible
+   change. Danger is a permanent delete and uses a filled rust button. */
+.confirm-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  font-family: var(--sans);
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.confirm-btn.is-cancel {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+}
+.confirm-btn.is-caution {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+}
+.confirm-btn.is-danger {
+  border: 1px solid var(--ttl-expired);
+  background: var(--ttl-expired);
+  color: #f7f5f0;
+  font-weight: 600;
+}
+.confirm-btn.is-danger:hover:not(:disabled) {
+  background: #7a2418;
+  border-color: #7a2418;
+}
+
 /*
  * Quiet mono text actions — prototype default: accent rest, ink hover.
  * Matches ui_kits/extension/v3 product.css .btn-text language.
@@ -704,6 +741,143 @@
 }
 .library-pulse-row + .library-pulse-row {
   border-top: 1px solid var(--rule-soft);
+}
+
+/* Quote page opened from a library highlight (extension popup). */
+.quote-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 16px 12px;
+  box-sizing: border-box;
+}
+.quote-detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.quote-detail-domain,
+.quote-detail-path,
+.quote-detail-kicker,
+.quote-detail-reason,
+.quote-detail-leaf,
+.quote-detail-saved {
+  font-family: var(--mono);
+  color: var(--ink-3);
+}
+.quote-detail-domain,
+.quote-detail-path {
+  margin: 0;
+  font-size: var(--step--1);
+}
+.quote-detail-text {
+  margin: 10px 0 0;
+  font-family: var(--serif);
+  font-size: var(--step-3);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.quote-detail-path {
+  margin-top: 10px;
+  word-break: break-word;
+}
+.quote-detail-note {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.quote-detail-kicker {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--step--2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.quote-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.quote-detail-tag {
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 99px;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+.quote-detail-related {
+  margin: 16px 0 8px;
+  padding: 12px 0 10px 12px;
+  background: var(--paper-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.quote-detail-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 8px;
+}
+.quote-detail-card {
+  flex: 0 0 148px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.quote-detail-reason {
+  font-size: var(--step--2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.quote-detail-host {
+  font-family: var(--sans);
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink);
+}
+.quote-detail-leaf,
+.quote-detail-saved {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--step--2);
+}
+.quote-detail-saved {
+  margin-top: auto;
+}
+.quote-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 12px;
+}
+.quote-detail-actions .btn {
+  width: 100%;
+  justify-content: center;
 }
 
 /* Export format pair — segmented quiet control (MD | XLSX) */
@@ -1113,19 +1287,6 @@ button.hl-icon.is-danger:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-variant-numeric: tabular-nums;
-}
-.search-meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 18px;
-}
-.search-count {
-  font-family: var(--mono);
-  font-size: var(--step--1);
-  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 .search-clear-filters {

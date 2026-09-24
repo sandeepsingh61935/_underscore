@@ -7,7 +7,10 @@ import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { useExtensionNoticeChrome } from '@/web/hooks/useExtensionNoticeChrome';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
+import { takeOauthReturnTo } from '@/web/routing/oauth-return-to';
+import { resolveSafeReturnTo } from '@/web/routing/safe-return-to';
 
 type ProductRoute = 'home' | 'library' | 'settings';
 
@@ -107,6 +110,7 @@ export function WebAppShell(): React.ReactElement {
   const navigate = useNavigate();
   const { strip: extNoticeStrip, remnant: extNoticeRemnant } =
     useExtensionNoticeChrome();
+  const phoneLayout = useMobileWebViewport();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -114,6 +118,15 @@ export function WebAppShell(): React.ReactElement {
   useEffect(() => {
     applyWebPrefs(readWebPrefs());
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const stashed = takeOauthReturnTo();
+    if (!stashed) return;
+    const target = resolveSafeReturnTo(stashed, '/home');
+    if (target === `${location.pathname}${location.search}`) return;
+    navigate(target, { replace: true });
+  }, [isAuthenticated, location.pathname, location.search, navigate]);
 
   const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
@@ -128,8 +141,8 @@ export function WebAppShell(): React.ReactElement {
 
   const activeRoute = routeFromPathname(location.pathname);
 
-  /** OD: library always flush. */
-  const workspaceFlush = activeRoute === 'library';
+  /** Phone is a full-bleed stack. Desktop library stays flush; home and settings keep the page inset. */
+  const workspaceFlush = phoneLayout || activeRoute === 'library';
 
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'
@@ -279,7 +292,7 @@ export function WebAppShell(): React.ReactElement {
         </aside>
 
         <div className="main">
-          {extNoticeStrip}
+          {!phoneLayout && extNoticeStrip}
           <main className={workspaceClass} data-od-id="workspace">
             <div className="workspace-inner">
               <Outlet />

@@ -9,6 +9,8 @@ import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
 import { CollectionsView } from '../../features/collections/views/CollectionsView';
 import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
 import { SubDomainView } from '../../features/collections/views/SubDomainView';
+import { HighlightQuoteView } from '@/features/collections/views/HighlightQuoteView';
+import type { OpenedHighlight } from '@/features/collections/opened-highlight';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
 import {
@@ -53,6 +55,7 @@ enum View {
   COLLECTIONS = 'COLLECTIONS',
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
   SUB_DOMAIN = 'SUB_DOMAIN',
+  HIGHLIGHT = 'HIGHLIGHT',
   AUTH = 'AUTH',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
@@ -128,6 +131,8 @@ function PopupApp(): React.ReactElement {
   const [currentView, setCurrentView] = useState<View>(View.LOADING);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
+  const [openedHighlight, setOpenedHighlight] = useState<OpenedHighlight | null>(null);
+  const [highlightReturn, setHighlightReturn] = useState<View>(View.SUB_DOMAIN);
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
@@ -278,6 +283,26 @@ function PopupApp(): React.ReactElement {
     setCurrentView(View.DOMAIN_DETAILS);
   };
 
+  const handleOpenHighlight = (highlight: OpenedHighlight): void => {
+    setOpenedHighlight(highlight);
+    setHighlightReturn(currentView);
+    setSelectedDomain(highlight.domain);
+    if (highlight.path) setSelectedSection(highlight.path);
+    setCurrentView(View.HIGHLIGHT);
+  };
+
+  const handleBackFromHighlight = (): void => {
+    setOpenedHighlight(null);
+    setCurrentView(highlightReturn);
+  };
+
+  const handleOpenRelatedSection = (domain: string, section: string): void => {
+    setOpenedHighlight(null);
+    setSelectedDomain(domain);
+    setSelectedSection(section);
+    setCurrentView(View.SUB_DOMAIN);
+  };
+
   const handleSettingsClick = (): void => {
     setCurrentView(View.SETTINGS);
   };
@@ -315,6 +340,8 @@ function PopupApp(): React.ReactElement {
     onSwitch: handleSettingsChangeMode,
     onBackToCollections: handleBackToCollections,
     onBackToDomain: handleBackToDomain,
+    onBackToHighlight: handleBackFromHighlight,
+    highlightBackLabel: () => openedHighlight?.domain || 'Library',
     subDomainBackLabel: () => selectedDomain,
     getModeId: () => modeId,
     getAccountPill: () =>
@@ -354,6 +381,7 @@ function PopupApp(): React.ReactElement {
         <CollectionsView
           onCollectionClick={handleCollectionClick}
           onSectionClick={handleSectionClick}
+          onOpenHighlight={handleOpenHighlight}
           isAuthenticated={!!user}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
@@ -363,6 +391,7 @@ function PopupApp(): React.ReactElement {
           domain={selectedDomain}
           onBack={handleBackToCollections}
           onSectionClick={handleSectionClick}
+          onOpenHighlight={handleOpenHighlight}
         />
       )}
       {currentView === View.SUB_DOMAIN && (
@@ -371,8 +400,15 @@ function PopupApp(): React.ReactElement {
           section={selectedSection}
           onBack={handleBackToDomain}
           onDomainEmpty={handleBackToCollections}
+          onOpenHighlight={handleOpenHighlight}
         />
       )}
+      {currentView === View.HIGHLIGHT && openedHighlight ? (
+        <HighlightQuoteView
+          highlight={openedHighlight}
+          onOpenSection={handleOpenRelatedSection}
+        />
+      ) : null}
       {currentView === View.AUTH && (
         <AuthView
           onLoginSuccess={handleLoginSuccess}

@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 
-/** Matches web-app.css tabbar breakpoint (`max-width: 820px`). */
-export const WEB_MOBILE_MQ = '(max-width: 820px)';
+/** Matches web-app.css tabbar breakpoint (`max-width: 767px`). */
+export const WEB_MOBILE_MQ = '(max-width: 767px)';
+
+export function isMobileWebViewport(
+  mq: { matches: boolean } | null | undefined
+): boolean {
+  return Boolean(mq?.matches);
+}
 
 export function useMobileWebViewport(): boolean {
   const [mobile, setMobile] = useState(() => {

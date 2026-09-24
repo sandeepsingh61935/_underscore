@@ -45,7 +45,11 @@ import { useVaultSync } from '@/web/hooks/useVaultSync';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
-import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
+import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
+import { clampPage } from '@/web/lib/buildPagerItems';
+import { LibraryPager } from '@/web/components/LibraryPager';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
   exportScopeFromSelection,
@@ -55,6 +59,7 @@ import {
   buildLibrarySearch,
   parseLibrarySelection,
 } from '@/web/routing/librarySelection';
+import { PhoneLibrary } from '@/web/components/PhoneLibrary';
 
 type LibSort = 'newest' | 'oldest' | 'domain' | 'quote';
 
@@ -156,118 +161,7 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
   return [...counts.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
 }
 
-type LibraryPagerProps = {
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-};
 
-/**
- * Numbered pager with prev/next, direct page buttons, and a go-to field.
- * Body-only control for the web Library list.
- */
-function LibraryPager({
-  page,
-  totalPages,
-  onPageChange,
-}: LibraryPagerProps): React.ReactElement {
-  const items = useMemo(() => buildPagerItems(page, totalPages), [page, totalPages]);
-  const [gotoDraft, setGotoDraft] = useState(String(page));
-
-  useEffect(() => {
-    setGotoDraft(String(page));
-  }, [page]);
-
-  const goTo = useCallback(
-    (raw: number | string) => {
-      const n = typeof raw === 'number' ? raw : Number.parseInt(String(raw).trim(), 10);
-      onPageChange(clampPage(n, totalPages));
-    },
-    [onPageChange, totalPages]
-  );
-
-  const commitGoto = useCallback(() => {
-    goTo(gotoDraft);
-  }, [goTo, gotoDraft]);
-
-  return (
-    <nav className="pager" data-od-id="library-pager" aria-label="Pagination">
-      <button
-        type="button"
-        className="pager-btn"
-        aria-label="Previous page"
-        disabled={page <= 1}
-        onClick={() => goTo(page - 1)}
-      >
-        ←
-      </button>
-
-      <div className="pager-pages" role="list">
-        {items.map((item) =>
-          item.type === 'ellipsis' ? (
-            <span
-              key={item.key}
-              className="pager-ellipsis"
-              role="presentation"
-              aria-hidden="true"
-            >
-              …
-            </span>
-          ) : (
-            <button
-              key={item.page}
-              type="button"
-              role="listitem"
-              className={item.page === page ? 'pager-page is-active' : 'pager-page'}
-              aria-label={`Page ${item.page}`}
-              aria-current={item.page === page ? 'page' : undefined}
-              data-od-id={`library-pager-page-${item.page}`}
-              onClick={() => goTo(item.page)}
-            >
-              {item.page}
-            </button>
-          )
-        )}
-      </div>
-
-      <label className="pager-goto">
-        <span className="pager-goto-label">Go to</span>
-        <input
-          className="pager-goto-input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={totalPages}
-          value={gotoDraft}
-          aria-label={`Go to page, ${page} of ${totalPages}`}
-          data-od-id="library-pager-goto"
-          onChange={(e) => setGotoDraft(e.target.value)}
-          onBlur={commitGoto}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitGoto();
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-        />
-        <span className="pager-label" aria-hidden="true">
-          / {totalPages}
-        </span>
-      </label>
-
-      <button
-        type="button"
-        className="pager-btn"
-        aria-label="Next page"
-        disabled={page >= totalPages}
-        onClick={() => goTo(page + 1)}
-      >
-        →
-      </button>
-    </nav>
-  );
-}
 
 /**
  * Library master-detail. Guest is always empty (useWebLibrary).
@@ -325,6 +219,11 @@ export function LibraryPage(): React.ReactElement {
       }),
     [isAuthenticated, isPaidActive, billing?.snapshot.entitlement.status]
   );
+
+  const clientKind = useWebClientKind();
+  const handheld = isHandheldClient(clientKind);
+  const consumeOnly = caps.isGuest || handheld;
+  const phoneLayout = useMobileWebViewport();
 
   const lib = useWebLibrary({
     isAuthenticated,
@@ -610,6 +509,36 @@ export function LibraryPage(): React.ReactElement {
     setPage(1);
   }, [selection.domain, selection.section, query, refine, tagFilters, sort]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    try {
+      if (
+        typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('underscore:library_open')
+      ) {
+        return;
+      }
+      sessionStorage.setItem('underscore:library_open', clientKind);
+    } catch {
+      // private mode: still emit
+    }
+    trackEvent('library_open', { client: clientKind });
+    // First authenticated paint only — resize must not re-count the kill test.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- clientKind snapshot
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) return;
+    const t = window.setTimeout(() => {
+      trackEvent('library_search', {
+        client: clientKind,
+        result_count: filtered.length,
+      });
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [query, filtered.length, clientKind]);
+
   const tags = useMemo(() => corpusTags(scoped), [scoped]);
 
   const relatedness = useRelatednessService(lib.highlights);
@@ -680,7 +609,7 @@ export function LibraryPage(): React.ReactElement {
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
-      if (!caps.flags.export || filtered.length === 0) return;
+      if (consumeOnly || !caps.flags.export || filtered.length === 0) return;
       exportWebHighlights(
         filtered.map((m) => m.highlight),
         format,
@@ -691,8 +620,138 @@ export function LibraryPage(): React.ReactElement {
       );
       setExportOpen(false);
     },
-    [caps.flags.export, filtered, selection.domain, selection.section]
+    [consumeOnly, caps.flags.export, filtered, selection.domain, selection.section]
   );
+
+  if (phoneLayout) {
+    if (lib.status === 'loading') {
+      return (
+        <div className="phone-library" data-od-id="phone-library-loading" aria-busy="true">
+          <p className="phone-empty">Loading…</p>
+        </div>
+      );
+    }
+    if (lib.status === 'error') {
+      return (
+        <div className="phone-library" data-od-id="phone-library-error">
+          <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
+          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    const canWrite = isAuthenticated && !caps.isGuest;
+    const seedPath = selection.highlight
+      ? (lib.highlights.find((h) => h.id === selection.highlight)?.path ?? selection.section)
+      : (selection.section ??
+        lib.highlights
+          .filter((h) => h.domain === selection.domain)
+          .sort((a, b) => b.savedAt - a.savedAt)[0]?.path ??
+        null);
+    const phoneRelated = selection.domain && seedPath
+      ? relatedness.relatedPages(selection.domain, seedPath)
+      : [];
+    const phoneRelatedLabel =
+      seedPath && seedPath !== '/'
+        ? `Related to ${displaySectionPath(seedPath)}`
+        : 'Related pages';
+    const exportRows = lib.highlights.filter(
+      (h) =>
+        h.domain === selection.domain &&
+        (!selection.section || (h.path || '/') === selection.section)
+    );
+
+    return (
+      <PhoneLibrary
+        highlights={filtered.map((row) => row.highlight)}
+        query={query}
+        onQueryChange={setQuery}
+        sort={sort}
+        onSortChange={setSort}
+        hasLibrary={lib.highlights.length > 0}
+        filters={{
+          fields,
+          onFieldsChange: setFields,
+          refine,
+          onRefineChange: setRefine,
+          tagFilters,
+          onTagFiltersChange: setTagFilters,
+          availableTags: tags,
+        }}
+        domain={selection.domain}
+        section={selection.section}
+        highlightId={selection.highlight}
+        onOpenDomain={(d) => setSelection(d, null, null)}
+        onSelectSection={(path) => {
+          if (!selection.domain) return;
+          setSelection(selection.domain, path, null);
+        }}
+        onOpenHighlight={(id) => {
+          setSelection(selection.domain, selection.section, id);
+        }}
+        clientKind={clientKind}
+        canExport={canWrite && caps.flags.export}
+        onExport={
+          canWrite && caps.flags.export
+            ? (format) => {
+                if (exportRows.length === 0 || !selection.domain) return;
+                exportWebHighlights(
+                  exportRows,
+                  format,
+                  exportScopeFromSelection({
+                    domain: selection.domain,
+                    section: selection.section,
+                  })
+                );
+              }
+            : undefined
+        }
+        onDeletePages={
+          canWrite && selection.domain
+            ? async (paths) => {
+                const domainName = selection.domain;
+                if (!domainName || paths.length === 0) return false;
+                const result = await deleteScope({
+                  scope: 'sections',
+                  domain: domainName,
+                  sectionKeys: paths,
+                });
+                return result.success;
+              }
+            : undefined
+        }
+        onDeleteDomain={
+          canWrite && selection.domain
+            ? async () => {
+                const domain = selection.domain;
+                if (!domain) return false;
+                const result = await deleteScope({ scope: 'domain', domain });
+                if (result.success) setSelection(null, null, null);
+                return result.success;
+              }
+            : undefined
+        }
+        onNoteSave={handleNoteSave}
+        onTagsChange={handleTagsChange}
+        onDeleteHighlight={handleHighlightDelete}
+        onDeleteHighlights={async (ids) => {
+          if (ids.length === 0) return false;
+          const result = await deleteScope({ scope: 'highlights', ids });
+          if (result.success && selection.highlight && ids.includes(selection.highlight)) {
+            setSelection(selection.domain, selection.section, null);
+          }
+          return result.success;
+        }}
+        relatedPages={phoneRelated}
+        relatedLabel={phoneRelatedLabel}
+        onOpenRelatedPage={(domain, section, rank, reason) => {
+          trackEvent('related_page_clicked', { rank, reason });
+          setSelection(domain, section, null);
+        }}
+      />
+    );
+  }
 
   if (lib.status === 'loading') {
     return (
@@ -748,16 +807,16 @@ export function LibraryPage(): React.ReactElement {
       key={detailHighlight.id}
       highlight={detailHighlight}
       related={relatedHighlightRows}
-      readOnly={caps.isGuest}
+      readOnly={consumeOnly}
       activeTagFilters={tagFilters}
       onBack={closeHighlightDetail}
       relatedHrefFor={highlightDetailHref}
       onOpenRelated={handleOpenRelatedHighlight}
       onOpenPage={openPage}
-      onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
-      onNoteSave={caps.isGuest ? undefined : handleNoteSave}
-      onTagsChange={caps.isGuest ? undefined : handleTagsChange}
-      onDelete={caps.isGuest ? undefined : handleHighlightDelete}
+      onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+      onNoteSave={consumeOnly ? undefined : handleNoteSave}
+      onTagsChange={consumeOnly ? undefined : handleTagsChange}
+      onDelete={consumeOnly ? undefined : handleHighlightDelete}
     />
   ) : filtered.length > 0 ? (
     <div className="lib-reading">
@@ -814,14 +873,15 @@ export function LibraryPage(): React.ReactElement {
               highlight={h}
               showDomain={showDomainSrc}
               matchBadge={badge}
-              readOnly={caps.isGuest}
+              readOnly={consumeOnly}
               activeTagFilters={tagFilters}
               onOpenHighlight={openHighlightDetail}
               onOpenPage={openPage}
-              onToggleTagFilter={caps.isGuest ? undefined : handleToggleTagFilter}
-              onNoteSave={caps.isGuest ? undefined : handleNoteSave}
-              onTagsChange={caps.isGuest ? undefined : handleTagsChange}
-              onDelete={caps.isGuest ? undefined : handleHighlightDelete}
+              onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+              onNoteSave={consumeOnly ? undefined : handleNoteSave}
+              onTagsChange={consumeOnly ? undefined : handleTagsChange}
+              onDelete={consumeOnly ? undefined : handleHighlightDelete}
+              clientKind={clientKind}
             />
           );
         })}
@@ -905,7 +965,7 @@ export function LibraryPage(): React.ReactElement {
                     <DomainFavicon domain={d.domain} />
                     <span className="tree-label">{d.domain}</span>
                   </button>
-                  {!caps.isGuest && d.count > 0 ? (
+                  {!consumeOnly && d.count > 0 ? (
                     <button
                       type="button"
                       className="tree-delete sr-icon is-delete"
@@ -942,7 +1002,7 @@ export function LibraryPage(): React.ReactElement {
                               {displaySectionPath(s.path)}
                             </span>
                           </button>
-                          {!caps.isGuest && s.count > 0 ? (
+                          {!consumeOnly && s.count > 0 ? (
                             <button
                               type="button"
                               className="tree-delete sr-icon is-delete"
@@ -1000,7 +1060,7 @@ export function LibraryPage(): React.ReactElement {
                 Open
               </a>
             ) : null}
-            {!caps.isGuest && selection.domain && !selection.highlight ? (
+            {!consumeOnly && selection.domain && !selection.highlight ? (
               <button
                 type="button"
                 className="sr-icon is-delete"
@@ -1031,7 +1091,7 @@ export function LibraryPage(): React.ReactElement {
                 <TrashIco />
               </button>
             ) : null}
-            {vault.connectionState === 'connected' ? (
+            {!consumeOnly && vault.connectionState === 'connected' ? (
               <button
                 type="button"
                 className="btn sm ghost"
@@ -1050,7 +1110,7 @@ export function LibraryPage(): React.ReactElement {
                 {vault.isSyncing ? '…' : 'Sync Vault'}
               </button>
             ) : null}
-            {caps.flags.export ? (
+            {!consumeOnly && caps.flags.export ? (
               <div className="export-menu" data-od-id="library-export" ref={exportRef}>
                 <button
                   type="button"

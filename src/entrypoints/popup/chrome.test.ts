@@ -9,6 +9,8 @@ const makeHandlers = (): ChromeHandlers => ({
   onSwitch: vi.fn(),
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
+  onBackToHighlight: vi.fn(),
+  highlightBackLabel: vi.fn(() => 'Library'),
   subDomainBackLabel: vi.fn(() => 'anthropic.com'),
   getModeId: vi.fn(() => 'local'),
   getAccountPill: vi.fn((): AccountPillLabel | null => 'Free'),

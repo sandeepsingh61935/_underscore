@@ -16,6 +16,8 @@ export type LibrarySortControlProps = {
   fullWidth?: boolean;
   /** text = mono Newest ▾ (no slab); boxed = bordered control */
   variant?: 'text' | 'boxed';
+  className?: string;
+  align?: 'left' | 'right';
 };
 
 export function LibrarySortControl({
@@ -23,6 +25,8 @@ export function LibrarySortControl({
   onChange,
   fullWidth = false,
   variant,
+  className,
+  align = 'left',
 }: LibrarySortControlProps): React.ReactElement {
   const mode = variant ?? (fullWidth ? 'boxed' : 'text');
   const [open, setOpen] = useState(false);
@@ -44,6 +48,7 @@ export function LibrarySortControl({
   return (
     <div
       ref={ref}
+      className={className}
       data-testid="library-sort"
       style={{ position: 'relative', width: isText ? undefined : '100%' }}
     >
@@ -59,22 +64,32 @@ export function LibrarySortControl({
           cursor: 'pointer',
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 4,
+          gap: 6,
           justifyContent: isText ? undefined : 'space-between',
           width: isText ? undefined : '100%',
           boxSizing: 'border-box',
           minHeight: isText ? 28 : 32,
-          padding: isText ? '0 2px' : '0 10px',
-          border: isText ? 'none' : '1px solid var(--rule-soft)',
+          padding: isText ? '2px 8px' : '0 10px',
+          borderRadius: 'var(--r-sm, 6px)',
+          border: isText ? '1px solid transparent' : '1px solid var(--rule-soft)',
           fontSize: 'var(--step--2)',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           color: 'var(--ink-3)',
           background: 'transparent',
+          transition: 'all 0.15s ease',
         }}
       >
         <span>{label}</span>
-        <span aria-hidden style={{ color: 'var(--ink-4)' }}>
+        <span
+          aria-hidden="true"
+          style={{
+            color: 'var(--ink-4)',
+            display: 'inline-block',
+            transition: 'transform 0.15s ease',
+            transform: open ? 'rotate(180deg)' : 'none',
+          }}
+        >
           ▾
         </span>
       </button>
@@ -83,14 +98,21 @@ export function LibrarySortControl({
           role="menu"
           style={{
             position: 'absolute',
-            left: 0,
-            top: '100%',
-            marginTop: 4,
+            left: align === 'right' ? 'auto' : 0,
+            right: align === 'right' ? 0 : 'auto',
+            top: 'calc(100% + 4px)',
             zIndex: 20,
-            minWidth: 140,
-            border: '1px solid var(--rule)',
+            minWidth: 150,
+            maxWidth: 'calc(100vw - 32px)',
+            padding: 4,
+            border: '1px solid var(--rule-soft, var(--border))',
+            borderRadius: 'var(--r-sm, 8px)',
             background: 'var(--paper)',
-            boxShadow: '0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent)',
+            boxShadow:
+              'var(--shadow-md, 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
           }}
         >
           {LIBRARY_SORT_KEYS.map((k) => (
@@ -106,18 +128,35 @@ export function LibrarySortControl({
               style={{
                 all: 'unset',
                 cursor: 'pointer',
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 width: '100%',
                 boxSizing: 'border-box',
-                padding: '10px 12px',
+                padding: '8px 10px',
+                borderRadius: 'var(--r-sm, 6px)',
                 fontSize: 'var(--step--2)',
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                color: k === value ? 'var(--accent)' : 'var(--ink-2)',
+                color: k === value ? 'var(--ink)' : 'var(--ink-2)',
+                fontWeight: k === value ? 600 : 400,
                 background: k === value ? 'var(--paper-2)' : 'transparent',
+                transition: 'background 0.12s ease, color 0.12s ease',
               }}
             >
-              {LIBRARY_SORT_LABELS[k]}
+              <span>{LIBRARY_SORT_LABELS[k]}</span>
+              {k === value ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color: 'var(--accent)',
+                    fontSize: '11px',
+                    marginLeft: 8,
+                  }}
+                >
+                  ✓
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

@@ -708,6 +708,16 @@ export default defineBackground({
         }
       });
 
+      messageBus.subscribe('LIST_RELATEDNESS_DOCS', async () => {
+        try {
+          const docs = await getHighlightQueryService().listForRelatedness();
+          return { success: true, data: { docs } };
+        } catch (error) {
+          logger.error('LIST_RELATEDNESS_DOCS failed', error as Error);
+          throw error;
+        }
+      });
+
       // Get Highlights By Domain Handler
       messageBus.subscribe(
         'GET_HIGHLIGHTS_BY_DOMAIN',

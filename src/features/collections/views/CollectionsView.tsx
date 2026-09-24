@@ -7,6 +7,7 @@ import { ExportActions } from '@/features/collections/components/ExportActions';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { LibraryDomainRow } from '@/features/collections/components/LibraryDomainRow';
 import { LibraryHighlightTile } from '@/features/collections/components/LibraryHighlightTile';
+import type { OpenedHighlight } from '@/features/collections/opened-highlight';
 import { LibraryRelatedTags } from '@/features/collections/components/LibraryRelatedTags';
 import {
   formatSearchMatchMeta,
@@ -51,6 +52,7 @@ export interface CollectionsViewProps {
   onSectionClick?: (domain: string, section: string) => void;
   isAuthenticated?: boolean;
   onSignIn?: () => void;
+  onOpenHighlight?: (highlight: OpenedHighlight) => void;
 }
 
 export function CollectionsView({
@@ -58,6 +60,7 @@ export function CollectionsView({
   onSectionClick,
   isAuthenticated: propIsAuthenticated,
   onSignIn,
+  onOpenHighlight,
 }: CollectionsViewProps): React.ReactElement {
   const navigate = useNavigate();
   const appContext = useApp();
@@ -309,6 +312,17 @@ export function CollectionsView({
                     {section.highlights.map((r) => (
                       <LibraryHighlightTile
                         key={r.id}
+                        onOpenDetail={() =>
+                          onOpenHighlight?.({
+                            id: r.id,
+                            text: r.text,
+                            domain: r.domain,
+                            path: r.path,
+                            url: r.url,
+                            notes: r.notes,
+                            tags: r.tags,
+                          })
+                        }
                         highlight={{
                           id: r.id,
                           text: r.text,

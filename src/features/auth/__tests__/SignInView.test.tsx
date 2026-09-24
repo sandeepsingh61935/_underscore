@@ -133,6 +133,22 @@ describe('SignInView', () => {
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
+  it('OAuth redirectTo stays /home when returnTo is /library', async () => {
+    render(
+      <MemoryRouter initialEntries={['/sign-in?returnTo=/library']}>
+        <SignInView />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    await waitFor(() => {
+      expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalled();
+    });
+    const arg = mockSupabase.auth.signInWithOAuth.mock.calls[0]?.[0] as {
+      options: { redirectTo: string };
+    };
+    expect(arg.options.redirectTo).toMatch(/\/home$/);
+  });
+
   describe('when VITE_AUTH_EMAIL_UI is enabled', () => {
     beforeEach(() => {
       vi.mocked(isAuthEmailUiEnabled).mockReturnValue(true);

@@ -9,14 +9,19 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { DomainFavicon } from '@/web/components/DomainFavicon';
+import { PhoneHome } from '@/web/components/PhoneHome';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
+import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import {
   useWebLibrary,
   type WebCurrentPage,
   type WebHighlight,
 } from '@/web/hooks/useWebLibrary';
+import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildLibrarySearch } from '@/web/routing/librarySelection';
 
 /** Denser rail cards fit more rows; keep in sync with aggregateLibrary default. */
@@ -137,6 +142,7 @@ export function HomePage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();
   const billing = useBillingContextOptional();
   const navigate = useNavigate();
+  const extPresence = useExtensionPresence();
 
   const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
@@ -154,10 +160,17 @@ export function HomePage(): React.ReactElement {
     planLabel: caps.planLabel,
   });
   const { updateMetadata } = useUpdateHighlightMetadata();
+  const { deleteScope } = useWebHighlightDelete({
+    highlights: lib.highlights,
+    removeHighlights: lib.removeHighlights,
+  });
 
   const empty = lib.highlights.length === 0;
   const guest = caps.isGuest;
-  const showIntegrationsCta = caps.flags.mcp;
+  const clientKind = useWebClientKind();
+  const consumeOnly = guest || isHandheldClient(clientKind);
+  const phoneLayout = useMobileWebViewport();
+  const showIntegrationsCta = caps.flags.mcp && !consumeOnly;
 
   const patchHighlight = lib.patchHighlight;
   const highlightsRef = useRef(lib.highlights);
@@ -218,6 +231,13 @@ export function HomePage(): React.ReactElement {
   );
 
   const recent = lib.recent;
+  const allRecent = useMemo(
+    () =>
+      [...lib.highlights].sort(
+        (a, b) => b.savedAt - a.savedAt || a.id.localeCompare(b.id)
+      ),
+    [lib.highlights]
+  );
   const hasMoreRecent = lib.highlights.length > RECENT_CAP;
   const fmt = (n: number): string => n.toLocaleString();
 
@@ -227,6 +247,80 @@ export function HomePage(): React.ReactElement {
     },
     [navigate]
   );
+
+  if (phoneLayout) {
+    if (lib.status === 'loading') {
+      return (
+        <div className="phone-home" data-od-id="phone-home-loading" aria-busy="true">
+          <p className="phone-empty">Loading…</p>
+        </div>
+      );
+    }
+    if (lib.status === 'error') {
+      return (
+        <div className="phone-home" data-od-id="phone-home-error">
+          <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
+          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    const cp = empty ? null : lib.currentPage;
+    const phonePath =
+      cp && cp.path && cp.path !== '/'
+        ? cp.path
+        : cp?.sectionLabel && cp.sectionLabel !== '/'
+          ? cp.sectionLabel
+          : '';
+    const phoneCountLabel =
+      pageHls.length === 1 ? '1 highlight' : `${pageHls.length} highlights`;
+
+    return (
+      <PhoneHome
+        greeting={title}
+        count={lib.highlights.length}
+        recent={allRecent}
+        stats={
+          empty
+            ? null
+            : {
+                highlightCount: lib.stats.highlightCount,
+                thisWeekCount: lib.stats.thisWeekCount,
+                pageCount: pageCountAll,
+                sourceCount: lib.domains.length,
+                notesCount: lib.stats.notesCount,
+                tagCount: lib.stats.tagCount,
+              }
+        }
+        currentPage={
+          cp
+            ? {
+                domain: cp.domain,
+                path: phonePath,
+                countLabel: phoneCountLabel,
+                quote: pageHls[0]?.quote ?? null,
+              }
+            : null
+        }
+        onOpenCurrentPage={
+          cp ? () => openLibraryPage(cp.domain, cp.path) : undefined
+        }
+        onOpenHighlight={(id, domain) => {
+          const h = lib.highlights.find((hl) => hl.id === id);
+          void navigate(
+            `/library?${buildLibrarySearch({ domain: h?.domain ?? domain, highlight: id })}`
+          );
+        }}
+        onNoteSave={handleNoteSave}
+        onTagsChange={handleTagsChange}
+        onDeleteHighlight={async (id) => {
+          const result = await deleteScope({ scope: 'highlight', id });
+          return result.success;
+        }}
+      />
+    );
+  }
 
   if (lib.status === 'loading') {
     return (
@@ -402,7 +496,6 @@ export function HomePage(): React.ReactElement {
     </>
   );
 
-  const extPresence = useExtensionPresence();
   const extensionInstalled = extPresence === 'installed';
   const firstRun = webHomeEmptyInstallCopy({ guest, extensionInstalled });
   const recentBody = empty ? (
@@ -426,11 +519,12 @@ export function HomePage(): React.ReactElement {
         highlight={h}
         density="rail"
         showDomain
-        readOnly={guest}
+        readOnly={consumeOnly}
         onOpenPage={openLibraryPage}
-        onToggleTagFilter={guest ? undefined : handleToggleTagFilter}
-        onNoteSave={guest ? undefined : handleNoteSave}
-        onTagsChange={guest ? undefined : handleTagsChange}
+        onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
+        onNoteSave={consumeOnly ? undefined : handleNoteSave}
+        onTagsChange={consumeOnly ? undefined : handleTagsChange}
+        clientKind={clientKind}
       />
     ))
   );

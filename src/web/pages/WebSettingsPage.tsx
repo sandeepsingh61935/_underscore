@@ -28,11 +28,17 @@ import {
   type SharedBillingProps,
 } from '@/web/components/settings/settingsPanels';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
+import { PhoneSettings } from '@/web/components/PhoneSettings';
 import { useWebLibrary } from '@/web/hooks/useWebLibrary';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
+import { isHandheldClient } from '@/web/lib/classify-web-client';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { exportWebHighlights } from '@/web/lib/webHighlightExport';
 import {
   buildSettingsSearch,
+  coerceSettingsTab,
   parseSettingsTab,
+  visibleSettingsTabs,
   type SettingsTab,
 } from '@/web/routing/settingsTab';
 
@@ -51,7 +57,11 @@ export function WebSettingsPage(): React.ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const tab = parseSettingsTab(location.search);
+  const clientKind = useWebClientKind();
+  const handheld = isHandheldClient(clientKind);
+  const phoneLayout = useMobileWebViewport();
+  const tab = coerceSettingsTab(parseSettingsTab(location.search), handheld);
+  const settingsTabs = TABS.filter((t) => visibleSettingsTabs(handheld).includes(t.id));
 
   const entitlement = billing?.snapshot.entitlement ?? freeEntitlement();
   // Never demote paid on load error — use entitlement when snapshot gate is not ready.
@@ -134,6 +144,14 @@ export function WebSettingsPage(): React.ReactElement {
     },
     [navigate]
   );
+
+  useEffect(() => {
+    if (!handheld) return;
+    const raw = parseSettingsTab(location.search);
+    if (raw === 'ai' || raw === 'data') {
+      setTab('account');
+    }
+  }, [handheld, location.search, setTab]);
 
   const clearHandoffSoon = useCallback(() => {
     window.setTimeout(() => setHandoff(null), 4000);
@@ -227,6 +245,40 @@ export function WebSettingsPage(): React.ReactElement {
       setDeleteLibraryBusy(false);
     }
   }, [deleteLibraryBusy, deleteScope, isAuthenticated, lib.highlights.length]);
+
+  if (phoneLayout) {
+    return (
+      <PhoneSettings
+        isAuthenticated={isAuthenticated}
+        email={user?.email ?? null}
+        theme={theme}
+        onThemeChange={setTheme}
+        highlights={lib.highlights}
+        stats={lib.stats}
+        onRefresh={handleDataSync}
+        refreshing={cloudSyncing}
+        refreshError={cloudSyncError}
+        canExport={caps.flags.export}
+        onExport={(format) => exportWebHighlights(lib.highlights, format, { kind: 'library' })}
+        onDeleteLibrary={async () => {
+          const result = await deleteScope({ scope: 'library' });
+          return result.success;
+        }}
+        onSignOut={async () => {
+          await logout();
+        }}
+        canUseIntegrations={caps.flags.mcp}
+        integrationsLockReason={
+          caps.flags.mcp
+            ? undefined
+            : caps.isPastDue
+              ? 'Fix billing to use Integrations'
+              : 'Sign in to use account features'
+        }
+        isPaidActive={isPaidActive}
+      />
+    );
+  }
 
   const sharedBilling: SharedBillingProps = {
     isAuthenticated,
@@ -330,7 +382,7 @@ export function WebSettingsPage(): React.ReactElement {
           data-od-id="settings-nav"
           aria-label="Settings sections"
         >
-          {TABS.map((t) => (
+          {settingsTabs.map((t) => (
             <button
               key={t.id}
               type="button"
