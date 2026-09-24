@@ -9,6 +9,7 @@ export type ViewKey =
   | 'COLLECTIONS'
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
+  | 'HIGHLIGHT'
   | 'AUTH'
   | 'SETTINGS'
   | 'DASHBOARD';
@@ -37,6 +38,8 @@ export interface ChromeHandlers {
   onSwitch?: () => void;
   onBackToCollections: () => void;
   onBackToDomain: () => void;
+  onBackToHighlight: () => void;
+  highlightBackLabel: () => string;
   subDomainBackLabel: () => string;
   getModeId: () => string;
   getAccountPill: () => AccountPillLabel | null;
@@ -95,6 +98,20 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToCollections,
       backLabel: 'Library',
+      accountPill: null,
+    },
+    HIGHLIGHT: {
+      title: `${BRAND} · library`,
+      place: 'library',
+      brand: BRAND,
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: true,
+      modeId: handlers.getModeId(),
+      activeTab: 'collections',
+      onTabChange: handlers.onTabChange,
+      onBack: handlers.onBackToHighlight,
+      backLabel: handlers.highlightBackLabel(),
       accountPill: null,
     },
     SUB_DOMAIN: {

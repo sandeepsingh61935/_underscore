@@ -249,15 +249,12 @@ describe('SubDomainView search wiring', () => {
     await waitFor(() => {
       expect(screen.getByText('No matches')).toBeTruthy();
     });
-    expect(screen.getByText('0')).toBeTruthy();
     expect(screen.queryByText('A highlighted quote')).toBeNull();
 
-    // Empty-state CTA (text "Clear"), not the filter meta clear alone.
-    const clearBtn = screen
-      .getAllByRole('button', { name: 'Clear' })
-      .find((el) => el.textContent?.trim() === 'Clear');
+    // Empty-state CTA
+    const clearBtn = screen.getByRole('button', { name: 'Clear search' });
     expect(clearBtn).toBeTruthy();
-    fireEvent.click(clearBtn!);
+    fireEvent.click(clearBtn);
 
     await waitFor(() => {
       expect(screen.getByText('A highlighted quote')).toBeTruthy();

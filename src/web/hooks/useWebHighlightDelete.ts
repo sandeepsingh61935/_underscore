@@ -14,7 +14,9 @@ import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 
 export type WebDeleteRequest =
   | { scope: 'highlight'; id: string }
+  | { scope: 'highlights'; ids: readonly string[] }
   | { scope: 'section'; domain: string; sectionKey: string }
+  | { scope: 'sections'; domain: string; sectionKeys: readonly string[] }
   | { scope: 'domain'; domain: string }
   | { scope: 'library' };
 
@@ -25,10 +27,20 @@ function idsForRequest(
   switch (request.scope) {
     case 'highlight':
       return highlights.some((h) => h.id === request.id) ? [request.id] : [];
+    case 'highlights': {
+      const wanted = new Set(request.ids);
+      return highlights.filter((h) => wanted.has(h.id)).map((h) => h.id);
+    }
     case 'section':
       return highlights
-        .filter((h) => h.domain === request.domain && h.path === request.sectionKey)
+        .filter((h) => h.domain === request.domain && (h.path || '/') === (request.sectionKey || '/'))
         .map((h) => h.id);
+    case 'sections': {
+      const keys = new Set(request.sectionKeys.map((key) => key || '/'));
+      return highlights
+        .filter((h) => h.domain === request.domain && keys.has(h.path || '/'))
+        .map((h) => h.id);
+    }
     case 'domain':
       return highlights.filter((h) => h.domain === request.domain).map((h) => h.id);
     case 'library':
@@ -75,6 +87,19 @@ export function useWebHighlightDelete(opts: UseWebHighlightDeleteOpts) {
 
       if (request.scope === 'highlight') {
         toast.success('Highlight deleted');
+      } else if (request.scope === 'highlights') {
+        toast.success(
+          result.deletedCount === 1
+            ? 'Highlight deleted'
+            : `Deleted ${result.deletedCount} highlights`
+        );
+      } else if (request.scope === 'sections') {
+        const pages = request.sectionKeys.length;
+        toast.success(
+          pages === 1
+            ? `Deleted ${result.deletedCount} highlight${result.deletedCount === 1 ? '' : 's'}`
+            : `Deleted ${pages} pages (${result.deletedCount} highlights)`
+        );
       } else if (request.scope === 'library') {
         toast.success(
           result.deletedCount === 1

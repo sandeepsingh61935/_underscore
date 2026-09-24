@@ -12,6 +12,7 @@ import { DomainFavicon } from '@/web/components/DomainFavicon';
 import { PhoneHome } from '@/web/components/PhoneHome';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
+import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import {
   useWebLibrary,
   type WebCurrentPage,
@@ -159,6 +160,10 @@ export function HomePage(): React.ReactElement {
     planLabel: caps.planLabel,
   });
   const { updateMetadata } = useUpdateHighlightMetadata();
+  const { deleteScope } = useWebHighlightDelete({
+    highlights: lib.highlights,
+    removeHighlights: lib.removeHighlights,
+  });
 
   const empty = lib.highlights.length === 0;
   const guest = caps.isGuest;
@@ -226,6 +231,13 @@ export function HomePage(): React.ReactElement {
   );
 
   const recent = lib.recent;
+  const allRecent = useMemo(
+    () =>
+      [...lib.highlights].sort(
+        (a, b) => b.savedAt - a.savedAt || a.id.localeCompare(b.id)
+      ),
+    [lib.highlights]
+  );
   const hasMoreRecent = lib.highlights.length > RECENT_CAP;
   const fmt = (n: number): string => n.toLocaleString();
 
@@ -254,16 +266,57 @@ export function HomePage(): React.ReactElement {
         </div>
       );
     }
+    const cp = empty ? null : lib.currentPage;
+    const phonePath =
+      cp && cp.path && cp.path !== '/'
+        ? cp.path
+        : cp?.sectionLabel && cp.sectionLabel !== '/'
+          ? cp.sectionLabel
+          : '';
+    const phoneCountLabel =
+      pageHls.length === 1 ? '1 highlight' : `${pageHls.length} highlights`;
+
     return (
       <PhoneHome
         greeting={title}
         count={lib.highlights.length}
-        recent={recent}
+        recent={allRecent}
+        stats={
+          empty
+            ? null
+            : {
+                highlightCount: lib.stats.highlightCount,
+                thisWeekCount: lib.stats.thisWeekCount,
+                pageCount: pageCountAll,
+                sourceCount: lib.domains.length,
+                notesCount: lib.stats.notesCount,
+                tagCount: lib.stats.tagCount,
+              }
+        }
+        currentPage={
+          cp
+            ? {
+                domain: cp.domain,
+                path: phonePath,
+                countLabel: phoneCountLabel,
+                quote: pageHls[0]?.quote ?? null,
+              }
+            : null
+        }
+        onOpenCurrentPage={
+          cp ? () => openLibraryPage(cp.domain, cp.path) : undefined
+        }
         onOpenHighlight={(id, domain) => {
           const h = lib.highlights.find((hl) => hl.id === id);
           void navigate(
             `/library?${buildLibrarySearch({ domain: h?.domain ?? domain, highlight: id })}`
           );
+        }}
+        onNoteSave={handleNoteSave}
+        onTagsChange={handleTagsChange}
+        onDeleteHighlight={async (id) => {
+          const result = await deleteScope({ scope: 'highlight', id });
+          return result.success;
         }}
       />
     );

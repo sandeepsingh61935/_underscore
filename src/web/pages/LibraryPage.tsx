@@ -48,7 +48,8 @@ import { trackEvent } from '@/web/lib/analytics';
 import { isHandheldClient } from '@/web/lib/classify-web-client';
 import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { useWebClientKind } from '@/web/lib/use-web-client-kind';
-import { buildPagerItems, clampPage } from '@/web/lib/buildPagerItems';
+import { clampPage } from '@/web/lib/buildPagerItems';
+import { LibraryPager } from '@/web/components/LibraryPager';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
   exportScopeFromSelection,
@@ -160,118 +161,7 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
   return [...counts.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
 }
 
-type LibraryPagerProps = {
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-};
 
-/**
- * Numbered pager with prev/next, direct page buttons, and a go-to field.
- * Body-only control for the web Library list.
- */
-function LibraryPager({
-  page,
-  totalPages,
-  onPageChange,
-}: LibraryPagerProps): React.ReactElement {
-  const items = useMemo(() => buildPagerItems(page, totalPages), [page, totalPages]);
-  const [gotoDraft, setGotoDraft] = useState(String(page));
-
-  useEffect(() => {
-    setGotoDraft(String(page));
-  }, [page]);
-
-  const goTo = useCallback(
-    (raw: number | string) => {
-      const n = typeof raw === 'number' ? raw : Number.parseInt(String(raw).trim(), 10);
-      onPageChange(clampPage(n, totalPages));
-    },
-    [onPageChange, totalPages]
-  );
-
-  const commitGoto = useCallback(() => {
-    goTo(gotoDraft);
-  }, [goTo, gotoDraft]);
-
-  return (
-    <nav className="pager" data-od-id="library-pager" aria-label="Pagination">
-      <button
-        type="button"
-        className="pager-btn"
-        aria-label="Previous page"
-        disabled={page <= 1}
-        onClick={() => goTo(page - 1)}
-      >
-        ←
-      </button>
-
-      <div className="pager-pages" role="list">
-        {items.map((item) =>
-          item.type === 'ellipsis' ? (
-            <span
-              key={item.key}
-              className="pager-ellipsis"
-              role="presentation"
-              aria-hidden="true"
-            >
-              …
-            </span>
-          ) : (
-            <button
-              key={item.page}
-              type="button"
-              role="listitem"
-              className={item.page === page ? 'pager-page is-active' : 'pager-page'}
-              aria-label={`Page ${item.page}`}
-              aria-current={item.page === page ? 'page' : undefined}
-              data-od-id={`library-pager-page-${item.page}`}
-              onClick={() => goTo(item.page)}
-            >
-              {item.page}
-            </button>
-          )
-        )}
-      </div>
-
-      <label className="pager-goto">
-        <span className="pager-goto-label">Go to</span>
-        <input
-          className="pager-goto-input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={totalPages}
-          value={gotoDraft}
-          aria-label={`Go to page, ${page} of ${totalPages}`}
-          data-od-id="library-pager-goto"
-          onChange={(e) => setGotoDraft(e.target.value)}
-          onBlur={commitGoto}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitGoto();
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-        />
-        <span className="pager-label" aria-hidden="true">
-          / {totalPages}
-        </span>
-      </label>
-
-      <button
-        type="button"
-        className="pager-btn"
-        aria-label="Next page"
-        disabled={page >= totalPages}
-        onClick={() => goTo(page + 1)}
-      >
-        →
-      </button>
-    </nav>
-  );
-}
 
 /**
  * Library master-detail. Guest is always empty (useWebLibrary).
@@ -751,30 +641,114 @@ export function LibraryPage(): React.ReactElement {
         </div>
       );
     }
+    const canWrite = isAuthenticated && !caps.isGuest;
+    const seedPath = selection.highlight
+      ? (lib.highlights.find((h) => h.id === selection.highlight)?.path ?? selection.section)
+      : (selection.section ??
+        lib.highlights
+          .filter((h) => h.domain === selection.domain)
+          .sort((a, b) => b.savedAt - a.savedAt)[0]?.path ??
+        null);
+    const phoneRelated = selection.domain && seedPath
+      ? relatedness.relatedPages(selection.domain, seedPath)
+      : [];
+    const phoneRelatedLabel =
+      seedPath && seedPath !== '/'
+        ? `Related to ${displaySectionPath(seedPath)}`
+        : 'Related pages';
+    const exportRows = lib.highlights.filter(
+      (h) =>
+        h.domain === selection.domain &&
+        (!selection.section || (h.path || '/') === selection.section)
+    );
+
     return (
       <PhoneLibrary
-        highlights={lib.highlights}
+        highlights={filtered.map((row) => row.highlight)}
         query={query}
         onQueryChange={setQuery}
+        sort={sort}
+        onSortChange={setSort}
+        hasLibrary={lib.highlights.length > 0}
+        filters={{
+          fields,
+          onFieldsChange: setFields,
+          refine,
+          onRefineChange: setRefine,
+          tagFilters,
+          onTagFiltersChange: setTagFilters,
+          availableTags: tags,
+        }}
         domain={selection.domain}
+        section={selection.section}
         highlightId={selection.highlight}
-        onOpenDomain={(d) => {
-          const search = buildLibrarySearch({ domain: d });
-          void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
+        onOpenDomain={(d) => setSelection(d, null, null)}
+        onSelectSection={(path) => {
+          if (!selection.domain) return;
+          setSelection(selection.domain, path, null);
         }}
         onOpenHighlight={(id) => {
-          const search = buildLibrarySearch({ domain: selection.domain, highlight: id });
-          void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
-        }}
-        onBack={() => {
-          if (selection.highlight) {
-            const search = buildLibrarySearch({ domain: selection.domain });
-            void navigate({ pathname: '/library', search: search ? `?${search}` : '' }, { replace: false });
-          } else if (selection.domain) {
-            void navigate({ pathname: '/library', search: '' }, { replace: false });
-          }
+          setSelection(selection.domain, selection.section, id);
         }}
         clientKind={clientKind}
+        canExport={canWrite && caps.flags.export}
+        onExport={
+          canWrite && caps.flags.export
+            ? (format) => {
+                if (exportRows.length === 0 || !selection.domain) return;
+                exportWebHighlights(
+                  exportRows,
+                  format,
+                  exportScopeFromSelection({
+                    domain: selection.domain,
+                    section: selection.section,
+                  })
+                );
+              }
+            : undefined
+        }
+        onDeletePages={
+          canWrite && selection.domain
+            ? async (paths) => {
+                const domainName = selection.domain;
+                if (!domainName || paths.length === 0) return false;
+                const result = await deleteScope({
+                  scope: 'sections',
+                  domain: domainName,
+                  sectionKeys: paths,
+                });
+                return result.success;
+              }
+            : undefined
+        }
+        onDeleteDomain={
+          canWrite && selection.domain
+            ? async () => {
+                const domain = selection.domain;
+                if (!domain) return false;
+                const result = await deleteScope({ scope: 'domain', domain });
+                if (result.success) setSelection(null, null, null);
+                return result.success;
+              }
+            : undefined
+        }
+        onNoteSave={handleNoteSave}
+        onTagsChange={handleTagsChange}
+        onDeleteHighlight={handleHighlightDelete}
+        onDeleteHighlights={async (ids) => {
+          if (ids.length === 0) return false;
+          const result = await deleteScope({ scope: 'highlights', ids });
+          if (result.success && selection.highlight && ids.includes(selection.highlight)) {
+            setSelection(selection.domain, selection.section, null);
+          }
+          return result.success;
+        }}
+        relatedPages={phoneRelated}
+        relatedLabel={phoneRelatedLabel}
+        onOpenRelatedPage={(domain, section, rank, reason) => {
+          trackEvent('related_page_clicked', { rank, reason });
+          setSelection(domain, section, null);
+        }}
       />
     );
   }

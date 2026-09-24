@@ -129,6 +129,30 @@ export class HighlightQueryService {
       .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
   }
 
+  /** Lightweight rows for the quote page's related-pages rail. */
+  async listForRelatedness(): Promise<
+    Array<{
+      id: string;
+      text: string;
+      url: string;
+      path: string;
+      domain: string;
+      notes?: string;
+      tags?: string[];
+    }>
+  > {
+    const highlights = await this.readable.findAll();
+    return highlights.map((hl) => ({
+      id: hl.id,
+      text: hl.text,
+      url: hl.url ?? '',
+      path: hl.url ? getSectionPath(hl.url) : '/',
+      domain: hl.url ? (getDomainFromUrl(hl.url) ?? '') : '',
+      notes: hl.metadata?.notes,
+      tags: hl.metadata?.tags,
+    }));
+  }
+
   async getHighlightsByDomain(domain: string): Promise<DomainHighlightSummary[]> {
     if (!domain) {
       throw new Error('Domain required');

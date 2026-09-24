@@ -141,8 +141,8 @@ export function WebAppShell(): React.ReactElement {
 
   const activeRoute = routeFromPathname(location.pathname);
 
-  /** OD: library always flush. */
-  const workspaceFlush = activeRoute === 'library';
+  /** Phone is a full-bleed stack. Desktop library stays flush; home and settings keep the page inset. */
+  const workspaceFlush = phoneLayout || activeRoute === 'library';
 
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'

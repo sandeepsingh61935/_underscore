@@ -27,16 +27,6 @@ export interface DeleteConfirmDialogProps {
   confirmText?: string;
 }
 
-const actionButtonBase: React.CSSProperties = {
-  flex: 1,
-  minHeight: 44,
-  fontFamily: 'var(--sans)',
-  fontSize: 'var(--step--1)',
-  padding: '10px 12px',
-  cursor: 'pointer',
-  boxSizing: 'border-box',
-};
-
 function emphasizeNames(message: string, strongNames: string[]): React.ReactNode {
   if (!strongNames.length) return message;
 
@@ -105,24 +95,7 @@ export function DeleteConfirmDialog({
     void onConfirm();
   };
 
-  const confirmStyle: React.CSSProperties = isDanger
-    ? {
-        ...actionButtonBase,
-        border: '1px solid color-mix(in oklch, var(--ttl-expired) 45%, var(--rule))',
-        background: 'var(--paper)',
-        color: 'var(--ttl-expired)',
-        fontWeight: 500,
-        cursor: isConfirming ? 'wait' : 'pointer',
-        opacity: isConfirming ? 0.5 : 1,
-      }
-    : {
-        ...actionButtonBase,
-        border: '1px solid var(--accent)',
-        background: 'var(--accent)',
-        color: 'var(--paper)',
-        cursor: isConfirming ? 'wait' : 'pointer',
-        opacity: isConfirming ? 0.5 : 1,
-      };
+  const confirmClass = isDanger ? 'confirm-btn is-danger' : 'confirm-btn is-caution';
 
   return (
     <Dialog
@@ -134,31 +107,20 @@ export function DeleteConfirmDialog({
         <>
           <button
             type="button"
+            className="confirm-btn is-cancel"
             onClick={handleClose}
             disabled={isConfirming}
             data-testid="confirm-dialog-cancel"
-            style={{
-              ...actionButtonBase,
-              border: '1px solid var(--rule)',
-              background: 'var(--paper)',
-              color: 'var(--ink)',
-              opacity: isConfirming ? 0.5 : 1,
-              cursor: isConfirming ? 'wait' : 'pointer',
-            }}
           >
             {cancelLabel}
           </button>
           <button
             type="button"
+            className={confirmClass}
             onClick={handleConfirm}
             disabled={isConfirming || !challengeOk}
             data-testid="confirm-dialog-confirm"
             data-severity={severity}
-            style={{
-              ...confirmStyle,
-              opacity: isConfirming || !challengeOk ? 0.5 : 1,
-              cursor: isConfirming ? 'wait' : challengeOk ? 'pointer' : 'not-allowed',
-            }}
           >
             {isConfirming ? 'Working…' : confirmLabel}
           </button>

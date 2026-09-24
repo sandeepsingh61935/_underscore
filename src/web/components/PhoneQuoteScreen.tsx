@@ -1,40 +1,63 @@
 import React, { useState } from 'react';
 
-import { pageHrefForLibrary } from '@/shared/utils/page-href';
-import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
+import type { RelatedPageResult } from '@/shared/relatedness';
 import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
 import type { WebClientKind } from '@/web/lib/classify-web-client';
 
+import { phoneHighlightHref } from './phoneHighlightHref';
+import { PhoneRelatedPages } from './PhoneRelatedPages';
+
 export function PhoneQuoteScreen({
   highlight,
-  onBack,
   clientKind = 'phone',
+  relatedPages = [],
+  relatedLabel = 'Related pages',
+  onOpenRelatedPage,
 }: {
   highlight: WebHighlight;
-  onBack: () => void;
   clientKind?: WebClientKind;
+  relatedPages?: RelatedPageResult[];
+  relatedLabel?: string;
+  onOpenRelatedPage?: (domain: string, section: string, rank: number, reason: string) => void;
 }): React.ReactElement {
   const [copied, setCopied] = useState(false);
-  const pageUrl = pageHrefForLibrary(highlight.domain, highlight.path);
-  const href = pageUrl
-    ? buildTextFragmentUrl(pageUrl, { exact: highlight.quote })
-    : null;
+  const href = phoneHighlightHref(highlight);
+  const note = (highlight.note ?? '').trim();
+  const path = highlight.path && highlight.path !== '/' ? highlight.path : '';
 
   return (
     <section className="phone-quote" data-od-id="phone-quote">
-      <button type="button" className="phone-back" onClick={onBack}>
-        Back
-      </button>
+      <p className="phone-quote-source">{highlight.domain}</p>
       <p className="phone-quote-text">{highlight.quote}</p>
-      <p className="phone-quote-meta">
-        {highlight.domain}
-        {highlight.path ? ` ${highlight.path}` : ''}
-      </p>
+      {path ? <p className="phone-quote-meta">{path}</p> : null}
+      {note ? (
+        <div className="phone-note" data-od-id="phone-quote-note">
+          <span className="phone-note-kicker">Your note</span>
+          {note}
+        </div>
+      ) : null}
+      {highlight.tags.length > 0 ? (
+        <div className="phone-tags">
+          {highlight.tags.map((tag) => (
+            <span key={tag} className="phone-tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {onOpenRelatedPage ? (
+        <PhoneRelatedPages
+          label={relatedLabel}
+          pages={relatedPages}
+          layout="vertical"
+          onOpen={onOpenRelatedPage}
+        />
+      ) : null}
       <div className="phone-quote-actions">
         {href ? (
           <a
-            className="btn sm"
+            className="btn primary"
             href={href}
             target="_blank"
             rel="noopener noreferrer"
@@ -45,10 +68,11 @@ export function PhoneQuoteScreen({
         ) : null}
         <button
           type="button"
-          className="btn sm ghost"
+          className="btn"
           onClick={() => {
-            if (!href || !navigator.clipboard?.writeText) return;
-            void navigator.clipboard.writeText(href).then(() => {
+            const text = href ?? highlight.quote;
+            if (!navigator.clipboard?.writeText) return;
+            void navigator.clipboard.writeText(text).then(() => {
               setCopied(true);
               window.setTimeout(() => setCopied(false), 1500);
             });

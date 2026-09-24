@@ -36,7 +36,7 @@ const HIGHLIGHTS: WebHighlight[] = [
 ];
 
 describe('PhoneHome', () => {
-  it('shows greeting and count', () => {
+  it('shows greeting', () => {
     render(
       <PhoneHome
         greeting="Good evening, sandy"
@@ -46,7 +46,7 @@ describe('PhoneHome', () => {
       />
     );
     expect(screen.getByText('Good evening, sandy')).toBeInTheDocument();
-    expect(screen.getByText('3 highlights')).toBeInTheDocument();
+    expect(screen.queryByText('3 highlights')).toBeNull();
   });
 
   it('shows recent quotes', () => {
@@ -93,6 +93,37 @@ describe('PhoneHome', () => {
     expect(screen.queryByText('Sources')).toBeNull();
   });
 
+  it('shows the library strip and current page when the web home has them', () => {
+    render(
+      <PhoneHome
+        greeting="Good evening, sandy"
+        count={3}
+        recent={HIGHLIGHTS}
+        stats={{
+          highlightCount: 3,
+          thisWeekCount: 1,
+          pageCount: 2,
+          sourceCount: 2,
+          notesCount: 0,
+          tagCount: 0,
+        }}
+        currentPage={{
+          domain: 'example.com',
+          path: '/docs',
+          countLabel: '2 highlights',
+          quote: 'First quote',
+        }}
+        onOpenCurrentPage={() => undefined}
+        onOpenHighlight={() => undefined}
+      />
+    );
+    expect(screen.getByLabelText('Library stats')).toBeInTheDocument();
+    expect(screen.getByText('This week')).toBeInTheDocument();
+    expect(screen.getByText('Sources')).toBeInTheDocument();
+    expect(screen.getByText('Current page')).toBeInTheDocument();
+    expect(screen.queryByText('Ask')).toBeNull();
+  });
+
   it('shows empty message when no highlights', () => {
     render(
       <PhoneHome
@@ -103,5 +134,56 @@ describe('PhoneHome', () => {
       />
     );
     expect(screen.getByText(/no highlights yet/i)).toBeInTheDocument();
+  });
+
+  it('paginates recent list items with page size 10', () => {
+    const manyHighlights: WebHighlight[] = Array.from({ length: 15 }, (_, i) => ({
+      id: `h-${i + 1}`,
+      domain: 'example.com',
+      path: '/docs',
+      quote: `Recent quote ${i + 1}`,
+      note: '',
+      tags: [],
+      savedAt: 1000 + i,
+    }));
+
+    render(
+      <PhoneHome
+        greeting="Good morning"
+        count={15}
+        recent={manyHighlights}
+        onOpenHighlight={() => undefined}
+      />
+    );
+
+    // Page 1 should show the first 10 items
+    expect(screen.getByText('Recent quote 1')).toBeInTheDocument();
+    expect(screen.getByText('Recent quote 10')).toBeInTheDocument();
+    expect(screen.queryByText('Recent quote 11')).toBeNull();
+
+    // Pager should be rendered
+    const pager = screen.getByRole('navigation', { name: 'Pagination' });
+    expect(pager).toBeInTheDocument();
+
+    // Click page 2
+    fireEvent.click(screen.getByRole('listitem', { name: 'Page 2' }));
+
+    // Page 2 should show remaining 5 items
+    expect(screen.getByText('Recent quote 11')).toBeInTheDocument();
+    expect(screen.getByText('Recent quote 15')).toBeInTheDocument();
+    expect(screen.queryByText('Recent quote 1')).toBeNull();
+  });
+
+  it('does not render pager when recent items are 10 or fewer', () => {
+    render(
+      <PhoneHome
+        greeting="Good morning"
+        count={3}
+        recent={HIGHLIGHTS}
+        onOpenHighlight={() => undefined}
+      />
+    );
+
+    expect(screen.queryByRole('navigation', { name: 'Pagination' })).toBeNull();
   });
 });

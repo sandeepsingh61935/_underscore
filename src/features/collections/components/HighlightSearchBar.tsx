@@ -58,11 +58,6 @@ const FIELD_CHIP_LABELS: Record<SearchField, string> = {
   domain: 'Domain',
 };
 
-function resultCountLabel(count: number): string {
-  if (count === 0) return '0';
-  return String(count);
-}
-
 function fieldsCoverAll(fields: SearchField[]): boolean {
   if (fields.length === 0) return true;
   return USER_SEARCH_FIELDS.every((f) => fields.includes(f));
@@ -79,7 +74,6 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     tagFilters = [],
     onTagFiltersChange,
     availableTags,
-    resultCount,
     placeholder = 'Search…',
     disabled = false,
     filterOpen: filterOpenProp,
@@ -153,11 +147,6 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
   const handleTagToggle = (tag: string): void => {
     onTagFiltersChange?.(toggleTagFilter(tagFilters, tag));
   };
-
-  const trimmedQuery = query.trim();
-  // Show count for text search and for refine/tag-only filtering (parents pass resultCount).
-  const showResultCount =
-    resultCount !== undefined && (trimmedQuery.length > 0 || hasFilters);
 
   const popularTags = useMemo(() => {
     if (!availableTags) return [];
@@ -278,22 +267,6 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
             <span className="filter-active-chip" role="listitem">
               <span>+{tagFilters.length - 3}</span>
             </span>
-          )}
-        </div>
-      )}
-
-      {showResultCount && (
-        <div className="search-meta-row">
-          <span className="search-count">{resultCountLabel(resultCount as number)}</span>
-          {activeN > 0 && (
-            <button
-              type="button"
-              className="search-clear-filters"
-              disabled={disabled}
-              onClick={handleResetFilters}
-            >
-              Clear
-            </button>
           )}
         </div>
       )}
