@@ -9,6 +9,7 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { resolveWebCaps } from '@/web/caps/resolveWebCaps';
 import { resolveWebPaidActive } from '@/web/caps/resolveWebPaidActive';
 import { DomainFavicon } from '@/web/components/DomainFavicon';
+import { PhoneHome } from '@/web/components/PhoneHome';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import { useExtensionPresence } from '@/web/extension-presence-context';
 import {
@@ -21,7 +22,6 @@ import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { buildLibrarySearch } from '@/web/routing/librarySelection';
-import { PhoneHome } from '@/web/components/PhoneHome';
 
 /** Denser rail cards fit more rows; keep in sync with aggregateLibrary default. */
 const RECENT_CAP = 12;
@@ -141,6 +141,7 @@ export function HomePage(): React.ReactElement {
   const { isAuthenticated, user } = useApp();
   const billing = useBillingContextOptional();
   const navigate = useNavigate();
+  const extPresence = useExtensionPresence();
 
   const isPaidActive = resolveWebPaidActive(billing?.snapshot);
   const caps = useMemo(
@@ -442,7 +443,6 @@ export function HomePage(): React.ReactElement {
     </>
   );
 
-  const extPresence = useExtensionPresence();
   const extensionInstalled = extPresence === 'installed';
   const firstRun = webHomeEmptyInstallCopy({ guest, extensionInstalled });
   const recentBody = empty ? (

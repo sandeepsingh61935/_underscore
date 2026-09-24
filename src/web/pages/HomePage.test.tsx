@@ -12,7 +12,13 @@ vi.mock('@/features/billing/BillingProvider', () => ({
   useBillingContextOptional: vi.fn(() => null),
 }));
 
+vi.mock('@/web/lib/is-mobile-web-viewport', () => ({
+  useMobileWebViewport: vi.fn(() => false),
+}));
+
 import { useApp } from '@/core/context/AppProvider';
+import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
+import { clearWebLibrarySessionMemory } from '@/web/hooks/useWebLibrary';
 
 function renderHome() {
   return render(
@@ -25,6 +31,7 @@ function renderHome() {
 describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWebLibrarySessionMemory();
     (useApp as ReturnType<typeof vi.fn>).mockReturnValue({
       isAuthenticated: false,
       user: null,
@@ -65,5 +72,36 @@ describe('HomePage', () => {
     expect(libraryHref('example.com', '/docs/guide')).toBe(
       '/library?domain=example.com&section=%2Fdocs%2Fguide'
     );
+  });
+
+  it('does not violate rules of hooks when transitioning from loading to ready', async () => {
+    (useApp as ReturnType<typeof vi.fn>).mockReturnValue({
+      isAuthenticated: true,
+      user: { email: 'user@example.com' },
+    });
+    renderHome();
+    await screen.findByText(/Good/);
+    const hookOrderErrors = (console.error as any).mock.calls.filter((call: any[]) =>
+      typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
+    );
+    expect(hookOrderErrors).toHaveLength(0);
+  });
+
+  it('does not violate rules of hooks when viewport transitions between mobile and desktop', () => {
+    vi.mocked(useMobileWebViewport).mockReturnValue(true);
+    const { rerender } = renderHome();
+    expect(document.querySelector('[data-od-id="phone-home"]')).toBeTruthy();
+
+    vi.mocked(useMobileWebViewport).mockReturnValue(false);
+    rerender(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+
+    const hookOrderErrors = (console.error as any).mock.calls.filter((call: any[]) =>
+      typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
+    );
+    expect(hookOrderErrors).toHaveLength(0);
   });
 });
