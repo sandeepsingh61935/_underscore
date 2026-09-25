@@ -129,6 +129,7 @@ export default defineConfig({
     },
     build: {
       target: 'esnext', // Use modern JS
+      chunkSizeWarningLimit: 1200,
       modulePreload: {
         polyfill: false,
         resolveDependencies: () => [],
@@ -154,7 +155,7 @@ export default defineConfig({
       if (!isPopup) return;
 
       config.build ??= {};
-      config.build.chunkSizeWarningLimit = 600;
+      config.build.chunkSizeWarningLimit = 1200;
       config.build.rollupOptions ??= {};
       const output = config.build.rollupOptions.output;
       const outputObj = Array.isArray(output) ? output[0] : output;
@@ -200,11 +201,17 @@ export default defineConfig({
         ) {
           return 'markdown';
         }
+        if (id.includes('@radix-ui')) {
+          return 'radix';
+        }
         if (id.includes('lucide-react')) {
           return 'icons';
         }
         if (id.includes('node_modules/zod')) {
           return 'zod';
+        }
+        if (id.includes('node_modules/dexie') || id.includes('node_modules/idb')) {
+          return 'idb';
         }
         if (id.includes('dompurify')) {
           return 'dompurify';
