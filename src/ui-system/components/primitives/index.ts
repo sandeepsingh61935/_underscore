@@ -8,3 +8,4 @@ export * from './Input';
 export * from './Logo';
 export * from './Spinner';
 export * from './Text';
+export * from './HighlightActionIcons';

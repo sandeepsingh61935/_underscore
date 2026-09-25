@@ -6,11 +6,11 @@
 import React, { useCallback, useRef, useState } from 'react';
 
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
-import { MarginaliaStrip } from '@/features/collections/components/MarginaliaStrip';
 import {
   copyHighlightPlainText,
   copyQuoteLink,
 } from '@/features/collections/hooks/useHighlightExport';
+import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpdateHighlightMetadata';
 import { useUpdateHighlightText } from '@/features/collections/hooks/useUpdateHighlightText';
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
@@ -74,15 +74,16 @@ export function LibraryHighlightTile({
   onOpenDetail,
   onDelete,
   allowMarginalia = false,
-  isExpanded = false,
-  onToggleExpand,
-  suggestions,
+  isExpanded: _isExpanded = false,
+  onToggleExpand: _onToggleExpand,
+  suggestions: _suggestions,
   matchBadge,
   isUnanchored = false,
   onReanchor,
   canReanchor = true,
 }: LibraryHighlightTileProps): React.ReactElement {
   const { updateText } = useUpdateHighlightText();
+  const { updateMetadata } = useUpdateHighlightMetadata();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isDeletingRef = useRef(false);
@@ -90,6 +91,18 @@ export function LibraryHighlightTile({
   const onSaveQuote = useCallback(
     async (text: string): Promise<boolean> => updateText(highlight.id, text),
     [highlight.id, updateText]
+  );
+
+  const onSaveNotes = useCallback(
+    async (notes: string): Promise<boolean> =>
+      updateMetadata(highlight.id, { notes }, { silent: true }),
+    [highlight.id, updateMetadata]
+  );
+
+  const onSaveTags = useCallback(
+    async (tags: string[]): Promise<boolean> =>
+      updateMetadata(highlight.id, { tags }, { silent: true }),
+    [highlight.id, updateMetadata]
   );
 
   const quote = highlight.text || '[Unavailable]';
@@ -142,19 +155,6 @@ export function LibraryHighlightTile({
     }
   }, [onDelete]);
 
-  const footerStart =
-    allowMarginalia && onToggleExpand ? (
-      <MarginaliaStrip
-        highlightId={highlight.id}
-        notes={highlight.notes}
-        labels={highlight.tags}
-        isExpanded={isExpanded}
-        onToggleExpand={onToggleExpand}
-        suggestions={suggestions}
-        embedInCard
-      />
-    ) : undefined;
-
   const deleteCopy = deleteHighlightCopy();
 
   return (
@@ -174,7 +174,10 @@ export function LibraryHighlightTile({
         onOpen={onOpen}
         onDelete={onDelete ? () => setDeleteOpen(true) : undefined}
         onSaveQuote={onSaveQuote}
-        footerStart={footerStart}
+        notes={highlight.notes}
+        tags={highlight.tags}
+        onSaveNotes={allowMarginalia ? onSaveNotes : undefined}
+        onSaveTags={allowMarginalia ? onSaveTags : undefined}
         matchBadge={matchBadge}
         isUnanchored={isUnanchored}
         onReanchor={onReanchor}

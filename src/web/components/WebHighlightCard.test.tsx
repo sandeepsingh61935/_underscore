@@ -16,7 +16,7 @@ const base: WebHighlight = {
 };
 
 describe('WebHighlightCard', () => {
-  it('renders quote, tag chips, and compact Note action when editable', () => {
+  it('renders quote, tag chips, and action buttons when editable', () => {
     render(
       <WebHighlightCard
         highlight={base}
@@ -28,15 +28,11 @@ describe('WebHighlightCard', () => {
 
     expect(screen.getByText(/Hello world/)).toBeTruthy();
     expect(document.querySelector('[data-od-id="hl-tag-h1-craft"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
-      /Add note/
-    );
-    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.className).toContain(
-      'hl-ghost'
-    );
+    expect(screen.getByRole('button', { name: 'Add note' })).toBeTruthy();
+    expect(document.querySelector('.hl-actions')).toBeTruthy();
   });
 
-  it('empty card keeps Add tag / Add note on the meta row (no dashed foot)', () => {
+  it('empty card provides Add tag and Add note action buttons below divider', () => {
     render(
       <WebHighlightCard
         highlight={{ ...base, note: '', tags: [] }}
@@ -45,16 +41,13 @@ describe('WebHighlightCard', () => {
       />
     );
 
-    expect(document.querySelector('.hl-foot')).toBeNull();
-    expect(document.querySelector('.hl-meta-invites')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="hl-tag-add-h1"]')?.textContent).toMatch(
-      /Add tag/
-    );
-    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
-      /Add note/
-    );
+    expect(document.querySelector('.hl-actions')).toBeTruthy();
+    const noteBtn = screen.getByRole('button', { name: 'Add note' });
+    const tagBtn = screen.getByRole('button', { name: 'Add tags' });
+    expect(noteBtn).toBeTruthy();
+    expect(tagBtn).toBeTruthy();
 
-    fireEvent.click(document.querySelector('[data-od-id="hl-note-h1"]')!);
+    fireEvent.click(noteBtn);
     expect(document.querySelector('[data-od-id="hl-note-edit-h1"]')).toBeTruthy();
   });
 
@@ -289,5 +282,92 @@ describe('WebHighlightCard', () => {
     expect(path.getAttribute('href')).toBe(
       'https://example.com/article#:~:text=remarkable%20insight'
     );
+  });
+
+  it('renders 6 action buttons in consistent order: Copy, Link, Note, Tag, Open, Delete', () => {
+    const { container } = render(
+      <WebHighlightCard
+        highlight={{
+          ...base,
+          quote: 'remarkable insight',
+          domain: 'example.com',
+          path: '/article',
+        }}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={vi.fn().mockResolvedValue(true)}
+        onDelete={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    const actionContainer = container.querySelector('.hl-actions');
+    expect(actionContainer).toBeTruthy();
+
+    const buttonsAndLinks = actionContainer?.querySelectorAll('.hl-ico');
+    expect(buttonsAndLinks?.length).toBe(6);
+
+    expect(buttonsAndLinks?.[0]).toHaveAttribute('aria-label', 'Copy');
+    expect(buttonsAndLinks?.[1]).toHaveAttribute('aria-label', 'Copy direct link to quote');
+    expect(buttonsAndLinks?.[2]).toHaveAttribute('aria-label', 'Add note');
+    expect(buttonsAndLinks?.[3]).toHaveAttribute('aria-label', 'Add tags');
+    expect(buttonsAndLinks?.[4]).toHaveAttribute('aria-label', 'Open source');
+    expect(buttonsAndLinks?.[5]).toHaveAttribute('aria-label', 'Delete highlight');
+  });
+
+  it('toggles note editor and sets active state on note button', () => {
+    render(
+      <WebHighlightCard
+        highlight={base}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    const noteBtn = screen.getByRole('button', { name: 'Add note' });
+    expect(noteBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(noteBtn.className).not.toContain('is-active');
+    expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull();
+
+    fireEvent.click(noteBtn);
+    expect(noteBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(noteBtn.className).toContain('is-active');
+    expect(screen.getByRole('textbox', { name: 'Note' })).toBeTruthy();
+
+    fireEvent.click(noteBtn);
+    expect(noteBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull();
+  });
+
+  it('toggles tag editor and sets active state on tag button', () => {
+    render(
+      <WebHighlightCard
+        highlight={base}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+        onTagsChange={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    const tagBtn = screen.getByRole('button', { name: 'Add tags' });
+    expect(tagBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(tagBtn.className).not.toContain('is-active');
+    expect(screen.queryByPlaceholderText('Add tag…')).toBeNull();
+
+    fireEvent.click(tagBtn);
+    expect(tagBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(tagBtn.className).toContain('is-active');
+    expect(screen.getByPlaceholderText('Add tag…')).toBeTruthy();
+  });
+
+  it('opens note editor when clicking the note display box', () => {
+    render(
+      <WebHighlightCard
+        highlight={{ ...base, note: 'Saved thoughts' }}
+        onNoteSave={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    const noteBox = screen.getByText('Saved thoughts');
+    fireEvent.click(noteBox);
+
+    expect(screen.getByRole('textbox', { name: 'Note' })).toBeTruthy();
   });
 });

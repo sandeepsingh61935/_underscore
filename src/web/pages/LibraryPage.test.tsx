@@ -262,9 +262,9 @@ describe('LibraryPage', () => {
 
     expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="hl-tag-add-h1"]')).toBeTruthy();
-    expect(document.querySelector('[data-od-id="hl-note-h1"]')?.textContent).toMatch(
-      /Add note/
-    );
+    expect(
+      document.querySelector('[data-od-id="hl-note-h1"]')?.getAttribute('aria-label')
+    ).toBe('Add note');
     expect(document.querySelector('[data-od-id="hl-note-h2"]')?.textContent).toMatch(
       /note here/
     );

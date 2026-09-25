@@ -326,4 +326,115 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     render(<HighlightCard quote="Apple" domain="example.com" onCopy={vi.fn()} />);
     expect(screen.queryByTestId('highlight-match-badge')).toBeNull();
   });
+
+  it('renders horizontal divider above action row', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onCopy={vi.fn()}
+      />
+    );
+    const row = screen.getByTestId('highlight-action-row');
+    expect(row.style.borderTop).toBe('1px solid var(--rule-soft)');
+  });
+
+  it('renders note display box with YOUR NOTE kicker when notes are present', () => {
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        notes="Interesting concept"
+      />
+    );
+    expect(screen.getByText('YOUR NOTE')).toBeTruthy();
+    expect(screen.getByText('Interesting concept')).toBeTruthy();
+  });
+
+  it('toggles note editor and sets active state on Note button', async () => {
+    const onSaveNotes = vi.fn(async () => true);
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        onSaveNotes={onSaveNotes}
+      />
+    );
+
+    const noteBtn = screen.getByRole('button', { name: /Add note/i });
+    expect(noteBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(noteBtn.className).not.toContain('is-active');
+
+    // Click to open editor
+    fireEvent.click(noteBtn);
+    expect(noteBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(noteBtn.className).toContain('is-active');
+
+    const textarea = screen.getByRole('textbox', { name: /Note/i });
+    expect(textarea).toBeTruthy();
+    fireEvent.change(textarea, { target: { value: 'My new note' } });
+
+    // Click Save
+    const saveBtn = screen.getByRole('button', { name: /^Save$/i });
+    fireEvent.click(saveBtn);
+
+    await vi.waitFor(() => {
+      expect(onSaveNotes).toHaveBeenCalledWith('My new note');
+    });
+  });
+
+  it('toggles tag editor, sets active state on Tag button, and adds tag', async () => {
+    const onSaveTags = vi.fn(async () => true);
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        tags={['design']}
+        onSaveTags={onSaveTags}
+      />
+    );
+
+    expect(screen.getByText('design')).toBeTruthy();
+
+    const tagBtn = screen.getByRole('button', { name: /Add tags/i });
+    expect(tagBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(tagBtn.className).not.toContain('is-active');
+
+    // Click to open tag editor
+    fireEvent.click(tagBtn);
+    expect(tagBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(tagBtn.className).toContain('is-active');
+
+    const input = screen.getByPlaceholderText(/Add tag…/i);
+    fireEvent.change(input, { target: { value: 'architecture' } });
+
+    const addBtn = screen.getByRole('button', { name: /^Add$/i });
+    fireEvent.click(addBtn);
+
+    await vi.waitFor(() => {
+      expect(onSaveTags).toHaveBeenCalledWith(['design', 'architecture']);
+    });
+  });
+
+  it('removes a tag using the remove button in tag editing mode', async () => {
+    const onSaveTags = vi.fn(async () => true);
+    render(
+      <HighlightCard
+        quote="Apple"
+        domain="example.com"
+        tags={['science', 'tech']}
+        onSaveTags={onSaveTags}
+      />
+    );
+
+    const tagBtn = screen.getByRole('button', { name: /Add tags/i });
+    fireEvent.click(tagBtn);
+
+    const removeBtn = screen.getByRole('button', { name: /Remove tag science/i });
+    fireEvent.click(removeBtn);
+
+    await vi.waitFor(() => {
+      expect(onSaveTags).toHaveBeenCalledWith(['tech']);
+    });
+  });
 });

@@ -13,7 +13,7 @@
  * @see docs/superpowers/specs/2026-07-14-highlight-tile-editor-density-prd.md
  * @see docs/superpowers/specs/2026-07-20-highlight-edit-format-tools-prd.md
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { discardEditsCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
@@ -24,6 +24,7 @@ import {
   type EditHistory,
   type EditSnapshot,
 } from '@/shared/utils/edit-history';
+import { normalizeHighlightTags } from '@/shared/utils/highlight-metadata';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import { HIGHLIGHT_TEXT_MAX_LENGTH } from '@/shared/utils/highlight-text';
 import {
@@ -32,7 +33,23 @@ import {
   type MarkdownFormatAction,
 } from '@/shared/utils/markdown-wrap';
 import { Dialog } from '@/ui-system/components/primitives/Dialog';
+import {
+  HighlightCopyIcon,
+  HighlightDeleteIcon,
+  HighlightLinkIcon,
+  HighlightNoteIcon,
+  HighlightOpenIcon,
+  HighlightTagIcon,
+} from '@/ui-system/components/primitives/HighlightActionIcons';
 import { HighlightMarkdownBody } from '@/ui-system/components/primitives/HighlightMarkdownBody';
+
+function tagKey(t: string): string {
+  return t.trim().toLowerCase();
+}
+
+function normalizeTagInput(raw: string): string {
+  return raw.trim().replace(/^#+/, '').replace(/\s+/g, '-');
+}
 
 export interface HighlightCardProps {
   quote: string;
@@ -75,6 +92,17 @@ export interface HighlightCardProps {
   onReanchor?: () => void | Promise<void>;
   /** Whether re-anchoring is currently available (false if page has no selection) */
   canReanchor?: boolean;
+
+  /** Saved note content */
+  notes?: string;
+  /** Saved tag labels */
+  tags?: string[];
+  /** Callback to persist updated note content */
+  onSaveNotes?: (notes: string) => Promise<boolean>;
+  /** Callback to persist updated tag list */
+  onSaveTags?: (tags: string[]) => Promise<boolean>;
+  /** Callback when clicking a tag pill */
+  onToggleTagFilter?: (tag: string) => void;
 }
 
 /** Quiet text for Save / Cancel while editing. */
@@ -98,69 +126,6 @@ function IconEdit(): React.ReactElement {
         d="M10.5 2.5l3 3L5 14H2v-3L10.5 2.5z"
         stroke="currentColor"
         strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconCopy(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect
-        x="5.5"
-        y="5.5"
-        width="7"
-        height="8"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M3.5 10.5V3.5h7"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconDelete(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconLink(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5L7 4M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5L9 12"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconExternalLink(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M10 2.5h3.5v3.5M6.5 9.5l7-7M11.5 8.5v4a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h4"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -230,6 +195,11 @@ export function HighlightCard({
   isUnanchored = false,
   onReanchor,
   canReanchor = true,
+  notes,
+  tags,
+  onSaveNotes,
+  onSaveTags,
+  onToggleTagFilter,
 }: HighlightCardProps): React.ReactElement {
   const padTop = density === 'compact' ? 10 : 12;
   const padBottom = 8;
@@ -246,6 +216,182 @@ export function HighlightCard({
   /** Latest draft for history helpers without stale closures. */
   const draftRef = useRef(draft);
   draftRef.current = draft;
+
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [tagEditing, setTagEditing] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(notes ?? '');
+  const [tagInput, setTagInput] = useState('');
+  const [localTags, setLocalTags] = useState<string[]>(() =>
+    tags ? normalizeHighlightTags(tags) : []
+  );
+  const [tagError, setTagError] = useState<string | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
+  const [savingTags, setSavingTags] = useState(false);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const tagsRowRef = useRef<HTMLDivElement>(null);
+  const noteFieldId = useId();
+  const tagFieldId = useId();
+  const tagsBusyRef = useRef(false);
+
+  useEffect(() => {
+    if (!noteEditing) setNoteDraft(notes ?? '');
+  }, [notes, noteEditing]);
+
+  useEffect(() => {
+    if (tagsBusyRef.current || tagEditing) return;
+    setLocalTags(tags ? normalizeHighlightTags(tags) : []);
+    setTagError(null);
+  }, [tags, tagEditing]);
+
+  useEffect(() => {
+    if (noteEditing) {
+      const t = window.setTimeout(() => noteRef.current?.focus(), 0);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
+  }, [noteEditing]);
+
+  useEffect(() => {
+    if (tagEditing) {
+      const t = window.setTimeout(() => tagInputRef.current?.focus(), 0);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
+  }, [tagEditing]);
+
+  useEffect(() => {
+    if (!tagEditing) return undefined;
+    let remove: (() => void) | undefined;
+    const attachTimer = window.setTimeout(() => {
+      const onDoc = (e: MouseEvent): void => {
+        const el = tagsRowRef.current;
+        if (el && !el.contains(e.target as Node)) {
+          setTagEditing(false);
+          setTagInput('');
+          setTagError(null);
+        }
+      };
+      document.addEventListener('mousedown', onDoc);
+      remove = () => document.removeEventListener('mousedown', onDoc);
+    }, 0);
+    return () => {
+      window.clearTimeout(attachTimer);
+      remove?.();
+    };
+  }, [tagEditing]);
+
+  const saveNote = useCallback(async () => {
+    if (!onSaveNotes) return;
+    const next = noteDraft.trim();
+    const previousNote = notes ?? '';
+    setNoteEditing(false);
+    setSavingNote(false);
+    const ok = await onSaveNotes(next);
+    if (!ok) {
+      setNoteDraft(next || previousNote);
+      setNoteEditing(true);
+    }
+  }, [noteDraft, notes, onSaveNotes]);
+
+  const cancelNote = useCallback(() => {
+    setNoteDraft(notes ?? '');
+    setNoteEditing(false);
+  }, [notes]);
+
+  const persistTags = useCallback(
+    async (next: string[], previous: string[]): Promise<boolean> => {
+      if (!onSaveTags) return false;
+      if (tagsBusyRef.current) return false;
+      tagsBusyRef.current = true;
+      setTagError(null);
+      setLocalTags(next);
+      setSavingTags(false);
+      try {
+        const ok = await onSaveTags(next);
+        if (!ok) {
+          setLocalTags(previous);
+          setTagError('Could not save tag. Try again.');
+          return false;
+        }
+        return true;
+      } catch {
+        setLocalTags(previous);
+        setTagError('Could not save tag. Try again.');
+        return false;
+      } finally {
+        tagsBusyRef.current = false;
+      }
+    },
+    [onSaveTags]
+  );
+
+  const addTag = useCallback(async () => {
+    if (!onSaveTags || tagsBusyRef.current) return;
+    const clean = normalizeTagInput(tagInput);
+    if (!clean) {
+      setTagError('Type a tag name first.');
+      tagInputRef.current?.focus();
+      return;
+    }
+    const previous = localTags;
+    const next = normalizeHighlightTags([...localTags, clean]);
+    if (next.length === previous.length) {
+      if (previous.some((t) => tagKey(t) === tagKey(clean))) {
+        setTagInput('');
+        setTagError(null);
+        return;
+      }
+      setTagError('Tag limit reached (10).');
+      return;
+    }
+    setTagInput('');
+    setTagError(null);
+    const ok = await persistTags(next, previous);
+    if (ok) {
+      window.setTimeout(() => tagInputRef.current?.focus(), 0);
+    } else {
+      setTagInput(clean);
+    }
+  }, [localTags, onSaveTags, persistTags, tagInput]);
+
+  const removeTag = useCallback(
+    async (tag: string) => {
+      if (!onSaveTags || tagsBusyRef.current) return;
+      const previous = localTags;
+      const next = normalizeHighlightTags(
+        localTags.filter((t) => tagKey(t) !== tagKey(tag))
+      );
+      await persistTags(next, previous);
+    },
+    [localTags, onSaveTags, persistTags]
+  );
+
+  const startTagEdit = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.preventDefault();
+      e?.stopPropagation();
+      if (!onSaveTags) return;
+      setTagError(null);
+      setTagEditing(true);
+    },
+    [onSaveTags]
+  );
+
+  const startNoteEdit = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.preventDefault();
+      e?.stopPropagation();
+      if (!onSaveNotes) return;
+      setNoteDraft(notes ?? '');
+      setNoteEditing(true);
+    },
+    [notes, onSaveNotes]
+  );
+
+  const hasNote = Boolean(notes?.trim());
+  const canNote = Boolean(onSaveNotes);
+  const canTag = Boolean(onSaveTags);
 
   const rememberSelection = (el: HTMLTextAreaElement): void => {
     savedSelectionRef.current = {
@@ -439,6 +585,8 @@ export function HighlightCard({
       onSaveQuote ||
         onCopy ||
         onCopyQuoteLink ||
+        canNote ||
+        canTag ||
         onOpen ||
         onDelete ||
         (isUnanchored && onReanchor)
@@ -706,15 +854,179 @@ export function HighlightCard({
             </div>
           )}
 
+          {hasNote && !noteEditing ? (
+            <div
+              className="hl-note"
+              role={canNote ? 'button' : undefined}
+              tabIndex={canNote ? 0 : undefined}
+              onClick={canNote ? () => startNoteEdit() : undefined}
+              onKeyDown={
+                canNote
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        startNoteEdit();
+                      }
+                    }
+                  : undefined
+              }
+            >
+              <span className="hl-note-kicker">YOUR NOTE</span>
+              <p className="hl-note-txt">{notes?.trim()}</p>
+            </div>
+          ) : null}
+
+          {noteEditing && canNote ? (
+            <div className="hl-note-edit">
+              <label className="hl-note-kicker" htmlFor={noteFieldId}>
+                YOUR NOTE
+              </label>
+              <textarea
+                id={noteFieldId}
+                ref={noteRef}
+                className="hl-note-input"
+                rows={3}
+                placeholder="Add a note…"
+                aria-label="Note"
+                value={noteDraft}
+                disabled={savingNote}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') cancelNote();
+                }}
+              />
+              <div className="hl-note-actions">
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  disabled={savingNote}
+                  onClick={cancelNote}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn sm"
+                  disabled={savingNote}
+                  onClick={() => void saveNote()}
+                >
+                  {savingNote ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {localTags.length > 0 || tagEditing ? (
+            <div
+              className="hl-tags"
+              ref={tagsRowRef}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {localTags.map((t) => {
+                if (tagEditing && canTag) {
+                  return (
+                    <span key={t} className="hl-tag-chip">
+                      <span>{t}</span>
+                      <button
+                        type="button"
+                        className="hl-tag-rm"
+                        aria-label={`Remove tag ${t}`}
+                        disabled={savingTags}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void removeTag(t);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    className="hl-tag"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onToggleTagFilter?.(t);
+                    }}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {tagEditing && canTag ? (
+            <div className="hl-tag-edit">
+              <input
+                id={tagFieldId}
+                ref={tagInputRef}
+                className="hl-tag-input"
+                placeholder="Add tag…"
+                aria-label="New tag name"
+                autoComplete="off"
+                value={tagInput}
+                disabled={savingTags}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  if (tagError) setTagError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void addTag();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setTagEditing(false);
+                    setTagInput('');
+                    setTagError(null);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn sm"
+                disabled={savingTags}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void addTag();
+                }}
+              >
+                {savingTags ? 'Saving…' : 'Add'}
+              </button>
+            </div>
+          ) : null}
+
+          {tagError ? (
+            <p className="hl-tag-error" role="alert">
+              {tagError}
+            </p>
+          ) : null}
+
           {showActionRow && (
             <div
               data-testid="highlight-action-row"
               style={{
                 display: 'flex',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 gap: 6,
                 minHeight: 28,
-                marginTop: showLocationMeta ? 0 : 6,
+                marginTop: 10,
+                paddingTop: 4,
+                borderTop: '1px solid var(--rule-soft)',
               }}
             >
               {footerStart != null && (
@@ -766,20 +1078,6 @@ export function HighlightCard({
                   </>
                 ) : (
                   <>
-                    {onSaveQuote && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditor();
-                        }}
-                        className="hl-icon"
-                        aria-label="Edit highlight text"
-                        title="Edit"
-                      >
-                        <IconEdit />
-                      </button>
-                    )}
                     {onCopy && (
                       <button
                         type="button"
@@ -791,7 +1089,7 @@ export function HighlightCard({
                         aria-label="Copy highlight text"
                         title="Copy"
                       >
-                        <IconCopy />
+                        <HighlightCopyIcon />
                       </button>
                     )}
                     {onCopyQuoteLink && (
@@ -805,7 +1103,49 @@ export function HighlightCard({
                         aria-label="Copy direct link to quote"
                         title="Copy quote link"
                       >
-                        <IconLink />
+                        <HighlightLinkIcon />
+                      </button>
+                    )}
+                    {canNote && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (noteEditing) {
+                            cancelNote();
+                          } else {
+                            startNoteEdit();
+                            setTagEditing(false);
+                          }
+                        }}
+                        className={`hl-icon${noteEditing ? ' is-active' : ''}`}
+                        aria-label={hasNote ? 'Edit note' : 'Add note'}
+                        aria-pressed={noteEditing}
+                        title={hasNote ? 'Edit note' : 'Add note'}
+                      >
+                        <HighlightNoteIcon />
+                      </button>
+                    )}
+                    {canTag && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (tagEditing) {
+                            setTagEditing(false);
+                            setTagInput('');
+                            setTagError(null);
+                          } else {
+                            startTagEdit();
+                            setNoteEditing(false);
+                          }
+                        }}
+                        className={`hl-icon${tagEditing ? ' is-active' : ''}`}
+                        aria-label="Add tags"
+                        aria-pressed={tagEditing}
+                        title="Add tags"
+                      >
+                        <HighlightTagIcon />
                       </button>
                     )}
                     {onOpen && (
@@ -819,7 +1159,21 @@ export function HighlightCard({
                         aria-label="Open highlight in browser tab"
                         title="Open in new tab"
                       >
-                        <IconExternalLink />
+                        <HighlightOpenIcon />
+                      </button>
+                    )}
+                    {onSaveQuote && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditor();
+                        }}
+                        className="hl-icon"
+                        aria-label="Edit highlight text"
+                        title="Edit"
+                      >
+                        <IconEdit />
                       </button>
                     )}
                     {isUnanchored && onReanchor && (
@@ -867,7 +1221,7 @@ export function HighlightCard({
                         aria-label="Delete highlight"
                         title="Delete"
                       >
-                        <IconDelete />
+                        <HighlightDeleteIcon />
                       </button>
                     )}
                   </>

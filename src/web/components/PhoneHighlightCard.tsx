@@ -42,6 +42,7 @@ export function PhoneHighlightCard({
   selected?: boolean;
 }): React.ReactElement {
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [noteEditing, setNoteEditing] = useState(false);
   const [noteDraft, setNoteDraft] = useState(highlight.note);
@@ -127,7 +128,24 @@ export function PhoneHighlightCard({
       {meta ? <p className="phone-hl-meta">{meta}</p> : null}
 
       {note && !noteEditing ? (
-        <div className="phone-note">
+        <div
+          className="phone-note"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setNoteDraft(highlight.note);
+            setNoteEditing(true);
+            setTagEditing(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setNoteDraft(highlight.note);
+              setNoteEditing(true);
+              setTagEditing(false);
+            }
+          }}
+        >
           <span className="phone-note-kicker">Your note</span>
           {note}
         </div>
@@ -220,7 +238,7 @@ export function PhoneHighlightCard({
           className="phone-ico"
           aria-label={copied ? 'Copied' : 'Copy'}
           onClick={() => {
-            const text = href ?? highlight.quote;
+            const text = highlight.quote;
             if (!navigator.clipboard?.writeText) return;
             void navigator.clipboard.writeText(text).then(() => {
               setCopied(true);
@@ -233,13 +251,33 @@ export function PhoneHighlightCard({
             <path d="M6 15H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 3h9A1.5 1.5 0 0 1 15.5 4.5V6" />
           </svg>
         </button>
+        {href ? (
+          <button
+            type="button"
+            className="phone-ico"
+            aria-label={copiedLink ? 'Quote link copied' : 'Copy quote link'}
+            onClick={() => {
+              if (!navigator.clipboard?.writeText || !href) return;
+              void navigator.clipboard.writeText(href).then(() => {
+                setCopiedLink(true);
+                window.setTimeout(() => setCopiedLink(false), 1500);
+              });
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+        ) : null}
         <button
           type="button"
-          className="phone-ico"
+          className={noteEditing ? 'phone-ico is-active' : 'phone-ico'}
           aria-label={note ? 'Edit note' : 'Add note'}
+          aria-pressed={noteEditing}
           onClick={() => {
             setNoteDraft(highlight.note);
-            setNoteEditing(true);
+            setNoteEditing((open) => !open);
             setTagEditing(false);
           }}
         >
@@ -250,8 +288,9 @@ export function PhoneHighlightCard({
         </button>
         <button
           type="button"
-          className="phone-ico"
+          className={tagEditing ? 'phone-ico is-active' : 'phone-ico'}
           aria-label="Add tags"
+          aria-pressed={tagEditing}
           onClick={() => {
             setTagEditing((open) => !open);
             setNoteEditing(false);
