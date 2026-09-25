@@ -207,7 +207,48 @@
   --utility-overlay-88: rgba(0, 0, 0, 0.88);
 }
 
-/* Base resets inside artboards */
+/* Base resets inside artboards and global scrollbars */
+*,
+*::before,
+*::after {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--rule-soft);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-3);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--ink-2);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .ue * {
   box-sizing: border-box;
 }
@@ -283,6 +324,97 @@
 .popup-page-title-wrap {
   padding: 12px 16px 6px;
   flex-shrink: 0;
+}
+
+/* ── Legal / long-form public articles (Privacy, Terms, Help) ─ */
+.public-legal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: var(--paper);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.public-legal__article {
+  width: 100%;
+  max-width: min(100%, 44rem);
+  margin: 0 auto;
+  padding: 16px 16px 32px;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.public-legal__title {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: var(--step-3);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.public-legal__meta {
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.public-legal__article ul {
+  margin: 8px 0 16px;
+  padding-left: 20px;
+}
+
+.public-legal__article li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.public-legal__article p {
+  margin: 0 0 12px;
+}
+
+.help-install-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.help-install-card {
+  border: 1px solid var(--rule-soft);
+  padding: 12px 14px;
+  box-sizing: border-box;
+  background: var(--paper-2);
+}
+
+.help-install-card h3 {
+  margin: 0 0 8px;
+  font-size: var(--step-0);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.help-install-card ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.help-install-card li + li {
+  margin-top: 4px;
+}
+
+@media (min-width: 720px) {
+  .help-install-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
 }
 
 .u-kicker {
@@ -664,16 +796,29 @@
   max-width: 100%;
   box-sizing: border-box;
   scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
 }
 .screen-scroll::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
+}
+.screen-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 .screen-scroll::-webkit-scrollbar-thumb {
-  background: var(--rule-soft);
-  border-radius: 3px;
+  background-color: var(--rule-soft);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+}
+.screen-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-3);
+}
+.screen-scroll::-webkit-scrollbar-thumb:active {
+  background-color: var(--ink-2);
 }
 
 /* Settings disclosure rows (Typography, Library stats) */
@@ -756,7 +901,29 @@
 .quote-detail-scroll {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
+}
+.quote-detail-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.quote-detail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.quote-detail-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--rule-soft);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+}
+.quote-detail-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-3);
+}
+.quote-detail-scroll::-webkit-scrollbar-thumb:active {
+  background-color: var(--ink-2);
 }
 .quote-detail-domain,
 .quote-detail-path,
@@ -1355,14 +1522,27 @@ button.hl-icon.is-danger:active {
   max-width: 100%;
   box-sizing: border-box;
   scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
   scrollbar-gutter: stable;
 }
 .list-scroll::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
+}
+.list-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 .list-scroll::-webkit-scrollbar-thumb {
-  background: var(--rule-soft);
-  border-radius: 3px;
+  background-color: var(--rule-soft);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+}
+.list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-3);
+}
+.list-scroll::-webkit-scrollbar-thumb:active {
+  background-color: var(--ink-2);
 }
 
 /* Focus overlay: make artboards look like newspaper clippings */
