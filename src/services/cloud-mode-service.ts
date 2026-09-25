@@ -80,9 +80,17 @@ export class CloudModeService {
         delete (payload as any).liveRanges;
       }
 
-      // Attach a TextQuoteSelector to the first range
+      // Attach a TextQuoteSelector to the first range — preserve the
+      // extractor's raw selector (with prefix/suffix) when present so we
+      // don't destroy anchoring data with the normalized display body.
       if (payload.ranges && payload.ranges.length > 0) {
         const first = payload.ranges[0]!;
+        const existing = (first as unknown as { selector?: TextQuoteSelector })
+          .selector as TextQuoteSelector | undefined;
+        const selector: TextQuoteSelector =
+          existing?.exact
+            ? existing
+            : { type: 'TextQuoteSelector' as const, exact: first.text };
         payload.ranges[0] = {
           xpath: first.xpath,
           startOffset: first.startOffset,
@@ -90,10 +98,7 @@ export class CloudModeService {
           text: first.text,
           textBefore: first.textBefore,
           textAfter: first.textAfter,
-          selector: {
-            type: 'TextQuoteSelector',
-            exact: highlight.text,
-          },
+          selector,
         };
       }
 
@@ -148,9 +153,18 @@ export class CloudModeService {
       this.logger.info(`[VAULT] [QUERY] Querying highlights for URL: ${url}`);
 
       // Fetch from Repository (DualWriteRepo handles local + cloud merging)
-      const highlights = this.facade
-        .getAll()
-        .filter((h) => h.url && normalizePageUrl(h.url) === url);
+      // Include www ↔ bare variant so Gutenberg www. ↔ bare doesn't orphan rows
+      const pageVariants = new Set<string>();
+      pageVariants.add(url);
+      const pv = this.getWwwVariant(url);
+      if (pv) pageVariants.add(pv);
+      const highlights = this.facade.getAll().filter((h) => {
+        if (!h.url) return false;
+        const n = normalizePageUrl(h.url);
+        if (pageVariants.has(n)) return true;
+        const hv = this.getWwwVariant(n);
+        return hv ? pageVariants.has(hv) : false;
+      });
 
       this.logger.info(
         `[VAULT] [HIT] Found ${highlights.length} highlights from repository`
@@ -174,11 +188,15 @@ export class CloudModeService {
               };
             }
 
-            const range = await this.restoreHighlightRange(selector);
+            const sr = this.getSerializedRange(highlight);
+            const { range, tier } = await this.restoreHighlightWithTier(
+              selector,
+              sr
+            );
             return {
               highlight,
               range,
-              restoredUsing: this.determineRestorationTier(range, selector),
+              restoredUsing: tier,
             };
           } catch (rowError) {
             this.logger.error(
@@ -219,6 +237,16 @@ export class CloudModeService {
     return null;
   }
 
+  private getSerializedRange(
+    highlight: HighlightDataV2
+  ): import('@/shared/schemas/highlight-schema').SerializedRange | null {
+    const ranges = highlight.ranges;
+    if (Array.isArray(ranges) && ranges.length > 0 && ranges[0]) {
+      return ranges[0] as import('@/shared/schemas/highlight-schema').SerializedRange;
+    }
+    return null;
+  }
+
   /**
    * Restore a single highlight (Public API)
    * Useful for real-time sync / instant rendering
@@ -247,11 +275,12 @@ export class CloudModeService {
         return { range: null, restoredUsing: 'failed' };
       }
 
-      const range = await this.restoreHighlightRange(selector);
+      const sr = this.getSerializedRange(highlight);
+      const { range, tier } = await this.restoreHighlightWithTier(selector, sr);
 
       return {
         range,
-        restoredUsing: this.determineRestorationTier(range, selector),
+        restoredUsing: tier,
       };
     } catch (error) {
       this.logger.error('[VAULT] Failed to restore single highlight', error as Error);
@@ -284,6 +313,174 @@ export class CloudModeService {
       this.logger.error('Restoration error:', error as Error);
       return null;
     }
+  }
+
+  private async restoreHighlightWithTier(
+    selector: HighlightSelector,
+    sr: import('@/shared/schemas/highlight-schema').SerializedRange | null
+  ): Promise<{
+    range: Range | null;
+    tier: 'xpath' | 'position' | 'fuzzy' | 'text-quote' | 'failed';
+  }> {
+    if (this.isTextQuoteSelector(selector)) {
+      const q = this.quoteFinder.find(selector);
+      if (q) return { range: q, tier: 'text-quote' };
+      // Fallback to SerializedRange xpath/fuzzy when TextQuote misses
+      if (sr) {
+        const fb = this.tryRestoreFromSerializedRange(sr);
+        if (fb) {
+          const tier = this.determineFallbackTier(fb, sr);
+          return { range: fb, tier };
+        }
+      }
+      return { range: null, tier: 'failed' };
+    }
+    // Legacy MultiSelector — keep using the dedicated method so it stays covered
+    const r = await this.restoreHighlightRange(selector);
+    return {
+      range: r,
+      tier: this.determineRestorationTier(r, selector),
+    };
+  }
+
+  private tryRestoreFromSerializedRange(
+    sr: import('@/shared/schemas/highlight-schema').SerializedRange
+  ): Range | null {
+    // Strategy 2: exact XPath
+    const node = this.getNodeByXPath(sr.xpath);
+    if (node) {
+      const exact = this.tryExactMatch(node, sr);
+      if (exact) return exact;
+    }
+    // Strategy 3: fuzzy with context
+    const fuzzy = this.tryFuzzyMatch(sr);
+    if (fuzzy) return fuzzy;
+    return null;
+  }
+
+  private tryExactMatch(
+    node: Node,
+    sr: import('@/shared/schemas/highlight-schema').SerializedRange
+  ): Range | null {
+    try {
+      const textContent = node.textContent || '';
+      const actual = textContent.substring(sr.startOffset, sr.endOffset);
+      if (actual !== sr.text) return null;
+      const range = document.createRange();
+      range.setStart(node, sr.startOffset);
+      range.setEnd(node, sr.endOffset);
+      return range;
+    } catch {
+      return null;
+    }
+  }
+
+  private tryFuzzyMatch(
+    sr: import('@/shared/schemas/highlight-schema').SerializedRange
+  ): Range | null {
+    const matches = this.findTextInDocument(sr.text);
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return matches[0] ?? null;
+    for (const m of matches) {
+      const before = this.getTextBeforeRange(m, 50);
+      const after = this.getTextAfterRange(m, 50);
+      if (
+        this.contextMatches(before, sr.textBefore) ||
+        this.contextMatches(after, sr.textAfter)
+      ) {
+        return m;
+      }
+    }
+    return matches[0] ?? null;
+  }
+
+  private contextMatches(actual: string, expected: string): boolean {
+    if (!expected || !actual) return false;
+    const a = actual.replace(/\s+/g, ' ').trim();
+    const e = expected.replace(/\s+/g, ' ').trim();
+    const min = Math.min(a.length, e.length);
+    if (min < 10) return a === e;
+    return (
+      a.includes(e.substring(0, min / 2)) || e.includes(a.substring(0, min / 2))
+    );
+  }
+
+  private getNodeByXPath(xpath: string): Node | null {
+    try {
+      const res = document.evaluate(
+        xpath,
+        document,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null
+      );
+      return res.singleNodeValue;
+    } catch {
+      return null;
+    }
+  }
+
+  private findTextInDocument(text: string): Range[] {
+    const ranges: Range[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      const content = node.textContent || '';
+      let idx = 0;
+      while ((idx = content.indexOf(text, idx)) !== -1) {
+        const r = document.createRange();
+        r.setStart(node, idx);
+        r.setEnd(node, idx + text.length);
+        ranges.push(r);
+        idx += text.length;
+      }
+    }
+    return ranges;
+  }
+
+  private getTextBeforeRange(range: Range, length: number): string {
+    try {
+      const pre = document.createRange();
+      pre.setStart(document.body, 0);
+      pre.setEnd(range.startContainer, range.startOffset);
+      return pre.toString().slice(-length);
+    } catch {
+      return '';
+    }
+  }
+
+  private getTextAfterRange(range: Range, length: number): string {
+    try {
+      const post = document.createRange();
+      post.setStart(range.endContainer, range.endOffset);
+      post.setEnd(document.body, document.body.childNodes.length);
+      return post.toString().slice(0, length);
+    } catch {
+      return '';
+    }
+  }
+
+  private determineFallbackTier(
+    range: Range,
+    sr: import('@/shared/schemas/highlight-schema').SerializedRange
+  ): 'xpath' | 'fuzzy' {
+    try {
+      const node = this.getNodeByXPath(sr.xpath);
+      if (node) {
+        const actual = (node.textContent || '').substring(sr.startOffset, sr.endOffset);
+        if (actual === sr.text && range.toString() === sr.text) {
+          const cmp = document.evaluate(
+            sr.xpath,
+            document,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+          ).singleNodeValue;
+          if (cmp) return 'xpath';
+        }
+      }
+    } catch {}
+    return 'fuzzy';
   }
 
   /**
@@ -421,6 +618,20 @@ export class CloudModeService {
   async clearAll(): Promise<void> {
     this.facade.clear();
     this.logger.info('[VAULT] Vault Mode repository data cleared');
+  }
+
+  private getWwwVariant(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+      const host = u.hostname;
+      const other = host.startsWith('www.') ? host.slice(4) : `www.${host}`;
+      const v = new URL(url);
+      v.hostname = other;
+      return normalizePageUrl(v.href);
+    } catch {
+      return null;
+    }
   }
 }
 

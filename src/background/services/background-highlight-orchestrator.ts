@@ -158,6 +158,11 @@ export class BackgroundHighlightOrchestrator {
       if (resolved) keys.add(resolved);
       const normalizedRequested = normalizePageUrl(url);
       if (normalizedRequested) keys.add(normalizedRequested);
+      // Include www ↔ bare variant so Gutenberg www. ↔ bare doesn't orphan rows
+      for (const k of [...keys]) {
+        const v = this.getWwwVariant(k);
+        if (v) keys.add(v);
+      }
 
       const byId = new Map<string, HighlightDataV2>();
       const readable = this.facade.getReadable();
@@ -206,6 +211,20 @@ export class BackgroundHighlightOrchestrator {
       const err = e as Error;
       this.logger.error('[bridge] getHighlight failed', err, { id });
       return { success: false, error: err.message };
+    }
+  }
+
+  private getWwwVariant(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+      const host = u.hostname;
+      const other = host.startsWith('www.') ? host.slice(4) : `www.${host}`;
+      const v = new URL(url);
+      v.hostname = other;
+      return normalizePageUrl(v.href);
+    } catch {
+      return null;
     }
   }
 }

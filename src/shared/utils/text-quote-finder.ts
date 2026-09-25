@@ -8,11 +8,58 @@
 
 import type { TextQuoteSelector } from '@/shared/schemas/highlight-schema';
 
+const UNICODE_SPACE_RE = /[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g;
+
+function normalizeForMatch(s: string): string {
+  return s
+    .replace(UNICODE_SPACE_RE, ' ')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\t\n\r ]+/g, ' ')
+    .trim();
+}
+
+function buildNormalizedWithMap(raw: string): {
+  norm: string;
+  normToRaw: number[];
+} {
+  const intermediate = raw
+    .replace(UNICODE_SPACE_RE, ' ')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"');
+  let norm = '';
+  const normToRaw: number[] = [];
+  let inWs = false;
+  let wsStart = -1;
+  for (let i = 0; i < intermediate.length; i++) {
+    const ch = intermediate[i]!;
+    const isWs = ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v';
+    if (isWs) {
+      if (!inWs) {
+        wsStart = i;
+        inWs = true;
+      }
+    } else {
+      if (inWs) {
+        if (norm.length > 0) {
+          norm += ' ';
+          normToRaw.push(wsStart);
+        }
+        inWs = false;
+      }
+      norm += ch;
+      normToRaw.push(i);
+    }
+  }
+  // trailing whitespace is trimmed (not emitted)
+  return { norm, normToRaw };
+}
+
 /**
  * Find TextQuoteSelector in document and create Range
  *
  * Algorithm (from Hypothesis):
- * 1. Find all occurrences of exact text
+ * 1. Find all occurrences of exact text (collapsed whitespace + quote equivalence)
  * 2. If 1 match: return it
  * 3. If multiple: filter by prefix match
  * 4. If still multiple: filter by suffix match
@@ -55,47 +102,88 @@ export class TextQuoteFinder {
   }
 
   /**
-   * Find all exact text matches in document
+   * Find all exact text matches in document using collapsed whitespace
+   * and quote equivalence, mapping normalized indices back to raw DOM offsets.
    */
   private findExactMatches(exact: string, root: Node): Range[] {
-    const ranges: Range[] = [];
+    const normExact = normalizeForMatch(exact);
+    if (!normExact) return [];
+    const textNodes: Text[] = [];
+    let raw = '';
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-
     let node: Text | null;
     while ((node = walker.nextNode() as Text)) {
-      const text = node.textContent || '';
-      let index = 0;
-
-      // Find all occurrences in this text node
-      while ((index = text.indexOf(exact, index)) !== -1) {
-        const range = document.createRange();
-        range.setStart(node, index);
-        range.setEnd(node, index + exact.length);
-        ranges.push(range);
-        index += exact.length;
-      }
+      textNodes.push(node);
+      raw += node.textContent || '';
     }
-
+    if (!raw) return [];
+    const { norm: normRaw, normToRaw } = buildNormalizedWithMap(raw);
+    if (!normRaw) return [];
+    const ranges: Range[] = [];
+    let searchIndex = 0;
+    while ((searchIndex = normRaw.indexOf(normExact, searchIndex)) !== -1) {
+      const rawStart = normToRaw[searchIndex]!;
+      const endNormIdx = searchIndex + normExact.length;
+      const rawEnd =
+        endNormIdx < normToRaw.length ? normToRaw[endNormIdx]! : raw.length;
+      const start = this.mapTextIndexToNode(textNodes, rawStart);
+      const end = this.mapTextIndexToNode(textNodes, rawEnd);
+      if (start && end) {
+        try {
+          const range = document.createRange();
+          range.setStart(start.node, start.offset);
+          range.setEnd(end.node, end.offset);
+          ranges.push(range);
+        } catch (e) {
+          console.warn('Failed to create range from collapsed search', e);
+        }
+      }
+      searchIndex += 1;
+    }
     return ranges;
   }
 
+  private mapTextIndexToNode(
+    nodes: Text[],
+    targetIndex: number
+  ): { node: Text; offset: number } | null {
+    let currentIndex = 0;
+    for (const node of nodes) {
+      const nodeLength = node.length;
+      const nodeEnd = currentIndex + nodeLength;
+      if (targetIndex < nodeEnd) {
+        return { node, offset: targetIndex - currentIndex };
+      }
+      if (targetIndex === nodeEnd) {
+        // Prefer start of next node over end of current when at boundary
+        const next = nodes[nodes.indexOf(node) + 1];
+        if (next) return { node: next, offset: 0 };
+        return { node, offset: nodeLength };
+      }
+      currentIndex = nodeEnd;
+    }
+    return null;
+  }
+
   /**
-   * Filter matches by prefix context
+   * Filter matches by prefix context (normalized)
    */
   private filterByPrefix(ranges: Range[], prefix: string): Range[] {
+    const normPrefix = normalizeForMatch(prefix);
     return ranges.filter((range) => {
       const textBefore = this.getTextBefore(range);
-      return textBefore.endsWith(prefix);
+      return normalizeForMatch(textBefore).endsWith(normPrefix);
     });
   }
 
   /**
-   * Filter matches by suffix context
+   * Filter matches by suffix context (normalized)
    */
   private filterBySuffix(ranges: Range[], suffix: string): Range[] {
+    const normSuffix = normalizeForMatch(suffix);
     return ranges.filter((range) => {
       const textAfter = this.getTextAfter(range);
-      return textAfter.startsWith(suffix);
+      return normalizeForMatch(textAfter).startsWith(normSuffix);
     });
   }
 
