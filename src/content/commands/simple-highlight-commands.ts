@@ -68,6 +68,10 @@ export class CreateHighlightCommand implements Command {
     }
   }
 
+  getCreatedHighlightId(): string | null {
+    return this.createdHighlightId;
+  }
+
   /**
    * Execute command: Create highlight via mode manager
    *

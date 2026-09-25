@@ -174,6 +174,24 @@ describe('CreateHighlightCommand', () => {
     });
   });
 
+  describe('Test 2b: Exposes the created highlight id', () => {
+    it('returns null before execute and the id after execute', async () => {
+      (mockModeManager.createHighlight as ReturnType<typeof vi.fn>).mockResolvedValue(
+        'created-id'
+      );
+      const command = new CreateHighlightCommand(
+        selection,
+        'yellow',
+        mockModeManager,
+        mockLogger
+      );
+
+      expect(command.getCreatedHighlightId()).toBeNull();
+      await command.execute();
+      expect(command.getCreatedHighlightId()).toBe('created-id');
+    });
+  });
+
   describe('Test 3: Undo calls modeManager.removeHighlight()', () => {
     it('should delegate removal to modeManager with stored highlight ID', async () => {
       // Arrange
