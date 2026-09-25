@@ -5,6 +5,7 @@ import type {
   OAuthProviderType,
 } from '@/background/auth/interfaces/i-auth-manager';
 import type { AuthStatePayload } from '@/shared/auth/auth-state-payload';
+import { AUTH_CACHED_STATE_KEY } from '@/shared/auth/broadcast-auth-state';
 import { AUTH_SESSION_CLEARED, AUTH_STATE_CHANGED } from '@/shared/auth/constants';
 import { useIpcAction, type ActionResult } from '@/shared/hooks/useIpcAction';
 
@@ -48,6 +49,98 @@ function hasChromeRuntime(): boolean {
   );
 }
 
+interface CachedAuthState {
+  user: User | null;
+  verificationStatus: 'idle' | 'awaiting' | 'failed';
+  verificationExpiresAt: number | null;
+  verificationEmail: string | null;
+}
+
+const CACHED_AUTH_STATE_KEY = AUTH_CACHED_STATE_KEY;
+
+function readCachedAuthState(): CachedAuthState | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(CACHED_AUTH_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CachedAuthState>;
+    return {
+      user: parsed.user ?? null,
+      verificationStatus: parsed.verificationStatus ?? 'idle',
+      verificationExpiresAt: parsed.verificationExpiresAt ?? null,
+      verificationEmail: parsed.verificationEmail ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAuthState(state: Partial<CachedAuthState>): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const current = readCachedAuthState() ?? {
+      user: null,
+      verificationStatus: 'idle',
+      verificationExpiresAt: null,
+      verificationEmail: null,
+    };
+    const updated: CachedAuthState = {
+      user: 'user' in state ? (state.user ?? null) : current.user,
+      verificationStatus:
+        'verificationStatus' in state && state.verificationStatus
+          ? state.verificationStatus
+          : current.verificationStatus,
+      verificationExpiresAt:
+        'verificationExpiresAt' in state
+          ? (state.verificationExpiresAt ?? null)
+          : current.verificationExpiresAt,
+      verificationEmail:
+        'verificationEmail' in state
+          ? (state.verificationEmail ?? null)
+          : current.verificationEmail,
+    };
+    window.localStorage.setItem(CACHED_AUTH_STATE_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+export function clearCachedAuthState(): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(CACHED_AUTH_STATE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/** SW-free read: chrome.storage works without waking the service worker. */
+async function readExtensionCachedAuthState(): Promise<Partial<AuthResponse> | null> {
+  try {
+    if (typeof chrome === 'undefined' || !chrome.storage) return null;
+    const sessionGet = chrome.storage.session?.get
+      ? await chrome.storage.session.get(CACHED_AUTH_STATE_KEY)
+      : null;
+    const sessionHit = (sessionGet as Record<string, unknown> | null)?.[
+      CACHED_AUTH_STATE_KEY
+    ];
+    if (sessionHit && typeof sessionHit === 'object') {
+      return sessionHit as Partial<AuthResponse>;
+    }
+    const localGet = chrome.storage.local?.get
+      ? await chrome.storage.local.get(CACHED_AUTH_STATE_KEY)
+      : null;
+    const localHit = (localGet as Record<string, unknown> | null)?.[CACHED_AUTH_STATE_KEY];
+    if (localHit && typeof localHit === 'object') {
+      return localHit as Partial<AuthResponse>;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Hook to access current user auth state from background AuthManager.
  *
@@ -57,13 +150,22 @@ function hasChromeRuntime(): boolean {
  * because they are subscription/fetch patterns, not request/response.
  */
 export function useCurrentUser(): UseCurrentUserResult {
-  const [user, setUser] = useState<User | null>(null);
+  const [initialCached] = useState<CachedAuthState | null>(() => readCachedAuthState());
+  const [user, setUser] = useState<User | null>(() => initialCached?.user ?? null);
   const [verificationStatus, setVerificationStatus] = useState<
     'idle' | 'awaiting' | 'failed'
-  >('idle');
-  const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  >(() => initialCached?.verificationStatus ?? 'idle');
+  const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(
+    () => initialCached?.verificationExpiresAt ?? null
+  );
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    () => initialCached?.verificationEmail ?? null
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (initialCached !== null) return false;
+    if (!hasChromeRuntime()) return false;
+    return true;
+  });
   const [error, setError] = useState<string | null>(null);
 
   const loginAction = useIpcAction<{ provider?: OAuthProviderType }, AuthResponse>(
@@ -87,6 +189,12 @@ export function useCurrentUser(): UseCurrentUserResult {
     setVerificationStatus('idle');
     setVerificationExpiresAt(null);
     setVerificationEmail(null);
+    writeCachedAuthState({
+      user: null,
+      verificationStatus: 'idle',
+      verificationExpiresAt: null,
+      verificationEmail: null,
+    });
   };
 
   const applyAuthPayload = (data: Partial<AuthResponse>): void => {
@@ -102,6 +210,7 @@ export function useCurrentUser(): UseCurrentUserResult {
     if ('verificationEmail' in data) {
       setVerificationEmail(data.verificationEmail ?? null);
     }
+    writeCachedAuthState(data);
   };
 
   // Fetch initial auth state from background
@@ -120,13 +229,21 @@ export function useCurrentUser(): UseCurrentUserResult {
       };
     }
 
-    const fetchAuthState = async (): Promise<void> => {
+    const reconcileAuthState = async (): Promise<void> => {
+      // SW-free cache first (no service-worker wake), then live IPC.
+      const cached = await readExtensionCachedAuthState();
+      if (!mounted) return;
+      if (cached) {
+        applyAuthPayload(cached);
+        setIsLoading(false);
+      }
+
       const result = await getAuthStateAction({});
       if (!mounted) return;
 
       if (result.success) {
         applyAuthPayload(result.data);
-      } else {
+      } else if (!cached) {
         setUser(null);
         setVerificationStatus('idle');
         setVerificationExpiresAt(null);
@@ -135,7 +252,7 @@ export function useCurrentUser(): UseCurrentUserResult {
       setIsLoading(false);
     };
 
-    void fetchAuthState();
+    void reconcileAuthState();
 
     const handleMessage = (message: AuthStateChangedMessage): void => {
       if (message?.type === AUTH_STATE_CHANGED && message.payload) {

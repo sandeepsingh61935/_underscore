@@ -28,6 +28,25 @@ function broadcastToTabs(message: Record<string, unknown>): void {
   });
 }
 
+/** Storage key for the SW-free cached auth payload (hybrid session → local, NO TTL). */
+export const AUTH_CACHED_STATE_KEY = 'auth_cached_state';
+
+/**
+ * Persist auth payload where the popup can read it without waking the SW
+ * (chrome.storage needs no service worker). Best-effort, never throws.
+ */
+export function cacheAuthState(state: AuthState): void {
+  try {
+    if (typeof chrome === 'undefined' || !chrome.storage) return;
+    const payload = toAuthStatePayload(state);
+    const record = { [AUTH_CACHED_STATE_KEY]: payload };
+    chrome.storage.session?.set?.(record)?.catch?.(() => {});
+    chrome.storage.local?.set?.(record)?.catch?.(() => {});
+  } catch {
+    // ignore
+  }
+}
+
 /** Broadcast auth state to popup, content scripts, and other extension contexts. */
 export function broadcastAuthStateChange(state: AuthState): void {
   const payload = toAuthStatePayload(state);
@@ -37,6 +56,7 @@ export function broadcastAuthStateChange(state: AuthState): void {
     timestamp: Date.now(),
   };
 
+  cacheAuthState(state);
   runtimeMessage(message);
   broadcastToTabs(message);
 }
@@ -45,6 +65,7 @@ export function broadcastAuthStateChange(state: AuthState): void {
 export function broadcastAuthSessionCleared(): void {
   const message = {
     type: AUTH_SESSION_CLEARED,
+    payload: {},
     timestamp: Date.now(),
   };
 

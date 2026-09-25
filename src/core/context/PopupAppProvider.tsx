@@ -34,6 +34,16 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
   const { currentMode, modeReady, persistMode } = usePersistedMode(propIsAuthenticated);
   const onEffectiveMode = useModeSyncCallback(persistMode);
   const [isLoading, setIsLoading] = useState(false);
+  // Idle-deferred font bootstrap so first paint never waits on font fetch (Q4).
+  const [idleReady, setIdleReady] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(() => setIdleReady(true), { timeout: 800 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(() => setIdleReady(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('underscore-theme') as Theme | null;
@@ -121,7 +131,7 @@ export const PopupAppProvider: React.FC<PopupAppProviderProps> = ({
         currentMode={currentMode}
         onEffectiveMode={onEffectiveMode}
       >
-        <TypePresetBootstrap />
+        {idleReady ? <TypePresetBootstrap /> : null}
         {children}
       </BillingProvider>
     </AppContext.Provider>

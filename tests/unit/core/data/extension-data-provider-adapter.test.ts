@@ -45,7 +45,7 @@ describe('ExtensionDataProviderAdapter', () => {
     ]);
   });
 
-  it('returns empty array when IPC response is unsuccessful', async () => {
+  it('throws when IPC response is unsuccessful (caller keeps cached list)', async () => {
     const send = vi.fn(async () => ({ success: false, error: 'boom' }));
     const messageBus = { send } as unknown as IMessageBus;
     const adapter = new ExtensionDataProviderAdapter(
@@ -53,11 +53,10 @@ describe('ExtensionDataProviderAdapter', () => {
       messageBus
     );
 
-    const collections = await adapter.getCollections('ephemeral');
-    expect(collections).toEqual([]);
+    await expect(adapter.getCollections('ephemeral')).rejects.toThrow('boom');
   });
 
-  it('returns empty array when IPC throws', async () => {
+  it('throws when IPC throws (caller keeps cached list)', async () => {
     const send = vi.fn(async () => {
       throw new Error('IPC down');
     });
@@ -67,7 +66,6 @@ describe('ExtensionDataProviderAdapter', () => {
       messageBus
     );
 
-    const collections = await adapter.getCollections('ephemeral');
-    expect(collections).toEqual([]);
+    await expect(adapter.getCollections('ephemeral')).rejects.toThrow('IPC down');
   });
 });

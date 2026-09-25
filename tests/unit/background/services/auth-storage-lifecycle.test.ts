@@ -107,6 +107,49 @@ describe('handleAuthStorageEvent', () => {
     expect(await basic.count()).toBe(1);
   });
 
+  it('on sign-in does not block on cloud hydrate (fast local reload first)', async () => {
+    const basic = new InMemoryHighlightRepository();
+    const pro = new InMemoryHighlightRepository();
+    await pro.add(makeHighlight('pro-local'));
+    const scoped = new ScopedHighlightRepository(basic, pro, 'basic');
+    const facade = new RepositoryFacade(scoped);
+    await facade.initialize();
+    const reloadSpy = vi.spyOn(facade, 'reload');
+
+    let resolveHydrate!: (v: unknown) => void;
+    const hydrateGate = new Promise((resolve) => {
+      resolveHydrate = resolve;
+    });
+    const hydrate = vi.fn().mockReturnValue(hydrateGate);
+
+    await handleAuthStorageEvent(
+      { type: 'SIGNED_IN', userId: 'user-1' },
+      {
+        scopedRepository: scoped,
+        repositoryFacade: facade,
+        cloudHydration: { hydrate },
+      }
+    );
+
+    // Must have returned while hydrate is still pending
+    expect(scoped.getActiveScope()).toBe('pro');
+    expect(hydrate).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+    expect(facade.getAll().map((h) => h.id)).toContain('pro-local');
+
+    resolveHydrate({
+      localCountBefore: 1,
+      cloudCount: 0,
+      backfilledCount: 0,
+      updatedCount: 0,
+      deletedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+    });
+    await hydrateGate;
+    await Promise.resolve();
+  });
+
   it('on sign-in reloads facade even when cloud hydrate fails', async () => {
     const basic = new InMemoryHighlightRepository();
     const pro = new InMemoryHighlightRepository();

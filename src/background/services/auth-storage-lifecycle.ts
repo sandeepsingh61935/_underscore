@@ -61,22 +61,24 @@ export async function handleAuthStorageEvent(
   if (event.type === 'SIGNED_IN') {
     await scopedRepository.activateScope('pro');
     scopedTagRepository?.activateScope('pro');
-    try {
-      if (cloudHydration) {
-        await cloudHydration.hydrate();
-      }
-    } catch (err) {
-      // Cloud hydrate is best-effort. Local pro scope + facade reload still apply.
-      logger.error(
-        'Cloud hydrate failed on sign-in; continuing with local Pro storage',
-        err instanceof Error ? err : new Error(String(err))
-      );
-    }
-    // Always reload from active (pro) store. Hydrate may no-op or fail without
-    // reloading — leaving the facade stuck on pre-sign-in (basic) data.
+    // Fast local reload first so popup IPC never waits on the network.
+    // Cloud hydrate runs off the critical path, then reloads + notifies again.
     // Double reload after a successful hydrate is intentional and cheap.
     await repositoryFacade.reload();
     notifyLibraryDataChanged({ source: 'auth_sign_in' });
+    if (cloudHydration) {
+      void cloudHydration
+        .hydrate()
+        .then(() => repositoryFacade.reload())
+        .then(() => notifyLibraryDataChanged({ source: 'auth_sign_in_hydrated' }))
+        .catch((err: unknown) => {
+          // Cloud hydrate is best-effort. Local pro scope + facade reload still apply.
+          logger.error(
+            'Cloud hydrate failed on sign-in; continuing with local Pro storage',
+            err instanceof Error ? err : new Error(String(err))
+          );
+        });
+    }
     return;
   }
 

@@ -6,10 +6,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 
 import { PopupAppProvider, useApp } from '../../core/context/PopupAppProvider';
-import { CollectionsView } from '../../features/collections/views/CollectionsView';
-import { DomainDetailsView } from '../../features/collections/views/DomainDetailsView';
-import { SubDomainView } from '../../features/collections/views/SubDomainView';
-import { HighlightQuoteView } from '@/features/collections/views/HighlightQuoteView';
 import type { OpenedHighlight } from '@/features/collections/opened-highlight';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { WelcomePage } from '../../pages/WelcomePage';
@@ -49,6 +45,48 @@ import { EventBus } from '@/shared/utils/event-bus';
 import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
 import '../../ui-system/theme/global.css';
 import './base.css';
+
+// Lazy collection views: keeps initial popup parse off the critical path (Q9).
+// Dashboard/Settings stay eager (default sync-seed targets).
+const CollectionsView = React.lazy(() =>
+  import('../../features/collections/views/CollectionsView').then((m) => ({
+    default: m.CollectionsView,
+  }))
+);
+const DomainDetailsView = React.lazy(() =>
+  import('../../features/collections/views/DomainDetailsView').then((m) => ({
+    default: m.DomainDetailsView,
+  }))
+);
+const SubDomainView = React.lazy(() =>
+  import('../../features/collections/views/SubDomainView').then((m) => ({
+    default: m.SubDomainView,
+  }))
+);
+const HighlightQuoteView = React.lazy(() =>
+  import('@/features/collections/views/HighlightQuoteView').then((m) => ({
+    default: m.HighlightQuoteView,
+  }))
+);
+
+function ViewSkeleton(): React.ReactElement {
+  return (
+    <div style={{ padding: '8px 0' }}>
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          style={{
+            height: 56,
+            margin: '0 16px 8px',
+            border: '1px solid var(--rule-soft)',
+            background: 'var(--paper-2)',
+            opacity: 0.6,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 enum View {
   LOADING = 'LOADING',
@@ -533,7 +571,7 @@ function PopupApp(): React.ReactElement {
   return (
     <PopupShell chrome={chrome[currentView as ViewKey]}>
       <div key={currentView} style={MOTION_STYLE}>
-        {viewContent}
+        <React.Suspense fallback={<ViewSkeleton />}>{viewContent}</React.Suspense>
       </div>
       <UploadFromDeviceDialog
         open={deviceUploadPrompt.open}

@@ -38,6 +38,7 @@ import { authStateResponseData } from '@/shared/auth/auth-state-payload';
 import {
   broadcastAuthSessionCleared,
   broadcastAuthStateChange,
+  cacheAuthState,
 } from '@/shared/auth/broadcast-auth-state';
 import {
   CLEAR_VERIFICATION_STATE,
@@ -354,6 +355,8 @@ export default defineBackground({
           data: authStateResponseData(state),
         };
       });
+      // Seed the SW-free cache so the next popup open paints instantly.
+      cacheAuthState(authManager.getAuthState());
 
       messageBus.subscribe(CLEAR_VERIFICATION_STATE, async () => {
         logger.info('Handling CLEAR_VERIFICATION_STATE request');

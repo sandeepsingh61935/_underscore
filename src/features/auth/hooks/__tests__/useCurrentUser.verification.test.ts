@@ -32,6 +32,7 @@ describe('useCurrentUser verification state', () => {
   let bus: IMessageBus;
 
   beforeEach(() => {
+    window.localStorage.clear();
     bus = makeStubBus();
 
     vi.stubGlobal('chrome', {
@@ -67,6 +68,7 @@ describe('useCurrentUser verification state', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+    window.localStorage.clear();
   });
 
   it('returns verificationStatus from registerWithEmail and persists the email', async () => {

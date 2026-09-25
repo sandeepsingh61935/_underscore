@@ -122,7 +122,13 @@ export function useBilling(options: UseBillingOptions): UseBillingResult {
   }, [isAuthenticated, port, refresh, applyDevOverride]);
 
   useEffect(() => {
-    void refresh();
+    // Idle-deferred so popup first paint never waits on entitlement IPC (Q4).
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(() => void refresh(), { timeout: 800 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(timer);
   }, [refresh]);
 
   const startCheckout = useCallback(
