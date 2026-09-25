@@ -220,7 +220,7 @@ describe('WebHighlightCard', () => {
     );
   });
 
-  it('rail density omits tags/note chrome when neither exists', () => {
+  it('rail density omits note/tag display blocks when empty, but provides consistent action buttons', () => {
     render(
       <WebHighlightCard
         highlight={{ ...base, note: '', tags: [] }}
@@ -228,12 +228,18 @@ describe('WebHighlightCard', () => {
         showDomain
         onNoteSave={vi.fn().mockResolvedValue(true)}
         onTagsChange={vi.fn().mockResolvedValue(true)}
+        onDelete={vi.fn().mockResolvedValue(true)}
       />
     );
 
-    expect(document.querySelector('[data-od-id="hl-tags-h1"]')).toBeNull();
-    expect(document.querySelector('[data-od-id="hl-note-h1"]')).toBeNull();
-    expect(document.querySelector('.hl-foot')).toBeNull();
+    expect(document.querySelector('.hl-tags')).toBeNull();
+    expect(document.querySelector('.hl-note')).toBeNull();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-copy-text-h1"]')).toBeTruthy();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-link-h1"]')).toBeTruthy();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-note-h1"]')).toBeTruthy();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-tag-add-h1"]')).toBeTruthy();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-open-h1"]')).toBeTruthy();
+    expect(document.querySelector('.hl-actions [data-od-id="hl-delete-h1"]')).toBeTruthy();
   });
 
   it('renders copy quote link button and writes fragment URL to clipboard', async () => {

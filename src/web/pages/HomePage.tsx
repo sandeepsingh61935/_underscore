@@ -195,6 +195,14 @@ export function HomePage(): React.ReactElement {
     [navigate]
   );
 
+  const handleHighlightDelete = useCallback(
+    async (id: string): Promise<boolean> => {
+      const result = await deleteScope({ scope: 'highlight', id });
+      return result.success;
+    },
+    [deleteScope]
+  );
+
   const name = isAuthenticated
     ? emailLocalPart(user?.email) ||
       (user?.displayName?.trim() ? user.displayName.trim() : null)
@@ -314,10 +322,7 @@ export function HomePage(): React.ReactElement {
         }}
         onNoteSave={handleNoteSave}
         onTagsChange={handleTagsChange}
-        onDeleteHighlight={async (id) => {
-          const result = await deleteScope({ scope: 'highlight', id });
-          return result.success;
-        }}
+        onDeleteHighlight={handleHighlightDelete}
       />
     );
   }
@@ -524,6 +529,7 @@ export function HomePage(): React.ReactElement {
         onToggleTagFilter={consumeOnly ? undefined : handleToggleTagFilter}
         onNoteSave={consumeOnly ? undefined : handleNoteSave}
         onTagsChange={consumeOnly ? undefined : handleTagsChange}
+        onDelete={consumeOnly ? undefined : handleHighlightDelete}
         clientKind={clientKind}
       />
     ))

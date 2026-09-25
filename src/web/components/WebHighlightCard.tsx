@@ -328,14 +328,12 @@ export function WebHighlightCard({
 
   const isRail = density === 'rail';
   const pageUrl = pageHrefForLibrary(h.domain, h.path);
-  const sourceHref =
-    !isRail && pageUrl
-      ? buildTextFragmentUrl(pageUrl, { exact: h.quote })
-      : null;
-  // Rail: existing tags/note only.
+  const sourceHref = pageUrl
+    ? buildTextFragmentUrl(pageUrl, { exact: h.quote })
+    : null;
   const hasNote = Boolean(note);
-  const canTag = Boolean(canEdit && onTagsChange && !isRail);
-  const canNote = Boolean(canEdit && onNoteSave && !isRail);
+  const canTag = Boolean(canEdit && onTagsChange);
+  const canNote = Boolean(canEdit && onNoteSave);
 
   return (
     <div
