@@ -50,6 +50,20 @@ export class CloudHydrationService implements ICloudHydrationService {
     return this.hydrationInFlight;
   }
 
+  isHydrating(): boolean {
+    return this.hydrationInFlight !== null;
+  }
+
+  async awaitHydration(): Promise<void> {
+    if (this.hydrationInFlight) {
+      try {
+        await this.hydrationInFlight;
+      } catch {
+        // ignore hydration errors — callers will read whatever is available
+      }
+    }
+  }
+
   private emptyResult(localCountBefore = 0): CloudHydrationResult {
     return {
       localCountBefore,

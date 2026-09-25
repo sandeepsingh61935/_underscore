@@ -17,6 +17,7 @@ import {
   clearPopupDomainSection,
   clearPendingAuthMode,
   loadPopupNavigationSnapshot,
+  loadSyncPopupNavigationSnapshot,
   persistPopupDomain,
   persistPopupSection,
   persistPopupView,
@@ -27,7 +28,7 @@ import {
 } from '../../shared/popup/resolve-popup-initial-route';
 import type { ModeType } from '../../shared/schemas/mode-state-schemas';
 import { PopupShell } from '../../ui-system/components/layout/PopupShell';
-import { Spinner } from '../../ui-system/components/primitives/Spinner';
+import { Button, Spinner } from '@/ui-system/components/primitives';
 import {
   AuthProvider,
   useAuth as useExtensionAuth,
@@ -60,6 +61,16 @@ enum View {
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
 }
+
+/** Instant swap — no animation to avoid chrome/body desync (Q1). */
+const MOTION_STYLE = {
+  position: 'absolute' as const,
+  inset: 0,
+  display: 'flex',
+  flexDirection: 'column' as const,
+  pointerEvents: 'auto' as const,
+  backgroundColor: 'var(--paper)',
+};
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -110,9 +121,24 @@ class ErrorBoundary extends Component<
           >
             {this.state.error?.message || 'Unknown error'}
           </p>
-          <button type="button" onClick={() => window.location.reload()} className="btn">
+          <Button
+            type="button"
+            variant="default"
+            size="default"
+            onClick={() => {
+              void clearPopupDomainSection().catch(() => {});
+              try {
+                window.localStorage.removeItem('underscore_last_popup_view');
+                window.localStorage.removeItem('underscore_last_selected_domain');
+                window.localStorage.removeItem('underscore_last_selected_section');
+              } catch {
+                // ignore
+              }
+              window.location.reload();
+            }}
+          >
             Reload Extension
-          </button>
+          </Button>
         </div>
       );
     }
@@ -121,20 +147,57 @@ class ErrorBoundary extends Component<
   }
 }
 
+function getInitialPopupState(
+  isAuthenticated: boolean,
+  currentMode: ModeType,
+  verificationStatus?: 'idle' | 'awaiting' | 'failed'
+): {
+  view: View;
+  selectedDomain: string;
+  selectedSection: string;
+  pendingMode: ModeType | null;
+} {
+  try {
+    const nav = loadSyncPopupNavigationSnapshot();
+    const hasSeenWelcome =
+      typeof window !== 'undefined' &&
+      window.localStorage?.getItem('underscore_seen_welcome') === 'true';
+    const effectiveSeenWelcome = hasSeenWelcome || Boolean(nav.lastView);
+    const resolved = resolvePopupInitialRoute({
+      isAuthenticated,
+      onboarding: { hasSeenWelcome: effectiveSeenWelcome },
+      nav,
+      currentMode,
+      verificationStatus,
+    });
+    return {
+      view: (resolved.view as View) || View.DASHBOARD,
+      selectedDomain: resolved.selectedDomain || '',
+      selectedSection: resolved.selectedSection || '',
+      pendingMode: nav.pendingAuthMode ? (nav.pendingAuthMode as ModeType) : null,
+    };
+  } catch {
+    return { view: View.DASHBOARD, selectedDomain: '', selectedSection: '', pendingMode: null };
+  }
+}
+
 function PopupApp(): React.ReactElement {
-  const { user, logout, isLoading, setMode, currentMode } = useApp(); // Use from context now!
+  const { user, logout, isLoading, setMode, currentMode } = useApp();
   const deviceUploadPrompt = useDeviceUploadPrompt(Boolean(user));
   const { verificationStatus } = useExtensionAuth();
   const billing = useBillingContextOptional();
-  // Auth sync is now handled by PopupAppProvider via props
 
-  const [currentView, setCurrentView] = useState<View>(View.LOADING);
-  const [selectedDomain, setSelectedDomain] = useState<string>('');
-  const [selectedSection, setSelectedSection] = useState<string>('');
+  const initial = React.useMemo(
+    () => getInitialPopupState(Boolean(user), currentMode, verificationStatus),
+    []
+  );
+  const [currentView, setCurrentView] = useState<View>(initial.view);
+  const [selectedDomain, setSelectedDomain] = useState<string>(initial.selectedDomain);
+  const [selectedSection, setSelectedSection] = useState<string>(initial.selectedSection);
   const [openedHighlight, setOpenedHighlight] = useState<OpenedHighlight | null>(null);
   const [highlightReturn, setHighlightReturn] = useState<View>(View.SUB_DOMAIN);
-  const [isStorageReady, setIsStorageReady] = useState(false);
-  const [pendingMode, setPendingMode] = useState<ModeType | null>(null);
+  const [isStorageReady, setIsStorageReady] = useState(true);
+  const [pendingMode, setPendingMode] = useState<ModeType | null>(initial.pendingMode);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
 
   // Authentication & Mode Notification / Swapping Effect
@@ -180,10 +243,8 @@ function PopupApp(): React.ReactElement {
     void completeAuthNavigation();
   }, [user, currentView, isStorageReady, isLoading, pendingMode, currentMode, setMode]);
 
-  // Initialization
+  // Initialization & background reconciliation (instant, no LOADING flash)
   useEffect(() => {
-    if (isLoading) return;
-
     async function initStorage(): Promise<void> {
       try {
         const [onboarding, nav] = await Promise.all([
@@ -191,7 +252,13 @@ function PopupApp(): React.ReactElement {
           loadPopupNavigationSnapshot(),
         ]);
         const hasSeenWelcome = onboarding['underscore_seen_welcome'] === 'true';
-
+        if (hasSeenWelcome && typeof window !== 'undefined' && window.localStorage) {
+          try {
+            window.localStorage.setItem('underscore_seen_welcome', 'true');
+          } catch {
+            // ignore
+          }
+        }
         const resolved = resolvePopupInitialRoute({
           isAuthenticated: Boolean(user),
           onboarding: { hasSeenWelcome },
@@ -199,35 +266,27 @@ function PopupApp(): React.ReactElement {
           currentMode,
           verificationStatus,
         });
-
         if (resolved.applyMode) {
           setMode(resolved.applyMode);
           setPendingMode(null);
-          if (resolved.consumePendingAuthMode) {
-            await clearPendingAuthMode();
-          }
+          if (resolved.consumePendingAuthMode) await clearPendingAuthMode();
         } else if (nav.pendingAuthMode) {
           setPendingMode(nav.pendingAuthMode as ModeType);
         }
-
-        if (resolved.selectedDomain) {
-          setSelectedDomain(resolved.selectedDomain);
-        }
-        if (resolved.selectedSection) {
-          setSelectedSection(resolved.selectedSection);
-        }
-
-        setCurrentView(resolved.view as View);
+        if (resolved.selectedDomain) setSelectedDomain(resolved.selectedDomain);
+        if (resolved.selectedSection) setSelectedSection(resolved.selectedSection);
+        setCurrentView((prev) => {
+          const next = resolved.view as View;
+          return prev === initial.view ? next : prev;
+        });
       } catch (err) {
         console.error('Storage load failed', err);
-        setCurrentView(View.WELCOME);
       } finally {
         setIsStorageReady(true);
       }
     }
-
-    initStorage();
-  }, [isLoading]);
+    void initStorage();
+  }, []);
 
   // Persist view state so reopening the popup restores the last screen (not auth gates).
   useEffect(() => {
@@ -236,6 +295,13 @@ function PopupApp(): React.ReactElement {
   }, [currentView, isStorageReady]);
 
   const handleStartWelcome = async (): Promise<void> => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('underscore_seen_welcome', 'true');
+      }
+    } catch {
+      // ignore
+    }
     await browser.storage.local.set({ underscore_seen_welcome: 'true' });
     setMode('basic');
     setCurrentView(View.COLLECTIONS);
@@ -335,29 +401,44 @@ function PopupApp(): React.ReactElement {
       : modeId === 'pro_xai' || billing.snapshot.isPaidActive
     : modeId === 'pro_xai';
   const billingStatus = billing?.snapshot.entitlement.status ?? null;
-  const chromeHandlers: ChromeHandlers = {
-    onTabChange: handleTabChange,
-    onSwitch: handleSettingsChangeMode,
-    onBackToCollections: handleBackToCollections,
-    onBackToDomain: handleBackToDomain,
-    onBackToHighlight: handleBackFromHighlight,
-    highlightBackLabel: () => openedHighlight?.domain || 'Library',
-    subDomainBackLabel: () => selectedDomain,
-    getModeId: () => modeId,
-    getAccountPill: () =>
-      resolveAccountPillLabel({
-        modeId,
-        isAuthenticated: Boolean(user),
-        isPaidActive,
-        billingStatus,
-      }),
-    onAccountPillClick: handleSettingsClick,
-  };
-  const chrome = buildChrome(chromeHandlers);
+  const chromeHandlers: ChromeHandlers = React.useMemo(
+    () => ({
+      onTabChange: handleTabChange,
+      onSwitch: handleSettingsChangeMode,
+      onBackToCollections: handleBackToCollections,
+      onBackToDomain: handleBackToDomain,
+      onBackToHighlight: handleBackFromHighlight,
+      highlightBackLabel: () => openedHighlight?.domain || 'Library',
+      subDomainBackLabel: () => selectedDomain,
+      getModeId: () => modeId,
+      getAccountPill: () =>
+        resolveAccountPillLabel({
+          modeId,
+          isAuthenticated: Boolean(user),
+          isPaidActive,
+          billingStatus,
+        }),
+      onAccountPillClick: handleSettingsClick,
+    }),
+    [
+      handleTabChange,
+      handleSettingsChangeMode,
+      handleBackToCollections,
+      handleBackToDomain,
+      handleBackFromHighlight,
+      openedHighlight?.domain,
+      selectedDomain,
+      modeId,
+      isPaidActive,
+      billingStatus,
+      user,
+    ]
+  );
+  const chrome = React.useMemo(() => buildChrome(chromeHandlers), [chromeHandlers]);
 
   if (currentView === View.LOADING || !isStorageReady) {
     return (
-      <PopupShell chrome={chrome[View.LOADING]} viewKey={View.LOADING}>
+      <PopupShell chrome={chrome[View.LOADING]}>
         <div
           style={{
             flex: 1,
@@ -372,12 +453,13 @@ function PopupApp(): React.ReactElement {
     );
   }
 
-  // Body-only views: PopupShell owns the sole AnimatePresence + motion.div
-  // (and reduced-motion gating). No per-view motion wrappers.
-  return (
-    <PopupShell chrome={chrome[currentView as ViewKey]} viewKey={currentView}>
-      {currentView === View.WELCOME && <WelcomePage onStartClick={handleStartWelcome} />}
-      {currentView === View.COLLECTIONS && (
+  let viewContent: React.ReactNode = null;
+  switch (currentView) {
+    case View.WELCOME:
+      viewContent = <WelcomePage onStartClick={handleStartWelcome} />;
+      break;
+    case View.COLLECTIONS:
+      viewContent = (
         <CollectionsView
           onCollectionClick={handleCollectionClick}
           onSectionClick={handleSectionClick}
@@ -385,16 +467,20 @@ function PopupApp(): React.ReactElement {
           isAuthenticated={!!user}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
-      )}
-      {currentView === View.DOMAIN_DETAILS && (
+      );
+      break;
+    case View.DOMAIN_DETAILS:
+      viewContent = (
         <DomainDetailsView
           domain={selectedDomain}
           onBack={handleBackToCollections}
           onSectionClick={handleSectionClick}
           onOpenHighlight={handleOpenHighlight}
         />
-      )}
-      {currentView === View.SUB_DOMAIN && (
+      );
+      break;
+    case View.SUB_DOMAIN:
+      viewContent = (
         <SubDomainView
           domain={selectedDomain}
           section={selectedSection}
@@ -402,34 +488,53 @@ function PopupApp(): React.ReactElement {
           onDomainEmpty={handleBackToCollections}
           onOpenHighlight={handleOpenHighlight}
         />
-      )}
-      {currentView === View.HIGHLIGHT && openedHighlight ? (
+      );
+      break;
+    case View.HIGHLIGHT:
+      viewContent = openedHighlight ? (
         <HighlightQuoteView
           highlight={openedHighlight}
           onOpenSection={handleOpenRelatedSection}
         />
-      ) : null}
-      {currentView === View.AUTH && (
+      ) : null;
+      break;
+    case View.AUTH:
+      viewContent = (
         <AuthView
           onLoginSuccess={handleLoginSuccess}
           onBack={() => setCurrentView(View.COLLECTIONS)}
         />
-      )}
-      {currentView === View.SETTINGS && (
+      );
+      break;
+    case View.SETTINGS:
+      viewContent = (
         <SettingsPage
           onBack={handleBackToCollections}
           onChangeMode={handleSettingsChangeMode}
           onSignIn={() => setCurrentView(View.AUTH)}
           onLogout={handleLogout}
         />
-      )}
-      {currentView === View.DASHBOARD && (
+      );
+      break;
+    case View.DASHBOARD:
+      viewContent = (
         <DashboardView
           onLogout={handleLogout}
           onSectionClick={handleSectionClick}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
-      )}
+      );
+      break;
+    default:
+      viewContent = null;
+      break;
+  }
+
+  return (
+    <PopupShell chrome={chrome[currentView as ViewKey]}>
+      <div key={currentView} style={MOTION_STYLE}>
+        {viewContent}
+      </div>
       <UploadFromDeviceDialog
         open={deviceUploadPrompt.open}
         email={deviceUploadPrompt.email}

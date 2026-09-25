@@ -257,17 +257,35 @@ export function DomainDetailsView({
       <div className="list-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ marginTop: 4 }}>
           {isLoading ? (
-            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
-                Loading...
-              </span>
+            <div style={{ padding: '8px 0' }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 72,
+                    margin: '0 16px 8px',
+                    border: '1px solid var(--rule-soft)',
+                    background: 'var(--paper-2)',
+                    opacity: 0.6,
+                  }}
+                />
+              ))}
             </div>
           ) : isSearching ? (
             isSearchLoading ? (
-              <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                <span className="u-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
-                  Loading...
-                </span>
+              <div style={{ padding: '8px 0' }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: 44,
+                      margin: '0 16px 8px',
+                      border: '1px solid var(--rule-soft)',
+                      background: 'var(--paper-2)',
+                      opacity: 0.6,
+                    }}
+                  />
+                ))}
               </div>
             ) : searchSectionGroups.length === 0 ? (
               <EmptyState

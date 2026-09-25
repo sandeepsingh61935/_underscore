@@ -55,6 +55,54 @@ const EMPTY_HIGHLIGHTS_RESULT: HighlightsResult = {
 
 type SessionKey = string;
 
+const HIGHLIGHTS_CACHE_PREFIX = 'underscore_cached_highlights:';
+
+function readCachedHighlights(key: string): Highlight[] | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(`${HIGHLIGHTS_CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((h: Record<string, unknown>) => ({
+        ...h,
+        createdAt: h['createdAt'] ? new Date(h['createdAt'] as string) : new Date(),
+        updatedAt: h['updatedAt'] ? new Date(h['updatedAt'] as string) : undefined,
+      })) as Highlight[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedHighlights(key: string, data: Highlight[]): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(`${HIGHLIGHTS_CACHE_PREFIX}${key}`, JSON.stringify(data));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function clearCachedHighlights(key?: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (key) window.localStorage.removeItem(`${HIGHLIGHTS_CACHE_PREFIX}${key}`);
+    else {
+      const keys: string[] = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k?.startsWith(HIGHLIGHTS_CACHE_PREFIX)) keys.push(k);
+      }
+      for (const k of keys) window.localStorage.removeItem(k);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 const sessionByKey = new Map<SessionKey, Highlight[]>();
 
 function sessionKey(
@@ -67,6 +115,7 @@ function sessionKey(
 
 export function clearHighlightsByDomainSessionMemory(): void {
   sessionByKey.clear();
+  clearCachedHighlights();
 }
 
 /**
@@ -79,7 +128,8 @@ export function useHighlightsByDomain(
 ): HighlightsResult {
   const context = isExtensionContext() ? 'extension' : 'web';
   const bootKey = domain ? sessionKey(domain, isAuthenticated, context) : null;
-  const warm = bootKey ? sessionByKey.get(bootKey) : undefined;
+  const warm = bootKey ? (sessionByKey.get(bootKey) ?? readCachedHighlights(bootKey)) : undefined;
+  if (warm && bootKey && !sessionByKey.has(bootKey)) sessionByKey.set(bootKey, warm);
 
   const [result, setResult] = useState<HighlightsResult>(() => {
     if (!domain) return EMPTY_HIGHLIGHTS_RESULT;
@@ -231,6 +281,7 @@ export function useHighlightsByDomain(
         if (domainRef.current !== activeDomain || authRef.current !== auth) return;
 
         sessionByKey.set(activeKey, highlights);
+        writeCachedHighlights(activeKey, highlights);
         setResult({
           highlights,
           isLoading: false,
@@ -274,8 +325,9 @@ export function useHighlightsByDomain(
       }
 
       const activeKey = sessionKey(domain, isAuthenticated, context);
-      const cached = sessionByKey.get(activeKey);
+      const cached = sessionByKey.get(activeKey) ?? readCachedHighlights(activeKey);
       if (cached) {
+        if (!sessionByKey.has(activeKey)) sessionByKey.set(activeKey, cached);
         setResult({ highlights: cached, isLoading: false, error: null });
         await fetchHighlights({ silent: true });
       } else {
@@ -294,7 +346,10 @@ export function useHighlightsByDomain(
   useEffect(() => {
     if (!isAuthenticated) {
       for (const k of [...sessionByKey.keys()]) {
-        if (k.endsWith(':auth')) sessionByKey.delete(k);
+        if (k.endsWith(':auth')) {
+          sessionByKey.delete(k);
+          clearCachedHighlights(k);
+        }
       }
       if (context === 'web') {
         setResult(EMPTY_HIGHLIGHTS_RESULT);

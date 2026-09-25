@@ -38,7 +38,6 @@ describe('PopupShell', () => {
           showModeHeader: false,
           showTabBar: false,
         }}
-        viewKey="DASHBOARD"
       >
         <div>body</div>
       </PopupShell>
@@ -53,7 +52,7 @@ describe('PopupShell', () => {
 
   it('renders the title strip with the chrome brand when showTitleStrip is true', () => {
     render(
-      <PopupShell chrome={baseChrome} viewKey="LOADING">
+      <PopupShell chrome={baseChrome}>
         <div>body</div>
       </PopupShell>
     );
@@ -74,7 +73,7 @@ describe('PopupShell', () => {
     }));
     try {
       render(
-        <PopupShell chrome={baseChrome} viewKey="DASHBOARD">
+        <PopupShell chrome={baseChrome}>
           <div>calm-body</div>
         </PopupShell>
       );
@@ -86,10 +85,7 @@ describe('PopupShell', () => {
 
   it('omits the title strip when showTitleStrip is false', () => {
     render(
-      <PopupShell
-        chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }}
-        viewKey="WELCOME"
-      >
+      <PopupShell chrome={{ ...baseChrome, showTitleStrip: false, title: '', brand: '' }}>
         <div>body</div>
       </PopupShell>
     );
@@ -110,7 +106,6 @@ describe('PopupShell', () => {
           onBack: noopHandlers.onBackToCollections,
           backLabel: 'Library',
         }}
-        viewKey="DOMAIN_DETAILS"
       >
         <div>body</div>
       </PopupShell>
@@ -133,7 +128,6 @@ describe('PopupShell', () => {
           activeTab: 'home',
           onTabChange: noopHandlers.onTabChange,
         }}
-        viewKey="DASHBOARD"
       >
         <div>body</div>
       </PopupShell>
@@ -157,7 +151,6 @@ describe('PopupShell', () => {
           activeTab: 'collections',
           onTabChange: noopHandlers.onTabChange,
         }}
-        viewKey="COLLECTIONS"
       >
         <div>body</div>
       </PopupShell>

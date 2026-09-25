@@ -19,4 +19,8 @@ export type CloudHydrationProgress = (percent: number, phase?: string) => void;
 
 export interface ICloudHydrationService {
   hydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult>;
+  /** True while a hydrate is in-flight. */
+  isHydrating(): boolean;
+  /** Resolves when current hydrate finishes (no-op if idle). */
+  awaitHydration(): Promise<void>;
 }

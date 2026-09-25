@@ -18,15 +18,21 @@ export function useLibraryDataChanged(onChanged: () => void): void {
       return;
     }
 
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     const handleMessage = (message: { type?: string }): void => {
       if (message?.type === LIBRARY_DATA_CHANGED) {
-        onChanged();
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          timeout = null;
+          onChanged();
+        }, 150);
       }
     };
 
     chrome.runtime.onMessage.addListener(handleMessage);
 
     return () => {
+      if (timeout) clearTimeout(timeout);
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
   }, [onChanged]);

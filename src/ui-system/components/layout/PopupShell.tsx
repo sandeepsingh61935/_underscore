@@ -1,4 +1,3 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import React, { type ReactNode } from 'react';
 
 import type { PopupChrome } from '../../../entrypoints/popup/chrome';
@@ -6,23 +5,8 @@ import type { PopupChrome } from '../../../entrypoints/popup/chrome';
 import { ModeHeader } from './ModeHeader';
 import { TabBar } from './TabBar';
 
-const screenVariants = {
-  initial: { opacity: 0, y: 10, scale: 0.984 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -6, scale: 1.012 },
-} as const;
-
-/** Instant swap when prefers-reduced-motion is set (story 76). */
-const reducedScreenVariants = {
-  initial: { opacity: 1, y: 0, scale: 1 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 1, y: 0, scale: 1 },
-} as const;
-
 export interface PopupShellProps {
   chrome: PopupChrome;
-  /** Current view key, used as the AnimatePresence motion key */
-  viewKey: string;
   children: ReactNode;
   dark?: boolean;
 }
@@ -72,18 +56,11 @@ function PopupTitleStrip({
   );
 }
 
-export function PopupShell({
+export const PopupShell = React.memo(function PopupShell({
   chrome,
-  viewKey,
   children,
   dark = false,
 }: PopupShellProps): React.ReactElement {
-  const reduceMotion = useReducedMotion();
-  const variants = reduceMotion ? reducedScreenVariants : screenVariants;
-  const transition = reduceMotion
-    ? { duration: 0 }
-    : { type: 'spring' as const, stiffness: 120, damping: 20, mass: 1.0 };
-
   return (
     <div
       className={`ue ${dark ? 'dark' : ''}`}
@@ -132,25 +109,7 @@ export function PopupShell({
             boxSizing: 'border-box',
           }}
         >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={viewKey}
-              variants={variants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={transition}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                pointerEvents: 'auto',
-              }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          {children}
         </div>
         {chrome.showTabBar && chrome.activeTab && chrome.onTabChange && (
           <TabBar active={chrome.activeTab} onChange={chrome.onTabChange} />
@@ -158,4 +117,4 @@ export function PopupShell({
       </div>
     </div>
   );
-}
+});

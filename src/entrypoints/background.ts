@@ -694,10 +694,17 @@ export default defineBackground({
         }
       });
 
-      // Get Collections (Grouped by Domain) Handler
+      // Get Collections (Grouped by Domain) Handler — gate on in-flight hydration to avoid empty-first flash (Q3/Q9)
       messageBus.subscribe('GET_COLLECTIONS', async (payload: { mode?: string }) => {
         logger.info('Handling GET_COLLECTIONS request', { mode: payload?.mode });
         try {
+          if (cloudHydrationService.isHydrating()) {
+            const gated = Promise.race([
+              cloudHydrationService.awaitHydration(),
+              new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+            ]);
+            await gated;
+          }
           const collections = await getHighlightQueryService().getCollections(
             payload?.mode
           );
@@ -992,10 +999,17 @@ export default defineBackground({
         };
       });
 
-      // Get Dashboard Data Handler
+      // Get Dashboard Data Handler — gate on in-flight hydration (Q3/Q9)
       messageBus.subscribe('GET_DASHBOARD_DATA', async (payload: { mode?: string }) => {
         logger.info('Handling GET_DASHBOARD_DATA request', { mode: payload?.mode });
         try {
+          if (cloudHydrationService.isHydrating()) {
+            const gated = Promise.race([
+              cloudHydrationService.awaitHydration(),
+              new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+            ]);
+            await gated;
+          }
           const data = await getHighlightQueryService().getDashboardData(payload?.mode);
           const recentHighlights =
             await backgroundHighlightOrchestrator.enrichWithPlaintext(

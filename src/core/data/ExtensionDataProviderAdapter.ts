@@ -24,7 +24,8 @@ export class ExtensionDataProviderAdapter implements IDataProvider {
         timestamp: Date.now(),
       });
       if (!response?.success || !response.data) {
-        return [];
+        const errMsg = (response as unknown as { error?: string })?.error || 'Failed to fetch collections';
+        throw new Error(errMsg);
       }
       return response.data.collections.map((c) => ({
         id: c.domain,
@@ -32,8 +33,9 @@ export class ExtensionDataProviderAdapter implements IDataProvider {
         highlightCount: c.highlightCount,
         lastActive: c.lastActive ? new Date(c.lastActive) : undefined,
       }));
-    } catch {
-      return [];
+    } catch (err) {
+      if (err instanceof Error) throw err;
+      throw new Error('Failed to fetch collections');
     }
   }
 }
