@@ -29,13 +29,35 @@ const PAINT_SHADOW_CSS = `
   z-index: 2147483645;
   color: inherit;
 }
+@media (prefers-color-scheme: dark) {
+  :host {
+    color: #f5f5f5;
+  }
+}
+:host-context(html[data-darkreader-scheme="dark"]),
+:host-context(html[data-darkreader-mode]),
+:host-context(html.dark),
+:host-context(body.dark),
+:host-context([data-theme="dark"]),
+:host-context([data-color-mode="dark"]),
+:host-context([data-bs-theme="dark"]) {
+  color: #f5f5f5;
+}
+:host-context(html[data-darkreader-scheme="light"]),
+:host-context(html.light),
+:host-context(body.light),
+:host-context([data-theme="light"]),
+:host-context([data-color-mode="light"]),
+:host-context([data-bs-theme="light"]) {
+  color: #111111;
+}
 .underscore-paint-rect {
   position: absolute;
   pointer-events: none;
   box-sizing: border-box;
   border-radius: 0;
   height: ${STRIP_HEIGHT_PX}px;
-  background-color: currentColor;
+  background-color: var(--underscore-color, currentColor);
   box-shadow: none;
 }
 `;
@@ -55,6 +77,8 @@ export class RangeOverlayPainter implements HighlightPainter {
   private layer: ShadowRoot | null = null;
   private scrollScheduled = false;
   private listenersAttached = false;
+  private themeObserver: MutationObserver | null = null;
+  private mediaQuery: MediaQueryList | null = null;
 
   static getInstance(): RangeOverlayPainter {
     if (!RangeOverlayPainter.instance) {
@@ -191,10 +215,11 @@ export class RangeOverlayPainter implements HighlightPainter {
       root = document.createElement('div');
       root.id = ROOT_ID;
       root.setAttribute('aria-hidden', 'true');
-      (document.documentElement || document.body).appendChild(root);
+      (document.body || document.documentElement).appendChild(root);
     }
     this.root = root;
     this.ensureLayer(root);
+    this.detectAndApplyUnderscoreColor();
     return root;
   }
 
@@ -233,19 +258,6 @@ export class RangeOverlayPainter implements HighlightPainter {
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
 
-    const parentEl =
-      range.startContainer.nodeType === Node.ELEMENT_NODE
-        ? (range.startContainer as HTMLElement)
-        : range.startContainer.parentElement;
-    let textColor: string | undefined;
-    if (parentEl && typeof window.getComputedStyle === 'function') {
-      try {
-        textColor = window.getComputedStyle(parentEl).color;
-      } catch {
-        textColor = undefined;
-      }
-    }
-
     for (let i = 0; i < rects.length; i++) {
       const rect = rects[i];
       if (!rect || rect.width <= 0 || rect.height <= 0) continue;
@@ -253,9 +265,6 @@ export class RangeOverlayPainter implements HighlightPainter {
       const el = document.createElement('div');
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
-      if (textColor) {
-        el.style.color = textColor;
-      }
       el.style.left = `${rect.left + scrollX}px`;
       el.style.top = `${rect.top + scrollY + rect.height - 1 + UNDERLINE_OFFSET_PX}px`;
       el.style.width = `${rect.width}px`;
@@ -270,6 +279,91 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (this.listenersAttached) return;
     window.addEventListener('scroll', this.onViewportChange, true);
     window.addEventListener('resize', this.onViewportChange, true);
+
+    if (typeof window.matchMedia === 'function') {
+      try {
+        this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        this.mediaQuery.addEventListener?.('change', this.onViewportChange);
+      } catch {
+        // matchMedia not supported or restricted in environment
+      }
+    }
+
+    if (typeof MutationObserver !== 'undefined') {
+      this.themeObserver = new MutationObserver((mutations) => {
+        let shouldRelayout = false;
+        for (const m of mutations) {
+          if (m.type === 'attributes') {
+            shouldRelayout = true;
+            break;
+          }
+          if (m.type === 'childList') {
+            for (let i = 0; i < m.addedNodes.length; i++) {
+              const node = m.addedNodes[i];
+              if (
+                node instanceof HTMLElement &&
+                (node.tagName === 'STYLE' || node.tagName === 'LINK')
+              ) {
+                shouldRelayout = true;
+                break;
+              }
+            }
+            if (shouldRelayout) break;
+            for (let i = 0; i < m.removedNodes.length; i++) {
+              const node = m.removedNodes[i];
+              if (
+                node instanceof HTMLElement &&
+                (node.tagName === 'STYLE' || node.tagName === 'LINK')
+              ) {
+                shouldRelayout = true;
+                break;
+              }
+            }
+            if (shouldRelayout) break;
+          }
+        }
+        if (shouldRelayout) {
+          this.onViewportChange();
+        }
+      });
+
+      const docEl = document.documentElement;
+      if (docEl) {
+        this.themeObserver.observe(docEl, {
+          attributes: true,
+          attributeFilter: [
+            'class',
+            'data-theme',
+            'data-color-mode',
+            'data-darkreader-scheme',
+            'data-darkreader-mode',
+            'data-bs-theme',
+            'style',
+          ],
+        });
+      }
+      if (document.body && document.body !== docEl) {
+        this.themeObserver.observe(document.body, {
+          attributes: true,
+          attributeFilter: [
+            'class',
+            'data-theme',
+            'data-color-mode',
+            'data-darkreader-scheme',
+            'data-darkreader-mode',
+            'data-bs-theme',
+            'style',
+          ],
+          childList: true,
+        });
+      }
+      if (document.head) {
+        this.themeObserver.observe(document.head, {
+          childList: true,
+        });
+      }
+    }
+
     this.listenersAttached = true;
   }
 
@@ -277,6 +371,14 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (!this.listenersAttached) return;
     window.removeEventListener('scroll', this.onViewportChange, true);
     window.removeEventListener('resize', this.onViewportChange, true);
+    if (this.mediaQuery) {
+      this.mediaQuery.removeEventListener?.('change', this.onViewportChange);
+      this.mediaQuery = null;
+    }
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
     this.listenersAttached = false;
   }
 
@@ -289,7 +391,15 @@ export class RangeOverlayPainter implements HighlightPainter {
     });
   };
 
+  private detectAndApplyUnderscoreColor(): void {
+    if (!this.root) return;
+    const { isDark } = detectPageLuminance();
+    const color = isDark ? '#f5f5f5' : '#111111';
+    this.root.style.setProperty('--underscore-color', color);
+  }
+
   private relayoutAll(): void {
+    this.detectAndApplyUnderscoreColor();
     for (const entry of this.entries.values()) {
       for (const el of entry.elements) el.remove();
 
@@ -310,4 +420,86 @@ export function getHighlightPainter(): HighlightPainter {
 /** @deprecated Use getHighlightPainter() */
 export function getRangeOverlayPainter(): HighlightPainter {
   return getHighlightPainter();
+}
+
+export interface PageLuminanceResult {
+  hex: string;
+  luminance: number;
+  isDark: boolean;
+}
+
+/**
+ * Detects the background luminance of the page by walking up the DOM
+ * from body to documentElement, returning color info and dark/light classification.
+ */
+export function detectPageLuminance(target?: Element | null): PageLuminanceResult {
+  let el: Element | null =
+    target ??
+    (typeof document !== 'undefined'
+      ? document.body || document.documentElement
+      : null);
+
+  let colorString: string | null = null;
+
+  while (el) {
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+      try {
+        const bg = window.getComputedStyle(el).backgroundColor;
+        if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+          const alphaMatch = bg.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/);
+          if (!alphaMatch || parseFloat(alphaMatch[1]!) > 0) {
+            colorString = bg;
+            break;
+          }
+        }
+      } catch {
+        // Element cannot be queried for computed style
+      }
+    }
+    el = el.parentElement;
+  }
+
+  let r = 255;
+  let g = 255;
+  let b = 255;
+
+  if (colorString) {
+    const rgbMatch = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (rgbMatch) {
+      r = parseInt(rgbMatch[1]!, 10);
+      g = parseInt(rgbMatch[2]!, 10);
+      b = parseInt(rgbMatch[3]!, 10);
+    } else if (colorString.startsWith('#')) {
+      const cleanHex = colorString.replace('#', '');
+      if (cleanHex.length === 3) {
+        r = parseInt(cleanHex[0]! + cleanHex[0]!, 16);
+        g = parseInt(cleanHex[1]! + cleanHex[1]!, 16);
+        b = parseInt(cleanHex[2]! + cleanHex[2]!, 16);
+      } else if (cleanHex.length >= 6) {
+        r = parseInt(cleanHex.substring(0, 2), 16);
+        g = parseInt(cleanHex.substring(2, 4), 16);
+        b = parseInt(cleanHex.substring(4, 6), 16);
+      }
+    }
+  }
+
+  const toHex = (c: number): string => {
+    const hexVal = Math.max(0, Math.min(255, Math.round(c))).toString(16);
+    return hexVal.length === 1 ? '0' + hexVal : hexVal;
+  };
+  const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+
+  // WCAG standard relative luminance formula
+  const [rs, gs, bs] = [r, g, b].map((c) => {
+    const val = c / 255;
+    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+  });
+  const luminance = 0.2126 * rs! + 0.7152 * gs! + 0.0722 * bs!;
+  const isDark = luminance < 0.5;
+
+  return {
+    hex,
+    luminance,
+    isDark,
+  };
 }
