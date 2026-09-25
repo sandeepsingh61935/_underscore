@@ -6,6 +6,7 @@ import { useIpcAction } from '@/shared/hooks/useIpcAction';
 import { displaySectionPath } from '@/shared/utils/page-href';
 import { openExternalUrl } from '@/shared/utils/open-external-url';
 import { buildTextFragmentUrl } from '@/shared/utils/text-fragment';
+import { DomainFavicon } from '@/features/collections/components/DomainFavicon';
 
 type RelatednessDoc = {
   id: string;
@@ -17,12 +18,6 @@ type RelatednessDoc = {
   tags?: string[];
 };
 
-function shortLeaf(section: string): string {
-  const shown = displaySectionPath(section).replace(/\?…$/, '');
-  const leaf = shown.split('/').filter(Boolean).pop() ?? shown;
-  if (leaf.length <= 22) return leaf;
-  return `${leaf.slice(0, 20)}…`;
-}
 
 function sourceHref(highlight: OpenedHighlight): string | null {
   const base = highlight.url || (highlight.domain ? `https://${highlight.domain}${highlight.path || ''}` : '');
@@ -63,6 +58,8 @@ export function HighlightQuoteView({
   const href = sourceHref(highlight);
   const path = highlight.path && highlight.path !== '/' ? highlight.path : '';
   const note = highlight.notes?.trim() ?? '';
+  const seedPath = highlight.path && highlight.path !== '/' ? highlight.path : null;
+  const relatedLabel = seedPath ? `Related to ${displaySectionPath(seedPath)}` : 'Related pages';
 
   return (
     <section className="quote-detail" data-od-id="extension-quote">
@@ -71,7 +68,7 @@ export function HighlightQuoteView({
         <p className="quote-detail-text">{highlight.text}</p>
         {path ? <p className="quote-detail-path">{displaySectionPath(path)}</p> : null}
         {note ? (
-          <div className="quote-detail-note">
+          <div className="quote-detail-note" data-testid="quote-detail-note">
             <span className="quote-detail-kicker">Your note</span>
             {note}
           </div>
@@ -86,21 +83,39 @@ export function HighlightQuoteView({
           </div>
         ) : null}
         {related.length > 0 ? (
-          <section className="quote-detail-related" aria-label="Related pages">
-            <p className="quote-detail-kicker">Related pages</p>
-            <div className="quote-detail-rail">
-              {related.map((page) => (
-                <button
-                  key={`${page.domain}${page.section}`}
-                  type="button"
-                  className="quote-detail-card"
-                  onClick={() => onOpenSection?.(page.domain, page.section)}
-                >
-                  <span className="quote-detail-host">{page.domain}</span>
-                  <span className="quote-detail-leaf">{shortLeaf(page.section)}</span>
-                  <span className="quote-detail-saved">{page.highlightCount} saved</span>
-                </button>
-              ))}
+          <section
+            className="quote-detail-related quote-detail-related--vertical"
+            data-od-id="quote-detail-related"
+            aria-label="Related pages"
+          >
+            <p className="quote-detail-kicker">{relatedLabel}</p>
+            <div className="quote-detail-list">
+              {related.map((page) => {
+                const count =
+                  page.highlightCount === 1 ? '1 highlight' : `${page.highlightCount} highlights`;
+                const sectionLabel = displaySectionPath(page.section);
+                return (
+                  <button
+                    key={`${page.domain}${page.section}`}
+                    type="button"
+                    className="quote-detail-row"
+                    aria-label={`${page.domain}, ${sectionLabel}, ${count}`}
+                    onClick={() => onOpenSection?.(page.domain, page.section)}
+                  >
+                    <DomainFavicon domain={page.domain} className="quote-detail-ico" size={16} />
+                    <div className="quote-detail-info">
+                      <div className="quote-detail-host-line">
+                        <span className="quote-detail-host">{page.domain}</span>
+                      </div>
+                      <span className="quote-detail-path-sub">{sectionLabel}</span>
+                    </div>
+                    <span className="quote-detail-count">{page.highlightCount}</span>
+                    <span className="quote-detail-trail" aria-hidden="true">
+                      →
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
         ) : null}

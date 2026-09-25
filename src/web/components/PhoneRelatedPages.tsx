@@ -51,9 +51,6 @@ export function PhoneRelatedPages({
                 <div className="phone-related-info">
                   <div className="phone-related-host-line">
                     <span className="phone-related-host">{page.domain}</span>
-                    {page.reason ? (
-                      <span className="phone-related-reason">{page.reason}</span>
-                    ) : null}
                   </div>
                   <span className="phone-related-path">{sectionLabel}</span>
                 </div>

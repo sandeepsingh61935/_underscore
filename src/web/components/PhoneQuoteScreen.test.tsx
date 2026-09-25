@@ -76,11 +76,11 @@ describe('PhoneQuoteScreen', () => {
     expect(container.querySelector('.phone-related-list')).toBeInTheDocument();
     expect(container.querySelector('.phone-related-rail')).toBeNull();
 
-    // Verify content is rendered
+    // Verify content is rendered without reason badge
     expect(screen.getByText('gutenberg.org')).toBeInTheDocument();
     expect(screen.getByText('ricardo.ai')).toBeInTheDocument();
-    expect(screen.getByText('Shared tags')).toBeInTheDocument();
-    expect(screen.getByText('Similar text')).toBeInTheDocument();
+    expect(screen.queryByText('Shared tags')).toBeNull();
+    expect(screen.queryByText('Similar text')).toBeNull();
 
     // Clicking row triggers callback
     fireEvent.click(screen.getByText('gutenberg.org'));

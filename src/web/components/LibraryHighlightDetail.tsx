@@ -5,22 +5,27 @@
 
 import React from 'react';
 
+import type { RelatedPageResult } from '@/shared/relatedness';
 import {
   RelatedHighlightsSection,
   type RelatedHighlightRow,
 } from '@/web/components/RelatedHighlightsSection';
+import { PhoneRelatedPages } from '@/web/components/PhoneRelatedPages';
 import { WebHighlightCard } from '@/web/components/WebHighlightCard';
 import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 
 export type LibraryHighlightDetailProps = {
   highlight: WebHighlight;
-  related: RelatedHighlightRow[];
+  related?: RelatedHighlightRow[];
+  relatedPages?: RelatedPageResult[];
+  relatedLabel?: string;
+  onOpenRelatedPage?: (domain: string, section: string, rank: number, reason: string) => void;
   readOnly?: boolean;
   activeTagFilters?: string[];
   onBack: () => void;
   /** Build `/library?…&highlight=` href for a related row. */
-  relatedHrefFor: (id: string) => string;
-  onOpenRelated: (id: string, rank: number, reason: string) => void;
+  relatedHrefFor?: (id: string) => string;
+  onOpenRelated?: (id: string, rank: number, reason: string) => void;
   onOpenPage?: (domain: string, path: string) => void;
   onToggleTagFilter?: (tag: string) => void;
   onNoteSave?: (id: string, note: string) => Promise<boolean>;
@@ -30,7 +35,10 @@ export type LibraryHighlightDetailProps = {
 
 export function LibraryHighlightDetail({
   highlight,
-  related,
+  related = [],
+  relatedPages = [],
+  relatedLabel = 'Related pages',
+  onOpenRelatedPage,
   readOnly = false,
   activeTagFilters,
   onBack,
@@ -70,11 +78,20 @@ export function LibraryHighlightDetail({
         onTagsChange={onTagsChange}
         onDelete={onDelete}
       />
-      <RelatedHighlightsSection
-        items={related}
-        hrefFor={relatedHrefFor}
-        onOpen={onOpenRelated}
-      />
+      {relatedPages.length > 0 && onOpenRelatedPage ? (
+        <PhoneRelatedPages
+          label={relatedLabel}
+          pages={relatedPages}
+          layout="vertical"
+          onOpen={onOpenRelatedPage}
+        />
+      ) : related.length > 0 && relatedHrefFor && onOpenRelated ? (
+        <RelatedHighlightsSection
+          items={related}
+          hrefFor={relatedHrefFor}
+          onOpen={onOpenRelated}
+        />
+      ) : null}
     </div>
   );
 }

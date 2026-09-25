@@ -565,6 +565,19 @@ export function LibraryPage(): React.ReactElement {
     });
   }, [lib.highlights, relatedHighlightResults]);
 
+  const detailSeedPath = detailHighlight
+    ? detailHighlight.path && detailHighlight.path !== '/'
+      ? detailHighlight.path
+      : selection.section
+    : null;
+  const detailRelatedPages = useMemo(() => {
+    if (!selection.domain || !detailSeedPath) return [];
+    return relatedness.relatedPages(selection.domain, detailSeedPath);
+  }, [relatedness, selection.domain, detailSeedPath]);
+  const detailRelatedLabel = detailSeedPath
+    ? `Related to ${displaySectionPath(detailSeedPath)}`
+    : 'Related pages';
+
   const relatedPageHref = useCallback((domain: string, section: string) => {
     const search = buildLibrarySearch({
       domain,
@@ -807,6 +820,12 @@ export function LibraryPage(): React.ReactElement {
       key={detailHighlight.id}
       highlight={detailHighlight}
       related={relatedHighlightRows}
+      relatedPages={detailRelatedPages}
+      relatedLabel={detailRelatedLabel}
+      onOpenRelatedPage={(domain, section, rank, reason) => {
+        trackEvent('related_page_clicked', { rank, reason });
+        setSelection(domain, section, null);
+      }}
       readOnly={consumeOnly}
       activeTagFilters={tagFilters}
       onBack={closeHighlightDetail}
