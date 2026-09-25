@@ -222,6 +222,14 @@ export function SubDomainView({
     }
   };
 
+  const pageUrl = useMemo(() => {
+    if (!domain) return null;
+    const withUrl = sectionHighlights.find((h) => h.url);
+    if (withUrl?.url) return withUrl.url;
+    const path = section.startsWith('/') ? section : `/${section}`;
+    return `https://${domain}${path === '/' ? '' : path}`;
+  }, [domain, section, sectionHighlights]);
+
   if (!isLoading && highlights.length > 0 && sectionHighlights.length === 0) {
     return (
       <div
@@ -239,14 +247,6 @@ export function SubDomainView({
   }
 
   const sectionTitle = section === '/' ? '/' : section;
-
-  const pageUrl = useMemo(() => {
-    if (!domain) return null;
-    const withUrl = sectionHighlights.find((h) => h.url);
-    if (withUrl?.url) return withUrl.url;
-    const path = section.startsWith('/') ? section : `/${section}`;
-    return `https://${domain}${path === '/' ? '' : path}`;
-  }, [domain, section, sectionHighlights]);
 
   return (
     <div

@@ -6,6 +6,8 @@
  */
 import { browser } from 'wxt/browser';
 
+import { WEB_APP_ORIGIN_MATCHES } from '@/shared/extension/web-app-origin-matches';
+
 const ATTR = 'data-underscore-ext';
 const MSG_SOURCE = 'underscore-extension';
 
@@ -34,7 +36,7 @@ function announce(version: string): void {
 }
 
 export default defineContentScript({
-  matches: ['http://*/*', 'https://*/*'],
+  matches: [...WEB_APP_ORIGIN_MATCHES],
   runAt: 'document_start',
   world: 'ISOLATED',
   main() {

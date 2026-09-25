@@ -55,6 +55,8 @@ packages/mcp-server/package-lock.json
 # Graphify (generated knowledge graph + cache)
 graphify-out/
 **/graphify-out/
+.graphify/
+**/.graphify/
 
 # Playwright MCP dumps
 .playwright-mcp/
