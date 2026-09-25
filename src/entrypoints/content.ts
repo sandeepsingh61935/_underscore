@@ -565,8 +565,9 @@ export default defineContentScript({
         browser.runtime
           .sendMessage({
             type: 'HIGHLIGHT_COUNT_UPDATE',
+            payload: { count: repositoryFacade.count() },
             count: repositoryFacade.count(),
-            timestamp: Date.now(), // Added for schema validation
+            timestamp: Date.now(),
           })
           .catch(() => {
             // Popup may not be open, ignore error

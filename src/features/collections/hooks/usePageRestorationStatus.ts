@@ -45,7 +45,7 @@ export function usePageRestorationStatus(
 
       chrome.tabs.sendMessage(
         tabId,
-        { type: GET_RESTORATION_STATUS, timestamp: Date.now() },
+        { type: GET_RESTORATION_STATUS, payload: {}, timestamp: Date.now() },
         (response) => {
           if (chrome.runtime?.lastError) {
             // Content script may not be loaded on this page (e.g. chrome://)
@@ -76,7 +76,7 @@ export function usePageRestorationStatus(
       return new Promise((resolve) => {
         chrome.tabs.sendMessage(
           tabId,
-          { type: CHECK_PAGE_SELECTION, timestamp: Date.now() },
+          { type: CHECK_PAGE_SELECTION, payload: {}, timestamp: Date.now() },
           (response) => {
             if (chrome.runtime?.lastError || !response?.success) {
               resolve(false);

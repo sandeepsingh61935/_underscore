@@ -120,6 +120,44 @@ describe('usePageRestorationStatus', () => {
     expect(result.current.unanchoredCount).toBe(2);
   });
 
+  it('sends GET_RESTORATION_STATUS with required MessageSchema payload', async () => {
+    const { validateMessage } = await import('@/shared/schemas/message-schemas');
+    renderHook(() => usePageRestorationStatus('https://example.com/article'));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const calls = (chrome.tabs.sendMessage as any).mock.calls as Array<any[]>;
+    const statusCall = calls.find((c) => c[1]?.type === GET_RESTORATION_STATUS);
+    expect(statusCall).toBeTruthy();
+    expect(() => validateMessage(statusCall![1])).not.toThrow();
+    expect(statusCall![1]).toHaveProperty('payload');
+  });
+
+  it('sends CHECK_PAGE_SELECTION with required MessageSchema payload', async () => {
+    const { validateMessage } = await import('@/shared/schemas/message-schemas');
+    const { result } = renderHook(() =>
+      usePageRestorationStatus('https://example.com/article')
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    let success = false;
+    await act(async () => {
+      success = await result.current.checkSelection();
+    });
+
+    expect(success).toBe(true);
+    const calls = (chrome.tabs.sendMessage as any).mock.calls as Array<any[]>;
+    const selCall = calls.find((c) => c[1]?.type === CHECK_PAGE_SELECTION);
+    expect(selCall).toBeTruthy();
+    expect(() => validateMessage(selCall![1])).not.toThrow();
+    expect(selCall![1]).toHaveProperty('payload');
+  });
+
   it('reanchorHighlight sends REANCHOR_HIGHLIGHT message and clears unanchored flag on success', async () => {
     const { result } = renderHook(() =>
       usePageRestorationStatus('https://example.com/article')
