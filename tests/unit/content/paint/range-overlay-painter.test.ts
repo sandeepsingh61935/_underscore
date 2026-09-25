@@ -60,21 +60,14 @@ describe('RangeOverlayPainter', () => {
 
     const root = document.getElementById('underscore-paint-root');
     expect(root).toBeTruthy();
-    expect(root?.hasAttribute('data-darkreader-ignore')).toBe(true);
     expect(root?.shadowRoot).toBeTruthy();
     const rects = paintScope().querySelectorAll('.underscore-paint-rect');
     expect(rects.length).toBeGreaterThan(0);
     expect(rects[0]?.getAttribute('data-highlight-id')).toBe('hl-1');
-    const fill = (rects[0] as HTMLElement).style.background;
-    expect(fill).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
-    expect(fill).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
-    expect((rects[0] as HTMLElement).style.getPropertyPriority('background')).toBe(
-      'important'
-    );
     expect(painter.paintedCount).toBe(1);
   });
 
-  it('marks the paint stylesheet so Dark Reader will not rewrite the strip', () => {
+  it('defines single-tone currentColor stroke in the paint stylesheet', () => {
     const painter = RangeOverlayPainter.getInstance();
     const range = rangeOver('hello');
     stubClientRects(range, [stubRect(10, 20, 80, 16)]);
@@ -82,16 +75,15 @@ describe('RangeOverlayPainter', () => {
 
     const shadow = document.getElementById('underscore-paint-root')?.shadowRoot;
     const paintStyle = shadow?.querySelector('style[data-underscore-paint]');
-    expect(paintStyle?.classList.contains('darkreader')).toBe(true);
-
-    const rect = shadow?.querySelector('.underscore-paint-rect') as HTMLElement;
-    expect(rect.style.getPropertyPriority('background')).toBe('important');
-    expect(rect.style.background).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
-    expect(rect.style.background).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
+    expect(paintStyle).toBeTruthy();
+    expect(paintStyle?.textContent).toContain('background-color: currentColor');
+    expect(paintStyle?.textContent).not.toContain('linear-gradient');
   });
 
-  it('keeps both stroke colors even when the page background is dark', () => {
-    document.body.style.backgroundColor = 'rgb(18, 18, 18)';
+  it('matches text color from element and does not paint dual background gradient', () => {
+    const p = document.getElementById('p')!;
+    p.style.color = 'rgb(42, 42, 42)';
+
     const painter = RangeOverlayPainter.getInstance();
     const range = rangeOver('hello');
     stubClientRects(range, [stubRect(10, 20, 40, 14)]);
@@ -99,10 +91,10 @@ describe('RangeOverlayPainter', () => {
     painter.paint('hl-dark', [range], 'yellow');
 
     const rect = paintScope().querySelector('.underscore-paint-rect') as HTMLElement;
-    const fill = rect.style.background;
-    expect(fill).toMatch(/#111111|rgb\(17,\s*17,\s*17\)/);
-    expect(fill).toMatch(/#f5f5f5|rgb\(245,\s*245,\s*245\)/);
-    expect(rect.hasAttribute('data-darkreader-ignore')).toBe(true);
+    expect(rect).toBeTruthy();
+    expect(rect.style.color).toBe('rgb(42, 42, 42)');
+    expect(rect.style.background).not.toContain('linear-gradient');
+    expect(rect.hasAttribute('data-darkreader-ignore')).toBe(false);
   });
 
   it('hitTest returns id for point inside range geometry', () => {

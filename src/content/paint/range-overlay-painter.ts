@@ -2,13 +2,10 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = a 2px baseline strip (near-black + near-white).
- * Both stops are set as an inline background with !important so they beat
- * Dark Reader's `[data-darkreader-inline-bgimage]` override, which otherwise
- * rewrites both stops toward the dark page background. The strip lives in an
- * open shadow root; its stylesheet is classed `darkreader` so Dark Reader's
- * style manager skips it. colorRole is accepted for API stability but does
- * not tint the on-page stroke.
+ * Underscore stroke = a 2px baseline strip matching the text color (currentColor).
+ * The strip lives in an open shadow root and adapts to page themes, Dark Reader,
+ * and custom backgrounds without background halos.
+ * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
 import { getFirstLineEdgeRects } from './first-line-geometry';
@@ -18,12 +15,8 @@ import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
 
 const ROOT_ID = 'underscore-paint-root';
-const STROKE_THICKNESS_PX = 1;
 const STRIP_HEIGHT_PX = 2;
 const UNDERLINE_OFFSET_PX = 2;
-const STROKE_ON_LIGHT = '#111111';
-const STROKE_ON_DARK = '#f5f5f5';
-const DUAL_FILL = `linear-gradient(to top, ${STROKE_ON_LIGHT} 0 ${STROKE_THICKNESS_PX}px, ${STROKE_ON_DARK} ${STROKE_THICKNESS_PX}px 100%)`;
 const PAINT_SHADOW_CSS = `
 :host {
   position: absolute;
@@ -34,7 +27,7 @@ const PAINT_SHADOW_CSS = `
   overflow: visible;
   pointer-events: none;
   z-index: 2147483645;
-  filter: none !important;
+  color: inherit;
 }
 .underscore-paint-rect {
   position: absolute;
@@ -42,9 +35,8 @@ const PAINT_SHADOW_CSS = `
   box-sizing: border-box;
   border-radius: 0;
   height: ${STRIP_HEIGHT_PX}px;
-  background: ${DUAL_FILL} !important;
-  box-shadow: none !important;
-  filter: none !important;
+  background-color: currentColor;
+  box-shadow: none;
 }
 `;
 
@@ -201,7 +193,6 @@ export class RangeOverlayPainter implements HighlightPainter {
       root.setAttribute('aria-hidden', 'true');
       (document.documentElement || document.body).appendChild(root);
     }
-    root.setAttribute('data-darkreader-ignore', '');
     this.root = root;
     this.ensureLayer(root);
     return root;
@@ -220,8 +211,6 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (!this.layer.querySelector('style[data-underscore-paint]')) {
       const style = document.createElement('style');
       style.dataset['underscorePaint'] = '';
-      // Dark Reader's shouldManageStyle skips stylesheets with this class.
-      style.classList.add('darkreader');
       style.textContent = PAINT_SHADOW_CSS;
       this.layer.appendChild(style);
     }
@@ -244,6 +233,19 @@ export class RangeOverlayPainter implements HighlightPainter {
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
 
+    const parentEl =
+      range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? (range.startContainer as HTMLElement)
+        : range.startContainer.parentElement;
+    let textColor: string | undefined;
+    if (parentEl && typeof window.getComputedStyle === 'function') {
+      try {
+        textColor = window.getComputedStyle(parentEl).color;
+      } catch {
+        textColor = undefined;
+      }
+    }
+
     for (let i = 0; i < rects.length; i++) {
       const rect = rects[i];
       if (!rect || rect.width <= 0 || rect.height <= 0) continue;
@@ -251,8 +253,9 @@ export class RangeOverlayPainter implements HighlightPainter {
       const el = document.createElement('div');
       el.className = 'underscore-paint-rect';
       el.dataset['highlightId'] = id;
-      el.setAttribute('data-darkreader-ignore', '');
-      el.style.setProperty('background', DUAL_FILL, 'important');
+      if (textColor) {
+        el.style.color = textColor;
+      }
       el.style.left = `${rect.left + scrollX}px`;
       el.style.top = `${rect.top + scrollY + rect.height - 1 + UNDERLINE_OFFSET_PX}px`;
       el.style.width = `${rect.width}px`;
