@@ -409,13 +409,13 @@ body {
   color: inherit;
   box-decoration-break: clone;
   padding: 0;
-  /* Matches content paint: inset underline ~2.5px ink */
-  box-shadow: inset 0 -2.5px 0 var(--ink);
+  /* Matches content paint: inset underline ~2px ink */
+  box-shadow: inset 0 -2px 0 var(--ink);
   text-decoration: none;
 }
 
 .u-mark-accent {
-  box-shadow: inset 0 -2.5px 0 var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .settings-row {

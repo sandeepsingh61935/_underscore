@@ -2,7 +2,7 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = a 5px baseline strip (near-black + near-white).
+ * Underscore stroke = a 2px baseline strip (near-black + near-white).
  * Both stops are set as an inline background with !important so they beat
  * Dark Reader's `[data-darkreader-inline-bgimage]` override, which otherwise
  * rewrites both stops toward the dark page background. The strip lives in an
@@ -18,8 +18,9 @@ import { resolveColorRoleForPaint } from '@/content/styles/highlight-styles';
 import type { ColorRole } from '@/shared/schemas/highlight-schema';
 
 const ROOT_ID = 'underscore-paint-root';
-const STROKE_THICKNESS_PX = 2.5;
-const STRIP_HEIGHT_PX = 5;
+const STROKE_THICKNESS_PX = 1;
+const STRIP_HEIGHT_PX = 2;
+const UNDERLINE_OFFSET_PX = 2;
 const STROKE_ON_LIGHT = '#111111';
 const STROKE_ON_DARK = '#f5f5f5';
 const DUAL_FILL = `linear-gradient(to top, ${STROKE_ON_LIGHT} 0 ${STROKE_THICKNESS_PX}px, ${STROKE_ON_DARK} ${STROKE_THICKNESS_PX}px 100%)`;
@@ -253,7 +254,7 @@ export class RangeOverlayPainter implements HighlightPainter {
       el.setAttribute('data-darkreader-ignore', '');
       el.style.setProperty('background', DUAL_FILL, 'important');
       el.style.left = `${rect.left + scrollX}px`;
-      el.style.top = `${rect.top + scrollY + rect.height - STRIP_HEIGHT_PX}px`;
+      el.style.top = `${rect.top + scrollY + rect.height - 1 + UNDERLINE_OFFSET_PX}px`;
       el.style.width = `${rect.width}px`;
       el.style.height = `${STRIP_HEIGHT_PX}px`;
       layer.appendChild(el);
