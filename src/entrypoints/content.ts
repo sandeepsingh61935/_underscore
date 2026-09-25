@@ -20,6 +20,10 @@ import { HighlightRenderer } from '@/content/highlight-renderer';
 import type { ModeManager, BasicMode, ProMode, ProXaiMode } from '@/content/modes';
 import { MODE_NAMES } from '@/content/modes/mode-constants';
 import { SelectionDetector } from '@/content/selection-detector';
+import { ContentHighlightMetadataClient } from '@/content/services/content-highlight-metadata-client';
+import { ThemeDetector } from '@/content/services/theme-detector';
+import { planAnnotationBarOpen } from '@/content/ui/annotation-bar-target';
+import { SelectionAnnotationBar } from '@/content/ui/selection-annotation-bar';
 import { getHighlightsInRange } from '@/content/utils/get-highlights-in-range';
 import { serializeRange, deserializeRange } from '@/content/utils/range-converter';
 // import { isCloudModeEnabled } from '@/content/cloud-mode-init';
@@ -312,9 +316,23 @@ export default defineContentScript({
         );
       }
 
+      const metadataClient = new ContentHighlightMetadataClient(messageBus);
+      const themeDetector = new ThemeDetector();
+      const annotationBar = new SelectionAnnotationBar({
+        saveMetadata: (payload) => metadataClient.update(payload),
+        isDark: () => {
+          try {
+            return themeDetector.detect().isDark;
+          } catch {
+            return false;
+          }
+        },
+      });
+
       // ===== Orchestrate: Listen to selection events =====
       eventBus.on<SelectionCreatedEvent>(EventName.SELECTION_CREATED, async (event) => {
         logger.info('Selection detected, checking for overlaps');
+        annotationBar.close();
 
         try {
           // RANGE SUBTRACTION: Check if selection overlaps existing highlights
@@ -427,6 +445,20 @@ export default defineContentScript({
 
           await commandStack.execute(command);
 
+          const barId = planAnnotationBarOpen({
+            overlappingCount: overlappingHighlights.length,
+            createdId: command.getCreatedHighlightId(),
+          });
+          if (barId && event.selection.rangeCount > 0) {
+            const stored = repositoryFacade.get(barId);
+            annotationBar.open({
+              id: barId,
+              range: event.selection.getRangeAt(0),
+              note: typeof stored?.metadata?.notes === 'string' ? stored.metadata.notes : '',
+              tags: Array.isArray(stored?.metadata?.tags) ? stored.metadata.tags : [],
+            });
+          }
+
           const { scheduleDomainFaviconCapture } =
             await import('@/content/favicon/capture-domain-favicon');
           scheduleDomainFaviconCapture(getCapturePageUrl());
@@ -462,6 +494,9 @@ export default defineContentScript({
 
         if (outcome === 'deleted') {
           logger.info('Highlight removed via Ctrl+Click', { id: event.highlightId });
+          if (annotationBar.highlightId() === event.highlightId) {
+            annotationBar.close();
+          }
           broadcastCount();
         }
       });
@@ -479,6 +514,9 @@ export default defineContentScript({
             await modeManager.removeHighlight(hl.id);
 
             repositoryFacade.remove(hl.id);
+            if (annotationBar.highlightId() === hl.id) {
+              annotationBar.close();
+            }
 
             await storage.saveEvent({
               type: 'highlight.removed',
@@ -502,6 +540,10 @@ export default defineContentScript({
           e.preventDefault();
           if (commandStack.canUndo()) {
             await commandStack.undo();
+            const openId = annotationBar.highlightId();
+            if (openId && !modeManager.getHighlight(openId)) {
+              annotationBar.close();
+            }
             logger.info('Undo executed');
             broadcastCount();
           }
