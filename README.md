@@ -7,7 +7,7 @@ Browser extension (**Chrome** + **Firefox**, Manifest V3) and companion **web
 app**.
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.3-informational.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-0.1.4-informational.svg)](./package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](./package.json)
 [![Quality](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml/badge.svg)](https://github.com/sandeepsingh61935/_underscore/actions/workflows/quality.yml)
 
@@ -89,12 +89,12 @@ Open the app:
 Use **/install** for browser-specific sideload steps when distribution is
 manual.
 
-### Extension from zip (v0.1.3)
+### Extension from zip (v0.1.4)
 
 Prebuilt archives (also produced by `bun run zip:chrome` / `zip:firefox`):
 
-- [`public-web/downloads/underscore-highlighter-0.1.3-chrome.zip`](./public-web/downloads/underscore-highlighter-0.1.3-chrome.zip)
-- [`public-web/downloads/underscore-highlighter-0.1.3-firefox.zip`](./public-web/downloads/underscore-highlighter-0.1.3-firefox.zip)
+- [`public-web/downloads/underscore-highlighter-0.1.4-chrome.zip`](./public-web/downloads/underscore-highlighter-0.1.4-chrome.zip)
+- [`public-web/downloads/underscore-highlighter-0.1.4-firefox.zip`](./public-web/downloads/underscore-highlighter-0.1.4-firefox.zip)
 
 1. **Chrome / Chromium:** `chrome://extensions` → Developer mode → **Load
    unpacked** (unzip first) or install the packaged build as your browser
