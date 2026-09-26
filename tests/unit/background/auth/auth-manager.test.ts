@@ -505,4 +505,52 @@ describe('AuthManager Unit Tests', () => {
     authStateCallback('SIGNED_OUT', null);
     expect(spy).toHaveBeenCalledTimes(1); // Not called again
   });
+
+  /**
+   * Test 11: LOGOUT is recorded even without a known user (nullable user_id)
+   */
+  it('should log LOGOUT as anonymous when no user is known', async () => {
+    const auditLogger = { logAuthEvent: vi.fn().mockResolvedValue(undefined) };
+    const mgr = new AuthManager(
+      mockSupabase as unknown as SupabaseClient,
+      mockEventBus,
+      mockLogger,
+      auditLogger as any
+    );
+    await mgr.initialize();
+
+    await mgr.signOut();
+
+    expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+    expect(auditLogger.logAuthEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'LOGOUT', userId: 'anonymous' })
+    );
+  });
+
+  /**
+   * Test 12: manual refresh failure emits a TOKEN_REFRESH anomaly event
+   */
+  it('should log TOKEN_REFRESH on manual refresh failure', async () => {
+    const auditLogger = { logAuthEvent: vi.fn().mockResolvedValue(undefined) };
+    const mgr = new AuthManager(
+      mockSupabase as unknown as SupabaseClient,
+      mockEventBus,
+      mockLogger,
+      auditLogger as any
+    );
+    await mgr.initialize();
+
+    mockSupabase.auth.refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: new Error('Refresh failed'),
+    });
+
+    await expect(mgr.refreshToken()).rejects.toThrow('Refresh failed');
+    expect(auditLogger.logAuthEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'TOKEN_REFRESH',
+        metadata: { outcome: 'failed' },
+      })
+    );
+  });
 });

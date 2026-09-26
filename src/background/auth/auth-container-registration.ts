@@ -6,8 +6,14 @@
 
 import { AuditLogger } from './audit-logger';
 import { CSPValidator } from './csp-validator';
+import { ForwardingAuditLogger } from './forwarding-audit-logger';
 import type { IAuditLogger } from './interfaces/i-audit-logger';
+import {
+  resolveFunctionsBaseUrl,
+  ServerAuditSink,
+} from './server-audit-sink';
 
+import type { SupabaseConfig } from '@/background/api/supabase-client';
 import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 
@@ -21,7 +27,33 @@ import type { ILogger } from '@/shared/interfaces/i-logger';
 export function registerAuthComponents(container: Container): void {
   container.registerSingleton<IAuditLogger>('auditLogger', () => {
     const logger = container.resolve<ILogger>('logger');
-    return new AuditLogger(logger);
+    const local = new AuditLogger(logger);
+
+    // Server sink is best-effort: unconfigured Supabase or missing
+    // auth-audit table degrades to local-only logging (fail open).
+    try {
+      const config = container.resolve<SupabaseConfig>('supabaseConfig');
+      if (!config.url || !config.anonKey) {
+        return local;
+      }
+      const sink = new ServerAuditSink(
+        resolveFunctionsBaseUrl(config.url),
+        config.anonKey,
+        async () => {
+          try {
+            const sdk = container.resolve<{ auth: { getSession: () => Promise<{ data: { session: { access_token: string } | null } }> } }>('_supabaseSDK');
+            const { data } = await sdk.auth.getSession();
+            return data.session?.access_token ?? null;
+          } catch {
+            return null;
+          }
+        },
+        logger
+      );
+      return new ForwardingAuditLogger(local, sink);
+    } catch {
+      return local;
+    }
   });
 
   container.registerSingleton('cspValidator', () => {

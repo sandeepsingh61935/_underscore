@@ -132,7 +132,14 @@ export class AuthManager implements IAuthManager {
       }
 
       // Listen for Supabase auth state changes
-      this.supabase.auth.onAuthStateChange((_event, session) => {
+      this.supabase.auth.onAuthStateChange((event, session) => {
+        // Automatic refreshes are routine volume — local debug only, never
+        // forwarded to the server sink (failures surface via refreshToken()).
+        if (event === 'TOKEN_REFRESHED') {
+          this.logger.debug('Supabase token refreshed', {
+            userId: session?.user?.id,
+          });
+        }
         this.handleSupabaseAuthStateChange(session);
       });
 
@@ -385,12 +392,10 @@ export class AuthManager implements IAuthManager {
    * Sign out current user
    */
   async signOut(): Promise<void> {
-    const userId = this.currentState.user?.id;
+    const userId = this.currentState.user?.id ?? 'anonymous';
     this.logger.info('Sign out', { userId });
     await this.supabase.auth.signOut();
-    if (userId) {
-      await this.logAuthEvent('LOGOUT', userId);
-    }
+    await this.logAuthEvent('LOGOUT', userId);
     // State update handled by listener
   }
 
@@ -640,7 +645,15 @@ export class AuthManager implements IAuthManager {
    */
   async refreshToken(): Promise<void> {
     const { error } = await this.supabase.auth.refreshSession();
-    if (error) throw error;
+    if (error) {
+      await this.logAuthEvent(
+        'TOKEN_REFRESH',
+        this.currentState.user?.id ?? 'anonymous',
+        undefined,
+        { outcome: 'failed' }
+      );
+      throw error;
+    }
   }
 
   /**
@@ -864,16 +877,17 @@ export class AuthManager implements IAuthManager {
   }
 
   private async logAuthEvent(
-    action: 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED',
+    action: 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED' | 'TOKEN_REFRESH',
     userId: string,
-    provider?: string
+    provider?: string,
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     if (!this.auditLogger) {
       return;
     }
 
     try {
-      await this.auditLogger.logAuthEvent({ action, userId, provider });
+      await this.auditLogger.logAuthEvent({ action, userId, provider, metadata });
     } catch (error) {
       this.logger.error('Failed to write auth audit event', error as Error, {
         action,

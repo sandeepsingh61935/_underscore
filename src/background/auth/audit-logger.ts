@@ -183,7 +183,11 @@ export class AuditLogger implements IAuditLogger {
         }
       );
 
-      // TODO: Lock account or implement rate limiting
+      // Policy (deliberate, no hard lock): cool-down is enforced by the
+      // AuthManager rate limiters (5 attempts / 15 min per bucket) plus
+      // Supabase Auth server-side limits. This BRUTE_FORCE security event is
+      // forwarded to the server audit sink for alerting. No automatic account
+      // lock — see design decision log.
     }
   }
 
