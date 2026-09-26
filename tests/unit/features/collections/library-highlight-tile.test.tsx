@@ -65,8 +65,8 @@ describe('LibraryHighlightTile', () => {
         onToggleExpand={vi.fn()}
       />
     );
-    expect(screen.getByTestId('highlight-action-row').textContent).toContain('n1');
-    expect(screen.getByTestId('highlight-action-row').textContent).toContain('t1');
+    expect(screen.getByText('n1')).toBeInTheDocument();
+    expect(screen.getByText('t1')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Edit highlight text/i })
     ).toBeInTheDocument();
@@ -194,7 +194,8 @@ describe('LibraryHighlightTile', () => {
         onToggleExpand={vi.fn()}
       />
     );
-    expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add note' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add tags' })).toBeTruthy();
     expect(
       screen.getByRole('button', { name: /Edit highlight text/i })
     ).toBeInTheDocument();

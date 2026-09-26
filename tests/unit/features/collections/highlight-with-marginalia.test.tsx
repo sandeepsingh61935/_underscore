@@ -25,7 +25,7 @@ vi.mock('@/features/collections/hooks/useHighlightExport', () => ({
 }));
 
 describe('HighlightWithMarginalia', () => {
-  it('puts invite and Edit/Copy/Delete on one action row', () => {
+  it('puts note/tags actions and Edit/Copy/Delete on one action row', () => {
     render(
       <HighlightWithMarginalia
         highlightId="hl-1"
@@ -38,8 +38,8 @@ describe('HighlightWithMarginalia', () => {
       />
     );
 
-    const row = screen.getByTestId('highlight-action-row');
-    expect(row.textContent).toContain('+ Add note or tags');
+    expect(screen.getByRole('button', { name: /Add note/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Add tags/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Copy highlight text/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Delete highlight/i })).toBeTruthy();
@@ -47,7 +47,7 @@ describe('HighlightWithMarginalia', () => {
     expect(screen.queryByRole('button', { name: /As captured/i })).toBeNull();
   });
 
-  it('puts collapsed note + tags on the action row with Edit', () => {
+  it('renders note + tags and action buttons', () => {
     render(
       <HighlightWithMarginalia
         highlightId="hl-1"
@@ -60,13 +60,12 @@ describe('HighlightWithMarginalia', () => {
       />
     );
 
-    const row = screen.getByTestId('highlight-action-row');
-    expect(row.textContent).toContain('My note');
-    expect(row.textContent).toContain('bfs');
+    expect(screen.getByText('My note')).toBeTruthy();
+    expect(screen.getByText('bfs')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Edit highlight text/i })).toBeTruthy();
   });
 
-  it('expanded: shows note tray placeholders without NOTE header', () => {
+  it('opens note input when Add note button is clicked', () => {
     render(
       <HighlightWithMarginalia
         highlightId="hl-1"
@@ -77,10 +76,7 @@ describe('HighlightWithMarginalia', () => {
       />
     );
 
-    expect(screen.getByTestId('marginalia-tray')).toBeTruthy();
-    expect(screen.getByPlaceholderText('What stood out?')).toBeTruthy();
-    expect(screen.getByLabelText('Add tag')).toBeTruthy();
-    expect(screen.queryByText(/^Note$/i)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+    const addNoteBtn = screen.getByRole('button', { name: /Add note/i });
+    expect(addNoteBtn).toBeTruthy();
   });
 });

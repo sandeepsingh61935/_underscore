@@ -132,6 +132,7 @@ describe('SubDomainView basic mode boundaries', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: '+ Add note or tags' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add note' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add tags' })).toBeTruthy();
   });
 });
