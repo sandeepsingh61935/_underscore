@@ -1,6 +1,8 @@
 /**
- * Overlay paint host. Stroke fill lives in the paint shadow root so Dark Reader
- * cannot rewrite page-level box-shadow / background on the mark.
+ * Overlay paint host. Stroke fill lives in the paint shadow root.
+ * The stroke self-inverts via white + mix-blend-mode: difference, so no
+ * theme rules are needed here. Removed filter: none !important so Dark
+ * Reader and browser invert filters can naturally invert along with page.
  */
 
 #underscore-paint-root {
@@ -12,5 +14,5 @@
   overflow: visible;
   pointer-events: none;
   z-index: 2147483645;
-  filter: none !important;
+  color-scheme: light dark;
 }
