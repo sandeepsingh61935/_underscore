@@ -56,6 +56,7 @@ export interface DomainHighlightSummary {
 export interface DashboardData {
   totalHighlights: number;
   totalDomains: number;
+  pageCount: number;
   thisWeekCount: number;
   /** Highlights with activity since local midnight. */
   todayCount: number;
@@ -63,6 +64,8 @@ export interface DashboardData {
   withNotesCount: number;
   /** Highlights that have at least one tag. */
   withTagsCount: number;
+  /** Unique normalized tags count across library. */
+  tagCount: number;
   recentHighlights: DomainHighlightSummary[];
 }
 
@@ -251,6 +254,8 @@ export class HighlightQueryService {
     const highlights = await this.readable.findAll();
 
     const domainMap = new Map<string, number>();
+    const pageSet = new Set<string>();
+    const uniqueTags = new Set<string>();
     let thisWeekCount = 0;
     let todayCount = 0;
     let withNotesCount = 0;
@@ -268,6 +273,9 @@ export class HighlightQueryService {
 
       domainMap.set(domain, (domainMap.get(domain) || 0) + 1);
 
+      const path = getSectionPath(hl.url);
+      pageSet.add(`${domain}\0${path}`);
+
       const activity = highlightActivityMs(hl);
       if (activity >= oneWeekAgo) {
         thisWeekCount++;
@@ -281,13 +289,17 @@ export class HighlightQueryService {
       if ((hl.metadata?.tags ?? []).length > 0) {
         withTagsCount++;
       }
+      for (const raw of hl.metadata?.tags ?? []) {
+        const key = raw.trim().toLowerCase();
+        if (key) uniqueTags.add(key);
+      }
 
       try {
         recentHighlights.push({
           id: hl.id,
           text: hl.text,
           url: hl.url ?? '',
-          path: getSectionPath(hl.url),
+          path,
           domain,
           createdAt: hl.createdAt,
           updatedAt: hl.updatedAt,
@@ -308,10 +320,12 @@ export class HighlightQueryService {
     return {
       totalHighlights: highlights.length,
       totalDomains: domainMap.size,
+      pageCount: pageSet.size,
       thisWeekCount,
       todayCount,
       withNotesCount,
       withTagsCount,
+      tagCount: uniqueTags.size,
       recentHighlights: topRecent,
     };
   }
