@@ -1,12 +1,21 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { usePersistedMode } from '@/ui-system/hooks/usePersistedMode';
 import { useBillingContextOptional } from '@/features/billing/BillingProvider';
 import { freeEntitlement } from '@/shared/billing';
+
+function renderSettings(props: React.ComponentProps<typeof SettingsPage> = {}) {
+  return render(
+    <MemoryRouter>
+      <SettingsPage {...props} />
+    </MemoryRouter>
+  );
+}
 
 vi.mock('@/core/context/AppProvider', () => ({
   useApp: vi.fn(),
@@ -137,7 +146,7 @@ describe('SettingsPage IA lock', () => {
   });
 
   it('guest: local card, no Mode, no Billing, Keyboard entry', () => {
-    render(<SettingsPage onSignIn={vi.fn()} />);
+    renderSettings({ onSignIn: vi.fn() });
     expect(screen.getByTestId('settings-guest-card')).toBeTruthy();
     expect(screen.queryByTestId('settings-mode-seg')).toBeNull();
     expect(screen.queryByTestId('settings-section-billing')).toBeNull();
@@ -147,7 +156,7 @@ describe('SettingsPage IA lock', () => {
   });
 
   it('Keyboard row opens dedicated shortcuts page with back', () => {
-    render(<SettingsPage />);
+    renderSettings();
     fireEvent.click(screen.getByTestId('settings-open-keyboard'));
     expect(screen.getByTestId('settings-keyboard-page')).toBeTruthy();
     expect(screen.getByTestId('settings-shortcuts-table')).toBeTruthy();
@@ -168,7 +177,7 @@ describe('SettingsPage IA lock', () => {
       isAuthenticated: true,
     });
     mockBilling(false);
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByTestId('settings-section-account')).toBeTruthy();
     expect(screen.getByText('Synced')).toBeTruthy();
     expect(screen.queryByTestId('settings-mode-seg')).toBeNull();
@@ -177,12 +186,41 @@ describe('SettingsPage IA lock', () => {
   });
 
   it('shows Integrations section', () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByTestId('settings-section-integrations')).toBeTruthy();
   });
 
   it('legal footer present', () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByTestId('settings-legal-footer')).toBeTruthy();
   });
+
+  it('opens Privacy Policy and goes back', () => {
+    renderSettings();
+    fireEvent.click(screen.getByTestId('settings-legal-privacy'));
+    expect(screen.getByTestId('settings-legal-page')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Privacy Policy' })).toBeTruthy();
+    fireEvent.click(screen.getByTestId('settings-legal-back'));
+    expect(screen.queryByTestId('settings-legal-page')).toBeNull();
+    expect(screen.getByTestId('settings-legal-footer')).toBeTruthy();
+  });
+
+  it('opens Terms of Service and goes back', () => {
+    renderSettings();
+    fireEvent.click(screen.getByTestId('settings-legal-terms'));
+    expect(screen.getByTestId('settings-legal-page')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Terms of Service' })).toBeTruthy();
+    fireEvent.click(screen.getByTestId('settings-legal-back'));
+    expect(screen.queryByTestId('settings-legal-page')).toBeNull();
+  });
+
+  it('opens Help and goes back', () => {
+    renderSettings();
+    fireEvent.click(screen.getByTestId('settings-legal-help'));
+    expect(screen.getByTestId('settings-legal-page')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Help' })).toBeTruthy();
+    fireEvent.click(screen.getByTestId('settings-legal-back'));
+    expect(screen.queryByTestId('settings-legal-page')).toBeNull();
+  });
 });
+
