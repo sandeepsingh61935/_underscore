@@ -63,7 +63,6 @@ function normalizeTagInput(raw: string): string {
   return raw.trim().replace(/^#+/, '').replace(/\s+/g, '-');
 }
 
-
 export function WebHighlightCard({
   highlight: h,
   showDomain = true,
@@ -328,9 +327,7 @@ export function WebHighlightCard({
 
   const isRail = density === 'rail';
   const pageUrl = pageHrefForLibrary(h.domain, h.path);
-  const sourceHref = pageUrl
-    ? buildTextFragmentUrl(pageUrl, { exact: h.quote })
-    : null;
+  const sourceHref = pageUrl ? buildTextFragmentUrl(pageUrl, { exact: h.quote }) : null;
   const hasNote = Boolean(note);
   const canTag = Boolean(canEdit && onTagsChange);
   const canNote = Boolean(canEdit && onNoteSave);

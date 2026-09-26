@@ -39,9 +39,7 @@ export function useExtensionNoticeChrome(): {
 
   if (view.surface === 'strip') {
     return {
-      strip: (
-        <ExtensionSetupStrip view={view} from={from} onDismiss={onDismiss} />
-      ),
+      strip: <ExtensionSetupStrip view={view} from={from} onDismiss={onDismiss} />,
       remnant: null,
     };
   }

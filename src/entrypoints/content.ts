@@ -437,7 +437,8 @@ export default defineContentScript({
             annotationBar.open({
               id: barId,
               range: event.selection.getRangeAt(0),
-              note: typeof stored?.metadata?.notes === 'string' ? stored.metadata.notes : '',
+              note:
+                typeof stored?.metadata?.notes === 'string' ? stored.metadata.notes : '',
               tags: Array.isArray(stored?.metadata?.tags) ? stored.metadata.tags : [],
               // Same on-the-spot Delete as the click pill: a fresh highlight can
               // be removed without clicking the underscore again. Omitted when
@@ -841,9 +842,9 @@ export default defineContentScript({
             const selection = window.getSelection();
             const hasSelection = Boolean(
               selection &&
-                !selection.isCollapsed &&
-                selection.rangeCount > 0 &&
-                selection.toString().trim().length > 0
+              !selection.isCollapsed &&
+              selection.rangeCount > 0 &&
+              selection.toString().trim().length > 0
             );
             sendResponse({
               success: true,
@@ -859,9 +860,9 @@ export default defineContentScript({
             const selection = window.getSelection();
             const hasSelection = Boolean(
               selection &&
-                !selection.isCollapsed &&
-                selection.rangeCount > 0 &&
-                selection.toString().trim().length > 0
+              !selection.isCollapsed &&
+              selection.rangeCount > 0 &&
+              selection.toString().trim().length > 0
             );
             sendResponse({
               success: true,

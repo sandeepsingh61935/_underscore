@@ -9,7 +9,10 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { RangeOverlayPainter, sampleTextColorNearRange } from '@/content/paint/range-overlay-painter';
+import {
+  RangeOverlayPainter,
+  sampleTextColorNearRange,
+} from '@/content/paint/range-overlay-painter';
 
 function stubRect(left: number, top: number, width: number, height: number): DOMRect {
   return {
@@ -124,7 +127,9 @@ describe('RangeOverlayPainter', () => {
     stubClientRects(range, [stubRect(10, 20, 40, 14)]);
     painter.paint('hl-toggle', [range], 'yellow');
 
-    let rect = paintScope().querySelector('[data-highlight-id="hl-toggle"]') as HTMLElement;
+    let rect = paintScope().querySelector(
+      '[data-highlight-id="hl-toggle"]'
+    ) as HTMLElement;
     expect(rect.style.backgroundColor).toBe('rgb(232, 230, 227)');
 
     // Theme toggled back to light: text color changes, relayout re-samples.
@@ -156,7 +161,9 @@ describe('RangeOverlayPainter', () => {
       });
     });
 
-    const rect = paintScope().querySelector('[data-highlight-id="hl-resize"]') as HTMLElement;
+    const rect = paintScope().querySelector(
+      '[data-highlight-id="hl-resize"]'
+    ) as HTMLElement;
     expect(rect).toBeTruthy();
     expect(rect.style.width).toBe('50px');
   });

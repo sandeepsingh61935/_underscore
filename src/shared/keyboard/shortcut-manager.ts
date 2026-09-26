@@ -107,7 +107,10 @@ export class ShortcutManager {
             try {
               void handler(event);
             } catch (err) {
-              this.logger.error(`Error executing shortcut handler for ${id}`, err as Error);
+              this.logger.error(
+                `Error executing shortcut handler for ${id}`,
+                err as Error
+              );
             }
           }
           return;
@@ -126,7 +129,10 @@ export class ShortcutManager {
             try {
               void handler(event);
             } catch (err) {
-              this.logger.error(`Error executing secondary shortcut handler for ${id}`, err as Error);
+              this.logger.error(
+                `Error executing secondary shortcut handler for ${id}`,
+                err as Error
+              );
             }
           }
           return;

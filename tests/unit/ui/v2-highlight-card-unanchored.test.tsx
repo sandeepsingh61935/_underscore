@@ -5,12 +5,7 @@ import { HighlightCard } from '@/ui-system/components/primitives/HighlightCard';
 
 describe('HighlightCard unanchored recovery UI', () => {
   it('does not render unanchored pill or re-anchor button when isUnanchored is false or omitted', () => {
-    render(
-      <HighlightCard
-        quote="Test quote"
-        domain="example.com"
-      />
-    );
+    render(<HighlightCard quote="Test quote" domain="example.com" />);
 
     expect(screen.queryByText(/Unanchored/i)).toBeNull();
     expect(screen.queryByRole('button', { name: /Re-anchor to selection/i })).toBeNull();

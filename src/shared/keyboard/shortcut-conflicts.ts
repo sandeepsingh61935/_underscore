@@ -14,7 +14,12 @@ export interface ValidationResult {
   conflict?: ShortcutConflict;
 }
 
-const BROWSER_RESERVED_KEYS: Array<{ key: string; ctrlOrMeta?: boolean; shift?: boolean; alt?: boolean }> = [
+const BROWSER_RESERVED_KEYS: Array<{
+  key: string;
+  ctrlOrMeta?: boolean;
+  shift?: boolean;
+  alt?: boolean;
+}> = [
   { key: 'w', ctrlOrMeta: true }, // Close tab
   { key: 't', ctrlOrMeta: true }, // New tab
   { key: 't', ctrlOrMeta: true, shift: true }, // Reopen tab
@@ -74,7 +79,8 @@ export function validateChord(
   if (!chord.ctrlOrMeta && !chord.alt) {
     return {
       valid: false,
-      error: 'Shortcut must include a modifier (Ctrl, ⌘, or Alt) to avoid blocking typing',
+      error:
+        'Shortcut must include a modifier (Ctrl, ⌘, or Alt) to avoid blocking typing',
     };
   }
 

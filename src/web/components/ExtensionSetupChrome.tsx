@@ -16,12 +16,7 @@ export function ExtensionSetupStrip({
   const { copy, variant } = view;
   const installState: InstallContinueState = { from };
   return (
-    <div
-      className="ext-notice"
-      data-od-id="ext-notice"
-      data-kind={variant}
-      role="status"
-    >
+    <div className="ext-notice" data-od-id="ext-notice" data-kind={variant} role="status">
       <p className="ext-notice__body">{copy.body}</p>
       <div className="ext-notice__actions">
         {copy.installHref && copy.installLabel ? (

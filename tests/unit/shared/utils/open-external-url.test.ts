@@ -35,7 +35,11 @@ describe('openExternalUrl', () => {
     };
 
     openExternalUrl('https://example.com/web');
-    expect(openMock).toHaveBeenCalledWith('https://example.com/web', '_blank', 'noopener,noreferrer');
+    expect(openMock).toHaveBeenCalledWith(
+      'https://example.com/web',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 
   it('ignores empty or whitespace URLs', () => {

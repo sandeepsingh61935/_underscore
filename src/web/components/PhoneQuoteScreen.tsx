@@ -19,7 +19,12 @@ export function PhoneQuoteScreen({
   clientKind?: WebClientKind;
   relatedPages?: RelatedPageResult[];
   relatedLabel?: string;
-  onOpenRelatedPage?: (domain: string, section: string, rank: number, reason: string) => void;
+  onOpenRelatedPage?: (
+    domain: string,
+    section: string,
+    rank: number,
+    reason: string
+  ) => void;
 }): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const href = phoneHighlightHref(highlight);

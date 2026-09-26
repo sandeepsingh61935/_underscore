@@ -116,8 +116,7 @@ function ThisPageLine({
   unanchoredCount?: number;
 }): React.ReactElement {
   const empty = !domain;
-  const unanchoredSuffix =
-    unanchoredCount > 0 ? ` (${unanchoredCount} unanchored)` : '';
+  const unanchoredSuffix = unanchoredCount > 0 ? ` (${unanchoredCount} unanchored)` : '';
   const label = empty
     ? 'This page · none open'
     : `This page · ${domain}${path !== '/' ? path : ''} · ${count}${unanchoredSuffix}`;

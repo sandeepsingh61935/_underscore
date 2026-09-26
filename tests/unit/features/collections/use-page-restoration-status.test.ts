@@ -20,42 +20,46 @@ describe('usePageRestorationStatus', () => {
         query: vi.fn().mockImplementation((_query, callback) => {
           callback([{ id: 123, url: 'https://example.com/article' }]);
         }),
-        sendMessage: vi.fn().mockImplementation((_tabId: unknown, _message: any, _callback?: any): Promise<any> => {
-          const message = _message;
-          const callback = _callback;
-          if (message.type === GET_RESTORATION_STATUS) {
-            const res = {
-              success: true,
-              data: {
-                url: 'https://example.com/article',
-                anchoredCount: 1,
-                unanchoredIds: ['hl-orphan-1'],
-                hasSelection: true,
-              },
-            };
-            if (callback) callback(res);
-            return Promise.resolve(res);
-          }
-          if (message.type === CHECK_PAGE_SELECTION) {
-            const res = {
-              success: true,
-              data: { hasSelection: true },
-            };
-            if (callback) callback(res);
-            return Promise.resolve(res);
-          }
-          if (message.type === REANCHOR_HIGHLIGHT) {
-            const res = {
-              success: true,
-              data: { highlightId: message.payload.highlightId },
-            };
-            if (callback) callback(res);
-            return Promise.resolve(res);
-          }
-          const defaultRes = { success: true };
-          if (callback) callback(defaultRes);
-          return Promise.resolve(defaultRes);
-        }),
+        sendMessage: vi
+          .fn()
+          .mockImplementation(
+            (_tabId: unknown, _message: any, _callback?: any): Promise<any> => {
+              const message = _message;
+              const callback = _callback;
+              if (message.type === GET_RESTORATION_STATUS) {
+                const res = {
+                  success: true,
+                  data: {
+                    url: 'https://example.com/article',
+                    anchoredCount: 1,
+                    unanchoredIds: ['hl-orphan-1'],
+                    hasSelection: true,
+                  },
+                };
+                if (callback) callback(res);
+                return Promise.resolve(res);
+              }
+              if (message.type === CHECK_PAGE_SELECTION) {
+                const res = {
+                  success: true,
+                  data: { hasSelection: true },
+                };
+                if (callback) callback(res);
+                return Promise.resolve(res);
+              }
+              if (message.type === REANCHOR_HIGHLIGHT) {
+                const res = {
+                  success: true,
+                  data: { highlightId: message.payload.highlightId },
+                };
+                if (callback) callback(res);
+                return Promise.resolve(res);
+              }
+              const defaultRes = { success: true };
+              if (callback) callback(defaultRes);
+              return Promise.resolve(defaultRes);
+            }
+          ),
       },
       runtime: {
         onMessage: {

@@ -30,9 +30,9 @@ describe('shortcut-chord', () => {
   });
 
   it('checks chord equality', () => {
-    expect(areChordsEqual({ key: 'u', ctrlOrMeta: true }, { key: 'U', ctrlOrMeta: true })).toBe(
-      true
-    );
+    expect(
+      areChordsEqual({ key: 'u', ctrlOrMeta: true }, { key: 'U', ctrlOrMeta: true })
+    ).toBe(true);
     expect(
       areChordsEqual(
         { key: 'u', ctrlOrMeta: true, shift: true },
@@ -138,7 +138,11 @@ describe('shortcut-conflicts', () => {
       undo: { key: 'z', ctrlOrMeta: true },
     };
 
-    const conflict = detectActionConflict('undo', { key: 'u', ctrlOrMeta: true }, current);
+    const conflict = detectActionConflict(
+      'undo',
+      { key: 'u', ctrlOrMeta: true },
+      current
+    );
     expect(conflict?.conflictingId).toBe('highlight');
   });
 
@@ -163,7 +167,8 @@ describe('shortcut-conflicts', () => {
 
     // Valid
     expect(
-      validateChord('clear-page', { key: 'k', ctrlOrMeta: true, alt: true }, current).valid
+      validateChord('clear-page', { key: 'k', ctrlOrMeta: true, alt: true }, current)
+        .valid
     ).toBe(true);
   });
 });

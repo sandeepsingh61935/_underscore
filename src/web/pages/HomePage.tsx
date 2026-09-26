@@ -268,7 +268,13 @@ export function HomePage(): React.ReactElement {
       return (
         <div className="phone-home" data-od-id="phone-home-error">
           <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
-          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={() => {
+              void lib.refresh();
+            }}
+          >
             Retry
           </button>
         </div>
@@ -311,9 +317,7 @@ export function HomePage(): React.ReactElement {
               }
             : null
         }
-        onOpenCurrentPage={
-          cp ? () => openLibraryPage(cp.domain, cp.path) : undefined
-        }
+        onOpenCurrentPage={cp ? () => openLibraryPage(cp.domain, cp.path) : undefined}
         onOpenHighlight={(id, domain) => {
           const h = lib.highlights.find((hl) => hl.id === id);
           void navigate(

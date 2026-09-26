@@ -37,7 +37,9 @@ export function PhoneRelatedPages({
         <div className="phone-related-list" data-od-id="phone-related-list">
           {pages.map((page, rank) => {
             const count =
-              page.highlightCount === 1 ? '1 highlight' : `${page.highlightCount} highlights`;
+              page.highlightCount === 1
+                ? '1 highlight'
+                : `${page.highlightCount} highlights`;
             const sectionLabel = displaySectionPath(page.section);
             return (
               <button
@@ -47,7 +49,11 @@ export function PhoneRelatedPages({
                 aria-label={`${page.domain}, ${sectionLabel}, ${count}`}
                 onClick={() => onOpen(page.domain, page.section, rank, page.reason)}
               >
-                <DomainFavicon domain={page.domain} className="phone-related-ico" size={16} />
+                <DomainFavicon
+                  domain={page.domain}
+                  className="phone-related-ico"
+                  size={16}
+                />
                 <div className="phone-related-info">
                   <div className="phone-related-host-line">
                     <span className="phone-related-host">{page.domain}</span>
@@ -67,12 +73,18 @@ export function PhoneRelatedPages({
   }
 
   return (
-    <section className="phone-related" data-od-id="phone-related-pages" aria-label="Related pages">
+    <section
+      className="phone-related"
+      data-od-id="phone-related-pages"
+      aria-label="Related pages"
+    >
       <p className="phone-kicker">{label}</p>
       <div className="phone-related-rail">
         {pages.map((page, rank) => {
           const count =
-            page.highlightCount === 1 ? '1 highlight' : `${page.highlightCount} highlights`;
+            page.highlightCount === 1
+              ? '1 highlight'
+              : `${page.highlightCount} highlights`;
           return (
             <button
               key={`${page.domain}${page.section}`}

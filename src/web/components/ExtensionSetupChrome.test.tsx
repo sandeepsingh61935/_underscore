@@ -6,10 +6,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DEFAULT_EXTENSION_NOTICE_PREFS } from '@/web/lib/extension-notice-prefs';
 import { resolveExtensionNotice } from '@/web/lib/resolve-extension-notice';
 
-import {
-  ExtensionSetupRemnant,
-  ExtensionSetupStrip,
-} from './ExtensionSetupChrome';
+import { ExtensionSetupRemnant, ExtensionSetupStrip } from './ExtensionSetupChrome';
 
 function wrap(ui: React.ReactElement, initial = '/home') {
   return render(
@@ -60,17 +57,11 @@ describe('ExtensionSetupChrome', () => {
     });
     expect(view.surface).toBe('strip');
     if (view.surface !== 'strip') return;
-    wrap(
-      <ExtensionSetupStrip
-        view={view}
-        from="/library"
-        onDismiss={() => undefined}
-      />
-    );
+    wrap(<ExtensionSetupStrip view={view} from="/library" onDismiss={() => undefined} />);
     expect(document.querySelector('[data-od-id="ext-notice-signin"]')).toBeTruthy();
-    expect(
-      document.querySelector('[data-od-id="ext-notice"]')?.textContent
-    ).toMatch(/or sign in/i);
+    expect(document.querySelector('[data-od-id="ext-notice"]')?.textContent).toMatch(
+      /or sign in/i
+    );
   });
 
   it('remnant links to /install with accessible name', () => {

@@ -27,7 +27,9 @@ function extractBoundaryChunk(str: string, length: number, fromEnd: boolean): st
   } else {
     const slice = str.slice(-length);
     const firstSpace = slice.indexOf(' ');
-    return (firstSpace !== -1 && firstSpace < length - 15 ? slice.slice(firstSpace + 1) : slice).trim();
+    return (
+      firstSpace !== -1 && firstSpace < length - 15 ? slice.slice(firstSpace + 1) : slice
+    ).trim();
   }
 }
 

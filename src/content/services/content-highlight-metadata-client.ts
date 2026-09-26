@@ -36,11 +36,14 @@ export class ContentHighlightMetadataClient {
     notes?: string;
     tags?: string[];
   }): Promise<{ ok: true } | { ok: false; error: string }> {
-    const response = await this.messageBus.send<MessageResponse<undefined>>('background', {
-      type: UPDATE_HIGHLIGHT_METADATA,
-      payload,
-      timestamp: Date.now(),
-    });
+    const response = await this.messageBus.send<MessageResponse<undefined>>(
+      'background',
+      {
+        type: UPDATE_HIGHLIGHT_METADATA,
+        payload,
+        timestamp: Date.now(),
+      }
+    );
     if (!response?.success) {
       const field = payload.tags !== undefined ? 'tags' : 'notes';
       return { ok: false, error: annotationSaveError(field, response?.error) };

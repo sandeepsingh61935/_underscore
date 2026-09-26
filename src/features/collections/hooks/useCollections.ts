@@ -31,7 +31,10 @@ function readCachedCollections(key: string): DomainCollection[] | null {
 function writeCachedCollections(key: string, data: DomainCollection[]): void {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(`${COLLECTIONS_CACHE_PREFIX}${key}`, JSON.stringify(data));
+      window.localStorage.setItem(
+        `${COLLECTIONS_CACHE_PREFIX}${key}`,
+        JSON.stringify(data)
+      );
     }
   } catch {
     // ignore

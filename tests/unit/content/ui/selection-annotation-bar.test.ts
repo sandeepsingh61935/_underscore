@@ -85,7 +85,9 @@ describe('SelectionAnnotationBar shell', () => {
     const input = root.querySelector('input') as HTMLInputElement;
     expect(input.getAttribute('aria-label')).toBe('Tags');
     expect(input.placeholder).toContain('#word');
-    expect(root.textContent).toContain('A #word is a tag. Write #one #two to add several.');
+    expect(root.textContent).toContain(
+      'A #word is a tag. Write #one #two to add several.'
+    );
     expect(input.value).toBe('#css');
 
     input.value = '#draft';
@@ -114,7 +116,9 @@ describe('SelectionAnnotationBar shell', () => {
     (root.querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
     (root.querySelector('[aria-label="Add notes"]') as HTMLButtonElement).click();
     root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
-    expect((root.querySelector('textarea') as HTMLTextAreaElement).value).toBe('saved note');
+    expect((root.querySelector('textarea') as HTMLTextAreaElement).value).toBe(
+      'saved note'
+    );
   });
 
   it('Esc from a box returns to the actions, and Esc on the actions closes', () => {
@@ -127,9 +131,13 @@ describe('SelectionAnnotationBar shell', () => {
     });
     const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
     (root.querySelector('[aria-label="Add tags"]') as HTMLButtonElement).click();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
     expect(ui.mode()).toBe('actions');
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
     expect(ui.isOpen()).toBe(false);
     expect(document.querySelector('[data-annotation-bar]')).toBeNull();
   });
@@ -172,9 +180,9 @@ describe('SelectionAnnotationBar shell', () => {
       note: '',
       tags: [],
     });
-    expect(document.querySelector('[data-annotation-bar]')?.getAttribute('data-dark')).toBe(
-      'true'
-    );
+    expect(
+      document.querySelector('[data-annotation-bar]')?.getAttribute('data-dark')
+    ).toBe('true');
     ui.close();
   });
 
@@ -200,7 +208,9 @@ describe('SelectionAnnotationBar shell', () => {
     const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
     const actions = [...root.querySelectorAll('button')].map((b) => b.textContent);
     expect(actions).toEqual(['Add tags', 'Add notes', 'Delete']);
-    expect(root.querySelector('[aria-label="Delete"]')?.classList.contains('danger')).toBe(true);
+    expect(
+      root.querySelector('[aria-label="Delete"]')?.classList.contains('danger')
+    ).toBe(true);
     ui.close();
   });
 
@@ -331,7 +341,9 @@ describe('SelectionAnnotationBar save', () => {
     again.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })
     );
-    await vi.waitFor(() => expect(saveMetadata).toHaveBeenCalledWith({ id: 'hl-1', notes: '' }));
+    await vi.waitFor(() =>
+      expect(saveMetadata).toHaveBeenCalledWith({ id: 'hl-1', notes: '' })
+    );
   });
 
   it('keeps the box open and shows the error when save fails', async () => {
@@ -345,10 +357,14 @@ describe('SelectionAnnotationBar save', () => {
     (root.querySelector('textarea') as HTMLTextAreaElement).value = 'x';
     (root.querySelector('[aria-label="Save"]') as HTMLButtonElement).click();
     await vi.waitFor(() => {
-      expect(root.querySelector('[role="alert"]')?.textContent).toBe("Couldn't save. Try again.");
+      expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+        "Couldn't save. Try again."
+      );
     });
     expect(ui.mode()).toBe('notes');
-    expect((root.querySelector('[aria-label="Save"]') as HTMLButtonElement).disabled).toBe(false);
+    expect(
+      (root.querySelector('[aria-label="Save"]') as HTMLButtonElement).disabled
+    ).toBe(false);
   });
 
   it('ignores a second click while saving', async () => {
@@ -373,4 +389,3 @@ describe('SelectionAnnotationBar save', () => {
     await vi.waitFor(() => expect(ui.mode()).toBe('actions'));
   });
 });
-

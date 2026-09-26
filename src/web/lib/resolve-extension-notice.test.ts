@@ -11,12 +11,8 @@ const base = {
 
 describe('resolveExtensionNotice', () => {
   it('shows nothing while presence is unknown or unset', () => {
-    expect(
-      resolveExtensionNotice({ ...base, presence: null }).surface
-    ).toBe('none');
-    expect(
-      resolveExtensionNotice({ ...base, presence: 'unknown' }).surface
-    ).toBe('none');
+    expect(resolveExtensionNotice({ ...base, presence: null }).surface).toBe('none');
+    expect(resolveExtensionNotice({ ...base, presence: 'unknown' }).surface).toBe('none');
   });
 
   it('desktop missing → strip, or remnant when collapsed', () => {
@@ -51,9 +47,7 @@ describe('resolveExtensionNotice', () => {
   });
 
   it('guest + installed → sign-in line, unless dismissed', () => {
-    expect(
-      resolveExtensionNotice({ ...base, presence: 'installed' })
-    ).toMatchObject({
+    expect(resolveExtensionNotice({ ...base, presence: 'installed' })).toMatchObject({
       surface: 'strip',
       variant: 'guest-signin',
       dismissKey: 'guestSigninDismissed',

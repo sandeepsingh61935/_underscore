@@ -33,7 +33,13 @@ function buildNormalizedWithMap(raw: string): {
   let wsStart = -1;
   for (let i = 0; i < intermediate.length; i++) {
     const ch = intermediate[i]!;
-    const isWs = ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v';
+    const isWs =
+      ch === ' ' ||
+      ch === '\t' ||
+      ch === '\n' ||
+      ch === '\r' ||
+      ch === '\f' ||
+      ch === '\v';
     if (isWs) {
       if (!inWs) {
         wsStart = i;
@@ -124,8 +130,7 @@ export class TextQuoteFinder {
     while ((searchIndex = normRaw.indexOf(normExact, searchIndex)) !== -1) {
       const rawStart = normToRaw[searchIndex]!;
       const endNormIdx = searchIndex + normExact.length;
-      const rawEnd =
-        endNormIdx < normToRaw.length ? normToRaw[endNormIdx]! : raw.length;
+      const rawEnd = endNormIdx < normToRaw.length ? normToRaw[endNormIdx]! : raw.length;
       const start = this.mapTextIndexToNode(textNodes, rawStart);
       const end = this.mapTextIndexToNode(textNodes, rawEnd);
       if (start && end) {

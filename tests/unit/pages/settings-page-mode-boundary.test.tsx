@@ -223,4 +223,3 @@ describe('SettingsPage IA lock', () => {
     expect(screen.queryByTestId('settings-legal-page')).toBeNull();
   });
 });
-

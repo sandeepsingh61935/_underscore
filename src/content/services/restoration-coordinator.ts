@@ -28,10 +28,7 @@ export interface RestorationCoordinatorDeps {
   renderAndRegister?: (
     highlight: HighlightDataV2 & { liveRanges?: Range[] }
   ) => Promise<void>;
-  onUpdateHighlight?: (
-    id: string,
-    updates: Partial<HighlightDataV2>
-  ) => Promise<void>;
+  onUpdateHighlight?: (id: string, updates: Partial<HighlightDataV2>) => Promise<void>;
   url?: string;
 }
 
@@ -76,7 +73,8 @@ export class RestorationCoordinator {
       try {
         const legacyData = highlight as unknown as Record<string, unknown>;
         const serializedRanges: SerializedRange[] =
-          highlight.ranges || (legacyData['range'] ? [legacyData['range'] as SerializedRange] : []);
+          highlight.ranges ||
+          (legacyData['range'] ? [legacyData['range'] as SerializedRange] : []);
 
         if (serializedRanges.length === 0) {
           this.logger.warn('[RestorationCoordinator] No ranges found for highlight', {
@@ -96,7 +94,8 @@ export class RestorationCoordinator {
           } catch (rangeError) {
             this.logger.warn('[RestorationCoordinator] Range deserialization failed', {
               id: highlight.id,
-              error: rangeError instanceof Error ? rangeError.message : String(rangeError),
+              error:
+                rangeError instanceof Error ? rangeError.message : String(rangeError),
             });
           }
         }
@@ -119,9 +118,13 @@ export class RestorationCoordinator {
 
         this.anchoredIds.add(highlight.id);
       } catch (error) {
-        this.logger.error('[RestorationCoordinator] Error evaluating highlight', error as Error, {
-          id: highlight.id,
-        });
+        this.logger.error(
+          '[RestorationCoordinator] Error evaluating highlight',
+          error as Error,
+          {
+            id: highlight.id,
+          }
+        );
         this.unanchoredIds.add(highlight.id);
       }
     }
@@ -201,4 +204,3 @@ export class RestorationCoordinator {
     return updatedHighlight;
   }
 }
-

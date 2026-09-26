@@ -63,7 +63,12 @@ export type PhoneLibraryProps = {
   onDeleteHighlights?: (ids: string[]) => Promise<boolean>;
   relatedPages?: RelatedPageResult[];
   relatedLabel?: string;
-  onOpenRelatedPage?: (domain: string, section: string, rank: number, reason: string) => void;
+  onOpenRelatedPage?: (
+    domain: string,
+    section: string,
+    rank: number,
+    reason: string
+  ) => void;
 };
 
 type DomainGroup = {
@@ -93,7 +98,8 @@ function pagesInDomain(highlights: WebHighlight[], keepOrder = false): PageGroup
   const pages = [...map.values()];
   if (keepOrder) return pages;
   return pages.sort(
-    (a, b) => b.lastActive - a.lastActive || b.count - a.count || a.path.localeCompare(b.path)
+    (a, b) =>
+      b.lastActive - a.lastActive || b.count - a.count || a.path.localeCompare(b.path)
   );
 }
 
@@ -202,7 +208,12 @@ export function PhoneLibrary({
   ) : null;
   const sortControl =
     onSortChange && sort ? (
-      <LibrarySortControl value={sort} onChange={onSortChange} variant="text" align="right" />
+      <LibrarySortControl
+        value={sort}
+        onChange={onSortChange}
+        variant="text"
+        align="right"
+      />
     ) : null;
 
   // Quote screen mode
@@ -229,16 +240,27 @@ export function PhoneLibrary({
       : [...matched].sort((a, b) => b.savedAt - a.savedAt);
     const pages = pagesInDomain(domainHighlights, Boolean(sort));
     const domainCopy = deleteDomainCopy(domain, domainHighlights.length);
-    const exportRow = canExport && onExport ? (
-      <>
-        <button type="button" className="phone-export-btn" aria-label="Export Markdown" onClick={() => onExport('md')}>
-          <span>MD</span>
-        </button>
-        <button type="button" className="phone-export-btn" aria-label="Export spreadsheet" onClick={() => onExport('xlsx')}>
-          <span>XLSX</span>
-        </button>
-      </>
-    ) : null;
+    const exportRow =
+      canExport && onExport ? (
+        <>
+          <button
+            type="button"
+            className="phone-export-btn"
+            aria-label="Export Markdown"
+            onClick={() => onExport('md')}
+          >
+            <span>MD</span>
+          </button>
+          <button
+            type="button"
+            className="phone-export-btn"
+            aria-label="Export spreadsheet"
+            onClick={() => onExport('xlsx')}
+          >
+            <span>XLSX</span>
+          </button>
+        </>
+      ) : null;
 
     if (!section) {
       const totalPageListPages = Math.max(1, Math.ceil(pages.length / PHONE_PAGE_SIZE));
@@ -340,7 +362,11 @@ export function PhoneLibrary({
                           {picked ? '✓' : ''}
                         </span>
                       ) : (
-                        <DomainFavicon domain={domain} className="page-row-ico" size={16} />
+                        <DomainFavicon
+                          domain={domain}
+                          className="page-row-ico"
+                          size={16}
+                        />
                       )}
                       <div className="page-row-body">
                         <div className="page-row-title">{label}</div>
@@ -393,11 +419,16 @@ export function PhoneLibrary({
                     ).message
                   : `This permanently removes ${pages
                       .filter((page) => selectedPaths.includes(page.path))
-                      .reduce((sum, page) => sum + page.count, 0)} highlights from ${selectedPaths.length} pages on ${domain}.`
+                      .reduce(
+                        (sum, page) => sum + page.count,
+                        0
+                      )} highlights from ${selectedPaths.length} pages on ${domain}.`
               }
               note="This action cannot be undone."
               strongNames={
-                selectedPaths.length === 1 ? [selectedPaths[0] ?? domain, domain] : [domain]
+                selectedPaths.length === 1
+                  ? [selectedPaths[0] ?? domain, domain]
+                  : [domain]
               }
               confirmLabel="Delete permanently"
               cancelLabel="Cancel"
@@ -443,10 +474,16 @@ export function PhoneLibrary({
     }
 
     const visibleHighlights = domainHighlights.filter((h) => (h.path || '/') === section);
-    const totalQuotePages = Math.max(1, Math.ceil(visibleHighlights.length / PHONE_PAGE_SIZE));
+    const totalQuotePages = Math.max(
+      1,
+      Math.ceil(visibleHighlights.length / PHONE_PAGE_SIZE)
+    );
     const safeQuotePage = clampPage(quotePage, totalQuotePages);
     const quoteStart = (safeQuotePage - 1) * PHONE_PAGE_SIZE;
-    const pagedHighlights = visibleHighlights.slice(quoteStart, quoteStart + PHONE_PAGE_SIZE);
+    const pagedHighlights = visibleHighlights.slice(
+      quoteStart,
+      quoteStart + PHONE_PAGE_SIZE
+    );
 
     return (
       <section className="phone-library" data-od-id="phone-library-quotes">
@@ -529,7 +566,9 @@ export function PhoneLibrary({
                         return;
                       }
                       setSelectedHighlightIds((prev) =>
-                        prev.includes(h.id) ? prev.filter((id) => id !== h.id) : [...prev, h.id]
+                        prev.includes(h.id)
+                          ? prev.filter((id) => id !== h.id)
+                          : [...prev, h.id]
                       );
                     }}
                     clientKind={clientKind}
@@ -614,13 +653,11 @@ export function PhoneLibrary({
         <div className="phone-sort-line">
           <div className="phone-toolbar-meta">
             <span className="phone-search-count">
-              {filtered.length} domain{filtered.length === 1 ? '' : 's'} · {visibleHighlights}{' '}
-              highlight{visibleHighlights === 1 ? '' : 's'}
+              {filtered.length} domain{filtered.length === 1 ? '' : 's'} ·{' '}
+              {visibleHighlights} highlight{visibleHighlights === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="phone-toolbar-actions">
-            {sortControl}
-          </div>
+          <div className="phone-toolbar-actions">{sortControl}</div>
         </div>
       ) : null}
       {highlights.length === 0 && !hasLibrary ? (

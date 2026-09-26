@@ -234,12 +234,18 @@ describe('WebHighlightCard', () => {
 
     expect(document.querySelector('.hl-tags')).toBeNull();
     expect(document.querySelector('.hl-note')).toBeNull();
-    expect(document.querySelector('.hl-actions [data-od-id="hl-copy-text-h1"]')).toBeTruthy();
+    expect(
+      document.querySelector('.hl-actions [data-od-id="hl-copy-text-h1"]')
+    ).toBeTruthy();
     expect(document.querySelector('.hl-actions [data-od-id="hl-link-h1"]')).toBeTruthy();
     expect(document.querySelector('.hl-actions [data-od-id="hl-note-h1"]')).toBeTruthy();
-    expect(document.querySelector('.hl-actions [data-od-id="hl-tag-add-h1"]')).toBeTruthy();
+    expect(
+      document.querySelector('.hl-actions [data-od-id="hl-tag-add-h1"]')
+    ).toBeTruthy();
     expect(document.querySelector('.hl-actions [data-od-id="hl-open-h1"]')).toBeTruthy();
-    expect(document.querySelector('.hl-actions [data-od-id="hl-delete-h1"]')).toBeTruthy();
+    expect(
+      document.querySelector('.hl-actions [data-od-id="hl-delete-h1"]')
+    ).toBeTruthy();
   });
 
   it('renders copy quote link button and writes fragment URL to clipboard', async () => {
@@ -261,7 +267,9 @@ describe('WebHighlightCard', () => {
       />
     );
 
-    const linkBtn = document.querySelector('[data-od-id="hl-link-h1"]') as HTMLButtonElement;
+    const linkBtn = document.querySelector(
+      '[data-od-id="hl-link-h1"]'
+    ) as HTMLButtonElement;
     expect(linkBtn).toBeTruthy();
     expect(linkBtn.getAttribute('aria-label')).toBe('Copy direct link to quote');
 
@@ -312,7 +320,10 @@ describe('WebHighlightCard', () => {
     expect(buttonsAndLinks?.length).toBe(6);
 
     expect(buttonsAndLinks?.[0]).toHaveAttribute('aria-label', 'Copy');
-    expect(buttonsAndLinks?.[1]).toHaveAttribute('aria-label', 'Copy direct link to quote');
+    expect(buttonsAndLinks?.[1]).toHaveAttribute(
+      'aria-label',
+      'Copy direct link to quote'
+    );
     expect(buttonsAndLinks?.[2]).toHaveAttribute('aria-label', 'Add note');
     expect(buttonsAndLinks?.[3]).toHaveAttribute('aria-label', 'Add tags');
     expect(buttonsAndLinks?.[4]).toHaveAttribute('aria-label', 'Open source');

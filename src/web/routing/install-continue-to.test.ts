@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  readInstallContinueFrom,
-  resolveInstallContinueTo,
-} from './install-continue-to';
+import { readInstallContinueFrom, resolveInstallContinueTo } from './install-continue-to';
 
 describe('resolveInstallContinueTo', () => {
   it('returns product routes including query strings', () => {
@@ -11,9 +8,7 @@ describe('resolveInstallContinueTo', () => {
     expect(resolveInstallContinueTo('/library?domain=ex.com')).toBe(
       '/library?domain=ex.com'
     );
-    expect(resolveInstallContinueTo('/settings?tab=data')).toBe(
-      '/settings?tab=data'
-    );
+    expect(resolveInstallContinueTo('/settings?tab=data')).toBe('/settings?tab=data');
   });
 
   it('maps missing, marketing, and install back to home', () => {

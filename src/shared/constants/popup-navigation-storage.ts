@@ -37,7 +37,8 @@ export interface PopupNavigationSnapshot {
 
 function safeLocalStorageGet(key: string): string | null {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage.getItem(key);
+    if (typeof window !== 'undefined' && window.localStorage)
+      return window.localStorage.getItem(key);
   } catch {
     // ignore
   }
@@ -45,14 +46,16 @@ function safeLocalStorageGet(key: string): string | null {
 }
 function safeLocalStorageSet(key: string, value: string): void {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(key, value);
+    if (typeof window !== 'undefined' && window.localStorage)
+      window.localStorage.setItem(key, value);
   } catch {
     // ignore
   }
 }
 function safeLocalStorageRemove(key: string): void {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.removeItem(key);
+    if (typeof window !== 'undefined' && window.localStorage)
+      window.localStorage.removeItem(key);
   } catch {
     // ignore
   }
@@ -64,10 +67,12 @@ export function loadSyncPopupNavigationSnapshot(): PopupNavigationSnapshot {
     lastView: safeLocalStorageGet(POPUP_NAV_STORAGE_KEYS.lastView) ?? undefined,
     lastDomain: safeLocalStorageGet(POPUP_NAV_STORAGE_KEYS.lastDomain) ?? undefined,
     lastSection: safeLocalStorageGet(POPUP_NAV_STORAGE_KEYS.lastSection) ?? undefined,
-    lastLlmSetupProvider: (safeLocalStorageGet(
-      POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider
-    ) as ProviderName) ?? undefined,
-    pendingAuthMode: safeLocalStorageGet(POPUP_NAV_STORAGE_KEYS.pendingAuthMode) ?? undefined,
+    lastLlmSetupProvider:
+      (safeLocalStorageGet(
+        POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider
+      ) as ProviderName) ?? undefined,
+    pendingAuthMode:
+      safeLocalStorageGet(POPUP_NAV_STORAGE_KEYS.pendingAuthMode) ?? undefined,
   };
 }
 
@@ -87,9 +92,12 @@ export async function loadPopupNavigationSnapshot(): Promise<PopupNavigationSnap
       ProviderName | undefined,
     pendingAuthMode: data[POPUP_NAV_STORAGE_KEYS.pendingAuthMode] as string | undefined,
   };
-  if (snapshot.lastView) safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastView, snapshot.lastView);
-  if (snapshot.lastDomain) safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastDomain, snapshot.lastDomain);
-  if (snapshot.lastSection) safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastSection, snapshot.lastSection);
+  if (snapshot.lastView)
+    safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastView, snapshot.lastView);
+  if (snapshot.lastDomain)
+    safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastDomain, snapshot.lastDomain);
+  if (snapshot.lastSection)
+    safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastSection, snapshot.lastSection);
   if (snapshot.pendingAuthMode)
     safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.pendingAuthMode, snapshot.pendingAuthMode);
   return snapshot;
@@ -121,7 +129,8 @@ export async function clearPopupDomainSection(): Promise<void> {
 }
 
 export async function persistLlmSetupProvider(provider: ProviderName): Promise<void> {
-  if (provider) safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider, provider);
+  if (provider)
+    safeLocalStorageSet(POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider, provider);
   await browser.storage.local.set({
     [POPUP_NAV_STORAGE_KEYS.lastLlmSetupProvider]: provider,
   });

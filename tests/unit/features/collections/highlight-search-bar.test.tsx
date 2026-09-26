@@ -183,7 +183,11 @@ describe('HighlightSearchBar', () => {
     expect(container.querySelector('.search-meta-row')).toBeNull();
     expect(screen.queryByText('12')).not.toBeInTheDocument();
 
-    rerender(<HighlightSearchBar {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })} />);
+    rerender(
+      <HighlightSearchBar
+        {...baseProps({ query: '', refine: ['has_notes'], resultCount: 0 })}
+      />
+    );
     expect(container.querySelector('.search-meta-row')).toBeNull();
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });

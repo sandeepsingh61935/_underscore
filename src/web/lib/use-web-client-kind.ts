@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import {
-  classifyWebClient,
-  type WebClientKind,
-} from '@/web/lib/classify-web-client';
+import { classifyWebClient, type WebClientKind } from '@/web/lib/classify-web-client';
 
 function readKind(): WebClientKind {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') {

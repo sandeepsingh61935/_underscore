@@ -61,9 +61,7 @@ describe('buildTextFragmentUrl', () => {
       exact: 'key takeaway',
     });
 
-    expect(url).toBe(
-      'https://example.com/article#introduction:~:text=key%20takeaway'
-    );
+    expect(url).toBe('https://example.com/article#introduction:~:text=key%20takeaway');
   });
 
   it('returns baseUrl unchanged if exact text is empty or blank', () => {

@@ -11,7 +11,11 @@ export interface HighlightIconProps {
   height?: number | string;
 }
 
-export function HighlightCopyIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightCopyIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}
@@ -31,7 +35,11 @@ export function HighlightCopyIcon({ className, width, height }: HighlightIconPro
   );
 }
 
-export function HighlightLinkIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightLinkIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}
@@ -51,7 +59,11 @@ export function HighlightLinkIcon({ className, width, height }: HighlightIconPro
   );
 }
 
-export function HighlightNoteIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightNoteIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}
@@ -71,7 +83,11 @@ export function HighlightNoteIcon({ className, width, height }: HighlightIconPro
   );
 }
 
-export function HighlightTagIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightTagIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}
@@ -91,7 +107,11 @@ export function HighlightTagIcon({ className, width, height }: HighlightIconProp
   );
 }
 
-export function HighlightOpenIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightOpenIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}
@@ -110,7 +130,11 @@ export function HighlightOpenIcon({ className, width, height }: HighlightIconPro
   );
 }
 
-export function HighlightDeleteIcon({ className, width, height }: HighlightIconProps): React.ReactElement {
+export function HighlightDeleteIcon({
+  className,
+  width,
+  height,
+}: HighlightIconProps): React.ReactElement {
   return (
     <svg
       className={className}

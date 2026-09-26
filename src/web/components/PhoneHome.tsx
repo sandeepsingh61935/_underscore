@@ -64,7 +64,11 @@ export function PhoneHome({
       <header className="phone-home-top">
         <h1 className="phone-home-greeting">{greeting}</h1>
         {stats && count > 0 ? (
-          <div className="phone-stats" data-od-id="phone-home-stats" aria-label="Library stats">
+          <div
+            className="phone-stats"
+            data-od-id="phone-home-stats"
+            aria-label="Library stats"
+          >
             <div className="phone-stat">
               <span className="phone-stat-label">Total</span>
               <span className="phone-stat-val">{stat(stats.highlightCount)}</span>

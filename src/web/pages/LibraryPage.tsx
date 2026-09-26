@@ -161,8 +161,6 @@ function corpusTags(rows: WebHighlight[]): { label: string; n: number }[] {
   return [...counts.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
 }
 
-
-
 /**
  * Library master-detail. Guest is always empty (useWebLibrary).
  * Selection lives in the URL (`?domain=&section=`).
@@ -524,7 +522,7 @@ export function LibraryPage(): React.ReactElement {
     }
     trackEvent('library_open', { client: clientKind });
     // First authenticated paint only — resize must not re-count the kill test.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- clientKind snapshot
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clientKind snapshot
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -639,7 +637,11 @@ export function LibraryPage(): React.ReactElement {
   if (phoneLayout) {
     if (lib.status === 'loading') {
       return (
-        <div className="phone-library" data-od-id="phone-library-loading" aria-busy="true">
+        <div
+          className="phone-library"
+          data-od-id="phone-library-loading"
+          aria-busy="true"
+        >
           <p className="phone-empty">Loading…</p>
         </div>
       );
@@ -648,7 +650,13 @@ export function LibraryPage(): React.ReactElement {
       return (
         <div className="phone-library" data-od-id="phone-library-error">
           <p className="phone-empty">{lib.error || 'Try again in a moment.'}</p>
-          <button type="button" className="btn sm" onClick={() => { void lib.refresh(); }}>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={() => {
+              void lib.refresh();
+            }}
+          >
             Retry
           </button>
         </div>
@@ -656,15 +664,17 @@ export function LibraryPage(): React.ReactElement {
     }
     const canWrite = isAuthenticated && !caps.isGuest;
     const seedPath = selection.highlight
-      ? (lib.highlights.find((h) => h.id === selection.highlight)?.path ?? selection.section)
+      ? (lib.highlights.find((h) => h.id === selection.highlight)?.path ??
+        selection.section)
       : (selection.section ??
         lib.highlights
           .filter((h) => h.domain === selection.domain)
           .sort((a, b) => b.savedAt - a.savedAt)[0]?.path ??
         null);
-    const phoneRelated = selection.domain && seedPath
-      ? relatedness.relatedPages(selection.domain, seedPath)
-      : [];
+    const phoneRelated =
+      selection.domain && seedPath
+        ? relatedness.relatedPages(selection.domain, seedPath)
+        : [];
     const phoneRelatedLabel =
       seedPath && seedPath !== '/'
         ? `Related to ${displaySectionPath(seedPath)}`
@@ -751,7 +761,11 @@ export function LibraryPage(): React.ReactElement {
         onDeleteHighlights={async (ids) => {
           if (ids.length === 0) return false;
           const result = await deleteScope({ scope: 'highlights', ids });
-          if (result.success && selection.highlight && ids.includes(selection.highlight)) {
+          if (
+            result.success &&
+            selection.highlight &&
+            ids.includes(selection.highlight)
+          ) {
             setSelection(selection.domain, selection.section, null);
           }
           return result.success;

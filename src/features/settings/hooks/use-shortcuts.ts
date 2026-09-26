@@ -17,7 +17,9 @@ export interface UseShortcutsResult {
   resetAll: () => Promise<void>;
 }
 
-export function useShortcuts(storage: IShortcutStorage = getShortcutStorage()): UseShortcutsResult {
+export function useShortcuts(
+  storage: IShortcutStorage = getShortcutStorage()
+): UseShortcutsResult {
   const [platform] = useState<ShortcutPlatform>(() => detectShortcutPlatform());
   const [overrides, setOverrides] = useState<Record<string, Chord>>({});
 

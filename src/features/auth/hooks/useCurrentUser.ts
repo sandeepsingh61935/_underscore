@@ -131,7 +131,9 @@ async function readExtensionCachedAuthState(): Promise<Partial<AuthResponse> | n
     const localGet = chrome.storage.local?.get
       ? await chrome.storage.local.get(CACHED_AUTH_STATE_KEY)
       : null;
-    const localHit = (localGet as Record<string, unknown> | null)?.[CACHED_AUTH_STATE_KEY];
+    const localHit = (localGet as Record<string, unknown> | null)?.[
+      CACHED_AUTH_STATE_KEY
+    ];
     if (localHit && typeof localHit === 'object') {
       return localHit as Partial<AuthResponse>;
     }

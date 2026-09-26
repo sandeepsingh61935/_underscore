@@ -8,10 +8,7 @@
 import { parseAnalyticsEvent } from '@/shared/analytics/parse-analytics-event';
 import { eventBus } from '@/shared/utils/event-bus';
 
-export type AnalyticsProps = Record<
-  string,
-  string | number | boolean | null | undefined
->;
+export type AnalyticsProps = Record<string, string | number | boolean | null | undefined>;
 
 /**
  * Fire a named product event. Never pass highlight text or other PII.

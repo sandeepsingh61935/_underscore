@@ -10,9 +10,7 @@ const NAME_SET = new Set<string>(ANALYTICS_EVENT_NAMES);
 const PROP_ALLOW = new Set(['client', 'result_count', 'rank', 'reason']);
 const PROP_DENY = new Set(['quote', 'q', 'query', 'email', 'text']);
 
-export function parseAnalyticsEvent(
-  raw: unknown
-):
+export function parseAnalyticsEvent(raw: unknown):
   | {
       ok: true;
       name: AnalyticsEventName;

@@ -24,7 +24,9 @@ export function SettingsThemeSeg({
       data-testid="settings-theme"
       data-od-id="settings-theme"
     >
-      <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>
+      <div
+        style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}
+      >
         Theme
       </div>
       <div className="seg" role="radiogroup" aria-label="Theme">

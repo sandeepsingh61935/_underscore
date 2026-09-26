@@ -108,8 +108,7 @@ export function WebAppShell(): React.ReactElement {
   const billing = useBillingContextOptional();
   const location = useLocation();
   const navigate = useNavigate();
-  const { strip: extNoticeStrip, remnant: extNoticeRemnant } =
-    useExtensionNoticeChrome();
+  const { strip: extNoticeStrip, remnant: extNoticeRemnant } = useExtensionNoticeChrome();
   const phoneLayout = useMobileWebViewport();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

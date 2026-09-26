@@ -87,10 +87,9 @@ export class CloudModeService {
         const first = payload.ranges[0]!;
         const existing = (first as unknown as { selector?: TextQuoteSelector })
           .selector as TextQuoteSelector | undefined;
-        const selector: TextQuoteSelector =
-          existing?.exact
-            ? existing
-            : { type: 'TextQuoteSelector' as const, exact: first.text };
+        const selector: TextQuoteSelector = existing?.exact
+          ? existing
+          : { type: 'TextQuoteSelector' as const, exact: first.text };
         payload.ranges[0] = {
           xpath: first.xpath,
           startOffset: first.startOffset,
@@ -189,10 +188,7 @@ export class CloudModeService {
             }
 
             const sr = this.getSerializedRange(highlight);
-            const { range, tier } = await this.restoreHighlightWithTier(
-              selector,
-              sr
-            );
+            const { range, tier } = await this.restoreHighlightWithTier(selector, sr);
             return {
               highlight,
               range,
@@ -400,9 +396,7 @@ export class CloudModeService {
     const e = expected.replace(/\s+/g, ' ').trim();
     const min = Math.min(a.length, e.length);
     if (min < 10) return a === e;
-    return (
-      a.includes(e.substring(0, min / 2)) || e.includes(a.substring(0, min / 2))
-    );
+    return a.includes(e.substring(0, min / 2)) || e.includes(a.substring(0, min / 2));
   }
 
   private getNodeByXPath(xpath: string): Node | null {

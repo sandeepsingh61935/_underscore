@@ -331,9 +331,13 @@ describe('WebSettingsPage', () => {
   it('data tab: renders Local Vault Mirror (Obsidian / Logseq) section', async () => {
     renderSettings('/settings?tab=data', true);
     await waitFor(() => {
-      expect(document.querySelector('[data-od-id="settings-vault-mirror-block"]')).toBeTruthy();
+      expect(
+        document.querySelector('[data-od-id="settings-vault-mirror-block"]')
+      ).toBeTruthy();
     });
-    expect(document.body.textContent).toMatch(/Local Vault Mirror \(Obsidian \/ Logseq\)/i);
+    expect(document.body.textContent).toMatch(
+      /Local Vault Mirror \(Obsidian \/ Logseq\)/i
+    );
   });
 
   it('data tab: clicking Sync shows active feedback and updates last synced status', async () => {

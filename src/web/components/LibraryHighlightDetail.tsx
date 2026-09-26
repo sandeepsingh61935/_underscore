@@ -19,7 +19,12 @@ export type LibraryHighlightDetailProps = {
   related?: RelatedHighlightRow[];
   relatedPages?: RelatedPageResult[];
   relatedLabel?: string;
-  onOpenRelatedPage?: (domain: string, section: string, rank: number, reason: string) => void;
+  onOpenRelatedPage?: (
+    domain: string,
+    section: string,
+    rank: number,
+    reason: string
+  ) => void;
   readOnly?: boolean;
   activeTagFilters?: string[];
   onBack: () => void;

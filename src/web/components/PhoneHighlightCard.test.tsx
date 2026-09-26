@@ -25,11 +25,7 @@ describe('PhoneHighlightCard', () => {
 
   it('renders copy text action and copies plain quote text', async () => {
     render(
-      <PhoneHighlightCard
-        highlight={baseHighlight}
-        meta="example.com"
-        onOpen={vi.fn()}
-      />
+      <PhoneHighlightCard highlight={baseHighlight} meta="example.com" onOpen={vi.fn()} />
     );
 
     const copyBtn = screen.getByRole('button', { name: 'Copy' });
@@ -41,11 +37,7 @@ describe('PhoneHighlightCard', () => {
 
   it('renders copy quote link action and copies text-fragment URL', async () => {
     render(
-      <PhoneHighlightCard
-        highlight={baseHighlight}
-        meta="example.com"
-        onOpen={vi.fn()}
-      />
+      <PhoneHighlightCard highlight={baseHighlight} meta="example.com" onOpen={vi.fn()} />
     );
 
     const copyLinkBtn = screen.getByRole('button', { name: 'Copy quote link' });
@@ -83,11 +75,7 @@ describe('PhoneHighlightCard', () => {
 
   it('toggles note editor and sets active state on note button', () => {
     render(
-      <PhoneHighlightCard
-        highlight={baseHighlight}
-        meta="example.com"
-        onOpen={vi.fn()}
-      />
+      <PhoneHighlightCard highlight={baseHighlight} meta="example.com" onOpen={vi.fn()} />
     );
 
     const noteBtn = screen.getByRole('button', { name: 'Edit note' });
@@ -107,11 +95,7 @@ describe('PhoneHighlightCard', () => {
 
   it('toggles tag editor and sets active state on tag button', () => {
     render(
-      <PhoneHighlightCard
-        highlight={baseHighlight}
-        meta="example.com"
-        onOpen={vi.fn()}
-      />
+      <PhoneHighlightCard highlight={baseHighlight} meta="example.com" onOpen={vi.fn()} />
     );
 
     const tagBtn = screen.getByRole('button', { name: 'Add tags' });
@@ -127,11 +111,7 @@ describe('PhoneHighlightCard', () => {
 
   it('opens note editor when clicking the note display box', () => {
     render(
-      <PhoneHighlightCard
-        highlight={baseHighlight}
-        meta="example.com"
-        onOpen={vi.fn()}
-      />
+      <PhoneHighlightCard highlight={baseHighlight} meta="example.com" onOpen={vi.fn()} />
     );
 
     const noteBox = screen.getByText('secret note');

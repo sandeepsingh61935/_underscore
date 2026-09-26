@@ -185,7 +185,9 @@ export function buildVaultPageMarkdown(opts: VaultPageMarkdownOptions): string {
     highlightCount: highlights.length,
   });
 
-  const bodyBlocks = highlights.map((h, i) => formatHighlightBlock(h, i + 1)).join('\n\n');
+  const bodyBlocks = highlights
+    .map((h, i) => formatHighlightBlock(h, i + 1))
+    .join('\n\n');
 
   return `${frontmatter}\n\n# ${title}\n\n${bodyBlocks}\n`;
 }
@@ -251,7 +253,8 @@ export function clearVaultSyncMeta(): void {
 function toExportable(item: VaultHighlightItem): ExportableHighlight {
   const text = item.quote || item.text || '';
   const path = item.path || '/';
-  const url = item.url || `https://${item.domain}${path.startsWith('/') ? path : `/${path}`}`;
+  const url =
+    item.url || `https://${item.domain}${path.startsWith('/') ? path : `/${path}`}`;
   let createdAt: Date;
   if (item.createdAt instanceof Date) {
     createdAt = item.createdAt;
@@ -359,13 +362,19 @@ export async function syncHighlightsToVaultDirectory(
 
   for (const [pageKey, page] of pageMap.entries()) {
     const prevFile = meta.files[pageKey];
-    if (!options?.forceFullSync && prevFile && prevFile.lastModified >= page.lastModified) {
+    if (
+      !options?.forceFullSync &&
+      prevFile &&
+      prevFile.lastModified >= page.lastModified
+    ) {
       skippedPages++;
       continue;
     }
 
     try {
-      const dirHandle = await rootHandle.getDirectoryHandle(page.folder, { create: true });
+      const dirHandle = await rootHandle.getDirectoryHandle(page.folder, {
+        create: true,
+      });
       const fileHandle = await dirHandle.getFileHandle(page.filename, { create: true });
       const writable = await fileHandle.createWritable();
       const markdown = buildVaultPageMarkdown({
@@ -420,12 +429,18 @@ async function getDB() {
 }
 
 interface DirectoryPickerWindow extends Window {
-  showDirectoryPicker?: (options?: { mode?: 'read' | 'readwrite' }) => Promise<FileSystemDirectoryHandle>;
+  showDirectoryPicker?: (options?: {
+    mode?: 'read' | 'readwrite';
+  }) => Promise<FileSystemDirectoryHandle>;
 }
 
 interface QueryableFileSystemHandle extends FileSystemHandle {
-  queryPermission?: (descriptor?: { mode?: 'read' | 'readwrite' }) => Promise<PermissionState>;
-  requestPermission?: (descriptor?: { mode?: 'read' | 'readwrite' }) => Promise<PermissionState>;
+  queryPermission?: (descriptor?: {
+    mode?: 'read' | 'readwrite';
+  }) => Promise<PermissionState>;
+  requestPermission?: (descriptor?: {
+    mode?: 'read' | 'readwrite';
+  }) => Promise<PermissionState>;
 }
 
 export function isFileSystemAccessSupported(): boolean {
@@ -516,5 +531,3 @@ export async function clearVaultDirectoryHandle(): Promise<void> {
     // Ignore
   }
 }
-
-

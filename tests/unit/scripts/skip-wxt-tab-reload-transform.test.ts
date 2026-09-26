@@ -12,7 +12,9 @@ const WXT_SNIPPET = `async function reloadTabsForContentScript(contentScript) {
 describe('skipWxtContentScriptTabReloadTransform', () => {
   it('inserts an early return so tabs are not reloaded', () => {
     const out = skipWxtContentScriptTabReloadTransform(WXT_SNIPPET);
-    expect(out).toContain('async function reloadTabsForContentScript(contentScript) {return;');
+    expect(out).toContain(
+      'async function reloadTabsForContentScript(contentScript) {return;'
+    );
     expect(out).toContain('browser.tabs.reload');
   });
 

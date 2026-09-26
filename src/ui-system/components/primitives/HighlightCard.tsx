@@ -583,13 +583,13 @@ export function HighlightCard({
   const hasTileActions =
     Boolean(
       onSaveQuote ||
-        onCopy ||
-        onCopyQuoteLink ||
-        canNote ||
-        canTag ||
-        onOpen ||
-        onDelete ||
-        (isUnanchored && onReanchor)
+      onCopy ||
+      onCopyQuoteLink ||
+      canNote ||
+      canTag ||
+      onOpen ||
+      onDelete ||
+      (isUnanchored && onReanchor)
     ) || editing;
   const showActionRow = hasTileActions || footerStart != null;
 

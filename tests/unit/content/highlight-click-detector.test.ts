@@ -22,7 +22,13 @@ function bus() {
 
 function clickAt(x: number, y: number, init: MouseEventInit = {}): void {
   document.dispatchEvent(
-    new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y, ...init })
+    new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      ...init,
+    })
   );
 }
 
@@ -39,10 +45,7 @@ describe('HighlightClickDetector', () => {
 
   function detector(hit: { id: string } | null): HighlightClickDetector {
     const hitTester = { findHighlightAtPoint: vi.fn().mockReturnValue(hit) };
-    const d = new HighlightClickDetector(
-      eventBus as never,
-      hitTester as never
-    );
+    const d = new HighlightClickDetector(eventBus as never, hitTester as never);
     d.init();
     return d;
   }

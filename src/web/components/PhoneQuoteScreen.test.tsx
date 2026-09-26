@@ -29,9 +29,7 @@ describe('PhoneQuoteScreen', () => {
   });
 
   it('tracks highlight_open_source on click', () => {
-    render(
-      <PhoneQuoteScreen highlight={highlight} clientKind="phone" />
-    );
+    render(<PhoneQuoteScreen highlight={highlight} clientKind="phone" />);
     const link = screen.getByRole('link', { name: 'Open' });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -84,6 +82,11 @@ describe('PhoneQuoteScreen', () => {
 
     // Clicking row triggers callback
     fireEvent.click(screen.getByText('gutenberg.org'));
-    expect(onOpen).toHaveBeenCalledWith('gutenberg.org', '/ebooks/1234', 0, 'Shared tags');
+    expect(onOpen).toHaveBeenCalledWith(
+      'gutenberg.org',
+      '/ebooks/1234',
+      0,
+      'Shared tags'
+    );
   });
 });

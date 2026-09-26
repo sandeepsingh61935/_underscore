@@ -61,7 +61,11 @@ export function sampleTextColorNearRange(range: Range): string | null {
       ? (node as Text).parentElement
       : (node as Element | null);
 
-  while (el && typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+  while (
+    el &&
+    typeof window !== 'undefined' &&
+    typeof window.getComputedStyle === 'function'
+  ) {
     try {
       const color = window.getComputedStyle(el).color;
       if (color) {

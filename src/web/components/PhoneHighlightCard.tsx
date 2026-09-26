@@ -9,7 +9,6 @@ import type { WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
 import type { WebClientKind } from '@/web/lib/classify-web-client';
 
-
 const QUOTE_CLAMP = 140;
 
 function tagKey(t: string): string {
@@ -49,7 +48,9 @@ export function PhoneHighlightCard({
   const [savingNote, setSavingNote] = useState(false);
   const [tagEditing, setTagEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(() => normalizeHighlightTags(highlight.tags));
+  const [tags, setTags] = useState<string[]>(() =>
+    normalizeHighlightTags(highlight.tags)
+  );
   const [tagError, setTagError] = useState<string | null>(null);
   const [savingTags, setSavingTags] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,7 +59,7 @@ export function PhoneHighlightCard({
   const tagId = useId();
   const href = phoneHighlightHref(highlight);
   const long = highlight.quote.length > QUOTE_CLAMP;
-  const note = (noteEditing ? noteDraft : highlight.note ?? '').trim();
+  const note = (noteEditing ? noteDraft : (highlight.note ?? '')).trim();
   const deleteCopy = deleteHighlightCopy();
 
   useEffect(() => {
@@ -88,7 +89,9 @@ export function PhoneHighlightCard({
     const next = normalizeHighlightTags([...tags, clean]);
     if (next.length === tags.length) {
       setTagInput('');
-      setTagError(tags.some((t) => tagKey(t) === tagKey(clean)) ? null : 'Tag limit reached (10).');
+      setTagError(
+        tags.some((t) => tagKey(t) === tagKey(clean)) ? null : 'Tag limit reached (10).'
+      );
       return;
     }
     setSavingTags(true);
@@ -114,7 +117,9 @@ export function PhoneHighlightCard({
         </span>
       ) : null}
       <button type="button" className="phone-hl-body" onClick={onOpen}>
-        <p className={expanded ? 'phone-hl-quote is-open' : 'phone-hl-quote'}>{highlight.quote}</p>
+        <p className={expanded ? 'phone-hl-quote is-open' : 'phone-hl-quote'}>
+          {highlight.quote}
+        </p>
       </button>
       {long ? (
         <button
@@ -164,7 +169,11 @@ export function PhoneHighlightCard({
             onChange={(e) => setNoteDraft(e.target.value)}
           />
           <div className="phone-note-actions">
-            <button type="button" className="btn sm ghost" onClick={() => setNoteEditing(false)}>
+            <button
+              type="button"
+              className="btn sm ghost"
+              onClick={() => setNoteEditing(false)}
+            >
               Cancel
             </button>
             <button
@@ -221,7 +230,12 @@ export function PhoneHighlightCard({
               }
             }}
           />
-          <button type="button" className="btn sm" disabled={savingTags} onClick={() => void addTag()}>
+          <button
+            type="button"
+            className="btn sm"
+            disabled={savingTags}
+            onClick={() => void addTag()}
+          >
             {savingTags ? 'Saving…' : 'Add'}
           </button>
         </div>
@@ -330,30 +344,30 @@ export function PhoneHighlightCard({
       </div>
 
       <DeleteConfirmDialog
-          open={deleteOpen}
-          onClose={() => {
-            if (!isDeleting) setDeleteOpen(false);
-          }}
-          severity={deleteCopy.severity}
-          title={deleteCopy.title}
-          message={deleteCopy.message}
-          note={deleteCopy.note}
-          strongNames={deleteCopy.strongNames}
-          confirmLabel={deleteCopy.confirmLabel}
-          cancelLabel={deleteCopy.cancelLabel}
-          isConfirming={isDeleting}
-          onConfirm={() => {
-            if (!onDelete) {
-              setDeleteOpen(false);
-              return;
-            }
-            setIsDeleting(true);
-            void onDelete(highlight.id).finally(() => {
-              setIsDeleting(false);
-              setDeleteOpen(false);
-            });
-          }}
-        />
+        open={deleteOpen}
+        onClose={() => {
+          if (!isDeleting) setDeleteOpen(false);
+        }}
+        severity={deleteCopy.severity}
+        title={deleteCopy.title}
+        message={deleteCopy.message}
+        note={deleteCopy.note}
+        strongNames={deleteCopy.strongNames}
+        confirmLabel={deleteCopy.confirmLabel}
+        cancelLabel={deleteCopy.cancelLabel}
+        isConfirming={isDeleting}
+        onConfirm={() => {
+          if (!onDelete) {
+            setDeleteOpen(false);
+            return;
+          }
+          setIsDeleting(true);
+          void onDelete(highlight.id).finally(() => {
+            setIsDeleting(false);
+            setDeleteOpen(false);
+          });
+        }}
+      />
     </article>
   );
 }

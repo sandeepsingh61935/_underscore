@@ -5,7 +5,4 @@
  * and `src/content/utils/range-converter.ts` imports.
  */
 
-export {
-  TextQuoteFinder,
-  findTextQuoteSelector,
-} from '@/shared/utils/text-quote-finder';
+export { TextQuoteFinder, findTextQuoteSelector } from '@/shared/utils/text-quote-finder';

@@ -283,11 +283,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
   it('renders Copy quote link action and calls onCopyQuoteLink when clicked', () => {
     const handler = vi.fn();
     render(
-      <HighlightCard
-        quote="Apple"
-        domain="example.com"
-        onCopyQuoteLink={handler}
-      />
+      <HighlightCard quote="Apple" domain="example.com" onCopyQuoteLink={handler} />
     );
     const btn = screen.getByRole('button', { name: /Copy direct link to quote/i });
     expect(btn).toBeTruthy();
@@ -297,13 +293,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
 
   it('renders Open in new tab action and calls onOpen when clicked', () => {
     const onOpen = vi.fn();
-    render(
-      <HighlightCard
-        quote="Apple"
-        domain="example.com"
-        onOpen={onOpen}
-      />
-    );
+    render(<HighlightCard quote="Apple" domain="example.com" onOpen={onOpen} />);
     const btn = screen.getByRole('button', { name: /Open highlight in browser tab/i });
     expect(btn).toBeTruthy();
     fireEvent.click(btn);
@@ -328,24 +318,14 @@ describe('HighlightCard (V2 wireframe contract)', () => {
   });
 
   it('renders horizontal divider above action row', () => {
-    render(
-      <HighlightCard
-        quote="Apple"
-        domain="example.com"
-        onCopy={vi.fn()}
-      />
-    );
+    render(<HighlightCard quote="Apple" domain="example.com" onCopy={vi.fn()} />);
     const row = screen.getByTestId('highlight-action-row');
     expect(row.style.borderTop).toBe('1px solid var(--rule-soft)');
   });
 
   it('renders note display box with Note kicker when notes are present', () => {
     render(
-      <HighlightCard
-        quote="Apple"
-        domain="example.com"
-        notes="Interesting concept"
-      />
+      <HighlightCard quote="Apple" domain="example.com" notes="Interesting concept" />
     );
     expect(screen.getByText('Note')).toBeTruthy();
     expect(screen.getByText('Interesting concept')).toBeTruthy();
@@ -354,11 +334,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
   it('toggles note editor and sets active state on Note button', async () => {
     const onSaveNotes = vi.fn(async () => true);
     render(
-      <HighlightCard
-        quote="Apple"
-        domain="example.com"
-        onSaveNotes={onSaveNotes}
-      />
+      <HighlightCard quote="Apple" domain="example.com" onSaveNotes={onSaveNotes} />
     );
 
     const noteBtn = screen.getByRole('button', { name: /Add note/i });

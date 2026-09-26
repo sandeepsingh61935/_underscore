@@ -140,7 +140,10 @@ export function usePageRestorationStatus(
     const messageHandler = (message: any) => {
       if (message?.type === PAGE_RESTORATION_STATUS && message.payload) {
         const payload = message.payload as PageRestorationStatusPayload;
-        if (!currentUrl || normalizePageUrl(payload.url) === normalizePageUrl(currentUrl)) {
+        if (
+          !currentUrl ||
+          normalizePageUrl(payload.url) === normalizePageUrl(currentUrl)
+        ) {
           startTransition(() => {
             setUnanchoredIds(new Set(payload.unanchoredIds || []));
           });

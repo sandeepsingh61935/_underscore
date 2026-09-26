@@ -63,8 +63,8 @@ export function VaultSyncPanel({
           <div className="grow">
             <div className="title">Chromium browser required</div>
             <div className="sub">
-              Local folder sync requires a Chromium browser (Chrome, Edge, Brave, Arc).
-              On this browser, you can download a markdown archive of your library.
+              Local folder sync requires a Chromium browser (Chrome, Edge, Brave, Arc). On
+              this browser, you can download a markdown archive of your library.
             </div>
           </div>
           {onFallbackDownload ? (
@@ -87,8 +87,8 @@ export function VaultSyncPanel({
           <div className="grow">
             <div className="title">Mirror to local folder</div>
             <div className="sub">
-              Automatically save highlights and notes as Markdown files with YAML frontmatter
-              into your Obsidian or Logseq vault.
+              Automatically save highlights and notes as Markdown files with YAML
+              frontmatter into your Obsidian or Logseq vault.
             </div>
           </div>
           <button
@@ -146,7 +146,9 @@ export function VaultSyncPanel({
               ) : lastSyncedAt ? (
                 <>
                   Last synced: {formatSyncTime(lastSyncedAt)}
-                  {syncResult ? ` · ${syncResult.writtenPages + syncResult.skippedPages} files up to date` : ''}
+                  {syncResult
+                    ? ` · ${syncResult.writtenPages + syncResult.skippedPages} files up to date`
+                    : ''}
                 </>
               ) : (
                 'Connected and ready to mirror.'

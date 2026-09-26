@@ -26,8 +26,7 @@ describe('classifyWebClient', () => {
   it('classifies iPad (Macintosh + touches) as tablet even when wide', () => {
     expect(
       classifyWebClient({
-        userAgent:
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
         maxTouchPoints: 5,
         pointerCoarse: true,
         viewportWidth: 1024,
@@ -80,8 +79,7 @@ describe('classifyWebClient', () => {
   it('does not treat Macintosh + touches without coarse pointer as tablet', () => {
     expect(
       classifyWebClient({
-        userAgent:
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
         maxTouchPoints: 5,
         pointerCoarse: false,
         viewportWidth: 1440,

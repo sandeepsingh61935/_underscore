@@ -19,12 +19,7 @@ describe('LibraryHighlightDetail', () => {
 
   it('renders quote, domain, and "Note" block with kicker and body', () => {
     const onBack = vi.fn();
-    render(
-      <LibraryHighlightDetail
-        highlight={baseHighlight}
-        onBack={onBack}
-      />
-    );
+    render(<LibraryHighlightDetail highlight={baseHighlight} onBack={onBack} />);
 
     expect(screen.getByText('example.com')).toBeInTheDocument();
     expect(screen.getByText('“Knowledge is justified true belief.”')).toBeInTheDocument();
@@ -34,12 +29,7 @@ describe('LibraryHighlightDetail', () => {
 
   it('triggers onBack when Back button is clicked', () => {
     const onBack = vi.fn();
-    render(
-      <LibraryHighlightDetail
-        highlight={baseHighlight}
-        onBack={onBack}
-      />
-    );
+    render(<LibraryHighlightDetail highlight={baseHighlight} onBack={onBack} />);
 
     fireEvent.click(screen.getByRole('button', { name: '← Back' }));
     expect(onBack).toHaveBeenCalledTimes(1);
@@ -89,6 +79,11 @@ describe('LibraryHighlightDetail', () => {
 
     // Clicking row triggers callback
     fireEvent.click(screen.getByText('gutenberg.org'));
-    expect(onOpenRelatedPage).toHaveBeenCalledWith('gutenberg.org', '/ebooks/1234', 0, 'Shared tags');
+    expect(onOpenRelatedPage).toHaveBeenCalledWith(
+      'gutenberg.org',
+      '/ebooks/1234',
+      0,
+      'Shared tags'
+    );
   });
 });

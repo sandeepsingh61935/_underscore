@@ -259,7 +259,9 @@ export function WebSettingsPage(): React.ReactElement {
         refreshing={cloudSyncing}
         refreshError={cloudSyncError}
         canExport={caps.flags.export}
-        onExport={(format) => exportWebHighlights(lib.highlights, format, { kind: 'library' })}
+        onExport={(format) =>
+          exportWebHighlights(lib.highlights, format, { kind: 'library' })
+        }
         onDeleteLibrary={async () => {
           const result = await deleteScope({ scope: 'library' });
           return result.success;

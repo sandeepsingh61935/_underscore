@@ -244,7 +244,9 @@ describe('LibraryHighlightTile', () => {
       />
     );
 
-    const openBtn = screen.getByRole('button', { name: /Open highlight in browser tab/i });
+    const openBtn = screen.getByRole('button', {
+      name: /Open highlight in browser tab/i,
+    });
     expect(openBtn).toBeInTheDocument();
     fireEvent.click(openBtn);
 

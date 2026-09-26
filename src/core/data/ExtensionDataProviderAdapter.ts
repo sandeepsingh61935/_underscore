@@ -24,7 +24,9 @@ export class ExtensionDataProviderAdapter implements IDataProvider {
         timestamp: Date.now(),
       });
       if (!response?.success || !response.data) {
-        const errMsg = (response as unknown as { error?: string })?.error || 'Failed to fetch collections';
+        const errMsg =
+          (response as unknown as { error?: string })?.error ||
+          'Failed to fetch collections';
         throw new Error(errMsg);
       }
       return response.data.collections.map((c) => ({

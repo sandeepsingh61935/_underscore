@@ -9,9 +9,7 @@ import type { ExtensionPresence } from '@/shared/extension/extension-presence';
 import type { ExtensionNoticePrefs } from '@/web/lib/extension-notice-prefs';
 
 export type ExtensionNoticeStripVariant =
-  | 'missing-strip'
-  | 'guest-signin'
-  | 'mobile-guest';
+  'missing-strip' | 'guest-signin' | 'mobile-guest';
 
 export type ExtensionNoticeDismissKey = keyof ExtensionNoticePrefs;
 

@@ -104,7 +104,9 @@ describe('Frontmatter & Markdown Generation', () => {
     expect(frontmatter).toContain('---');
     expect(frontmatter).toContain('title: "Systems Talk"');
     expect(frontmatter).toContain('url: "https://danluu.com/systems-talk"');
-    expect(frontmatter).toContain('source: "https://danluu.com/systems-talk#:~:text=reliable"');
+    expect(frontmatter).toContain(
+      'source: "https://danluu.com/systems-talk#:~:text=reliable"'
+    );
     expect(frontmatter).toContain('domain: "danluu.com"');
     expect(frontmatter).toContain('tags: [systems, engineering]');
     expect(frontmatter).toContain('updated: 2026-09-03');
@@ -400,5 +402,3 @@ describe('Permission Lifecycle & Directory Handle Persistence', () => {
     expect(afterClear).toBeNull();
   });
 });
-
-

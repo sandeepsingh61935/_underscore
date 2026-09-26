@@ -82,7 +82,9 @@ describe('HighlightQuoteView', () => {
     );
 
     // Container with vertical styling
-    expect(container.querySelector('.quote-detail-related--vertical')).toBeInTheDocument();
+    expect(
+      container.querySelector('.quote-detail-related--vertical')
+    ).toBeInTheDocument();
     expect(container.querySelector('.quote-detail-list')).toBeInTheDocument();
     expect(container.querySelector('.quote-detail-rail')).toBeNull();
 

@@ -79,7 +79,10 @@ function readCachedHighlights(key: string): Highlight[] | null {
 function writeCachedHighlights(key: string, data: Highlight[]): void {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(`${HIGHLIGHTS_CACHE_PREFIX}${key}`, JSON.stringify(data));
+      window.localStorage.setItem(
+        `${HIGHLIGHTS_CACHE_PREFIX}${key}`,
+        JSON.stringify(data)
+      );
     }
   } catch {
     // ignore
@@ -128,7 +131,9 @@ export function useHighlightsByDomain(
 ): HighlightsResult {
   const context = isExtensionContext() ? 'extension' : 'web';
   const bootKey = domain ? sessionKey(domain, isAuthenticated, context) : null;
-  const warm = bootKey ? (sessionByKey.get(bootKey) ?? readCachedHighlights(bootKey)) : undefined;
+  const warm = bootKey
+    ? (sessionByKey.get(bootKey) ?? readCachedHighlights(bootKey))
+    : undefined;
   if (warm && bootKey && !sessionByKey.has(bootKey)) sessionByKey.set(bootKey, warm);
 
   const [result, setResult] = useState<HighlightsResult>(() => {

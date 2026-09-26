@@ -4,7 +4,9 @@ import { planAnnotationBarOpen } from '@/content/ui/annotation-bar-target';
 
 describe('planAnnotationBarOpen', () => {
   it('opens for a new highlight id', () => {
-    expect(planAnnotationBarOpen({ overlappingCount: 0, createdId: 'hl-1' })).toBe('hl-1');
+    expect(planAnnotationBarOpen({ overlappingCount: 0, createdId: 'hl-1' })).toBe(
+      'hl-1'
+    );
   });
 
   it('does not open when the selection only overlaps existing highlights', () => {

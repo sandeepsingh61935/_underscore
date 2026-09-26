@@ -3784,7 +3784,9 @@ html[data-density='roomy'] {
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .phone-related-row:hover,
@@ -4151,7 +4153,10 @@ html[data-density='roomy'] {
     font-size: var(--step--2) !important;
     letter-spacing: 0.06em !important;
     text-transform: uppercase !important;
-    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease) !important;
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease) !important;
   }
 
   .phone-sort-line [data-testid='library-sort'] button[aria-haspopup='menu']:hover,
@@ -4161,7 +4166,9 @@ html[data-density='roomy'] {
     border-color: var(--rule) !important;
   }
 
-  .phone-sort-line [data-testid='library-sort'] button[aria-haspopup='menu'][aria-expanded='true'] {
+  .phone-sort-line
+    [data-testid='library-sort']
+    button[aria-haspopup='menu'][aria-expanded='true'] {
     background: var(--paper-3) !important;
     color: var(--ink) !important;
     border-color: var(--accent) !important;
@@ -4178,7 +4185,10 @@ html[data-density='roomy'] {
     gap: 2px;
   }
 
-  .phone-sort-line [data-testid='library-sort'] > div[role='menu'] button[role='menuitem'] {
+  .phone-sort-line
+    [data-testid='library-sort']
+    > div[role='menu']
+    button[role='menuitem'] {
     border-radius: var(--r-sm);
     padding: 8px 10px;
     font-family: var(--mono);
@@ -4187,7 +4197,10 @@ html[data-density='roomy'] {
     color: var(--ink-2);
   }
 
-  .phone-sort-line [data-testid='library-sort'] > div[role='menu'] button[role='menuitem']:hover {
+  .phone-sort-line
+    [data-testid='library-sort']
+    > div[role='menu']
+    button[role='menuitem']:hover {
     background: var(--paper-3);
     color: var(--ink);
   }
@@ -4602,7 +4615,10 @@ html[data-density='roomy'] {
     letter-spacing: 0.04em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
   }
 
   .phone-export-btn:hover {

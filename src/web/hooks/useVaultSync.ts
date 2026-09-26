@@ -19,10 +19,7 @@ import {
 } from '@/web/services/vault-sync-service';
 
 export type VaultConnectionState =
-  | 'unsupported'
-  | 'disconnected'
-  | 'need-permission'
-  | 'connected';
+  'unsupported' | 'disconnected' | 'need-permission' | 'connected';
 
 export interface UseVaultSyncOptions {
   highlights: VaultHighlightItem[];
@@ -56,7 +53,8 @@ export function useVaultSync({
   const [connectionState, setConnectionState] = useState<VaultConnectionState>(
     isSupported ? 'disconnected' : 'unsupported'
   );
-  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [directoryHandle, setDirectoryHandle] =
+    useState<FileSystemDirectoryHandle | null>(null);
   const [vaultName, setVaultName] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -149,9 +147,12 @@ export function useVaultSync({
 
   const selectVaultFolder = useCallback(async (): Promise<boolean> => {
     type PickerWindow = Window & {
-      showDirectoryPicker?: (options?: { mode?: 'read' | 'readwrite' }) => Promise<FileSystemDirectoryHandle>;
+      showDirectoryPicker?: (options?: {
+        mode?: 'read' | 'readwrite';
+      }) => Promise<FileSystemDirectoryHandle>;
     };
-    const pickerWindow = typeof window !== 'undefined' ? (window as PickerWindow) : undefined;
+    const pickerWindow =
+      typeof window !== 'undefined' ? (window as PickerWindow) : undefined;
     if (!isSupported || !pickerWindow?.showDirectoryPicker) {
       setError('File System Access API is not supported in this browser');
       return false;
@@ -228,7 +229,12 @@ export function useVaultSync({
 
   // Debounced auto-sync
   useEffect(() => {
-    if (!autoSync || !isAuthenticated || connectionState !== 'connected' || !directoryHandle) {
+    if (
+      !autoSync ||
+      !isAuthenticated ||
+      connectionState !== 'connected' ||
+      !directoryHandle
+    ) {
       return;
     }
 
@@ -239,7 +245,15 @@ export function useVaultSync({
     return () => {
       clearTimeout(timer);
     };
-  }, [autoSync, isAuthenticated, connectionState, directoryHandle, highlights, debounceMs, executeSync]);
+  }, [
+    autoSync,
+    isAuthenticated,
+    connectionState,
+    directoryHandle,
+    highlights,
+    debounceMs,
+    executeSync,
+  ]);
 
   return {
     isSupported,

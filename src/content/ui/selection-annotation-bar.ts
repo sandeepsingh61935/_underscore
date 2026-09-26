@@ -7,8 +7,7 @@ import { tagBoxAction } from '@/content/ui/parse-hash-tags';
 import { SELECTION_ANNOTATION_BAR_CSS } from '@/content/ui/selection-annotation-bar-css';
 import { sanitizeHighlightNote } from '@/shared/utils/highlight-metadata';
 
-export const ANNOTATION_TAG_HINT =
-  'A #word is a tag. Write #one #two to add several.';
+export const ANNOTATION_TAG_HINT = 'A #word is a tag. Write #one #two to add several.';
 
 export type AnnotationBarMode = 'closed' | 'actions' | 'tags' | 'notes';
 
@@ -304,7 +303,9 @@ export class SelectionAnnotationBar {
   }
 
   private setSavingButton(saving: boolean): void {
-    const save = this.root().querySelector('[aria-label="Save"]') as HTMLButtonElement | null;
+    const save = this.root().querySelector(
+      '[aria-label="Save"]'
+    ) as HTMLButtonElement | null;
     if (!save) return;
     save.disabled = saving;
     save.textContent = saving ? 'Saving' : 'Save';

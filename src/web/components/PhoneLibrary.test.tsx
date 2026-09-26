@@ -91,7 +91,9 @@ describe('PhoneLibrary', () => {
         clientKind="phone"
       />
     );
-    expect(screen.getByRole('button', { name: 'Delete domain example.com' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete domain example.com' })
+    ).toBeInTheDocument();
     expect(screen.getByText('docs')).toBeInTheDocument();
     expect(screen.getByText('about')).toBeInTheDocument();
     expect(screen.queryByText('Alpha insight')).toBeNull();
@@ -217,11 +219,15 @@ describe('PhoneLibrary', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Export Markdown' }));
     expect(onExport).toHaveBeenCalledWith('md');
-    expect(screen.getByRole('button', { name: 'Export spreadsheet' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Export spreadsheet' })
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Export JSON' })).toBeNull();
     expect(screen.getAllByRole('button', { name: 'Add note' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Add tags' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: 'Delete highlight' }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('button', { name: 'Delete highlight' }).length
+    ).toBeGreaterThan(0);
     expect(screen.getByRole('region', { name: 'Related pages' })).toBeInTheDocument();
     expect(screen.getByText('other.org')).toBeInTheDocument();
   });
@@ -394,8 +400,12 @@ describe('PhoneLibrary', () => {
     expect(quoteList).toBeInTheDocument();
 
     // Verify DOM order: related -> sortLine -> quoteList
-    expect(related!.compareDocumentPosition(sortLine!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(sortLine!.compareDocumentPosition(quoteList!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      related!.compareDocumentPosition(sortLine!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      sortLine!.compareDocumentPosition(quoteList!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it('paginates the page underscore list item view when items exceed page size', () => {

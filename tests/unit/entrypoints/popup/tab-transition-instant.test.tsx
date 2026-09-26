@@ -102,10 +102,7 @@ function MockPopupHarness() {
         >
           Library
         </button>
-        <button
-          data-testid="tab-settings"
-          onClick={() => handleTabChange('settings')}
-        >
+        <button data-testid="tab-settings" onClick={() => handleTabChange('settings')}>
           Settings
         </button>
       </nav>

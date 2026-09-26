@@ -510,7 +510,9 @@ describe('LibraryPage', () => {
       expect(document.querySelector('[data-od-id="library-vault-sync"]')).toBeTruthy();
     });
 
-    const syncBtn = document.querySelector('[data-od-id="library-vault-sync"]') as HTMLButtonElement;
+    const syncBtn = document.querySelector(
+      '[data-od-id="library-vault-sync"]'
+    ) as HTMLButtonElement;
     expect(syncBtn.textContent).toMatch(/Sync Vault/i);
 
     fireEvent.click(syncBtn);

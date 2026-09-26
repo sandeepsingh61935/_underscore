@@ -18,9 +18,7 @@ export function readInstallContinueFrom(state: unknown): string | undefined {
  * Continue-without-installing may only return to product routes.
  * Marketing /install must not loop.
  */
-export function resolveInstallContinueTo(
-  from: string | null | undefined
-): string {
+export function resolveInstallContinueTo(from: string | null | undefined): string {
   const candidate = resolveSafeReturnTo(from, '/home');
   if (
     PRODUCT_PREFIXES.some(

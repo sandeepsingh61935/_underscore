@@ -87,8 +87,8 @@ export function SubDomainView({
   const tabContext = useCurrentTabContext();
   const isCurrentPage = Boolean(
     tabContext.domain &&
-      tabContext.domain === domain &&
-      (tabContext.path || '/') === (section || '/')
+    tabContext.domain === domain &&
+    (tabContext.path || '/') === (section || '/')
   );
   const {
     isUnanchored,

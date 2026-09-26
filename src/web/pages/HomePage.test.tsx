@@ -81,8 +81,8 @@ describe('HomePage', () => {
     });
     renderHome();
     await screen.findByText(/Good/);
-    const hookOrderErrors = (console.error as any).mock.calls.filter((call: any[]) =>
-      typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
+    const hookOrderErrors = (console.error as any).mock.calls.filter(
+      (call: any[]) => typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
     );
     expect(hookOrderErrors).toHaveLength(0);
   });
@@ -99,8 +99,8 @@ describe('HomePage', () => {
       </MemoryRouter>
     );
 
-    const hookOrderErrors = (console.error as any).mock.calls.filter((call: any[]) =>
-      typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
+    const hookOrderErrors = (console.error as any).mock.calls.filter(
+      (call: any[]) => typeof call[0] === 'string' && call[0].includes('Rules of Hooks')
     );
     expect(hookOrderErrors).toHaveLength(0);
   });

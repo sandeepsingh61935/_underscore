@@ -89,7 +89,10 @@ export function PhoneSettings({
 
   if (keyboardOpen) {
     return (
-      <div data-od-id="settings-keyboard-page" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div
+        data-od-id="settings-keyboard-page"
+        style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+      >
         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule-soft)' }}>
           <button
             type="button"
@@ -108,10 +111,20 @@ export function PhoneSettings({
             ← Settings
           </button>
         </div>
-        <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <div
+          className="list-scroll screen-scroll"
+          style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+        >
           <div style={{ padding: '12px 16px 4px' }}>
             <h1 className="settings-title">Keyboard</h1>
-            <p className="u-sans" style={{ margin: '6px 0 0', fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}>
+            <p
+              className="u-sans"
+              style={{
+                margin: '6px 0 0',
+                fontSize: 'var(--step--1)',
+                color: 'var(--ink-3)',
+              }}
+            >
               Shortcuts while highlighting on a page.
             </p>
           </div>
@@ -142,21 +155,35 @@ export function PhoneSettings({
       : 'Library matches cloud';
 
   return (
-    <div data-od-id="settings-page" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div
+      data-od-id="settings-page"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+    >
       <div className="settings-head" data-od-id="settings-head">
         <h2 className="settings-title" data-od-id="settings-title">
           Settings
         </h2>
       </div>
-      <div className="list-scroll screen-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      <div
+        className="list-scroll screen-scroll"
+        style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+      >
         {!isAuthenticated ? (
           <SettingsLocalCard onSignIn={goSignIn} onChooseFree={goSignIn} />
         ) : (
           <>
-            <div className="u-caps" data-od-id="settings-section-account" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+            <div
+              className="u-caps"
+              data-od-id="settings-section-account"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
               Account
             </div>
-            <div className="row" style={{ cursor: 'default' }} data-od-id="settings-account-row">
+            <div
+              className="row"
+              style={{ cursor: 'default' }}
+              data-od-id="settings-account-row"
+            >
               <div>
                 <div className="title">{email || 'Signed in'}</div>
                 <div className="sub">Synced</div>
@@ -166,7 +193,10 @@ export function PhoneSettings({
         )}
 
         <div data-od-id="settings-section-appearance">
-          <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
             Appearance
           </div>
           <TypographySettings
@@ -177,10 +207,18 @@ export function PhoneSettings({
         </div>
 
         <div data-od-id="settings-section-keyboard-entry">
-          <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
             Help
           </div>
-          <button type="button" className="row" data-od-id="settings-open-keyboard" onClick={() => setKeyboardOpen(true)}>
+          <button
+            type="button"
+            className="row"
+            data-od-id="settings-open-keyboard"
+            onClick={() => setKeyboardOpen(true)}
+          >
             <div>
               <div className="title">Keyboard</div>
               <div className="sub">Shortcuts on pages you highlight</div>
@@ -192,7 +230,10 @@ export function PhoneSettings({
         </div>
 
         <div data-od-id="settings-section-data">
-          <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
             Data
           </div>
           {isAuthenticated ? (
@@ -210,7 +251,11 @@ export function PhoneSettings({
           <div className="row" style={{ cursor: 'default' }} data-od-id="settings-sync">
             <div>
               <div className="title">Merge from account</div>
-              <div className="sub">{isAuthenticated ? mergeSubtitle : 'Sign in to upload or merge your library'}</div>
+              <div className="sub">
+                {isAuthenticated
+                  ? mergeSubtitle
+                  : 'Sign in to upload or merge your library'}
+              </div>
             </div>
             <span className="row-end">
               <BtnText
@@ -226,10 +271,16 @@ export function PhoneSettings({
               </BtnText>
             </span>
           </div>
-          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-upload-device">
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-upload-device"
+          >
             <div>
               <div className="title">Upload from this device</div>
-              <div className="sub">Add guest highlights on this device to your account</div>
+              <div className="sub">
+                Add guest highlights on this device to your account
+              </div>
             </div>
             <span className="row-end">
               <BtnText muted disabled aria-label="Upload from this device">
@@ -263,7 +314,11 @@ export function PhoneSettings({
               </span>
             </span>
           </div>
-          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-delete-lib">
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-delete-lib"
+          >
             <div>
               <div className="title">Delete library</div>
             </div>
@@ -282,10 +337,17 @@ export function PhoneSettings({
         </div>
 
         <div data-od-id="settings-section-integrations">
-          <div className="u-caps" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+          <div
+            className="u-caps"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
             Integrations
           </div>
-          <div className="row" style={{ cursor: 'default' }} data-od-id="settings-connect-ai">
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-connect-ai"
+          >
             <div>
               <div className="title">Integrations</div>
               <div className="sub">
@@ -298,7 +360,9 @@ export function PhoneSettings({
               <button
                 type="button"
                 className="btn-text"
-                aria-label={canUseIntegrations ? 'Open Integrations' : 'Integrations locked'}
+                aria-label={
+                  canUseIntegrations ? 'Open Integrations' : 'Integrations locked'
+                }
                 onClick={() => setConnectOpen(true)}
               >
                 ›
@@ -309,10 +373,18 @@ export function PhoneSettings({
 
         {isAuthenticated ? (
           <>
-            <div className="u-caps" data-od-id="settings-section-session" style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}>
+            <div
+              className="u-caps"
+              data-od-id="settings-section-session"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
               Session
             </div>
-            <div className="row" style={{ cursor: 'default' }} data-od-id="settings-session">
+            <div
+              className="row"
+              style={{ cursor: 'default' }}
+              data-od-id="settings-session"
+            >
               <div>
                 <div className="title">This browser</div>
                 <div className="sub">Your account stays signed in on other devices</div>
@@ -334,7 +406,8 @@ export function PhoneSettings({
 
         <SettingsLegalFooter
           onOpenLegal={(doc) => {
-            const path = doc === 'privacy' ? '/privacy' : doc === 'terms' ? '/terms' : '/help';
+            const path =
+              doc === 'privacy' ? '/privacy' : doc === 'terms' ? '/terms' : '/help';
             void navigate(path);
           }}
         />

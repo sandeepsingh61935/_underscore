@@ -32,7 +32,9 @@ function makeHighlight(overrides: Partial<HighlightDataV2> = {}): HighlightDataV
 
 describe('RestorationCoordinator', () => {
   let mockLogger: ILogger;
-  let mockRenderAndRegister: (hl: HighlightDataV2 & { liveRanges?: Range[] }) => Promise<void>;
+  let mockRenderAndRegister: (
+    hl: HighlightDataV2 & { liveRanges?: Range[] }
+  ) => Promise<void>;
   let mockDeserializeRange: (sr: SerializedRange) => Range | null;
 
   beforeEach(() => {

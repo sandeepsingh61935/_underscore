@@ -64,7 +64,10 @@ export function matchesEvent(chord: Chord, event: KeyboardEvent): boolean {
   return true;
 }
 
-export function formatKeyName(key: string, platform: ShortcutPlatform = detectShortcutPlatform()): string {
+export function formatKeyName(
+  key: string,
+  platform: ShortcutPlatform = detectShortcutPlatform()
+): string {
   const norm = normalizeKey(key);
   if (norm === 'escape') return 'Esc';
   if (norm === 'space') return 'Space';
@@ -117,11 +120,22 @@ export function parseChord(chordStr: string): Chord | null {
 
   for (const token of tokens) {
     const lower = token.toLowerCase();
-    if (lower === 'ctrl' || lower === 'control' || lower === 'cmd' || lower === 'command' || token === '⌘') {
+    if (
+      lower === 'ctrl' ||
+      lower === 'control' ||
+      lower === 'cmd' ||
+      lower === 'command' ||
+      token === '⌘'
+    ) {
       ctrlOrMeta = true;
     } else if (lower === 'shift') {
       shift = true;
-    } else if (lower === 'alt' || lower === 'opt' || lower === 'option' || token === '⌥') {
+    } else if (
+      lower === 'alt' ||
+      lower === 'opt' ||
+      lower === 'option' ||
+      token === '⌥'
+    ) {
       alt = true;
     } else {
       key = normalizeKey(token);

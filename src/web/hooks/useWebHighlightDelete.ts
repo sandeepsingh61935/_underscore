@@ -33,7 +33,10 @@ function idsForRequest(
     }
     case 'section':
       return highlights
-        .filter((h) => h.domain === request.domain && (h.path || '/') === (request.sectionKey || '/'))
+        .filter(
+          (h) =>
+            h.domain === request.domain && (h.path || '/') === (request.sectionKey || '/')
+        )
         .map((h) => h.id);
     case 'sections': {
       const keys = new Set(request.sectionKeys.map((key) => key || '/'));

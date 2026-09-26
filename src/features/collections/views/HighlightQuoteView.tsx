@@ -18,9 +18,10 @@ type RelatednessDoc = {
   tags?: string[];
 };
 
-
 function sourceHref(highlight: OpenedHighlight): string | null {
-  const base = highlight.url || (highlight.domain ? `https://${highlight.domain}${highlight.path || ''}` : '');
+  const base =
+    highlight.url ||
+    (highlight.domain ? `https://${highlight.domain}${highlight.path || ''}` : '');
   if (!base || !highlight.text) return null;
   return buildTextFragmentUrl(base, { exact: highlight.text });
 }
@@ -59,7 +60,9 @@ export function HighlightQuoteView({
   const path = highlight.path && highlight.path !== '/' ? highlight.path : '';
   const note = highlight.notes?.trim() ?? '';
   const seedPath = highlight.path && highlight.path !== '/' ? highlight.path : null;
-  const relatedLabel = seedPath ? `Related to ${displaySectionPath(seedPath)}` : 'Related pages';
+  const relatedLabel = seedPath
+    ? `Related to ${displaySectionPath(seedPath)}`
+    : 'Related pages';
 
   return (
     <section className="quote-detail" data-od-id="extension-quote">
@@ -92,7 +95,9 @@ export function HighlightQuoteView({
             <div className="quote-detail-list">
               {related.map((page) => {
                 const count =
-                  page.highlightCount === 1 ? '1 highlight' : `${page.highlightCount} highlights`;
+                  page.highlightCount === 1
+                    ? '1 highlight'
+                    : `${page.highlightCount} highlights`;
                 const sectionLabel = displaySectionPath(page.section);
                 return (
                   <button
@@ -102,7 +107,11 @@ export function HighlightQuoteView({
                     aria-label={`${page.domain}, ${sectionLabel}, ${count}`}
                     onClick={() => onOpenSection?.(page.domain, page.section)}
                   >
-                    <DomainFavicon domain={page.domain} className="quote-detail-ico" size={16} />
+                    <DomainFavicon
+                      domain={page.domain}
+                      className="quote-detail-ico"
+                      size={16}
+                    />
                     <div className="quote-detail-info">
                       <div className="quote-detail-host-line">
                         <span className="quote-detail-host">{page.domain}</span>
@@ -122,7 +131,11 @@ export function HighlightQuoteView({
       </div>
       <div className="quote-detail-actions">
         {href ? (
-          <button type="button" className="btn primary" onClick={() => openExternalUrl(href)}>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => openExternalUrl(href)}
+          >
             Open
           </button>
         ) : null}
