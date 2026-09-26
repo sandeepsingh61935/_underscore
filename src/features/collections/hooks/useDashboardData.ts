@@ -8,10 +8,12 @@ import type { HighlightPresentation } from '@/shared/utils/highlight-presentatio
 export interface DashboardData {
   totalHighlights: number;
   totalDomains: number;
+  pageCount: number;
   thisWeekCount: number;
   todayCount: number;
   withNotesCount: number;
   withTagsCount: number;
+  tagCount: number;
   recentHighlights: Array<{
     id: string;
     text: string;
@@ -31,10 +33,12 @@ export interface DashboardData {
 const EMPTY_DASHBOARD: DashboardData = {
   totalHighlights: 0,
   totalDomains: 0,
+  pageCount: 0,
   thisWeekCount: 0,
   todayCount: 0,
   withNotesCount: 0,
   withTagsCount: 0,
+  tagCount: 0,
   recentHighlights: [],
 };
 

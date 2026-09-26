@@ -21,6 +21,8 @@ function sample(n: number): DashboardData {
   return {
     totalHighlights: n,
     totalDomains: 1,
+    pageCount: 1,
+    tagCount: 0,
     thisWeekCount: 0,
     todayCount: 0,
     withNotesCount: 0,
