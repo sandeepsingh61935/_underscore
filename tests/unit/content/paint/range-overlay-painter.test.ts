@@ -2,13 +2,14 @@
  * @file range-overlay-painter.test.ts
  * @description Sole HighlightPainter: overlay paint + hit-test.
  *
- * Stroke is a white strip with difference blending, so the compositor
- * inverts per pixel (black-on-light, white-on-dark) with no theme state.
+ * Each strip is painted inline in the highlight's own rendered text color,
+ * sampled per Range — so site themes and Dark Reader rewrites are tracked
+ * with no theme state of our own.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { RangeOverlayPainter } from '@/content/paint/range-overlay-painter';
+import { RangeOverlayPainter, sampleTextColorNearRange } from '@/content/paint/range-overlay-painter';
 
 function stubRect(left: number, top: number, width: number, height: number): DOMRect {
   return {
@@ -70,52 +71,64 @@ describe('RangeOverlayPainter', () => {
     expect(painter.paintedCount).toBe(1);
   });
 
-  it('uses white difference blending with no theme detection in the paint stylesheet', () => {
+  it('carries no blending or theme variables in the paint stylesheet', () => {
     const painter = RangeOverlayPainter.getInstance();
     const range = rangeOver('hello');
     stubClientRects(range, [stubRect(10, 20, 80, 16)]);
-    painter.paint('hl-dr', [range], 'yellow');
+    painter.paint('hl-css', [range], 'yellow');
 
     const shadow = document.getElementById('underscore-paint-root')?.shadowRoot;
     const paintStyle = shadow?.querySelector('style[data-underscore-paint]');
     expect(paintStyle).toBeTruthy();
-    expect(paintStyle?.textContent).toContain('background-color: #ffffff');
-    expect(paintStyle?.textContent).toContain('mix-blend-mode: difference');
+    expect(paintStyle?.textContent).not.toContain('mix-blend-mode');
     expect(paintStyle?.textContent).not.toContain('--underscore-color');
     expect(paintStyle?.textContent).not.toContain(':host-context');
     expect(paintStyle?.textContent).not.toContain('linear-gradient');
-    expect(paintStyle?.textContent).not.toContain('prefers-color-scheme');
   });
 
-  it('sets no theme color property for dark or light page backgrounds', () => {
-    for (const bg of ['rgb(30, 30, 30)', 'rgb(255, 255, 255)', 'transparent']) {
-      RangeOverlayPainter.resetForTests();
-      document.body.innerHTML = '<p id="p">hello world of highlights</p>';
-      document.body.style.backgroundColor = bg;
-      const painter = RangeOverlayPainter.getInstance();
-      const range = rangeOver('hello');
-      stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+  it('paints the strip in the highlight element text color on light pages', () => {
+    const p = document.getElementById('p')!;
+    p.style.color = 'rgb(17, 17, 17)';
 
-      painter.paint(`hl-bg-${bg}`, [range], 'yellow');
-
-      const root = document.getElementById('underscore-paint-root') as HTMLElement;
-      expect(root).toBeTruthy();
-      expect(root.style.getPropertyValue('--underscore-color')).toBe('');
-    }
-  });
-
-  it('keeps rects stable across theme toggle without any color state', async () => {
-    document.body.style.backgroundColor = 'rgb(20, 20, 20)';
     const painter = RangeOverlayPainter.getInstance();
     const range = rangeOver('hello');
     stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+    painter.paint('hl-light', [range], 'yellow');
 
-    painter.paint('hl-theme-change', [range], 'yellow');
-    const root = document.getElementById('underscore-paint-root') as HTMLElement;
-    expect(root.style.getPropertyValue('--underscore-color')).toBe('');
+    const rect = paintScope().querySelector('.underscore-paint-rect') as HTMLElement;
+    expect(rect).toBeTruthy();
+    expect(rect.style.backgroundColor).toBe('rgb(17, 17, 17)');
+  });
 
-    // Simulate switching to light theme: blending adapts, no JS color update.
-    document.body.style.backgroundColor = 'rgb(255, 255, 255)';
+  it('paints the strip in the light text color on dark pages', () => {
+    const p = document.getElementById('p')!;
+    p.style.color = 'rgb(232, 230, 227)';
+    document.body.style.backgroundColor = 'rgb(24, 26, 27)';
+
+    const painter = RangeOverlayPainter.getInstance();
+    const range = rangeOver('hello');
+    stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+    painter.paint('hl-dark', [range], 'yellow');
+
+    const rect = paintScope().querySelector('.underscore-paint-rect') as HTMLElement;
+    expect(rect).toBeTruthy();
+    expect(rect.style.backgroundColor).toBe('rgb(232, 230, 227)');
+  });
+
+  it('re-samples the text color on relayout when the theme toggles', async () => {
+    const p = document.getElementById('p')!;
+    p.style.color = 'rgb(232, 230, 227)';
+
+    const painter = RangeOverlayPainter.getInstance();
+    const range = rangeOver('hello');
+    stubClientRects(range, [stubRect(10, 20, 40, 14)]);
+    painter.paint('hl-toggle', [range], 'yellow');
+
+    let rect = paintScope().querySelector('[data-highlight-id="hl-toggle"]') as HTMLElement;
+    expect(rect.style.backgroundColor).toBe('rgb(232, 230, 227)');
+
+    // Theme toggled back to light: text color changes, relayout re-samples.
+    p.style.color = 'rgb(17, 17, 17)';
     window.dispatchEvent(new Event('resize'));
 
     await new Promise<void>((resolve) => {
@@ -124,27 +137,8 @@ describe('RangeOverlayPainter', () => {
       });
     });
 
-    expect(root.style.getPropertyValue('--underscore-color')).toBe('');
-    const rects = paintScope().querySelectorAll('[data-highlight-id="hl-theme-change"]');
-    expect(rects.length).toBeGreaterThan(0);
-  });
-
-  it('avoids frozen inline styles and does not paint dual background gradient', () => {
-    const p = document.getElementById('p')!;
-    p.style.color = 'rgb(42, 42, 42)';
-
-    const painter = RangeOverlayPainter.getInstance();
-    const range = rangeOver('hello');
-    stubClientRects(range, [stubRect(10, 20, 40, 14)]);
-
-    painter.paint('hl-dark', [range], 'yellow');
-
-    const rect = paintScope().querySelector('.underscore-paint-rect') as HTMLElement;
-    expect(rect).toBeTruthy();
-    // Color should not be frozen with an inline style, allowing blend compositing
-    expect(rect.style.color).toBe('');
-    expect(rect.style.background).not.toContain('linear-gradient');
-    expect(rect.hasAttribute('data-darkreader-ignore')).toBe(false);
+    rect = paintScope().querySelector('[data-highlight-id="hl-toggle"]') as HTMLElement;
+    expect(rect.style.backgroundColor).toBe('rgb(17, 17, 17)');
   });
 
   it('relays rect geometry on resize', async () => {
@@ -234,5 +228,37 @@ describe('RangeOverlayPainter', () => {
     painter.clear();
     expect(painter.paintedCount).toBe(0);
     expect(document.getElementById('underscore-paint-root')).toBeNull();
+  });
+});
+
+describe('sampleTextColorNearRange', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<p id="p">hello world of highlights</p>';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function rangeOver(text: string): Range {
+    const p = document.getElementById('p')!;
+    const node = p.firstChild as Text;
+    const start = node.data.indexOf(text);
+    const range = document.createRange();
+    range.setStart(node, start);
+    range.setEnd(node, start + text.length);
+    return range;
+  }
+
+  it('returns the element text color for a range', () => {
+    document.getElementById('p')!.style.color = 'rgb(42, 42, 42)';
+    expect(sampleTextColorNearRange(rangeOver('hello'))).toBe('rgb(42, 42, 42)');
+  });
+
+  it('skips transparent colors walking up to an opaque ancestor', () => {
+    document.getElementById('p')!.style.color = 'rgba(0, 0, 0, 0)';
+    document.body.style.color = 'rgb(232, 230, 227)';
+    expect(sampleTextColorNearRange(rangeOver('hello'))).toBe('rgb(232, 230, 227)');
+    document.body.style.color = '';
   });
 });

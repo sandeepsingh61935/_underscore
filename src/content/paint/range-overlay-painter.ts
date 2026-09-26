@@ -2,11 +2,13 @@
  * @file range-overlay-painter.ts
  * @description Sole HighlightPainter: absolute DOM rects from live Ranges.
  *
- * Underscore stroke = a 2px baseline strip with difference blending.
- * White source + `mix-blend-mode: difference` inverts per pixel behind it
- * (black-on-light, white-on-dark) with zero theme detection, so site dark
- * themes, prefers-color-scheme, Dark Reader, and mixed backgrounds all
- * adapt instantly in both toggle directions.
+ * Underscore stroke = a 2px baseline strip painted in the highlight's own
+ * rendered text color, sampled per Range from computed style. Sampling the
+ * text element (not the page background, not an allow-list) tracks site dark
+ * themes, prefers-color-scheme, and Dark Reader dynamic rewrites, since those
+ * all change the computed text color. Filter/inversion modes keep working
+ * because the overlay lives inside the filtered subtree and inverts along
+ * with the page. Relayout re-samples, so theme toggles correct on next paint.
  * colorRole is accepted for API stability but does not tint the on-page stroke.
  */
 
@@ -37,11 +39,46 @@ const PAINT_SHADOW_CSS = `
   box-sizing: border-box;
   border-radius: 0;
   height: ${STRIP_HEIGHT_PX}px;
-  background-color: #ffffff;
-  mix-blend-mode: difference;
   box-shadow: none;
 }
 `;
+
+/**
+ * Sample the highlight's own rendered text color: walk up from the Range's
+ * common ancestor to the first element with a non-transparent computed
+ * color. Computed style already reflects site themes and Dark Reader dynamic
+ * rewrites, so no theme allow-list or luminance math is needed.
+ */
+export function sampleTextColorNearRange(range: Range): string | null {
+  let node: Node | null = null;
+  try {
+    node = range.commonAncestorContainer;
+  } catch {
+    return null;
+  }
+  let el: Element | null =
+    node && node.nodeType === Node.TEXT_NODE
+      ? (node as Text).parentElement
+      : (node as Element | null);
+
+  while (el && typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    try {
+      const color = window.getComputedStyle(el).color;
+      if (color) {
+        const m = color.match(
+          /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/
+        );
+        if (!m) return color;
+        const alpha = m[4] === undefined ? 1 : parseFloat(m[4]);
+        if (alpha > 0.01) return color;
+      }
+    } catch {
+      // Element cannot be queried for computed style
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
 
 interface OverlayEntry {
   id: string;
@@ -58,6 +95,8 @@ export class RangeOverlayPainter implements HighlightPainter {
   private layer: ShadowRoot | null = null;
   private scrollScheduled = false;
   private listenersAttached = false;
+  private themeObserver: MutationObserver | null = null;
+  private mediaQuery: MediaQueryList | null = null;
 
   static getInstance(): RangeOverlayPainter {
     if (!RangeOverlayPainter.instance) {
@@ -235,6 +274,7 @@ export class RangeOverlayPainter implements HighlightPainter {
     const created: HTMLElement[] = [];
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
+    const ink = sampleTextColorNearRange(range) ?? 'currentColor';
 
     for (let i = 0; i < rects.length; i++) {
       const rect = rects[i];
@@ -247,6 +287,7 @@ export class RangeOverlayPainter implements HighlightPainter {
       el.style.top = `${rect.top + scrollY + rect.height - 1 + UNDERLINE_OFFSET_PX}px`;
       el.style.width = `${rect.width}px`;
       el.style.height = `${STRIP_HEIGHT_PX}px`;
+      el.style.backgroundColor = ink;
       layer.appendChild(el);
       created.push(el);
     }
@@ -257,6 +298,31 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (this.listenersAttached) return;
     window.addEventListener('scroll', this.onViewportChange, true);
     window.addEventListener('resize', this.onViewportChange, true);
+
+    if (typeof window.matchMedia === 'function') {
+      try {
+        this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        this.mediaQuery.addEventListener?.('change', this.onViewportChange);
+      } catch {
+        // matchMedia not supported or restricted in environment
+      }
+    }
+
+    if (typeof MutationObserver !== 'undefined') {
+      // No theme allow-list: any class/style change on html/body may restyle
+      // text, and relayout re-samples each highlight's own text color.
+      this.themeObserver = new MutationObserver(() => {
+        this.onViewportChange();
+      });
+      const docEl = document.documentElement;
+      if (docEl) {
+        this.themeObserver.observe(docEl, { attributes: true });
+      }
+      if (document.body && document.body !== docEl) {
+        this.themeObserver.observe(document.body, { attributes: true });
+      }
+    }
+
     this.listenersAttached = true;
   }
 
@@ -264,6 +330,14 @@ export class RangeOverlayPainter implements HighlightPainter {
     if (!this.listenersAttached) return;
     window.removeEventListener('scroll', this.onViewportChange, true);
     window.removeEventListener('resize', this.onViewportChange, true);
+    if (this.mediaQuery) {
+      this.mediaQuery.removeEventListener?.('change', this.onViewportChange);
+      this.mediaQuery = null;
+    }
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
     this.listenersAttached = false;
   }
 
