@@ -17,7 +17,7 @@ describe('LibraryHighlightDetail', () => {
     encrypted: false,
   };
 
-  it('renders quote, domain, and "YOUR NOTE" block with kicker and body', () => {
+  it('renders quote, domain, and "Note" block with kicker and body', () => {
     const onBack = vi.fn();
     render(
       <LibraryHighlightDetail
@@ -28,7 +28,7 @@ describe('LibraryHighlightDetail', () => {
 
     expect(screen.getByText('example.com')).toBeInTheDocument();
     expect(screen.getByText('“Knowledge is justified true belief.”')).toBeInTheDocument();
-    expect(screen.getByText('YOUR NOTE')).toBeInTheDocument();
+    expect(screen.getByText('Note')).toBeInTheDocument();
     expect(screen.getByText('Plato Theaetetus inquiry')).toBeInTheDocument();
   });
 

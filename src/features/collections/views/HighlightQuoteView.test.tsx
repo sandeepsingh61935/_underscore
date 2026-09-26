@@ -59,12 +59,12 @@ describe('HighlightQuoteView', () => {
     expect(screen.getByText('epistemology')).toBeInTheDocument();
   });
 
-  it('renders "Your note" card with kicker and note body', () => {
+  it('renders "Note" card with kicker and note body', () => {
     render(<HighlightQuoteView highlight={baseHighlight} />);
 
     const noteCard = screen.getByTestId('quote-detail-note');
     expect(noteCard).toBeInTheDocument();
-    expect(screen.getByText('Your note')).toBeInTheDocument();
+    expect(screen.getByText('Note')).toBeInTheDocument();
     expect(screen.getByText('Important passage on epistemology')).toBeInTheDocument();
   });
 

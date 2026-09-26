@@ -33,7 +33,7 @@ export function PhoneQuoteScreen({
       {path ? <p className="phone-quote-meta">{path}</p> : null}
       {note ? (
         <div className="phone-note" data-od-id="phone-quote-note">
-          <span className="phone-note-kicker">Your note</span>
+          <span className="phone-note-kicker">Note</span>
           {note}
         </div>
       ) : null}

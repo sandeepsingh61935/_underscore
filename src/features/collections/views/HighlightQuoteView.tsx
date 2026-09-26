@@ -69,7 +69,7 @@ export function HighlightQuoteView({
         {path ? <p className="quote-detail-path">{displaySectionPath(path)}</p> : null}
         {note ? (
           <div className="quote-detail-note" data-testid="quote-detail-note">
-            <span className="quote-detail-kicker">Your note</span>
+            <span className="quote-detail-kicker">Note</span>
             {note}
           </div>
         ) : null}

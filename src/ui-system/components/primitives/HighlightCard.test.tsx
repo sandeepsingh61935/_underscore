@@ -339,7 +339,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
     expect(row.style.borderTop).toBe('1px solid var(--rule-soft)');
   });
 
-  it('renders note display box with YOUR NOTE kicker when notes are present', () => {
+  it('renders note display box with Note kicker when notes are present', () => {
     render(
       <HighlightCard
         quote="Apple"
@@ -347,7 +347,7 @@ describe('HighlightCard (V2 wireframe contract)', () => {
         notes="Interesting concept"
       />
     );
-    expect(screen.getByText('YOUR NOTE')).toBeTruthy();
+    expect(screen.getByText('Note')).toBeTruthy();
     expect(screen.getByText('Interesting concept')).toBeTruthy();
   });
 

@@ -871,7 +871,7 @@ export function HighlightCard({
                   : undefined
               }
             >
-              <span className="hl-note-kicker">YOUR NOTE</span>
+              <span className="hl-note-kicker">Note</span>
               <p className="hl-note-txt">{notes?.trim()}</p>
             </div>
           ) : null}
@@ -879,7 +879,7 @@ export function HighlightCard({
           {noteEditing && canNote ? (
             <div className="hl-note-edit">
               <label className="hl-note-kicker" htmlFor={noteFieldId}>
-                YOUR NOTE
+                Note
               </label>
               <textarea
                 id={noteFieldId}

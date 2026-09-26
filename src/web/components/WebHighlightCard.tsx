@@ -399,7 +399,7 @@ export function WebHighlightCard({
               : undefined
           }
         >
-          <span className="hl-note-kicker">YOUR NOTE</span>
+          <span className="hl-note-kicker">Note</span>
           <p className="hl-note-txt">{note}</p>
         </div>
       ) : null}
@@ -407,7 +407,7 @@ export function WebHighlightCard({
       {noteEditing && canEdit && onNoteSave ? (
         <div className="hl-note-edit" data-od-id={`hl-note-edit-${h.id}`}>
           <label className="hl-note-kicker" htmlFor={noteFieldId}>
-            YOUR NOTE
+            Note
           </label>
           <textarea
             id={noteFieldId}

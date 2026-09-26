@@ -146,14 +146,14 @@ export function PhoneHighlightCard({
             }
           }}
         >
-          <span className="phone-note-kicker">Your note</span>
+          <span className="phone-note-kicker">Note</span>
           {note}
         </div>
       ) : null}
       {noteEditing ? (
         <div className="phone-note-edit">
           <label className="phone-note-kicker" htmlFor={noteId}>
-            Your note
+            Note
           </label>
           <textarea
             id={noteId}
