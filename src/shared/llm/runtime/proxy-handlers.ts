@@ -30,6 +30,7 @@ import { buildProviderFromConfig } from '@/shared/llm/providers/build-provider-f
 export interface ProxyEnv {
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
   LLM_PROXY_ALLOWED_ORIGINS?: string;
@@ -164,10 +165,65 @@ async function readJsonBody(
 }
 
 /**
- * POST /api/llm/stream
- * Headers: Authorization: Bearer <jwt>, X-Llm-Api-Key: <user key>
- * Body: { provider, model?, request }
+ * Durable per-user quota for LLM streams (backs the per-isolate in-memory
+ * limiter so counters survive multi-isolate / cold starts).
+ * Reuses the `billing_try_rate_limit` RPC: 200 starts / day + 30 / minute.
+ *
+ * Fail-open on infrastructure failure: the in-memory limiter below still
+ * bounds abuse per isolate, and blocking all paid chat on an RPC hiccup is
+ * worse than a burst. Returns 'unavailable' so callers can distinguish.
  */
+export const LLM_PROXY_DAILY_MAX = 200;
+export const LLM_PROXY_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const LLM_PROXY_DURABLE_PER_MINUTE = 30;
+export const LLM_PROXY_DURABLE_MINUTE_WINDOW_MS = 60 * 1000;
+
+export interface DurableRpc {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+}
+
+export async function checkDurableLlmQuota(
+  admin: DurableRpc,
+  userId: string,
+  nowMs: number = Date.now()
+): Promise<{ ok: true } | { ok: false; reason: 'unavailable' | 'rate_limit' }> {
+  const calls: Array<[string, number, number]> = [
+    [`llm-proxy-day:${userId}`, LLM_PROXY_DAILY_MAX, LLM_PROXY_DAILY_WINDOW_MS],
+    [`llm-proxy-min:${userId}`, LLM_PROXY_DURABLE_PER_MINUTE, LLM_PROXY_DURABLE_MINUTE_WINDOW_MS],
+  ];
+  try {
+    for (const [key, max, windowMs] of calls) {
+      const { data, error } = await admin.rpc('billing_try_rate_limit', {
+        p_key: key,
+        p_max: max,
+        p_window_ms: windowMs,
+        p_now_ms: nowMs,
+      });
+      if (error) return { ok: false, reason: 'unavailable' };
+      const rec = data as { allowed?: unknown } | null;
+      if (!rec || typeof rec !== 'object' || rec.allowed !== true) {
+        // Malformed RPC payload fails closed (deny), mirroring billing edge.
+        return { ok: false, reason: 'rate_limit' };
+      }
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'unavailable' };
+  }
+}
+
+function durableAdminClient(env: ProxyEnv): DurableRpc | null {
+  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL || '';
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !serviceKey) return null;
+  const client = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return { rpc: (fn, args) => client.rpc(fn, args) as unknown as Promise<{ data: unknown; error: { message: string } | null }> };
+}
 export async function handleLlmStreamProxy(
   req: Request,
   env: ProxyEnv
@@ -223,6 +279,18 @@ export async function handleLlmStreamProxy(
         ? 'Another stream is already in progress'
         : 'Rate limit exceeded; try again later';
     return withCors(req, env, jsonResponse(429, { error: msg }));
+  }
+
+  // Durable quota second (only when the service-role key is configured):
+  // survives multi-isolate / cold starts. 'unavailable' fails open into the
+  // in-memory decision above; over-limit denies and releases the slot.
+  const admin = durableAdminClient(env);
+  if (admin) {
+    const quota = await checkDurableLlmQuota(admin, auth.userId);
+    if (!quota.ok && quota.reason === 'rate_limit') {
+      rateByUser.set(auth.userId, releaseStream(rateByUser.get(auth.userId) ?? next));
+      return withCors(req, env, jsonResponse(429, { error: 'Rate limit exceeded; try again later' }));
+    }
   }
 
   let providerInstance;

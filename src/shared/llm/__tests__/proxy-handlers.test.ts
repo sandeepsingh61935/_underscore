@@ -35,6 +35,7 @@ vi.mock('@/shared/llm/providers/build-provider-from-config', () => ({
 }));
 
 import {
+  checkDurableLlmQuota,
   handleLlmHealthProxy,
   handleLlmStreamProxy,
   resetLlmProxyRateLimitsForTests,
@@ -198,5 +199,67 @@ describe('handleLlmStreamProxy / health', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; model: string };
     expect(body).toEqual({ ok: true, model: 'gpt-4o-mini' });
+  });
+
+  it('fails open when the durable limiter is unreachable (service key set, rpc broken)', async () => {
+    paidUser();
+    const res = await handleLlmStreamProxy(
+      new Request('http://127.0.0.1:3000/api/llm/stream', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: 'Bearer tok',
+          'x-llm-api-key': 'sk-test',
+        },
+        body: JSON.stringify({
+          provider: 'openai',
+          request: {
+            systemPrompt: 's',
+            messages: [{ role: 'user', content: 'q' }],
+            maxTokens: 10,
+          },
+        }),
+      }),
+      { ...env, SUPABASE_SERVICE_ROLE_KEY: 'service-role' }
+    );
+    // Mocked supabase client has no rpc → unavailable → in-memory gate decides.
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('checkDurableLlmQuota', () => {
+  const allowRpc = () =>
+    vi.fn().mockResolvedValue({ data: { allowed: true, retryAfterMs: 0 }, error: null });
+
+  it('allows when both windows allow', async () => {
+    const rpc = allowRpc();
+    await expect(checkDurableLlmQuota({ rpc }, 'user-1')).resolves.toEqual({ ok: true });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc.mock.calls[0]?.[1]).toMatchObject({ p_key: 'llm-proxy-day:user-1' });
+    expect(rpc.mock.calls[1]?.[1]).toMatchObject({ p_key: 'llm-proxy-min:user-1' });
+  });
+
+  it('denies when a window is exhausted or malformed', async () => {
+    const denied = { rpc: vi.fn().mockResolvedValue({ data: { allowed: false }, error: null }) };
+    await expect(checkDurableLlmQuota(denied, 'user-1')).resolves.toEqual({
+      ok: false,
+      reason: 'rate_limit',
+    });
+
+    const malformed = { rpc: vi.fn().mockResolvedValue({ data: null, error: null }) };
+    await expect(checkDurableLlmQuota(malformed, 'user-1')).resolves.toEqual({
+      ok: false,
+      reason: 'rate_limit',
+    });
+  });
+
+  it('reports unavailable on RPC failure (caller fails open)', async () => {
+    const broken = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'db down' } }),
+    };
+    await expect(checkDurableLlmQuota(broken, 'user-1')).resolves.toEqual({
+      ok: false,
+      reason: 'unavailable',
+    });
   });
 });

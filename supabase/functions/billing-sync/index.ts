@@ -81,14 +81,24 @@ Deno.serve(async (req) => {
     15 * 60 * 1000
   );
   if (!rl.allowed) {
+    // Limiter outage fails closed (503) — distinct from over-limit (429).
+    const unavailable = rl.unavailable === true;
     return new Response(
-      JSON.stringify({
-        error: 'Too many billing sync requests',
-        code: 'RATE_LIMITED',
-        retryAfterMs: rl.retryAfterMs,
-      }),
+      JSON.stringify(
+        unavailable
+          ? {
+              error: 'Service temporarily unavailable',
+              code: 'RATE_LIMIT_UNAVAILABLE',
+              retryAfterMs: rl.retryAfterMs,
+            }
+          : {
+              error: 'Too many billing sync requests',
+              code: 'RATE_LIMITED',
+              retryAfterMs: rl.retryAfterMs,
+            }
+      ),
       {
-        status: 429,
+        status: unavailable ? 503 : 429,
         headers: {
           ...cors,
           'Content-Type': 'application/json',

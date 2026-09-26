@@ -49,15 +49,16 @@ export function tryConsumeRateLimit(
 
 /**
  * Parse durable RPC JSON from `billing_try_rate_limit`.
- * Malformed / missing → fail open (do not lock users out if DB hiccups).
+ * Malformed / missing → fail closed (deny; the edge treats limiter outage
+ * as 503, never as budget remaining).
  */
 export function parseBillingRateLimitRpc(data: unknown): RateLimitDecision {
   if (!data || typeof data !== 'object') {
-    return { allowed: true, retryAfterMs: 0 };
+    return { allowed: false, retryAfterMs: 60_000 };
   }
   const rec = data as Record<string, unknown>;
   if (typeof rec['allowed'] !== 'boolean') {
-    return { allowed: true, retryAfterMs: 0 };
+    return { allowed: false, retryAfterMs: 60_000 };
   }
   const rawRetry = rec['retryAfterMs'];
   const retry =

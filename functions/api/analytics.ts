@@ -4,10 +4,19 @@
  */
 
 import { parseAnalyticsEvent } from '../../src/shared/analytics/parse-analytics-event';
+import {
+  analyticsIdentity,
+  tryConsumeAnalytics,
+  type AnalyticsBucket,
+} from '../../src/shared/analytics/analytics-rate-limit';
 
 interface PagesContext {
   request: Request;
 }
+
+// Per-isolate abuse guard (anonymous endpoint). Not a global guarantee —
+ // same documented limitation as the LLM proxy pre-check.
+const buckets = new Map<string, AnalyticsBucket>();
 
 function envelope(
   data: unknown,
@@ -23,6 +32,9 @@ function envelope(
 export async function onRequest(context: PagesContext): Promise<Response> {
   if (context.request.method !== 'POST') {
     return envelope(null, { message: 'method_not_allowed' }, 405);
+  }
+  if (!tryConsumeAnalytics(buckets, analyticsIdentity(context.request))) {
+    return envelope(null, { message: 'rate_limited' }, 429);
   }
   let raw: unknown;
   try {

@@ -9,16 +9,21 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 export interface RateLimitDecision {
   allowed: boolean;
   retryAfterMs: number;
+  /**
+   * True when the limiter itself is unavailable (missing env / RPC failure).
+   * Callers must fail closed (503) rather than treating this as over-limit.
+   */
+  unavailable?: boolean;
 }
 
-/** Fail open on malformed RPC (availability over lockout). */
+/** Fail closed on malformed RPC (deny rather than allow abuse during outage). */
 export function parseBillingRateLimitRpc(data: unknown): RateLimitDecision {
   if (!data || typeof data !== 'object') {
-    return { allowed: true, retryAfterMs: 0 };
+    return { allowed: false, retryAfterMs: 60_000, unavailable: true };
   }
   const rec = data as Record<string, unknown>;
   if (typeof rec.allowed !== 'boolean') {
-    return { allowed: true, retryAfterMs: 0 };
+    return { allowed: false, retryAfterMs: 60_000, unavailable: true };
   }
   const retry =
     typeof rec.retryAfterMs === 'number' && Number.isFinite(rec.retryAfterMs)
@@ -47,8 +52,8 @@ export async function tryRateLimit(
 ): Promise<RateLimitDecision> {
   const admin = serviceClient();
   if (!admin) {
-    console.error('rate limit: missing SUPABASE_URL / SERVICE_ROLE_KEY — fail open');
-    return { allowed: true, retryAfterMs: 0 };
+    console.error('rate limit: missing SUPABASE_URL / SERVICE_ROLE_KEY — fail closed');
+    return { allowed: false, retryAfterMs: 60_000, unavailable: true };
   }
 
   const { data, error } = await admin.rpc('billing_try_rate_limit', {
@@ -59,8 +64,8 @@ export async function tryRateLimit(
   });
 
   if (error) {
-    console.error('rate limit rpc failed — fail open', error.message);
-    return { allowed: true, retryAfterMs: 0 };
+    console.error('rate limit rpc failed — fail closed', error.message);
+    return { allowed: false, retryAfterMs: 60_000, unavailable: true };
   }
 
   return parseBillingRateLimitRpc(data);

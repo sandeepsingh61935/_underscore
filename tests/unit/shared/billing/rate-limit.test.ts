@@ -64,8 +64,9 @@ describe('parseBillingRateLimitRpc (durable edge response)', () => {
     });
   });
 
-  it('fails open on malformed payload (availability over lockout)', () => {
-    expect(parseBillingRateLimitRpc(null).allowed).toBe(true);
-    expect(parseBillingRateLimitRpc({}).allowed).toBe(true);
+  it('fails closed on malformed payload (deny on limiter outage)', () => {
+    expect(parseBillingRateLimitRpc(null).allowed).toBe(false);
+    expect(parseBillingRateLimitRpc({}).allowed).toBe(false);
+    expect(parseBillingRateLimitRpc(null).retryAfterMs).toBeGreaterThan(0);
   });
 });
