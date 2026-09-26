@@ -3,14 +3,18 @@ import { describe, expect, it } from 'vitest';
 import {
   buildProtectedResourceMetadata,
   buildWwwAuthenticateHeader,
+  corsPreflightResponse,
+  isAllowedMcpOrigin,
   isProtectedResourceMetadataRequest,
   MCP_HTTP_PATH,
   normalizeSupabaseProjectUrl,
+  parseMcpAllowedOrigins,
   protectedResourceMetadataPath,
   protectedResourceMetadataPathForResource,
   protectedResourceMetadataUrl,
   resolveMcpResourceUrl,
   supabaseAuthIssuer,
+  withCors,
 } from '../oauth-metadata.js';
 
 describe('oauth-metadata', () => {
@@ -77,5 +81,71 @@ describe('oauth-metadata', () => {
     const header = buildWwwAuthenticateHeader(metadataUrl);
     expect(header).toContain('resource_metadata="https://underscore-mcp.example.workers.dev');
     expect(header).toContain('scope="openid email profile"');
+  });
+
+  describe('CORS allowlist', () => {
+    const allowed = ['https://underscore-web.pages.dev', 'http://127.0.0.1:3000'];
+
+    it('parses MCP_ALLOWED_ORIGINS env (comma-separated, origin-normalized)', () => {
+      expect(
+        parseMcpAllowedOrigins('https://underscore-web.pages.dev, http://127.0.0.1:3000/'),
+      ).toEqual(['https://underscore-web.pages.dev', 'http://127.0.0.1:3000']);
+      expect(parseMcpAllowedOrigins(undefined)).toEqual([]);
+      expect(parseMcpAllowedOrigins('')).toEqual([]);
+    });
+
+    it('allows exact web origins, rejects unknown origins', () => {
+      expect(isAllowedMcpOrigin('https://underscore-web.pages.dev', allowed)).toBe(true);
+      expect(isAllowedMcpOrigin('https://evil.example.com', allowed)).toBe(false);
+      expect(isAllowedMcpOrigin(null, allowed)).toBe(false);
+    });
+
+    it('allows the pinned extension ID, rejects other extension IDs', () => {
+      expect(
+        isAllowedMcpOrigin('chrome-extension://hecejpjekcgpifnemddfmkjmphmgljlm', allowed),
+      ).toBe(true);
+      expect(isAllowedMcpOrigin('chrome-extension://evilid', allowed)).toBe(false);
+    });
+
+    it('echoes the allowlisted origin on preflight with Vary: Origin', () => {
+      const req = new Request('https://underscore-mcp.example.workers.dev/mcp', {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://underscore-web.pages.dev' },
+      });
+      const res = corsPreflightResponse(req, { MCP_ALLOWED_ORIGINS: allowed.join(',') });
+      expect(res.status).toBe(204);
+      expect(res.headers.get('Access-Control-Allow-Origin')).toBe(
+        'https://underscore-web.pages.dev',
+      );
+      expect(res.headers.get('Vary')).toBe('Origin');
+    });
+
+    it('rejects disallowed preflight origins with 403 and no ACAO header', () => {
+      const req = new Request('https://underscore-mcp.example.workers.dev/mcp', {
+        method: 'OPTIONS',
+        headers: { Origin: 'https://evil.example.com' },
+      });
+      const res = corsPreflightResponse(req, { MCP_ALLOWED_ORIGINS: allowed.join(',') });
+      expect(res.status).toBe(403);
+      expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    });
+
+    it('echoes allowlisted origin on actual responses, omits header without Origin', () => {
+      const base = Response.json({ ok: true });
+      const req = new Request('https://underscore-mcp.example.workers.dev/mcp', {
+        headers: { Origin: 'https://underscore-web.pages.dev' },
+      });
+      const ok = withCors(base, req, { MCP_ALLOWED_ORIGINS: allowed.join(',') });
+      expect(ok.headers.get('Access-Control-Allow-Origin')).toBe(
+        'https://underscore-web.pages.dev',
+      );
+      expect(ok.headers.get('Vary')).toBe('Origin');
+
+      const noOrigin = withCors(Response.json({ ok: true }), new Request('https://underscore-mcp.example.workers.dev/mcp'), {
+        MCP_ALLOWED_ORIGINS: allowed.join(','),
+      });
+      expect(noOrigin.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(noOrigin.status).toBe(200);
+    });
   });
 });

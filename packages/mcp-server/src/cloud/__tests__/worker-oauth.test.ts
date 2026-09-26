@@ -24,7 +24,32 @@ describe('handleMcpRequest OAuth routes', () => {
     expect(body.authorization_servers[0]).toBe(
       'https://cuzwaukxagefyvtxbqmi.supabase.co/auth/v1',
     );
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('rejects disallowed browser origins with 403 before auth', async () => {
+    const response = await handleMcpRequest(
+      new Request('https://underscore-mcp.test.workers.dev/mcp', {
+        method: 'POST',
+        headers: { Origin: 'https://evil.example.com' },
+      }),
+      env,
+    );
+    expect(response.status).toBe(403);
+  });
+
+  it('echoes allowlisted origins on worker responses', async () => {
+    const response = await handleMcpRequest(
+      new Request('https://underscore-mcp.test.workers.dev/mcp', {
+        method: 'POST',
+        headers: { Origin: 'chrome-extension://hecejpjekcgpifnemddfmkjmphmgljlm' },
+      }),
+      { ...env, MCP_ALLOWED_ORIGINS: 'https://underscore-web.pages.dev' },
+    );
+    expect(response.status).toBe(401);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+      'chrome-extension://hecejpjekcgpifnemddfmkjmphmgljlm',
+    );
   });
 
   it('returns protected resource metadata at legacy well-known URL', async () => {

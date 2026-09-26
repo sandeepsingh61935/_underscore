@@ -11,8 +11,11 @@ import { assertPaidCloudMcpAccess } from './paid-gate.js';
 import {
   buildProtectedResourceMetadata,
   corsPreflightResponse,
+  isMcpRequestOriginAllowed,
   isProtectedResourceMetadataRequest,
+  mcpOriginForbiddenResponse,
   oauthUnauthorizedResponse,
+  parseMcpAllowedOrigins,
   protectedResourceMetadataUrl,
   resolveMcpResourceUrl,
   supabaseAuthIssuer,
@@ -24,6 +27,8 @@ export interface McpWorkerEnv {
   SUPABASE_ANON_KEY: string;
   /** Optional stable resource URL for OAuth (defaults to request origin). */
   MCP_RESOURCE_URL?: string;
+  /** Comma-separated CORS allowlist for browser clients. */
+  MCP_ALLOWED_ORIGINS?: string;
 }
 
 function extractBearer(request: Request): string | null {
@@ -50,7 +55,7 @@ function validateWorkerEnv(env: McpWorkerEnv): Response | null {
 
 function handleOAuthProtectedResource(request: Request, env: McpWorkerEnv): Response {
   const configError = validateWorkerEnv(env);
-  if (configError) return withCors(configError);
+  if (configError) return withCors(configError, request, env);
 
   const resourceUrl = resolveMcpResourceUrl(request, env);
   const metadata = buildProtectedResourceMetadata(resourceUrl, env.SUPABASE_URL);
@@ -62,6 +67,8 @@ function handleOAuthProtectedResource(request: Request, env: McpWorkerEnv): Resp
         'Content-Type': 'application/json',
       },
     }),
+    request,
+    env,
   );
 }
 
@@ -88,11 +95,18 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
   const url = new URL(request.url);
 
   if (request.method === 'OPTIONS') {
-    return corsPreflightResponse();
+    return corsPreflightResponse(request, env);
+  }
+
+  // Origin gate before auth: browsers must be allowlisted; origin-less
+  // (non-browser) callers pass through to JWT validation.
+  const allowedOrigins = parseMcpAllowedOrigins(env.MCP_ALLOWED_ORIGINS);
+  if (!isMcpRequestOriginAllowed(request.headers.get('Origin'), allowedOrigins)) {
+    return mcpOriginForbiddenResponse();
   }
 
   if (request.method === 'GET' && url.pathname === '/health') {
-    return handleHealth(request, env);
+    return withCors(handleHealth(request, env), request, env);
   }
 
   const configError = validateWorkerEnv(env);
@@ -110,7 +124,7 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
 
   const token = extractBearer(request);
   if (!token) {
-    return withCors(oauthUnauthorizedResponse(request, env));
+    return withCors(oauthUnauthorizedResponse(request, env), request, env);
   }
 
   try {
@@ -121,9 +135,9 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
     const paid = await assertPaidCloudMcpAccess(supabase, token);
     if (!paid.ok) {
       if (paid.status === 401) {
-        return withCors(oauthUnauthorizedResponse(request, env));
+        return withCors(oauthUnauthorizedResponse(request, env), request, env);
       }
-      return withCors(Response.json({ error: paid.error }, { status: paid.status }));
+      return withCors(Response.json({ error: paid.error }, { status: paid.status }), request, env);
     }
     void recordMcpSessionSuccess(supabase, paid.userId);
 
@@ -141,7 +155,7 @@ export async function handleMcpRequest(request: Request, env: McpWorkerEnv): Pro
       sessionIdGenerator: undefined,
     });
     await server.connect(transport);
-    return transport.handleRequest(request);
+    return withCors(await transport.handleRequest(request), request, env);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal worker error';
     return Response.json({ error: message }, { status: 500 });
