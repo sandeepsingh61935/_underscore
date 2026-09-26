@@ -29,8 +29,11 @@ export type PopupHomeModelInput = {
   displayName: string | null;
   totalHighlights: number;
   totalDomains: number;
+  pageCount?: number;
   thisWeekCount: number;
   todayCount: number;
+  notesCount?: number;
+  tagCount?: number;
   /** Tab context domain when available (popup). */
   tabDomain: string | null;
   tabPath: string | null;
@@ -42,8 +45,11 @@ export type PopupHomeModelInput = {
 export type PopupHomeStats = {
   highlightCount: number;
   domainCount: number;
+  pageCount: number;
   thisWeekCount: number;
   todayCount: number;
+  notesCount: number;
+  tagCount: number;
 };
 
 export type PopupHomeModel = {
@@ -126,8 +132,11 @@ export function buildPopupHomeModel(input: PopupHomeModelInput): PopupHomeModel 
     stats: {
       highlightCount: input.totalHighlights,
       domainCount: input.totalDomains,
+      pageCount: input.pageCount ?? 0,
       thisWeekCount: input.thisWeekCount,
       todayCount: input.todayCount,
+      notesCount: input.notesCount ?? 0,
+      tagCount: input.tagCount ?? 0,
     },
   };
 }

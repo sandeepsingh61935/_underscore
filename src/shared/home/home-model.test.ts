@@ -63,8 +63,11 @@ describe('buildPopupHomeModel', () => {
       displayName: 'Ada',
       totalHighlights: 12,
       totalDomains: 3,
+      pageCount: 5,
       thisWeekCount: 4,
       todayCount: 1,
+      notesCount: 2,
+      tagCount: 3,
       tabDomain: 'news.com',
       tabPath: '/a',
       currentPageHighlightCount: 2,
@@ -77,8 +80,11 @@ describe('buildPopupHomeModel', () => {
     expect(m.stats).toEqual({
       highlightCount: 12,
       domainCount: 3,
+      pageCount: 5,
       thisWeekCount: 4,
       todayCount: 1,
+      notesCount: 2,
+      tagCount: 3,
     });
     expect(m.showCurrentPage).toBe(true);
     expect(m.currentPageEmpty).toBe(false);
