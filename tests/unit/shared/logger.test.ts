@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ConsoleLogger, LogLevel, LoggerFactory } from '@/shared/utils/logger';
+import { ConsoleLogger, LogLevel, LoggerFactory, sanitizeForConsole } from '@/shared/utils/logger';
 
 describe('ConsoleLogger', () => {
   let logger: ConsoleLogger;
@@ -57,13 +57,54 @@ describe('ConsoleLogger', () => {
   });
 
   describe('error', () => {
-    it('should log error with stack trace', () => {
+    it('should log error without full Error object (sanitized to name/message/code)', () => {
       const consoleSpy = vi.spyOn(console, 'error');
       const error = new Error('Test error');
 
       logger.error('An error occurred', error);
 
-      expect(consoleSpy).toHaveBeenCalledTimes(2); // Once for message, once for stack
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('An error occurred'),
+        expect.objectContaining({ name: 'Error', message: 'Test error' }),
+      );
+      // Full Error instance (with stack) must never reach the console args.
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        expect.anything(),
+        error,
+      );
+    });
+  });
+
+  describe('sanitizeForConsole', () => {
+    it('redacts secrets, tokens, emails and user content', () => {
+      const [out] = sanitizeForConsole([
+        {
+          userId: 'user-1',
+          email: 'a@b.com',
+          password: 'hunter2',
+          access_token: 'tok',
+          refresh_token: 'rtok',
+          'x-llm-api-key': 'sk-x',
+          text: 'highlight text',
+          url: 'https://example.com/page?q=1',
+        },
+      ]) as Array<Record<string, unknown>>;
+      if (!out) throw new Error('expected sanitized output');
+
+      expect(out['userId']).toBe('user-1');
+      expect(out['email']).toBe('[redacted]');
+      expect(out['password']).toBe('[redacted]');
+      expect(out['access_token']).toBe('[redacted]');
+      expect(out['refresh_token']).toBe('[redacted]');
+      expect(out['x-llm-api-key']).toBe('[redacted]');
+      expect(out['text']).toBe('[redacted]');
+      expect(out['url']).toBe('https://example.com');
+    });
+
+    it('shrinks Error instances to name/message/code', () => {
+      const err = Object.assign(new Error('boom'), { code: 'AUTH_ERROR' });
+      const [out] = sanitizeForConsole([err]) as Array<Record<string, unknown>>;
+      expect(out).toEqual({ name: 'Error', message: 'boom', code: 'AUTH_ERROR' });
     });
   });
 

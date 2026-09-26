@@ -222,7 +222,7 @@ export class AuthManager implements IAuthManager {
         throw new Error(`Native OAuth flow not implemented for provider: ${provider}`);
       }
 
-      this.logger.info('Initiating Supabase OAuth flow', { provider, redirectUrl });
+      this.logger.debug('Initiating Supabase OAuth flow', { provider, redirectUrl });
 
       // 1. Get the OAuth URL from Supabase (skip browser redirect)
       const { data, error: oauthError } = await this.supabase.auth.signInWithOAuth({
@@ -281,7 +281,7 @@ export class AuthManager implements IAuthManager {
    */
   async signInWithEmail(email: string, password: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Email sign in attempt', { email });
+    this.logger.debug('Email sign in attempt', { email });
 
     if (!(await this.authRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.authRateLimiter);
@@ -313,7 +313,7 @@ export class AuthManager implements IAuthManager {
       return { success: true, user };
     } catch (error) {
       await this.logAuthFailure('email', email);
-      this.logger.error('Email sign in threw exception', error as Error, { email });
+      this.logger.error('Email sign in threw exception', error as Error);
       return {
         success: false,
         error: { code: 'EXCEPTION', message: mapAuthError('sign-in', null) },
@@ -326,7 +326,7 @@ export class AuthManager implements IAuthManager {
    */
   async signUpWithEmail(email: string, password: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Email sign up attempt', { email });
+    this.logger.debug('Email sign up attempt', { email });
 
     if (!(await this.authRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.authRateLimiter);
@@ -359,7 +359,7 @@ export class AuthManager implements IAuthManager {
       // as a distinct, user-facing "already exists" case instead of
       // silently starting a verification flow that can never succeed.
       if (isExistingAccountSignup(data.user, data.session)) {
-        this.logger.info('Sign up blocked: account already exists', { email });
+        this.logger.debug('Sign up blocked: account already exists', { email });
         return {
           success: false,
           error: {
@@ -380,7 +380,7 @@ export class AuthManager implements IAuthManager {
       // or we just manually updated it with startVerificationTimer.
       return { success: true, user: this.mapSupabaseUser(data.user) };
     } catch (error) {
-      this.logger.error('Email sign up threw exception', error as Error, { email });
+      this.logger.error('Email sign up threw exception', error as Error);
       return {
         success: false,
         error: { code: 'EXCEPTION', message: mapAuthError('sign-up', null) },
@@ -409,13 +409,17 @@ export class AuthManager implements IAuthManager {
       });
 
       if (error) {
-        return { success: false, error: { code: 'AUTH_ERROR', message: error.message } };
+        this.logger.error('Session restore failed', error);
+        return {
+          success: false,
+          error: { code: 'AUTH_ERROR', message: mapAuthError('session', error) },
+        };
       }
 
       if (!data.user) {
         return {
           success: false,
-          error: { code: 'AUTH_ERROR', message: 'No user returned from setSession' },
+          error: { code: 'AUTH_ERROR', message: mapAuthError('session', null) },
         };
       }
 
@@ -426,8 +430,11 @@ export class AuthManager implements IAuthManager {
       );
       return { success: true, user };
     } catch (error) {
-      const innerMsg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: { code: 'EXCEPTION', message: innerMsg } };
+      this.logger.error(
+        'Session restore threw exception',
+        error instanceof Error ? error : new Error(String(error))
+      );
+      return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('session', null) } };
     }
   }
 
@@ -436,7 +443,7 @@ export class AuthManager implements IAuthManager {
    */
   async verifyEmailOtp(email: string, token: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Verify email OTP attempt', { email });
+    this.logger.debug('Verify email OTP attempt', { email });
 
     if (!(await this.otpVerifyRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.otpVerifyRateLimiter);
@@ -469,9 +476,7 @@ export class AuthManager implements IAuthManager {
       // onAuthStateChange listener once Supabase sets the new session.
       return { success: true, user };
     } catch (error) {
-      this.logger.error('Email OTP verification threw exception', error as Error, {
-        email,
-      });
+      this.logger.error('Email OTP verification threw exception', error as Error);
       return {
         success: false,
         error: { code: 'EXCEPTION', message: mapAuthError('verify-email-otp', null) },
@@ -484,7 +489,7 @@ export class AuthManager implements IAuthManager {
    */
   async resendEmailOtp(email: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Resend email OTP attempt', { email });
+    this.logger.debug('Resend email OTP attempt', { email });
 
     if (!(await this.otpResendRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.otpResendRateLimiter);
@@ -504,7 +509,7 @@ export class AuthManager implements IAuthManager {
       await this.startVerificationTimer(email);
       return { success: true };
     } catch (error) {
-      this.logger.error('Resend email OTP threw exception', error as Error, { email });
+      this.logger.error('Resend email OTP threw exception', error as Error);
       return {
         success: false,
         error: { code: 'EXCEPTION', message: mapAuthError('resend-email-otp', null) },
@@ -517,7 +522,7 @@ export class AuthManager implements IAuthManager {
    */
   async requestPasswordReset(email: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Password reset requested', { email });
+    this.logger.debug('Password reset requested', { email });
 
     if (!(await this.otpResendRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.otpResendRateLimiter);
@@ -540,9 +545,7 @@ export class AuthManager implements IAuthManager {
       }
       return { success: true };
     } catch (error) {
-      this.logger.error('Password reset request threw exception', error as Error, {
-        email,
-      });
+      this.logger.error('Password reset request threw exception', error as Error);
       return {
         success: false,
         error: {
@@ -559,7 +562,7 @@ export class AuthManager implements IAuthManager {
    */
   async verifyRecoveryOtp(email: string, token: string): Promise<AuthResult> {
     await this.initialize();
-    this.logger.info('Verify recovery OTP attempt', { email });
+    this.logger.debug('Verify recovery OTP attempt', { email });
 
     if (!(await this.otpVerifyRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.otpVerifyRateLimiter);
@@ -595,9 +598,7 @@ export class AuthManager implements IAuthManager {
       const user = this.mapSupabaseUser(data.user);
       return { success: true, user };
     } catch (error) {
-      this.logger.error('Recovery OTP verification threw exception', error as Error, {
-        email,
-      });
+      this.logger.error('Recovery OTP verification threw exception', error as Error);
       return {
         success: false,
         error: { code: 'EXCEPTION', message: mapAuthError('verify-recovery-otp', null) },

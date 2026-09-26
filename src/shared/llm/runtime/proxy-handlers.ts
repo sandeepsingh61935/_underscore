@@ -298,7 +298,11 @@ export async function handleLlmStreamProxy(
     providerInstance = buildProviderFromConfig({ provider, apiKey, model });
   } catch (err) {
     rateByUser.set(auth.userId, releaseStream(rateByUser.get(auth.userId) ?? next));
-    return withCors(req, env, jsonResponse(400, { error: (err as Error).message }));
+    return withCors(
+      req,
+      env,
+      jsonResponse(400, { error: 'Provider configuration invalid', code: 'llm_provider_error' })
+    );
   }
 
   const encoder = new TextEncoder();
@@ -405,7 +409,8 @@ export async function handleLlmHealthProxy(
       jsonResponse(400, {
         ok: false,
         model: model ?? 'unknown',
-        error: (err as Error).message,
+        error: 'Provider health check failed',
+        code: 'llm_provider_error',
       })
     );
   }

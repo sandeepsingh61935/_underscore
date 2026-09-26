@@ -42,9 +42,14 @@ import { MessageBusProvider } from '@/shared/contexts/MessageBusContext';
 import { ChromeMessageBus } from '@/shared/services/chrome-message-bus';
 import { resolveAccountPillLabel } from '@/shared/utils/account-pill';
 import { EventBus } from '@/shared/utils/event-bus';
-import { ConsoleLogger, LogLevel } from '@/shared/utils/logger';
+import { ConsoleLogger, LogLevel, LoggerFactory } from '@/shared/utils/logger';
 import '../../ui-system/theme/global.css';
 import './base.css';
+
+// Production consoles are user-readable: warnings and errors only.
+if (import.meta.env.PROD) {
+  LoggerFactory.setGlobalLevel(LogLevel.WARN);
+}
 
 // Lazy collection views: keeps initial popup parse off the critical path (Q9).
 // Dashboard/Settings stay eager (default sync-seed targets).

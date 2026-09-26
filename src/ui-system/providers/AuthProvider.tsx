@@ -2,6 +2,9 @@ import React, { createContext, useContext, useCallback, useEffect, useMemo } fro
 
 import type { OAuthProviderType } from '@/background/auth/interfaces/i-auth-manager';
 import { useCurrentUser, type User } from '@/features/auth/hooks/useCurrentUser';
+import { LoggerFactory } from '@/shared/utils/logger';
+
+const logger = LoggerFactory.getLogger('ui-system/providers/auth-provider');
 
 // Re-export User so existing consumers of `import { User } from '.../AuthProvider'`
 // keep compiling. The canonical definition now lives in useCurrentUser.
@@ -154,7 +157,7 @@ export function useRequireAuth(redirectTo?: string) {
   useEffect(() => {
     if (!isLoading && !isAuthenticated && redirectTo) {
       // Could integrate with router here
-      console.log('[useRequireAuth] Not authenticated, should redirect to:', redirectTo);
+      logger.debug('Not authenticated, should redirect', { redirectTo });
     }
   }, [isAuthenticated, isLoading, redirectTo]);
 

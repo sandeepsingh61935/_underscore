@@ -11,6 +11,7 @@ import {
   resolveBillingReturnUrl,
 } from '../_shared/billing-urls.ts';
 import { tryRateLimit } from '../_shared/rate-limit.ts';
+import { truncateForLog } from '../_shared/log.ts';
 
 function loadAllowedOrigins(): string[] {
   return parseBillingAllowedOrigins(Deno.env.get('BILLING_ALLOWED_ORIGINS'));
@@ -170,7 +171,7 @@ Deno.serve(async (req) => {
     });
     const data = await res.json();
     if (!res.ok) {
-      console.error('Polar checkout error', data);
+        console.error('Polar checkout error', truncateForLog(data));
       return new Response(
         JSON.stringify({
           error: 'Checkout failed',

@@ -20,7 +20,8 @@ export type AuthErrorContext =
   | 'resend-email-otp'
   | 'request-password-reset'
   | 'verify-recovery-otp'
-  | 'update-password';
+  | 'update-password'
+  | 'session';
 
 export interface MappableAuthError {
   code?: string | null;
@@ -99,6 +100,7 @@ const DEFAULT_MESSAGES: Record<AuthErrorContext, string> = {
   'verify-recovery-otp':
     'That code is incorrect or has expired. Try again or resend a new code.',
   'update-password': 'Failed to update password. Please try again.',
+  session: 'Your session could not be restored. Please sign in again.',
 };
 
 /**

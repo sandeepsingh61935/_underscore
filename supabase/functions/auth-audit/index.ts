@@ -37,6 +37,7 @@ function serviceClient() {
 }
 
 Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID().slice(0, 8);
   const allowed = loadAllowedOrigins();
   const origin = req.headers.get('Origin');
   const cors = auditCors(origin, allowed);
@@ -132,6 +133,7 @@ Deno.serve(async (req) => {
     const missingTable =
       error.code === '42P01' || /auth_audit_events.*(does not exist|not exist)/i.test(error.message);
     console.error('auth-audit insert failed', {
+      requestId,
       code: error.code,
       message: error.message,
     });

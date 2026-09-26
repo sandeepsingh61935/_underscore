@@ -101,6 +101,15 @@ describe('mapAuthError', () => {
       })
     ).toBe('Google sign-in failed. Please try again.');
   });
+
+  it('maps session-restore failures to a generic re-sign-in message (never raw)', () => {
+    expect(mapAuthError('session', { message: 'token has expired or is invalid' })).toBe(
+      'Your session could not be restored. Please sign in again.'
+    );
+    expect(mapAuthError('session', null)).toBe(
+      'Your session could not be restored. Please sign in again.'
+    );
+  });
 });
 
 describe('isRateLimitCode', () => {

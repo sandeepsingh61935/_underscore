@@ -39,7 +39,13 @@ export interface ILogger {
 }
 
 /**
- * Console logger implementation
+ * Console logger implementation.
+ *
+ * SECURITY: this is the single boundary between product code and the
+ * user-readable browser console. All metadata is sanitized before it reaches
+ * `console.*`: secrets/tokens/emails/user-content are redacted, URLs are
+ * reduced to origin, Error objects shrink to {name, message, code}, and
+ * stack traces print in development only.
  */
 export class ConsoleLogger implements ILogger {
   private level: LogLevel;
@@ -55,7 +61,7 @@ export class ConsoleLogger implements ILogger {
     if (this.level <= LogLevel.DEBUG) {
       const entry = this.createEntry(LogLevel.DEBUG, message, metadata);
       // eslint-disable-next-line no-console
-      console.debug(this.format(entry), ...metadata);
+      console.debug(this.format(entry), ...sanitizeForConsole(metadata));
     }
   }
 
@@ -63,23 +69,27 @@ export class ConsoleLogger implements ILogger {
     if (this.level <= LogLevel.INFO) {
       const entry = this.createEntry(LogLevel.INFO, message, metadata);
       // eslint-disable-next-line no-console
-      console.info(this.format(entry), ...metadata);
+      console.info(this.format(entry), ...sanitizeForConsole(metadata));
     }
   }
 
   warn(message: string, ...metadata: any[]): void {
     if (this.level <= LogLevel.WARN) {
       const entry = this.createEntry(LogLevel.WARN, message, metadata);
-      console.warn(this.format(entry), ...metadata);
+      console.warn(this.format(entry), ...sanitizeForConsole(metadata));
     }
   }
 
   error(message: string, error?: Error, ...metadata: any[]): void {
     if (this.level <= LogLevel.ERROR) {
       const entry = this.createEntry(LogLevel.ERROR, message, metadata, error);
-      console.error(this.format(entry), error, ...metadata);
+      console.error(
+        this.format(entry),
+        error ? sanitizeForConsole([error])[0] : error,
+        ...sanitizeForConsole(metadata)
+      );
 
-      if (error?.stack) {
+      if (error?.stack && isDevelopment()) {
         console.error('Stack trace:', error.stack);
       }
     }
@@ -114,6 +124,108 @@ export class ConsoleLogger implements ILogger {
     const timestamp = entry.timestamp.toISOString();
     return `[${timestamp}] [${level}] [${entry.namespace}] ${entry.message}`;
   }
+}
+
+/** True in development builds (vite/wxt/vitest). Stacks print only here. */
+function isDevelopment(): boolean {
+  try {
+    return (
+      typeof import.meta !== 'undefined' &&
+      (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+const REDACTED = '[redacted]';
+
+/**
+ * Metadata keys that must never reach the console with their values.
+ * Normalized (lowercased, separators stripped) before comparison.
+ */
+const REDACT_KEYS = new Set([
+  'password',
+  'passwd',
+  'secret',
+  'token',
+  'accesstoken',
+  'refreshtoken',
+  'providertoken',
+  'providerrefreshtoken',
+  'apikey',
+  'xllmapikey',
+  'xapikey',
+  'authorization',
+  'authcode',
+  'otp',
+  'otptoken',
+  'session',
+  'email',
+  'text',
+  'content',
+  'quote',
+  'excerpt',
+  'payload',
+  'props',
+  'body',
+]);
+
+/** Keys reduced to URL origin (path/query may carry tokens or history). */
+const ORIGIN_ONLY_KEYS = new Set(['url', 'redirecturl', 'redirectto', 'href', 'link']);
+
+function normalizeKey(key: string): string {
+  return key.toLowerCase().replace(/[_-]+/g, '');
+}
+
+function sanitizeUrl(value: unknown): unknown {
+  if (typeof value !== 'string') return REDACTED;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return REDACTED;
+  }
+}
+
+function sanitizeValue(value: unknown, depth: number, seen: WeakSet<object>): unknown {
+  if (value === null || value === undefined) return value;
+  if (value instanceof Error) {
+    const code = (value as unknown as { code?: unknown }).code;
+    return {
+      name: value.name,
+      message: value.message,
+      ...(typeof code === 'string' ? { code } : {}),
+    };
+  }
+  if (typeof value !== 'object') return value;
+  if (seen.has(value)) return REDACTED;
+  if (depth <= 0) return REDACTED;
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitizeValue(v, depth - 1, seen));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const norm = normalizeKey(k);
+    if (REDACT_KEYS.has(norm)) {
+      out[k] = REDACTED;
+    } else if (ORIGIN_ONLY_KEYS.has(norm)) {
+      out[k] = sanitizeUrl(v);
+    } else {
+      out[k] = sanitizeValue(v, depth - 1, seen);
+    }
+  }
+  return out;
+}
+
+/**
+ * Sanitize console arguments: same shape, sensitive values redacted.
+ * Exported for tests. Depth-limited and cycle-safe.
+ */
+export function sanitizeForConsole(metadata: unknown[]): unknown[] {
+  const seen = new WeakSet<object>();
+  return metadata.map((m) => sanitizeValue(m, 3, seen));
 }
 
 /**

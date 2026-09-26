@@ -4,26 +4,39 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { AppRoutes } from './core/routing/AppRoutes';
+import { newErrorId } from './shared/utils/error-id';
+import { LoggerFactory, LogLevel } from './shared/utils/logger';
 import './ui-system/theme/global.css';
 import './web/theme/web-app.css';
 import './web/theme/public-pages.css';
 
+// Production consoles are user-readable: warnings and errors only.
+if (import.meta.env.PROD) {
+  LoggerFactory.setGlobalLevel(LogLevel.WARN);
+}
+
+const webLogger = LoggerFactory.getLogger('web/root');
+
 /** Prevent a single route crash from blanking the entire SPA. */
 class RootErrorBoundary extends Component<
   { children: ReactNode },
-  { error: Error | null }
+  { error: Error | null; errorId: string | null }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, errorId: null };
   }
 
-  static getDerivedStateFromError(error: Error): { error: Error } {
-    return { error };
+  static getDerivedStateFromError(error: Error): { error: Error; errorId: string } {
+    return { error, errorId: newErrorId() };
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[web] uncaught render error', error, info.componentStack);
+    // Full detail to the logger only — never rendered into the DOM.
+    webLogger.error('Uncaught render error', error, {
+      errorId: this.state.errorId,
+      componentStack: info.componentStack,
+    });
   }
 
   override render(): ReactNode {
@@ -40,8 +53,8 @@ class RootErrorBoundary extends Component<
         >
           <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
           <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
-            The app hit an unexpected error. Try reloading. If it keeps happening, open
-            the browser console and share the error message.
+            The app hit an unexpected error. Try reloading. If it keeps happening,
+            share this reference with support.
           </p>
           <pre
             style={{
@@ -51,7 +64,7 @@ class RootErrorBoundary extends Component<
               overflow: 'auto',
             }}
           >
-            {this.state.error.message}
+            {this.state.errorId ?? 'err_unavailable'}
           </pre>
           <button
             type="button"

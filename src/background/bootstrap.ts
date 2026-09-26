@@ -22,9 +22,15 @@ import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-p
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
 import type { ScopedTagRepository } from '@/shared/repositories/scoped-tag-repository';
-import { LoggerFactory } from '@/shared/utils/logger';
+import { LoggerFactory, LogLevel } from '@/shared/utils/logger';
 
 const logger = LoggerFactory.getLogger('Bootstrap');
+
+// Production consoles are user-readable: warnings and errors only.
+// Debug/info (including email-bearing diagnostics) stay in dev builds.
+if (import.meta.env.PROD) {
+  LoggerFactory.setGlobalLevel(LogLevel.WARN);
+}
 
 /**
  * Initialize background services and dependency injection

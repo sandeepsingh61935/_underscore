@@ -17,6 +17,7 @@ import {
   parseBillingAllowedOrigins,
 } from '../_shared/billing-urls.ts';
 import { tryRateLimit } from '../_shared/rate-limit.ts';
+import { truncateForLog } from '../_shared/log.ts';
 import { resolveBillingSyncFromSubscriptions } from '../_shared/polar-sync.ts';
 
 function loadAllowedOrigins(): string[] {
@@ -178,7 +179,7 @@ Deno.serve(async (req) => {
 
   if (!res.ok) {
     const errBody = await res.text();
-    console.error('Polar customer state failed', res.status, errBody);
+    console.error('Polar customer state failed', res.status, truncateForLog(errBody));
     return new Response(
       JSON.stringify({
         error:

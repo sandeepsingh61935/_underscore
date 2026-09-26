@@ -149,7 +149,7 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       eqeqeq: ['warn', 'always'],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-empty': 'warn',
 
       // Import rules

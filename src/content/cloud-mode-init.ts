@@ -8,6 +8,9 @@
  */
 
 import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-service-factory';
+import { LoggerFactory } from '@/shared/utils/logger';
+
+const logger = LoggerFactory.getLogger('content/cloud-mode-init');
 
 /**
  * Initialize Vault Mode
@@ -19,26 +22,30 @@ import { createCloudModeServiceWithCloudSync } from '@/services/cloud-mode-servi
  */
 export async function initializeCloudMode(): Promise<void> {
   try {
-    console.warn('[CLOUD] Initializing Vault Mode with cloud sync...');
+    logger.debug('Initializing Vault Mode with cloud sync...');
 
     const service = createCloudModeServiceWithCloudSync();
 
     // Restore highlights for current page
     const restored = await service.restoreHighlightsForUrl();
 
-    console.warn(`[CLOUD] Initialized: ${restored.length} highlights restored`);
-    restored.forEach((r) => {
-      console.warn(`[CLOUD] - ${r.highlight.id}: ${r.restoredUsing} tier`);
-    });
+    logger.info('Vault Mode initialized', { restoredCount: restored.length });
+    logger.debug(
+      'Restored highlights',
+      restored.map((r) => ({ id: r.highlight.id, tier: r.restoredUsing }))
+    );
 
     // Expose service globally for debugging
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).cloudModeService = service;
-      console.warn('[CLOUD] CloudModeService available as: window.cloudModeService');
+      logger.debug('CloudModeService available as window.cloudModeService');
     }
   } catch (error) {
-    console.error('[CLOUD] Failed to initialize Vault Mode:', error);
+    logger.error(
+      'Failed to initialize Vault Mode',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }

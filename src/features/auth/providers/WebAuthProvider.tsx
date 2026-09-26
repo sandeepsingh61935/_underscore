@@ -14,6 +14,9 @@ import {
   syncSessionToExtension,
 } from '@/shared/auth/session-bridge';
 import { getWebSupabaseClient } from '@/shared/auth/supabase-web-client';
+import { LoggerFactory } from '@/shared/utils/logger';
+
+const logger = LoggerFactory.getLogger('features/auth/web-auth-provider');
 
 export type WebAuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -81,7 +84,7 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
       .getSession()
       .then(({ data, error }) => {
         if (error) {
-          console.warn('[web-auth] getSession failed', {
+          logger.warn('getSession failed', {
             message: error.message,
             name: error.name,
           });
@@ -91,7 +94,10 @@ export function WebAuthProvider({ children }: WebAuthProviderProps): React.React
         refreshFromSession(data.session);
       })
       .catch((err: unknown) => {
-        console.warn('[web-auth] getSession threw', err);
+        logger.warn(
+          'getSession threw',
+          err instanceof Error ? err : new Error(String(err))
+        );
         refreshFromSession(null);
       });
 

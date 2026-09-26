@@ -271,7 +271,7 @@ export default defineBackground({
       messageBus.subscribe(
         'LOGIN_EMAIL',
         async (payload: { email?: string; password?: string }) => {
-          logger.info('Handling LOGIN_EMAIL request', { email: payload.email });
+          logger.debug('Handling LOGIN_EMAIL request', { email: payload.email });
           if (!payload.email || !payload.password) {
             return {
               success: false,
@@ -307,7 +307,7 @@ export default defineBackground({
       messageBus.subscribe(
         'REGISTER_EMAIL',
         async (payload: { email?: string; password?: string }) => {
-          logger.info('Handling REGISTER_EMAIL request', { email: payload.email });
+          logger.debug('Handling REGISTER_EMAIL request', { email: payload.email });
           if (!payload.email || !payload.password) {
             return {
               success: false,

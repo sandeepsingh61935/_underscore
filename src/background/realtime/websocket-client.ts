@@ -151,8 +151,9 @@ export class WebSocketClient implements IWebSocketClient {
     payload: RealtimePostgresChangesPayload<SupabaseHighlightRow>
   ): void {
     if (!payload || typeof payload !== 'object') {
+      // Shape-only: full payloads may carry highlight URLs and text.
       this.logger.warn('[WebSocketClient] Ignoring malformed realtime payload', {
-        payload,
+        payloadType: typeof payload,
       });
       return;
     }
