@@ -192,7 +192,11 @@ export async function checkDurableLlmQuota(
 ): Promise<{ ok: true } | { ok: false; reason: 'unavailable' | 'rate_limit' }> {
   const calls: Array<[string, number, number]> = [
     [`llm-proxy-day:${userId}`, LLM_PROXY_DAILY_MAX, LLM_PROXY_DAILY_WINDOW_MS],
-    [`llm-proxy-min:${userId}`, LLM_PROXY_DURABLE_PER_MINUTE, LLM_PROXY_DURABLE_MINUTE_WINDOW_MS],
+    [
+      `llm-proxy-min:${userId}`,
+      LLM_PROXY_DURABLE_PER_MINUTE,
+      LLM_PROXY_DURABLE_MINUTE_WINDOW_MS,
+    ],
   ];
   try {
     for (const [key, max, windowMs] of calls) {
@@ -222,7 +226,13 @@ function durableAdminClient(env: ProxyEnv): DurableRpc | null {
   const client = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  return { rpc: (fn, args) => client.rpc(fn, args) as unknown as Promise<{ data: unknown; error: { message: string } | null }> };
+  return {
+    rpc: (fn, args) =>
+      client.rpc(fn, args) as unknown as Promise<{
+        data: unknown;
+        error: { message: string } | null;
+      }>,
+  };
 }
 export async function handleLlmStreamProxy(
   req: Request,
@@ -289,7 +299,11 @@ export async function handleLlmStreamProxy(
     const quota = await checkDurableLlmQuota(admin, auth.userId);
     if (!quota.ok && quota.reason === 'rate_limit') {
       rateByUser.set(auth.userId, releaseStream(rateByUser.get(auth.userId) ?? next));
-      return withCors(req, env, jsonResponse(429, { error: 'Rate limit exceeded; try again later' }));
+      return withCors(
+        req,
+        env,
+        jsonResponse(429, { error: 'Rate limit exceeded; try again later' })
+      );
     }
   }
 
@@ -301,7 +315,10 @@ export async function handleLlmStreamProxy(
     return withCors(
       req,
       env,
-      jsonResponse(400, { error: 'Provider configuration invalid', code: 'llm_provider_error' })
+      jsonResponse(400, {
+        error: 'Provider configuration invalid',
+        code: 'llm_provider_error',
+      })
     );
   }
 

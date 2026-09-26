@@ -53,8 +53,8 @@ class RootErrorBoundary extends Component<
         >
           <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
           <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
-            The app hit an unexpected error. Try reloading. If it keeps happening,
-            share this reference with support.
+            The app hit an unexpected error. Try reloading. If it keeps happening, share
+            this reference with support.
           </p>
           <pre
             style={{

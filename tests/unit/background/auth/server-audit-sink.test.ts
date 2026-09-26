@@ -74,7 +74,11 @@ describe('ForwardingAuditLogger', () => {
     const sink = { forward: vi.fn().mockResolvedValue(undefined) };
     const forwarding = new ForwardingAuditLogger(inner as any, sink as any);
 
-    await forwarding.logAuthEvent({ action: 'LOGIN', userId: 'user-1', provider: 'google' });
+    await forwarding.logAuthEvent({
+      action: 'LOGIN',
+      userId: 'user-1',
+      provider: 'google',
+    });
 
     expect(inner.logAuthEvent).toHaveBeenCalledTimes(1);
     expect(sink.forward).toHaveBeenCalledWith('LOGIN', 'user-1', 'google');

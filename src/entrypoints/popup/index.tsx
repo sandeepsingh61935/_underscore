@@ -220,7 +220,12 @@ function getInitialPopupState(
       pendingMode: nav.pendingAuthMode ? (nav.pendingAuthMode as ModeType) : null,
     };
   } catch {
-    return { view: View.DASHBOARD, selectedDomain: '', selectedSection: '', pendingMode: null };
+    return {
+      view: View.DASHBOARD,
+      selectedDomain: '',
+      selectedSection: '',
+      pendingMode: null,
+    };
   }
 }
 

@@ -26,11 +26,15 @@ describe('analytics rate limit', () => {
 
   it('derives identity from proxy headers, unknown fallback', () => {
     expect(
-      analyticsIdentity(new Request('https://x.test/', { headers: { 'cf-connecting-ip': '9.9.9.9' } }))
+      analyticsIdentity(
+        new Request('https://x.test/', { headers: { 'cf-connecting-ip': '9.9.9.9' } })
+      )
     ).toBe('ip:9.9.9.9');
     expect(
       analyticsIdentity(
-        new Request('https://x.test/', { headers: { 'x-forwarded-for': '1.1.1.1, 2.2.2.2' } })
+        new Request('https://x.test/', {
+          headers: { 'x-forwarded-for': '1.1.1.1, 2.2.2.2' },
+        })
       )
     ).toBe('ip:1.1.1.1');
     expect(analyticsIdentity(new Request('https://x.test/'))).toBe('ip:unknown');

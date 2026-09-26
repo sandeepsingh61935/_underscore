@@ -15,7 +15,7 @@ interface PagesContext {
 }
 
 // Per-isolate abuse guard (anonymous endpoint). Not a global guarantee —
- // same documented limitation as the LLM proxy pre-check.
+// same documented limitation as the LLM proxy pre-check.
 const buckets = new Map<string, AnalyticsBucket>();
 
 function envelope(

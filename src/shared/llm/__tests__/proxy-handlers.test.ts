@@ -240,7 +240,9 @@ describe('checkDurableLlmQuota', () => {
   });
 
   it('denies when a window is exhausted or malformed', async () => {
-    const denied = { rpc: vi.fn().mockResolvedValue({ data: { allowed: false }, error: null }) };
+    const denied = {
+      rpc: vi.fn().mockResolvedValue({ data: { allowed: false }, error: null }),
+    };
     await expect(checkDurableLlmQuota(denied, 'user-1')).resolves.toEqual({
       ok: false,
       reason: 'rate_limit',

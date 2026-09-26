@@ -8,10 +8,7 @@ import { AuditLogger } from './audit-logger';
 import { CSPValidator } from './csp-validator';
 import { ForwardingAuditLogger } from './forwarding-audit-logger';
 import type { IAuditLogger } from './interfaces/i-audit-logger';
-import {
-  resolveFunctionsBaseUrl,
-  ServerAuditSink,
-} from './server-audit-sink';
+import { resolveFunctionsBaseUrl, ServerAuditSink } from './server-audit-sink';
 
 import type { SupabaseConfig } from '@/background/api/supabase-client';
 import type { Container } from '@/background/di/container';
@@ -41,7 +38,13 @@ export function registerAuthComponents(container: Container): void {
         config.anonKey,
         async () => {
           try {
-            const sdk = container.resolve<{ auth: { getSession: () => Promise<{ data: { session: { access_token: string } | null } }> } }>('_supabaseSDK');
+            const sdk = container.resolve<{
+              auth: {
+                getSession: () => Promise<{
+                  data: { session: { access_token: string } | null };
+                }>;
+              };
+            }>('_supabaseSDK');
             const { data } = await sdk.auth.getSession();
             return data.session?.access_token ?? null;
           } catch {

@@ -434,7 +434,10 @@ export class AuthManager implements IAuthManager {
         'Session restore threw exception',
         error instanceof Error ? error : new Error(String(error))
       );
-      return { success: false, error: { code: 'EXCEPTION', message: mapAuthError('session', null) } };
+      return {
+        success: false,
+        error: { code: 'EXCEPTION', message: mapAuthError('session', null) },
+      };
     }
   }
 

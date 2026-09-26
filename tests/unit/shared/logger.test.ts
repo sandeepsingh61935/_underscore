@@ -5,7 +5,12 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ConsoleLogger, LogLevel, LoggerFactory, sanitizeForConsole } from '@/shared/utils/logger';
+import {
+  ConsoleLogger,
+  LogLevel,
+  LoggerFactory,
+  sanitizeForConsole,
+} from '@/shared/utils/logger';
 
 describe('ConsoleLogger', () => {
   let logger: ConsoleLogger;
@@ -65,13 +70,10 @@ describe('ConsoleLogger', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('An error occurred'),
-        expect.objectContaining({ name: 'Error', message: 'Test error' }),
+        expect.objectContaining({ name: 'Error', message: 'Test error' })
       );
       // Full Error instance (with stack) must never reach the console args.
-      expect(consoleSpy).not.toHaveBeenCalledWith(
-        expect.anything(),
-        error,
-      );
+      expect(consoleSpy).not.toHaveBeenCalledWith(expect.anything(), error);
     });
   });
 
