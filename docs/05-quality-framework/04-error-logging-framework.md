@@ -7,13 +7,72 @@
 
 ---
 
+## Logging Conventions & Restrictions (ENFORCED)
+
+These rules are binding and covered by tests/lint. The patterns below
+describe the normative standard; where older sections of this doc show
+aspirational snippets (e.g. `StructuredLogger`, env-gated factory), the
+implementation in `src/shared/utils/logger.ts` is authoritative.
+
+### 1. Single boundary
+
+- All product logging in `src/` goes through `ILogger` via
+  `LoggerFactory.getLogger('<file-path>')`. Namespace = file path.
+- Direct `console.log/info/debug` in `src/` is an eslint **error**
+  (`no-console`; `warn`/`error` remain allowed but prefer the logger).
+- `ConsoleLogger` sanitizes every console argument: secrets, tokens,
+  emails and user-content values are redacted; URL-bearing fields are
+  reduced to origin; `Error` objects shrink to `{name, message, code}`;
+  stack traces print in development builds only.
+
+### 2. Levels
+
+- `DEBUG` = dev diagnosis (the only level that may carry PII).
+- `INFO` = lifecycle + counts (no PII).
+- `WARN` = recoverable; `ERROR` = needs action, always with an error ID.
+- Production bootstraps (background, popup, web SPA) set the global
+  level to `WARN`. Debug/info logs (including email-bearing
+  diagnostics) never reach user consoles in production.
+
+### 3. Never log (any surface, any level above DEBUG)
+
+Passwords, OTP codes, access/refresh/provider tokens, LLM API keys,
+OAuth codes, full session objects, full realtime payloads (highlight
+URL/text), raw third-party bodies (truncate to 200 chars server-side).
+
+### 4. User surfaces
+
+- Never render `error.message` verbatim in UI. Route auth failures
+  through `mapAuthError`; everything else shows a generic message plus
+  a short relayable error ID (`newErrorId()`, e.g. `err_8k2qx`).
+  Full detail goes to the logger / server audit sink keyed by that ID.
+- Auth error contexts include `session` for session-restore failures
+  ("Your session could not be restored. Please sign in again.").
+
+### 5. Correlation
+
+Background IPC auth handlers and Edge Functions attach a per-request
+ID to error logs so an incident traces end-to-end (no full
+distributed trace; per-request scope is sufficient).
+
+### 6. Reviewer checklist
+
+- [ ] New logs use a namespaced `ILogger` at the correct level?
+- [ ] Any PII/user content above `DEBUG`? Any full objects as args?
+- [ ] Error paths return a mapped message + error ID?
+- [ ] `bun run build && bun run type-check`, `no-console` clean,
+      redaction tests green?
+
+---
+
 ## Table of Contents
 
-1. [Error Hierarchy](#error-hierarchy)
-2. [Logging System](#logging-system)
-3. [Error Boundaries](#error-boundaries)
-4. [Monitoring & Telemetry](#monitoring--telemetry)
-5. [Best Practices](#best-practices)
+1. [Conventions & Restrictions (ENFORCED)](#logging-conventions--restrictions-enforced)
+2. [Error Hierarchy](#error-hierarchy)
+3. [Logging System](#logging-system)
+4. [Error Boundaries](#error-boundaries)
+5. [Monitoring & Telemetry](#monitoring--telemetry)
+6. [Best Practices](#best-practices)
 
 ---
 
