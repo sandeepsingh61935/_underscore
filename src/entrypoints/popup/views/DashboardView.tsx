@@ -36,10 +36,12 @@ function formatPath(path: string | null | undefined): string {
 }
 
 const STAT_CELLS: Array<{ key: keyof PopupHomeStats; label: string }> = [
-  { key: 'highlightCount', label: 'Highlights' },
-  { key: 'domainCount', label: 'Domains' },
+  { key: 'highlightCount', label: 'Total' },
   { key: 'thisWeekCount', label: 'This week' },
-  { key: 'todayCount', label: 'Today' },
+  { key: 'pageCount', label: 'Pages' },
+  { key: 'domainCount', label: 'Sources' },
+  { key: 'notesCount', label: 'Notes' },
+  { key: 'tagCount', label: 'Tags' },
 ];
 
 function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
@@ -49,7 +51,7 @@ function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
         data-testid="home-stats"
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: 0,
           border: '1px solid var(--rule-soft)',
         }}
@@ -59,9 +61,9 @@ function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
             key={cell.key}
             data-testid={`home-stat-${cell.key}`}
             style={{
-              padding: '10px 12px',
-              borderRight: i % 2 === 0 ? '1px solid var(--rule-soft)' : undefined,
-              borderBottom: i < 2 ? '1px solid var(--rule-soft)' : undefined,
+              padding: '8px 10px',
+              borderRight: i % 3 !== 2 ? '1px solid var(--rule-soft)' : undefined,
+              borderBottom: i < 3 ? '1px solid var(--rule-soft)' : undefined,
               minWidth: 0,
             }}
           >
@@ -69,9 +71,12 @@ function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
               className="u-mono"
               style={{
                 fontSize: 'var(--step--2)',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'var(--ink-4)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
               {cell.label}
@@ -83,6 +88,7 @@ function HomeHeader({ stats }: { stats: PopupHomeStats }): React.ReactElement {
                 color: 'var(--ink)',
                 marginTop: 2,
                 fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1.15,
               }}
             >
               {stats[cell.key]}
@@ -286,8 +292,11 @@ export function DashboardView({
 
   const totalHighlights = dashboardData?.totalHighlights ?? 0;
   const totalDomains = dashboardData?.totalDomains ?? 0;
+  const pageCount = dashboardData?.pageCount ?? 0;
   const thisWeekCount = dashboardData?.thisWeekCount ?? 0;
   const todayCount = dashboardData?.todayCount ?? 0;
+  const notesCount = dashboardData?.withNotesCount ?? 0;
+  const tagCount = dashboardData?.tagCount ?? dashboardData?.withTagsCount ?? 0;
   const recentHighlights = dashboardData?.recentHighlights ?? [];
   const libraryAccess = resolveLibraryAccess(isAuthenticated, totalHighlights);
   const isGuest = !isAuthenticated || mode === 'basic';
@@ -300,8 +309,11 @@ export function DashboardView({
     displayName,
     totalHighlights,
     totalDomains,
+    pageCount,
     thisWeekCount,
     todayCount,
+    notesCount,
+    tagCount,
     tabDomain: tabContext.domain,
     tabPath: tabContext.path,
     currentPageHighlightCount: currentPageHighlightsCount,

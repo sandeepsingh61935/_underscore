@@ -54,10 +54,12 @@ function mockGuestEmpty(): void {
     data: {
       totalHighlights: 0,
       totalDomains: 0,
+      pageCount: 0,
       thisWeekCount: 0,
       todayCount: 0,
       withNotesCount: 0,
       withTagsCount: 0,
+      tagCount: 0,
       recentHighlights: [],
     },
     isLoading: false,
@@ -108,10 +110,12 @@ function mockWithHighlights(opts?: {
     data: {
       totalHighlights: recentCount,
       totalDomains: 1,
+      pageCount: pageCount,
       thisWeekCount: recentCount,
       todayCount: Math.min(1, recentCount),
       withNotesCount: recentCount > 0 ? 1 : 0,
       withTagsCount: recentCount > 0 ? 1 : 0,
+      tagCount: recentCount > 0 ? 1 : 0,
       recentHighlights,
     },
     isLoading: false,
@@ -162,7 +166,7 @@ describe('DashboardView home product cleanup', () => {
     expect(screen.getByText('Highlight quote 1')).toBeTruthy();
   });
 
-  it('shows 2x2 stats including this week and today', () => {
+  it('shows 3x2 stats grid matching web app', () => {
     mockWithHighlights({ recentCount: 2 });
     render(<DashboardView />);
 
@@ -170,9 +174,15 @@ describe('DashboardView home product cleanup', () => {
     expect(screen.getByTestId('home-stat-highlightCount').textContent).toMatch(/2/);
     expect(screen.getByTestId('home-stat-domainCount').textContent).toMatch(/1/);
     expect(screen.getByTestId('home-stat-thisWeekCount')).toBeTruthy();
-    expect(screen.getByTestId('home-stat-todayCount')).toBeTruthy();
+    expect(screen.getByTestId('home-stat-pageCount')).toBeTruthy();
+    expect(screen.getByTestId('home-stat-notesCount')).toBeTruthy();
+    expect(screen.getByTestId('home-stat-tagCount')).toBeTruthy();
+    expect(screen.getByText('Total')).toBeTruthy();
     expect(screen.getByText('This week')).toBeTruthy();
-    expect(screen.getByText('Today')).toBeTruthy();
+    expect(screen.getByText('Pages')).toBeTruthy();
+    expect(screen.getByText('Sources')).toBeTruthy();
+    expect(screen.getByText('Notes')).toBeTruthy();
+    expect(screen.getByText('Tags')).toBeTruthy();
   });
 
   it('does not show Ask about this page', () => {

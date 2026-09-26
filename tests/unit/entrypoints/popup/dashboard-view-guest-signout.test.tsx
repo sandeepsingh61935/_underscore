@@ -49,6 +49,8 @@ describe('DashboardView guest sign-out UX', () => {
       data: {
         totalHighlights: 0,
         totalDomains: 0,
+        pageCount: 0,
+        tagCount: 0,
         thisWeekCount: 0,
         todayCount: 0,
         withNotesCount: 0,
@@ -79,6 +81,8 @@ describe('DashboardView guest sign-out UX', () => {
       data: {
         totalHighlights: 2,
         totalDomains: 1,
+        pageCount: 1,
+        tagCount: 0,
         thisWeekCount: 2,
         todayCount: 0,
         withNotesCount: 0,
